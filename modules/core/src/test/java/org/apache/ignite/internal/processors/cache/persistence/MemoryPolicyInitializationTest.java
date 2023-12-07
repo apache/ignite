@@ -226,7 +226,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
      * @param plcName Policy name.
      */
     private void verifyCacheMemoryPolicy(IgniteCache cache, String plcName) {
-        GridCacheContext ctx = ((IgniteCacheProxy) cache).context();
+        GridCacheContext ctx = ((IgniteCacheProxy)cache).context();
 
         assertEquals(plcName, ctx.dataRegion().config().getName());
     }

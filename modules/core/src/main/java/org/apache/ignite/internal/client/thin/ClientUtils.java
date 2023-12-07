@@ -67,7 +67,6 @@ import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpir
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE;
 import static org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy.convertDuration;
@@ -75,7 +74,7 @@ import static org.apache.ignite.internal.processors.platform.cache.expiry.Platfo
 /**
  * Shared serialization/deserialization utils.
  */
-final class ClientUtils {
+public final class ClientUtils {
     /** Marshaller. */
     private final ClientBinaryMarshaller marsh;
 
@@ -100,7 +99,7 @@ final class ClientUtils {
      * @param out Output stream.
      * @param elemWriter Collection element serializer
      */
-    static <E> void collection(
+    public static <E> void collection(
         Collection<E> col, BinaryOutputStream out,
         BiConsumer<BinaryOutputStream, E> elemWriter
     ) {
@@ -265,7 +264,7 @@ final class ClientUtils {
             };
 
             itemWriter.accept(CfgItem.NAME, w -> w.writeString(cfg.getName()));
-            itemWriter.accept(CfgItem.CACHE_MODE, w -> w.writeInt(cfg.getCacheMode().ordinal()));
+            itemWriter.accept(CfgItem.CACHE_MODE, w -> w.writeInt(CacheMode.toCode(cfg.getCacheMode())));
             itemWriter.accept(CfgItem.ATOMICITY_MODE, w -> w.writeInt(cfg.getAtomicityMode().ordinal()));
             itemWriter.accept(CfgItem.BACKUPS, w -> w.writeInt(cfg.getBackups()));
             itemWriter.accept(CfgItem.WRITE_SYNC_MODE, w -> w.writeInt(cfg.getWriteSynchronizationMode().ordinal()));
@@ -388,7 +387,7 @@ final class ClientUtils {
             return new ClientCacheConfiguration().setName("TBD") // cache name is to be assigned later
                 .setAtomicityMode(CacheAtomicityMode.fromOrdinal(reader.readInt()))
                 .setBackups(reader.readInt())
-                .setCacheMode(CacheMode.fromOrdinal(reader.readInt()))
+                .setCacheMode(CacheMode.fromCode(reader.readInt()))
                 .setCopyOnRead(reader.readBoolean())
                 .setDataRegionName(reader.readString())
                 .setEagerTtl(reader.readBoolean())
@@ -749,37 +748,98 @@ final class ClientUtils {
 
     /** Thin client protocol cache configuration item codes. */
     private enum CfgItem {
-        /** Name. */NAME(0),
-        /** Cache mode. */CACHE_MODE(1),
-        /** Atomicity mode. */ATOMICITY_MODE(2),
-        /** Backups. */BACKUPS(3),
-        /** Write synchronization mode. */WRITE_SYNC_MODE(4),
-        /** Read from backup. */READ_FROM_BACKUP(6),
-        /** Eager ttl. */EAGER_TTL(405),
-        /** Group name. */GROUP_NAME(400),
-        /** Default lock timeout. */DEFAULT_LOCK_TIMEOUT(402),
-        /** Partition loss policy. */PART_LOSS_POLICY(404),
-        /** Rebalance batch size. */REBALANCE_BATCH_SIZE(303),
-        /** Rebalance batches prefetch count. */REBALANCE_BATCHES_PREFETCH_COUNT(304),
-        /** Rebalance delay. */REBALANCE_DELAY(301),
-        /** Rebalance mode. */REBALANCE_MODE(300),
-        /** Rebalance order. */REBALANCE_ORDER(305),
-        /** Rebalance throttle. */REBALANCE_THROTTLE(306),
-        /** Rebalance timeout. */REBALANCE_TIMEOUT(302),
-        /** Copy on read. */COPY_ON_READ(5),
-        /** Data region name. */DATA_REGION_NAME(100),
-        /** Stats enabled. */STATS_ENABLED(406),
-        /** Max async ops. */MAX_ASYNC_OPS(403),
-        /** Max query iterators. */MAX_QUERY_ITERATORS(206),
-        /** Onheap cache enabled. */ONHEAP_CACHE_ENABLED(101),
-        /** Query metric size. */QUERY_METRIC_SIZE(202),
-        /** Query parallelism. */QUERY_PARALLELISM(201),
-        /** Sql escape all. */SQL_ESCAPE_ALL(205),
-        /** Sql index max inline size. */SQL_IDX_MAX_INLINE_SIZE(204),
-        /** Sql schema. */SQL_SCHEMA(203),
-        /** Key configs. */KEY_CONFIGS(401),
-        /** Key entities. */QUERY_ENTITIES(200),
-        /** Expire policy. */EXPIRE_POLICY(407);
+        /** Name. */
+        NAME(0),
+
+        /** Cache mode. */
+        CACHE_MODE(1),
+
+        /** Atomicity mode. */
+        ATOMICITY_MODE(2),
+
+        /** Backups. */
+        BACKUPS(3),
+
+        /** Write synchronization mode. */
+        WRITE_SYNC_MODE(4),
+
+        /** Read from backup. */
+        READ_FROM_BACKUP(6),
+
+        /** Eager ttl. */
+        EAGER_TTL(405),
+
+        /** Group name. */
+        GROUP_NAME(400),
+
+        /** Default lock timeout. */
+        DEFAULT_LOCK_TIMEOUT(402),
+
+        /** Partition loss policy. */
+        PART_LOSS_POLICY(404),
+
+        /** Rebalance batch size. */
+        REBALANCE_BATCH_SIZE(303),
+
+        /** Rebalance batches prefetch count. */
+        REBALANCE_BATCHES_PREFETCH_COUNT(304),
+
+        /** Rebalance delay. */
+        REBALANCE_DELAY(301),
+
+        /** Rebalance mode. */
+        REBALANCE_MODE(300),
+
+        /** Rebalance order. */
+        REBALANCE_ORDER(305),
+
+        /** Rebalance throttle. */
+        REBALANCE_THROTTLE(306),
+
+        /** Rebalance timeout. */
+        REBALANCE_TIMEOUT(302),
+
+        /** Copy on read. */
+        COPY_ON_READ(5),
+
+        /** Data region name. */
+        DATA_REGION_NAME(100),
+
+        /** Stats enabled. */
+        STATS_ENABLED(406),
+
+        /** Max async ops. */
+        MAX_ASYNC_OPS(403),
+
+        /** Max query iterators. */
+        MAX_QUERY_ITERATORS(206),
+
+        /** Onheap cache enabled. */
+        ONHEAP_CACHE_ENABLED(101),
+
+        /** Query metric size. */
+        QUERY_METRIC_SIZE(202),
+
+        /** Query parallelism. */
+        QUERY_PARALLELISM(201),
+
+        /** Sql escape all. */
+        SQL_ESCAPE_ALL(205),
+
+        /** Sql index max inline size. */
+        SQL_IDX_MAX_INLINE_SIZE(204),
+
+        /** Sql schema. */
+        SQL_SCHEMA(203),
+
+        /** Key configs. */
+        KEY_CONFIGS(401),
+
+        /** Key entities. */
+        QUERY_ENTITIES(200),
+
+        /** Expire policy. */
+        EXPIRE_POLICY(407);
 
         /** Code. */
         private final short code;

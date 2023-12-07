@@ -25,13 +25,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.cache.CacheMode.LOCAL;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Grid cache concurrent hash map self test.
@@ -39,16 +35,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        CacheConfiguration cc = defaultCacheConfiguration();
-
-        cc.setCacheMode(LOCAL);
-        cc.setWriteSynchronizationMode(FULL_SYNC);
-
-        cfg.setCacheConfiguration(cc);
-
-        return cfg;
+        return super.getConfiguration(igniteInstanceName)
+            .setCacheConfiguration(defaultCacheConfiguration());
     }
 
     /** {@inheritDoc} */

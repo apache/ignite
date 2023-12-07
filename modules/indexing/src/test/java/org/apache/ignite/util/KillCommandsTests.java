@@ -20,23 +20,32 @@ package org.apache.ignite.util;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.client.ClientConnectionException;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -47,10 +56,14 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 
+import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLIENT_LISTENER_PORT;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.util.KillCommandsSQLTest.execute;
@@ -82,6 +95,12 @@ class KillCommandsTests {
     /** Latch to block compute task execution. */
     private static CountDownLatch computeLatch;
 
+    /** Scan query filter latch. */
+    private static volatile CountDownLatch filterLatch;
+
+    /** Scan query cancel latch. */
+    private static volatile CountDownLatch cancelLatch;
+
     /**
      * Test cancel of the scan query.
      *
@@ -89,7 +108,28 @@ class KillCommandsTests {
      * @param srvs Server nodes.
      * @param qryCanceler Query cancel closure.
      */
-    public static void doTestScanQueryCancel(IgniteEx cli, List<IgniteEx> srvs, Consumer<T3<UUID, String, Long>> qryCanceler) {
+    public static void doTestScanQueryCancel(
+        IgniteEx cli,
+        List<IgniteEx> srvs,
+        Consumer<T3<UUID, String, Long>> qryCanceler
+    ) throws Exception {
+        checkScanQueryCancelBeforeFetching(cli, srvs, qryCanceler);
+
+        checkScanQueryCancelDuringFetching(cli, srvs, qryCanceler);
+    }
+
+    /**
+     * Checks cancel of the scan query before fetching.
+     *
+     * @param cli Client node.
+     * @param srvs Server nodes.
+     * @param qryCanceler Query cancel closure.
+     */
+    public static void checkScanQueryCancelBeforeFetching(
+        IgniteEx cli,
+        List<IgniteEx> srvs,
+        Consumer<T3<UUID, String, Long>> qryCanceler
+    ) throws Exception {
         IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
 
         QueryCursor<Cache.Entry<Object, Object>> qry1 = cache.query(new ScanQuery<>().setPageSize(PAGE_SZ));
@@ -98,14 +138,7 @@ class KillCommandsTests {
         // Fetch first entry and therefore caching first page.
         assertNotNull(iter1.next());
 
-        List<List<?>> scanQries0 = execute(srvs.get(0),
-            "SELECT ORIGIN_NODE_ID, CACHE_NAME, QUERY_ID FROM SYS.SCAN_QUERIES");
-
-        assertEquals(1, scanQries0.size());
-
-        UUID originNodeId = (UUID)scanQries0.get(0).get(0);
-        String cacheName = (String)scanQries0.get(0).get(1);
-        long qryId = (Long)scanQries0.get(0).get(2);
+        T3<UUID, String, Long> qryInfo = scanQuery(srvs.get(0));
 
         // Opens second query.
         QueryCursor<Cache.Entry<Object, Object>> qry2 = cache.query(new ScanQuery<>().setPageSize(PAGE_SZ));
@@ -115,19 +148,78 @@ class KillCommandsTests {
         assertNotNull(iter2.next());
 
         // Cancel first query.
-        qryCanceler.accept(new T3<>(originNodeId, cacheName, qryId));
+        qryCanceler.accept(qryInfo);
 
-        // Fetch all cached entries. It's size equal to the {@code PAGE_SZ * NODES_CNT}.
-        for (int i = 0; i < PAGE_SZ * srvs.size() - 1; i++)
-            assertNotNull(iter1.next());
+        // Fetch of the next page should throw the exception. New page is delivered in parallel to iterating.
+        assertThrowsWithCause(() -> {
+            for (int i = 0; i < PAGE_SZ * PAGES_CNT - 1; i++)
+                assertNotNull(iter1.next());
 
-        // Fetch of the next page should throw the exception.
-        assertThrowsWithCause(iter1::next, IgniteCheckedException.class);
+            return null;
+        }, IgniteCheckedException.class);
 
         // Checking that second query works fine after canceling first.
-        for (int i = 0; i < PAGE_SZ * PAGE_SZ - 1; i++)
+        for (int i = 0; i < PAGE_SZ * PAGES_CNT - 1; i++)
             assertNotNull(iter2.next());
 
+        checkScanQueryResources(cli, srvs, qryInfo.get3());
+
+        qry2.close();
+    }
+
+    /**
+     * Checks cancel of the scan query during fetching.
+     *
+     * @param cli Client node.
+     * @param srvs Server nodes.
+     * @param qryCanceler Query cancel closure.
+     */
+    private static void checkScanQueryCancelDuringFetching(
+        IgniteEx cli,
+        List<IgniteEx> srvs,
+        Consumer<T3<UUID, String, Long>> qryCanceler
+    ) throws Exception {
+        filterLatch = new CountDownLatch(1);
+        cancelLatch = new CountDownLatch(1);
+
+        IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
+
+        QueryCursor<Cache.Entry<Object, Object>> qry = cache.query(new ScanQuery<>().setFilter((o, o2) -> {
+            try {
+                filterLatch.countDown();
+
+                cancelLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
+            }
+            catch (Exception ignored) {
+                // No-op.
+            }
+
+            return true;
+        }));
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync((Runnable)() -> qry.iterator().next());
+
+        assertTrue(filterLatch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+
+        T3<UUID, String, Long> qryInfo = scanQuery(srvs.get(0));
+
+        qryCanceler.accept(qryInfo);
+
+        cancelLatch.countDown();
+
+        assertThrowsAnyCause(null, fut::get, NoSuchElementException.class, "Iterator has been closed.");
+
+        checkScanQueryResources(cli, srvs, qryInfo.get3());
+    }
+
+    /**
+     * Checks scan query resources.
+     *
+     * @param cli Client node.
+     * @param srvs Server nodes.
+     * @param qryId Query ID to check.
+     */
+    private static void checkScanQueryResources(IgniteEx cli, List<IgniteEx> srvs, long qryId) {
         // Checking all server node objects cleared after cancel.
         for (int i = 0; i < srvs.size(); i++) {
             IgniteEx ignite = srvs.get(i);
@@ -149,6 +241,23 @@ class KillCommandsTests {
             assertNotNull(futs);
             assertFalse(futs.containsKey(qryId));
         }
+    }
+
+    /**
+     * Gets scan query info.
+     *
+     * @param node Node to get query info.
+     * @return Tuple of scan query info.
+     */
+    private static T3<UUID, String, Long> scanQuery(IgniteEx node) throws IgniteCheckedException {
+        assertTrue(waitForCondition(() -> node.context().systemView().view(SCAN_QRY_SYS_VIEW).size() > 0, TIMEOUT));
+
+        List<List<?>> qry = execute(node,
+            "SELECT ORIGIN_NODE_ID, CACHE_NAME, QUERY_ID FROM SYS.SCAN_QUERIES");
+
+        assertEquals(1, qry.size());
+
+        return new T3<>((UUID)qry.get(0).get(0), (String)qry.get(0).get(1), (Long)qry.get(0).get(2));
     }
 
     /**
@@ -199,7 +308,8 @@ class KillCommandsTests {
             }
 
             assertThrowsWithCause(() -> fut.get(TIMEOUT), IgniteException.class);
-        } finally {
+        }
+        finally {
             computeLatch.countDown();
         }
     }
@@ -313,9 +423,14 @@ class KillCommandsTests {
      * @param cli Client node.
      * @param srvs Server nodes.
      * @param qryCanceler Query cancel closure.
+     * @param scanCanceler Scan query cancel closure.
      */
-    public static void doTestCancelContinuousQuery(IgniteEx cli, List<IgniteEx> srvs,
-        BiConsumer<UUID, UUID> qryCanceler) throws Exception {
+    public static void doTestCancelContinuousQuery(
+        IgniteEx cli,
+        List<IgniteEx> srvs,
+        BiConsumer<UUID, UUID> qryCanceler,
+        Consumer<T3<UUID, String, Long>> scanCanceler
+    ) throws Exception {
         IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
 
         ContinuousQuery<Integer, Integer> cq = new ContinuousQuery<>();
@@ -367,6 +482,71 @@ class KillCommandsTests {
 
             assertTrue(srv.configuration().getIgniteInstanceName(), res);
         }
+
+        T3<UUID, String, Long> qryInfo = scanQuery(srvs.get(0));
+
+        scanCanceler.accept(qryInfo);
+    }
+
+    /**
+     * Test cancel of the client connection(s).
+     *
+     * @param srvs Server nodes.
+     * @param cliCanceler Client connection cancel closure.
+     */
+    public static void doTestCancelClientConnection(List<IgniteEx> srvs, BiConsumer<UUID, Long> cliCanceler) {
+        ClientConfiguration cfg = new ClientConfiguration()
+            .setAddressesFinder(() -> new String[] {"127.0.0.1:" + srvs.get(0).localNode().attribute(CLIENT_LISTENER_PORT)})
+            .setPartitionAwarenessEnabled(false);
+
+        IgniteClient cli0 = Ignition.startClient(cfg);
+        IgniteClient cli1 = Ignition.startClient(cfg);
+        IgniteClient cli2 = Ignition.startClient(cfg);
+        IgniteClient cli3 = Ignition.startClient(new ClientConfiguration()
+            .setAddressesFinder(() -> new String[] {"127.0.0.1:" + srvs.get(1).localNode().attribute(CLIENT_LISTENER_PORT)})
+            .setPartitionAwarenessEnabled(false));
+
+        assertEquals(ClusterState.ACTIVE, cli0.cluster().state());
+        assertEquals(ClusterState.ACTIVE, cli1.cluster().state());
+        assertEquals(ClusterState.ACTIVE, cli2.cluster().state());
+        assertEquals(ClusterState.ACTIVE, cli3.cluster().state());
+
+        List<List<?>> conns = execute(srvs.get(0), "SELECT CONNECTION_ID FROM SYS.CLIENT_CONNECTIONS ORDER BY 1");
+
+        cliCanceler.accept(srvs.get(0).localNode().id(), (Long)conns.get(0).get(0));
+
+        Predicate<IgniteClient> checker = cli -> {
+            try {
+                return waitForCondition(() -> {
+                    try {
+                        cli.cluster().state();
+
+                        return false;
+                    }
+                    catch (ClientConnectionException e) {
+                        return true;
+                    }
+                }, 10_000);
+            }
+            catch (Exception e) {
+                return false;
+            }
+        };
+
+        assertTrue(checker.test(cli0));
+        assertEquals(ClusterState.ACTIVE, cli1.cluster().state());
+        assertEquals(ClusterState.ACTIVE, cli2.cluster().state());
+        assertEquals(ClusterState.ACTIVE, cli3.cluster().state());
+
+        cliCanceler.accept(srvs.get(0).localNode().id(), null);
+
+        assertTrue(checker.test(cli1));
+        assertTrue(checker.test(cli2));
+        assertEquals(ClusterState.ACTIVE, cli3.cluster().state());
+
+        cliCanceler.accept(null, null);
+
+        assertTrue(checker.test(cli3));
     }
 
     /** */

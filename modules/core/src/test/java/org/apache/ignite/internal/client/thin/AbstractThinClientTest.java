@@ -28,6 +28,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.apache.logging.log4j.Level;
 
 /**
  * Abstract thin client test.
@@ -37,7 +39,42 @@ public abstract class AbstractThinClientTest extends GridCommonAbstractTest {
      * Gets default client configuration.
      */
     protected ClientConfiguration getClientConfiguration() {
-        return new ClientConfiguration().setPartitionAwarenessEnabled(false);
+        GridTestLog4jLogger log = new GridTestLog4jLogger();
+        log.setLevel(Level.ALL);
+
+        return new ClientConfiguration()
+            .setPartitionAwarenessEnabled(isClientPartitionAwarenessEnabled())
+            .setLogger(log);
+    }
+
+    /**
+     * Gets default client configuration with addresses set to the specified nodes.
+     *
+     * @param nodes Server nodes.
+     */
+    protected ClientConfiguration getClientConfiguration(ClusterNode... nodes) {
+        String[] addrs = new String[nodes.length];
+
+        for (int i = 0; i < nodes.length; i++) {
+            ClusterNode node = nodes[i];
+
+            addrs[i] = clientHost(node) + ":" + clientPort(node);
+        }
+
+        return getClientConfiguration()
+                .setAddresses(addrs)
+                .setClusterDiscoveryEnabled(isClientEndpointsDiscoveryEnabled());
+    }
+
+    /**
+     * Gets default client configuration with addresses set to the specified nodes.
+     *
+     * @param ignites Server nodes.
+     */
+    protected ClientConfiguration getClientConfiguration(Ignite... ignites) {
+        ClusterNode[] nodes = Arrays.stream(ignites).map(ignite -> ignite.cluster().localNode()).toArray(ClusterNode[]::new);
+
+        return getClientConfiguration(nodes);
     }
 
     /**
@@ -65,15 +102,9 @@ public abstract class AbstractThinClientTest extends GridCommonAbstractTest {
      * @return Thin client.
      */
     protected IgniteClient startClient(ClusterNode... nodes) {
-        String[] addrs = new String[nodes.length];
+        ClientConfiguration cfg = getClientConfiguration(nodes);
 
-        for (int i = 0; i < nodes.length; i++) {
-            ClusterNode node = nodes[i];
-
-            addrs[i] = clientHost(node) + ":" + clientPort(node);
-        }
-
-        return Ignition.startClient(getClientConfiguration().setAddresses(addrs));
+        return Ignition.startClient(cfg);
     }
 
     /**
@@ -115,5 +146,19 @@ public abstract class AbstractThinClientTest extends GridCommonAbstractTest {
     protected void dropAllThinClientConnections() {
         for (Ignite ignite : G.allGrids())
             dropAllThinClientConnections(ignite);
+    }
+
+    /**
+     * Toggles endpoints discovery feature on or off.
+     */
+    protected boolean isClientEndpointsDiscoveryEnabled() {
+        return true;
+    }
+
+    /**
+     * Toggles partition awareness feature on or off.
+     */
+    protected boolean isClientPartitionAwarenessEnabled() {
+        return true;
     }
 }

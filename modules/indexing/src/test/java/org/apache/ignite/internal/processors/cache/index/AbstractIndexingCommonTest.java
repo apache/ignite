@@ -34,9 +34,9 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
 import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
@@ -89,13 +89,13 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
      */
     protected List<Path> getIndexBinPaths(String cacheName) {
         return G.allGrids().stream()
-            .map(grid -> (IgniteEx) grid)
+            .map(grid -> (IgniteEx)grid)
             .map(grid -> {
                 IgniteInternalCache<Object, Object> cachex = grid.cachex(cacheName);
 
                 assertNotNull(cachex);
 
-                FilePageStoreManager pageStoreMgr = (FilePageStoreManager) cachex.context().shared().pageStore();
+                FilePageStoreManager pageStoreMgr = (FilePageStoreManager)cachex.context().shared().pageStore();
 
                 assertNotNull(pageStoreMgr);
 
@@ -157,7 +157,7 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
             GridCacheContext cctx,
             GridFutureAdapter<Void> rebuildIdxFut,
             SchemaIndexCacheVisitorClosure clo,
-            SchemaIndexOperationCancellationToken cancel
+            IndexRebuildCancelToken cancel
         ) {
             CountDownLatch startThread = new CountDownLatch(1);
 

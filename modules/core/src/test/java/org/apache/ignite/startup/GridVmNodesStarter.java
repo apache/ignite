@@ -36,9 +36,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.log4j.Appender;
-import org.apache.log4j.Logger;
-import org.apache.log4j.varia.NullAppender;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
@@ -203,11 +200,6 @@ public final class GridVmNodesStarter {
         if (!path.isFile())
             throw new IgniteCheckedException("Provided file path is not a file: " + path);
 
-        // Add no-op logger to remove no-appender warning.
-        Appender app = new NullAppender();
-
-        Logger.getRootLogger().addAppender(app);
-
         ApplicationContext springCtx;
 
         try {
@@ -230,9 +222,6 @@ public final class GridVmNodesStarter {
 
         if (cfgMap == null)
             throw new IgniteCheckedException("Failed to find a single grid factory configuration in: " + path);
-
-        // Remove previously added no-op logger.
-        Logger.getRootLogger().removeAppender(app);
 
         if (cfgMap.isEmpty())
             throw new IgniteCheckedException("Can't find grid factory configuration in: " + path);

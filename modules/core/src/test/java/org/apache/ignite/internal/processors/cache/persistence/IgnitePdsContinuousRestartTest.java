@@ -31,6 +31,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -46,12 +47,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -89,13 +88,6 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      */
     protected IgnitePdsContinuousRestartTest(boolean cancel) {
         this.cancel = cancel;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11937", MvccFeatureChecker.forcedMvcc());
-
-        super.beforeTest();
     }
 
     /** {@inheritDoc} */
@@ -268,7 +260,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
 
         final IgniteEx load = ignite(0);
 
-        load.cluster().active(true);
+        load.cluster().state(ClusterState.ACTIVE);
 
         try (IgniteDataStreamer<Object, Object> s = load.dataStreamer(CACHE_NAME)) {
             s.allowOverwrite(true);
@@ -328,10 +320,9 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
                                 TransactionOptimisticException.class,
                                 TransactionRollbackException.class,
                                 ClusterTopologyException.class,
-                                NodeStoppingException.class))
-                                continue; // Expected types.
-
-                            MvccFeatureChecker.assertMvccWriteConflict(e);
+                                NodeStoppingException.class)) {
+                                // Expected types.
+                            }
                         }
                     }
                 }

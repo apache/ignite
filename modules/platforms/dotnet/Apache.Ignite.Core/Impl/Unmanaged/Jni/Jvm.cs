@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Security;
     using System.Threading;
@@ -41,15 +42,34 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         // ReSharper disable once InconsistentNaming
         private const int JNI_VERSION_9 = 0x00090000;
 
-        /** Options to enable startup on Java 9. */
-        private static readonly string[] Java9Options =
+        /** Options to enable startup on Java 9+. */
+        public static readonly string[] Java9Options =
         {
             "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED",
             "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED",
             "--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED",
             "--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED",
             "--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED",
-            "--illegal-access=permit"
+            "--illegal-access=permit",
+
+            "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED",
+            "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED",
+            "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
+            "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED",
+            "--add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED",
+            "--add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED",
+            "--add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED",
+            "--add-opens=java.base/java.io=ALL-UNNAMED",
+            "--add-opens=java.base/java.nio=ALL-UNNAMED",
+            "--add-opens=java.base/java.net=ALL-UNNAMED",
+            "--add-opens=java.base/java.util=ALL-UNNAMED",
+            "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED",
+            "--add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED",
+            "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED",
+            "--add-opens=java.base/java.lang=ALL-UNNAMED",
+            "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED",
+            "--add-opens=java.base/java.math=ALL-UNNAMED",
+            "--add-opens=java.sql/java.sql=ALL-UNNAMED"
         };
 
         /** */
@@ -104,8 +124,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             _methodId = new MethodId(env);
 
-            // Keep AppDomain check here to avoid JITting GetCallbacksFromDefaultDomain method on .NET Core
-            // (which fails due to _AppDomain usage).
+            // Keep AppDomain check here to avoid JITting GetCallbacksFromDefaultDomain method on .NET Core.
             _callbacks = AppDomain.CurrentDomain.IsDefaultAppDomain()
                 ? new Callbacks(env, this)
                 : GetCallbacksFromDefaultDomain();
@@ -114,13 +133,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Gets the callbacks.
         /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static Callbacks GetCallbacksFromDefaultDomain()
         {
-#if !NETCOREAPP
             return GetCallbacksFromDefaultDomainImpl();
-#else
-            throw new IgniteException("Multiple domains are not supported on .NET Core.");
-#endif
         }
 
         /// <summary>
@@ -249,7 +265,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Determines whether we are on Java 9.
         /// </summary>
-        private static bool IsJava9()
+        public static bool IsJava9()
         {
             var args = new JvmInitArgs
             {

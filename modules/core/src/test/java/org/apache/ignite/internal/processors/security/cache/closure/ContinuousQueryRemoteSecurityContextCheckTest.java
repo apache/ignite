@@ -98,6 +98,6 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
      * @return Test operation.
      */
     private IgniteRunnable operation(Consumer<ContinuousQuery<Integer, Integer>> c) {
-       return operation(c, false);
+        return operation(c, false);
     }
 }

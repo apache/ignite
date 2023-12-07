@@ -426,6 +426,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             foreach (var txStart in txStarts)
             {
+                // ReSharper disable once AccessToForEachVariableInClosure
                 var tasks = Enumerable.Range(0, 3)
                     .Select(i => Task.Factory.StartNew(() => act(txStart),TaskCreationOptions.LongRunning))
                     .ToArray();

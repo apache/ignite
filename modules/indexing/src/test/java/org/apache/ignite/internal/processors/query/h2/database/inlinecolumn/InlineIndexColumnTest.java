@@ -29,6 +29,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
@@ -282,7 +283,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
                 .inlineObjHash(inlineObjHash)
                 .stringOptimizedCompare(true);
 
-            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(wrap(v1, cls).getType(), keyTypeSettings);
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(IndexKeyType.forCode(wrap(v1, cls).getType()), keyTypeSettings);
 
             keyType.put(pageAddr, off, idxKey(wrap(v1, cls)), maxSize);
 
@@ -353,7 +354,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
                 .inlineObjHash(false)
                 .stringOptimizedCompare(false);
 
-            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(Value.STRING, keyTypeSettings);
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(IndexKeyType.STRING, keyTypeSettings);
 
             keyType.put(pageAddr, off, idxKey(ValueString.get("aaaaaaa")), 3 + 5);
 
@@ -406,7 +407,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
                 .inlineObjHash(false)
                 .stringOptimizedCompare(false);
 
-            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(Value.BYTES, keyTypeSettings);
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(IndexKeyType.BYTES, keyTypeSettings);
 
             int maxSize = 3 + 3;
             int savedBytesCnt = keyType.put(pageAddr, off,
@@ -418,7 +419,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
             maxSize = 3 + 5;
 
-            assertTrue(Arrays.equals(new byte[] {1, 2, 3}, (byte[]) keyType.get(pageAddr, off, maxSize).key()));
+            assertTrue(Arrays.equals(new byte[] {1, 2, 3}, (byte[])keyType.get(pageAddr, off, maxSize).key()));
 
             savedBytesCnt = keyType.put(pageAddr, off,
                 idxKey(ValueBytes.get(new byte[] {1, 2, 3, 4, 5}), keyTypeSettings), maxSize);
@@ -427,7 +428,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
             assertTrue(savedBytesCnt <= maxSize);
 
-            assertTrue(Arrays.equals(new byte[] {1, 2, 3, 4, 5}, (byte[]) keyType.get(pageAddr, off, maxSize).key()));
+            assertTrue(Arrays.equals(new byte[] {1, 2, 3, 4, 5}, (byte[])keyType.get(pageAddr, off, maxSize).key()));
         }
         finally {
             if (page != 0L)
@@ -470,7 +471,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
                 .inlineObjHash(false)
                 .stringOptimizedCompare(false);
 
-            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(Value.JAVA_OBJECT, keyTypeSettings);
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(IndexKeyType.JAVA_OBJECT, keyTypeSettings);
 
             ValueJavaObject exp = ValueJavaObject.getNoCopy(new TestPojo(4, 3L), null, null);
 
@@ -485,7 +486,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
             assertTrue(Arrays.equals(
                 Arrays.copyOf(exp.getBytesNoCopy(), 3),
-                ((JavaObjectIndexKey) keyType.get(pageAddr, off, maxSize)).bytesNoCopy()));
+                ((JavaObjectIndexKey)keyType.get(pageAddr, off, maxSize)).bytesNoCopy()));
 
             savedBytesCnt = keyType.put(pageAddr, off, idxKey(ValueJavaObject.getNoCopy(null, exp.getBytesNoCopy(), null)), maxSize);
 
@@ -495,7 +496,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
             assertTrue(Arrays.equals(
                 exp.getBytesNoCopy(),
-                ((JavaObjectIndexKey) keyType.get(pageAddr, off, maxSize)).bytesNoCopy()));
+                ((JavaObjectIndexKey)keyType.get(pageAddr, off, maxSize)).bytesNoCopy()));
         }
         finally {
             if (page != 0L)
@@ -535,7 +536,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
             IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
                 .stringOptimizedCompare(false);
 
-            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(Value.JAVA_OBJECT, keyTypeSettings);
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(IndexKeyType.JAVA_OBJECT, keyTypeSettings);
 
             Value exp = wrap(new TestPojo(4, 3L), TestPojo.class);
 
@@ -890,7 +891,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
                 .inlineObjHash(false)
                 .stringOptimizedCompare(false);
 
-            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(v1.getType(), keyTypeSettings);
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(IndexKeyType.forCode(v1.getType()), keyTypeSettings);
 
             off += keyType.put(pageAddr, off, idxKey(v1), max - off);
             off += keyType.put(pageAddr, off, idxKey(v2), max - off);

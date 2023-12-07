@@ -128,6 +128,8 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
     private void updateAndEventConsistencyTest(CacheConfiguration<TestKey, TestValue> ccfg) throws Exception {
         ignite(0).createCache(ccfg);
 
+        awaitCacheOnClient(ignite(4), ccfg.getName());
+
         try {
             List<ConcurrentMap<TestKey, List<T2<TestValue, TestValue>>>> nodesEvts = new ArrayList<>();
 

@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream
  * Interop .Net bootstrap.
  */
 public class PlatformDotNetBootstrap extends PlatformAbstractBootstrap {
+    /** */
     private boolean useLogger;
 
     /** {@inheritDoc} */

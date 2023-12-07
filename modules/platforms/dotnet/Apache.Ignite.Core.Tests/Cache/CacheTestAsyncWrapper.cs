@@ -78,12 +78,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public bool IsAllowAtomicOpsInTx
-        {
-            get { return false; }
-        }
-
-        /** <inheritDoc /> */
         public ICache<TK, TV> WithSkipStore()
         {
             return _cache.WithSkipStore().WrapAsync();
@@ -99,12 +93,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         public ICache<TK1, TV1> WithKeepBinary<TK1, TV1>()
         {
             return _cache.WithKeepBinary<TK1, TV1>().WrapAsync();
-        }
-
-        /** <inheritDoc /> */
-        public ICache<TK, TV> WithAllowAtomicOpsInTx()
-        {
-            return this;
         }
 
         /** <inheritDoc /> */

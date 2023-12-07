@@ -222,7 +222,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      */
     public void setFlushThreadCount(int flushThreadCnt) {
         this.flushThreadCnt = flushThreadCnt;
-        this.flushThreadCntIsPowerOfTwo = (flushThreadCnt & (flushThreadCnt - 1)) == 0;
+        this.flushThreadCntIsPowerOfTwo = U.isPow2(flushThreadCnt);
     }
 
     /**
@@ -442,20 +442,21 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 try {
                     StoreOperation op;
 
-                    V val0;
+                    V value;
 
                     if (writeCoalescing && val.nextOperation() != null) {
                         op = val.nextOperation();
 
-                        val0 = (op == StoreOperation.PUT) ? val.nextEntry().getValue() : null;
-                    } else {
+                        value = (op == StoreOperation.PUT) ? val.nextEntry().getValue() : null;
+                    }
+                    else {
                         op = val.operation();
 
-                        val0 = (op == StoreOperation.PUT) ? val.entry().getValue() : null;
+                        value = (op == StoreOperation.PUT) ? val.entry().getValue() : null;
                     }
 
                     if (op == StoreOperation.PUT)
-                        loaded.put(key, val0);
+                        loaded.put(key, value);
                     else
                         assert op == StoreOperation.RMV : op;
                 }
@@ -501,21 +502,22 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             try {
                 StoreOperation op;
 
-                V val0;
+                V value;
 
                 if (writeCoalescing && val.nextOperation() != null) {
                     op = val.nextOperation();
 
-                    val0 = (op == StoreOperation.PUT) ? val.nextEntry().getValue() : null;
-                } else {
+                    value = (op == StoreOperation.PUT) ? val.nextEntry().getValue() : null;
+                }
+                else {
                     op = val.operation();
 
-                    val0 = (op == StoreOperation.PUT) ? val.entry().getValue() : null;
+                    value = (op == StoreOperation.PUT) ? val.entry().getValue() : null;
                 }
 
                 switch (op) {
                     case PUT:
-                        return val0;
+                        return value;
 
                     case RMV:
                         return null;
@@ -575,7 +577,9 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
     /** {@inheritDoc} */
     @Override public void sessionEnd(boolean commit) {
-        // No-op.
+        // To prevent connection leaks, we must call CacheStore#sessionEnd
+        // on stores that manage connections themselves.
+        store.sessionEnd(commit);
     }
 
     /** {@inheritDoc} */
@@ -660,20 +664,29 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     }
 
     /**
-     * Return flusher by by key.
+     * Return flusher by key.
      *
      * @param key Key for search.
      * @return flusher.
      */
     private Flusher flusher(K key) {
-        int h, idx;
+        return flushThreads[resolveFlusherByKeyHash(key.hashCode())];
+    }
 
-        if (flushThreadCntIsPowerOfTwo)
-            idx = ((h = key.hashCode()) ^ (h >>> 16)) & (flushThreadCnt - 1);
-        else
-            idx = ((h = key.hashCode()) ^ (h >>> 16)) % flushThreadCnt;
+    /**
+     * Lookup flusher index by provided key hash using
+     * approach similar to {@link HashMap#hash(Object)}. In case
+     * <code>size</code> is not a power of 2 we fallback to modulo operation.
+     *
+     * @param hash Object hash.
+     * @return Calculated flucher index [0..flushThreadCnt).
+     */
+    int resolveFlusherByKeyHash(int hash) {
+        int h = (hash ^ (hash >>> 16));
 
-        return flushThreads[idx];
+        return flushThreadCntIsPowerOfTwo
+            ? h & (flushThreadCnt - 1)
+            : U.hashToIndex(h, flushThreadCnt);
     }
 
     /**
@@ -757,7 +770,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 assert val.status() == ValueStatus.PENDING || val.status() == ValueStatus.PENDING_AND_UPDATED;
 
                 batch.put(e.getKey(), val.entry());
-            } finally {
+            }
+            finally {
                 val.readLock().unlock();
             }
         }

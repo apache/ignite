@@ -74,13 +74,13 @@ public class TestAdditionalSecurityProcessor extends TestSecurityProcessor {
     /** {@inheritDoc} */
     @Override public SecurityContext authenticate(AuthenticationContext authCtx) throws IgniteCheckedException {
         if (checkSslCerts) {
-            String str = (String) authCtx.nodeAttributes().get(ADDITIONAL_SECURITY_CLIENT_VERSION_ATTR);
+            String str = (String)authCtx.nodeAttributes().get(ADDITIONAL_SECURITY_CLIENT_VERSION_ATTR);
 
             if (str == null)
                 throw new IgniteAccessControlException("Client version is not found.");
 
             if (ADDITIONAL_SECURITY_CLIENT_VERSION.equals(str)) {
-                String login = (String) authCtx.credentials().getLogin();
+                String login = (String)authCtx.credentials().getLogin();
 
                 if (login == null || !login.contains(CLIENT)) {
                     throw new IgniteAccessControlException("User isn't allowed to use client [login=" +

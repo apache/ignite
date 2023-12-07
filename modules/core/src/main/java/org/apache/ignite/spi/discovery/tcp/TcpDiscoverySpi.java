@@ -511,6 +511,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /**
      * @param id Id.
+     * @return Cluster node instance with specified ID.
      */
     public ClusterNode getNode0(UUID id) {
         if (impl instanceof ServerImpl)
@@ -995,7 +996,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * <p>
      * If not specified, default is {@link #DFLT_SO_LINGER}
      * </p>
-    */
+     *
+     * @param soLinger SO_LINGER value.
+     */
     @IgniteSpiConfiguration(optional = true)
     public void setSoLinger(int soLinger) {
         this.soLinger = soLinger;
@@ -1497,6 +1500,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         stats.registerMetrics(discoReg);
 
+        discoReg.register("SslEnabled", this::isSslEnabled, "Whether SSL is enabled.");
+
         discoReg.register("MessageWorkerQueueSize", () -> impl.getMessageWorkerQueueSize(),
             "Message worker queue current size");
 
@@ -1624,7 +1629,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             writeToSocket(sock, null, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
 
             return sock;
-        } catch (IOException | IgniteSpiOperationTimeoutException e) {
+        }
+        catch (IOException | IgniteSpiOperationTimeoutException e) {
             if (sock != null)
                 U.closeQuiet(sock);
 
@@ -1652,7 +1658,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             configureSocketOptions(sock);
 
             return sock;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             if (sock != null)
                 U.closeQuiet(sock);
 
@@ -2126,9 +2133,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @param dataPacket Data packet.
      */
     DiscoveryDataPacket collectExchangeData(DiscoveryDataPacket dataPacket) {
-        if (locNode.isDaemon())
-            return dataPacket;
-
         assert dataPacket != null;
         assert dataPacket.joiningNodeId() != null;
 
@@ -2162,9 +2166,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @param clsLdr Class loader.
      */
     protected void onExchange(DiscoveryDataPacket dataPacket, ClassLoader clsLdr) {
-        if (locNode.isDaemon())
-            return;
-
         assert dataPacket != null;
         assert dataPacket.joiningNodeId() != null;
 
@@ -2430,6 +2431,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /**
      * <strong>FOR TEST ONLY!!!</strong>
+     * @return Client workers count.
      */
     public int clientWorkerCount() {
         return ((ServerImpl)impl).clientWorkersCount();
@@ -2444,6 +2446,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /**
      * <strong>FOR TEST ONLY!!!</strong>
+     *
+     * @param lsnr Listener of sent messages.
      */
     public void addSendMessageListener(IgniteInClosure<TcpDiscoveryAbstractMessage> lsnr) {
         sndMsgLsnrs.add(lsnr);
@@ -2456,6 +2460,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /**
      * <strong>FOR TEST ONLY!!!</strong>
+     *
+     * @param lsnr Instance of the listener for sent messages.
      */
     public void removeSendMessageListener(IgniteInClosure<TcpDiscoveryAbstractMessage> lsnr) {
         sndMsgLsnrs.remove(lsnr);
@@ -2463,6 +2469,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /**
      * <strong>FOR TEST ONLY!!!</strong>
+     *
+     * @param lsnr Instance of the listener for incoming messages.
      */
     public void addIncomeConnectionListener(IgniteInClosure<Socket> lsnr) {
         incomeConnLsnrs.add(lsnr);
@@ -2470,6 +2478,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /**
      * <strong>FOR TEST ONLY!!!</strong>
+     *
+     * @param lsnr Instance of the listener for incoming messages.
      */
     public void removeIncomeConnectionListener(IgniteInClosure<Socket> lsnr) {
         incomeConnLsnrs.remove(lsnr);

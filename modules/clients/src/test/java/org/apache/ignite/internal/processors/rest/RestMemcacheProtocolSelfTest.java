@@ -27,9 +27,6 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheMode.LOCAL;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-
 /**
  * TCP protocol test.
  */
@@ -86,17 +83,11 @@ public class RestMemcacheProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @param cacheName Cache name.
      * @return Cache configuration.
-     * @throws Exception In case of error.
      */
-    private CacheConfiguration cacheConfiguration(@NotNull String cacheName) throws Exception {
-        CacheConfiguration cfg = defaultCacheConfiguration();
-
-        cfg.setCacheMode(LOCAL);
-        cfg.setName(cacheName);
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setStatisticsEnabled(true);
-
-        return cfg;
+    private static CacheConfiguration<?, ?> cacheConfiguration(@NotNull String cacheName) {
+        return defaultCacheConfiguration()
+            .setName(cacheName)
+            .setStatisticsEnabled(true);
     }
 
     /**
@@ -194,8 +185,8 @@ public class RestMemcacheProtocolSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMetrics() throws Exception {
-        grid().cache(DEFAULT_CACHE_NAME).localMxBean().clear();
-        grid().cache(CACHE_NAME).localMxBean().clear();
+        grid().cache(DEFAULT_CACHE_NAME).clearStatistics();
+        grid().cache(CACHE_NAME).clearStatistics();
 
         grid().cache(DEFAULT_CACHE_NAME).put("key1", "val");
         grid().cache(DEFAULT_CACHE_NAME).put("key2", "val");

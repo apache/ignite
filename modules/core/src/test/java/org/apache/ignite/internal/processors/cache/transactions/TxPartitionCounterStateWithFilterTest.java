@@ -92,6 +92,8 @@ public class TxPartitionCounterStateWithFilterTest extends GridCommonAbstractTes
                     try {
                         ignite(0).createCache(cacheConfiguration(cacheMode, backups, CacheAtomicityMode.TRANSACTIONAL));
 
+                        awaitCacheOnClient(ig, DEFAULT_CACHE_NAME);
+
                         IgniteCache<Integer, Integer> cache = ig.cache(DEFAULT_CACHE_NAME);
 
                         assertNotNull(cache);

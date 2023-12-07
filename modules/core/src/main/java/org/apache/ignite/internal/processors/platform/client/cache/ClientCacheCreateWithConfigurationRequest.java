@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
+import static org.apache.ignite.internal.processors.platform.client.ClientStatus.CACHE_CONFIG_INVALID;
 
 /**
  * Cache create with configuration request.
@@ -49,6 +50,8 @@ public class ClientCacheCreateWithConfigurationRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
+        checkClientCacheConfiguration(cacheCfg);
+
         try {
             ctx.kernalContext().grid().createCache(cacheCfg);
         }
@@ -57,5 +60,13 @@ public class ClientCacheCreateWithConfigurationRequest extends ClientRequest {
         }
 
         return super.process(ctx);
+    }
+
+    /**
+     * @param cfg Cache configuration to validate compatibility.
+     */
+    public static void checkClientCacheConfiguration(CacheConfiguration<?, ?> cfg) {
+        if (cfg.getCacheMode() == null)
+            throw new IgniteClientException(CACHE_CONFIG_INVALID, "The cache mode LOCAL is not supported by the server.");
     }
 }

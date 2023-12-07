@@ -98,8 +98,11 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
                     startGrid(igniteInstanceName, cfg, null);
                 }
 
-                if (testsCfg.withClients() && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX)
+                if (testsCfg.withClients() && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX) {
+                    awaitCacheOnClient(grid(CLIENT_NEAR_ONLY_IDX), cacheName());
+
                     grid(CLIENT_NEAR_ONLY_IDX).createNearCache(cacheName(), new NearCacheConfiguration());
+                }
             }
             else if (cacheStartMode == null || cacheStartMode == CacheStartMode.DYNAMIC) {
                 super.beforeTestsStarted();
@@ -154,8 +157,11 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
                 grid.getOrCreateCache(cc);
             }
 
-            if (testsCfg.withClients() && i == CLIENT_NEAR_ONLY_IDX && grid(i).configuration().isClientMode())
+            if (testsCfg.withClients() && i == CLIENT_NEAR_ONLY_IDX && grid(i).configuration().isClientMode()) {
+                awaitCacheOnClient(grid(CLIENT_NEAR_ONLY_IDX), cacheName());
+
                 grid(CLIENT_NEAR_ONLY_IDX).createNearCache(cacheName(), new NearCacheConfiguration());
+            }
         }
 
         awaitPartitionMapExchange();

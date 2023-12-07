@@ -30,14 +30,17 @@ public enum SelectCommand {
      * Creates SELECT query that has primary key field in the WHERE clause.
      */
     BY_PRIMARY_KEY {
+        /** {@inheritDoc} */
         @Override public String selectOne() {
             return "SELECT id, val FROM test_long WHERE id = ?;";
         }
 
+        /** {@inheritDoc} */
         @Override public String selectRange() {
             return "SELECT id, val FROM test_long WHERE id BETWEEN ? AND ?;";
         }
 
+        /** {@inheritDoc} */
         @Override public long fieldByPK(long pk) {
             // This command uses PK value itself.
             return pk;
@@ -48,14 +51,17 @@ public enum SelectCommand {
      * Creates SELECT query that has value field in the WHERE clause.
      */
     BY_VALUE {
+        /** {@inheritDoc} */
         @Override public String selectOne() {
             return "SELECT id, val FROM test_long WHERE val = ?;";
         }
 
+        /** {@inheritDoc} */
         @Override public String selectRange() {
             return "SELECT id, val FROM test_long WHERE val BETWEEN ? AND ?;";
         }
 
+        /** {@inheritDoc} */
         @Override public long fieldByPK(long pk) {
             // data model defines that value is generated as id (PK) field plus one.
             return pk + 1;

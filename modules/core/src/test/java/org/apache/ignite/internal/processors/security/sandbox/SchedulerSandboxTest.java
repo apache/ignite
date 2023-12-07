@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.junit.Test;
 
 /**
@@ -85,7 +85,7 @@ public class SchedulerSandboxTest extends AbstractSandboxTest {
 
     /** */
     private void execute(Ignite node, Consumer<IgniteScheduler> consumer, boolean isForbiddenCase) {
-        GridTestUtils.RunnableX r = () -> node.compute().run(() -> {
+        RunnableX r = () -> node.compute().run(() -> {
             error = null;
 
             latch = new CountDownLatch(1);

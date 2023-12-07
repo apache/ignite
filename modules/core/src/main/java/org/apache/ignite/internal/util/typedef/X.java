@@ -29,8 +29,11 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -461,41 +464,19 @@ public final class X {
      *
      * @param t Throwable to check (if {@code null}, {@code false} is returned).
      * @param msg Message text that should be in cause.
-     * @param cls Cause classes to check (if {@code null} or empty, {@code false} is returned).
+     * @param types Cause classes to check (if {@code null} or empty, {@code false} is returned).
      * @return {@code True} if one of the causing exception is an instance of passed in classes,
      *      {@code false} otherwise.
      */
-    @SafeVarargs
-    public static boolean hasCause(@Nullable Throwable t, @Nullable String msg, @Nullable Class<?>... cls) {
-        if (t == null || F.isEmpty(cls))
+    public static boolean hasCause(@Nullable Throwable t, @Nullable String msg, @Nullable Class<?>... types) {
+        if (t == null || F.isEmpty(types))
             return false;
 
-        assert cls != null;
+        Set<Throwable> dejaVu = Collections.newSetFromMap(new IdentityHashMap<>());
 
-        for (Throwable th = t; th != null; th = th.getCause()) {
-            for (Class<?> c : cls) {
-                if (c.isAssignableFrom(th.getClass())) {
-                    if (msg != null) {
-                        if (th.getMessage() != null && th.getMessage().contains(msg))
-                            return true;
-                        else
-                            continue;
-                    }
+        Throwable found = searchForCause(t, dejaVu, msg, types);
 
-                    return true;
-                }
-            }
-
-            for (Throwable n : th.getSuppressed()) {
-                if (hasCause(n, msg, cls))
-                    return true;
-            }
-
-            if (th.getCause() == th)
-                break;
-        }
-
-        return false;
+        return found != null;
     }
 
     /**
@@ -548,22 +529,71 @@ public final class X {
         if (t == null || cls == null)
             return null;
 
-        for (Throwable th = t; th != null; th = th.getCause()) {
-            if (cls.isAssignableFrom(th.getClass()))
-                return (T)th;
+        Set<Throwable> dejaVu = Collections.newSetFromMap(new IdentityHashMap<>());
 
-            for (Throwable n : th.getSuppressed()) {
-                T found = cause(n, cls);
+        @SuppressWarnings("unchecked")
+        T res = (T)searchForCause(t, dejaVu, null, cls);
 
-                if (found != null)
-                    return found;
-            }
+        return res;
+    }
 
-            if (th.getCause() == th)
-                break;
+    /**
+     * Traverses `tree` of {@link Throwable} to find first cause/suppressed is assignable from any of given types.
+     * Function is aware of possible circular references through tracking of tested objects.
+     *
+     * @param t Throwable.
+     * @param dejaVu Set of throwable for tracking already tested objects.
+     * @param types Candidate types.
+     * @return First throwable meets test condition or {@code null} if none has matched.
+     */
+    @Nullable private static Throwable searchForCause(
+        Throwable t,
+        Set<Throwable> dejaVu,
+        @Nullable String msg,
+        Class<?>... types
+    ) {
+        if (isThrowableValid(t, msg, types))
+            return t;
+
+        if (!dejaVu.add(t))
+            return null;
+
+        Throwable cause = t.getCause();
+
+        if (cause != null) {
+            Throwable found = searchForCause(cause, dejaVu, msg, types);
+
+            if (found != null)
+                return found;
+        }
+
+        for (Throwable suppressed : t.getSuppressed()) {
+            Throwable found = searchForCause(suppressed, dejaVu, msg, types);
+
+            if (found != null)
+                return found;
         }
 
         return null;
+    }
+
+    /**
+     * Checks whether given throwable is assignable from any of candidate throwable type
+     *     and contains given non-null message.
+     *
+     * @param thr Throwable.
+     * @param msg Possible throwable message.
+     * @param candidateTypes Possible types of throwable.
+     * @return {@code true} if such type in found, else {@code false}.
+     */
+    private static boolean isThrowableValid(Throwable thr, @Nullable String msg, Class<?>... candidateTypes) {
+        for (Class<?> c : candidateTypes) {
+            if (c != null && c.isAssignableFrom(thr.getClass())
+                && (msg == null || (thr.getMessage() != null && thr.getMessage().contains(msg))))
+                return true;
+        }
+
+        return false;
     }
 
     /**

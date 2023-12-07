@@ -61,6 +61,34 @@ include::{javaCodeDir}/JavaThinClient.java[tag=system-views,indent=0]
 ----
 
 
+System views can also be queried through the link:tools/control-script#system-view-command[Control Script system view command].
+Note that the mentioned above command result contains all columns of the requested system view. If filtering is necessary, it should be performed manually.
+
+Examples of the use of link:tools/control-script#system-view-command[Control Script system view command]:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+# get the list of nodes
+control.sh --system-view NODES
+
+# get the list of metrics from the node with the specific ID
+control.sh --system-view NODE_METRICS --node-id a1b77663-b37f-4ddf-87a6-1e2d684f3bae
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+# get the list of nodes
+control.bat --system-view NODES
+
+# get the list of metrics from the node with the specific ID
+control.bat --system-view NODE_METRICS --node-id a1b77663-b37f-4ddf-87a6-1e2d684f3bae
+----
+--
+
+
 :table_opts: cols="2,1,4",opts="header"
 
 == CACHES
@@ -86,6 +114,7 @@ include::{javaCodeDir}/JavaThinClient.java[tag=system-views,indent=0]
 |EVICTION_FILTER | string |  toString representation of eviction filter
 |EVICTION_POLICY_FACTORY | string |  toString representation of eviction policy factory
 |EXPIRY_POLICY_FACTORY | string |  toString representation of expiry policy factory
+|CONFLICT_RESOLVER | string |  toString representation of cache conflict resolver
 |INTERCEPTOR | string |  toString representation of interceptor
 |IS_COPY_ON_READ | boolean | Flag indicating whether a copy of the value stored in the on-heap cache
 |IS_EAGER_TTL | boolean | Flag indicating whether expired cache entries will be eagerly removed from cache
@@ -282,7 +311,6 @@ The NODES view contains information about the cluster nodes.
 |CONSISTENT_ID |VARCHAR |Node's consistent ID.
 |HOSTNAMES |VARCHAR |The host names of the node.
 |IS_CLIENT |BOOLEAN |Indicates whether the node is a client.
-|IS_DAEMON |BOOLEAN |Indicates whether the node is a daemon node.
 |NODE_ID |UUID |Node ID.
 |NODE_ORDER |INT |Node order within the topology.
 |VERSION |VARCHAR |Node version.
@@ -303,6 +331,20 @@ The NODE_ATTRIBUTES view contains the attributes of all nodes.
 
 |===
 
+== CONFIGURATION
+
+
+The CONFIGURATION view contains the configuration properties of node.
+
+[{table_opts}]
+|===
+| Column |Data Type |Description
+
+|NAME |VARCHAR |Configuration property name.
+|VALUE |VARCHAR |Configuration property value.
+
+|===
+
 == BASELINE_NODES
 
 
@@ -313,6 +355,21 @@ The BASELINE_NODES view contains information about the nodes that are part of th
 | Column |Data Type |Description
 |CONSISTENT_ID |VARCHAR |Node consistent ID.
 |ONLINE |BOOLEAN |Indicates whether the node is up and running.
+
+|===
+
+
+== BASELINE_NODE_ATTRIBUTES
+
+
+The BASELINE_NODE_ATTRIBUTES view exposes node attributes fixed at a moment when a current baseline topology was set.
+
+[{table_opts}]
+|===
+| Column | Data Type | Description
+| NODE_CONSISTENT_ID | VARCHAR | Node consistent ID.
+| NAME | VARCHAR | Name of the node attribute.
+| VALUE | VARCHAR | Attribute value.
 
 |===
 
@@ -330,6 +387,20 @@ This view exposes information about currently opened client connections: JDBC, O
 |TYPE | string |  Type of the connection
 |USER | string |  User name
 |VERSION | string |  Protocol version
+|===
+
+== CLIENT_CONNECTION_ATTRIBUTES
+
+
+The CLIENT_CONNECTION_ATTRIBUTES view exposes user defined attributes of client connections (thin, JDBC, ODBC). Attributes for the connection are provided by clients. For example, attributes for java thin client can be specified using `ClientConfiguration.setUserAttributes` method.
+
+[{table_opts}]
+|===
+| Column | Data Type | Description
+| CONNECTION_ID | long | ID of the connection
+| NAME | VARCHAR | Name of the attribute
+| VALUE | VARCHAR | Attribute value
+
 |===
 
 == STRIPED_THREADPOOL_QUEUE
@@ -414,22 +485,22 @@ This view exposes information about currently running continuous queries.
 |TOPIC | string |  Query topic name
 |===
 
-
-
 == SQL_QUERIES
 
 This view exposes information about currently running SQL queries.
 
 [{table_opts}]
 |===
-|NAME | TYPE |    DESCRIPTION
-|DURATION | long |    Query execution duration
+|NAME | TYPE | DESCRIPTION
+|QUERY_ID | UUID | Query ID
+|SQL | string | Query text
+|ORIGIN_NODE_ID | UUID | Node that started query
+|START_TIME | date | Query start time
+|DURATION | long | Query execution duration
+|INITIATOR_ID | string | User defined query initiator ID
 |LOCAL | boolean | True if local only
-|ORIGIN_NODE_ID | UUID |    Node that started query
-|QUERY_ID | UUID |    Query ID
-|SCHEMA_NAME | string |  Schema name
-|SQL | string |  Query text
-|START_TIME | date |    Query start time
+|SCHEMA_NAME | string | Schema name
+|SUBJECT_ID | UUID | The subject ID of the entity that initiated the query
 |===
 
 == SQL_QUERIES_HISTORY
@@ -446,7 +517,6 @@ This view exposes information about currently running SQL queries.
 |DURATION_MAX | long |    Maximum duration of execution
 |LAST_START_TIME | date |    Last execution date
 |===
-
 
 == SCHEMAS
 
@@ -526,10 +596,7 @@ The NODE_METRICS view provides various metrics about the state of nodes, resourc
 
 |===
 
-
-
 == TABLES
-
 
 The TABLES view contains information about the SQL tables.
 
@@ -549,7 +616,6 @@ The TABLES view contains information about the SQL tables.
 |VALUE_TYPE_NAME | string |  Value type name
 
 |===
-
 
 == TABLE_COLUMNS
 
@@ -571,8 +637,6 @@ This view exposes information about SQL table columns.
 |TYPE | string |  Column type
 |===
 
-
-
 == VIEWS
 
 This view exposes information about SQL views.
@@ -584,7 +648,6 @@ This view exposes information about SQL views.
 |SCHEMA | string |  Schema
 |DESCRIPTION | string |  Description
 |===
-
 
 == VIEW_COLUMNS
 
@@ -622,7 +685,6 @@ The INDEXES view contains information about SQL indexes.
 |IS_UNIQUE | boolean | True if unique index
 |===
 
-
 == PAGE_LISTS
 
 The page list is a data structure used to store a list of partially free data pages (free lists) and fully free allocated
@@ -636,7 +698,6 @@ In this case, the `DATA_REGION_PAGE_LISTS` system view needs to used. These view
 of each page list that is useful to understand how much data can be inserted into a cache without allocating new pages
 and also helps to detect skews in page lists utilization.
 
-
 === CACHE_GROUP_PAGE_LISTS
 
 [{table_opts}]
@@ -649,6 +710,7 @@ and also helps to detect skews in page lists utilization.
 |BUCKET_SIZE | long  |  Count of pages in the bucket
 |STRIPES_COUNT |   int| Count of stripes used by this bucket. Stripes are used to avoid contention.
 |CACHED_PAGES_COUNT |  int| Count of pages in an on-heap page list cache for this bucket.
+|PAGE_FREE_SPACE | int | Free space (in bytes) available to use for each page in this bucket.
 |===
 
 === DATA_REGION_PAGE_LISTS
@@ -661,6 +723,7 @@ and also helps to detect skews in page lists utilization.
 |BUCKET_SIZE | long  |  Count of pages in the bucket
 |STRIPES_COUNT |   int| Count of stripes used by this bucket. Stripes are used to avoid contention.
 |CACHED_PAGES_COUNT |  int| Count of pages in an on-heap page list cache for this bucket.
+|PAGE_FREE_SPACE | int | Free space (in bytes) available to use for each page in this bucket.
 |===
 
 == PARTITION_STATES
@@ -696,6 +759,17 @@ This view exposes information about all available binary types.
 == METASTORAGE
 
 This view exposes the contents of the metastorage cache.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Name
+|VALUE | string | String or raw binary (if data could not be deserialized for some reason) representation of an element
+|===
+
+== DISTRIBUTED_METASTORAGE
+
+This view exposes the contents of the distributed metastorage cache.
 
 [{table_opts}]
 |===
@@ -855,4 +929,82 @@ Note, lock will be shown on the non parent node only after initial usage on that
 |GROUP_NAME | string | Cache group name to store data structure
 |GROUP_ID | int | Cache group id to store data structure
 |REMOVED | boolean | `True` if removed
+|===
+
+== STATISTICS_CONFIGURATION
+
+The STATISTICS_CONFIGURATION view contains information about link:SQL/sql-statistics[SQL statistics,window=_blank] configuration.
+
+[cols="2,1,4",opts="header,stretch"]
+|===
+|Column|Data Type|Description
+|SCHEMA |VARCHAR |Schema name.
+|TYPE |VARCHAR |Object type.
+|NAME |VARCHAR |Object name.
+|COLUMN |VARCHAR |Column name.
+|MAX_PARTITION_OBSOLESCENCE_PERCENT |TINYINT |Maximum percentage of obsolescent rows in statistics. See the link:SQL/sql-statistics#statistics-obsolescence[SQL Statistics,window=_blank] page for more details.
+|MANUAL_NULLS |BIGINT |If not null - overrided number of null values.
+|MANUAL_DISTINCT |BIGINT |If not null - overrided number of distinct values.
+|MANUAL_TOTAL |BIGINT |If not null - overrided total number of values.
+|MANUAL_SIZE |INT |If not null - overrided average size of non null values in column.
+|VERSION |BIGINT |Configuration version.
+|===
+
+
+== STATISTICS_LOCAL_DATA
+
+The STATISTICS_LOCAL_DATA view contains link:SQL/sql-statistics[SQL statistics,window=_blank] for locally managed (or stored) data. This view is node-specific, so each node has an instance of the view that contains information about its local data statistics.
+
+[cols="2,1,4",opts="header,stretch"]
+|===
+|Column|Data Type|Description
+|SCHEMA |VARCHAR |Schema name.
+|TYPE |VARCHAR |Object type.
+|NAME |VARCHAR |Object name.
+|COLUMN |VARCHAR |Column name.
+|ROWS_COUNT |BIGINT |Count of column rows.
+|DISTINCT |BIGINT |Number of unique non-null values.
+|NULLS |BIGINT |Number of null values.
+|TOTAL |BIGINT |Total number of values in column.
+|SIZE |INTEGER |Average value size in bytes.
+|VERSION |BIGINT |Statistics version.
+|LAST_UPDATE_TIME |VARCHAR |Maximum time of all partition statistics which was used to generate local one.
+|===
+
+== STATISTICS_PARTITION_DATA
+
+The STATISTICS_PARTITION_DATA view contains information about link:SQL/sql-statistics[SQL statistics,window=_blank] on every partition data stored on a local node.
+
+[cols="2,1,4",opts="header,stretch"]
+|===
+|Column|Data Type|Description
+|SCHEMA |VARCHAR |Schema name.
+|TYPE |VARCHAR |Object type.
+|NAME |VARCHAR |Object name.
+|COLUMN |VARCHAR |Column name.
+|PARTITION |INTEGER |Partition number.
+|ROWS_COUNT |BIGINT |Count of column rows.
+|UPDATE_COUNTER |BIGINT |Partition counter update when statistics are collected.
+|DISTINCT |BIGINT |Number of unique non-null values.
+|NULLS |BIGINT |Number of null values.
+|TOTAL |BIGINT |Total number of values in column.
+|SIZE |INTEGER |Average value size in bytes.
+|VERSION |BIGINT |Statistics version.
+|LAST_UPDATE_TIME |VARCHAR |Maximum time of all partition statistics which was used to generate local one.
+|===
+
+== SNAPSHOT
+
+The SNAPSHOT view exposes information about local snapshots.
+
+[{table_opts}]
+|===
+| Column | Data Type | Description
+| NAME | VARCHAR | Snapshot name.
+| CONSISTENT_ID | VARCHAR | Consistent ID of a node to which snapshot data relates.
+| BASELINE_NODES | VARCHAR | Baseline nodes affected by the snapshot.
+| CACHE_GROUPS | VARCHAR | Cache group names that were included in the snapshot.
+| SNAPSHOT_RECORD_SEGMENT | BIGINT | Index of WAL segment containing snapshot's WAL record.
+| INCREMENT_INDEX | INTEGER | Incremental snapshot index.
+| TYPE | VARCHAR | Type of snapshot - full or incremental.
 |===

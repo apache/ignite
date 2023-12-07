@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
+/** */
 public class IndexPagesMetricsInMemoryTest extends AbstractIndexPageMetricsTest {
     /** {@inheritDoc} */
     @Override boolean isPersistenceEnabled() {

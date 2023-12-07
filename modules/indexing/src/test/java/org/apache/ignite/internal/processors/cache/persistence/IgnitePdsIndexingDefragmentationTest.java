@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -32,31 +34,27 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.management.cache.ValidateIndexesClosure;
+import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Defragmentation tests with enabled ignite-indexing.
  */
 public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentationTest {
-    /** Use MVCC in tests. */
-    private static final String USE_MVCC = "USE_MVCC";
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -93,11 +91,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
             )
             .setAffinity(new RendezvousAffinityFunction(false, PARTS));
 
-        if (Boolean.TRUE.toString().equals(System.getProperty(USE_MVCC))) {
-            cache1Cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-            cache2Cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-        } else
-            cache2Cfg.setExpiryPolicyFactory(new PolicyFactory());
+        cache2Cfg.setExpiryPolicyFactory(new PolicyFactory());
 
         cfg.setCacheConfiguration(cache1Cfg, cache2Cfg);
 
@@ -160,7 +154,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         awaitPartitionMapExchange();
 
-        CaptureRebuildGridQueryIndexing idxRebuild = (CaptureRebuildGridQueryIndexing) node.context().indexProcessor().idxRebuild();
+        CaptureRebuildGridQueryIndexing idxRebuild = (CaptureRebuildGridQueryIndexing)node.context().indexProcessor().idxRebuild();
 
         assertFalse(idxRebuild.didRebuildIndexes());
 
@@ -192,7 +186,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         node.context().resource().injectGeneric(clo);
 
-        VisorValidateIndexesJobResult call = clo.call();
+        ValidateIndexesJobResult call = clo.call();
 
         assertFalse(call.hasIssues());
     }
@@ -214,28 +208,6 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
      */
     @Test
     public void testIndexingWithComplexKey() throws Exception {
-        test(integer -> new IgniteCacheUpdateSqlQuerySelfTest.AllTypes((long)integer));
-    }
-
-    /**
-     * Test using integer keys.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    @WithSystemProperty(key = USE_MVCC, value = "true")
-    public void testIndexingWithIntegerKeyAndMVCC() throws Exception {
-        test(Function.identity());
-    }
-
-    /**
-     * Test using complex keys (integer and string).
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    @WithSystemProperty(key = USE_MVCC, value = "true")
-    public void testIndexingWithComplexKeyAndMVCC() throws Exception {
         test(integer -> new IgniteCacheUpdateSqlQuerySelfTest.AllTypes((long)integer));
     }
 
@@ -265,6 +237,8 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         CacheGroupContext grp = grid(0).context().cache().cacheGroup(CU.cacheId(cacheName));
 
+        forceCheckpoint();
+
         // Restart first time.
         stopGrid(0);
 
@@ -288,6 +262,98 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
         cache.query(new SqlFieldsQuery("SELECT * FROM TEST WHERE VAL_OBJ > 0")).getAll();
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDecimalIndex() throws Exception {
+        startGrid(0).cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<?, ?> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        cache.query(new SqlFieldsQuery("CREATE TABLE TEST (ID INT PRIMARY KEY, VAL_INT INT, VAL_DEC DECIMAL)"));
+
+        final String cacheName = "SQL_default_TEST";
+
+        cache.query(new SqlFieldsQuery("CREATE INDEX TEST_VAL_DEC ON TEST(VAL_DEC)"));
+
+        for (int i = 0; i < ADDED_KEYS_COUNT; i++)
+            cache.query(new SqlFieldsQuery("INSERT INTO TEST VALUES (?, ?, ?)").setArgs(i, i, BigDecimal.valueOf(i)));
+
+        cache.query(new SqlFieldsQuery("DELETE FROM TEST WHERE MOD(ID, 2) = 0"));
+
+        createMaintenanceRecord(cacheName);
+
+        CacheGroupContext grp = grid(0).context().cache().cacheGroup(CU.cacheId(cacheName));
+
+        forceCheckpoint();
+
+        // Restart first time.
+        stopGrid(0);
+
+        defragmentAndValidateSizesDecreasedAfterDefragmentation(0, grp);
+
+        startGrid(0);
+
+        // Reinit cache object.
+        cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        assertTrue(explainQuery(cache, "EXPLAIN SELECT * FROM TEST WHERE ID > 0").contains("_key_pk_proxy"));
+
+        cache.query(new SqlFieldsQuery("SELECT * FROM TEST WHERE ID > 0")).getAll();
+
+        assertTrue(explainQuery(cache, "EXPLAIN SELECT * FROM TEST WHERE VAL_DEC > 0").contains("test_val_dec"));
+
+        cache.query(new SqlFieldsQuery("SELECT * FROM TEST WHERE VAL_DEC > 0")).getAll();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testVarcharIndex() throws Exception {
+        final String strPrefix = "AAAAAAAAAA";
+
+        startGrid(0).cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<?, ?> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        cache.query(new SqlFieldsQuery("CREATE TABLE TEST (ID INT PRIMARY KEY, VAL_INT INT, VAL_STR VARCHAR)"));
+
+        final String cacheName = "SQL_default_TEST";
+
+        cache.query(new SqlFieldsQuery("CREATE INDEX TEST_VAL_STR ON TEST(VAL_STR)"));
+
+        for (int i = 0; i < ADDED_KEYS_COUNT; i++) {
+            cache.query(new SqlFieldsQuery("INSERT INTO TEST VALUES (?, ?, ?)")
+                .setArgs(i, i, strPrefix + i));
+        }
+
+        cache.query(new SqlFieldsQuery("DELETE FROM TEST WHERE MOD(ID, 2) = 0"));
+
+        createMaintenanceRecord(cacheName);
+
+        CacheGroupContext grp = grid(0).context().cache().cacheGroup(CU.cacheId(cacheName));
+
+        forceCheckpoint();
+
+        // Restart first time.
+        stopGrid(0);
+
+        defragmentAndValidateSizesDecreasedAfterDefragmentation(0, grp);
+
+        startGrid(0);
+
+        // Reinit cache object.
+        cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        assertTrue(explainQuery(cache, "EXPLAIN SELECT * FROM TEST WHERE VAL_STR = 'a'").contains("test_val_str"));
+
+        List<List<?>> res = cache.query(new SqlFieldsQuery("SELECT * FROM TEST WHERE VAL_STR = ?").setArgs(strPrefix + 1)).getAll();
+
+        assertEquals(1, res.size());
+    }
+
     /** */
     private static String explainQuery(IgniteCache<?, ?> cache, String qry) {
         return cache
@@ -306,14 +372,18 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
         /**
          * Whether index rebuild happened.
          */
-        private boolean rebuiltIndexes;
+        private volatile boolean rebuiltIndexes;
 
         /** {@inheritDoc} */
-        @Override @Nullable public IgniteInternalFuture<?> rebuild(GridCacheContext cctx, boolean force) {
-            IgniteInternalFuture<?> fut = super.rebuild(cctx, force);
-            rebuiltIndexes = fut != null;
+        @Override @Nullable public IgniteInternalFuture<?> rebuild(
+            GridCacheContext cctx,
+            boolean force,
+            IndexRebuildCancelToken cancelTok
+        ) {
+            IgniteInternalFuture<?> future = super.rebuild(cctx, force, cancelTok);
+            rebuiltIndexes = future != null;
 
-            return fut;
+            return future;
         }
 
         /**

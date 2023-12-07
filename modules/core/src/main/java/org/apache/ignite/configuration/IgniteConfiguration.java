@@ -40,7 +40,6 @@ import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
-import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compute.ComputeJob;
@@ -85,6 +84,7 @@ import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.spi.tracing.TracingSpi;
 import org.apache.ignite.ssl.SslContextFactory;
@@ -92,7 +92,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.STOP;
+import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.USE_FAILURE_HANDLER;
 
 /**
  * This class defines grid runtime configuration. This configuration is passed to
@@ -199,7 +199,7 @@ public class IgniteConfiguration {
     public static final int DFLT_MGMT_THREAD_CNT = 4;
 
     /** Default segmentation policy. */
-    public static final SegmentationPolicy DFLT_SEG_PLC = STOP;
+    public static final SegmentationPolicy DFLT_SEG_PLC = USE_FAILURE_HANDLER;
 
     /** Default value for wait for segment on startup flag. */
     public static final boolean DFLT_WAIT_FOR_SEG_ON_START = true;
@@ -225,8 +225,11 @@ public class IgniteConfiguration {
     /** Default value for cache sanity check enabled flag. */
     public static final boolean DFLT_CACHE_SANITY_CHECK_ENABLED = true;
 
-    /** Default relative working directory path for snapshot operation result. */
+    /** Default relative working directory path for snapshot operation result. The default directory is <tt>snapshots</tt>. */
     public static final String DFLT_SNAPSHOT_DIRECTORY = "snapshots";
+
+    /** Default number of threads to perform snapshot operations. The default value is <tt>4</tt>. */
+    public static final int DFLT_SNAPSHOT_THREAD_POOL_SIZE = 4;
 
     /** Default value for late affinity assignment flag. */
     @Deprecated
@@ -341,9 +344,6 @@ public class IgniteConfiguration {
 
     /** Marshal local jobs. */
     private boolean marshLocJobs = DFLT_MARSHAL_LOCAL_JOBS;
-
-    /** Daemon flag. */
-    private boolean daemon;
 
     /** Whether or not peer class loading is enabled. */
     private boolean p2pEnabled = DFLT_P2P_ENABLED;
@@ -564,6 +564,9 @@ public class IgniteConfiguration {
      */
     private String snapshotPath = DFLT_SNAPSHOT_DIRECTORY;
 
+    /** Total number of threads to perform snapshot operation. By default, the {@link #DFLT_SNAPSHOT_THREAD_POOL_SIZE} is used. */
+    private int snapshotThreadPoolSize = DFLT_SNAPSHOT_THREAD_POOL_SIZE;
+
     /** Active on start flag. */
     @Deprecated
     private boolean activeOnStart = DFLT_ACTIVE_ON_START;
@@ -674,7 +677,6 @@ public class IgniteConfiguration {
         cliConnCfg = cfg.getClientConnectorConfiguration();
         connectorCfg = cfg.getConnectorConfiguration();
         consistentId = cfg.getConsistentId();
-        daemon = cfg.isDaemon();
         dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
@@ -723,6 +725,7 @@ public class IgniteConfiguration {
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
         segResolvers = cfg.getSegmentationResolvers();
         snapshotPath = cfg.getSnapshotPath();
+        snapshotThreadPoolSize = cfg.getSnapshotThreadPoolSize();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
         sqlConnCfg = cfg.getSqlConnectorConfiguration();
@@ -787,46 +790,6 @@ public class IgniteConfiguration {
      */
     public String getIgniteInstanceName() {
         return igniteInstanceName;
-    }
-
-    /**
-     * Whether or not this node should be a daemon node.
-     * <p>
-     * Daemon nodes are the usual grid nodes that participate in topology but not
-     * visible on the main APIs, i.e. they are not part of any cluster groups. The only
-     * way to see daemon nodes is to use {@link ClusterGroup#forDaemons()} method.
-     * <p>
-     * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on Ignite and needs to participate in the topology, but also needs to be
-     * excluded from the "normal" topology, so that it won't participate in the task execution
-     * or in-memory data grid storage.
-     *
-     * @return {@code True} if this node should be a daemon node, {@code false} otherwise.
-     * @see ClusterGroup#forDaemons()
-     */
-    public boolean isDaemon() {
-        return daemon;
-    }
-
-    /**
-     * Sets daemon flag.
-     * <p>
-     * Daemon nodes are the usual grid nodes that participate in topology but not
-     * visible on the main APIs, i.e. they are not part of any cluster group. The only
-     * way to see daemon nodes is to use {@link ClusterGroup#forDaemons()} method.
-     * <p>
-     * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on Ignite and needs to participate in the topology, but also needs to be
-     * excluded from the "normal" topology, so that it won't participate in the task execution
-     * or in-memory data grid storage.
-     *
-     * @param daemon Daemon flag.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setDaemon(boolean daemon) {
-        this.daemon = daemon;
-
-        return this;
     }
 
     /**
@@ -915,7 +878,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return an instance of logger to use in grid. If not provided,
-     * {@ignitelink org.apache.ignite.logger.log4j.Log4JLogger}
+     * {@ignitelink org.apache.ignite.logger.log4j2.Log4J2Logger}
      * will be used.
      *
      * @return Logger to use in grid.
@@ -1677,10 +1640,11 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Compression level for internal network messages.
+     * Sets compression level for internal network messages.
+     * @param netCompressionLevel Compression level for internal network messages.
      * <p>
      * If not provided, then default value
-     * Deflater.BEST_SPEED is used.
+     * {@link Deflater#BEST_SPEED} is used.
      *
      */
     public void setNetworkCompressionLevel(int netCompressionLevel) {
@@ -1741,6 +1705,25 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setNetworkSendRetryCount(int sndRetryCnt) {
         this.sndRetryCnt = sndRetryCnt;
+
+        return this;
+    }
+
+    /**
+     * @return Total number of threads to perform snapshot operation. By default,
+     * the {@link #DFLT_SNAPSHOT_THREAD_POOL_SIZE} is used.
+     */
+    public int getSnapshotThreadPoolSize() {
+        return snapshotThreadPoolSize;
+    }
+
+    /**
+     * @param snapshotThreadPoolSize Total number of threads to perform snapshot operation. By default,
+     * the {@link #DFLT_SNAPSHOT_THREAD_POOL_SIZE} is used.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSnapshotThreadPoolSize(int snapshotThreadPoolSize) {
+        this.snapshotThreadPoolSize = snapshotThreadPoolSize;
 
         return this;
     }
@@ -1930,6 +1913,7 @@ public class IgniteConfiguration {
      * Sets SSL context factory that will be used for creating a secure socket  layer.
      *
      * @param sslCtxFactory Ssl context factory.
+     * @return {@code this} for chaining.
      * @see SslContextFactory
      */
     public IgniteConfiguration setSslContextFactory(Factory<SSLContext> sslCtxFactory) {
@@ -2175,7 +2159,7 @@ public class IgniteConfiguration {
      * on arrive to mapped node. This approach suits well for large amount of small
      * jobs (which is a wide-spread use case). User still can control the number
      * of concurrent jobs by setting maximum thread pool size defined by
-     * IgniteConfiguration.getPublicThreadPoolSize() configuration property.
+     * {@link IgniteConfiguration#getPublicThreadPoolSize()} configuration property.
      *
      * @return Grid collision SPI implementation or {@code null} to use default implementation.
      */
@@ -2454,11 +2438,12 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instances of {@link MetricExporterSpi}.
+     * Sets fully configured instances of {@link MetricExporterSpi}. {@link JmxMetricExporterSpi} is used by default.
      *
      * @param metricExporterSpi Fully configured instances of {@link MetricExporterSpi}.
      * @return {@code this} for chaining.
      * @see IgniteConfiguration#getMetricExporterSpi()
+     * @see JmxMetricExporterSpi
      */
     public IgniteConfiguration setMetricExporterSpi(MetricExporterSpi... metricExporterSpi) {
         this.metricExporterSpi = metricExporterSpi;
@@ -2480,9 +2465,10 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets fully configured metric SPI implementations.
+     * Gets fully configured metric SPI implementations. {@link JmxMetricExporterSpi} is used by default.
      *
      * @return Metric exporter SPI implementations.
+     * @see JmxMetricExporterSpi
      */
     public MetricExporterSpi[] getMetricExporterSpi() {
         return metricExporterSpi;
@@ -2599,6 +2585,7 @@ public class IgniteConfiguration {
      * Sets cache configurations.
      *
      * @param cacheCfg Cache configurations.
+     * @return {@code this} for chaining.
      */
     @SuppressWarnings({"ZeroLengthArrayAllocation"})
     public IgniteConfiguration setCacheConfiguration(CacheConfiguration... cacheCfg) {
@@ -2644,6 +2631,7 @@ public class IgniteConfiguration {
      * Cache key configuration defines
      *
      * @param cacheKeyCfg Cache key configuration.
+     * @return {@code this} for chaining.
      */
     public IgniteConfiguration setCacheKeyConfiguration(CacheKeyConfiguration... cacheKeyCfg) {
         this.cacheKeyCfg = cacheKeyCfg;
@@ -2664,6 +2652,7 @@ public class IgniteConfiguration {
      * Sets configuration for Ignite Binary objects.
      *
      * @param binaryCfg Binary configuration object.
+     * @return {@code this} for chaining.
      */
     public IgniteConfiguration setBinaryConfiguration(BinaryConfiguration binaryCfg) {
         this.binaryCfg = binaryCfg;
@@ -3155,7 +3144,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * @return By default the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used. The value can be
+     * @return By default, the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used. The value can be
      * configured as relative path starting from the Ignites {@link #getWorkDirectory()} or
      * the value can be represented as an absolute snapshot working path.
      */
@@ -3164,9 +3153,10 @@ public class IgniteConfiguration {
     }
 
     /**
-     * @param snapshotPath By default the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used.
+     * @param snapshotPath By default, the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used.
      * The value can be configured as relative path starting from the Ignites {@link #getWorkDirectory()}
      * or the value can be represented as an absolute snapshot working path instead.
+     * @return {@code this} for chaining.
      */
     public IgniteConfiguration setSnapshotPath(String snapshotPath) {
         this.snapshotPath = snapshotPath;

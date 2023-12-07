@@ -135,18 +135,6 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<ClusterNode> remoteDaemonNodes() {
-        Collection<ClusterNode> daemons = new ArrayList<>();
-
-        for (ClusterNode node : rmtNodes) {
-            if (node.isDaemon())
-                daemons.add(node);
-        }
-
-        return daemons;
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<ClusterNode> nodes() {
         Collection<ClusterNode> all = new ArrayList<>(rmtNodes);
 

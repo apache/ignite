@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Impl
         /// Create JVM.
         /// </summary>
         /// <returns>JVM.</returns>
-        private static Jvm CreateJvm(IgniteConfiguration cfg, ILogger log)
+        internal static Jvm CreateJvm(IgniteConfiguration cfg, ILogger log)
         {
             // Do not bother with classpath when JVM exists.
             var jvm = Jvm.Get(true);

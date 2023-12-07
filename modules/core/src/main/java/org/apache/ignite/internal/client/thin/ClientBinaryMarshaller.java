@@ -85,8 +85,7 @@ class ClientBinaryMarshaller {
      * Configure marshaller with custom Ignite Binary Object configuration.
      */
     public void setBinaryConfiguration(BinaryConfiguration binCfg) {
-        if (impl.context().configuration().getBinaryConfiguration() != binCfg)
-            impl = createImpl(binCfg);
+        impl = createImpl(binCfg);
     }
 
     /**
@@ -108,7 +107,7 @@ class ClientBinaryMarshaller {
 
         igniteCfg.setBinaryConfiguration(binCfg);
 
-        BinaryContext ctx = new BinaryContext(metaHnd, igniteCfg, new NullLogger());
+        BinaryContext ctx = new BinaryContext(metaHnd, igniteCfg, NullLogger.INSTANCE);
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
@@ -121,4 +120,3 @@ class ClientBinaryMarshaller {
         return new GridBinaryMarshaller(ctx);
     }
 }
-

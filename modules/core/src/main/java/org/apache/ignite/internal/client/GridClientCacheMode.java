@@ -21,9 +21,6 @@ package org.apache.ignite.internal.client;
  * Cache type on remote node.
  */
 public enum GridClientCacheMode {
-    /** Local cache. */
-    LOCAL,
-
     /** Replicated cache. */
     REPLICATED,
 

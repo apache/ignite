@@ -14,7 +14,7 @@ To enable ignite logging with default configuration use:
     ...
     <property name="gridLogger">
         <bean class="org.apache.ignite.logger.log4j2.Log4J2Logger">
-            <constructor-arg type="java.lang.String" value="config/ignite-log4j2.xml"/>
+            <constructor-arg type="java.lang.String" value="config/ignite-log4j.xml"/>
         </bean>
     </property>
     ...

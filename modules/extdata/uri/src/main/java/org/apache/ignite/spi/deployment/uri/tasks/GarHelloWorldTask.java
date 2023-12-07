@@ -81,6 +81,7 @@ public class GarHelloWorldTask extends ComputeTaskSplitAdapter<String, String> {
         return jobs;
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public String reduce(List<ComputeJobResult> results) throws IgniteException {
         return String.valueOf(results.size());
     }

@@ -17,41 +17,39 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.AbstractTimestampIndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.DateTimeIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.TimestampIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueConstants.MAX_DATE_VALUE;
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueConstants.MIN_DATE_VALUE;
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueConstants.NANOS_PER_DAY;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.MAX_DATE_VALUE;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.MIN_DATE_VALUE;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.NANOS_PER_DAY;
 
 /**
- * Inline index key implementation for inlining {@link AbstractTimestampIndexKey} values.
+ * Inline index key implementation for inlining {@link TimestampIndexKey} values.
  */
-public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<AbstractTimestampIndexKey> {
+public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<TimestampIndexKey> {
     /** */
     public TimestampInlineIndexKeyType() {
-        super(IndexKeyTypes.TIMESTAMP, (short) 16);
+        super(IndexKeyType.TIMESTAMP, (short)16);
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, AbstractTimestampIndexKey key) {
-        long val1 = PageUtils.getLong(pageAddr, off + 1);
-
-        int c = Long.compare(val1, key.dateValue());
-
-        if (c != 0)
-            return Integer.signum(c);
-
-        long nanos1 = PageUtils.getLong(pageAddr, off + 9);
-
-        return Integer.signum(Long.compare(nanos1, key.nanos()));
+    @Override public boolean isComparableTo(IndexKey key) {
+        return key instanceof DateTimeIndexKey;
     }
 
     /** {@inheritDoc} */
-    @Override protected int put0(long pageAddr, int off, AbstractTimestampIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte) type());
+    @Override public int compare0(long pageAddr, int off, IndexKey key) {
+        return -Integer.signum(((DateTimeIndexKey)key).compareTo(PageUtils.getLong(pageAddr, off + 1),
+            PageUtils.getLong(pageAddr, off + 9)));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int put0(long pageAddr, int off, TimestampIndexKey key, int maxSize) {
+        PageUtils.putByte(pageAddr, off, (byte)type().code());
 
         PageUtils.putLong(pageAddr, off + 1, key.dateValue());
         PageUtils.putLong(pageAddr, off + 9, key.nanos());
@@ -60,23 +58,24 @@ public class TimestampInlineIndexKeyType extends NullableInlineIndexKeyType<Abst
     }
 
     /** {@inheritDoc} */
-    @Override protected AbstractTimestampIndexKey get0(long pageAddr, int off) {
+    @Override protected TimestampIndexKey get0(long pageAddr, int off) {
         long dv = PageUtils.getLong(pageAddr, off + 1);
         long nanos = PageUtils.getLong(pageAddr, off + 9);
 
         if (dv > MAX_DATE_VALUE) {
             dv = MAX_DATE_VALUE;
             nanos = NANOS_PER_DAY - 1;
-        } else if (dv < MIN_DATE_VALUE) {
+        }
+        else if (dv < MIN_DATE_VALUE) {
             dv = MIN_DATE_VALUE;
             nanos = 0;
         }
 
-        return (AbstractTimestampIndexKey) IndexKeyFactory.wrapDateValue(type(), dv, nanos);
+        return new TimestampIndexKey(dv, nanos);
     }
 
     /** {@inheritDoc} */
-    @Override protected int inlineSize0(AbstractTimestampIndexKey key) {
+    @Override protected int inlineSize0(TimestampIndexKey key) {
         return keySize + 1;
     }
 }

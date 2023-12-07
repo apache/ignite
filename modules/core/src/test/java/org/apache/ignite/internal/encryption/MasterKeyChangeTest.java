@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -172,7 +173,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         IgniteEx client = startClientGrid(getConfiguration("client"));
 
-        srv.cluster().active(true);
+        srv.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -272,7 +273,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         IgniteEx grid0 = grids.get1();
 
-        grid0.cluster().active(true);
+        grid0.cluster().state(ClusterState.ACTIVE);
 
         CacheConfiguration<Long, String> ccfg = new CacheConfiguration<Long, String>(cacheName())
             .setWriteSynchronizationMode(FULL_SYNC)

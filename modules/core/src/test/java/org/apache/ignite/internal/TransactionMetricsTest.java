@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.mxbean.TransactionMetricsMxBean;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -51,8 +50,6 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.METRICS);
-
         final IgniteConfiguration cfg = super.getConfiguration(name);
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
@@ -75,13 +72,6 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
         super.afterTest();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.METRICS);
-
-        super.beforeTestsStarted();
     }
 
     /**

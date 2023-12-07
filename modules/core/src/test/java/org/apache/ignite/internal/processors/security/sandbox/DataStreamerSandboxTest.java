@@ -22,7 +22,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.junit.Test;
 
 /**
@@ -45,7 +45,7 @@ public class DataStreamerSandboxTest extends AbstractSandboxTest {
     /**
      * @return Operation to test.
      */
-    private GridTestUtils.RunnableX operation(Ignite node) {
+    private RunnableX operation(Ignite node) {
         return () -> {
             try (IgniteDataStreamer<Integer, Integer> strm = node.dataStreamer(TEST_CACHE)) {
                 strm.receiver((cache, entries) -> controlAction());

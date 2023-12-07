@@ -212,7 +212,7 @@ public class GridJobContextImpl implements ComputeJobContext, Externalizable {
                                 }
 
                                 ExecutorService execSvc = job.isInternal() ?
-                                    ctx.getManagementExecutorService() : ctx.getExecutorService();
+                                    ctx.pools().getManagementExecutorService() : ctx.pools().getExecutorService();
 
                                 assert execSvc != null;
 

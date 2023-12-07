@@ -84,8 +84,7 @@ public class MaintenanceRegistrySimpleTest {
     private GridKernalContext initContext(boolean persistenceEnabled) throws IgniteCheckedException {
         String dfltWorkDir = U.defaultWorkDirectory();
 
-        GridKernalContext kctx = new StandaloneGridKernalContext(log, null, null)
-        {
+        GridKernalContext kctx = new StandaloneGridKernalContext(log, null, null) {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
@@ -138,6 +137,48 @@ public class MaintenanceRegistrySimpleTest {
 
         assertNotNull(task);
         assertEquals(newParams, task.parameters());
+    }
+
+    /**
+     * {@link MaintenanceTask} could be updated using remapping function.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMaintenanceTaskUpdate() throws Exception {
+        String name0 = "taskName0";
+        String descr = "description";
+        String oldParams = "oldParams";
+        String newParams = "newParams";
+
+        MaintenanceProcessor proc = new MaintenanceProcessor(initContext(true));
+
+        proc.start();
+
+        assertFalse(proc.isMaintenanceMode());
+
+        MaintenanceTask oldTask = new MaintenanceTask(name0, descr, oldParams);
+
+        assertNull(proc.registerMaintenanceTask(oldTask));
+
+        MaintenanceTask newTask = new MaintenanceTask(name0, descr, newParams);
+
+        proc.registerMaintenanceTask(newTask, prevTask -> new MaintenanceTask(
+                newTask.name(),
+                newTask.description(),
+               prevTask.parameters() + newTask.parameters()
+            )
+        );
+
+        proc.stop(false);
+
+        proc.start();
+
+        assertTrue(proc.isMaintenanceMode());
+        MaintenanceTask task = proc.activeMaintenanceTask(name0);
+
+        assertNotNull(task);
+        assertEquals(oldParams + newParams, task.parameters());
     }
 
     /**
@@ -302,6 +343,7 @@ public class MaintenanceRegistrySimpleTest {
         /** */
         private final List<MaintenanceAction<?>> actions = new ArrayList<>();
 
+        /** */
         SimpleMaintenanceCallback(List<MaintenanceAction<?>> actions) {
             this.actions.addAll(actions);
         }

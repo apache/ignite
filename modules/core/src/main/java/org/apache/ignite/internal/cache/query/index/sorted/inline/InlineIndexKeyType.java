@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,9 +28,9 @@ public interface InlineIndexKeyType {
     /**
      * Returns type of inlined column.
      *
-     * @return Integer code of the column's value type.
+     * @return Column's value type.
      */
-    public int type();
+    public IndexKeyType type();
 
     /**
      * Returns size of inlined key.
@@ -63,26 +64,63 @@ public interface InlineIndexKeyType {
      * @param pageAddr Page address.
      * @param off Offset.
      * @param key Index key.
-     * @param maxSize Max size.
-     *
+     * @param maxSize Remaining inlined buffer size (max available bytes to write for the current row).
      * @return Amount of bytes actually stored.
      */
     public int put(long pageAddr, int off, IndexKey key, int maxSize);
 
     /**
+     * Gets index key from inline index tree.
+     *
+     * @param pageAddr Page address.
+     * @param off Offset.
+     * @param maxSize Remaining inlined buffer size (max available bytes to read for the current row).
+     * @return Index key extracted from index tree.
      */
     @Nullable public IndexKey get(long pageAddr, int off, int maxSize);
+
+    /**
+     * Checks if inlined index key is null.
+     *
+     * @param pageAddr Page address.
+     * @param off Offset.
+     * @param maxSize Remaining inlined buffer size (max available bytes to read for the current row).
+     * @return {@code Boolean.TRUE} if index key is null, {@code Boolean.FALSE} if index key is not null,
+     *      {@code null} if can't say for sure.
+     */
+    @Nullable public Boolean isNull(long pageAddr, int off, int maxSize);
 
     /**
      * Compares inlined and given value.
      *
      * @param pageAddr Page address.
      * @param off Offset.
-     * @param maxSize Max size.
+     * @param maxSize Remaining inlined buffer size (max available bytes to read for the current row).
      * @param v Value that should be compare.
-     *
      * @return -1, 0 or 1 if inlined value less, equal or greater
      * than given respectively, or -2 if inlined part is not enough to compare.
      */
     public int compare(long pageAddr, int off, int maxSize, IndexKey v);
+
+    /**
+     * @return {@code True} if inlined value can be compared to index key.
+     */
+    public default boolean isComparableTo(IndexKey key) {
+        return type() == key.type();
+    }
+
+    /**
+     * @return Size of key, in bytes. {@code -1} means variable length of key.
+     */
+    public short keySize();
+
+    /**
+     * Whether inline contains full index key.
+     *
+     * @param pageAddr Page address.
+     * @param off Offset.
+     * @param maxSize Remaining inlined buffer size (max available bytes to read for the current row).
+     * @return {@code true} if inline contains full index key. Can be {@code false} for truncated variable length types.
+     */
+    public boolean inlinedFullValue(long pageAddr, int off, int maxSize);
 }

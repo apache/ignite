@@ -1,0 +1,40 @@
+# name: test/sql/function/string/test_difference.test
+# description: Just simple test to check support of DIFFERENCE function.
+# group: [string]
+
+
+query T
+SELECT difference('Robert', 'Ropert')
+----
+4
+
+query T
+SELECT difference('Anne', 'Andrew')
+----
+2
+
+query T
+SELECT difference('john', 'jack')
+----
+1
+
+query T
+SELECT difference('Worldwide', 'Ropert')
+----
+0
+
+query T
+SELECT difference(NULL, NULL)
+----
+NULL
+
+query T
+SELECT difference(NULL, 'Ropert')
+----
+NULL
+
+query T
+SELECT difference('Ropert', NULL)
+----
+NULL
+

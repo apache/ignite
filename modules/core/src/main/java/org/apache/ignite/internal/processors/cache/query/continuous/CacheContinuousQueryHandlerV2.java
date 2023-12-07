@@ -175,7 +175,8 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
 
             if (p2pUnmarshalFut.isDone())
                 p2pUnmarshalFut = new GridFutureAdapter<>();
-        } else
+        }
+        else
             rmtFilterFactory = (Factory)in.readObject();
 
         types = in.readByte();

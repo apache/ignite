@@ -154,6 +154,7 @@ public class PageMemoryTrackerPluginProvider extends AbstractTestPluginProvider
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void beforeBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
         if (plugin != null) {
             try {

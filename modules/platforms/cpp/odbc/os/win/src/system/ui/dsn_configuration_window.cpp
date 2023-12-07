@@ -36,7 +36,7 @@ namespace ignite
                 DsnConfigurationWindow::DsnConfigurationWindow(Window* parent, config::Configuration& config):
                     CustomWindow(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
                     width(360),
-                    height(600),
+                    height(620),
                     connectionSettingsGroupBox(),
                     sslSettingsGroupBox(),
                     authSettingsGroupBox(),
@@ -59,6 +59,7 @@ namespace ignite
                     userEdit(),
                     passwordLabel(),
                     passwordEdit(),
+                    engineModeComboBox(),
                     nestedTxModeComboBox(),
                     okButton(),
                     cancelButton(),
@@ -313,23 +314,48 @@ namespace ignite
 
                     rowPos += INTERVAL + ROW_HEIGHT;
 
+                    engineModeLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                                                  "SQL query engine:", ChildId::ENGINE_MODE_LABEL);
+                    engineModeComboBox = CreateComboBox(editPosX, rowPos, editSizeX, ROW_HEIGHT,
+                                                        "", ChildId::ENGINE_MODE_COMBO_BOX);
+                    {
+                        int id = 0;
+
+                        const EngineMode::ModeSet &supported = EngineMode::GetValidValues();
+
+                        for (EngineMode::ModeSet::const_iterator it = supported.begin(); it != supported.end(); ++it) {
+                            engineModeComboBox->AddString(EngineMode::ToString(*it));
+
+                            if (*it == config.GetEngineMode())
+                                engineModeComboBox->SetSelection(id);
+
+                            ++id;
+                        }
+                    }
+
+                    engineModeComboBox->SetEnabled(version >= ProtocolVersion::VERSION_2_13_0);
+
+                    rowPos += INTERVAL + ROW_HEIGHT;
+
                     nestedTxModeLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
                         "Nested Transaction Mode:", ChildId::NESTED_TX_MODE_LABEL);
                     nestedTxModeComboBox = CreateComboBox(editPosX, rowPos, editSizeX, ROW_HEIGHT,
                         "", ChildId::NESTED_TX_MODE_COMBO_BOX);
 
-                    int id = 0;
-
-                    const NestedTxMode::ModeSet& supported = NestedTxMode::GetValidValues();
-
-                    for (NestedTxMode::ModeSet::const_iterator it = supported.begin(); it != supported.end(); ++it)
                     {
-                        nestedTxModeComboBox->AddString(NestedTxMode::ToString(*it));
+                        int id = 0;
 
-                        if (*it == config.GetNestedTxMode())
-                            nestedTxModeComboBox->SetSelection(id);
+                        const NestedTxMode::ModeSet &supported = NestedTxMode::GetValidValues();
 
-                        ++id;
+                        for (NestedTxMode::ModeSet::const_iterator it = supported.begin();
+                             it != supported.end(); ++it) {
+                            nestedTxModeComboBox->AddString(NestedTxMode::ToString(*it));
+
+                            if (*it == config.GetNestedTxMode())
+                                nestedTxModeComboBox->SetSelection(id);
+
+                            ++id;
+                        }
                     }
 
                     nestedTxModeComboBox->SetEnabled(version >= ProtocolVersion::VERSION_2_5_0);
@@ -457,6 +483,7 @@ namespace ignite
                                     lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_1_5);
                                     skipReducerOnUpdateCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_3_0);
                                     nestedTxModeComboBox->SetEnabled(version >= ProtocolVersion::VERSION_2_5_0);
+                                    engineModeComboBox->SetEnabled(version >= ProtocolVersion::VERSION_2_13_0);
 
                                     break;
                                 }
@@ -607,7 +634,14 @@ namespace ignite
 
                     nestedTxModeComboBox->GetText(nestedTxModeStr);
 
-                    NestedTxMode::Type mode = NestedTxMode::FromString(nestedTxModeStr, config.GetNestedTxMode());
+                    NestedTxMode::Type nestedTxMode = NestedTxMode::FromString(nestedTxModeStr,
+                                                                               config.GetNestedTxMode());
+
+                    std::string engineModeStr;
+
+                    engineModeComboBox->GetText(engineModeStr);
+
+                    EngineMode::Type engineMode = EngineMode::FromString(engineModeStr, config.GetEngineMode());
 
                     bool distributedJoins = distributedJoinsCheckBox->IsChecked();
                     bool enforceJoinOrder = enforceJoinOrderCheckBox->IsChecked();
@@ -618,7 +652,8 @@ namespace ignite
 
                     LOG_MSG("Retrieving arguments:");
                     LOG_MSG("Page size:              " << pageSize);
-                    LOG_MSG("Nested TX Mode:         " << NestedTxMode::ToString(mode));
+                    LOG_MSG("SQL Engine Mode:        " << EngineMode::ToString(engineMode));
+                    LOG_MSG("Nested TX Mode:         " << NestedTxMode::ToString(nestedTxMode));
                     LOG_MSG("Distributed Joins:      " << (distributedJoins ? "true" : "false"));
                     LOG_MSG("Enforce Join Order:     " << (enforceJoinOrder ? "true" : "false"));
                     LOG_MSG("Replicated only:        " << (replicatedOnly ? "true" : "false"));
@@ -627,7 +662,8 @@ namespace ignite
                     LOG_MSG("Skip reducer on update: " << (skipReducerOnUpdate ? "true" : "false"));
 
                     cfg.SetPageSize(pageSize);
-                    cfg.SetNestedTxMode(mode);
+                    cfg.SetEngineMode(engineMode);
+                    cfg.SetNestedTxMode(nestedTxMode);
                     cfg.SetDistributedJoins(distributedJoins);
                     cfg.SetEnforceJoinOrder(enforceJoinOrder);
                     cfg.SetReplicatedOnly(replicatedOnly);

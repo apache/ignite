@@ -26,9 +26,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -51,7 +52,6 @@ import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.client.GridClientTopologyListener;
 import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
 import org.apache.ignite.internal.client.balancer.GridClientRoundRobinBalancer;
-import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
@@ -70,13 +70,10 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -145,7 +142,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * @return SSL context factory to use if SSL or {@code null} to disable SSL usage.
      */
-    @Nullable protected GridSslContextFactory sslContextFactory() {
+    @Nullable protected Factory<SSLContext> sslContextFactory() {
         return null;
     }
 
@@ -162,11 +159,11 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
             clientCfg.setPort(REST_TCP_PORT_BASE);
 
-            GridSslContextFactory sslCtxFactory = sslContextFactory();
+            Factory<SSLContext> sslCtxFactory = sslContextFactory();
 
             if (sslCtxFactory != null) {
                 clientCfg.setSslEnabled(true);
-                clientCfg.setSslContextFactory(sslCtxFactory);
+                clientCfg.setSslFactory(sslCtxFactory);
             }
 
             c.setConnectorConfiguration(clientCfg);
@@ -178,47 +175,27 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
         c.setCommunicationSpi(spi);
 
-        c.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration(PARTITIONED_CACHE_NAME),
-            cacheConfiguration(REPLICATED_CACHE_NAME), cacheConfiguration(REPLICATED_ASYNC_CACHE_NAME));
+        CacheConfiguration<?, ?> ccfg1 = defaultCacheConfiguration()
+            .setName(PARTITIONED_CACHE_NAME)
+            .setCacheMode(PARTITIONED)
+            .setBackups(0);
+
+        CacheConfiguration<?, ?> ccfg2 = defaultCacheConfiguration()
+            .setName(REPLICATED_CACHE_NAME)
+            .setCacheMode(REPLICATED);
+
+        CacheConfiguration<?, ?> ccfg3 = defaultCacheConfiguration()
+            .setName(REPLICATED_ASYNC_CACHE_NAME)
+            .setCacheMode(REPLICATED)
+            .setWriteSynchronizationMode(FULL_ASYNC);
+
+        c.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
 
         c.setPublicThreadPoolSize(40);
 
         c.setSystemThreadPoolSize(40);
 
         return c;
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @return Cache configuration.
-     * @throws Exception In case of error.
-     */
-    private CacheConfiguration cacheConfiguration(@NotNull String cacheName) throws Exception {
-        CacheConfiguration cfg = defaultCacheConfiguration();
-
-        cfg.setAtomicityMode(TRANSACTIONAL);
-
-        switch (cacheName) {
-            case DEFAULT_CACHE_NAME:
-                cfg.setCacheMode(LOCAL);
-                break;
-            case PARTITIONED_CACHE_NAME:
-                cfg.setCacheMode(PARTITIONED);
-
-                cfg.setBackups(0);
-                break;
-            default:
-                cfg.setCacheMode(REPLICATED);
-                break;
-        }
-
-        cfg.setName(cacheName);
-
-        cfg.setWriteSynchronizationMode(REPLICATED_ASYNC_CACHE_NAME.equals(cacheName) ? FULL_ASYNC : FULL_SYNC);
-
-        cfg.setAffinity(new RendezvousAffinityFunction());
-
-        return cfg;
     }
 
     /** {@inheritDoc} */

@@ -37,7 +37,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -57,13 +56,6 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
     /** Number of transactions. */
     private static final int TX_CNT = 1000;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.beforeTestsStarted();
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -86,8 +78,6 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected final IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         if (!c.isClientMode()) {
@@ -219,6 +209,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
      * Test store factory.
      */
     private static class TestStoreFactory implements Factory<CacheStore> {
+        /** {@inheritDoc} */
         @Override public CacheStore create() {
             try {
                 CacheStore<Integer, String> store = new CacheJdbcBlobStore<>();

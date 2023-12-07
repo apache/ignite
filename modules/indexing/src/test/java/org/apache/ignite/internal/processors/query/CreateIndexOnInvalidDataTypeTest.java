@@ -111,11 +111,10 @@ public class CreateIndexOnInvalidDataTypeTest extends AbstractIndexingCommonTest
         sql("CREATE INDEX TEST_VAL_INT_IDX ON TEST(VAL_INT)");
 
         GridTestUtils.assertThrowsAnyCause(log, () -> {
-                sql("CREATE INDEX TEST_VAL_DATE_IDX ON TEST(VAL_DATE)");
+            sql("CREATE INDEX TEST_VAL_DATE_IDX ON TEST(VAL_DATE)");
 
-                return null;
-            },
-            IgniteSQLException.class, "java.util.Date cannot be cast to java.sql.Date");
+            return null;
+        }, IgniteSQLException.class, "unexpected class");
 
         // Wait for node stop if it is initiated by FailureHandler
         U.sleep(1000);
@@ -125,11 +124,10 @@ public class CreateIndexOnInvalidDataTypeTest extends AbstractIndexingCommonTest
         assertEquals(KEY_CNT, res.size());
 
         GridTestUtils.assertThrowsAnyCause(log, () -> {
-                sql("DROP INDEX TEST_VAL_DATE_IDX");
+            sql("DROP INDEX TEST_VAL_DATE_IDX");
 
-                return null;
-            },
-            IgniteSQLException.class, "Index doesn't exist: TEST_VAL_DATE_IDX");
+            return null;
+        }, IgniteSQLException.class, "Index doesn't exist: TEST_VAL_DATE_IDX");
     }
 
     /**

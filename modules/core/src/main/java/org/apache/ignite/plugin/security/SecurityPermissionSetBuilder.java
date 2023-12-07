@@ -68,7 +68,10 @@ public class SecurityPermissionSetBuilder {
     private boolean dfltAllowAll;
 
     /** */
-    public static final SecurityPermissionSet ALLOW_ALL = create().build();
+    public static final SecurityPermissionSet ALL_PERMISSIONS = create().build();
+
+    /** */
+    public static final SecurityPermissionSet NO_PERMISSIONS = create().defaultAllowAll(false).build();
 
     /**
      * Static factory method for create new permission builder.
@@ -143,7 +146,8 @@ public class SecurityPermissionSetBuilder {
      * @return {@link SecurityPermissionSetBuilder} refer to same permission builder.
      */
     public SecurityPermissionSetBuilder appendSystemPermissions(SecurityPermission... perms) {
-        validate(toCollection("EVENTS_", "ADMIN_", "CACHE_CREATE", "CACHE_DESTROY", "JOIN_AS_SERVER"), perms);
+        validate(toCollection("EVENTS_", "ADMIN_", "CACHE_CREATE", "CACHE_DESTROY", "JOIN_AS_SERVER",
+            "CHANGE_STATISTICS", "REFRESH_STATISTICS"), perms);
 
         sysPerms.addAll(toCollection(perms));
 
@@ -241,5 +245,13 @@ public class SecurityPermissionSetBuilder {
         permSet.setSystemPermissions(unmodifiableSet(sysPerms));
 
         return permSet;
+    }
+
+    /**
+     * @param perms System permissions.
+     * @return {@link SecurityPermissionSet} instance with specified permissions added.
+     */
+    public static SecurityPermissionSet systemPermissions(SecurityPermission... perms) {
+        return create().defaultAllowAll(false).appendSystemPermissions(perms).build();
     }
 }

@@ -19,7 +19,6 @@ package org.apache.ignite;
 
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
@@ -39,16 +38,15 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
  *       the method returns data region metrics snapshots rather than just in time memory state.
  *     </li>
  *     <li>
- *       Second, all {@link DataRegionMetrics} of a local Apache Ignite node are visible through JMX interface. Refer to
- *       {@link DataRegionMetricsMXBean} for more details.
+ *       Second, all {@link DataRegionMetrics} of a local Apache Ignite node are visible through JMX interface.
+ *       Refer to JMX bean with the name "name=io.dataregion.{data_region_name}" for more details.
  *     </li>
  * </ol>
  * </p>
  * <p>
  * Data region metrics collection is not a free operation and might affect performance of an application. This is the reason
  * why the metrics are turned off by default. To enable the collection you can use both
- * {@link DataRegionConfiguration#setMetricsEnabled(boolean)} configuration property or
- * {@link DataRegionMetricsMXBean#enableMetrics()} method of a respective JMX bean.
+ * {@link DataRegionConfiguration#setMetricsEnabled(boolean)} configuration property.
  *
  * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
  *
@@ -76,6 +74,15 @@ public interface DataRegionMetrics {
     public long getTotalAllocatedPages();
 
     /**
+     * Gets a total size of memory allocated in the data region. When persistence is disabled, this
+     * metric shows the total size of pages in memory. When persistence is enabled, this metric shows the
+     * total size of pages in memory and on disk.
+     *
+     * @return Total size of memory allocated, in bytes.
+     */
+    public long getTotalAllocatedSize();
+
+    /**
      * Gets a total number of pages used for storing the data. It includes allocated pages except of empty
      * pages that are not used yet or pages that can be reused.
      * <p>
@@ -88,13 +95,13 @@ public interface DataRegionMetrics {
     public long getTotalUsedPages();
 
     /**
-     * Gets a total size of memory allocated in the data region. When persistence is disabled, this
-     * metric shows the total size of pages in memory. When persistence is enabled, this metric shows the
-     * total size of pages in memory and on disk.
+     * Returns the total amount of bytes occupied by the non-empty pages. This value is directly tied to the
+     * {@link #getTotalUsedPages} and does not take page fragmentation into account (i.e. if some data is removed from
+     * a page, but it is not completely empty, it will still show the whole page bytes as being occupied).
      *
-     * @return Total size of memory allocated, in bytes.
+     * @return Total amount of bytes occupied by the non-empty pages
      */
-    public long getTotalAllocatedSize();
+    public long getTotalUsedSize();
 
     /**
      * Gets pages allocation rate of a memory region.
@@ -119,9 +126,12 @@ public interface DataRegionMetrics {
     public float getLargeEntriesPagesPercentage();
 
     /**
-     * Gets the percentage of the used space.
+     * Returns the ratio of space occupied by user and system data to the size of all pages that contain this data.
+     * <p>
+     * This metric can help to determine how much space of a data page is occupied on average. Low fill factor can
+     * indicate that data pages are very fragmented (i.e. there is a lot of empty space across all data pages).
      *
-     * @return The percentage of the used space.
+     * @return Ratio of space occupied by user and system data to the size of all pages that contain ant data.
      */
     public float getPagesFillFactor();
 

@@ -107,7 +107,7 @@ public class GridLuceneInputStream extends IndexInput implements Cloneable {
 
     /** {@inheritDoc} */
     @Override public IndexInput clone() {
-        GridLuceneInputStream clone = (GridLuceneInputStream) super.clone();
+        GridLuceneInputStream clone = (GridLuceneInputStream)super.clone();
 
         if (closed)
             throw new AlreadyClosedException(toString());

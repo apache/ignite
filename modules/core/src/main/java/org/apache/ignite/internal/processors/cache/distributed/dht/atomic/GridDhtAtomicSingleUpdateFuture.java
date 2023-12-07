@@ -81,7 +81,8 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
         @NotNull AffinityTopologyVersion topVer,
         long ttl,
         long conflictExpireTime,
-        @Nullable GridCacheVersion conflictVer
+        @Nullable GridCacheVersion conflictVer,
+        boolean readRepairRecovery
     ) {
         if (canUseSingleRequest(ttl, conflictExpireTime, conflictVer)) {
             return new GridDhtAtomicSingleUpdateRequest(
@@ -91,11 +92,11 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
                 writeVer,
                 syncMode,
                 topVer,
-                updateReq.subjectId(),
                 updateReq.taskNameHash(),
                 cctx.deploymentEnabled(),
                 updateReq.keepBinary(),
-                updateReq.skipStore());
+                updateReq.skipStore(),
+                readRepairRecovery);
         }
         else {
             return new GridDhtAtomicUpdateRequest(
@@ -105,13 +106,13 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
                 writeVer,
                 syncMode,
                 topVer,
-                updateReq.subjectId(),
                 updateReq.taskNameHash(),
                 null,
                 cctx.deploymentEnabled(),
                 updateReq.keepBinary(),
                 updateReq.skipStore(),
-                false);
+                false,
+                readRepairRecovery);
         }
     }
 

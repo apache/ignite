@@ -118,7 +118,7 @@ public class PreloadingRestartWhileClearingPartitionTest extends GridCommonAbstr
         IgniteEx g2 = startGrid(2, new DependencyResolver() {
             @Override public <T> T resolve(T instance) {
                 if (instance instanceof GridDhtPartitionTopologyImpl) {
-                    GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl) instance;
+                    GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl)instance;
 
                     top.partitionFactory(new GridDhtPartitionTopologyImpl.PartitionFactory() {
                         @Override public GridDhtLocalPartition create(
@@ -143,7 +143,7 @@ public class PreloadingRestartWhileClearingPartitionTest extends GridCommonAbstr
         // Stop supplier for clearingPart.
         GridCacheContext<Object, Object> ctx = g2.cachex(DEFAULT_CACHE_NAME).context();
         GridDhtPartitionDemander.RebalanceFuture rebFut =
-            (GridDhtPartitionDemander.RebalanceFuture) ctx.preloader().rebalanceFuture();
+            (GridDhtPartitionDemander.RebalanceFuture)ctx.preloader().rebalanceFuture();
 
         GridDhtPreloaderAssignments assignments = U.field(rebFut, "assignments");
 

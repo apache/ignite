@@ -16,11 +16,12 @@
  */
 
 #include "impl/utility.h"
-#include "impl/cache/cache_client_impl.h"
 #include "impl/message.h"
 #include "impl/response_status.h"
 
 #include "impl/ignite_client_impl.h"
+#include "impl/cache/cache_client_impl.h"
+#include "impl/compute/compute_client_impl.h"
 #include "impl/transactions/transactions_impl.h"
 
 namespace ignite
@@ -32,14 +33,17 @@ namespace ignite
             IgniteClientImpl::IgniteClientImpl(const ignite::thin::IgniteClientConfiguration& cfg) :
                 cfg(cfg),
                 router(new DataRouter(cfg)),
-                txImpl(new transactions::TransactionsImpl(router))
+                txImpl(new transactions::TransactionsImpl(router)),
+                computeImpl(new compute::ComputeClientImpl(router))
             {
                 // No-op.
             }
 
             IgniteClientImpl::~IgniteClientImpl()
             {
-                // No-op.
+                DataRouter* router0 = router.Get();
+                if (router0)
+                    router0->Close();
             }
 
             void IgniteClientImpl::Start()
@@ -107,7 +111,7 @@ namespace ignite
 
             void IgniteClientImpl::GetCacheNames(std::vector<std::string>& cacheNames)
             {
-                Request<RequestType::CACHE_GET_NAMES> req;
+                RequestAdapter<MessageType::CACHE_GET_NAMES> req;
                 GetCacheNamesResponse rsp(cacheNames);
 
                 router.Get()->SyncMessage(req, rsp);

@@ -194,9 +194,8 @@ class OptimizedMarshallerUtils {
         Class cls,
         boolean useCache,
         MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper)
-        throws IOException
-    {
+        OptimizedMarshallerIdMapper mapper
+    ) throws IOException {
         OptimizedClassDescriptor desc = clsMap.get(cls);
 
         if (desc == null && !useCache) {
@@ -335,8 +334,8 @@ class OptimizedMarshallerUtils {
         OptimizedClassDescriptor desc = clsMap.get(cls);
 
         if (desc == null) {
-            OptimizedClassDescriptor old = clsMap.putIfAbsent(cls, desc =
-                new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(), mapper), clsMap, ctx, mapper));
+            OptimizedClassDescriptor old = clsMap.putIfAbsent(cls,
+                desc = new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(), mapper), clsMap, ctx, mapper));
 
             if (old != null)
                 desc = old;

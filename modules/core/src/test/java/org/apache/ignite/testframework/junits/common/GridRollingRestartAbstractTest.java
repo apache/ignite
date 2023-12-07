@@ -299,7 +299,7 @@ public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractT
 
             assert remote instanceof IgniteProcessProxy : remote;
 
-            IgniteProcessProxy proc = (IgniteProcessProxy) remote;
+            IgniteProcessProxy proc = (IgniteProcessProxy)remote;
 
             int pid = proc.getProcess().getPid();
 

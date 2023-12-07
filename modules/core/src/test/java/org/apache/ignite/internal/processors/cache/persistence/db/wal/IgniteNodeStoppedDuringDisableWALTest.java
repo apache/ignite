@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -41,10 +42,8 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -113,9 +112,6 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
      */
     @Test
     public void test() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-12040",
-            MvccFeatureChecker.forcedMvcc() && nodeStopPoint == NodeStopPoint.AFTER_DISABLE_WAL);
-
         testStopNodeWithDisableWAL(nodeStopPoint);
 
         stopAllGrids();
@@ -184,7 +180,7 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
 
         ig0.context().internalSubscriptionProcessor().registerMetastorageListener(walDisableCtx);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         try (IgniteDataStreamer<Integer, Integer> st = ig0.dataStreamer(DEFAULT_CACHE_NAME)) {
             st.allowOverwrite(true);
@@ -275,17 +271,31 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
      * Crash point.
      */
     private enum NodeStopPoint {
+        /** */
         BEFORE_WRITE_KEY_TO_META_STORE(false),
+
+        /** */
         AFTER_WRITE_KEY_TO_META_STORE(true),
+
+        /** */
         AFTER_CHECKPOINT_BEFORE_DISABLE_WAL(true),
+
+        /** */
         AFTER_DISABLE_WAL(true),
+
+        /** */
         AFTER_ENABLE_WAL(true),
+
+        /** */
         AFTER_CHECKPOINT_AFTER_ENABLE_WAL(true),
+
+        /** */
         AFTER_REMOVE_KEY_TO_META_STORE(false);
 
         /** Clean up flag. */
         private final boolean needCleanUp;
 
+        /** */
         NodeStopPoint(boolean up) {
             needCleanUp = up;
         }

@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -142,10 +143,10 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
      */
     private void testStopCachesOnDeactivation(String groupName) throws Exception {
         performTest(ig -> {
-            ig.cluster().active(false);
+            ig.cluster().state(ClusterState.INACTIVE);
 
             // Add to escape possible long waiting in awaitPartitionMapExchange due to {@link CacheAffinityChangeMessage}.
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             return null;
         }, groupName);
@@ -213,7 +214,7 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
     private void performTest(IgniteThrowableFunction<Ignite, Void> testAction, String groupName) throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(2);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         stopGrid(1);
 

@@ -339,7 +339,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
      */
     @Nullable public GridDeployment getDeployment(IgniteUuid ldrId) {
         if (locDep != null)
-           return locDep.classLoaderId().equals(ldrId) ? locDep : null;
+            return locDep.classLoaderId().equals(ldrId) ? locDep : null;
 
         GridDeployment dep = locStore.getDeployment(ldrId);
 

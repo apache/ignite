@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.util.Collection;
 import org.apache.ignite.cluster.BaselineNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -62,7 +63,7 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
 
         MetricRegistry mreg = ignite0.context().metric().registry(CLUSTER_METRICS);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         // Added 2 server nodes to baseline.
         resetBlt();

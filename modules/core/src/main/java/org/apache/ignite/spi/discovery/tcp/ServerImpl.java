@@ -43,6 +43,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
@@ -113,7 +114,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -164,7 +164,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NODE_IDS_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -177,14 +176,14 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.IgniteFeatures.TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION;
 import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_NODE_IDS_HISTORY_SIZE;
@@ -626,7 +625,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     topVer++;
 
-                    Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer,
+                    NavigableMap<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer,
                         Collections.unmodifiableList(top));
 
                     lsnr.onDiscovery(
@@ -1255,21 +1254,12 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @throws IgniteSpiException If any error occurs.
      */
     private void localAuthentication(SecurityCredentials locCred) {
-        assert spi.nodeAuth != null;
-        assert locCred != null || locNode.attribute(ATTR_AUTHENTICATION_ENABLED) != null;
-
         try {
-            SecurityContext subj = spi.nodeAuth.authenticateNode(locNode, locCred);
-
-            if (subj == null)
-                throw new IgniteSpiException("Authentication failed for local node: " + locNode.id());
-
-            Map<String, Object> attrs = new HashMap<>(locNode.attributes());
-
-            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(spi.marshaller(), subj));
-
-            locNode.setAttributes(attrs);
-
+            locNode.setAttributes(withSecurityContext(
+                authenticateLocalNode(locNode, locCred, spi.nodeAuth),
+                locNode.attributes(),
+                spi.marshaller()
+            ));
         }
         catch (IgniteException | IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
@@ -1713,7 +1703,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             Collection<ClusterNode> top = upcast(ring.visibleNodes());
 
-            Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
+            NavigableMap<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
             lsnr.onDiscovery(
                 new DiscoveryNotification(type, topVer, node, top, hist, null, spanContainer)
@@ -1737,7 +1727,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param top Topology snapshot.
      * @return Copy of updated topology history.
      */
-    @Nullable private Map<Long, Collection<ClusterNode>> updateTopologyHistory(long topVer, Collection<ClusterNode> top) {
+    @Nullable private NavigableMap<Long, Collection<ClusterNode>> updateTopologyHistory(long topVer, Collection<ClusterNode> top) {
         synchronized (mux) {
             if (topHist.containsKey(topVer))
                 return null;
@@ -1849,7 +1839,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         UUID destNodeId,
         @Nullable Collection<PendingMessage> msgs,
         @Nullable IgniteUuid discardCustomMsgId
-        ) {
+    ) {
         assert destNodeId != null;
 
         if (msg instanceof TcpDiscoveryNodeAddedMessage) {
@@ -2031,8 +2021,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     @Override public void updateMetrics(UUID nodeId,
         ClusterMetrics metrics,
         Map<Integer, CacheMetrics> cacheMetrics,
-        long tsNanos)
-    {
+        long tsNanos
+    ) {
         assert nodeId != null;
         assert metrics != null;
 
@@ -2557,8 +2547,8 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @return Collection of messages.
          */
         @Nullable Collection<TcpDiscoveryAbstractMessage> messages(@Nullable IgniteUuid lastMsgId,
-            TcpDiscoveryNode node)
-        {
+            TcpDiscoveryNode node
+        ) {
             assert node != null && node.clientRouterNodeId() != null : node;
 
             if (lastMsgId == null) {
@@ -3040,7 +3030,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (msg instanceof TraceableMessage) {
-                TraceableMessage tMsg = (TraceableMessage) msg;
+                TraceableMessage tMsg = (TraceableMessage)msg;
 
                 // If we read this message from socket.
                 if (fromSocket)
@@ -3173,7 +3163,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             notifiedDiscovery.set(false);
 
             if (msg instanceof TraceableMessage) {
-                TraceableMessage tMsg = (TraceableMessage) msg;
+                TraceableMessage tMsg = (TraceableMessage)msg;
 
                 tracing.messages().afterReceive(tMsg);
             }
@@ -3189,7 +3179,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             "ignoring message [msg=" + msg + ", locNode=" + locNode + ']');
 
                     if (msg instanceof TraceableMessage)
-                        ((TraceableMessage) msg).spanContainer().span()
+                        ((TraceableMessage)msg).spanContainer().span()
                             .addLog(() -> "Ring failed")
                             .setStatus(SpanStatus.ABORTED)
                             .end();
@@ -3224,7 +3214,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     if (msg instanceof TraceableMessage)
-                        ((TraceableMessage) msg).spanContainer().span()
+                        ((TraceableMessage)msg).spanContainer().span()
                             .addLog(() -> "Local node order not initialized")
                             .setStatus(SpanStatus.ABORTED)
                             .end();
@@ -3300,7 +3290,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 (msg instanceof TcpDiscoveryNodeAddedMessage
                     || msg instanceof TcpDiscoveryJoinRequestMessage
                     || notifiedDiscovery.get())) {
-                TraceableMessage tMsg = (TraceableMessage) msg;
+                TraceableMessage tMsg = (TraceableMessage)msg;
 
                 tracing.messages().finishProcessing(tMsg);
             }
@@ -3404,7 +3394,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 msgLsnr.apply(msg);
 
             if (msg instanceof TraceableMessage)
-                tracing.messages().beforeSend((TraceableMessage) msg);
+                tracing.messages().beforeSend((TraceableMessage)msg);
 
             sendMessageToClients(msg);
 
@@ -4261,7 +4251,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
                 else {
-                    if (!node.isClient() && !node.isDaemon()) {
+                    if (!node.isClient()) {
                         if (nodesIdsHist.contains(node.id())) {
                             try {
                                 trySendMessageDirectly(node, createTcpDiscoveryDuplicateIdMessage(locNodeId, node));
@@ -4326,23 +4316,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                             return;
                         }
                         else {
-                            String authFailedMsg = null;
-
                             if (!(subj instanceof Serializable)) {
                                 // Node has not pass authentication.
                                 LT.warn(log, "Authentication subject is not Serializable [nodeId=" + node.id() +
                                     ", addrs=" + U.addressesAsString(node) + ']');
 
-                                authFailedMsg = "Authentication subject is not serializable";
-                            }
-                            else if (node.clientRouterNodeId() == null &&
-                                !subj.systemOperationAllowed(SecurityPermission.JOIN_AS_SERVER))
-                                authFailedMsg = "Node is not authorised to join as a server node";
-
-                            if (authFailedMsg != null) {
                                 // Always output in debug.
                                 if (log.isDebugEnabled())
-                                    log.debug(authFailedMsg + " [nodeId=" + node.id() +
+                                    log.debug("Authentication subject is not serializable [nodeId=" + node.id() +
                                         ", addrs=" + U.addressesAsString(node));
 
                                 try {
@@ -4367,11 +4348,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             }
 
                             // Stick in authentication subject to node (use security-safe attributes for copy).
-                            Map<String, Object> attrs = new HashMap<>(node.getAttributes());
-
-                            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(spi.marshaller(), subj));
-
-                            node.setAttributes(attrs);
+                            node.setAttributes(withSecurityContext(subj, node.getAttributes(), spi.marshaller()));
                         }
                     }
                     catch (IgniteException | IgniteCheckedException e) {
@@ -4696,53 +4673,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                final Boolean locSrvcProcModeAttr = locNode.attribute(ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED);
-                // Can be null only in module tests of discovery spi (without node startup).
-                final Boolean locSrvcProcMode = locSrvcProcModeAttr != null ? locSrvcProcModeAttr : false;
-
-                final Boolean rmtSrvcProcModeAttr = node.attribute(ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED);
-                final boolean rmtSrvcProcMode = rmtSrvcProcModeAttr != null ? rmtSrvcProcModeAttr : false;
-
-                if (!F.eq(locSrvcProcMode, rmtSrvcProcMode)) {
-                    utilityPool.execute(
-                        new Runnable() {
-                            @Override public void run() {
-                                String errMsg = "Local node's " + IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED +
-                                    " property value differs from remote node's value " +
-                                    "(to make sure all nodes in topology have identical service processor mode, " +
-                                    "configure system property explicitly) " +
-                                    "[locSrvcProcMode=" + locSrvcProcMode +
-                                    ", rmtSrvcProcMode=" + rmtSrvcProcMode +
-                                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                                    ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
-
-                                String sndMsg = "Local node's " + IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED +
-                                    " property value differs from remote node's value " +
-                                    "(to make sure all nodes in topology have identical service processor mode, " +
-                                    "configure system property explicitly) " +
-                                    "[locSrvcProcMode=" + rmtSrvcProcMode +
-                                    ", rmtSrvcProcMode=" + locSrvcProcMode +
-                                    ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                                    ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                                    ", rmtNodeId=" + locNode.id() + ']';
-
-                                nodeCheckError(
-                                    node,
-                                    errMsg,
-                                    sndMsg);
-                            }
-                        });
-
-                    // Ignore join request.
-                    msg.spanContainer().span()
-                        .addLog(() -> "Ignored")
-                        .setStatus(SpanStatus.ABORTED)
-                        .end();
-
-                    return;
-                }
-
                 // Handle join.
                 node.internalOrder(ring.nextNodeOrder());
 
@@ -5008,7 +4938,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (msg.verified() && !locNodeId.equals(node.id())) {
-                if (!node.isClient() && !node.isDaemon() && nodesIdsHist.contains(node.id())) {
+                if (!node.isClient() && nodesIdsHist.contains(node.id())) {
                     U.warn(log, "Discarding node added message since local node has already seen " +
                         "joining node in topology [node=" + node + ", locNode=" + locNode + ", msg=" + msg + ']');
 
@@ -5127,8 +5057,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             // Node already connected to the cluster can apply joining nodes' disco data immediately
                             spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
-                            if (!node.isDaemon())
-                                spi.collectExchangeData(dataPacket);
+                            spi.collectExchangeData(dataPacket);
                         }
                         else if (spiState == CONNECTING)
                             // Node joining to the cluster should postpone applying disco data of other joiners till
@@ -5393,7 +5322,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     notifiedDiscovery.set(notified);
 
-                    if (!node.isClient() && !node.isDaemon())
+                    if (!node.isClient())
                         nodesIdsHist.add(node.id());
                 }
 
@@ -6203,7 +6132,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         try {
                             res = pingNode(msg.nodeToPing());
-                        } catch (IgniteSpiException e) {
+                        }
+                        catch (IgniteSpiException e) {
                             log.error("Failed to ping node [nodeToPing=" + msg.nodeToPing() + ']', e);
 
                             res = false;
@@ -6226,7 +6156,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private void processCustomMessage(TcpDiscoveryCustomEventMessage msg, boolean waitForNotification) {
             if (isLocalNodeCoordinator()) {
-                if (posponeUndeliveredMessages(msg))
+                if (postponeUndeliveredMessages(msg))
                     return;
 
                 if (!msg.verified()) {
@@ -6317,7 +6247,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Processed message.
          * @return {@code true} If message was appended to pending queue.
          */
-        private boolean posponeUndeliveredMessages(final TcpDiscoveryCustomEventMessage msg) {
+        private boolean postponeUndeliveredMessages(final TcpDiscoveryCustomEventMessage msg) {
             boolean joiningEmpty;
 
             synchronized (mux) {
@@ -6428,7 +6358,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             TcpDiscoverySpiState spiState = spiStateCopy();
 
-            Map<Long, Collection<ClusterNode>> hist;
+            NavigableMap<Long, Collection<ClusterNode>> hist;
 
             synchronized (mux) {
                 hist = new TreeMap<>(topHist);
@@ -6662,7 +6592,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     blockingSectionBegin();
 
                     try {
-                        sock = srvrSock.accept();
+                        sock = IgniteUtils.acceptServerSocket(srvrSock);
                     }
                     finally {
                         blockingSectionEnd();
@@ -7021,10 +6951,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (log.isDebugEnabled())
                         U.error(log, "Caught exception on handshake [err=" + e + ", sock=" + sock + ']', e);
 
-                    if (X.hasCause(e, SSLException.class) && spi.isSslEnabled() && !spi.isNodeStopping0())
+                    if (X.hasCause(e, SSLException.class) && spi.isSslEnabled() && !spi.isNodeStopping0()) {
                         LT.warn(log, "Failed to initialize connection " +
                             "(missing SSL configuration on remote node?) " +
                             "[rmtAddr=" + sock.getInetAddress() + ']', true);
+
+                        spi.stats.onSslConnectionRejected();
+                    }
                     else if ((X.hasCause(e, ObjectStreamException.class) || !sock.isClosed())
                         && !spi.isNodeStopping0()) {
                         if (U.isMacInvalidArgumentError(e))

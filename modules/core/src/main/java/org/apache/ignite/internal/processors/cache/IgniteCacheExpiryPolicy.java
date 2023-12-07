@@ -53,8 +53,8 @@ public interface IgniteCacheExpiryPolicy {
      * @param rdrs Entry readers.
      */
     public void ttlUpdated(KeyCacheObject key,
-       GridCacheVersion ver,
-       @Nullable Collection<UUID> rdrs);
+        GridCacheVersion ver,
+        @Nullable Collection<UUID> rdrs);
 
     /**
      * Clears information about updated entries.

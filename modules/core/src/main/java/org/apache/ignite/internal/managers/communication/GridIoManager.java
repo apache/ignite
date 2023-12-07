@@ -31,14 +31,12 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.channels.Channel;
 import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -110,6 +108,7 @@ import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -155,6 +154,7 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_IO_TEST;
 import static org.apache.ignite.internal.IgniteFeatures.CHANNEL_COMMUNICATION;
 import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.CALLER_THREAD;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAMER_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IDX_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
@@ -847,8 +847,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
         }
 
-        SimpleDateFormat dateFmt = new SimpleDateFormat("HH:mm:ss,SSS");
-
         StringBuilder b = new StringBuilder(U.nl())
             .append("IO test results (round-trip count per each latency bin).")
             .append(U.nl());
@@ -894,25 +892,25 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 .append(String.format("%15d", e.getValue().totalLatency)).append(U.nl());
 
             b.append(U.nl()).append("Max latencies (ns):").append(U.nl());
-            format(b, e.getValue().maxLatency, dateFmt);
+            format(b, e.getValue().maxLatency);
 
             b.append(U.nl()).append("Max request send queue times (ns):").append(U.nl());
-            format(b, e.getValue().maxReqSendQueueTime, dateFmt);
+            format(b, e.getValue().maxReqSendQueueTime);
 
             b.append(U.nl()).append("Max request receive queue times (ns):").append(U.nl());
-            format(b, e.getValue().maxReqRcvQueueTime, dateFmt);
+            format(b, e.getValue().maxReqRcvQueueTime);
 
             b.append(U.nl()).append("Max response send queue times (ns):").append(U.nl());
-            format(b, e.getValue().maxResSendQueueTime, dateFmt);
+            format(b, e.getValue().maxResSendQueueTime);
 
             b.append(U.nl()).append("Max response receive queue times (ns):").append(U.nl());
-            format(b, e.getValue().maxResRcvQueueTime, dateFmt);
+            format(b, e.getValue().maxResRcvQueueTime);
 
             b.append(U.nl()).append("Max request wire times (millis):").append(U.nl());
-            format(b, e.getValue().maxReqWireTimeMillis, dateFmt);
+            format(b, e.getValue().maxReqWireTimeMillis);
 
             b.append(U.nl()).append("Max response wire times (millis):").append(U.nl());
-            format(b, e.getValue().maxResWireTimeMillis, dateFmt);
+            format(b, e.getValue().maxResWireTimeMillis);
 
             b.append(U.nl());
         }
@@ -924,12 +922,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      * @param b Builder.
      * @param pairs Pairs to format.
-     * @param dateFmt Formatter.
      */
-    private void format(StringBuilder b, Collection<IgnitePair<Long>> pairs, SimpleDateFormat dateFmt) {
+    private static void format(StringBuilder b, Collection<IgnitePair<Long>> pairs) {
         for (IgnitePair<Long> p : pairs) {
-            b.append(String.format("%15d", p.get1())).append(" ")
-                .append(dateFmt.format(new Date(p.get2()))).append(U.nl());
+            b.append(String.format("%15d", p.get1()))
+                .append(" ")
+                .append(IgniteUtils.DEBUG_DATE_FMT.format(Instant.ofEpochMilli(p.get2())))
+                .append(U.nl());
         }
     }
 
@@ -971,7 +970,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                                     if (nodeId.equals(e.getValue().rmtNodeId)) {
                                         it.remove();
 
-                                        interruptRecevier(e.getValue(),
+                                        interruptReceiver(e.getValue(),
                                             new ClusterTopologyCheckedException("Remote node left the grid. " +
                                                 "Receiver has been stopped : " + nodeId));
                                     }
@@ -1180,7 +1179,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
 
             for (ReceiverContext rctx : rcvs) {
-                interruptRecevier(rctx, new NodeStoppingException("Local node io manager requested to be stopped: "
+                interruptReceiver(rctx, new NodeStoppingException("Local node io manager requested to be stopped: "
                     + ctx.localNodeId()));
             }
         }
@@ -1323,14 +1322,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 case QUERY_POOL:
                 case SCHEMA_POOL:
                 case SERVICE_POOL:
-                {
+                case CALLER_THREAD:
                     if (msg.isOrdered())
                         processOrderedMessage(nodeId, msg, plc, msgC);
                     else
                         processRegularMessage(nodeId, msg, plc, msgC);
 
                     break;
-                }
 
                 default:
                     assert plc >= 0 : "Negative policy [plc=" + plc + ", msg=" + msg + ']';
@@ -1388,7 +1386,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         };
 
         try {
-            pools.p2pPool().execute(c);
+            pools.getPeerClassLoadingExecutorService().execute(c);
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to process P2P message due to execution rejection. Increase the upper bound " +
@@ -1441,7 +1439,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             if (msg0.processFromNioThread())
                 c.run();
             else
-                ctx.getStripedExecutorService().execute(-1, c);
+                ctx.pools().getStripedExecutorService().execute(-1, c);
 
             return;
         }
@@ -1452,7 +1450,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             /*if (msg0.processedFromNioThread())
                 c.run();
             else*/
-                ctx.getStripedExecutorService().execute(-1, c);
+            ctx.pools().getStripedExecutorService().execute(-1, c);
 
             return;
         }
@@ -1460,13 +1458,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         final int part = msg.partition(); // Store partition to avoid possible recalculation.
 
         if (plc == GridIoPolicy.SYSTEM_POOL && part != GridIoMessage.STRIPE_DISABLED_PART) {
-            ctx.getStripedExecutorService().execute(part, c);
+            ctx.pools().getStripedExecutorService().execute(part, c);
 
             return;
         }
 
         if (plc == GridIoPolicy.DATA_STREAMER_POOL && part != GridIoMessage.STRIPE_DISABLED_PART) {
-            ctx.getDataStreamerExecutorService().execute(part, c);
+            ctx.pools().getDataStreamerExecutorService().execute(part, c);
 
             return;
         }
@@ -1927,9 +1925,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @return {@code True} if node left.
      * @throws IgniteClientDisconnectedCheckedException If ping failed.
      */
-    public boolean checkNodeLeft(UUID nodeId, IgniteCheckedException sndErr, boolean ping)
-        throws IgniteClientDisconnectedCheckedException
-    {
+    public boolean checkNodeLeft(
+        UUID nodeId,
+        IgniteCheckedException sndErr,
+        boolean ping
+    ) throws IgniteClientDisconnectedCheckedException {
         return sndErr instanceof ClusterTopologyCheckedException ||
             ctx.discovery().node(nodeId) == null ||
             (ping && !ctx.discovery().pingNode(nodeId));
@@ -1966,7 +1966,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             rcvCtx0 = rcvCtxs.remove(topic);
         }
 
-        interruptRecevier(rcvCtx0,
+        interruptReceiver(rcvCtx0,
             new IgniteCheckedException("Receiver has been closed due to removing corresponding transmission handler " +
                 "on local node [nodeId=" + ctx.localNodeId() + ']'));
     }
@@ -2139,10 +2139,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (ctx.security().enabled()) {
             UUID secSubjId = null;
 
-            UUID curSecSubjId = ctx.security().securityContext().subject().id();
-
-            if (!locNodeId.equals(curSecSubjId))
-                secSubjId = curSecSubjId;
+            if (!ctx.security().isDefaultContext())
+                secSubjId = ctx.security().securityContext().subject().id();
 
             return new GridIoSecurityAwareMessage(secSubjId, plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
         }
@@ -2268,8 +2266,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         GridTopic topic,
         Message msg,
         byte plc,
-        IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException
-    {
+        IgniteInClosure<IgniteException> ackC
+    ) throws IgniteCheckedException {
         send(node, topic, topic.ordinal(), msg, plc, false, 0, false, ackC, false);
     }
 
@@ -2383,8 +2381,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         @Nullable Object topic,
         boolean ordered,
         long timeout,
-        boolean async) throws IgniteCheckedException
-    {
+        boolean async
+    ) throws IgniteCheckedException {
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(locNodeId);
 
         byte[] serMsg = null;
@@ -2468,6 +2466,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
     }
 
+    /** */
     public void addUserMessageListener(final @Nullable Object topic, final @Nullable IgniteBiPredicate<UUID, ?> p) {
         addUserMessageListener(topic, p, ctx.localNodeId());
     }
@@ -2789,7 +2788,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param rctx Receiver context to use.
      * @param ex Exception to close receiver with.
      */
-    private void interruptRecevier(ReceiverContext rctx, Exception ex) {
+    private void interruptReceiver(ReceiverContext rctx, Exception ex) {
         if (rctx == null)
             return;
 
@@ -2802,9 +2801,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             rctx.lastState = rctx.lastState == null ?
                 new TransmissionMeta(ex) : rctx.lastState.error(ex);
 
-            rctx.hnd.onException(rctx.rmtNodeId, ex);
+            if (X.hasCause(ex, TransmissionCancelledException.class)) {
+                if (log.isInfoEnabled())
+                    log.info("Transmission receiver has been cancelled [rctx=" + rctx + ']');
+            }
+            else
+                U.error(log, "Receiver has been interrupted due to an exception occurred [rctx=" + rctx + ']', ex);
 
-            U.error(log, "Receiver has been interrupted due to an exception occurred [ctx=" + rctx + ']', ex);
+            rctx.hnd.onException(rctx.rmtNodeId, ex);
         }
     }
 
@@ -2858,7 +2862,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     "It's not allowed to process different sessions over the same topic simultaneously. " +
                     "Channel will be closed [initMsg=" + initMsg + ", channel=" + ch + ", nodeId=" + rmtNodeId + ']');
 
-                U.error(log, err);
+                U.error(log, "Error has been sent back to remote node. Receiver holds the local topic " +
+                    "[topic=" + topic + ", rmtNodeId=" + rmtNodeId + ", ctx=" + rcvCtx + ']', err);
 
                 out.writeObject(new TransmissionMeta(err));
 
@@ -2883,17 +2888,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 if (rcvCtx.lastState == null || rcvCtx.lastState.error() == null)
                     receiveFromChannel(topic, rcvCtx, in, out, ch);
                 else
-                    interruptRecevier(rcvCtxs.remove(topic), rcvCtx.lastState.error());
+                    interruptReceiver(rcvCtxs.remove(topic), rcvCtx.lastState.error());
             }
             finally {
                 rcvCtx.lock.unlock();
             }
         }
         catch (Throwable t) {
-            U.error(log, "Download session cannot be finished due to an unexpected error [ctx=" + rcvCtx + ']', t);
-
             // Do not remove receiver context here, since sender will recconect to get this error.
-            interruptRecevier(rcvCtx, new IgniteCheckedException("Channel processing error [nodeId=" + rmtNodeId + ']', t));
+            interruptReceiver(rcvCtx, new IgniteCheckedException("Channel processing error [nodeId=" + rmtNodeId + ']', t));
         }
         finally {
             U.closeQuiet(in);
@@ -2913,7 +2916,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         ReceiverContext rcvCtx,
         ObjectInputStream in,
         ObjectOutputStream out,
-        ReadableByteChannel ch
+        SocketChannel ch
     ) throws NodeStoppingException, InterruptedException {
         try {
             while (true) {
@@ -2960,9 +2963,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     rcvCtx.rcv.close();
 
                     U.log(log, "File has been received " +
-                        "[name=" + rcvCtx.rcv.state().name() + ", transferred=" + rcvCtx.rcv.transferred() +
+                        "[name=" + rcvCtx.rcv.state().name() +
+                        ", transferred=" + rcvCtx.rcv.transferred() +
                         ", time=" + (double)((U.currentTimeMillis() - startTime) / 1000) + " sec" +
-                        ", rmtId=" + rcvCtx.rmtNodeId + ']');
+                        ", rmtId=" + rcvCtx.rmtNodeId +
+                        ", rmtAddr=" + ch.getRemoteAddress() + ']');
 
                     rcvCtx.rcv = null;
                 }
@@ -2993,7 +2998,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 }
 
                 @Override public void onTimeout() {
-                    interruptRecevier(rcvCtxs.remove(topic), new IgniteCheckedException("Receiver is closed due to " +
+                    interruptReceiver(rcvCtxs.remove(topic), new IgniteCheckedException("Receiver is closed due to " +
                         "waiting for the reconnect has been timeouted"));
                 }
             });
@@ -3214,7 +3219,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         private T2<UUID, IgniteUuid> sesKey;
 
         /** Instance of opened writable channel to work with. */
-        private WritableByteChannel channel;
+        private SocketChannel channel;
 
         /** Decorated with data operations socket of output channel. */
         private ObjectOutput out;
@@ -3248,7 +3253,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             configureChannel(channel, netTimeoutMs);
 
-            this.channel = (WritableByteChannel)channel;
+            this.channel = channel;
             out = new ObjectOutputStream(channel.socket().getOutputStream());
             in = new ObjectInputStream(channel.socket().getInputStream());
 
@@ -3377,8 +3382,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 U.log(log, "File has been sent to remote node [name=" + file.getName() +
                     ", uploadTime=" + (double)((U.currentTimeMillis() - startTime) / 1000) + " sec, retries=" + retries +
-                    ", transferred=" + snd.transferred() + ", rmtId=" + rmtId + ']');
-
+                    ", transferred=" + snd.transferred() + ", rmtId=" + rmtId +
+                    ", rmtAddr=" + channel.getRemoteAddress() + ']');
             }
             catch (InterruptedException e) {
                 closeChannelQuiet();
@@ -3669,7 +3674,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     // Resource injection.
                     if (dep != null)
-                        ctx.resource().inject(dep, dep.deployedClass(ioMsg.deploymentClassName()), msgBody);
+                        ctx.resource().inject(dep, dep.deployedClass(ioMsg.deploymentClassName()).get1(), msgBody);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal user message [node=" + nodeId + ", message=" +
@@ -4350,7 +4355,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (ctx.security().enabled()) {
             assert msg instanceof GridIoSecurityAwareMessage;
 
-            return ((GridIoSecurityAwareMessage) msg).secSubjId();
+            return ((GridIoSecurityAwareMessage)msg).secSubjId();
         }
 
         return null;

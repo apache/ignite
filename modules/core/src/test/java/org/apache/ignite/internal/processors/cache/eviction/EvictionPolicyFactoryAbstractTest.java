@@ -25,7 +25,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.EvictableEntry;
@@ -45,9 +44,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -82,6 +79,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     /** Policy max memory size. */
     protected long plcMaxMemSize = 0;
 
+    /** */
     protected Factory<T> policyFactory;
 
     /** Near policy max. */
@@ -312,44 +310,6 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMaxSizePut() throws Exception {
-        plcMax = 100;
-        plcBatchSize = 1;
-        plcMaxMemSize = 0;
-
-        doTestPut(plcMax);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMaxSizePutWithBatch() throws Exception {
-        plcMax = 100;
-        plcBatchSize = 2;
-        plcMaxMemSize = 0;
-
-        doTestPut(plcMax);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMaxMemSizePut() throws Exception {
-        int max = 100;
-
-        plcMax = 0;
-        plcBatchSize = 2;
-        plcMaxMemSize = max * PUT_ENTRY_SIZE;
-
-        doTestPut(max);
-    }
-
-    /**
      * Tests policy behaviour.
      *
      * @throws Exception If failed.
@@ -487,73 +447,6 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
 
             assertTrue(p.getCurrentSize() <= (plcMaxMemSize > 0 ? max : max + plcBatchSize));
             assertTrue(p.getCurrentMemorySize() <= (plcMaxMemSize > 0 ? max : max + plcBatchSize) * MockEntry.KEY_SIZE);
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    protected void doTestPut(int max) throws Exception {
-        mode = LOCAL;
-        syncCommit = true;
-
-        policyFactory = createPolicyFactory();
-
-        try {
-            Ignite ignite = startGrid();
-
-            IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
-
-            int cnt = 500;
-
-            int min = Integer.MAX_VALUE;
-
-            int minIdx = 0;
-
-            for (int i = 0; i < cnt; i++) {
-                cache.put(i, i);
-
-                int cacheSize = cache.size();
-
-                if (i > max && cacheSize < min) {
-                    min = cacheSize;
-                    minIdx = i;
-                }
-            }
-
-            assertTrue("Min cache size is too small: " + min, min >= max);
-
-            check(max, PUT_ENTRY_SIZE);
-
-            info("Min cache size [min=" + min + ", idx=" + minIdx + ']');
-            info("Current cache size " + cache.size());
-            info("Current cache key size " + cache.size());
-
-            min = Integer.MAX_VALUE;
-
-            minIdx = 0;
-
-            // Touch.
-            for (int i = cnt; --i > cnt - max;) {
-                cache.get(i);
-
-                int cacheSize = cache.size();
-
-                if (cacheSize < min) {
-                    min = cacheSize;
-                    minIdx = i;
-                }
-            }
-
-            info("----");
-            info("Min cache size [min=" + min + ", idx=" + minIdx + ']');
-            info("Current cache size " + cache.size());
-            info("Current cache key size " + cache.size());
-
-            check(max, PUT_ENTRY_SIZE);
         }
         finally {
             stopAllGrids();

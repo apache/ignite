@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.direct.DirectMarshallingMessagesTest;
 import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2ByteOrderSelfTest;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerEnumSelfTest;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerNodeFailoverTest;
@@ -50,7 +51,8 @@ import org.junit.runners.Suite;
     DirectByteBufferStreamImplV2ByteOrderSelfTest.class,
     GridHandleTableSelfTest.class,
     OptimizedMarshallerPooledSelfTest.class,
-    MarshallerEnumDeadlockMultiJvmTest.class
+    MarshallerEnumDeadlockMultiJvmTest.class,
+    DirectMarshallingMessagesTest.class
 })
 public class IgniteMarshallerSelfTestSuite {
 }

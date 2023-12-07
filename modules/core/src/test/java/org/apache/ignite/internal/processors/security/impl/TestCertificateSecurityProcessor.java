@@ -41,7 +41,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -53,6 +53,9 @@ import static org.junit.Assert.assertTrue;
 public class TestCertificateSecurityProcessor extends GridProcessorAdapter implements GridSecurityProcessor {
     /** Permissions. */
     public static final Map<String, SecurityPermissionSet> PERMS = new ConcurrentHashMap<>();
+
+    /** Key - security subject ID, value - security contexts referred to this security subject. */
+    private final Map<UUID, SecurityContext> secCtxs = new ConcurrentHashMap<>();
 
     /** Users security data. */
     private final Collection<TestSecurityData> predefinedAuthData;
@@ -70,14 +73,18 @@ public class TestCertificateSecurityProcessor extends GridProcessorAdapter imple
 
     /** {@inheritDoc} */
     @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
-        return new TestSecurityContext(
+        SecurityContext res = new TestSecurityContext(
             new TestSecuritySubject()
                 .setType(REMOTE_NODE)
                 .setId(node.id())
                 .setAddr(new InetSocketAddress(F.first(node.addresses()), 0))
                 .setLogin("")
-                .setPerms(ALLOW_ALL)
+                .setPerms(ALL_PERMISSIONS)
         );
+
+        secCtxs.put(res.subject().id(), res);
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -101,7 +108,7 @@ public class TestCertificateSecurityProcessor extends GridProcessorAdapter imple
         if (!PERMS.containsKey(cn))
             return null;
 
-        return new TestSecurityContext(
+        SecurityContext res = new TestSecurityContext(
             new TestSecuritySubject()
                 .setType(ctx.subjectType())
                 .setId(ctx.subjectId())
@@ -110,6 +117,10 @@ public class TestCertificateSecurityProcessor extends GridProcessorAdapter imple
                 .setPerms(PERMS.get(cn))
                 .setCerts(ctx.certificates())
         );
+
+        secCtxs.put(res.subject().id(), res);
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -120,6 +131,11 @@ public class TestCertificateSecurityProcessor extends GridProcessorAdapter imple
     /** {@inheritDoc} */
     @Override public SecuritySubject authenticatedSubject(UUID subjId) {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SecurityContext securityContext(UUID subjId) {
+        return secCtxs.get(subjId);
     }
 
     /** {@inheritDoc} */
@@ -149,7 +165,7 @@ public class TestCertificateSecurityProcessor extends GridProcessorAdapter imple
         ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, new SecurityCredentials("", ""));
 
         for (TestSecurityData data : predefinedAuthData)
-            PERMS.put(data.credentials().getLogin().toString(), data.getPermissions());
+            PERMS.put(data.credentials().getLogin().toString(), data.permissions());
     }
 
     /** {@inheritDoc} */

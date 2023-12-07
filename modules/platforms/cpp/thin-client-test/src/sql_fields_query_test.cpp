@@ -17,6 +17,7 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <ignite/ignite_error.h>
 #include <ignite/ignition.h>
 
 #include <ignite/thin/ignite_client_configuration.h>
@@ -53,6 +54,30 @@ public:
     ~SqlFieldsQueryTestSuiteFixture()
     {
         ignite::Ignition::StopAll(false);
+    }
+
+    /**
+     * Perform an invalid SQL query and check whether returned SQLSTATE is expected.
+     */
+    void CheckSqlStateForQuery(const std::string& sql, const std::string& expectedSqlState)
+    {
+        SqlFieldsQuery testQry(sql);
+        testQry.SetSchema("PUBLIC");
+
+        try
+        {
+            cacheAllFields.Query(testQry);
+
+            BOOST_FAIL("Expected to get SQL error here");
+        }
+        catch (ignite::IgniteError& err)
+        {
+            std::string msg(err.GetText());
+
+            std::string sqlState(msg.substr(0, msg.find(':')));
+
+            BOOST_CHECK_EQUAL(expectedSqlState, sqlState);
+        }
     }
 
 protected:
@@ -104,6 +129,16 @@ BOOST_AUTO_TEST_CASE(SqlFieldsQuerySetGet)
     qry.SetEnforceJoinOrder(true);
     qry.SetLazy(true);
 
+    qry.SetUpdateBatchSize(42);
+
+    std::vector<int32_t> parts;
+    parts.push_back(1);
+    parts.push_back(4);
+    parts.push_back(90);
+    parts.push_back(12432);
+
+    qry.SetPartitions(parts);
+
     BOOST_CHECK_EQUAL(qry.GetSql(), sql);
     BOOST_CHECK_EQUAL(qry.GetTimeout(), 1000);
     BOOST_CHECK_EQUAL(qry.GetMaxRows(), 100);
@@ -115,6 +150,12 @@ BOOST_AUTO_TEST_CASE(SqlFieldsQuerySetGet)
     BOOST_CHECK(qry.IsDistributedJoins());
     BOOST_CHECK(qry.IsEnforceJoinOrder());
     BOOST_CHECK(qry.IsLazy());
+
+    BOOST_CHECK_EQUAL(qry.GetUpdateBatchSize(), 42);
+
+    std::vector<int32_t> partsOut = qry.GetPartitions();
+
+    BOOST_CHECK_EQUAL_COLLECTIONS(parts.begin(), parts.end(), partsOut.begin(), partsOut.end());
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -185,6 +226,7 @@ void CheckRowEqualsValue(QueryFieldsRow& row, const ignite::TestType& val)
  *
  * @param seed Seed to generate value.
  */
+IGNORE_SIGNED_OVERFLOW
 ignite::TestType MakeCustomTestValue(int32_t seed)
 {
     ignite::TestType val;
@@ -462,6 +504,54 @@ BOOST_AUTO_TEST_CASE(CreateTableInsertSelect)
     CheckRowCursorEmpty(row);
 
     CheckCursorEmpty(cursor);
+}
+
+
+/**
+ * Test that null value can be inserted using SQL query.
+ */
+BOOST_AUTO_TEST_CASE(TestInsertNull)
+{
+    const int64_t testKey(111);
+    SqlFieldsQuery insertPersonQry("INSERT INTO TestType(_key, strField, i32Field) VALUES(?, ?, ?)");
+
+    insertPersonQry.AddArgument<int64_t>(testKey);
+    insertPersonQry.AddArgument<std::string*>(0);
+    insertPersonQry.AddArgument<int32_t*>(0);
+
+    cacheAllFields.Query(insertPersonQry);
+
+    SqlFieldsQuery select("Select _key from TestType WHERE strField is NULL AND i32Field is NULL");
+
+    QueryFieldsCursor cursor = cacheAllFields.Query(select);
+
+    BOOST_CHECK(cursor.HasNext());
+
+    QueryFieldsRow row = cursor.GetNext();
+
+    BOOST_CHECK(row.HasNext());
+    BOOST_CHECK_EQUAL(row.GetNext<int64_t>(), testKey);
+    CheckRowCursorEmpty(row);
+
+    CheckCursorEmpty(cursor);
+}
+
+
+/**
+ * Test that SQL errors contain SQLSTATE with cause.
+ */
+BOOST_AUTO_TEST_CASE(TestSqlStateOnErrors)
+{
+    CheckSqlStateForQuery("select * from \"UnknownCache\".UNKNOWN_TABLE", "42000");
+    CheckSqlStateForQuery("select * from UNKNOWN_TABLE", "42000");
+    CheckSqlStateForQuery("insert into \"cacheAllFields\".TestType(_key) values(null)", "22004");
+    CheckSqlStateForQuery("insert into \"cacheAllFields\".TestType(_key) values('abc')", "0700B");
+    CheckSqlStateForQuery("insert into \"cacheAllFields\".TestType(_key, _val) values(1, null)", "0A000");
+
+    SqlFieldsQuery qry("CREATE TABLE PUBLIC.varchar_table(id INT PRIMARY KEY, str VARCHAR(5))");
+    cacheAllFields.Query(qry);
+
+    CheckSqlStateForQuery("insert into varchar_table(id, str) values(1, 'too_long')", "23000");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

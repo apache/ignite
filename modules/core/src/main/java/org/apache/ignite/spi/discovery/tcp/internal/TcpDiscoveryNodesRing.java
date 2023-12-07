@@ -62,7 +62,7 @@ public class TcpDiscoveryNodesRing {
         @Override public boolean apply(ClusterNode node) {
             assert node instanceof TcpDiscoveryNode : node;
 
-            return ((TcpDiscoveryNode) node).clientRouterNodeId() != null;
+            return ((TcpDiscoveryNode)node).clientRouterNodeId() != null;
         }
     };
 

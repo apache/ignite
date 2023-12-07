@@ -25,8 +25,9 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * FreeList implementation for cache.
@@ -45,12 +46,12 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
         int cacheGrpId,
         String name,
         DataRegion dataRegion,
-        IgniteWriteAheadLogManager wal,
+        @Nullable IgniteWriteAheadLogManager wal,
         long metaPageId,
         boolean initNew,
-        PageLockListener lockLsnr,
+        PageLockTrackerManager pageLockTrackerManager,
         GridKernalContext ctx,
-        AtomicLong pageListCacheLimit,
+        @Nullable AtomicLong pageListCacheLimit,
         byte pageFlag
     ) throws IgniteCheckedException {
         super(
@@ -61,7 +62,7 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
             wal,
             metaPageId,
             initNew,
-            lockLsnr,
+            pageLockTrackerManager,
             ctx,
             pageListCacheLimit,
             pageFlag
@@ -75,10 +76,5 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
         assert row.key().partition() == PageIdUtils.partId(row.link()) :
             "Constructed a link with invalid partition ID [partId=" + row.key().partition() +
                 ", link=" + U.hexLong(row.link()) + ']';
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return "FreeList [name=" + name + ']';
     }
 }

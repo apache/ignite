@@ -28,6 +28,7 @@ import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -35,6 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.marshaller.Marshaller;
@@ -99,7 +101,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
     public void testStartDuplicatedCacheConfigurations() throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(NODES);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         startCaches(ig0);
 
@@ -127,7 +129,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
     public void testTmpCacheConfigurationsDelete() throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(NODES);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         startCaches(ig0);
 
@@ -144,7 +146,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
             GridCacheSharedContext sharedCtx = ig.context().cache().context();
 
-            FilePageStoreManager pageStore = (FilePageStoreManager) sharedCtx.pageStore();
+            FilePageStoreManager pageStore = (FilePageStoreManager)sharedCtx.pageStore();
 
             File[] tmpFile = pageStore.cacheWorkDir(true, ODD_GROUP_NAME).listFiles(new FilenameFilter() {
                 @Override public boolean accept(File dir, String name) {
@@ -167,7 +169,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
     public void testCorruptedCacheConfigurationsValidation() throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(NODES);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         startCaches(ig0);
 
@@ -191,15 +193,12 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
         for (int i = 0; i < NODES; i++) {
             IgniteEx ig = grid(i);
 
-            GridCacheSharedContext sharedCtx = ig.context().cache().context();
-
-            FilePageStoreManager pageStore = (FilePageStoreManager) sharedCtx.pageStore();
-
             StoredCacheData corrData = cacheDescr.toStoredData(ig.context().cache().splitter());
 
             corrData.config().setGroupName(ODD_GROUP_NAME);
 
-            pageStore.storeCacheData(corrData, true);
+            GridTestUtils.<GridLocalConfigManager>getFieldValue(ig.context().cache(), "locCfgMgr")
+                .saveCacheConfiguration(corrData, true);
         }
     }
 
@@ -217,7 +216,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
             GridCacheSharedContext sharedCtx = ig.context().cache().context();
 
-            FilePageStoreManager pageStore = (FilePageStoreManager) sharedCtx.pageStore();
+            FilePageStoreManager pageStore = (FilePageStoreManager)sharedCtx.pageStore();
 
             StoredCacheData data = cacheDescr.toStoredData(ig.context().cache().splitter());
 
@@ -243,7 +242,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
             GridCacheSharedContext sharedCtx = ig.context().cache().context();
 
-            FilePageStoreManager pageStore = (FilePageStoreManager) sharedCtx.pageStore();
+            FilePageStoreManager pageStore = (FilePageStoreManager)sharedCtx.pageStore();
 
             StoredCacheData data = cacheDescr.toStoredData(ig.context().cache().splitter());
 

@@ -39,6 +39,7 @@ import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
 import org.apache.ignite.cache.store.jdbc.model.TestJdbcPojoDataSourceFactory;
 import org.apache.ignite.cache.store.jdbc.model.TestJdbcPojoStoreFactoryWithHangWriteAll;
 import org.apache.ignite.cache.store.jdbc.model.TestPojo;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -302,7 +303,8 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
             U.closeQuiet(stmt);
 
             U.closeQuiet(conn);
-        } catch (SQLException ex) {
+        }
+        catch (SQLException ex) {
             fail(ex.getMessage());
         }
 
@@ -366,7 +368,8 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
             U.closeQuiet(stmt);
 
             U.closeQuiet(conn);
-        } catch (SQLException ex) {
+        }
+        catch (SQLException ex) {
             fail();
         }
     }
@@ -445,7 +448,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
     public void updateAndReadWithCoalescingSameKey() throws Exception {
         Ignite ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, TestPojo> cache = grid(0).cache("TEST_CACHE");
 
@@ -469,7 +472,8 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
                         t1Cnt.decrementAndGet();
                     }
-                } catch (CacheException ignore) {
+                }
+                catch (CacheException ignore) {
                     //ignore
                 }
             }
@@ -491,7 +495,8 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
                         t2Cnt.decrementAndGet();
                     }
-                } catch (CacheException ignore) {
+                }
+                catch (CacheException ignore) {
                     //ignore
                 }
             }
@@ -520,7 +525,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
     public void readWithCoalescing() throws Exception {
         Ignite ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, TestPojo> cache = grid(0).cache("TEST_CACHE");
 
@@ -544,7 +549,8 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
                         t1Cnt.decrementAndGet();
                     }
-                } catch (CacheException ignore) {
+                }
+                catch (CacheException ignore) {
                     //ignore
                 }
             }
@@ -566,7 +572,8 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
                         t2Cnt.decrementAndGet();
                     }
-                } catch (CacheException ignore) {
+                }
+                catch (CacheException ignore) {
                     //ignore
                 }
             }
@@ -595,7 +602,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
     public void writeAllWithCoalescing() throws Exception {
         Ignite ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, TestPojo> cache = grid(0).cache("TEST_CACHE");
 
@@ -612,7 +619,8 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
                         t1Cnt.decrementAndGet();
                     }
-                } catch (CacheException ignore) {
+                }
+                catch (CacheException ignore) {
                     //ignore
                 }
             }
@@ -634,7 +642,8 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
                         t2Cnt.decrementAndGet();
                     }
-                } catch (CacheException ignore) {
+                }
+                catch (CacheException ignore) {
                     //ignore
                 }
             }

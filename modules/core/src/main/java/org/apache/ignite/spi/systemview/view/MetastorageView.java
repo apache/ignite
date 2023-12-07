@@ -38,13 +38,13 @@ public class MetastorageView {
         this.value = value;
     }
 
-    /** */
+    /** @return Metastorage record name. */
     @Order
     public String name() {
         return name;
     }
 
-    /** */
+    /** @return Metastorage record value. */
     @Order(1)
     public String value() {
         return value;

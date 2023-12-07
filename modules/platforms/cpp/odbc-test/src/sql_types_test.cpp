@@ -153,7 +153,7 @@ BOOST_AUTO_TEST_CASE(TestByteArrayParamInsert)
     BOOST_REQUIRE_EQUAL_COLLECTIONS(out.i8ArrayField.begin(), out.i8ArrayField.end(), paramData.begin(), paramData.end());
 }
 
-BOOST_AUTO_TEST_CASE(TestStingParamNullLen)
+BOOST_AUTO_TEST_CASE(TestStringParamNullLen)
 {
     SQLRETURN ret;
 
@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE(TestStingParamNullLen)
     SQLLEN paramLen = static_cast<SQLLEN>(paramData.size());
 
     ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR,
-       paramData.size(), 0, &paramData[0], paramLen, 0);
+       paramData.size(), 0, &paramData[0], paramLen, &paramLen);
 
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));

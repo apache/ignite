@@ -37,6 +37,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -105,6 +106,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
     private transient IgniteLogger log;
 
     /** Ignite instance. */
+    @GridToStringExclude
     @IgniteInstanceResource
     private transient IgniteEx ignite;
 

@@ -71,6 +71,7 @@ class PlatformTestPluginTarget implements PlatformTarget {
         return val + 1;
     }
 
+    /** {@inheritDoc} */
     @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         return reader.readString().length();
     }
@@ -158,7 +159,8 @@ class PlatformTestPluginTarget implements PlatformTarget {
                         try {
                             Thread.sleep(500L);
                             fa.onDone(val.toUpperCase());
-                        } catch (InterruptedException e) {
+                        }
+                        catch (InterruptedException e) {
                             e.printStackTrace();
                         }
                     }
@@ -171,7 +173,7 @@ class PlatformTestPluginTarget implements PlatformTarget {
                     }
 
                     @Override public void write(BinaryRawWriterEx writer, Object result) {
-                        writer.writeString((String) result);
+                        writer.writeString((String)result);
                     }
                 };
             }
@@ -188,7 +190,8 @@ class PlatformTestPluginTarget implements PlatformTarget {
                         try {
                             Thread.sleep(500L);
                             fa.onDone(new PlatformTestPluginException("x"));
-                        } catch (InterruptedException e) {
+                        }
+                        catch (InterruptedException e) {
                             e.printStackTrace();
                         }
                     }
@@ -226,7 +229,7 @@ class PlatformTestPluginTarget implements PlatformTarget {
         if (igniteCfg.getPluginConfigurations() != null) {
             for (PluginConfiguration pluginCfg : igniteCfg.getPluginConfigurations()) {
                 if (pluginCfg instanceof PlatformTestPluginConfiguration) {
-                    return (PlatformTestPluginConfiguration) pluginCfg;
+                    return (PlatformTestPluginConfiguration)pluginCfg;
                 }
             }
         }

@@ -25,6 +25,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -130,9 +131,9 @@ public class IgniteDbSingleNodeWithIndexingWalRestoreTest extends GridCommonAbst
     public void testClasslessBinaryValuesRestored() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
-        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager) ig.context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ig.context().cache().context().database();
 
         dbMgr.enableCheckpoints(false).get();
 
@@ -152,7 +153,7 @@ public class IgniteDbSingleNodeWithIndexingWalRestoreTest extends GridCommonAbst
 
         ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         cache = ig.cache("indexedCache").withKeepBinary();
 
@@ -168,9 +169,9 @@ public class IgniteDbSingleNodeWithIndexingWalRestoreTest extends GridCommonAbst
     public void testRegularClassesRestored() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
-        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager) ig.context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ig.context().cache().context().database();
 
         dbMgr.enableCheckpoints(false).get();
 
@@ -183,7 +184,7 @@ public class IgniteDbSingleNodeWithIndexingWalRestoreTest extends GridCommonAbst
 
         ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         cache = ig.cache("indexedCache");
 

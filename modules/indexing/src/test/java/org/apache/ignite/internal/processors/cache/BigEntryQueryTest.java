@@ -81,7 +81,7 @@ public class BigEntryQueryTest extends GridCommonAbstractTest {
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setIndexedTypes(Long.class, Value.class));
 
-            cache.putAll((Map) LongStream.range(610026643276160000L, 610026643276170000L).boxed()
+            cache.putAll((Map)LongStream.range(610026643276160000L, 610026643276170000L).boxed()
                 .collect(Collectors.toMap(Function.identity(),
                     t -> Value.of(new byte[(random.nextInt(16)) * 1000]),
                     (a, b) -> a, TreeMap::new)));

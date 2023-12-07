@@ -83,6 +83,50 @@ public class SqlCreateIndexCommand implements SqlCommand {
     /** Inline size. Zero effectively disables inlining. */
     private int inlineSize = QueryIndex.DFLT_INLINE_SIZE;
 
+    /**
+     * Default constructor.
+     */
+    public SqlCreateIndexCommand() {
+    }
+
+    /**
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param idxName Index name.
+     * @param ifNotExists "If not exists" clause.
+     * @param cols Indexed columns.
+     * @param spatial Spatial flag.
+     * @param parallel Count of threads to rebuild.
+     * @param inlineSize Inline size.
+     */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public SqlCreateIndexCommand(
+        String schemaName,
+        @Nullable String tblName,
+        String idxName,
+        boolean ifNotExists,
+        Collection<SqlIndexColumn> cols,
+        boolean spatial,
+        int parallel,
+        int inlineSize
+    ) {
+        this.schemaName = schemaName;
+        this.tblName = tblName;
+        this.idxName = idxName;
+        this.ifNotExists = ifNotExists;
+        this.spatial = spatial;
+        this.parallel = parallel;
+        this.inlineSize = inlineSize;
+        this.cols = cols;
+
+        colNames = new HashSet<>();
+
+        for (SqlIndexColumn col : cols) {
+            if (!colNames.add(col.name()))
+                throw new IllegalArgumentException("Column already defined: " + col.name());
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public String schemaName() {
         return schemaName;

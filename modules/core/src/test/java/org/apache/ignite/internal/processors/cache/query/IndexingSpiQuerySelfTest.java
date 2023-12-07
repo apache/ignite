@@ -56,6 +56,7 @@ import org.junit.Test;
  * Indexing Spi query only test
  */
 public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
+    /** */
     private IndexingSpi indexingSpi;
 
     /** {@inheritDoc} */
@@ -317,7 +318,7 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-     static class PersonKey implements Serializable, Comparable<PersonKey> {
+    static class PersonKey implements Serializable, Comparable<PersonKey> {
         /** */
         private int id;
 

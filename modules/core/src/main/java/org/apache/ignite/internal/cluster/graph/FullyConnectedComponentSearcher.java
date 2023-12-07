@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
 import java.util.Iterator;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Class to find (possibly) largest fully-connected component (also can be called as <b>complete subgraph</b>) in graph.
@@ -324,18 +325,7 @@ public class FullyConnectedComponentSearcher {
 
         /** {@inheritDoc} */
         @Override public int compare(Integer node1, Integer node2) {
-            long[] conn1 = connectionRow(node1);
-            long[] conn2 = connectionRow(node2);
-
-            int len = Math.min(conn1.length, conn2.length);
-            for (int i = 0; i < len; i++) {
-                int res = Long.compare(conn1[i], conn2[i]);
-
-                if (res != 0)
-                    return res;
-            }
-
-            return conn1.length - conn2.length;
+            return F.compareArrays(connectionRow(node1), connectionRow(node2));
         }
     }
 }

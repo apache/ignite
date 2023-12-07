@@ -189,36 +189,7 @@ if "%MAIN_CLASS%" == "" set MAIN_CLASS=org.apache.ignite.internal.commandline.Co
 ::
 :: Final CONTROL_JVM_OPTS for Java 9+ compatibility
 ::
-if %MAJOR_JAVA_VER% == 8 (
-    set CONTROL_JVM_OPTS= ^
-    -XX:+AggressiveOpts ^
-    %CONTROL_JVM_OPTS%
-)
-
-if %MAJOR_JAVA_VER% GEQ 9 if %MAJOR_JAVA_VER% LSS 11 (
-    set CONTROL_JVM_OPTS= ^
-    -XX:+AggressiveOpts ^
-    --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED ^
-    --add-exports=java.base/sun.nio.ch=ALL-UNNAMED ^
-    --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED ^
-    --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED ^
-    --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED ^
-    --illegal-access=permit ^
-    --add-modules=java.xml.bind ^
-    %CONTROL_JVM_OPTS%
-)
-
-if %MAJOR_JAVA_VER% GEQ 11 (
-    set CONTROL_JVM_OPTS= ^
-    --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED ^
-    --add-exports=java.base/sun.nio.ch=ALL-UNNAMED ^
-    --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED ^
-    --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED ^
-    --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED ^
-    --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED ^
-    --illegal-access=permit ^
-    %CONTROL_JVM_OPTS%
-)
+call "%SCRIPTS_HOME%\include\jvmdefaults.bat" %MAJOR_JAVA_VER% "%CONTROL_JVM_OPTS%" CONTROL_JVM_OPTS
 
 if defined JVM_OPTS (
     echo JVM_OPTS environment variable is set, but will not be used. To pass JVM options use CONTROL_JVM_OPTS

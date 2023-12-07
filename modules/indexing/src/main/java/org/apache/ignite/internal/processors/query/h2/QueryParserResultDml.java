@@ -66,13 +66,6 @@ public class QueryParserResultDml {
     }
 
     /**
-     * @return MVCC enabled.
-     */
-    public boolean mvccEnabled() {
-        return mvccEnabled;
-    }
-
-    /**
      * @return Streamer table.
      */
     @Nullable public GridH2Table streamTable() {

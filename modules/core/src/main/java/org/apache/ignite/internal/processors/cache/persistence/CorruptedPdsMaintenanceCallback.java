@@ -40,9 +40,10 @@ public class CorruptedPdsMaintenanceCallback implements MaintenanceWorkflowCallb
      * @param workDir
      * @param cacheStoreDirs
      */
-    public CorruptedPdsMaintenanceCallback(@NotNull File workDir,
-                                           @NotNull List<String> cacheStoreDirs)
-    {
+    public CorruptedPdsMaintenanceCallback(
+        @NotNull File workDir,
+        @NotNull List<String> cacheStoreDirs
+    ) {
         this.workDir = workDir;
         this.cacheStoreDirs = cacheStoreDirs;
     }

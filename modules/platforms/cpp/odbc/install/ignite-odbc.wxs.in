@@ -1,0 +1,113 @@
+<?xml version='1.0' encoding='windows-1252'?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+    <Product Name='@WIX_PRODUCT_NAME@' Manufacturer='@WIX_MANUFACTURER@'
+        Id='@WIX_PRODUCT_ID@'
+        UpgradeCode='@WIX_UPGRADE_CODE@'
+        Language='1033' Codepage='1252' Version='@CMAKE_PROJECT_VERSION@'>
+
+        <Package Id='*' Keywords='Installer' Description="@WIX_PRODUCT_NAME@ Installer"
+            Comments='@WIX_COPYRIGHT_COMMENT@' Platform="@WIX_PACKAGE_PLATFORM@"
+            InstallerVersion='301' Languages='1033' Compressed='yes' SummaryCodepage='1252' />
+
+        <Media Id='1' Cabinet='package.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1' />
+        <Property Id='DiskPrompt' Value="@WIX_PRODUCT_NAME@ Installation [1]" />
+
+        <Directory Id='TARGETDIR' Name='SourceDir'>
+            <Directory Id='@WIX_PROGRAM_FILES_FOLDER_ID@' Name='ProgramFiles'>
+                <Directory Id='ApacheIgnite' Name='Apache Ignite'>
+                    <Directory Id='INSTALLDIR' Name='ODBC Driver'>
+                        <Component Id='Driver' Guid='@WIX_COMPONENT_ID@' Win64='@WIX_COMPONENT_IS_WIN64@'>
+                            <File Id='IgniteOdbcDll' Name='ignite.odbc.dll' DiskId='1' Source='@WIX_ODBC_LIBRARY_PATH@' KeyPath='yes'/>
+
+                            <RegistryValue Root='HKLM' Key='Software\ODBC\ODBCINST.INI\ODBC Drivers' Name='Apache Ignite' Type='string' Value='Installed'/>
+
+                            <RegistryKey Id='OdbcDriverRegInfo' Root='HKLM' Key='Software\ODBC\ODBCINST.INI\Apache Ignite' ForceCreateOnInstall='yes' ForceDeleteOnUninstall='yes'>
+                                <RegistryValue Type='string' Name='DriverODBCVer' Value='03.00'/>
+                                <RegistryValue Type='string' Name='Driver' Value='[#IgniteOdbcDll]'/>
+                                <RegistryValue Type='string' Name='Setup' Value='[#IgniteOdbcDll]'/>
+                                <RegistryValue Type='integer' Name='UsageCount' Value='1'/>
+                            </RegistryKey>
+                        </Component>
+                    </Directory>
+                </Directory>
+            </Directory>
+        </Directory>
+
+        <Feature Id='Complete' Title='ODBC Driver' Description='@WIX_PRODUCT_NAME@.' Level='1'
+            ConfigurableDirectory='INSTALLDIR' Absent='disallow' AllowAdvertise='no' InstallDefault='local'>
+            <ComponentRef Id='Driver' />
+        </Feature>
+
+        <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
+
+        <UI Id="WixUI_InstallDir">
+            <TextStyle Id="WixUI_Font_Normal" FaceName="Tahoma" Size="8" />
+            <TextStyle Id="WixUI_Font_Bigger" FaceName="Tahoma" Size="12" />
+            <TextStyle Id="WixUI_Font_Title" FaceName="Tahoma" Size="9" Bold="yes" />
+
+            <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
+            <Property Id="WixUI_Mode" Value="InstallDir" />
+
+            <DialogRef Id="BrowseDlg" />
+            <DialogRef Id="DiskCostDlg" />
+            <DialogRef Id="ErrorDlg" />
+            <DialogRef Id="FatalError" />
+            <DialogRef Id="FilesInUse" />
+            <DialogRef Id="MsiRMFilesInUse" />
+            <DialogRef Id="PrepareDlg" />
+            <DialogRef Id="ProgressDlg" />
+            <DialogRef Id="ResumeDlg" />
+            <DialogRef Id="UserExit" />
+
+            <Publish Dialog="BrowseDlg" Control="OK" Event="DoAction" Value="WixUIValidatePath" Order="3">1</Publish>
+            <Publish Dialog="BrowseDlg" Control="OK" Event="SpawnDialog" Value="InvalidDirDlg" Order="4"><![CDATA[WIXUI_INSTALLDIR_VALID<>"1"]]></Publish>
+
+            <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999">1</Publish>
+
+            <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="InstallDirDlg">NOT Installed</Publish>
+            <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">Installed AND PATCH</Publish>
+
+            <Publish Dialog="InstallDirDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg">1</Publish>
+            <Publish Dialog="InstallDirDlg" Control="Next" Event="SetTargetPath" Value="[WIXUI_INSTALLDIR]" Order="1">1</Publish>
+            <Publish Dialog="InstallDirDlg" Control="Next" Event="DoAction" Value="WixUIValidatePath" Order="2">NOT WIXUI_DONTVALIDATEPATH</Publish>
+            <Publish Dialog="InstallDirDlg" Control="Next" Event="SpawnDialog" Value="InvalidDirDlg" Order="3"><![CDATA[NOT WIXUI_DONTVALIDATEPATH AND WIXUI_INSTALLDIR_VALID<>"1"]]></Publish>
+            <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Order="4">WIXUI_DONTVALIDATEPATH OR WIXUI_INSTALLDIR_VALID="1"</Publish>
+            <Publish Dialog="InstallDirDlg" Control="ChangeFolder" Property="_BrowseProperty" Value="[WIXUI_INSTALLDIR]" Order="1">1</Publish>
+            <Publish Dialog="InstallDirDlg" Control="ChangeFolder" Event="SpawnDialog" Value="BrowseDlg" Order="2">1</Publish>
+
+            <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="InstallDirDlg" Order="1">NOT Installed</Publish>
+            <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2">Installed AND NOT PATCH</Publish>
+            <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2">Installed AND PATCH</Publish>
+
+            <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg">1</Publish>
+
+            <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+            <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+            <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg">1</Publish>
+
+            <Property Id="ARPNOMODIFY" Value="1" />
+        </UI>
+
+        <UIRef Id="WixUI_Common" />
+        <UIRef Id="WixUI_ErrorProgressText" />
+
+    </Product>
+</Wix>

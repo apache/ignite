@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Invoked when binary object writing finishes.
         /// </summary>
-        internal event Action<BinaryObjectHeader, object> OnObjectWritten;
+        internal event Action<BinaryObjectHeader, BinaryObjectSchemaHolder, int> OnObjectWritten;
 
         /// <summary>
         /// Write named boolean value.
@@ -1239,6 +1239,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             _frame.HasCustomTypeData = false;
 
             var schemaIdx = _schema.PushSchema();
+            bool isNewSchema = false;
 
             try
             {
@@ -1273,7 +1274,10 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     // Update schema in type descriptor
                     if (desc.Schema.Get(schemaId) == null)
+                    {
                         desc.Schema.Add(schemaId, _schema.GetSchema(schemaIdx));
+                        isNewSchema = true;
+                    }
                 }
                 else
                     schemaOffset = headerSize;
@@ -1291,10 +1295,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 BinaryObjectHeader.Write(header, _stream, pos);
 
-                if (OnObjectWritten != null)
-                {
-                    OnObjectWritten(header, obj);
-                }
+                OnObjectWritten?.Invoke(header, _schema, schemaIdx);
 
                 Stream.Seek(pos + len, SeekOrigin.Begin); // Seek to the end
             }
@@ -1304,7 +1305,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             // Apply structure updates if any.
-            _frame.Struct.UpdateWriterStructure(this);
+            _frame.Struct.UpdateWriterStructure(this, isNewSchema);
 
             // Restore old frame.
             _frame = oldFrame;

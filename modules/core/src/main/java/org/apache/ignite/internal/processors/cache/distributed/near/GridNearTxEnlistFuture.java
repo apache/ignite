@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -39,20 +38,18 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -85,10 +82,10 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     private final UpdateSourceIterator<?> it;
 
     /** Batch size. */
-    private int batchSize;
+    private final int batchSize;
 
     /** */
-    private AtomicInteger batchCntr = new AtomicInteger();
+    private final AtomicInteger batchCntr = new AtomicInteger();
 
     /** */
     @SuppressWarnings("unused")
@@ -222,7 +219,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
                 Object cur = next0();
 
-                KeyCacheObject key = cctx.toCacheKeyObject(op.isDeleteOrLock() ? cur : ((IgniteBiTuple)cur).getKey());
+                KeyCacheObject key = cctx.toCacheKeyObject(op.isDeleteOrLock() ? cur : ((Map.Entry<?, ?>)cur).getKey());
 
                 ClusterNode node = cctx.affinity().primaryByKey(key, topVer);
 
@@ -360,12 +357,12 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             if (keysOnly)
                 keys.add(cctx.toCacheKeyObject(row));
             else {
-                keys.add(cctx.toCacheKeyObject(((IgniteBiTuple)row).getKey()));
+                keys.add(cctx.toCacheKeyObject(((Map.Entry<?, ?>)row).getKey()));
 
                 if (op.isInvoke())
-                    vals.add((Message)((IgniteBiTuple)row).getValue());
+                    vals.add((Message)((Map.Entry<?, ?>)row).getValue());
                 else
-                    vals.add(cctx.toCacheObject(((IgniteBiTuple)row).getValue()));
+                    vals.add(cctx.toCacheObject(((Map.Entry<?, ?>)row).getValue()));
             }
         }
 
@@ -375,7 +372,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             if (dhtTx == null) {
                 dhtTx = new GridDhtTxRemote(cctx.shared(),
                     cctx.localNodeId(),
-                    dhtFutId,
                     primaryId,
                     lockVer,
                     topVer,
@@ -388,8 +384,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
                     false,
                     tx.remainingTime(),
                     -1,
-                    this.tx.subjectId(),
-                    this.tx.taskNameHash(),
+                    SecurityUtils.securitySubjectId(cctx),
+                    tx.taskNameHash(),
                     false,
                     null);
 
@@ -450,7 +446,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             threadId,
             futId,
             batchId,
-            tx.subjectId(),
             topVer,
             lockVer,
             mvccSnapshot,
@@ -490,7 +485,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         GridDhtTxEnlistFuture fut = new GridDhtTxEnlistFuture(nodeId,
             lockVer,
             mvccSnapshot,
-            threadId,
             futId,
             batchId,
             tx,
@@ -504,22 +498,20 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
         updateLocalFuture(fut);
 
-        fut.listen(new CI1<IgniteInternalFuture<GridCacheReturn>>() {
-            @Override public void apply(IgniteInternalFuture<GridCacheReturn> fut) {
-                try {
-                    clearLocalFuture((GridDhtTxAbstractEnlistFuture)fut);
+        fut.listen(() -> {
+            try {
+                clearLocalFuture(fut);
 
-                    GridNearTxEnlistResponse res = fut.error() == null ? createResponse(fut) : null;
+                GridNearTxEnlistResponse res = fut.error() == null ? createResponse(fut) : null;
 
-                    if (checkResponse(nodeId, res, fut.error()))
-                        sendNextBatches(nodeId);
-                }
-                catch (IgniteCheckedException e) {
-                    checkResponse(nodeId, null, e);
-                }
-                finally {
-                    CU.unwindEvicts(cctx);
-                }
+                if (checkResponse(nodeId, res, fut.error()))
+                    sendNextBatches(nodeId);
+            }
+            catch (IgniteCheckedException e) {
+                checkResponse(nodeId, null, e);
+            }
+            finally {
+                CU.unwindEvicts(cctx);
             }
         });
 
@@ -544,7 +536,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
     /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
-        if (batches.keySet().contains(nodeId)) {
+        if (batches.containsKey(nodeId)) {
             if (log.isDebugEnabled())
                 log.debug("Found unacknowledged batch for left node [nodeId=" + nodeId + ", fut=" +
                     this + ']');
@@ -625,7 +617,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         private final ClusterNode node;
 
         /** Rows. */
-        private List<Object> rows = new ArrayList<>();
+        private final List<Object> rows = new ArrayList<>();
 
         /** Local backup rows. */
         private List<Object> locBkpRows;
@@ -651,12 +643,12 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
          * Adds a row.
          *
          * @param row Row.
-         * @param localBackup {@code true}, when the row key has local backup.
+         * @param locBackup {@code true}, when the row key has local backup.
          */
-        public void add(Object row, boolean localBackup) {
+        public void add(Object row, boolean locBackup) {
             rows.add(row);
 
-            if (localBackup) {
+            if (locBackup) {
                 if (locBkpRows == null)
                     locBkpRows = new ArrayList<>();
 

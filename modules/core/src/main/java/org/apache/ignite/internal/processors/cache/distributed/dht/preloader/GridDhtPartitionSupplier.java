@@ -38,15 +38,10 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -273,14 +268,13 @@ public class GridDhtPartitionSupplier {
             if (sctx == null) {
                 if (log.isDebugEnabled())
                     log.debug("Starting supplying rebalancing [" + supplyRoutineInfo(topicId, nodeId, demandMsg) +
-                        ", fullPartitions=" + S.compact(demandMsg.partitions().fullSet()) +
-                        ", histPartitions=" + S.compact(demandMsg.partitions().historicalSet()) + "]");
+                        ", fullPartitions=" + S.toStringSortedDistinct(demandMsg.partitions().fullSet()) +
+                        ", histPartitions=" + S.toStringSortedDistinct(demandMsg.partitions().historicalSet()) + "]");
             }
             else
                 maxBatchesCnt = 1;
 
             if (sctx == null || sctx.iterator == null) {
-                iter = grp.offheap().rebalanceIterator(demandMsg.partitions(), demandMsg.topologyVersion());
 
                 remainingParts = new HashSet<>(demandMsg.partitions().fullSet());
 
@@ -292,6 +286,8 @@ public class GridDhtPartitionSupplier {
                     remainingParts.add(p);
                 }
 
+                iter = grp.offheap().rebalanceIterator(demandMsg.partitions(), demandMsg.topologyVersion());
+
                 for (Integer part : demandMsg.partitions().fullSet()) {
                     if (iter.isPartitionMissing(part))
                         continue;
@@ -301,7 +297,7 @@ public class GridDhtPartitionSupplier {
                     assert loc != null && loc.state() == GridDhtPartitionState.OWNING
                         : "Partition should be in OWNING state: " + loc;
 
-                    supplyMsg.addEstimatedKeysCount(grp.offheap().totalPartitionEntriesCount(part));
+                    supplyMsg.addEstimatedKeysCount(loc.dataStore().fullSize());
                 }
 
                 for (int i = 0; i < histMap.size(); i++) {
@@ -323,17 +319,8 @@ public class GridDhtPartitionSupplier {
 
             long batchesCnt = 0;
 
-            CacheDataRow prevRow = null;
-
             while (iter.hasNext()) {
-                CacheDataRow row = iter.peek();
-
-                // Prevent mvcc entry history splitting into separate batches.
-                boolean canFlushHistory = !grp.mvccEnabled() ||
-                    prevRow != null && ((grp.sharedGroup() && row.cacheId() != prevRow.cacheId()) ||
-                        !row.key().equals(prevRow.key()));
-
-                if (canFlushHistory && supplyMsg.messageSize() >= msgMaxSize) {
+                if (supplyMsg.messageSize() >= msgMaxSize) {
                     if (++batchesCnt >= maxBatchesCnt) {
                         saveSupplyContext(ctxId,
                             iter,
@@ -356,9 +343,7 @@ public class GridDhtPartitionSupplier {
                     }
                 }
 
-                row = iter.next();
-
-                prevRow = row;
+                CacheDataRow row = iter.next();
 
                 int part = row.partition();
 
@@ -519,6 +504,10 @@ public class GridDhtPartitionSupplier {
                     + supplyRoutineInfo(topicId, nodeId, demandMsg) + ']', t1);
             }
 
+            // There can be errors in case of concurrent caches stop. Do not trigger failure handler in these cases.
+            if (!grp.hasCaches())
+                return;
+
             // If fallback to full rebalance is possible then let's try to switch to it
             // instead of triggering failure handler.
             if (!fallbackToFullRebalance) {
@@ -537,29 +526,10 @@ public class GridDhtPartitionSupplier {
      * @return Entry info.
      */
     private GridCacheEntryInfo extractEntryInfo(CacheDataRow row) {
-        GridCacheEntryInfo info = grp.mvccEnabled() ?
-            new GridCacheMvccEntryInfo() : new GridCacheEntryInfo();
+        GridCacheEntryInfo info = new GridCacheEntryInfo();
 
         info.key(row.key());
         info.cacheId(row.cacheId());
-
-        if (grp.mvccEnabled()) {
-            assert row.mvccCoordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA;
-
-            // Rows from rebalance iterator have actual states already.
-            if (row.mvccTxState() != TxState.COMMITTED)
-                return null;
-
-            ((MvccVersionAware)info).mvccVersion(row);
-            ((GridCacheMvccEntryInfo)info).mvccTxState(TxState.COMMITTED);
-
-            if (row.newMvccCoordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA &&
-                row.newMvccTxState() == TxState.COMMITTED) {
-                ((MvccUpdateVersionAware)info).newMvccVersion(row);
-                ((GridCacheMvccEntryInfo)info).newMvccTxState(TxState.COMMITTED);
-            }
-        }
-
         info.value(row.value());
         info.version(row.version());
         info.expireTime(row.expireTime());

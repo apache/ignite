@@ -29,9 +29,12 @@ import org.apache.ignite.examples.ExampleNodeStartup;
  * Example to showcase DDL capabilities of Ignite's SQL engine.
  * <p>
  * Remote nodes could be started from command line as follows:
- * {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
+ * {@code 'ignite.{sh|bat} examples/config/example-sql.xml'}.
  * <p>
  * Alternatively you can run {@link ExampleNodeStartup} in either same or another JVM.
+ * <p>
+ * To run this example on the Calcite-based SQL engine, modify {@code examples/config/example-sql.xml}
+ * file and set {@code CalciteQueryEngineConfiguration} as default.
  */
 public class SqlDdlExample {
     /** Dummy cache name. */
@@ -45,7 +48,7 @@ public class SqlDdlExample {
      */
     @SuppressWarnings({"unused", "ThrowFromFinallyBlock"})
     public static void main(String[] args) throws Exception {
-        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-sql.xml")) {
             print("Cache query DDL example started.");
 
             // Create dummy cache to act as an entry point for SQL queries (new SQL API which do not require this
@@ -57,15 +60,15 @@ public class SqlDdlExample {
             ) {
                 // Create reference City table based on REPLICATED template.
                 cache.query(new SqlFieldsQuery(
-                    "CREATE TABLE city (id LONG PRIMARY KEY, name VARCHAR) WITH \"template=replicated\"")).getAll();
+                    "CREATE TABLE city (id BIGINT PRIMARY KEY, name VARCHAR) WITH \"template=replicated\"")).getAll();
 
                 // Create table based on PARTITIONED template with one backup.
                 cache.query(new SqlFieldsQuery(
-                    "CREATE TABLE person (id LONG, name VARCHAR, city_id LONG, PRIMARY KEY (id, city_id)) " +
+                    "CREATE TABLE person (id BIGINT, name VARCHAR, city_id BIGINT, PRIMARY KEY (id, city_id)) " +
                     "WITH \"backups=1, affinity_key=city_id\"")).getAll();
 
                 // Create an index.
-                cache.query(new SqlFieldsQuery("CREATE INDEX on Person (city_id)")).getAll();
+                cache.query(new SqlFieldsQuery("CREATE INDEX person_idx ON Person (city_id)")).getAll();
 
                 print("Created database objects.");
 

@@ -159,32 +159,13 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
         };
 
         RecordSerializer serializer = new RecordSerializerFactoryImpl(
-            new GridCacheSharedContext<>(
-                kctx,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                new IgniteCacheDatabaseSharedManager() {
+            GridCacheSharedContext.builder()
+                .setDatabaseManager(new IgniteCacheDatabaseSharedManager(kctx) {
                     @Override public int pageSize() {
                         return DataStorageConfiguration.DFLT_PAGE_SIZE;
                     }
-                },
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null)
+                })
+                .build(kctx, null)
         ).createSerializer(serVer);
 
         SwitchSegmentRecord switchSegmentRecord = new SwitchSegmentRecord();
@@ -428,16 +409,19 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
-                cfg.setDataStorageConfiguration(
-                    new DataStorageConfiguration()
-                        .setWalSegmentSize(SEGMENT_SIZE)
-                        .setWalRecordIteratorBufferSize(SEGMENT_SIZE / 2)
-                        .setWalMode(WALMode.FSYNC)
-                        .setWalPath(workDir + WORK_SUB_DIR)
-                        .setWalArchivePath(workDir + ARCHIVE_SUB_DIR)
-                        .setFileIOFactory(new RandomAccessFileIOFactory())
-                );
+                DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
+                if (dsCfg == null)
+                    dsCfg = new DataStorageConfiguration();
+
+                dsCfg.setWalSegmentSize(SEGMENT_SIZE)
+                    .setWalRecordIteratorBufferSize(SEGMENT_SIZE / 2)
+                    .setWalMode(WALMode.FSYNC)
+                    .setWalPath(workDir + WORK_SUB_DIR)
+                    .setWalArchivePath(workDir + ARCHIVE_SUB_DIR)
+                    .setFileIOFactory(new RandomAccessFileIOFactory());
+
+                cfg.setDataStorageConfiguration(dsCfg);
                 cfg.setEventStorageSpi(new NoopEventStorageSpi());
 
                 return cfg;
@@ -456,29 +440,12 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
 
         GridTestUtils.setFieldValue(walMgr, "serializerVer", serVer);
 
-        GridCacheSharedContext<?, ?> ctx = new GridCacheSharedContext<>(
-            kctx,
-            null,
-            null,
-            null,
-            null,
-            walMgr,
-            new WalStateManager(kctx),
-            new GridCacheDatabaseSharedManager(kctx),
-            null,
-            null,
-            null,
-            null,
-            null,
-            new GridCacheIoManager(),
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-        );
+        GridCacheSharedContext<?, ?> ctx = GridCacheSharedContext.builder()
+            .setWalManager(walMgr)
+            .setWalStateManager(new WalStateManager(kctx))
+            .setDatabaseManager(new GridCacheDatabaseSharedManager(kctx))
+            .setIoManager(new GridCacheIoManager())
+            .build(kctx, null);
 
         walMgr.start(ctx);
 

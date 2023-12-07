@@ -81,7 +81,9 @@ public class ChangeCacheEncryptionRequest implements Serializable {
     /**
      * @return Key identifiers.
      */
-    public byte[] keyIds() { return keyIds; }
+    public byte[] keyIds() {
+        return keyIds;
+    }
 
     /**
      * @return Master key digest.

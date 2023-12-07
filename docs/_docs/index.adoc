@@ -44,7 +44,6 @@ API reference for various programming languages.
 * link:/releases/latest/javadoc/[JavaDoc]
 * link:/releases/latest/dotnetdoc/api/[C#/.NET]
 * link:/releases/latest/cppdoc/[C++]
-* link:/releases/latest/scaladoc/scalar/index.html[Scala]
 
 *Older Versions*
 

@@ -45,7 +45,8 @@ public abstract class WALRecord {
         /** */
         PAGE_RECORD(1, PHYSICAL),
 
-        /** */
+        /** @deprecated Use {@link #DATA_RECORD_V2} instead. */
+        @Deprecated
         DATA_RECORD(2, LOGICAL),
 
         /** Checkpoint (begin) record */
@@ -204,9 +205,13 @@ public abstract class WALRecord {
         MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD(51, PHYSICAL),
 
         /** Encrypted WAL-record. */
-        ENCRYPTED_RECORD(52, PHYSICAL),
+        ENCRYPTED_RECORD(52, MIXED),
 
-        /** Ecnrypted data record. */
+        /**
+         * Ecnrypted data record.
+         * @deprecated Use {@link #ENCRYPTED_DATA_RECORD_V3} instead.
+         */
+        @Deprecated
         ENCRYPTED_DATA_RECORD(53, LOGICAL),
 
         /** Mvcc data record. */
@@ -233,13 +238,17 @@ public abstract class WALRecord {
         /** Record that indicates that "corrupted" flag should be removed from tracking page. */
         TRACKING_PAGE_REPAIR_DELTA(61, PHYSICAL),
 
-        /** Atomic out-of-order update. */
+        /** Out-of-order update which is used by atomic caches on backup nodes. (Placeholder) */
         OUT_OF_ORDER_UPDATE(62, LOGICAL),
 
         /** Encrypted WAL-record. */
-        ENCRYPTED_RECORD_V2(63, PHYSICAL),
+        ENCRYPTED_RECORD_V2(63, MIXED),
 
-        /** Ecnrypted data record. */
+        /**
+         * Ecnrypted data record.
+         * @deprecated Use {@link #ENCRYPTED_DATA_RECORD_V3} instead.
+         */
+        @Deprecated
         ENCRYPTED_DATA_RECORD_V2(64, LOGICAL),
 
         /** Master key change record containing multiple keys for single cache group. */
@@ -252,7 +261,37 @@ public abstract class WALRecord {
         PARTITION_META_PAGE_DELTA_RECORD_V3(67, PHYSICAL),
 
         /** Index meta page delta record includes encryption status data. */
-        INDEX_META_PAGE_DELTA_RECORD(68, PHYSICAL);
+        INDEX_META_PAGE_DELTA_RECORD(68, PHYSICAL),
+
+        /** IGNITE-11704 placeholder: Partition meta page delta record includes tombstones count. */
+        PARTITION_META_PAGE_DELTA_RECORD_V4(69, PHYSICAL),
+
+        /** Data record V2. */
+        DATA_RECORD_V2(70, LOGICAL),
+
+        /** Ecnrypted data record. */
+        ENCRYPTED_DATA_RECORD_V3(71, LOGICAL),
+
+        /** Record for renaming the index root pages. */
+        INDEX_ROOT_PAGE_RENAME_RECORD(72, LOGICAL),
+
+        /** Partition clearing start. */
+        PARTITION_CLEARING_START_RECORD(73, LOGICAL),
+
+        /** Ecnrypted out-of-order update which is used by atomic caches on backup nodes. (Placeholder) */
+        ENCRYPTED_OUT_OF_ORDER_UPDATE(74, LOGICAL),
+
+        /** ClusterSnapshot start. */
+        CLUSTER_SNAPSHOT(75, LOGICAL),
+
+        /** Incremental snapshot start record. */
+        INCREMENTAL_SNAPSHOT_START_RECORD(76, LOGICAL),
+
+        /** Incremental snapshot finish record. */
+        INCREMENTAL_SNAPSHOT_FINISH_RECORD(77, LOGICAL),
+
+        /** CDC data record. */
+        CDC_DATA_RECORD(78, CUSTOM);
 
         /** Index for serialization. Should be consistent throughout all versions. */
         private final int idx;

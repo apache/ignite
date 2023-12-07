@@ -78,8 +78,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
-import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntryChangeListener;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -120,7 +120,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_TRIGGERING
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_READ_LOAD_BALANCING;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
@@ -187,9 +186,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Store manager. */
     private CacheStoreManager storeMgr;
-
-    /** Compression manager. */
-    private CacheCompressionManager compressMgr;
 
     /** Replication manager. */
     private GridCacheDrManager drMgr;
@@ -288,6 +284,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Recovery mode flag. */
     private volatile boolean recoveryMode;
 
+    /** Dump callback. */
+    private volatile DumpEntryChangeListener dumpLsnr;
+
     /** */
     private final boolean disableTriggeringCacheInterceptorOnConflict =
         Boolean.parseBoolean(System.getProperty(IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT, "false"));
@@ -341,8 +340,6 @@ public class GridCacheContext<K, V> implements Externalizable {
          * Managers in starting order!
          * ===========================
          */
-
-        CacheCompressionManager compressMgr,
         GridCacheEventManager evtMgr,
         CacheStoreManager storeMgr,
         CacheEvictionManager evictMgr,
@@ -361,7 +358,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert cacheCfg != null;
         assert locStartTopVer != null : cacheCfg.getName();
 
-        assert compressMgr != null;
         assert grp != null;
         assert evtMgr != null;
         assert storeMgr != null;
@@ -388,7 +384,6 @@ public class GridCacheContext<K, V> implements Externalizable {
          * Managers in starting order!
          * ===========================
          */
-        this.compressMgr = add(compressMgr);
         this.evtMgr = add(evtMgr);
         this.storeMgr = add(storeMgr);
         this.evictMgr = add(evictMgr);
@@ -645,13 +640,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Local cache.
-     */
-    public GridLocalCache<K, V> local() {
-        return (GridLocalCache<K, V>)cache;
-    }
-
-    /**
      * @return {@code True} if cache is DHT.
      */
     public boolean isDht() {
@@ -677,13 +665,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean isNear() {
         return cache != null && cache.isNear();
-    }
-
-    /**
-     * @return {@code True} if cache is local.
-     */
-    public boolean isLocal() {
-        return cache != null && cache.isLocal();
     }
 
     /**
@@ -873,14 +854,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean transactional() {
         CacheConfiguration cfg = config();
 
-        return cfg.getAtomicityMode() == TRANSACTIONAL || cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
-    }
-
-    /**
-     * @return {@code True} if transactional snapshot.
-     */
-    public boolean transactionalSnapshot() {
-        return config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
+        return cfg.getAtomicityMode() == TRANSACTIONAL;
     }
 
     /**
@@ -1253,13 +1227,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Compression manager.
-     */
-    public CacheCompressionManager compress() {
-        return compressMgr;
-    }
-
-    /**
      * Sets cache object context.
      *
      * @param cacheObjCtx Cache object context.
@@ -1379,36 +1346,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public CacheOperationContext operationContextPerCall() {
         return nearContext() ? dht().near().context().opCtxPerCall.get() : opCtxPerCall.get();
-    }
-
-    /**
-     * Gets subject ID per call.
-     *
-     * @param subjId Optional already existing subject ID.
-     * @return Subject ID per call.
-     */
-    public UUID subjectIdPerCall(@Nullable UUID subjId) {
-        if (subjId != null)
-            return subjId;
-
-        return subjectIdPerCall(subjId, operationContextPerCall());
-    }
-
-    /**
-     * Gets subject ID per call.
-     *
-     * @param subjId Optional already existing subject ID.
-     * @param opCtx Optional thread local operation context.
-     * @return Subject ID per call.
-     */
-    public UUID subjectIdPerCall(@Nullable UUID subjId, @Nullable CacheOperationContext opCtx) {
-        if (opCtx != null)
-            subjId = opCtx.subjectId();
-
-        if (subjId == null)
-            subjId = ctx.localNodeId();
-
-        return subjId;
     }
 
     /**
@@ -1684,6 +1621,11 @@ public class GridCacheContext<K, V> implements Externalizable {
         return conflictRslvr != null;
     }
 
+    /** @return Conflict resolver. */
+    public CacheVersionConflictResolver conflictResolver() {
+        return conflictRslvr;
+    }
+
     /**
      * Resolve DR conflict.
      *
@@ -1796,7 +1738,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param keepBinary Keep binary flag.
      * @return Unwrapped collection.
      */
-    public Collection<Object> unwrapBinariesIfNeeded(Collection<Object> col, boolean keepBinary) {
+    public Collection<Object> unwrapBinariesIfNeeded(Collection<?> col, boolean keepBinary) {
         return CacheObjectUtils.unwrapBinariesIfNeeded(cacheObjCtx, col, keepBinary);
     }
 
@@ -2039,7 +1981,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         final V1 v;
 
         if (!needVer)
-            v = (V1) val;
+            v = (V1)val;
         else if (getRes == null) {
             v = expireTime != 0 || ttl != 0
                 ? (V1)new EntryGetWithTtlResult(val, ver, false, expireTime, ttl)
@@ -2170,14 +2112,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if it is possible to directly read offheap instead of using {@link GridCacheEntryEx#innerGet}.
      */
     public boolean readNoEntry(@Nullable IgniteCacheExpiryPolicy expiryPlc, boolean readers) {
-        return mvccEnabled() || (!config().isOnheapCacheEnabled() && !readers && expiryPlc == null);
-    }
-
-    /**
-     * @return {@code True} if mvcc is enabled for cache.
-     */
-    public boolean mvccEnabled() {
-        return grp.mvccEnabled();
+        return !config().isOnheapCacheEnabled() && !readers && expiryPlc == null && config().getPlatformCacheConfiguration() == null;
     }
 
     /**
@@ -2400,6 +2335,19 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public AtomicReference<IgniteInternalFuture<Boolean>> lastRemoveAllJobFut() {
         return lastRmvAllJobFut;
+    }
+
+    /** */
+    public DumpEntryChangeListener dumpListener() {
+        return dumpLsnr;
+    }
+
+    /** */
+    public void dumpListener(DumpEntryChangeListener dumpEntryChangeLsnr) {
+        assert this.dumpLsnr == null || dumpEntryChangeLsnr == null;
+        assert cacheType == CacheType.USER;
+
+        this.dumpLsnr = dumpEntryChangeLsnr;
     }
 
     /** {@inheritDoc} */

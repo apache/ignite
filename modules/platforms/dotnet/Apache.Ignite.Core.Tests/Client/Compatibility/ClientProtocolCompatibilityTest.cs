@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compatibility
         public void TestClientNewerThanServerReconnectsOnServerVersion()
         {
             // Use a non-existent version that is not supported by the server
-            var version = new ClientProtocolVersion(short.MaxValue, short.MaxValue, short.MaxValue);
+            var version = new ClientProtocolVersion(1, short.MaxValue, short.MaxValue);
 
             using (var client = GetClient(version))
             {
@@ -133,8 +133,8 @@ namespace Apache.Ignite.Core.Tests.Client.Compatibility
                 var logs = GetLogs(client);
 
                 var expectedMessage = "Handshake failed on 127.0.0.1:10800, " +
-                                      "requested protocol version = 32767.32767.32767, server protocol version = , " +
-                                      "status = Fail, message = Unsupported version: 32767.32767.32767";
+                                      "requested protocol version = 1.32767.32767, server protocol version = , " +
+                                      "status = Fail, message = Unsupported version: 1.32767.32767";
 
                 var message = Regex.Replace(
                     logs[2].Message, @"server protocol version = \d\.\d\.\d", "server protocol version = ");
@@ -201,7 +201,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compatibility
         /// </summary>
         internal static void AssertNotSupportedFeatureOperation(Action action, ClientBitmaskFeature feature, ClientOp op)
         {
-            var ex = Assert.Throws<IgniteClientException>(() => action());
+            var ex = Assert.Catch<Exception>(() => action()).GetBaseException();
 
             var expectedMessage = string.Format(
                 "Operation {0} is not supported by the server. " +

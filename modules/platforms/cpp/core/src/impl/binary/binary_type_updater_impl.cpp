@@ -75,8 +75,14 @@ namespace ignite
 
                 rawWriter.WriteInt32(snap.GetTypeId());
                 rawWriter.WriteString(snap.GetTypeName());
-                rawWriter.WriteString(0); // Affinity key is not supported for now.
-                
+
+                const std::string& affFieldName = snap.GetAffinityFieldName();
+
+                if (affFieldName.empty())
+                    rawWriter.WriteNull();
+                else
+                    rawWriter.WriteString(affFieldName);
+
                 if (snap.HasFields())
                 {
                     const Snap::FieldMap& fields = snap.GetFieldMap();
@@ -143,11 +149,9 @@ namespace ignite
                 assert(typeId == readTypeId);
 
                 std::string typeName = rawReader.ReadString();
+                std::string affFieldName = rawReader.ReadString();
 
-                SPSnap res(new Snap(typeName, readTypeId));
-
-                // Skipping affinity key field name.
-                rawReader.ReadString();
+                SPSnap res(new Snap(typeName, affFieldName, readTypeId));
                 
                 int32_t fieldsNum = rawReader.ReadInt32();
 

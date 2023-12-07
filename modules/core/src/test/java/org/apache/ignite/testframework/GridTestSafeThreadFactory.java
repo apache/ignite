@@ -40,7 +40,7 @@ public final class GridTestSafeThreadFactory implements ThreadFactory {
     /** Collection to hold all started threads across the JVM. */
     private static final BlockingQueue<Thread> startedThreads = new LinkedBlockingQueue<>();
 
-    /* Lock protection of the started across the JVM threads collection. */
+    /** Lock protection of the started across the JVM threads collection. */
     private static final GridBusyLock startedThreadsLock = new GridBusyLock();
 
     /** Threads name prefix. */

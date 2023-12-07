@@ -27,4 +27,5 @@ include_directories(../include)
 
 add_executable(${TARGET} src/thin_client_put_get_example.cpp)
 
-target_link_libraries(${TARGET} ${IGNITE_THIN_CLIENT_LIB} ${IGNITE_BINARY_LIB} ${IGNITE_COMMON_LIB} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(${TARGET} ${IGNITE_THIN_CLIENT_LIB} ${IGNITE_BINARY_LIB} ${IGNITE_COMMON_LIB}
+        ${CMAKE_THREAD_LIBS_INIT})

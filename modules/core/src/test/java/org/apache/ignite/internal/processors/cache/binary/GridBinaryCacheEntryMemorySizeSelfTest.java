@@ -27,7 +27,6 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryMemorySizeSelfTest;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
@@ -68,7 +67,7 @@ public class GridBinaryCacheEntryMemorySizeSelfTest extends GridCacheEntryMemory
 
         BinaryContext pCtx = new BinaryContext(BinaryNoopMetadataHandler.instance(), iCfg, new NullLogger());
 
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", pCtx, iCfg);
+        marsh.setBinaryContext(pCtx, iCfg);
 
         return marsh;
     }

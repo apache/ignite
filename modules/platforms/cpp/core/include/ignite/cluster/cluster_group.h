@@ -29,6 +29,11 @@
 
 namespace ignite
 {
+    namespace impl
+    {
+        class IgniteImpl;
+    }
+
     namespace cluster
     {
         /**
@@ -40,6 +45,7 @@ namespace ignite
         class IGNITE_IMPORT_EXPORT ClusterGroup
         {
             friend class impl::cluster::ClusterGroupImpl;
+            friend class impl::IgniteImpl;
         public:
             /**
              * Constructor.
@@ -79,13 +85,6 @@ namespace ignite
              * @return Cluster group over nodes that started in client mode.
              */
             ClusterGroup ForClients();
-
-            /**
-             * Get cluster group consisting from the daemon nodes.
-             *
-             * @return Cluster group consisting from the daemon nodes.
-             */
-            ClusterGroup ForDaemons();
 
             /**
              * Get ClusterGroup for all data nodes that have the cache with the specified name running.

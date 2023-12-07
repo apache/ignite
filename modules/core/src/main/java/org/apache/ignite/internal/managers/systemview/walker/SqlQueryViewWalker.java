@@ -36,9 +36,10 @@ public class SqlQueryViewWalker implements SystemViewRowAttributeWalker<SqlQuery
         v.accept(2, "originNodeId", UUID.class);
         v.accept(3, "startTime", Date.class);
         v.accept(4, "duration", long.class);
-        v.accept(5, "local", boolean.class);
-        v.accept(6, "schemaName", String.class);
-        v.accept(7, "initiatorId", String.class);
+        v.accept(5, "initiatorId", String.class);
+        v.accept(6, "local", boolean.class);
+        v.accept(7, "schemaName", String.class);
+        v.accept(8, "subjectId", UUID.class);
     }
 
     /** {@inheritDoc} */
@@ -48,13 +49,14 @@ public class SqlQueryViewWalker implements SystemViewRowAttributeWalker<SqlQuery
         v.accept(2, "originNodeId", UUID.class, row.originNodeId());
         v.accept(3, "startTime", Date.class, row.startTime());
         v.acceptLong(4, "duration", row.duration());
-        v.acceptBoolean(5, "local", row.local());
-        v.accept(6, "schemaName", String.class, row.schemaName());
-        v.accept(7, "initiatorId", String.class, row.initiatorId());
+        v.accept(5, "initiatorId", String.class, row.initiatorId());
+        v.acceptBoolean(6, "local", row.local());
+        v.accept(7, "schemaName", String.class, row.schemaName());
+        v.accept(8, "subjectId", UUID.class, row.subjectId());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 8;
+        return 9;
     }
 }

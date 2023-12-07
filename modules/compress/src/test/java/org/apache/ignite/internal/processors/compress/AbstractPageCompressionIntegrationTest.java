@@ -169,6 +169,7 @@ public abstract class AbstractPageCompressionIntegrationTest extends GridCommonA
         @QuerySqlField
         UUID id;
 
+        /** */
         TestVal(int i) {
             this.str = i + "bla bla bla!";
             this.i = -i;

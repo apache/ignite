@@ -23,6 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCountDownLatch;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -54,11 +55,11 @@ public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobal
         lexp.incrementAndGet();
         lexp.incrementAndGet();
 
-        assertTrue(ig1.active());
-        assertTrue(ig2.active());
-        assertTrue(ig3.active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
+        assertTrue(ig3.cluster().state().active());
 
-        ig2.active(false);
+        ig2.cluster().state(ClusterState.INACTIVE);
 
         IgniteEx ex1 = (IgniteEx)ig1;
         IgniteEx ex2 = (IgniteEx)ig2;
@@ -72,15 +73,15 @@ public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobal
         assertTrue(F.isEmpty(cache2.jcaches()));
         assertTrue(F.isEmpty(cache3.jcaches()));
 
-        assertTrue(!ig1.active());
-        assertTrue(!ig2.active());
-        assertTrue(!ig3.active());
+        assertTrue(!ig1.cluster().state().active());
+        assertTrue(!ig2.cluster().state().active());
+        assertTrue(!ig3.cluster().state().active());
 
-        ig3.active(true);
+        ig3.cluster().state(ClusterState.ACTIVE);
 
-        assertTrue(ig1.active());
-        assertTrue(ig2.active());
-        assertTrue(ig3.active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
+        assertTrue(ig3.cluster().state().active());
 
         IgniteAtomicLong lact1 = ig1.atomicLong(lName, 0, false);
         IgniteAtomicLong lact2 = ig2.atomicLong(lName, 0, false);
@@ -128,11 +129,11 @@ public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobal
 
         assertEquals(4, latchExp1.count());
 
-        assertTrue(ig1.active());
-        assertTrue(ig2.active());
-        assertTrue(ig3.active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
+        assertTrue(ig3.cluster().state().active());
 
-        ig2.active(false);
+        ig2.cluster().state(ClusterState.INACTIVE);
 
         IgniteEx ex1 = (IgniteEx)ig1;
         IgniteEx ex2 = (IgniteEx)ig2;
@@ -146,15 +147,15 @@ public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobal
         assertTrue(F.isEmpty(cache2.jcaches()));
         assertTrue(F.isEmpty(cache3.jcaches()));
 
-        assertTrue(!ig1.active());
-        assertTrue(!ig2.active());
-        assertTrue(!ig3.active());
+        assertTrue(!ig1.cluster().state().active());
+        assertTrue(!ig2.cluster().state().active());
+        assertTrue(!ig3.cluster().state().active());
 
-        ig3.active(true);
+        ig3.cluster().state(ClusterState.ACTIVE);
 
-        assertTrue(ig1.active());
-        assertTrue(ig2.active());
-        assertTrue(ig3.active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
+        assertTrue(ig3.cluster().state().active());
 
         final IgniteCountDownLatch latchAct1 = ig1.countDownLatch(latchName, 0, false, false);
         final IgniteCountDownLatch latchAct2 = ig2.countDownLatch(latchName, 0, false, false);
@@ -226,11 +227,11 @@ public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobal
         seqExp2.incrementAndGet();
         seqExp3.incrementAndGet();
 
-        assertTrue(ig1.active());
-        assertTrue(ig2.active());
-        assertTrue(ig3.active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
+        assertTrue(ig3.cluster().state().active());
 
-        ig2.active(false);
+        ig2.cluster().state(ClusterState.INACTIVE);
 
         IgniteEx ex1 = (IgniteEx)ig1;
         IgniteEx ex2 = (IgniteEx)ig2;
@@ -244,15 +245,15 @@ public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobal
         assertTrue(F.isEmpty(cache2.jcaches()));
         assertTrue(F.isEmpty(cache3.jcaches()));
 
-        assertTrue(!ig1.active());
-        assertTrue(!ig2.active());
-        assertTrue(!ig3.active());
+        assertTrue(!ig1.cluster().state().active());
+        assertTrue(!ig2.cluster().state().active());
+        assertTrue(!ig3.cluster().state().active());
 
-        ig3.active(true);
+        ig3.cluster().state(ClusterState.ACTIVE);
 
-        assertTrue(ig1.active());
-        assertTrue(ig2.active());
-        assertTrue(ig3.active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
+        assertTrue(ig3.cluster().state().active());
 
         IgniteAtomicSequence seqAct1 = ig1.atomicSequence(seqName, 0, false);
         IgniteAtomicSequence seqAct2 = ig2.atomicSequence(seqName, 0, false);

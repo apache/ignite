@@ -241,6 +241,20 @@ BOOST_AUTO_TEST_CASE(TestSQLConnect)
     SQLGetInfo(dbc, SQL_DRIVER_NAME, 0, 0, 0);
 }
 
+BOOST_AUTO_TEST_CASE(TestSQLConnectFailedDSN)
+{
+    // Tests that SQLConnect using DSN doesn't fail with link error (especially on linux).
+    Prepare();
+
+    SQLCHAR dsnConnStr[] = "DSN=IGNITETEST";
+
+    SQLRETURN ret = SQLConnect(dbc, dsnConnStr, sizeof(dsnConnStr), 0, 0, 0, 0);
+
+    BOOST_REQUIRE(!SQL_SUCCEEDED(ret));
+    BOOST_CHECK_EQUAL(GetOdbcErrorState(SQL_HANDLE_DBC, dbc), "IM002");
+    BOOST_TEST_MESSAGE("Expected error: " << GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
+}
+
 BOOST_AUTO_TEST_CASE(TestSQLPrepare)
 {
     // There are no checks because we do not really care what is the result of these
@@ -779,6 +793,31 @@ BOOST_AUTO_TEST_CASE(TestSQLSetStmtAttr)
     SQLSetStmtAttr(stmt, SQL_ATTR_ROW_ARRAY_SIZE, 0, sizeof(val));
     SQLSetStmtAttr(stmt, SQL_ATTR_ROW_ARRAY_SIZE, reinterpret_cast<SQLPOINTER>(val), 0);
     SQLSetStmtAttr(stmt, SQL_ATTR_ROW_ARRAY_SIZE, 0, 0);
+}
+
+BOOST_AUTO_TEST_CASE(TestSQLSetStmtAttrGetStmtAttr)
+{
+    // check that statement array size is set correctly 
+
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
+
+    SQLINTEGER actual_row_array_size;
+    SQLINTEGER resLen = 0;
+
+    // repeat test for different values
+    SQLULEN valList[5] = {10, 52, 81, 103, 304};
+    for (int i = 0; i < 5; i++) {
+        SQLULEN val = valList[i];
+        SQLRETURN ret = SQLSetStmtAttr(stmt, SQL_ATTR_ROW_ARRAY_SIZE, reinterpret_cast<SQLPOINTER>(val), sizeof(val));
+    
+        ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+        ret = SQLGetStmtAttr(stmt, SQL_ATTR_ROW_ARRAY_SIZE, &actual_row_array_size, sizeof(actual_row_array_size), &resLen);
+
+        ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+        BOOST_CHECK_EQUAL(actual_row_array_size, val);
+    }
 }
 
 BOOST_AUTO_TEST_CASE(TestSQLPrimaryKeys)

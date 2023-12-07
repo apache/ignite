@@ -36,7 +36,7 @@ class ZkDiscoveryNodeLeaveEventData extends ZkDiscoveryEventData {
      * @param leftNodeInternalId Failed node ID.
      */
     ZkDiscoveryNodeLeaveEventData(long evtId, long topVer, long leftNodeInternalId) {
-       this(evtId, topVer, leftNodeInternalId, false);
+        this(evtId, topVer, leftNodeInternalId, false);
     }
 
     /**

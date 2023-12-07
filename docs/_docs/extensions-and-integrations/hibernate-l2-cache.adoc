@@ -12,6 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 = Apache Ignite Hibernate L2 Cache
 
 == Overview
@@ -35,7 +36,7 @@ access modes (`READ_ONLY`, `READ_WRITE`, `NONSTRICT_READ_WRITE`, and `TRANSACTIO
 * cache transactions, that make `TRANSACTIONAL` mode possible.
 * clustering, with 2 different replication modes: `REPLICATED` and `PARTITIONED`
 
-To start using GridGain as a Hibernate L2 cache, you need to perform 3 simple steps:
+To start using Ignite as a Hibernate L2 cache, you need to perform 3 simple steps:
 
 * Add Ignite libraries to your application's classpath.
 * Enable L2 cache and specify Ignite implementation class in L2 cache configuration.
@@ -45,11 +46,17 @@ In the section below we cover these steps in more detail.
 
 == L2 Cache Configuration
 
+[CAUTION]
+====
+[discrete]
+The `ignite-hibernate` module has been moved to the Apache Ignite Extensions project since the Apache Ignite 2.14 version.
+====
+
 To configure Ignite with as a Hibernate L2 cache, without any changes required to the existing Hibernate code, you need to:
 
-* Add either `ignite-hibernate_5.3` or `ignite-hibernate_4.2` module as a dependency to your project depending on whether
+* Add the `ignite-hibernate` module version `5.3.0`, `5.1.0` or `4.2.0` as a dependency to your project depending on whether
 Hibernate 5 or Hibernate 4 is used. Alternatively, you can copy JAR files of the same name from
-`+{apache_ignite_relese}/libs/optional+` to `+{apache_ignite_relese}/libs+` folder if you start an Apache Ignite node
+`+{apache_ignite_release}/libs/optional+` to `+{apache_ignite_release}/libs+` folder if you start an Apache Ignite node
 from a command line.
 * Configure Hibernate itself to use Ignite as an L2 cache.
 * Configure Ignite caches appropriately.
@@ -65,8 +72,8 @@ tab:Hibernate 5[]
 ----
 <dependency>
   <groupId>org.apache.ignite</groupId>
-  <artifactId>ignite-hibernate_5.3</artifactId>
-  <version>${ignite.version}</version>
+  <artifactId>ignite-hibernate-ext</artifactId>
+  <version>5.3.0</version>
 </dependency>
 ----
 tab:Hibernate 4[]
@@ -74,8 +81,8 @@ tab:Hibernate 4[]
 ----
 <dependency>
   <groupId>org.apache.ignite</groupId>
-  <artifactId>ignite-hibernate_4.2</artifactId>
-  <version>${ignite.version}</version>
+  <artifactId>ignite-hibernate-ext</artifactId>
+  <version>4.2.0</version>
 </dependency>
 ----
 --
@@ -233,7 +240,7 @@ $IGNITE_HOME\bin\ignite.bat my-config-folder\my-ignite-configuration.xml
 [NOTE]
 ====
 The nodes may be started on other hosts as well, forming a distributed caching cluster.
-Be sure to specify the right network settings in GridGain configuration file for that.
+Be sure to specify the right network settings in Ignite configuration file for that.
 ====
 
 == Query Cache

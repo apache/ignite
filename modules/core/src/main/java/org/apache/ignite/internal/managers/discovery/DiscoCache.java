@@ -63,9 +63,6 @@ public class DiscoCache {
     /** All server nodes. */
     private final List<ClusterNode> srvNodes;
 
-    /** Daemon nodes. */
-    private final List<ClusterNode> daemonNodes;
-
     /** Baseline nodes. */
     private final List<? extends BaselineNode> baselineNodes;
 
@@ -115,7 +112,6 @@ public class DiscoCache {
      * @param rmtNodes Remote nodes.
      * @param allNodes All nodes.
      * @param srvNodes Server nodes.
-     * @param daemonNodes Daemon nodes.
      * @param rmtNodesWithCaches Remote nodes with at least one cache configured.
      * @param baselineNodes Baseline nodes or {@code null} if baseline was not set.
      * @param allCacheNodes Cache nodes by cache name.
@@ -133,7 +129,6 @@ public class DiscoCache {
         List<ClusterNode> rmtNodes,
         List<ClusterNode> allNodes,
         List<ClusterNode> srvNodes,
-        List<ClusterNode> daemonNodes,
         List<ClusterNode> rmtNodesWithCaches,
         @Nullable List<? extends BaselineNode> baselineNodes,
         Map<Integer, List<ClusterNode>> allCacheNodes,
@@ -151,7 +146,6 @@ public class DiscoCache {
         this.rmtNodes = rmtNodes;
         this.allNodes = allNodes;
         this.srvNodes = srvNodes;
-        this.daemonNodes = daemonNodes;
         this.rmtNodesWithCaches = rmtNodesWithCaches;
         this.baselineNodes = baselineNodes;
         this.allCacheNodes = allCacheNodes;
@@ -239,11 +233,6 @@ public class DiscoCache {
     /** @return Server nodes. */
     public List<ClusterNode> serverNodes() {
         return srvNodes;
-    }
-
-    /** @return Daemon nodes. */
-    public List<ClusterNode> daemonNodes() {
-        return daemonNodes;
     }
 
     /** @return Consistent id map UUID -> Short (compacted consistent id). */
@@ -464,7 +453,6 @@ public class DiscoCache {
             rmtNodes,
             allNodes,
             srvNodes,
-            daemonNodes,
             rmtNodesWithCaches,
             baselineNodes,
             allCacheNodes,

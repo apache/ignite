@@ -77,7 +77,7 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
                         try {
-                            byte[] state = createTestArray((byte) 1);
+                            byte[] state = createTestArray((byte)1);
 
                             for (int i = 0; i < ITER_CNT; i++)
                                 getSpi().saveCheckpoint(CHECK_POINT_KEY, GridTestIoUtils.serializeJdk(state), 0, true);
@@ -97,7 +97,7 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
                         try {
-                            byte[] state = createTestArray((byte) 2);
+                            byte[] state = createTestArray((byte)2);
 
                             for (int i = 0; i < ITER_CNT; i++)
                                 getSpi().saveCheckpoint(CHECK_POINT_KEY, GridTestIoUtils.serializeJdk(state), 0, true);

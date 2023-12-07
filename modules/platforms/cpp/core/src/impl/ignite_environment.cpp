@@ -59,6 +59,14 @@ namespace ignite
                 CONTINUOUS_QUERY_FILTER_CREATE = 19,
                 CONTINUOUS_QUERY_FILTER_APPLY = 20,
                 CONTINUOUS_QUERY_FILTER_RELEASE = 21,
+                FUTURE_BYTE_RESULT = 24,
+                FUTURE_BOOL_RESULT = 25,
+                FUTURE_SHORT_RESULT = 26,
+                FUTURE_CHAR_RESULT = 27,
+                FUTURE_INT_RESULT = 28,
+                FUTURE_FLOAT_RESULT = 29,
+                FUTURE_LONG_RESULT = 30,
+                FUTURE_DOUBLE_RESULT = 31,
                 FUTURE_OBJECT_RESULT = 32,
                 FUTURE_NULL_RESULT = 33,
                 FUTURE_ERROR = 34,
@@ -268,9 +276,7 @@ namespace ignite
 
                 case OperationCallback::FUTURE_NULL_RESULT:
                 {
-                    SharedPointer<InteropMemory> mem = env->Get()->AllocateMemory();
-
-                    env->Get()->OnFutureResult(val, mem);
+                    env->Get()->OnFutureNullResult(val);
 
                     break;
                 }
@@ -350,11 +356,25 @@ namespace ignite
                     break;
                 }
 
+                case OperationCallback::FUTURE_BYTE_RESULT:
+                case OperationCallback::FUTURE_BOOL_RESULT:
+                case OperationCallback::FUTURE_SHORT_RESULT:
+                case OperationCallback::FUTURE_CHAR_RESULT:
+                case OperationCallback::FUTURE_INT_RESULT:
+                case OperationCallback::FUTURE_LONG_RESULT:
+                case OperationCallback::FUTURE_FLOAT_RESULT:
+                case OperationCallback::FUTURE_DOUBLE_RESULT:
+                {
+                    env->Get()->OnFuturePrimitiveResult(val1, val2);
+
+                    break;
+                }
+
                 case OperationCallback::FUTURE_OBJECT_RESULT:
                 {
                     SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val2);
 
-                    env->Get()->OnFutureResult(val1, mem);
+                    env->Get()->OnFutureObjectResult(val1, mem);
 
                     break;
                 }
@@ -723,7 +743,7 @@ namespace ignite
 
         void IgniteEnvironment::OnStartCallback(int64_t memPtr, jobject proc)
         {
-            this->proc = jni::JavaGlobalRef(*ctx.Get(), proc);
+            this->proc = jni::JavaGlobalRef(ctx, proc);
 
             InteropExternalMemory mem(reinterpret_cast<int8_t*>(memPtr));
             InteropInputStream stream(&mem);
@@ -814,7 +834,22 @@ namespace ignite
             return res ? 1 : 0;
         }
 
-        int64_t IgniteEnvironment::OnFutureResult(int64_t handle, SharedPointer<InteropMemory>& mem)
+        int64_t IgniteEnvironment::OnFuturePrimitiveResult(int64_t handle, int64_t value)
+        {
+            SharedPointer<compute::ComputeTaskHolder> task0 =
+                    StaticPointerCast<compute::ComputeTaskHolder>(registry.Get(handle));
+
+            registry.Release(handle);
+
+            compute::ComputeTaskHolder* task = task0.Get();
+
+            task->JobResultSuccess(value);
+            task->Reduce();
+
+            return 1;
+        }
+
+        int64_t IgniteEnvironment::OnFutureObjectResult(int64_t handle, SharedPointer<InteropMemory>& mem)
         {
             InteropInputStream inStream(mem.Get());
             BinaryReaderImpl reader(&inStream);
@@ -827,6 +862,21 @@ namespace ignite
             compute::ComputeTaskHolder* task = task0.Get();
 
             task->JobResultSuccess(reader);
+            task->Reduce();
+
+            return 1;
+        }
+
+        int64_t IgniteEnvironment::OnFutureNullResult(int64_t handle)
+        {
+            SharedPointer<compute::ComputeTaskHolder> task0 =
+                    StaticPointerCast<compute::ComputeTaskHolder>(registry.Get(handle));
+
+            registry.Release(handle);
+
+            compute::ComputeTaskHolder* task = task0.Get();
+
+            task->JobNullResultSuccess();
             task->Reduce();
 
             return 1;

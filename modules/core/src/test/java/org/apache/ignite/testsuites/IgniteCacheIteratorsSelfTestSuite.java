@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedIteratorsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedIteratorsSelfTest;
-import org.apache.ignite.internal.processors.cache.local.GridCacheLocalIteratorsSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -36,10 +35,9 @@ public class IgniteCacheIteratorsSelfTestSuite {
     public static List<Class<?>> suite(Collection<Class> ignoredTests) {
         List<Class<?>> suite = new ArrayList<>();
 
-        GridTestUtils.addTestIfNeeded(suite, GridCacheLocalIteratorsSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheReplicatedIteratorsSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedIteratorsSelfTest.class, ignoredTests);
 
         return suite;
-   }
+    }
 }

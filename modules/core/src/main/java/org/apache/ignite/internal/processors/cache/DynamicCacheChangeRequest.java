@@ -68,6 +68,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Restart flag. */
     private boolean restart;
 
+    /** Finalize update counters flag. */
+    private boolean finalizePartitionCounters;
+
     /** Restart operation id. */
     private IgniteUuid restartId;
 
@@ -101,6 +104,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Encryption key. */
     @Nullable private byte[] encKey;
 
+    /** Id of encryption key. */
+    @Nullable private Integer encKeyId;
+
     /** Master key digest. */
     @Nullable private byte[] masterKeyDigest;
 
@@ -114,7 +120,6 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public DynamicCacheChangeRequest(UUID reqId, String cacheName, UUID initiatingNodeId) {
         assert reqId != null;
-        assert cacheName != null;
 
         this.reqId = reqId;
         this.cacheName = cacheName;
@@ -130,6 +135,18 @@ public class DynamicCacheChangeRequest implements Serializable {
         DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
 
         req.markResetLostPartitions();
+
+        return req;
+    }
+
+    /**
+     * @param ctx Context.
+     * @return Request to finalize partition update counters.
+     */
+    static DynamicCacheChangeRequest finalizePartitionCounters(GridKernalContext ctx) {
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), null, ctx.localNodeId());
+
+        req.markFinalizePartitionCounters();
 
         return req;
     }
@@ -280,6 +297,20 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
+     * Set finalize partition update counters flag.
+     */
+    public void markFinalizePartitionCounters() {
+        finalizePartitionCounters = true;
+    }
+
+    /**
+     * Finalize partition update counters flag.
+     */
+    public boolean finalizePartitionCounters() {
+        return finalizePartitionCounters;
+    }
+
+    /**
      * @return Id of restart to allow only initiator start the restarting cache.
      */
     public IgniteUuid restartId() {
@@ -340,6 +371,9 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void startCacheConfiguration(CacheConfiguration startCfg) {
         this.startCfg = startCfg;
+
+        if (startCfg.getNearConfiguration() != null)
+            nearCacheCfg = startCfg.getNearConfiguration();
     }
 
     /**
@@ -468,6 +502,22 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     @Nullable public byte[] encryptionKey() {
         return encKey;
+    }
+
+    /**
+     * Sets encryption key id.
+     *
+     * @param encKeyId Encryption key id.
+     */
+    public void encryptionKeyId(@Nullable Integer encKeyId) {
+        this.encKeyId = encKeyId;
+    }
+
+    /**
+     * @return Encryption key id.
+     */
+    @Nullable public Integer encryptionKeyId() {
+        return encKeyId;
     }
 
     /** @param masterKeyDigest Master key digest. */

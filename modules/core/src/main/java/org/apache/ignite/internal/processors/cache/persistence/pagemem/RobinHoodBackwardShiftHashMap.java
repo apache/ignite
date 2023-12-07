@@ -141,7 +141,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
         this.numBuckets = (int)((size - MAPSIZE_SIZE - MAPSIZE_PADDING) / BYTES_PER_CELL);
         this.baseAddr = baseAddr;
 
-        GridUnsafe.setMemory(baseAddr, size, (byte)0);
+        GridUnsafe.zeroMemory(baseAddr, size);
     }
 
     /**

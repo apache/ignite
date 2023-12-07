@@ -53,9 +53,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -226,7 +224,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             GridCacheAdapter<Integer, String> cache1 = ((IgniteKernal)g1).internalCache(DEFAULT_CACHE_NAME);
 
             // Cache rebalancing events should not be fired for this cache.
-            CacheConfiguration ccfg = cacheConfiguration(((IgniteKernal)g1).getInstanceName())
+            CacheConfiguration ccfg = cacheConfiguration(g1.name())
                 .setName(DEFAULT_CACHE_NAME + "_evts_disabled")
                 .setEventsDisabled(true);
 
@@ -387,9 +385,9 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             IgniteCache<Integer, Object> cache2 = g2.cache(DEFAULT_CACHE_NAME);
             IgniteCache<Integer, Object> cache3 = g3.cache(DEFAULT_CACHE_NAME);
 
-            final Class<CacheEntryListener> cls1 = (Class<CacheEntryListener>) getExternalClassLoader().
+            final Class<CacheEntryListener> cls1 = (Class<CacheEntryListener>)getExternalClassLoader().
                 loadClass("org.apache.ignite.tests.p2p.CacheDeploymentCacheEntryListener");
-            final Class<CacheEntryEventSerializableFilter> cls2 = (Class<CacheEntryEventSerializableFilter>) getExternalClassLoader().
+            final Class<CacheEntryEventSerializableFilter> cls2 = (Class<CacheEntryEventSerializableFilter>)getExternalClassLoader().
                 loadClass("org.apache.ignite.tests.p2p.CacheDeploymentCacheEntryEventSerializableFilter");
 
             CacheEntryListenerConfiguration<Integer, Object> lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
@@ -551,8 +549,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testExternalClassesAtEventP2pDisabled() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
         testExternalClassesAtEvent0(true);
     }
 
@@ -561,8 +557,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testExternalClassesAtEvent() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
         testExternalClassesAtEvent0(false);
     }
 
@@ -747,8 +741,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMultipleNodes() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10082", MvccFeatureChecker.forcedMvcc());
-
         preloadMode = ASYNC;
         batchSize = 256;
 
@@ -864,7 +856,9 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     private static class EventListener implements IgnitePredicate<Event> {
+        /** {@inheritDoc} */
         @Override public boolean apply(Event evt) {
             System.out.println("Cache event: " + evt);
 

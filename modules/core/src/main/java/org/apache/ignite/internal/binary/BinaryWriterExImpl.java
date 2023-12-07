@@ -292,11 +292,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             useCompactFooter = false;
         }
 
-        int finalSchemaId;
         int offset;
 
         if (fieldCnt != 0) {
-            finalSchemaId = schemaId;
             offset = out.position() - start;
 
             // Write the schema.
@@ -318,16 +316,13 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         }
         else {
             if (rawOffPos != 0) {
-                finalSchemaId = 0;
                 offset = rawOffPos - start;
 
                 // If there is no schema, we are free to write raw offset to schema offset.
                 flags |= BinaryUtils.FLAG_HAS_RAW;
             }
-            else {
-                finalSchemaId = 0;
-                offset = 0;
-            }
+            else
+                offset = GridBinaryMarshaller.DFLT_HDR_LEN;
         }
 
         // Actual write.
@@ -341,7 +336,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         out.unsafeWriteInt(registered ? typeId : GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
         out.unsafePosition(start + GridBinaryMarshaller.TOTAL_LEN_POS);
         out.unsafeWriteInt(retPos - start);
-        out.unsafeWriteInt(finalSchemaId);
+        out.unsafeWriteInt(schemaId);
         out.unsafeWriteInt(offset);
 
         out.unsafePosition(retPos);
@@ -709,21 +704,21 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         }
     }
 
-     /**
-      * @param val Array of timestamps.
-      */
-     void doWriteTimestampArray(@Nullable Timestamp[] val) {
-         if (val == null)
-             out.writeByte(GridBinaryMarshaller.NULL);
-         else {
-             out.unsafeEnsure(1 + 4);
-             out.unsafeWriteByte(GridBinaryMarshaller.TIMESTAMP_ARR);
-             out.unsafeWriteInt(val.length);
+    /**
+     * @param val Array of timestamps.
+     */
+    void doWriteTimestampArray(@Nullable Timestamp[] val) {
+        if (val == null)
+            out.writeByte(GridBinaryMarshaller.NULL);
+        else {
+            out.unsafeEnsure(1 + 4);
+            out.unsafeWriteByte(GridBinaryMarshaller.TIMESTAMP_ARR);
+            out.unsafeWriteInt(val.length);
 
-             for (Timestamp ts : val)
-                 doWriteTimestamp(ts);
-         }
-     }
+            for (Timestamp ts : val)
+                doWriteTimestamp(ts);
+        }
+    }
 
     /**
      * @param val Array of time.
@@ -771,6 +766,34 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             out.writeInt(val.length);
 
             for (Object obj : val)
+                doWriteObject(obj);
+        }
+    }
+
+    /**
+     * @param val Array wrapper.
+     * @throws BinaryObjectException In case of error.
+     */
+    void doWriteBinaryArray(BinaryArray val) throws BinaryObjectException {
+        if (val.array() == null)
+            out.writeByte(GridBinaryMarshaller.NULL);
+        else {
+            if (tryWriteAsHandle(val))
+                return;
+
+            out.unsafeEnsure(1 + 4);
+            out.unsafeWriteByte(val instanceof BinaryEnumArray
+                ? GridBinaryMarshaller.ENUM_ARR
+                : GridBinaryMarshaller.OBJ_ARR
+            );
+            out.unsafeWriteInt(val.componentTypeId());
+
+            if (val.componentTypeId() == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+                doWriteString(val.componentClassName());
+
+            out.writeInt(val.array().length);
+
+            for (Object obj : val.array())
                 doWriteObject(obj);
         }
     }
@@ -1771,22 +1794,22 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeByte(int v) throws IOException {
-        out.writeByte((byte) v);
+        out.writeByte((byte)v);
     }
 
     /** {@inheritDoc} */
     @Override public void writeShort(int v) throws IOException {
-        out.writeShort((short) v);
+        out.writeShort((short)v);
     }
 
     /** {@inheritDoc} */
     @Override public void writeChar(int v) throws IOException {
-        out.writeChar((char) v);
+        out.writeChar((char)v);
     }
 
     /** {@inheritDoc} */
     @Override public void write(int b) throws IOException {
-        out.writeByte((byte) b);
+        out.writeByte((byte)b);
     }
 
     /** {@inheritDoc} */

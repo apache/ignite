@@ -18,20 +18,25 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.net.InetSocketAddress;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.client.monitoring.EventListenerDemultiplexer;
 
 /**
  * Configuration required to initialize {@link TcpClientChannel}.
  */
 final class ClientChannelConfiguration {
     /** Host. */
-    private final InetSocketAddress addr;
+    private final List<InetSocketAddress> addrs;
 
     /** Ssl mode. */
     private final SslMode sslMode;
@@ -96,11 +101,26 @@ final class ClientChannelConfiguration {
     /** User attributes. */
     private final Map<String, String> userAttrs;
 
+    /** Heartbeats. */
+    private final boolean heartbeatEnabled;
+
+    /** Heartbeat interval, in milliseconds. */
+    private final long heartbeatInterval;
+
+    /** Automatic binary configuration. */
+    private final boolean autoBinaryConfigurationEnabled;
+
+    /** */
+    private final IgniteLogger logger;
+
+    /** */
+    private final EventListenerDemultiplexer eventListener;
+
     /**
      * Constructor.
      */
     @SuppressWarnings("UnnecessaryThis")
-    ClientChannelConfiguration(ClientConfiguration cfg, InetSocketAddress addr) {
+    ClientChannelConfiguration(ClientConfiguration cfg, List<InetSocketAddress> addrs) {
         this.sslMode = cfg.getSslMode();
         this.tcpNoDelay = cfg.isTcpNoDelay();
         this.timeout = cfg.getTimeout();
@@ -120,16 +140,21 @@ final class ClientChannelConfiguration {
         this.userPwd = cfg.getUserPassword();
         this.reconnectThrottlingPeriod = cfg.getReconnectThrottlingPeriod();
         this.reconnectThrottlingRetries = cfg.getReconnectThrottlingRetries();
-        this.addr = addr;
+        this.addrs = Collections.unmodifiableList(addrs);
         this.userAttrs = cfg.getUserAttributes();
         this.asyncContinuationExecutor = cfg.getAsyncContinuationExecutor();
+        this.heartbeatEnabled = cfg.isHeartbeatEnabled();
+        this.heartbeatInterval = cfg.getHeartbeatInterval();
+        this.autoBinaryConfigurationEnabled = cfg.isAutoBinaryConfigurationEnabled();
+        this.logger = cfg.getLogger();
+        this.eventListener = EventListenerDemultiplexer.create(cfg);
     }
 
     /**
      * @return Address.
      */
-    public InetSocketAddress getAddress() {
-        return addr;
+    public List<InetSocketAddress> getAddresses() {
+        return addrs;
     }
 
     /**
@@ -278,5 +303,38 @@ final class ClientChannelConfiguration {
      */
     public Executor getAsyncContinuationExecutor() {
         return asyncContinuationExecutor;
+    }
+
+    /**
+     * @return Whether heartbeats are enabled.
+     */
+    public boolean getHeartbeatEnabled() {
+        return heartbeatEnabled;
+    }
+
+    /**
+     * @return Heartbeat interval, in milliseconds.
+     */
+    public long getHeartbeatInterval() {
+        return heartbeatInterval;
+    }
+
+    /**
+     * @return Whether automatic binary configuration is enabled.
+     */
+    public boolean isAutoBinaryConfigurationEnabled() {
+        return autoBinaryConfigurationEnabled;
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger getLogger() {
+        return logger;
+    }
+
+    /** */
+    public EventListenerDemultiplexer eventListener() {
+        return eventListener;
     }
 }

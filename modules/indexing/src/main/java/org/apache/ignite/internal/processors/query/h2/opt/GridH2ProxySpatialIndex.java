@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.HashSet;
 import java.util.List;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.Index;
@@ -57,11 +58,11 @@ public class GridH2ProxySpatialIndex extends GridH2ProxyIndex implements Spatial
 
     /** {@inheritDoc} */
     @Override public Cursor findByGeometry(TableFilter filter, SearchRow first, SearchRow last, SearchRow intersection) {
-        GridH2RowDescriptor desc = ((GridH2Table)idx.getTable()).rowDescriptor();
+        GridQueryRowDescriptor desc = ((GridH2Table)idx.getTable()).rowDescriptor();
 
         return ((SpatialIndex)idx).findByGeometry(filter,
-                desc.prepareProxyIndexRow(first),
-                desc.prepareProxyIndexRow(last),
-                desc.prepareProxyIndexRow(intersection));
+                prepareProxyIndexRow(desc, first),
+                prepareProxyIndexRow(desc, last),
+                prepareProxyIndexRow(desc, intersection));
     }
 }

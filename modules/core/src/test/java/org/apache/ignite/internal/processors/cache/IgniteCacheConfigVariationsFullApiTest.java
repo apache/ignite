@@ -95,7 +95,6 @@ import org.junit.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
@@ -1926,7 +1925,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             try {
                 if (f != null)
                     f.get();
-            } catch (Throwable t) {
+            }
+            catch (Throwable t) {
                 assert false : "Unexpected exception " + t;
             }
         }
@@ -2472,7 +2472,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         tx = txShouldBeUsed() ? transactions().txStart() : null;
 
         try {
-            assertEquals(1, (int) cache.getAndPutIfAbsentAsync("key2", 3).get());
+            assertEquals(1, (int)cache.getAndPutIfAbsentAsync("key2", 3).get());
 
             if (tx != null)
                 tx.commit();
@@ -3229,10 +3229,10 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             @Override public void run() throws Exception {
                 IgniteCache<String, Object> cache = ignite(0).cache(cacheName());
 
-                Map<String, Object> map = new HashMap<String, Object>() {{
-                    for (int i = 0; i < CNT; i++)
-                        put("key" + i, value(i));
-                }};
+                Map<String, Object> map = new HashMap<>();
+
+                for (int i = 0; i < CNT; i++)
+                    map.put("key" + i, value(i));
 
                 for (Map.Entry<String, Object> e : map.entrySet()) {
                     final String key = e.getKey();
@@ -3299,7 +3299,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      */
     @Test
     public void testDeletedEntriesFlag() throws Exception {
-        if (cacheMode() != LOCAL && cacheMode() != REPLICATED) {
+        if (cacheMode() == PARTITIONED) {
             final int cnt = 3;
 
             IgniteCache<String, Integer> cache = jcache();
@@ -4546,13 +4546,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         }, Math.min(ttl * 10, getTestTimeout())));
 
         IgniteCache srvNodeCache = serverNodeCache();
-
-        if (!isMultiJvmObject(srvNodeCache)) {
-            GridCacheAdapter internalCache = internalCache(srvNodeCache);
-
-            if (internalCache.isLocal())
-                return;
-        }
 
         assert c.get(key) == null;
 
@@ -6055,7 +6048,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         };
 
         try {
-            IgniteCache<String, Integer> cache = grid(0).cache(cacheName()).withAllowAtomicOpsInTx();
+            IgniteCache<String, Integer> cache = grid(0).cache(cacheName());
 
             List<String> keys = primaryKeysForCache(0, 2, 1);
 
@@ -6605,16 +6598,19 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      *
      */
     private static class CheckEntriesDeletedTask extends TestIgniteIdxRunnable {
+        /** */
         private final int cnt;
 
         /** */
         private String cacheName;
 
+        /** */
         public CheckEntriesDeletedTask(int cnt, String cacheName) {
             this.cnt = cnt;
             this.cacheName = cacheName;
         }
 
+        /** {@inheritDoc} */
         @Override public void run(int idx) throws Exception {
             for (int i = 0; i < cnt; i++) {
                 String key = String.valueOf(i);

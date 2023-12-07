@@ -23,7 +23,4 @@ package org.apache.ignite.internal.util.ipc;
 public enum IpcEndpointType {
     /** TCP loopback socket. Supported on all platforms. */
     TCP_LOOPBACK,
-
-    /** Shared memory region. Supported on POSIX-compliant OSes. */
-    SHARED_MEMORY
 }

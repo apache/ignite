@@ -37,14 +37,11 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -100,17 +97,6 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     @Test
-    public void testInvokeAllMvccTxCache() throws Exception {
-        Assume.assumeTrue("https://issues.apache.org/jira/browse/IGNITE-8582",
-            MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE));
-
-        check(false, createCacheConfiguration(TRANSACTIONAL_SNAPSHOT));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testInvokeAllAtomicCache() throws Exception {
         check(false, createCacheConfiguration(ATOMIC));
     }
@@ -132,17 +118,6 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testInvokeMvccTxCache() throws Exception {
-        Assume.assumeTrue("https://issues.apache.org/jira/browse/IGNITE-8582",
-            MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE));
-
-        check(true, createCacheConfiguration(TRANSACTIONAL_SNAPSHOT));
-    }
-
-    /**
      * Tests entry's versions consistency after invokeAll.
      *
      * @param single Single invoke or invokeAll.
@@ -159,10 +134,10 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
             for (int i = 0; i < NODES_CNT; i++) {
                 final int iter = i;
 
-                final Set<String> keys = new LinkedHashSet<String>() {{
-                    for (int i = 0; i < cnt; i++)
-                        add("key-" + iter + "-" + i);
-                }};
+                final Set<String> keys = new LinkedHashSet<>();
+
+                for (int j = 0; j < cnt; j++)
+                    keys.add("key-" + iter + "-" + j);
 
                 IgniteEx grid = grid(i);
 

@@ -27,7 +27,7 @@ tab:Unix[]
 cd {IGNITE_HOME}/bin/
 ----
 
-tab:Window[]
+tab:Windows[]
 [source,shell]
 ----
 cd {IGNITE_HOME}\bin\
@@ -48,7 +48,7 @@ tab:Unix[]
 ./ignite.sh ../examples/config/example-ignite.xml
 ----
 
-tab:Window[]
+tab:Windows[]
 [source,shell]
 ----
 ignite.bat ..\examples\config\example-ignite.xml

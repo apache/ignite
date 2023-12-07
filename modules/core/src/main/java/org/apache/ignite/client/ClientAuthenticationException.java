@@ -26,6 +26,8 @@ public class ClientAuthenticationException extends ClientException {
 
     /**
      * Default constructor.
+     *
+     * @param msg Detail exception message.
      */
     public ClientAuthenticationException(String msg) {
         super(msg);

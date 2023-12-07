@@ -34,8 +34,8 @@ public class PlatformCallable extends PlatformAbstractFunc implements IgniteCall
      * @param func Platform func.
      * @param ptr Handle for local execution.
      */
-    public PlatformCallable(Object func, long ptr) {
-        super(func, ptr);
+    public PlatformCallable(Object func, long ptr, String name) {
+        super(func, ptr, name);
     }
 
     /** <inheritdoc /> */

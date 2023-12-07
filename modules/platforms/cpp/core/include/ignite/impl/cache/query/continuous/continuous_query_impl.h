@@ -158,7 +158,7 @@ namespace ignite
                          * means that time check is disabled and entries will be
                          * sent only when buffer is full.
                          *
-                         * @param val Time interval in miliseconds.
+                         * @param val Time interval in milliseconds.
                          */
                         void SetTimeInterval(int64_t val)
                         {
@@ -223,7 +223,7 @@ namespace ignite
                         int32_t bufferSize;
 
                         /**
-                         * Time interval in miliseconds. When a cache update
+                         * Time interval in milliseconds. When a cache update
                          * happens, entry is first put into a buffer. Entries from
                          * buffer will be sent to the master node only if the buffer
                          * is full (its size can be changed via SetBufferSize) or
@@ -286,11 +286,28 @@ namespace ignite
                          * @param lsnr Event listener Invoked on the node where
                          *     continuous query execution has been started.
                          * @param loc Whether query should be executed locally.
+                         * @param filter Remote filter.
                          */
                         template<typename F>
                         ContinuousQueryImpl(Reference<ignite::cache::event::CacheEntryEventListener<K, V> >& lsnr,
                             bool loc, const Reference<F>& filter) :
                             ContinuousQueryImplBase(loc, new event::CacheEntryEventFilterHolder<F>(filter)),
+                            lsnr(lsnr)
+                        {
+                            // No-op.
+                        }
+
+                        /**
+                         * Constructor.
+                         *
+                         * @param lsnr Event listener Invoked on the node where
+                         *     continuous query execution has been started.
+                         * @param loc Whether query should be executed locally.
+                         * @param filter Remote Java filter.
+                         */
+                        ContinuousQueryImpl(Reference<ignite::cache::event::CacheEntryEventListener<K, V> >& lsnr,
+                            bool loc, const ignite::cache::event::JavaCacheEntryEventFilter& filter) :
+                            ContinuousQueryImplBase(loc, new event::JavaCacheEntryEventFilterHolder(filter)),
                             lsnr(lsnr)
                         {
                             // No-op.
@@ -374,7 +391,7 @@ namespace ignite
                          * Constructor.
                          */
                         template<typename F>
-                        RemoteFilterHolder(const Reference<F>& filter):
+                        explicit RemoteFilterHolder(const Reference<F>& filter):
                             ContinuousQueryImplBase(false, new event::CacheEntryEventFilterHolder<F>(filter))
                         {
                             // No-op.

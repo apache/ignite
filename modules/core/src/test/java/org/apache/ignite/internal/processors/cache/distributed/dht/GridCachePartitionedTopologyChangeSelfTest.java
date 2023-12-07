@@ -260,7 +260,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 List<Integer> parts = partitions(node, nodeType);
 
                 info(">>> Partitions for node [nodeId=" + node.localNode().id() + ", parts=" + parts +
-                   ", type=" + nodeType + ']');
+                    ", type=" + nodeType + ']');
 
                 final Map<Integer, Integer> keysMap = keysFor(node, parts);
 

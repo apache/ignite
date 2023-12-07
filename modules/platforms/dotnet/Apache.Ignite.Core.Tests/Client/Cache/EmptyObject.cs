@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     /// Object with no fields.
     /// </summary>
     [Serializable]
-    public class EmptyObject : ISerializable
+    public sealed class EmptyObject : ISerializable
     {
         /// <summary>
         /// Initializes a new instance of the EmptyObject class.

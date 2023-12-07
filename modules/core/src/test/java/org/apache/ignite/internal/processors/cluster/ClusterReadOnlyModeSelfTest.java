@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
+import java.util.HashSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Stream;
 import javax.cache.CacheException;
@@ -28,10 +29,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
-import org.apache.ignite.internal.processors.service.GridServiceAssignmentsKey;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -125,7 +126,8 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
             metaStorage.remove("key");
 
             assertNull(metaStorage.read("key"));
-        } finally {
+        }
+        finally {
             db.checkpointReadUnlock();
         }
     }
@@ -243,7 +245,7 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
             tx.rollback();
         }
 
-        assertEquals(1, (int) cache.get(key));
+        assertEquals(1, (int)cache.get(key));
 
         t.join();
     }
@@ -257,9 +259,22 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
 
         checkClusterInReadOnlyMode(true, grid);
 
-        grid.utilityCache().put(new GridServiceAssignmentsKey("test"), "test");
+        GridCacheUtilityKey<?> key = new GridCacheUtilityKey() {
+            @Override protected boolean equalsx(GridCacheUtilityKey key) {
+                return false;
+            }
 
-        assertEquals("test", grid.utilityCache().get(new GridServiceAssignmentsKey("test")));
+            @Override public int hashCode() {
+                return 0;
+            }
+        };
+
+        HashSet<String> sysTypes = GridTestUtils.getFieldValue(grid.context().marshallerContext(), "sysTypesSet");
+        sysTypes.add(key.getClass().getName());
+
+        grid.utilityCache().put(key, "test");
+
+        assertEquals("test", grid.utilityCache().get(key));
     }
 
     /** */

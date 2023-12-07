@@ -83,8 +83,7 @@ public class JdbcStatementBatchingSelfTest extends JdbcAbstractDmlStatementSelfT
      */
     @Test
     public void testErrorAmidstBatch() throws SQLException {
-        BatchUpdateException reason = (BatchUpdateException)
-            GridTestUtils.assertThrows(log,
+        BatchUpdateException reason = (BatchUpdateException)GridTestUtils.assertThrows(log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     try (Statement stmt = conn.createStatement()) {

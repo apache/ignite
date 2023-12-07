@@ -203,6 +203,7 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
      * Blocking indexing processor.
      */
     private static class BlockingIndexing extends IgniteH2Indexing {
+        /** {@inheritDoc} */
         @Override public void remove(GridCacheContext cctx, GridQueryTypeDescriptor type,
             CacheDataRow row) throws IgniteCheckedException {
             U.sleep(50);

@@ -247,6 +247,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
      * Test service.
      */
     private static class TestService implements Service {
+        /** */
         @LoggerResource
         private IgniteLogger log;
 

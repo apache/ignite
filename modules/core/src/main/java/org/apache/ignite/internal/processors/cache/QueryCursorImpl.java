@@ -187,7 +187,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
      * @return {@code true} if this cursor corresponds to a {@link ResultSet} as a result of query,
      * {@code false} if query was modifying operation like INSERT, UPDATE, or DELETE.
      */
-    public boolean isQuery() {
+    @Override public boolean isQuery() {
         return isQry;
     }
 
@@ -223,10 +223,17 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
 
     /** Query cursor state */
     protected enum State {
-        /** Idle. */ IDLE,
-        /** Executing. */ EXECUTING,
-        /** Execution completed. */ COMPLETED,
-        /** Closed. */CLOSED,
+        /** Idle. */
+        IDLE,
+
+        /** Executing. */
+        EXECUTING,
+
+        /** Execution completed. */
+        COMPLETED,
+
+        /** Closed. */
+        CLOSED,
     }
 
     /**

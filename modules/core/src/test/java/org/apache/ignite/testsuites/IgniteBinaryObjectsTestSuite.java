@@ -18,10 +18,12 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.binary.BinaryArrayIdentityResolverSelfTest;
+import org.apache.ignite.internal.binary.BinaryArraySelfTest;
 import org.apache.ignite.internal.binary.BinaryBasicIdMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryBasicNameMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryConfigurationConsistencySelfTest;
 import org.apache.ignite.internal.binary.BinaryConfigurationCustomSerializerSelfTest;
+import org.apache.ignite.internal.binary.BinaryContextPredefinedTypesTest;
 import org.apache.ignite.internal.binary.BinaryEnumsSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldExtractionSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldsHeapSelfTest;
@@ -58,6 +60,7 @@ import org.apache.ignite.internal.binary.streams.BinaryOffheapStreamByteOrderSel
 import org.apache.ignite.internal.processors.cache.binary.BinaryAtomicCacheLocalEntriesSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataInMemoryTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataMoveLegacyFolderTest;
+import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegisterClassTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegistrationCacheApiTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegistrationCacheStoreTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegistrationEntryProcessorTest;
@@ -65,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRemoveTe
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRemoveWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataUpdatesFlowTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryTxCacheLocalEntriesSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryConfigurationWithAffinityKeyClientReconnectTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectMetadataExchangeMultinodeTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectUserClassloaderSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBinariesDefaultMappersSelfTest;
@@ -81,9 +85,6 @@ import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCa
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsPartitionedOnheapSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsPartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.replicated.GridCacheBinaryObjectsReplicatedSelfTest;
-import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsAtomicLocalSelfTest;
-import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsLocalOnheapSelfTest;
-import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteBinaryMetadataUpdateChangingTopologySelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -93,6 +94,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    BinaryMetadataRegisterClassTest.class,
     BinaryMetadataRemoveTest.class,
     BinaryMetadataRemoveWithPersistenceTest.class,
 
@@ -120,6 +122,7 @@ import org.junit.runners.Suite;
     BinaryFooterOffsetsHeapSelfTest.class,
     BinaryFooterOffsetsOffheapSelfTest.class,
     BinaryEnumsSelfTest.class,
+    BinaryArraySelfTest.class,
     GridDefaultBinaryMappersBinaryMetaDataSelfTest.class,
     GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest.class,
     GridBinaryAffinityKeySelfTest.class,
@@ -138,9 +141,6 @@ import org.junit.runners.Suite;
     BinaryFooterOffsetsHeapNonCompactSelfTest.class,
     BinaryFooterOffsetsOffheapNonCompactSelfTest.class,
 
-    GridCacheBinaryObjectsLocalSelfTest.class,
-    GridCacheBinaryObjectsLocalOnheapSelfTest.class,
-    GridCacheBinaryObjectsAtomicLocalSelfTest.class,
     GridCacheBinaryObjectsReplicatedSelfTest.class,
     GridCacheBinaryObjectsPartitionedSelfTest.class,
     GridCacheBinaryObjectsPartitionedNearDisabledSelfTest.class,
@@ -168,6 +168,8 @@ import org.junit.runners.Suite;
     BinaryTxCacheLocalEntriesSelfTest.class,
     BinaryAtomicCacheLocalEntriesSelfTest.class,
 
+    GridCacheBinaryConfigurationWithAffinityKeyClientReconnectTest.class,
+
     // Byte order
     BinaryHeapStreamByteOrderSelfTest.class,
     BinaryAbstractOutputStreamTest.class,
@@ -175,7 +177,8 @@ import org.junit.runners.Suite;
 
     GridCacheBinaryObjectUserClassloaderSelfTest.class,
 
-    BinaryMetadataMoveLegacyFolderTest.class
+    BinaryMetadataMoveLegacyFolderTest.class,
+    BinaryContextPredefinedTypesTest.class,
 })
 public class IgniteBinaryObjectsTestSuite {
 }

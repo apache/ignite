@@ -27,11 +27,11 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFuture;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationException;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -52,7 +52,11 @@ public class IndexesRebuildTask {
      * @param force Force rebuild indexes.
      * @return A future of rebuilding cache indexes.
      */
-    @Nullable public IgniteInternalFuture<?> rebuild(GridCacheContext cctx, boolean force) {
+    @Nullable public IgniteInternalFuture<?> rebuild(
+        GridCacheContext<?, ?> cctx,
+        boolean force,
+        IndexRebuildCancelToken cancelTok
+    ) {
         assert cctx != null;
 
         if (!CU.affinityNode(cctx.localNode(), cctx.config().getNodeFilter()))
@@ -64,14 +68,14 @@ public class IndexesRebuildTask {
 
         String cacheName = cctx.name();
 
-        if (pageStore == null || !pageStore.hasIndexStore(cctx.groupId())) {
-            boolean mvccEnabled = cctx.mvccEnabled();
+        boolean recreate = pageStore == null || !pageStore.hasIndexStore(cctx.groupId());
 
+        if (recreate) {
             // If there are no index store, rebuild all indexes.
-            clo = row -> cctx.queries().store(row, null, mvccEnabled);
+            clo = row -> cctx.queries().store(row, null, false);
         }
         else {
-            Collection<InlineIndex> toRebuild = cctx.kernalContext().indexProcessor().treeIndexes(cctx, !force);
+            Collection<InlineIndex> toRebuild = cctx.kernalContext().indexProcessor().treeIndexes(cctx.name(), !force);
 
             if (F.isEmpty(toRebuild))
                 return null;
@@ -82,23 +86,36 @@ public class IndexesRebuildTask {
         // Closure prepared, do rebuild.
         cctx.kernalContext().query().markAsRebuildNeeded(cctx, true);
 
+        IgniteLogger log = cctx.kernalContext().grid().log();
+
+        if (recreate) {
+            cctx.kernalContext().query().markIndexRecreate(cctx);
+
+            cctx.group().indexWalEnabled(false);
+
+            if (log.isInfoEnabled()) {
+                log.info("WAL disabled for index partition " +
+                    "[name=" + cctx.group().cacheOrGroupName() + ", id=" + cctx.groupId() + ']');
+            }
+        }
+
         GridFutureAdapter<Void> rebuildCacheIdxFut = new GridFutureAdapter<>();
 
         // To avoid possible data race.
         GridFutureAdapter<Void> outRebuildCacheIdxFut = new GridFutureAdapter<>();
 
-        IgniteLogger log = cctx.kernalContext().grid().log();
-
         // An internal future for the ability to cancel index rebuilding.
-        SchemaIndexCacheFuture intRebFut = new SchemaIndexCacheFuture(new SchemaIndexOperationCancellationToken());
+        SchemaIndexCacheFuture intRebFut = new SchemaIndexCacheFuture(cancelTok);
 
         SchemaIndexCacheFuture prevIntRebFut = idxRebuildFuts.put(cctx.cacheId(), intRebFut);
 
         // Check that the previous rebuild is completed.
         assert prevIntRebFut == null;
 
-        rebuildCacheIdxFut.listen(fut -> {
-            Throwable err = fut.error();
+        cctx.kernalContext().query().onStartRebuildIndexes(cctx, recreate);
+
+        rebuildCacheIdxFut.listen(() -> {
+            Throwable err = rebuildCacheIdxFut.error();
 
             if (err == null) {
                 try {
@@ -111,8 +128,32 @@ public class IndexesRebuildTask {
 
             if (err != null)
                 U.error(log, "Failed to rebuild indexes for cache: " + cacheName, err);
+            else
+                cctx.kernalContext().query().onFinishRebuildIndexes(cctx);
 
             idxRebuildFuts.remove(cctx.cacheId(), intRebFut);
+
+            if (recreate) {
+                boolean recreateContinues = false;
+
+                for (GridCacheContext<?, ?> cctx0 : cctx.group().caches()) {
+                    if (idxRebuildFuts.containsKey(cctx0.cacheId())) {
+                        recreateContinues = true;
+
+                        break;
+                    }
+                }
+
+                if (!recreateContinues) {
+                    cctx.group().indexWalEnabled(true);
+
+                    if (log.isInfoEnabled()) {
+                        log.info("WAL enabled for index partition " +
+                            "[name=" + cctx.group().cacheOrGroupName() + ", id=" + cctx.group().groupId() + ']');
+                    }
+                }
+            }
+
             intRebFut.onDone(err);
 
             outRebuildCacheIdxFut.onDone(err);
@@ -129,15 +170,15 @@ public class IndexesRebuildTask {
      * @param cctx Cache context.
      * @param fut Future for rebuild indexes.
      * @param clo Closure.
-     * @param cancel Cancellation token.
+     * @param cancelTok Cancellation token.
      */
     protected void startRebuild(
         GridCacheContext cctx,
         GridFutureAdapter<Void> fut,
         SchemaIndexCacheVisitorClosure clo,
-        SchemaIndexOperationCancellationToken cancel
+        IndexRebuildCancelToken cancelTok
     ) {
-        new SchemaIndexCacheVisitorImpl(cctx, cancel, fut).visit(clo);
+        new SchemaIndexCacheVisitorImpl(cctx, cancelTok, fut).visit(clo);
     }
 
     /**
@@ -157,7 +198,8 @@ public class IndexesRebuildTask {
      * @param log Logger.
      */
     private void cancelIndexRebuildFuture(@Nullable SchemaIndexCacheFuture rebFut, IgniteLogger log) {
-        if (rebFut != null && !rebFut.isDone() && rebFut.cancelToken().cancel()) {
+        if (rebFut != null && !rebFut.isDone() &&
+            rebFut.cancelToken().cancel(new SchemaIndexOperationCancellationException("Index rebuild was cancelled."))) {
             try {
                 rebFut.get();
             }

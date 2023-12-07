@@ -238,6 +238,11 @@ public class PartitionUpdateCounterDebugWrapper implements PartitionUpdateCounte
     }
 
     /** {@inheritDoc} */
+    @Override public long highestAppliedCounter() {
+        return delegate.highestAppliedCounter();
+    }
+
+    /** {@inheritDoc} */
     @Override public long reserved() {
         return delegate.reserved();
     }
@@ -273,7 +278,18 @@ public class PartitionUpdateCounterDebugWrapper implements PartitionUpdateCounte
     }
 
     /** {@inheritDoc} */
+    @Override public Object comparableState() {
+        return delegate.comparableState();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return delegate.toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        return o instanceof PartitionUpdateCounterDebugWrapper
+                && delegate.equals(((PartitionUpdateCounterDebugWrapper)o).delegate);
     }
 }

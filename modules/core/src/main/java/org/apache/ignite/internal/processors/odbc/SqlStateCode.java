@@ -42,6 +42,9 @@ public final class SqlStateCode {
     /** IO error during communication. */
     public static final String CONNECTION_FAILURE = "08006";
 
+    /** Generic data exception. */
+    public static final String DATA_EXCEPTION = "22000";
+
     /** Null value occurred where it wasn't expected to. */
     public static final String NULL_VALUE = "22004";
 

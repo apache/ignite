@@ -146,6 +146,7 @@ public interface ClientCache<K, V> {
      * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
      *
      * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
+     * @return The number of all entries cached across all nodes.
      */
     public int size(CachePeekMode... peekModes) throws ClientException;
 
@@ -634,12 +635,16 @@ public interface ClientCache<K, V> {
     /**
      * Clears entry with specified key from the cache.
      * In contrast to {@link #remove(Object)}, this method does not notify event listeners and cache writers.
+     *
+     * @param key Cache entry key to clear.
      */
     public void clear(K key) throws ClientException;
 
     /**
      * Clears entry with specified key from the cache asynchronously.
      * In contrast to {@link #removeAsync(Object)}, this method does not notify event listeners and cache writers.
+     *
+     * @param key Cache entry key to clear.
      * @return Future representing pending completion of the operation.
      */
     public IgniteClientFuture<Void> clearAsync(K key) throws ClientException;
@@ -647,12 +652,16 @@ public interface ClientCache<K, V> {
     /**
      * Clears entries with specified keys from the cache.
      * In contrast to {@link #removeAll(Set)}, this method does not notify event listeners and cache writers.
+     *
+     * @param keys Cache entry keys to clear.
      */
     public void clearAll(Set<? extends K> keys) throws ClientException;
 
     /**
      * Clears entries with specified keys from the cache asynchronously.
      * In contrast to {@link #removeAllAsync(Set)}, this method does not notify event listeners and cache writers.
+     *
+     * @param keys Cache entry keys to clear.
      * @return Future representing pending completion of the operation.
      */
     public IgniteClientFuture<Void> clearAllAsync(Set<? extends K> keys) throws ClientException;
@@ -692,6 +701,8 @@ public interface ClientCache<K, V> {
      * if default marshaller is used.
      * If not, this method is no-op and will return current cache.
      *
+     * @param <K1> Client cache key type.
+     * @param <V1> Client cache value type.
      * @return New cache instance for binary objects.
      */
     public <K1, V1> ClientCache<K1, V1> withKeepBinary();
@@ -700,6 +711,9 @@ public interface ClientCache<K, V> {
      * Returns cache with the specified expired policy set. This policy will be used for each operation invoked on
      * the returned cache.
      *
+     * @param expirePlc Expiration policy.
+     * @param <K1> Client cache key type.
+     * @param <V1> Client cache value type.
      * @return Cache instance with the specified expiry policy set.
      */
     public <K1, V1> ClientCache<K1, V1> withExpirePolicy(ExpiryPolicy expirePlc);
@@ -712,6 +726,7 @@ public interface ClientCache<K, V> {
      * notified about client disconnected event via {@link ClientDisconnectListener} interface if you need it.
      *
      * @param qry Query.
+     * @param <R> Query result type.
      * @return Cursor.
      */
     public <R> QueryCursor<R> query(Query<R> qry);
@@ -724,6 +739,7 @@ public interface ClientCache<K, V> {
      *
      * @param qry Query.
      * @param disconnectListener Listener of client disconnected event.
+     * @param <R> Query result type.
      * @return Cursor.
      */
     public <R> QueryCursor<R> query(ContinuousQuery<K, V> qry, ClientDisconnectListener disconnectListener);

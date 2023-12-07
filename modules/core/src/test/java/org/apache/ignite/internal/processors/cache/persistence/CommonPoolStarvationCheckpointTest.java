@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -99,7 +100,7 @@ public class CommonPoolStarvationCheckpointTest extends GridCommonAbstractTest {
     public void testCommonPoolStarvation() throws Exception {
         IgniteEx grid = startGrid(0);
 
-        grid.cluster().active(true);
+        grid.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, OnePageValue> cache = grid.cache(CACHE_NAME);
 

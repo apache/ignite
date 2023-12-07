@@ -81,7 +81,7 @@ public class PlatformIsPartitionReservedTask extends ComputeTaskAdapter<Object[]
 
         /** {@inheritDoc} */
         @Nullable @Override public Boolean execute() {
-            GridKernalContext ctx = ((IgniteEx) ignite).context();
+            GridKernalContext ctx = ((IgniteEx)ignite).context();
 
             GridDhtPartitionTopology top = ctx.cache().cache(cacheName).context().topology();
 

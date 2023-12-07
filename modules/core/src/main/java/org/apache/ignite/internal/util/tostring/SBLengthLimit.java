@@ -71,6 +71,7 @@ class SBLengthLimit {
         }
     }
 
+    /** */
     CircularStringBuilder getTail() {
         return new CircularStringBuilder(TAIL_LEN);
     }

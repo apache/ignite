@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -43,7 +42,6 @@ import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -56,10 +54,6 @@ import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
  *
  */
 public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstractTest {
-    /** Force mvcc. */
-    protected static final boolean FORCE_MVCC =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, false);
-
     /** Transaction timeout. */
     private static final long TX_TIMEOUT = 400L;
 
@@ -119,8 +113,9 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
         for (CacheConfiguration<Integer, Integer> ccfg : cacheConfigurations()) {
             grid(0).createCache(ccfg);
 
-            if (ccfg.getCacheMode() != LOCAL && !FORCE_MVCC)
-                client.createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
+            awaitCacheOnClient(client, ccfg.getName());
+
+            client.createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
         }
 
         awaitPartitionMapExchange();
@@ -221,11 +216,6 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
     public void testCrossCacheTxInAnotherThread() throws Exception {
         executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
             @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
-                // TODO: IGNITE-9110 Optimistic tx hangs in cross-cache operations with LOCAL and non LOCAL caches.
-                if (transactionConcurrency() == TransactionConcurrency.OPTIMISTIC
-                    && cache.getConfiguration(CacheConfiguration.class).getCacheMode() == LOCAL)
-                    return;
-
                 for (TransactionIsolation isolation : TransactionIsolation.values()) {
                     final IgniteCache<Integer, Integer> otherCache = ignite.getOrCreateCache(
                         cacheConfiguration("otherCache", PARTITIONED, 0, false));
@@ -598,9 +588,6 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
         cfgs.add(cacheConfiguration("cache3", PARTITIONED, 1, true));
         cfgs.add(cacheConfiguration("cache4", REPLICATED, 0, false));
 
-        if (!FORCE_MVCC)
-            cfgs.add(cacheConfiguration("cache5", LOCAL, 0, false));
-
         return cfgs;
     }
 
@@ -642,7 +629,7 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
             log.info(">>> Run test for node [node=" + locNode.id() + ", client=" + locNode.isClient() + ']');
 
             for (CacheConfiguration ccfg : cacheConfigurations()) {
-                if (locNode.isClient() && ccfg.getCacheMode() == LOCAL)
+                if (locNode.isClient())
                     continue;
 
                 log.info(">>>> Run test for cache " + ccfg.getName());

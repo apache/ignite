@@ -38,10 +38,10 @@ public class MessageOrderLogListener extends LogListener {
      * @param messages array of messages that will be unified into ordered group.
      */
     public MessageOrderLogListener(String... messages) {
-        this(new MessageGroup(true) {{
-            for (String m : messages)
-                add(m);
-        }});
+        this.matchesGrp = new MessageGroup(true);
+
+        for (String m : messages)
+            matchesGrp.add(m);
     }
 
     /**

@@ -1,6 +1,6 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
+ * contributor license agreements. See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * Encrypted record from WAL.
  * That types of record returned from a {@code RecordDataSerializer} on offline WAL iteration.
@@ -25,12 +27,12 @@ public class EncryptedRecord extends WALRecord implements WalRecordCacheGroupAwa
     /**
      * Group id.
      */
-    private int grpId;
+    private final int grpId;
 
     /**
      * Type of plain record.
      */
-    private RecordType plainRecType;
+    private final RecordType plainRecType;
 
     /**
      * @param grpId Group id
@@ -56,5 +58,10 @@ public class EncryptedRecord extends WALRecord implements WalRecordCacheGroupAwa
      */
     public RecordType plainRecordType() {
         return plainRecType;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(EncryptedRecord.class, this, "super", super.toString());
     }
 }

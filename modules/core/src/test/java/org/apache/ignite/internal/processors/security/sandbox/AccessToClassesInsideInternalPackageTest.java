@@ -23,6 +23,7 @@ import java.security.AccessControlException;
 import java.security.Permissions;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -32,7 +33,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.security.SecurityUtils.IGNITE_INTERNAL_PACKAGE;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -64,7 +65,7 @@ public class AccessToClassesInsideInternalPackageTest extends AbstractSandboxTes
             "\n" +
             "public class TestInternalUtilsCallable implements IgniteCallable {\n" +
             "    @Override public Object call() throws Exception {\n" +
-            "        return IgnitionEx.isDaemon();\n" +
+            "        return IgnitionEx.isClientMode();\n" +
             "    }\n" +
             "}";
 
@@ -100,18 +101,18 @@ public class AccessToClassesInsideInternalPackageTest extends AbstractSandboxTes
 
     /** {@inheritDoc} */
     @Override protected void prepareCluster() throws Exception {
-        Ignite srv = startGrid("srv", ALLOW_ALL, false);
+        Ignite srv = startGrid("srv", ALL_PERMISSIONS, false);
 
         Permissions perms = new Permissions();
 
         perms.add(new RuntimePermission("accessClassInPackage." + IGNITE_INTERNAL_PACKAGE));
         perms.add(new RuntimePermission("accessClassInPackage." + IGNITE_INTERNAL_PACKAGE + ".*"));
 
-        startGrid(ALLOWED, ALLOW_ALL, perms, false);
+        startGrid(ALLOWED, ALL_PERMISSIONS, perms, false);
 
-        startGrid(FORBIDDEN, ALLOW_ALL, false);
+        startGrid(FORBIDDEN, ALL_PERMISSIONS, false);
 
-        srv.cluster().active(true);
+        srv.cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */

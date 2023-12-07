@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.database.baseline;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -53,7 +54,7 @@ public class IgniteStableBaselineCacheQueryNodeRestartsSelfTest extends IgniteCa
 
         initStoreStrategy();
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         stopGrid(gridCount());
 
@@ -91,6 +92,7 @@ public class IgniteStableBaselineCacheQueryNodeRestartsSelfTest extends IgniteCa
         }, 1, "restart-thread");
     }
 
+    /** {@inheritDoc} */
     @Override protected int countRebalances(int nodes, int restarts) {
         return 0;
     }

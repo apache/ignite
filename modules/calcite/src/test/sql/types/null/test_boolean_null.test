@@ -1,0 +1,36 @@
+# name: test/sql/types/null/test_boolean_null.test
+# description: Booleans and NULLs
+# group: [null]
+
+statement ok
+PRAGMA enable_verification
+
+# AND
+query TTTTTTTTT
+SELECT FALSE AND FALSE, FALSE AND TRUE, TRUE AND FALSE, TRUE AND TRUE, NULL AND FALSE, NULL AND TRUE, FALSE AND NULL, TRUE AND NULL, NULL AND NULL
+----
+false	false	false	true	false	NULL	false	NULL	NULL
+
+# OR
+query TTTTTTTTT
+SELECT FALSE OR FALSE, FALSE OR TRUE, TRUE OR FALSE, TRUE OR TRUE, NULL OR FALSE, NULL OR TRUE, FALSE OR NULL, TRUE OR NULL, NULL OR NULL
+----
+false	true	true	true	NULL	true	NULL	true	NULL
+
+# NOT
+query TTT
+SELECT NOT(FALSE), NOT(TRUE), NOT(NULL)
+----
+true	false	NULL
+
+# IS NULL
+query TTTT
+SELECT NULL IS NULL, NULL IS NOT NULL, 42 IS NULL, 42 IS NOT NULL
+----
+true	false	false	true
+
+# Comparisions
+query TTTT
+SELECT NULL = NULL, NULL <> NULL, 42 = NULL, 42 <> NULL
+----
+NULL	NULL	NULL	NULL

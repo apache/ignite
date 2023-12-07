@@ -24,6 +24,7 @@ import java.net.Socket;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcEndpointBindException;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
@@ -81,7 +82,7 @@ public class IpcServerTcpEndpoint implements IpcServerEndpoint {
     /** {@inheritDoc} */
     @Override public IpcEndpoint accept() throws IgniteCheckedException {
         try {
-            Socket sock = srvSock.accept();
+            Socket sock = IgniteUtils.acceptServerSocket(srvSock);
 
             return new IpcClientTcpEndpoint(sock);
         }

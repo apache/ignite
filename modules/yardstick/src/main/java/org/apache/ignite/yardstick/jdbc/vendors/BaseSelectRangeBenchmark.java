@@ -91,7 +91,7 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
     @Override protected void setupData() throws Exception {
         // Don't use default tables.
         // Instead we are able to use ignite instance to check cluster, before this instance gets closed.
-         Collection<ClusterNode> srvNodes = ignite().cluster().forServers().nodes();
+        Collection<ClusterNode> srvNodes = ignite().cluster().forServers().nodes();
 
         if (srvNodes.size() > 1) {
             throw new IllegalStateException("This benchmark is designed to no more than one server (data) node. " +

@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.JavaObjectIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.PlainJavaObjectIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -28,12 +29,12 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 public class ObjectHashInlineIndexKeyType extends NullableInlineIndexKeyType<JavaObjectIndexKey> {
     /** */
     public ObjectHashInlineIndexKeyType() {
-        super(IndexKeyTypes.JAVA_OBJECT, (short) 4);
+        super(IndexKeyType.JAVA_OBJECT, (short)4);
     }
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, JavaObjectIndexKey val, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte) type());
+        PageUtils.putByte(pageAddr, off, (byte)type().code());
         PageUtils.putInt(pageAddr, off + 1, val.hashCode());
 
         return keySize + 1;
@@ -48,7 +49,7 @@ public class ObjectHashInlineIndexKeyType extends NullableInlineIndexKeyType<Jav
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, JavaObjectIndexKey v) {
+    @Override public int compare0(long pageAddr, int off, IndexKey v) {
         int val1 = PageUtils.getInt(pageAddr, off + 1);
         int val2 = v.hashCode();
 

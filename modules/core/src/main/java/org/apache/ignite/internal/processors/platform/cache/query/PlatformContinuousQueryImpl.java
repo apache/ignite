@@ -156,12 +156,10 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
                 initialQryCur = getInitialQueryCursor(initialQry);
             }
             catch (Exception e) {
-                try
-                {
+                try {
                     close0();
                 }
-                catch (Exception ignored)
-                {
+                catch (Exception ignored) {
                     // Ignore
                 }
 
@@ -262,6 +260,10 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
                 @Override public List<GridQueryFieldMetadata> fieldsMeta() {
                     return ((QueryCursorEx)cursor).fieldsMeta();
                 }
+
+                @Override public boolean isQuery() {
+                    return false;
+                }
             }, batchSize);
 
         return new PlatformQueryCursor(platformCtx, new QueryCursorEx<Cache.Entry>() {
@@ -284,6 +286,10 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
 
             @Override public List<GridQueryFieldMetadata> fieldsMeta() {
                 return null;
+            }
+
+            @Override public boolean isQuery() {
+                return false;
             }
         }, batchSize);
     }

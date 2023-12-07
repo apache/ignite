@@ -21,9 +21,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
 import javax.cache.Cache;
-
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.Ignition;
@@ -31,21 +32,25 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientCluster;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientConnectionException;
+import org.apache.ignite.client.ClientDisconnectListener;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.cluster.ClusterState;
@@ -244,6 +249,7 @@ public class JavaThinClient {
     }
 
     public static final String KEYSTORE = "keystore/client.jks";
+
     public static final String TRUSTSTORE = "keystore/trust.jks";
 
     @Test
@@ -318,7 +324,6 @@ public class JavaThinClient {
         // end::results-to-map[]
     }
 
-
     void veiwsystemview() {
         //tag::system-views[]
         ClientConfiguration cfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
@@ -326,12 +331,12 @@ public class JavaThinClient {
         try (IgniteClient igniteClient = Ignition.startClient(cfg)) {
 
             // getting the id of the first node
-            UUID nodeId = (UUID) igniteClient.query(new SqlFieldsQuery("SELECT * from NODES").setSchema("IGNITE"))
+            UUID nodeId = (UUID) igniteClient.query(new SqlFieldsQuery("SELECT * from NODES").setSchema("SYS"))
             .getAll().iterator().next().get(0);
 
             double cpu_load = (Double) igniteClient
             .query(new SqlFieldsQuery("select CUR_CPU_LOAD * 100 from NODE_METRICS where NODE_ID = ? ")
-            .setSchema("IGNITE").setArgs(nodeId.toString()))
+            .setSchema("SYS").setArgs(nodeId.toString()))
             .getAll().iterator().next().get(0);
 
             System.out.println("node's cpu load = " + cpu_load);
@@ -354,10 +359,41 @@ public class JavaThinClient {
         try (IgniteClient client = Ignition.startClient(cfg)) {
             ClientCache<Integer, String> cache = client.cache("myCache");
             // Put, get or remove data from the cache...
+            cache.put(0, "Hello, world!");
+            // The partition number can be specified with IndexQuery#setPartition(Integer) as well.
+            ScanQuery scanQuery = new ScanQuery().setPartition(part);
         } catch (ClientException e) {
             System.err.println(e.getMessage());
         }
         //end::partition-awareness[]
+    }
+
+    void partitionAwarenessWithCustomMapper() throws Exception {
+        //tag::partition-awareness-with-mapper[]
+        // Partition awarenes is enabled by default since Apache Ignite 2.11 release.
+        ClientConfiguration cfg = new ClientConfiguration()
+            .setAddresses("node1_address:10800", "node2_address:10800", "node3_address:10800")
+            .setPartitionAwarenessMapperFactory(new ClientPartitionAwarenessMapperFactory() {
+                /** {@inheritDoc} */
+                @Override public ClientPartitionAwarenessMapper create(String cacheName, int partitions) {
+                    AffinityFunction aff = new RendezvousAffinityFunction(false, partitions);
+
+                    return aff::partition;
+                }
+            })
+
+        try (IgniteClient client = Ignition.startClient(cfg)) {
+            ClientCache<Integer, String> cache = client.cache(PART_CUSTOM_AFFINITY_CACHE_NAME);
+            // Put, get or remove data from the cache, partition awarenes will be enabled.
+        }
+        catch (ClientException e) {
+            System.err.println(e.getMessage());
+        }
+        //end::partition-awareness-with-mapper[]
+    }
+
+    private String[] fetchServerAddresses() {
+        return null;
     }
 
     void clientAddressFinder() throws Exception {
@@ -369,7 +405,7 @@ public class JavaThinClient {
         };
 
         ClientConfiguration cfg = new ClientConfiguration()
-            .setAddressFinder(finder)
+            .setAddressesFinder(finder)
             .setPartitionAwarenessEnabled(true);
 
         try (IgniteClient client = Ignition.startClient(cfg)) {
@@ -450,6 +486,33 @@ public class JavaThinClient {
         IgniteClientFuture<String> getFut = cache.getAsync(1);
         getFut.thenAccept(val -> System.out.println(val)); // Non-blocking continuation.
         //end::async-api[]
+    }
+
+    void continuousQueries() throws Exception {
+        ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
+
+        try (IgniteClient client = Ignition.startClient(clientCfg)) {
+            //tag::continuous-queries[]
+            ClientCache<Integer, String> cache = client.getOrCreateCache("myCache");
+
+            ContinuousQuery<Integer, String> query = new ContinuousQuery<>();
+
+            query.setLocalListener(new CacheEntryUpdatedListener<Integer, String>() {
+                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> events)
+                    throws CacheEntryListenerException {
+                    // react to the update events here
+                }
+            });
+
+            ClientDisconnectListener disconnectListener = new ClientDisconnectListener() {
+                @Override public void onDisconnected(Exception reason) {
+                    // react to the disconnect event here
+                }
+            };
+
+            cache.query(query, disconnectListener);
+            //end::continuous-queries[]
+        }
     }
 
     private static class MyTask {

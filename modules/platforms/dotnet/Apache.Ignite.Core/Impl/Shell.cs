@@ -17,8 +17,12 @@
 
 namespace Apache.Ignite.Core.Impl
 {
+    using System;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Text;
+    using System.Threading;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Shell utils (cmd/bash).
@@ -27,39 +31,93 @@ namespace Apache.Ignite.Core.Impl
     internal static class Shell
     {
         /// <summary>
-        /// Executes Bash command.
-        /// </summary>
-        public static string BashExecute(string args)
-        {
-            return Execute("/bin/bash", args);
-        }
-
-        /// <summary>
         /// Executes the command.
         /// </summary>
-        private static string Execute(string file, string args)
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "ExecuteSafe should ignore all exceptions.")]
+        public static string ExecuteSafe(string file, string args, int timeoutMs = 1000, ILogger log = null)
         {
-            var escapedArgs = args.Replace("\"", "\\\"");
-
-            var process = new Process
+            try
             {
-                StartInfo = new ProcessStartInfo
+                var processStartInfo = new ProcessStartInfo
                 {
                     FileName = file,
-                    Arguments = string.Format("-c \"{0}\"", escapedArgs),
+                    Arguments = args,
                     RedirectStandardOutput = true,
+                    RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
+                };
+
+                var stdOut = new StringBuilder();
+                var stdErr = new StringBuilder();
+
+                using (var stdOutEvt = new ManualResetEventSlim())
+                using (var stdErrEvt = new ManualResetEventSlim())
+                using (var process = new Process {StartInfo = processStartInfo})
+                {
+                    process.OutputDataReceived += (_, e) =>
+                    {
+                        if (e.Data == null)
+                        {
+                            // ReSharper disable once AccessToDisposedClosure
+                            stdOutEvt.Set();
+                        }
+                        else
+                        {
+                            stdOut.AppendLine(e.Data);
+                        }
+                    };
+
+                    process.ErrorDataReceived += (_, e) =>
+                    {
+                        if (e.Data == null)
+                        {
+                            // ReSharper disable once AccessToDisposedClosure
+                            stdErrEvt.Set();
+                        }
+                        else
+                        {
+                            stdErr.AppendLine(e.Data);
+                        }
+                    };
+
+                    process.Start();
+
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+
+                    if (!process.WaitForExit(timeoutMs))
+                    {
+                        log?.Warn("Shell command '{0}' timed out.", file);
+
+                        process.Kill();
+                    }
+
+                    if (!stdOutEvt.Wait(timeoutMs) || !stdErrEvt.Wait(timeoutMs))
+                    {
+                        log?.Warn("Shell command '{0}' timed out when waiting for stdout/stderr.", file);
+                    }
+
+                    if (stdErr.Length > 0)
+                    {
+                        log?.Warn("Shell command '{0}' stderr: '{1}'", file, stdErr);
+                    }
+
+                    if (process.ExitCode != 0)
+                    {
+                        log?.Warn("Shell command '{0}' exit code: {1}", file, process.ExitCode);
+                    }
+
+                    return stdOut.ToString();
                 }
-            };
+            }
+            catch (Exception e)
+            {
+                log?.Warn("Shell command '{0}' failed: '{1}'", file, e.Message, e);
 
-            process.Start();
-
-            var res = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
-
-            return res;
+                return string.Empty;
+            }
         }
-
     }
 }

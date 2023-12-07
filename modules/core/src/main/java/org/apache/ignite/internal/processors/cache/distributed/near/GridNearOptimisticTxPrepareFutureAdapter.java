@@ -66,7 +66,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
         if (tx.timeout() > 0) {
             // Init keyLockFut to make sure it is created when {@link #onNearTxLocalTimeout} is called.
             for (IgniteTxEntry e : tx.writeEntries()) {
-                if (e.context().isNear() || e.context().isLocal()) {
+                if (e.context().isNear()) {
                     keyLockFut = new KeyLockFuture();
                     break;
                 }
@@ -74,7 +74,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
 
             if (tx.serializable() && keyLockFut == null) {
                 for (IgniteTxEntry e : tx.readEntries()) {
-                    if (e.context().isNear() || e.context().isLocal()) {
+                    if (e.context().isNear()) {
                         keyLockFut = new KeyLockFuture();
                         break;
                     }

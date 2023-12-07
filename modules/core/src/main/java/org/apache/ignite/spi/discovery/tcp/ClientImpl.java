@@ -797,7 +797,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 msg.client(true);
 
                 if (msg instanceof TraceableMessage)
-                    tracing.messages().beforeSend((TraceableMessage) msg);
+                    tracing.messages().beforeSend((TraceableMessage)msg);
 
                 spi.writeToSocket(sock, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
@@ -1022,21 +1022,18 @@ class ClientImpl extends TcpDiscoveryImpl {
     @Override public void updateMetrics(UUID nodeId,
         ClusterMetrics metrics,
         Map<Integer, CacheMetrics> cacheMetrics,
-        long tsNanos)
-    {
-        boolean isLocDaemon = spi.locNode.isDaemon();
-
+        long tsNanos
+    ) {
         assert nodeId != null;
         assert metrics != null;
-        assert isLocDaemon || cacheMetrics != null;
+        assert cacheMetrics != null;
 
         TcpDiscoveryNode node = nodeId.equals(getLocalNodeId()) ? locNode : rmtNodes.get(nodeId);
 
         if (node != null && node.visible()) {
             node.setMetrics(metrics);
 
-            if (!isLocDaemon)
-                node.setCacheMetrics(cacheMetrics);
+            node.setCacheMetrics(cacheMetrics);
 
             node.lastUpdateTimeNanos(tsNanos);
 
@@ -2148,8 +2145,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                 final int joinCnt0 = joinCnt;
 
                 executorService.schedule(() -> {
-                        queue.add(new JoinTimeout(joinCnt0));
-                    }, spi.joinTimeout, MILLISECONDS);
+                    queue.add(new JoinTimeout(joinCnt0));
+                }, spi.joinTimeout, MILLISECONDS);
             }
 
             sockReader.setSocket(joinRes.get1(), locNode.clientRouterNodeId());
@@ -2167,7 +2164,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             spi.stats.onMessageProcessingStarted(msg);
 
             if (msg instanceof TraceableMessage)
-                tracing.messages().beforeSend((TraceableMessage) msg);
+                tracing.messages().beforeSend((TraceableMessage)msg);
 
             if (msg instanceof TcpDiscoveryNodeAddedMessage)
                 processNodeAddedMessage((TcpDiscoveryNodeAddedMessage)msg);
@@ -2191,7 +2188,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             spi.stats.onMessageProcessingFinished(msg);
 
             if (msg instanceof TraceableMessage)
-                tracing.messages().finishProcessing((TraceableMessage) msg);
+                tracing.messages().finishProcessing((TraceableMessage)msg);
 
             if (spi.ensured(msg)
                     && state == CONNECTED
@@ -2645,21 +2642,18 @@ class ClientImpl extends TcpDiscoveryImpl {
         private void updateMetrics(UUID nodeId,
             ClusterMetrics metrics,
             Map<Integer, CacheMetrics> cacheMetrics,
-            long tsNanos)
-        {
-            boolean isLocDaemon = spi.locNode.isDaemon();
-
+            long tsNanos
+        ) {
             assert nodeId != null;
             assert metrics != null;
-            assert isLocDaemon || cacheMetrics != null;
+            assert cacheMetrics != null;
 
             TcpDiscoveryNode node = nodeId.equals(getLocalNodeId()) ? locNode : rmtNodes.get(nodeId);
 
             if (node != null && node.visible()) {
                 node.setMetrics(metrics);
 
-                if (!isLocDaemon)
-                    node.setCacheMetrics(cacheMetrics);
+                node.setCacheMetrics(cacheMetrics);
 
                 node.lastUpdateTimeNanos(tsNanos);
 

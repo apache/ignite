@@ -19,6 +19,8 @@ package org.apache.ignite.internal.util.worker;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -48,13 +50,17 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
     private volatile boolean finished;
 
     /** Whether or not this runnable is cancelled. */
-    protected volatile boolean isCancelled;
+    protected final AtomicBoolean isCancelled = new AtomicBoolean();
 
     /** Actual thread runner. */
     private volatile Thread runner;
 
     /** Timestamp to be updated by this worker periodically to indicate it's up and running. */
     private volatile long heartbeatTs;
+
+    /** Atomic field updater to change heartbeat. */
+    private static final AtomicLongFieldUpdater<GridWorker> HEARTBEAT_UPDATER =
+        AtomicLongFieldUpdater.newUpdater(GridWorker.class, "heartbeatTs");
 
     /** Mutex for finish awaiting. */
     private final Object mux = new Object();
@@ -109,9 +115,8 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
             log.debug("Grid runnable started: " + name);
 
         try {
-            // Special case, when task gets cancelled before it got scheduled.
-            if (isCancelled)
-                runner.interrupt();
+            if (isCancelled.get())
+                onCancelledBeforeWorkerScheduled();
 
             // Listener callback.
             if (lsnr != null)
@@ -155,7 +160,7 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
                 lsnr.onStopped(this);
 
             if (log.isDebugEnabled())
-                if (isCancelled)
+                if (isCancelled.get())
                     log.debug("Grid runnable finished due to cancellation: " + name);
                 else if (runner.isInterrupted())
                     log.debug("Grid runnable finished due to interruption without cancellation: " + name);
@@ -186,9 +191,9 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
     }
 
     /**
-     * @return Runner thread.
+     * @return Runner thread, {@code null} if the worker has not yet started executing.
      */
-    public Thread runner() {
+    public @Nullable Thread runner() {
         return runner;
     }
 
@@ -211,20 +216,13 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
     }
 
     /**
-     * Cancels this runnable interrupting actual runner.
+     * Cancels this runnable.
      */
     public void cancel() {
         if (log.isDebugEnabled())
             log.debug("Cancelling grid runnable: " + this);
 
-        isCancelled = true;
-
-        Thread runner = this.runner;
-
-        // Cannot apply Future.cancel() because if we do, then Future.get() would always
-        // throw CancellationException and we would not be able to wait for task completion.
-        if (runner != null)
-            runner.interrupt();
+        onCancel(isCancelled.compareAndSet(false, true));
     }
 
     /**
@@ -236,7 +234,7 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
         if (log.isDebugEnabled())
             log.debug("Joining grid runnable: " + this);
 
-        if ((runner == null && isCancelled) || finished)
+        if ((runner == null && isCancelled.get()) || finished)
             return;
 
         synchronized (mux) {
@@ -254,7 +252,7 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
     public boolean isCancelled() {
         Thread runner = this.runner;
 
-        return isCancelled || (runner != null && runner.isInterrupted());
+        return isCancelled.get() || (runner != null && runner.isInterrupted());
     }
 
     /**
@@ -273,7 +271,16 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
 
     /** {@inheritDoc} */
     @Override public void updateHeartbeat() {
-        heartbeatTs = U.currentTimeMillis();
+        long curTs = U.currentTimeMillis();
+        long hbTs = heartbeatTs;
+
+        // Avoid heartbeat update while in the blocking section.
+        while (hbTs < curTs) {
+            if (HEARTBEAT_UPDATER.compareAndSet(this, hbTs, curTs))
+                return;
+
+            hbTs = heartbeatTs;
+        }
     }
 
     /** {@inheritDoc} */
@@ -283,13 +290,38 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
 
     /** {@inheritDoc} */
     @Override public void blockingSectionEnd() {
-        updateHeartbeat();
+        heartbeatTs = U.currentTimeMillis();
     }
 
     /** Can be called from {@link #runner()} thread to perform idleness handling. */
     protected void onIdle() {
         if (lsnr != null)
             lsnr.onIdle(this);
+    }
+
+    /**
+     * Callback on runner cancellation.
+     *
+     * @param firstCancelRequest Flag indicating that worker cancellation was requested for the first time.
+     */
+    protected void onCancel(boolean firstCancelRequest) {
+        Thread runner = this.runner;
+
+        // Cannot apply Future.cancel() because if we do, then Future.get() would always
+        // throw CancellationException, and we would not be able to wait for task completion.
+        if (runner != null)
+            runner.interrupt();
+    }
+
+    /**
+     * Callback on special case, when task is cancelled before is has been scheduled.
+     */
+    protected void onCancelledBeforeWorkerScheduled() {
+        Thread runner = this.runner;
+
+        assert runner != null : this;
+
+        runner.interrupt();
     }
 
     /** {@inheritDoc} */

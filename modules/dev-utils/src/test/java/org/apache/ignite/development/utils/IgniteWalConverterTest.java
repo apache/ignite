@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -184,23 +185,23 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final String result = outByte.toString();
 
-        int idx = 0;
+        int index = 0;
 
         for (Person person : list) {
             boolean find = false;
 
-            idx = result.indexOf("DataRecord", idx);
+            index = result.indexOf("DataRecord", index);
 
-            if (idx > 0) {
-                idx = result.indexOf("PersonKey", idx + 10);
+            if (index > 0) {
+                index = result.indexOf("PersonKey", index + 10);
 
-                if (idx > 0) {
-                    idx = result.indexOf("id=" + person.getId(), idx + 9);
+                if (index > 0) {
+                    index = result.indexOf("id=" + person.getId(), index + 9);
 
-                    if (idx > 0) {
-                        idx = result.indexOf("name=" + person.getName(), idx + 4);
+                    if (index > 0) {
+                        index = result.indexOf("name=" + person.getName(), index + 4);
 
-                        find = idx > 0;
+                        find = index > 0;
                     }
                 }
             }
@@ -248,25 +249,25 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final String result = outByte.toString();
 
-        int idx = 0;
+        int index = 0;
 
         for (Person person : list) {
             boolean find = false;
 
-            idx = result.indexOf("DataRecord", idx);
+            index = result.indexOf("DataRecord", index);
 
-            if (idx > 0) {
-                idx = result.indexOf(" v = [", idx + 10);
+            if (index > 0) {
+                index = result.indexOf(" v = [", index + 10);
 
-                if (idx > 0) {
-                    int start = idx + 6;
+                if (index > 0) {
+                    int start = index + 6;
 
-                    idx = result.indexOf("]", start);
+                    index = result.indexOf("]", start);
 
-                    if (idx > 0) {
-                        final String val = result.substring(start, idx);
+                    if (index > 0) {
+                        final String value = result.substring(start, index);
 
-                        find = new String(Base64.getDecoder().decode(val)).contains(person.getName());
+                        find = new String(Base64.getDecoder().decode(value)).contains(person.getName());
                     }
                 }
             }
@@ -308,10 +309,10 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             boolean find = false;
 
             while (!find) {
-                int recordTypeIdx = raf.read();
+                int recordTypeIndex = raf.read();
 
-                if (recordTypeIdx > 0) {
-                    recordTypeIdx--;
+                if (recordTypeIndex > 0) {
+                    recordTypeIndex--;
 
                     final long idx = raf.readLong();
 
@@ -319,7 +320,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
                     final int len = Integer.reverseBytes(raf.readInt());
 
-                    if (recordTypeIdx == WALRecord.RecordType.DATA_RECORD.index()) {
+                    if (recordTypeIndex == WALRecord.RecordType.DATA_RECORD_V2.index()) {
                         int i = 0;
 
                         int b;
@@ -365,33 +366,33 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final String result = outByte.toString();
 
-        int idx = 0;
+        int index = 0;
 
-        int cntErrorRead = 0;
+        int countErrorRead = 0;
 
         for (Person person : list) {
             boolean find = false;
 
-            idx = result.indexOf("DataRecord", idx);
+            index = result.indexOf("DataRecord", index);
 
-            if (idx > 0) {
-                idx = result.indexOf("PersonKey", idx + 10);
+            if (index > 0) {
+                index = result.indexOf("PersonKey", index + 10);
 
-                if (idx > 0) {
-                    idx = result.indexOf("id=" + person.getId(), idx + 9);
+                if (index > 0) {
+                    index = result.indexOf("id=" + person.getId(), index + 9);
 
-                    if (idx > 0) {
-                        idx = result.indexOf("name=" + person.getName(), idx + 4);
+                    if (index > 0) {
+                        index = result.indexOf("name=" + person.getName(), index + 4);
 
-                        find = idx > 0;
+                        find = index > 0;
                     }
                 }
             }
 
             if (!find)
-                cntErrorRead++;
+                countErrorRead++;
         }
-        assertEquals(1, cntErrorRead);
+        assertEquals(1, countErrorRead);
     }
 
     /**
@@ -425,12 +426,12 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             int find = 0;
 
             while (find < 2) {
-                int recordTypeIdx = raf.read();
+                int recordTypeIndex = raf.read();
 
-                if (recordTypeIdx > 0) {
-                    recordTypeIdx--;
+                if (recordTypeIndex > 0) {
+                    recordTypeIndex--;
 
-                    if (recordTypeIdx == WALRecord.RecordType.DATA_RECORD.index()) {
+                    if (recordTypeIndex == WALRecord.RecordType.DATA_RECORD_V2.index()) {
                         find++;
 
                         if (find == 2) {
@@ -470,31 +471,31 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final String result = outByte.toString();
 
-        int idx = 0;
+        int index = 0;
 
-        int cntErrorRead = 0;
+        int countErrorRead = 0;
 
         for (Person person : list) {
             boolean find = false;
 
-            idx = result.indexOf("DataRecord", idx);
+            index = result.indexOf("DataRecord", index);
 
-            if (idx > 0) {
-                idx = result.indexOf("PersonKey", idx + 10);
+            if (index > 0) {
+                index = result.indexOf("PersonKey", index + 10);
 
-                if (idx > 0) {
-                    idx = result.indexOf("id=" + person.getId(), idx + 9);
+                if (index > 0) {
+                    index = result.indexOf("id=" + person.getId(), index + 9);
 
-                    if (idx > 0) {
-                        idx = result.indexOf(person.getClass().getSimpleName(), idx + 4);
+                    if (index > 0) {
+                        index = result.indexOf(person.getClass().getSimpleName(), index + 4);
 
-                        if (idx > 0) {
-                            idx = result.indexOf("id=" + person.getId(), idx + person.getClass().getSimpleName().length());
+                        if (index > 0) {
+                            index = result.indexOf("id=" + person.getId(), index + person.getClass().getSimpleName().length());
 
-                            if (idx > 0) {
-                                idx = result.indexOf("name=" + person.getName(), idx + 4);
+                            if (index > 0) {
+                                index = result.indexOf("name=" + person.getName(), index + 4);
 
-                                find = idx > 0;
+                                find = index > 0;
                             }
                         }
                     }
@@ -502,10 +503,10 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             }
 
             if (!find)
-                cntErrorRead++;
+                countErrorRead++;
         }
 
-        assertEquals(9, cntErrorRead);
+        assertEquals(9, countErrorRead);
     }
 
     /**
@@ -576,7 +577,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         String nodeFolder;
 
         try (final IgniteEx node = startGrid(0)) {
-            node.cluster().active(true);
+            node.cluster().state(ClusterState.ACTIVE);
 
             nodeFolder = node.context().pdsFolderResolver().resolveFolders().folderName();
 
@@ -585,16 +586,16 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             for (int i = 0; i < 10; i++) {
                 final PersonKey key = new PersonKey(i);
 
-                final Person val;
+                final Person value;
 
                 if (i % 2 == 0)
-                    val = new Person(i, PERSON_NAME_PREFIX + i);
+                    value = new Person(i, PERSON_NAME_PREFIX + i);
                 else
-                    val = new PersonEx(i, PERSON_NAME_PREFIX + i, "Additional information " + i, "Description " + i);
+                    value = new PersonEx(i, PERSON_NAME_PREFIX + i, "Additional information " + i, "Description " + i);
 
-                cache.put(key, val);
+                cache.put(key, value);
 
-                list.add(val);
+                list.add(value);
             }
 
             if (afterPopulateConsumer != null)

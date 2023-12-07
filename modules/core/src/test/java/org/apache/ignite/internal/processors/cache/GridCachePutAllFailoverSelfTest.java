@@ -100,7 +100,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /** Filter to include only worker nodes. */
     private static final IgnitePredicate<ClusterNode> workerNodesFilter = new PN() {
         @Override public boolean apply(ClusterNode n) {
-             return "worker".equals(n.attribute("segment"));
+            return "worker".equals(n.attribute("segment"));
         }
     };
 
@@ -367,7 +367,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
                 for (Ignite g : runningWorkers) {
                     IgniteKernal k = (IgniteKernal)g;
 
-                    info(">>>> Entries on node: " + k.getLocalNodeId());
+                    info(">>>> Entries on node: " + k.localNodeId());
 
                     GridCacheAdapter<Object, Object> cache = k.internalCache("partitioned");
 

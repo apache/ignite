@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -154,32 +155,6 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @Test
-    public void testLocalCacheOnClientNodeWithLazyAllocation() throws Exception {
-        lazyAllocation = true;
-
-        IgniteEx srv = startSrv()[0];
-
-        IgniteCacheDatabaseSharedManager srvDb = srv.context().cache().context().database();
-
-        checkMemoryAllocated(srvDb.dataRegion(EAGER_REGION).pageMemory());
-        checkMemoryNotAllocated(srvDb.dataRegion(LAZY_REGION).pageMemory());
-
-        IgniteEx clnt = startClientGrid(2);
-
-        IgniteCacheDatabaseSharedManager clntDb = clnt.context().cache().context().database();
-
-        checkMemoryNotAllocated(clntDb.dataRegion(EAGER_REGION).pageMemory());
-        checkMemoryNotAllocated(clntDb.dataRegion(LAZY_REGION).pageMemory());
-
-        createCacheAndPut(clnt, CacheMode.LOCAL);
-
-        checkMemoryNotAllocated(clntDb.dataRegion(EAGER_REGION).pageMemory());
-        //LOCAL Cache was created in LAZY_REGION so it has to be allocated on client node.
-        checkMemoryAllocated(clntDb.dataRegion(LAZY_REGION).pageMemory());
-    }
-
-    /** @throws Exception If failed. */
-    @Test
     public void testStopNotAllocatedRegions() throws Exception {
         IgniteEx srv = startSrv()[0];
 
@@ -191,11 +166,13 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
         stopGrid(0);
     }
 
+    /** */
     @After
     public void after() {
         stopAllGrids();
     }
 
+    /** */
     @Before
     public void before() throws Exception {
         cleanPersistenceDir();
@@ -245,7 +222,7 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
         IgniteEx srv0 = startGrid(0);
         IgniteEx srv1 = startGrid(1);
 
-        srv0.cluster().active(true);
+        srv0.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 

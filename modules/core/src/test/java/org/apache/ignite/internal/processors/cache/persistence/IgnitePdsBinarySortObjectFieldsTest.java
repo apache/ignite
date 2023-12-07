@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -81,7 +82,7 @@ public class IgnitePdsBinarySortObjectFieldsTest extends GridCommonAbstractTest 
     public void testGivenCacheWithPojoValueAndPds_WhenPut_ThenNoHangup() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         final IgniteCache<Long, Value> cache = ignite.getOrCreateCache(
             new CacheConfiguration<Long, Value>(CACHE_NAME)

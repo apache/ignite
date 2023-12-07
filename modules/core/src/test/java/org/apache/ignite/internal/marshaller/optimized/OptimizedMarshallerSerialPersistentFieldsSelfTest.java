@@ -85,6 +85,7 @@ public class OptimizedMarshallerSerialPersistentFieldsSelfTest extends GridMarsh
     private static class TestClass2 implements Serializable {
         private static final long serialVersionUID = 0L;
 
+        /** */
         private Integer field3 = 1;
 
         /** For serialization compatibility. */

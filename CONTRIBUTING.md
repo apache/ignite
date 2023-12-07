@@ -1,5 +1,5 @@
 # Contributing to Apache Ignite
-## Joining Community and it's communication channels
+## Joining Community and its communication channels
 - Sign-in to Apache JIRA https://issues.apache.org/jira/
 - (To contribute code patches) Sing-in to [Apache Ignite](https://ignite.apache.org/) Continuous Integration server https://ci.ignite.apache.org/
 - (To contribute documentation to the wiki) Sing-in to [Apache Wiki](https://cwiki.apache.org/confluence/display/IGNITE)
@@ -65,6 +65,6 @@ Inspection profile is placed to IDEA [Project_Default](.idea/inspectionProfiles/
 ### Building project
 Usually all Maven builds are to be run with skipped tests:
 ```
-mvn -DskipTests
+./mvnw -DskipTests
 ```
 See also [DEVNOTES.txt](DEVNOTES.txt)

@@ -29,12 +29,10 @@ import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -80,18 +78,6 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTx() throws Exception {
-        Assume.assumeTrue("https://issues.apache.org/jira/browse/IGNITE-7187", singleNode());
-
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL_SNAPSHOT);
-
-        enumOperations(ccfg);
-    }
-
-    /**
      * @param ccfg Cache configuration.
      */
     private void enumOperations(CacheConfiguration<Object, Object> ccfg) {
@@ -104,6 +90,8 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
 
             if (!singleNode()) {
                 nodes = 6;
+
+                awaitCacheOnClient(ignite(nodes - 1), ccfg.getName());
 
                 ignite(nodes - 1).createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
             }

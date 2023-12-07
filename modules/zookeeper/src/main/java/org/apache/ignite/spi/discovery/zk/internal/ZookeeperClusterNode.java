@@ -40,7 +40,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 
 /**
@@ -54,7 +53,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     private static final byte CLIENT_NODE_MASK = 0x01;
 
     /** */
-    private UUID id;
+    private volatile UUID id;
 
     /** */
     private Serializable consistentId;
@@ -95,14 +94,6 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
 
     /** */
     private byte flags;
-
-    /** Daemon node flag. */
-    @GridToStringExclude
-    private transient boolean daemon;
-
-    /** Daemon node initialization flag. */
-    @GridToStringExclude
-    private transient volatile boolean daemonInit;
 
     /** */
     public ZookeeperClusterNode() {
@@ -311,17 +302,6 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDaemon() {
-        if (!daemonInit) {
-            daemon = "true".equalsIgnoreCase((String)attribute(ATTR_DAEMON));
-
-            daemonInit = true;
-        }
-
-        return daemon;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isClient() {
         return (CLIENT_NODE_MASK & flags) != 0;
     }
@@ -353,10 +333,10 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         id = U.readUuid(in);
-        consistentId = (Serializable) in.readObject();
+        consistentId = (Serializable)in.readObject();
         internalId = in.readLong();
         order = in.readLong();
-        ver = (IgniteProductVersion) in.readObject();
+        ver = (IgniteProductVersion)in.readObject();
         attrs = U.sealMap(U.readMap(in));
         addrs = U.readCollection(in);
         hostNames = U.readCollection(in);

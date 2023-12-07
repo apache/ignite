@@ -81,6 +81,13 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
     public long reserved();
 
     /**
+     * Returns highest applied update counter.
+     *
+     * @return Highest applied counter.
+     */
+    public long highestAppliedCounter();
+
+    /**
      * Sets update counter to absolute value. All missed updates will be discarded.
      *
      * @param val Absolute value.
@@ -148,4 +155,9 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
      * @return A deep copy of current instance.
      */
     public PartitionUpdateCounter copy();
+
+    /**
+     * @return Comparable counter state.
+     */
+    public Object comparableState();
 }

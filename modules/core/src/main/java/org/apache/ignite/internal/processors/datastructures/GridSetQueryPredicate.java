@@ -97,7 +97,7 @@ public class GridSetQueryPredicate<K, V> implements IgniteBiPredicate<K, V>, Ext
      * @return {@code True} if need to filter out non-primary keys during processing of set data query.
      */
     private boolean filterKeys() {
-        return !collocated && !(ctx.isLocal() || ctx.isReplicated()) &&
+        return !collocated && !ctx.isReplicated() &&
                 (CU.isNearEnabled(ctx) || ctx.isPartitioned());
     }
 

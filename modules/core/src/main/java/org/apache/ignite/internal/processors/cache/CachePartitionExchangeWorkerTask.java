@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Cache partition exchange worker task marker interface.
  */
@@ -25,4 +28,10 @@ public interface CachePartitionExchangeWorkerTask {
      * @return {@code False} if exchange merge should stop if this task is found in exchange worker queue.
      */
     boolean skipForExchangeMerge();
+
+    /**
+     * @return Security context in which current task must be executed.
+     * {@code null} means that the task is to run in the context of a local node,
+     */
+    @Nullable SecurityContext securityContext();
 }

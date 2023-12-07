@@ -52,8 +52,8 @@ import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -78,11 +78,7 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
     public static Iterable<Object[]> params() {
         CacheMode[] cacheModes = new CacheMode[] {CacheMode.PARTITIONED, CacheMode.REPLICATED};
 
-        CacheAtomicityMode[] atomicityModes = new CacheAtomicityMode[] {
-            CacheAtomicityMode.ATOMIC,
-            CacheAtomicityMode.TRANSACTIONAL,
-            CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT
-        };
+        CacheAtomicityMode[] atomicityModes = CacheAtomicityMode.values();
 
         List<Object[]> res = new ArrayList<>();
         for (CacheMode cacheMode : cacheModes) {
@@ -260,6 +256,9 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
         srv1.cluster().state(ClusterState.ACTIVE);
 
         createCache(srv1);
+
+        awaitCacheOnClient(grid(4), POI_CACHE_NAME);
+
         loadData(srv1, 0, NUM_ENTRIES);
 
         CountDownLatch idxLatch = blockIndexing(srv1);
@@ -632,7 +631,7 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
         /** {@inheritDoc} */
         @Override public void startRebuild(
             GridCacheContext cctx, GridFutureAdapter<Void> fut, SchemaIndexCacheVisitorClosure clo,
-            SchemaIndexOperationCancellationToken cancel) {
+            IndexRebuildCancelToken cancel) {
             awaitIndexing(cctx.localNodeId());
 
             super.startRebuild(cctx, fut, clo, cancel);

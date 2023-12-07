@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.junit.Test;
@@ -64,9 +65,9 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
         final Ignite igB2 = backUp(1);
         final Ignite igB3 = backUp(2);
 
-        assertTrue(!igB1.active());
-        assertTrue(!igB2.active());
-        assertTrue(!igB3.active());
+        assertTrue(!igB1.cluster().state().active());
+        assertTrue(!igB2.cluster().state().active());
+        assertTrue(!igB3.cluster().state().active());
 
         final AtomicInteger cntA = new AtomicInteger();
         final AtomicInteger cntD = new AtomicInteger();
@@ -87,14 +88,14 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
                         if (canAct.get()) {
                             long start = System.currentTimeMillis();
 
-                            ig.active(true);
+                            ig.cluster().state(ClusterState.ACTIVE);
 
                             timeA.addAndGet((System.currentTimeMillis() - start));
 
                             cntA.incrementAndGet();
 
                             for (Ignite ign : allBackUpNodes())
-                                assertTrue(ign.active());
+                                assertTrue(ign.cluster().state().active());
 
                             canAct.set(false);
                         }
@@ -112,14 +113,14 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
                         if (!canAct.get()) {
                             long start = System.currentTimeMillis();
 
-                            ig.active(false);
+                            ig.cluster().state(ClusterState.INACTIVE);
 
                             timeD.addAndGet((System.currentTimeMillis() - start));
 
                             cntD.incrementAndGet();
 
                             for (Ignite ign : allBackUpNodes())
-                                assertTrue(!ign.active());
+                                assertTrue(!ign.cluster().state().active());
 
                             canAct.set(true);
                         }
@@ -151,9 +152,9 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
         final Ignite igB2 = backUp(1);
         final Ignite igB3 = backUp(2);
 
-        assertTrue(!igB1.active());
-        assertTrue(!igB2.active());
-        assertTrue(!igB3.active());
+        assertTrue(!igB1.cluster().state().active());
+        assertTrue(!igB2.cluster().state().active());
+        assertTrue(!igB3.cluster().state().active());
 
         final AtomicInteger cntA = new AtomicInteger();
         final AtomicInteger cntD = new AtomicInteger();
@@ -178,14 +179,14 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
 
                             long start = System.currentTimeMillis();
 
-                            ig.active(true);
+                            ig.cluster().state(ClusterState.ACTIVE);
 
                             timeA.addAndGet((System.currentTimeMillis() - start));
 
                             cntA.incrementAndGet();
 
                             for (Ignite ign : allBackUpNodes())
-                                assertTrue(ign.active());
+                                assertTrue(ign.cluster().state().active());
                         }
                         finally {
                             rwLock.readLock().unlock();
@@ -206,14 +207,14 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
 
                             long start = System.currentTimeMillis();
 
-                            ig.active(false);
+                            ig.cluster().state(ClusterState.INACTIVE);
 
                             timeD.addAndGet((System.currentTimeMillis() - start));
 
                             cntD.incrementAndGet();
 
                             for (Ignite ign : allBackUpNodes())
-                                assertTrue(!ign.active());
+                                assertTrue(!ign.cluster().state().active());
                         }
                         finally {
                             rwLock.writeLock().unlock();
@@ -285,9 +286,9 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
         final Ignite igB2 = backUp(1);
         final Ignite igB3 = backUp(2);
 
-        assertTrue(!igB1.active());
-        assertTrue(!igB2.active());
-        assertTrue(!igB3.active());
+        assertTrue(!igB1.cluster().state().active());
+        assertTrue(!igB2.cluster().state().active());
+        assertTrue(!igB3.cluster().state().active());
 
         final CacheConfiguration<String, String> ccfg = new CacheConfiguration<>();
         ccfg.setName("main-cache");
@@ -313,7 +314,7 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
                         if (canAct.get()) {
                             long start = System.currentTimeMillis();
 
-                            ig.active(true);
+                            ig.cluster().state(ClusterState.ACTIVE);
 
                             IgniteCache<String, String> cache = ig.getOrCreateCache(ccfg);
 
@@ -326,7 +327,7 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
                             cntA.incrementAndGet();
 
                             for (Ignite ign : allBackUpNodes())
-                                assertTrue(ign.active());
+                                assertTrue(ign.cluster().state().active());
 
                             canAct.set(false);
                         }
@@ -349,14 +350,14 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
                             for (int i = 0; i < cnt.get(); i++)
                                 assertEquals("value" + i, cache.get("key" + i));
 
-                            ig.active(false);
+                            ig.cluster().state(ClusterState.INACTIVE);
 
                             timeD.addAndGet((System.currentTimeMillis() - start));
 
                             cntD.incrementAndGet();
 
                             for (Ignite ign : allBackUpNodes())
-                                assertTrue(!ign.active());
+                                assertTrue(!ign.cluster().state().active());
 
                             canAct.set(true);
                         }

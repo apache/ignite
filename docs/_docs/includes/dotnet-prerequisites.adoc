@@ -14,7 +14,7 @@
 // limitations under the License.
 [width="100%",cols="1,3"]
 |===
-|JDK |Oracle JDK 8 or 11, Open JDK 8 or 11, IBM JDK 8 or 11
+|JDK |Oracle JDK 8, 11 or 17, Open JDK 8, 11 or 17, IBM JDK 8, 11 or 17
 |.NET Framework |.NET 4.0+, .NET Core 2.0+
 //|IDE |Visual Studio 2010+, Rider, Visual Studio Code
 |===

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.compress;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -28,13 +29,17 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.xerial.snappy.Snappy;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.MAX_PAGE_SIZE;
 import static org.apache.ignite.configuration.DiskPageCompression.SKIP_GARBAGE;
 import static org.apache.ignite.internal.util.GridUnsafe.NATIVE_BYTE_ORDER;
@@ -44,10 +49,11 @@ import static org.apache.ignite.internal.util.GridUnsafe.NATIVE_BYTE_ORDER;
  */
 public class CompressionProcessorImpl extends CompressionProcessor {
     /** Max page size. */
-    private final ThreadLocalByteBuffer compactBuf = new ThreadLocalByteBuffer(MAX_PAGE_SIZE);
+    private final ThreadLocalDirectByteBuffer compactBuf = new ThreadLocalDirectByteBuffer(MAX_PAGE_SIZE, NATIVE_BYTE_ORDER);
 
-    /** A bit more than max page size. */
-    private final ThreadLocalByteBuffer compressBuf = new ThreadLocalByteBuffer(MAX_PAGE_SIZE + 1024);
+    /** A bit more than max page size, extra space is required by compressors. */
+    private final ThreadLocalDirectByteBuffer compressBuf =
+        new ThreadLocalDirectByteBuffer(maxCompressedBufferSize(MAX_PAGE_SIZE), NATIVE_BYTE_ORDER);
 
     /**
      * @param ctx Kernal context.
@@ -55,14 +61,6 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     @SuppressWarnings("WeakerAccess")
     public CompressionProcessorImpl(GridKernalContext ctx) {
         super(ctx);
-    }
-
-    /**
-     * @param cap Capacity.
-     * @return Direct byte buffer.
-     */
-    static ByteBuffer allocateDirectBuffer(int cap) {
-        return ByteBuffer.allocateDirect(cap).order(NATIVE_BYTE_ORDER);
     }
 
     /** {@inheritDoc} */
@@ -90,6 +88,8 @@ public class CompressionProcessorImpl extends CompressionProcessor {
                 "must be at least 2 times larger than the underlying storage block size (detected to be " + fsBlockSize +
                 " bytes at '" + storagePath + "') for page compression.");
         }
+
+        checkPunchHole(storagePath, fsBlockSize);
     }
 
     /** {@inheritDoc} */
@@ -168,6 +168,34 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         }
 
         return compactPage;
+    }
+
+    /** Check if filesystem actually supports punching holes. */
+    private void checkPunchHole(Path storagePath, int fsBlockSz) throws IgniteException {
+        ByteBuffer buffer = null;
+        File testFile = null;
+        try {
+            testFile = File.createTempFile("punch_hole_", null, storagePath.toFile());
+
+            buffer = GridUnsafe.allocateBuffer(fsBlockSz * 2);
+            GridUnsafe.zeroMemory(GridUnsafe.bufferAddress(buffer), buffer.capacity());
+
+            try (RandomAccessFileIO testFileIO = new RandomAccessFileIO(testFile, CREATE, WRITE)) {
+                testFileIO.writeFully(buffer);
+
+                testFileIO.punchHole(fsBlockSz, fsBlockSz);
+            }
+        }
+        catch (Exception e) {
+            throw new IgniteException("File system does not support punching holes on path " + storagePath, e);
+        }
+        finally {
+            if (buffer != null)
+                GridUnsafe.freeBuffer(buffer);
+
+            if (testFile != null)
+                testFile.delete();
+        }
     }
 
     /**
@@ -387,6 +415,15 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     }
 
     /** */
+    private static int maxCompressedBufferSize(int baseSz) {
+        int lz4Sz = Lz4.fastCompressor.maxCompressedLength(baseSz);
+        int zstdSz = (int)Zstd.compressBound(baseSz);
+        int snappySz = Snappy.maxCompressedLength(baseSz);
+
+        return Math.max(Math.max(lz4Sz, zstdSz), snappySz);
+    }
+
+    /** */
     static class Lz4 {
         /** */
         static final LZ4Factory factory = LZ4Factory.fastestInstance();
@@ -412,32 +449,6 @@ public class CompressionProcessorImpl extends CompressionProcessor {
          */
         static void decompress(ByteBuffer page, ByteBuffer dst) {
             decompressor.decompress(page, dst);
-        }
-    }
-
-    /**
-     */
-    static final class ThreadLocalByteBuffer extends ThreadLocal<ByteBuffer> {
-        /** */
-        final int size;
-
-        /**
-         * @param size Size.
-         */
-        ThreadLocalByteBuffer(int size) {
-            this.size = size;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected ByteBuffer initialValue() {
-            return allocateDirectBuffer(size);
-        }
-
-        /** {@inheritDoc} */
-        @Override public ByteBuffer get() {
-            ByteBuffer buf = super.get();
-            buf.clear();
-            return buf;
         }
     }
 }

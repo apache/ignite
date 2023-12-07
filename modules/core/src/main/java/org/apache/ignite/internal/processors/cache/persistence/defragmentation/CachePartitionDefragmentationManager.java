@@ -40,7 +40,6 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -49,13 +48,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.GridCacheDataStore;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointTimeoutLock;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightweightCheckpointManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
@@ -86,7 +85,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
-import org.jetbrains.annotations.Nullable;
 
 import static java.util.Comparator.comparing;
 import static java.util.stream.StreamSupport.stream;
@@ -163,8 +161,11 @@ public class CachePartitionDefragmentationManager {
     /** */
     private final GridFutureAdapter<?> completionFut = new GridFutureAdapter<>();
 
-    /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
-    @Nullable private volatile IgniteThreadPoolExecutor defragmentationThreadPool;
+    /** Checkpoint runner thread pool. */
+    private final IgniteThreadPoolExecutor defragmentationThreadPool;
+
+    /** Link map by partition ID. */
+    private final IntMap<LinkMap> linkMapByPart = new IntRWHashMap<>();
 
     /**
      * @param cacheNames Names of caches to be defragmented. Empty means "all".
@@ -206,8 +207,16 @@ public class CachePartitionDefragmentationManager {
             defragmentationThreadPoolSize,
             defragmentationThreadPoolSize,
             30_000,
-            new LinkedBlockingQueue<Runnable>()
+            new LinkedBlockingQueue<>()
         );
+
+        completionFut.chain(() -> {
+            linkMapByPart.values().forEach(LinkMap::close);
+
+            linkMapByPart.clear();
+
+            return completionFut.result();
+        });
     }
 
     /** */
@@ -218,6 +227,19 @@ public class CachePartitionDefragmentationManager {
         dbMgr.onStateRestored(null);
 
         nodeCheckpoint.forceCheckpoint("beforeDefragmentation", null).futureFor(FINISHED).get();
+
+        // The concurrent default checkpointer has various listeners, interferes with new dedicated
+        // CacheGroupContext for defragmentation and at least clears shared CheckpointProgress#clearCounters().
+        // Should be properly reconfigured and restarted after the defragmentation task to have ability launch
+        // other maintenance tasks after.
+        Checkpointer defaultCheckpointer = nodeCheckpoint.getCheckpointer();
+
+        if (defaultCheckpointer != null && !defaultCheckpointer.isDone()) {
+            if (log.isDebugEnabled())
+                log.debug("Stopping default checkpointer.");
+
+            defaultCheckpointer.shutdownNow();
+        }
 
         dbMgr.preserveWalTailPointer();
 
@@ -316,8 +338,6 @@ public class CachePartitionDefragmentationManager {
                             cacheDataStores.put(store.partId(), store);
                     }
 
-                    dbMgr.checkpointedDataRegions().remove(oldGrpCtx.dataRegion());
-
                     // Another cheat. Ttl cleanup manager knows too much shit.
                     oldGrpCtx.caches().stream()
                         .filter(cacheCtx -> cacheCtx.groupId() == grpId)
@@ -356,7 +376,8 @@ public class CachePartitionDefragmentationManager {
                         oldGrpCtx.localStartVersion(),
                         true,
                         false,
-                        true
+                        true,
+                        oldGrpCtx.compressionHandler()
                     );
 
                     defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadLock();
@@ -368,8 +389,6 @@ public class CachePartitionDefragmentationManager {
                     finally {
                         defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadUnlock();
                     }
-
-                    IntMap<LinkMap> linkMapByPart = new IntRWHashMap<>();
 
                     IgniteUtils.doInParallel(
                         defragmentationThreadPool,
@@ -383,27 +402,26 @@ public class CachePartitionDefragmentationManager {
                             cmpFut,
                             oldPageMem,
                             newGrpCtx,
-                            linkMapByPart,
                             oldCacheDataStore
                         )
                     );
 
-                    // A bit too general for now, but I like it more then saving only the last checkpoint future.
+                    // A bit too general for now, but I like it more than saving only the last checkpoint future.
                     cmpFut.markInitialized().get();
 
                     idxDfrgFut = new GridFinishedFuture<>();
 
                     if (filePageStoreMgr.hasIndexStore(grpId)) {
-                        defragmentIndexPartition(oldGrpCtx, newGrpCtx, linkMapByPart);
+                        defragmentIndexPartition(oldGrpCtx, newGrpCtx);
 
                         idxDfrgFut = defragmentationCheckpoint
                             .forceCheckpoint("index defragmented", null)
-                            .futureFor(CheckpointState.FINISHED);
+                            .futureFor(FINISHED);
                     }
 
                     PageStore oldIdxPageStore = filePageStoreMgr.getStore(grpId, INDEX_PARTITION);
 
-                    idxDfrgFut = idxDfrgFut.chain(fut -> {
+                    idxDfrgFut = idxDfrgFut.chain(() -> {
                         if (log.isDebugEnabled()) {
                             log.debug(S.toString(
                                 "Index partition defragmented",
@@ -416,15 +434,15 @@ public class CachePartitionDefragmentationManager {
                             ));
                         }
 
-                        oldPageMem.invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
+                        oldPageMem.invalidate(grpId, INDEX_PARTITION);
 
                         PageMemoryEx partPageMem = (PageMemoryEx)partDataRegion.pageMemory();
 
-                        partPageMem.invalidate(grpId, PageIdAllocator.INDEX_PARTITION);
+                        partPageMem.invalidate(grpId, INDEX_PARTITION);
 
                         DefragmentationPageReadWriteManager pageMgr = (DefragmentationPageReadWriteManager)partPageMem.pageManager();
 
-                        pageMgr.pageStoreMap().removePageStore(grpId, PageIdAllocator.INDEX_PARTITION);
+                        pageMgr.pageStoreMap().removePageStore(grpId, INDEX_PARTITION);
 
                         PageMemoryEx mappingPageMem = (PageMemoryEx)mappingDataRegion.pageMemory();
 
@@ -435,6 +453,14 @@ public class CachePartitionDefragmentationManager {
                         renameTempIndexFile(workDir);
 
                         writeDefragmentationCompletionMarker(filePageStoreMgr.getPageStoreFileIoFactory(), workDir, log);
+
+                        try {
+                            for (PageStore store : filePageStoreMgr.getStores(grpId))
+                                store.stop(false);
+                        }
+                        catch (Exception e) {
+                            throw new IgniteException("Failed to stop page store for group " + grpId, e);
+                        }
 
                         batchRenameDefragmentedCacheGroupPartitions(workDir, log);
 
@@ -500,7 +526,6 @@ public class CachePartitionDefragmentationManager {
         GridCompoundFuture<Object, Object> cmpFut,
         PageMemoryEx oldPageMem,
         CacheGroupContext newGrpCtx,
-        IntMap<LinkMap> linkMapByPart,
         CacheDataStore oldCacheDataStore
     ) throws IgniteCheckedException {
         TreeIterator treeIter = new TreeIterator(pageSize);
@@ -592,7 +617,7 @@ public class CachePartitionDefragmentationManager {
 
         GridFutureAdapter<?> cpFut = defragmentationCheckpoint
             .forceCheckpoint("partition defragmented", null)
-            .futureFor(CheckpointState.FINISHED);
+            .futureFor(FINISHED);
 
         cpFut.listen(cpLsnr);
 
@@ -603,7 +628,7 @@ public class CachePartitionDefragmentationManager {
 
     /** */
     public IgniteInternalFuture<?> completionFuture() {
-        return completionFut.chain(future -> null);
+        return completionFut.chain(() -> null);
     }
 
     /** */
@@ -640,7 +665,7 @@ public class CachePartitionDefragmentationManager {
 
         DefragmentationPageReadWriteManager partMgr = (DefragmentationPageReadWriteManager)partPageMem.pageManager();
 
-        partMgr.pageStoreMap().addPageStore(grpId, PageIdAllocator.INDEX_PARTITION, idxPageStore);
+        partMgr.pageStoreMap().addPageStore(grpId, INDEX_PARTITION, idxPageStore);
     }
 
     /**
@@ -806,6 +831,9 @@ public class CachePartitionDefragmentationManager {
                         long rmvId = oldPartMetaIo.getGlobalRemoveId(oldPartMetaPageAddr);
                         newPartMetaIo.setGlobalRemoveId(newPartMetaPageAddr, rmvId);
 
+                        long reuseListRoot = oldPartMetaIo.getPartitionMetaStoreReuseListRoot(oldPartMetaPageAddr);
+                        newPartMetaIo.setPartitionMetaStoreReuseListRoot(newPartMetaPageAddr, reuseListRoot);
+
                         // Copy cache sizes for shared cache group.
                         long oldCountersPageId = oldPartMetaIo.getCountersPageId(oldPartMetaPageAddr);
                         if (oldCountersPageId != 0L) {
@@ -836,6 +864,10 @@ public class CachePartitionDefragmentationManager {
                             partCtx.newCacheDataStore.partStorage().insertDataRow(gapsDataRow, IoStatisticsHolderNoOp.INSTANCE);
 
                             newPartMetaIo.setGapsLink(newPartMetaPageAddr, gapsDataRow.link());
+
+                            newPartMetaIo.setPartitionMetaStoreReuseListRoot(newPartMetaPageAddr,
+                                oldPartMetaIo.getPartitionMetaStoreReuseListRoot(oldPartMetaPageAddr)
+                            );
                         }
 
                         // Encryption stuff.
@@ -863,21 +895,19 @@ public class CachePartitionDefragmentationManager {
      * Defragmentate indexing partition.
      *
      * @param grpCtx
-     * @param mappingByPartition
      *
      * @throws IgniteCheckedException If failed.
      */
     private void defragmentIndexPartition(
         CacheGroupContext grpCtx,
-        CacheGroupContext newCtx,
-        IntMap<LinkMap> mappingByPartition
+        CacheGroupContext newCtx
     ) throws IgniteCheckedException {
         GridQueryProcessor qry = grpCtx.caches().get(0).kernalContext().query();
 
         if (!qry.moduleEnabled())
             return;
 
-        final IndexProcessor idx = grpCtx.caches().get(0).kernalContext().indexProcessor();
+        IndexProcessor idx = grpCtx.caches().get(0).kernalContext().indexProcessor();
 
         CheckpointTimeoutLock cpLock = defragmentationCheckpoint.checkpointTimeoutLock();
 
@@ -887,7 +917,7 @@ public class CachePartitionDefragmentationManager {
             grpCtx,
             newCtx,
             (PageMemoryEx)partDataRegion.pageMemory(),
-            mappingByPartition,
+            linkMapByPart,
             cpLock,
             cancellationChecker,
             defragmentationThreadPool

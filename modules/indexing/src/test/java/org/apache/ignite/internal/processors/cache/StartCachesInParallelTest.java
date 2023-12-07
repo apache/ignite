@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -109,11 +110,11 @@ public class StartCachesInParallelTest extends GridCommonAbstractTest {
 
         IgniteEx node = startGrid(0);
 
-        node.cluster().active(true);
+        node.cluster().state(ClusterState.ACTIVE);
 
         assertNull("Node failed with " + failureHnd.lastFailureCtx, failureHnd.lastFailureCtx);
 
-        assertTrue(node.cluster().active());
+        assertTrue(node.cluster().state().active());
     }
 
     /** */

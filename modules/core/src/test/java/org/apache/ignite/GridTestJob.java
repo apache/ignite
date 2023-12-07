@@ -29,6 +29,7 @@ public class GridTestJob extends ComputeJobAdapter {
     @LoggerResource
     private IgniteLogger log;
 
+    /** */
     CountDownLatch latch;
 
     /** */
@@ -58,7 +59,8 @@ public class GridTestJob extends ComputeJobAdapter {
         if (latch != null) {
             try {
                 latch.await();
-            } catch (InterruptedException ignore) {
+            }
+            catch (InterruptedException ignore) {
                 // Nothing to do
             }
         }

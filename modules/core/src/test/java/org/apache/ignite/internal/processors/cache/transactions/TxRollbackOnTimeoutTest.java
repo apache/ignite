@@ -58,14 +58,12 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionTimeoutException;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static java.lang.Thread.sleep;
@@ -128,8 +126,6 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7388", MvccFeatureChecker.forcedMvcc());
-
         super.beforeTest();
 
         startGridsMultiThreaded(GRID_CNT);
@@ -1130,9 +1126,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     private void waitingTxUnblockedOnThreadDeath0(final Ignite near,
         final Ignite other,
         final int recordsCnt,
-        final long timeout)
-        throws Exception
-    {
+        final long timeout
+    ) throws Exception {
         info("Start test [node1=" + near.name() + ", node2=" + other.name() + ']');
 
         final CountDownLatch blocked = new CountDownLatch(1);

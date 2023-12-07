@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -69,7 +70,7 @@ public class FsyncWalRolloverDoesNotBlockTest extends GridCommonAbstractTest {
     public void test() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         ig.context().cache().context().database().checkpointReadLock();
 

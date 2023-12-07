@@ -118,8 +118,7 @@ public class KubernetesServiceAddressResolverTest {
 
     /** */
     private KubernetesServiceAddressResolver prepareResolver(boolean includeNotReadyAddresses)
-        throws IOException
-    {
+        throws IOException {
         File account = File.createTempFile("kubernetes-test-account", "");
         FileWriter fw = new FileWriter(account);
         fw.write("account-token");

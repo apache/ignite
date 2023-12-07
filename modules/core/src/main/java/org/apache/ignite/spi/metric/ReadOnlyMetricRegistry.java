@@ -60,6 +60,7 @@ public interface ReadOnlyMetricRegistry extends Iterable<Metric> {
 
     /**
      * @param name Name of the metric.
+     * @param <M> Type of the metric.
      * @return Metric with specified name if exists. Null otherwise.
      */
     @Nullable public <M extends Metric> M findMetric(String name);

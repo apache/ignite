@@ -173,7 +173,7 @@ namespace Apache.Ignite.Core.Tests.Examples
             public string Console { get; set; } = "externalTerminal"; // Or "integratedTerminal"
 
             /** */
-            public bool StopAtEntry { get; set; } = false;
+            public bool StopAtEntry { get; set; }
         }
     }
 }

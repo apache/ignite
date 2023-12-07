@@ -37,6 +37,9 @@ public final class ClientStatus {
     /** Invalid op code. */
     public static final int INVALID_OP_CODE = 2;
 
+    /** Invalid node status. */
+    public static final int INVALID_NODE_STATE = 10;
+
     /** Functionality is disabled. */
     public static final int FUNCTIONALITY_DISABLED = 100;
 
@@ -45,6 +48,9 @@ public final class ClientStatus {
 
     /** Cache already exists. */
     public static final int CACHE_EXISTS = 1001;
+
+    /** Invalid cache configuration. */
+    public static final int CACHE_CONFIG_INVALID = 1002;
 
     /** Too many cursors. */
     public static final int TOO_MANY_CURSORS = 1010;

@@ -20,6 +20,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <sstream>
 
 namespace ignite
 {
@@ -78,6 +79,16 @@ namespace ignite
                     return 1;
 
                 return host.compare(other.host);
+            }
+
+            /**
+             * Check whether empty.
+             *
+             * @return @c true if empty.
+             */
+            bool IsEmpty() const
+            {
+                return host.empty();
             }
 
             /**
@@ -153,16 +164,29 @@ namespace ignite
                 return val1.Compare(val2) >= 0;
             }
 
+            /**
+             * Convert to string.
+             *
+             * @return String representation.
+             */
+            std::string ToString() const
+            {
+                std::stringstream buf;
+                buf << host << ':' << port;
+
+                if (range)
+                    buf << ".." << (port + range);
+
+                return buf.str();
+            }
+
             /** Remote host. */
             std::string host;
 
             /** TCP port. */
             uint16_t port;
 
-            /**
-             * Number of ports after the port that should be tried if
-             * the previous are unavailable.
-             */
+            /** Number of ports after the port that should be tried if the previous are unavailable. */
             uint16_t range;
         };
     }

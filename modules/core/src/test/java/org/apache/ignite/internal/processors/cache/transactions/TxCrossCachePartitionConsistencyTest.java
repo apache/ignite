@@ -27,6 +27,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -142,7 +143,7 @@ public class TxCrossCachePartitionConsistencyTest extends GridCommonAbstractTest
             IgniteEx crd = startGrids(NODES_CNT);
 
             if (persistenceEnabled)
-                crd.cluster().active(true);
+                crd.cluster().state(ClusterState.ACTIVE);
 
             awaitPartitionMapExchange();
 

@@ -141,7 +141,10 @@ struct Operation
             SIZE = 48,
 
             /** Operation: SizeLoc(peekModes). */
-            SIZE_LOC = 56
+            SIZE_LOC = 56,
+
+            /** Operation: Invoke. */
+            INVOKE_JAVA = 98,
     };
 };
 
@@ -326,6 +329,11 @@ namespace ignite
                 OutInOpX(Operation::INVOKE, inOp, outOp, err);
             }
 
+            void CacheImpl::InvokeJava(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
+            {
+                OutInOpX(Operation::INVOKE_JAVA, inOp, outOp, err);
+            }
+
             QueryCursorImpl* CacheImpl::QuerySqlFields(const SqlFieldsQuery& qry, IgniteError& err)
             {
                 return QueryInternal(qry, Operation::QRY_SQL_FIELDS, err);
@@ -459,10 +467,10 @@ namespace ignite
                 rawWriter.WriteInt32(qry0.GetBufferSize());
                 rawWriter.WriteInt64(qry0.GetTimeInterval());
 
-                // Autounsubscribe is a filter feature.
+                // Auto-unsubscribe is a filter feature.
                 rawWriter.WriteBool(false);
 
-                // Writing initial query. When there is not initial query writing -1.
+                // Writing initial query. When there is no initial query writing -1.
                 rawWriter.WriteInt32(typ);
                 if (typ != -1)
                     initialQry.Write(rawWriter);

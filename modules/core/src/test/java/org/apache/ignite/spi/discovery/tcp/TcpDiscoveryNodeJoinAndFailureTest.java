@@ -64,8 +64,10 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
     /** */
     private TcpDiscoveryIpFinder specialIpFinder1;
 
+    /** */
     private UUID nodeId;
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -180,7 +182,8 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
                         futRef.set(GridTestUtils.runAsync(() -> {
                             try {
                                 startGrid(NODE_WITH_PORT_ID_3);
-                            } catch (Exception ignored) {
+                            }
+                            catch (Exception ignored) {
                                 //NO-op.
                             }
                         }));

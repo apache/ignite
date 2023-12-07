@@ -38,7 +38,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 @WithSystemProperty(key = IGNITE_QUIET, value = "false")
 public class ClassPathContentLoggingTest extends GridCommonAbstractTest {
     /** */
-    private final ListeningTestLogger listeningLog = new ListeningTestLogger(false, log);
+    private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** */
     private String javaClassPath;

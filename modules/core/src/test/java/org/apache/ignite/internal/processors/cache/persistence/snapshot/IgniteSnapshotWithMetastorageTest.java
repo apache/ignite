@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -30,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -56,12 +58,15 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotWithMetastorage() throws Exception {
-        IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+        CacheConfiguration<Integer, Object> cfg2 = txCacheConfig(new CacheConfiguration<>("test"));
+
+        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, Integer::new, dfltCacheCfg, cfg2);
+
         startClientGrid();
 
         ignite.context().distributedMetastorage().write("key", "value");
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         stopAllGrids();
 
@@ -113,7 +118,7 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
                 }
             });
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         stop.set(true);
         updFut.get();
@@ -140,7 +145,7 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
     public void testMetastorageUpdateOnSnapshotFail() throws Exception {
         AtomicInteger keyCnt = new AtomicInteger();
         AtomicBoolean stop = new AtomicBoolean();
-        Set<String> writtenKeys = new TreeSet<>();
+        Set<String> writtenKeys = new ConcurrentSkipListSet<>();
 
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
@@ -178,7 +183,7 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
                 }
             });
 
-        IgniteFuture<?> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<?> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         GridTestUtils.assertThrowsAnyCause(log, fut::get, IgniteCheckedException.class, "Test exception");
 

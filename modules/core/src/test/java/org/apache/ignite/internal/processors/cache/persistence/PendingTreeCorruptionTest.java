@@ -29,7 +29,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingRow;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -105,7 +104,9 @@ public class PendingTreeCorruptionTest extends GridCommonAbstractTest {
         int expireCacheId = CU.cacheGroupId(expireCacheName, grpName);
 
         CacheGroupContext grp = ig.context().cache().cacheGroup(CU.cacheId(grpName));
-        IgniteCacheOffheapManager.CacheDataStore store = ((IgniteCacheOffheapManagerImpl)grp.offheap()).dataStore(0);
+        IgniteCacheOffheapManager.CacheDataStore store = grp.topology().localPartition(0).dataStore();
+
+        assertNotNull(store);
 
         // Get pending tree of expire cache.
         PendingEntriesTree pendingTree = store.pendingTree();

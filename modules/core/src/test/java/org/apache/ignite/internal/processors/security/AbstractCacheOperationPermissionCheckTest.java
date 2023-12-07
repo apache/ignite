@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.security;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -37,7 +38,7 @@ public abstract class AbstractCacheOperationPermissionCheckTest extends Abstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridAllowAll("server").cluster().active(true);
+        startGridAllowAll("server").cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */

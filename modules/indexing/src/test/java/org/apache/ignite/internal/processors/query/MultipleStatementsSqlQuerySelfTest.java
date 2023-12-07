@@ -54,11 +54,15 @@ public class MultipleStatementsSqlQuerySelfTest extends AbstractIndexingCommonTe
         GridQueryProcessor qryProc = node.context().query();
 
         SqlFieldsQuery qry = new SqlFieldsQuery(
+            "-- Creating table \n" +
             "create table test(ID int primary key, NAME varchar(20)); " +
+            " -- Adding data \n" +
                 "insert into test (ID, NAME) values (1, 'name_1');" +
                 "insert into test (ID, NAME) values (2, 'name_2'), (3, 'name_3');" +
-                "select * from test;")
-            .setSchema("PUBLIC");
+            " -- Query data \n" +
+            "select * from test;" +
+            " -- All done."
+        ).setSchema("PUBLIC");
 
         List<FieldsQueryCursor<List<?>>> res = qryProc.querySqlFields(qry, true, false);
 

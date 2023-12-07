@@ -85,4 +85,4 @@ Or you can enter the example into your Python interpreter/shell (IDLE on Windows
 
 == Further Examples
 
-Explore more Ignite Python examples link:https://github.com/apache/ignite-python-thin-client/tree/master/examples[here^].
+Explore more Ignite Python examples link:https://github.com/apache/ignite-python-thin-client/tree/master/examples[here,window=_blank].

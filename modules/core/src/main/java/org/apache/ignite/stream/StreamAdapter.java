@@ -98,7 +98,7 @@ public abstract class StreamAdapter<T, K, V> {
     @Deprecated
     public StreamTupleExtractor<T, K, V> getTupleExtractor() {
         if (singleTupleExtractor instanceof StreamTupleExtractor)
-            return (StreamTupleExtractor) singleTupleExtractor;
+            return (StreamTupleExtractor)singleTupleExtractor;
 
         throw new IllegalArgumentException("This method is deprecated and only relevant if using an old " +
             "StreamTupleExtractor; use getSingleTupleExtractor instead");
@@ -177,7 +177,8 @@ public abstract class StreamAdapter<T, K, V> {
             if (e != null)
                 stmr.addData(e);
 
-        } else {
+        }
+        else {
             Map<K, V> m = multipleTupleExtractor.extract(msg);
             
             if (m != null && !m.isEmpty())

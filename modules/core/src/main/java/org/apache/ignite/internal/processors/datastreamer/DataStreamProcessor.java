@@ -97,9 +97,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
-            return;
-
         marshErrBytes = U.marshal(marsh, new IgniteCheckedException("Failed to marshal response error, " +
             "see node log for details."));
 
@@ -136,9 +133,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        if (ctx.config().isDaemon())
-            return;
-
         if (!ctx.clientNode())
             ctx.io().removeMessageListener(TOPIC_DATASTREAM);
 

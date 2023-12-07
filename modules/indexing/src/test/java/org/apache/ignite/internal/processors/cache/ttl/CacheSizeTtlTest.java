@@ -91,6 +91,7 @@ public class CacheSizeTtlTest extends GridCommonAbstractTest {
             getTestTimeout()));
     }
 
+    /** */
     private static Ignite startIgniteServer() {
         IgniteConfiguration configuration = new IgniteConfiguration()
             .setClientMode(false)
@@ -100,6 +101,7 @@ public class CacheSizeTtlTest extends GridCommonAbstractTest {
         return Ignition.start(configuration);
     }
 
+    /** */
     private static Ignite startIgniteClient() {
         IgniteConfiguration configuration = new IgniteConfiguration()
             .setClientMode(true)
@@ -108,6 +110,7 @@ public class CacheSizeTtlTest extends GridCommonAbstractTest {
         return Ignition.start(configuration);
     }
 
+    /** */
     @NotNull
     private static CacheConfiguration<String, LocalDateTime> cacheConfiguration() {
         return new CacheConfiguration<String, LocalDateTime>()
@@ -117,6 +120,7 @@ public class CacheSizeTtlTest extends GridCommonAbstractTest {
             .setExpiryPolicyFactory(ModifiedExpiryPolicy.factoryOf(ENTRY_EXPIRY_DURATION));
     }
 
+    /** */
     private static TcpDiscoverySpi discoveryConfiguration() {
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
         ipFinder.setAddresses(singleton("127.0.0.1:48550..48551"));

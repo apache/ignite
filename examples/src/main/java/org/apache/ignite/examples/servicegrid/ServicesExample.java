@@ -155,7 +155,7 @@ public class ServicesExample {
      * Simple closure to demonstrate auto-injection of the service proxy.
      */
     private static class SimpleClosure implements IgniteCallable<Integer> {
-        // Auto-inject service proxy.
+        /** Auto-inject service proxy. */
         @ServiceResource(serviceName = "myClusterSingletonService", proxyInterface = SimpleMapService.class)
         private transient SimpleMapService mapSvc;
 

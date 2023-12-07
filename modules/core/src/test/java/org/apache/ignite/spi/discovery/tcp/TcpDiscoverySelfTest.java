@@ -177,8 +177,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         else
             cfg.setCacheConfiguration();
 
-        if (segPlc != null)
-            cfg.setSegmentationPolicy(segPlc);
+        cfg.setSegmentationPolicy(segPlc != null ? segPlc : SegmentationPolicy.STOP);
 
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
@@ -811,7 +810,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                         info(evt.message());
 
-                        UUID id = ((DiscoveryEvent) evt).eventNode().id();
+                        UUID id = ((DiscoveryEvent)evt).eventNode().id();
 
                         if (id.equals(g1.cluster().localNode().id()))
                             latch2_1.countDown();
@@ -833,7 +832,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                     info(evt.message());
 
-                    UUID id = ((DiscoveryEvent) evt).eventNode().id();
+                    UUID id = ((DiscoveryEvent)evt).eventNode().id();
 
                     if (id.equals(g1.cluster().localNode().id()))
                         latch1_1.countDown();
@@ -1035,7 +1034,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                 boolean found = false;
 
-                for (GridPortRecord rec : ((IgniteKernal) g).context().ports().records()) {
+                for (GridPortRecord rec : ((IgniteKernal)g).context().ports().records()) {
                     if ((rec.protocol() == UDP) && rec.port() == ipFinder.getMulticastPort()) {
                         found = true;
 
@@ -2137,7 +2136,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             assertEquals("Expected items in marshaller discovery data: 2, actual: "
                     + TestTcpDiscoveryMarshallerDataSpi.marshalledItems,
                     2, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
-        } finally {
+        }
+        finally {
             stopAllGrids();
         }
     }
@@ -2244,7 +2244,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     public void testCheckRingLatency() throws Exception {
         int hops = 1;
 
-        ListeningTestLogger testLog = new ListeningTestLogger(false, log);
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
 
         // We should discard ring check latency on server node.
         LogListener lsnr = LogListener.matches("Latency check has been discarded").times(hops).build();
@@ -2347,11 +2347,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 }
 
                 private List getAllMappings(DiscoveryDataBag bag) {
-                    return (List) bag.commonData().get(MARSHALLER_PROC.ordinal());
+                    return (List)bag.commonData().get(MARSHALLER_PROC.ordinal());
                 }
 
                 private Map getJavaMappings(List allMappings) {
-                    return (Map) allMappings.get(JAVA_ID);
+                    return (Map)allMappings.get(JAVA_ID);
                 }
             });
         }

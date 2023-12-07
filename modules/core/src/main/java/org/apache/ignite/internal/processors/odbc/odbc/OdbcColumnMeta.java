@@ -109,7 +109,7 @@ public class OdbcColumnMeta {
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (o instanceof OdbcColumnMeta) {
-            OdbcColumnMeta other = (OdbcColumnMeta) o;
+            OdbcColumnMeta other = (OdbcColumnMeta)o;
 
             return this == other || schemaName.equals(other.schemaName) && tableName.equals(other.tableName) &&
                 columnName.equals(other.columnName) && dataType.equals(other.dataType) &&

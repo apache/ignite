@@ -30,7 +30,6 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -43,11 +42,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOAD
  *
  */
 public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);

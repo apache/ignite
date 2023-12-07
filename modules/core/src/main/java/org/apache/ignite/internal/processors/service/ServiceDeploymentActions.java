@@ -19,9 +19,13 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.services.ServiceConfiguration;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -43,11 +47,36 @@ public class ServiceDeploymentActions {
     /** Services deployment errors. */
     private Map<IgniteUuid, Collection<byte[]>> depErrors;
 
+    /** Current platform */
+    private final String platform;
+
+    /**
+     * @param ctx Kernal context.
+     */
+    public ServiceDeploymentActions(GridKernalContext ctx) {
+        platform = ctx.platform().hasContext() ? ctx.platform().context().platform() : "";
+    }
+
     /**
      * @param servicesToDeploy Services info to deploy.
      */
     public void servicesToDeploy(@NotNull Map<IgniteUuid, ServiceInfo> servicesToDeploy) {
-        this.servicesToDeploy = servicesToDeploy;
+        Map<IgniteUuid, ServiceInfo> res = new HashMap<>();
+
+        for (Map.Entry<IgniteUuid, ServiceInfo> kv: servicesToDeploy.entrySet()) {
+            ServiceInfo dsc = kv.getValue();
+
+            ServiceConfiguration cfg = dsc.configuration();
+
+            String svcPlatform = PlatformUtils.servicePlatform(cfg);
+
+            if (!svcPlatform.isEmpty() && !platform.equals(svcPlatform))
+                continue;
+
+            res.put(kv.getKey(), dsc);
+        }
+
+        this.servicesToDeploy = Collections.unmodifiableMap(res);
     }
 
     /**
@@ -61,7 +90,7 @@ public class ServiceDeploymentActions {
      * @param servicesToUndeploy Services info to undeploy.
      */
     public void servicesToUndeploy(@NotNull Map<IgniteUuid, ServiceInfo> servicesToUndeploy) {
-        this.servicesToUndeploy = servicesToUndeploy;
+        this.servicesToUndeploy = Collections.unmodifiableMap(new HashMap<>(servicesToUndeploy));
     }
 
     /**
@@ -96,7 +125,7 @@ public class ServiceDeploymentActions {
      * @param depTops Deployment topologies.
      */
     public void deploymentTopologies(@NotNull Map<IgniteUuid, Map<UUID, Integer>> depTops) {
-        this.depTops = depTops;
+        this.depTops = Collections.unmodifiableMap(new HashMap<>(depTops));
     }
 
     /**
@@ -110,6 +139,6 @@ public class ServiceDeploymentActions {
      * @param depErrors Deployment errors.
      */
     public void deploymentErrors(@NotNull Map<IgniteUuid, Collection<byte[]>> depErrors) {
-        this.depErrors = depErrors;
+        this.depErrors = Collections.unmodifiableMap(new HashMap<>(depErrors));
     }
 }

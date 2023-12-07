@@ -44,9 +44,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityProcessor.CLIENT;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_STATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 
 /**
  * Common parent for security tests for thin client.
@@ -54,7 +55,7 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
 @RunWith(JUnit4.class)
 public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
     /** */
-    protected final ListeningTestLogger listeningLog = new ListeningTestLogger(false, log);
+    protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** */
     protected boolean fail;
@@ -72,7 +73,7 @@ public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
     protected TestSecurityData[] clientData() {
         return new TestSecurityData[]{new TestSecurityData(CLIENT,
             SecurityPermissionSetBuilder.create().defaultAllowAll(false)
-                .appendSystemPermissions(ADMIN_OPS, CACHE_CREATE)
+                .appendSystemPermissions(ADMIN_OPS, CACHE_CREATE, ADMIN_CLUSTER_STATE)
                 .build()
         )};
     }
@@ -90,7 +91,7 @@ public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
 
         cfg.setPluginProviders(getPluginProvider(name));
 
-        SslContextFactory sslFactory = (SslContextFactory) GridTestUtils.sslFactory();
+        SslContextFactory sslFactory = (SslContextFactory)GridTestUtils.sslFactory();
 
         cfg.setSslContextFactory(sslFactory);
         cfg.setConnectorConfiguration(new ConnectorConfiguration()
@@ -154,7 +155,7 @@ public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
      * @return SSL context factory for clients.
      */
     @NotNull protected SslContextFactory getClientSslContextFactory() {
-        SslContextFactory sslFactory = (SslContextFactory) GridTestUtils.sslFactory();
+        SslContextFactory sslFactory = (SslContextFactory)GridTestUtils.sslFactory();
 
         sslFactory.setKeyStoreFilePath(U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.client.path"))
             .getAbsolutePath());
@@ -167,7 +168,7 @@ public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
      * @return Plugin provider.
      */
     protected PluginProvider<?> getPluginProvider(String name) {
-        return new TestAdditionalSecurityPluginProvider(name, null, ALLOW_ALL,
+        return new TestAdditionalSecurityPluginProvider(name, null, ALL_PERMISSIONS,
             globalAuth, true, clientData());
     }
 }

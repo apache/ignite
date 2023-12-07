@@ -285,6 +285,16 @@ $ {command} logs ignite-cluster-5b69557db6-lcglw -n ignite
 
 The string `servers=2` in the last line indicates that the two nodes joined into a single cluster.
 
+=== Readiness Probe Setup
+
+To set up a readiness probe uncomment the relevant section inside the yaml definitions
+below. A special REST command (link:restapi#probe[PROBE]) is used to determine when an Ignite Kernal has started.
+
+=== Liveness Probe
+
+To set up a liveness probe uncomment the relevant section inside the yaml definitions
+below. The REST command (link:restapi#version[VERSION]) is used to verify that Ignite is running properly.
+
 == Activating the Cluster
 
 If you deployed a stateless cluster, skip this step: a cluster without persistence does not require activation.
@@ -388,17 +398,8 @@ Note that we use the external IP address (LoadBalancer Ingress) of the service.
 include::{javaFile}[tags=connectThinClient, indent=0]
 ----
 
-=== Connecting to REST API
 
-Connect to the cluster's REST API as follows:
-
-[source,shell,subs="attributes,specialchars"]
-----
-$ curl http://13.86.186.145:8080/ignite?cmd=version
-{"successStatus":0,"error":null,"response":"{version}","sessionToken":null}
-----
-
-== Partition Awareness
+==== Partition Awareness
 
 include::../../includes/partition-awareness.adoc[]
 
@@ -410,5 +411,15 @@ In this case, a client can connect to every pod in a cluster.
 include::{javaFile}[tags=connectThinClientWithKubernetesConfiguration, indent=0]
 ----
 
+
+=== Connecting to REST API
+
+Connect to the cluster's REST API as follows:
+
+[source,shell,subs="attributes,specialchars"]
+----
+$ curl http://13.86.186.145:8080/ignite?cmd=version
+{"successStatus":0,"error":null,"response":"{version}","sessionToken":null}
+----
 
 //end::kubernetes-config[]

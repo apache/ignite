@@ -39,6 +39,7 @@ import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -52,7 +53,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -140,7 +140,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> withReadRepair() {
+    @Override public IgniteCache<K, V> withReadRepair(ReadRepairStrategy strategy) {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
@@ -258,6 +258,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         return compute.call(new SizeLongTask(cacheName, isAsync, peekModes, false));
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFuture<Long> sizeLongAsync(CachePeekMode... peekModes) throws CacheException {
         return compute.callAsync(new SizeLongTask(cacheName, isAsync, peekModes, false));
     }
@@ -267,6 +268,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         return compute.call(new PartitionSizeLongTask(cacheName, isAsync, peekModes, partition, false));
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFuture<Long> sizeLongAsync(int partition, CachePeekMode... peekModes) throws CacheException {
         return compute.callAsync(new PartitionSizeLongTask(cacheName, isAsync, peekModes, partition, false));
     }
@@ -662,16 +664,6 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheMetricsMXBean mxBean() {
-        throw new UnsupportedOperationException("Method should be supported.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheMetricsMXBean localMxBean() {
-        throw new UnsupportedOperationException("Method should be supported.");
-    }
-
-    /** {@inheritDoc} */
     @Override public <K1, V1> IgniteCache<K1, V1> withKeepBinary() {
         throw new UnsupportedOperationException("Method should be supported.");
     }
@@ -704,11 +696,6 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     /** {@inheritDoc} */
     @Override public boolean localPreloadPartition(int partition) {
         throw new UnsupportedOperationException("Method should be supported.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> withAllowAtomicOpsInTx() {
-        return this;
     }
 
     /**

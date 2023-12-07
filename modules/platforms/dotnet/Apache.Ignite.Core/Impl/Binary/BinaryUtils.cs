@@ -422,26 +422,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Convert Java ticks to DateTime.
-        /// </summary>
-        /// <param name="javaTicks">Ticks.</param>
-        /// <returns>Resulting DateTime.</returns>
-        public static DateTime JavaTicksToDateTime(long javaTicks)
-        {
-            return new DateTime(JavaDateTicks + javaTicks * 1000, DateTimeKind.Utc);
-        }
-
-        /// <summary>
-        /// Convert DateTime struct to Java ticks
-        /// <param name="dateTime">DateTime to convert</param>
-        /// </summary>
-        /// <returns>Ticks count</returns>
-        public static long DateTimeToJavaTicks(DateTime dateTime)
-        {
-            return (dateTime.Ticks - JavaDateTicks) / 1000;
-        }
-
-        /// <summary>
         /// Write nullable date array.
         /// </summary>
         /// <param name="vals">Values.</param>
@@ -1452,7 +1432,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the string hash code using Java algorithm.
         /// </summary>
-        private static int GetStringHashCode(string val)
+        public static int GetStringHashCode(string val)
         {
             if (val == null)
                 return 0;

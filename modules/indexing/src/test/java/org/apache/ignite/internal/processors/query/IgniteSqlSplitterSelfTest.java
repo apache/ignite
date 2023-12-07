@@ -412,21 +412,25 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
         }
     }
 
+    /** */
     @Test
     public void testPartitionedTablesUsingReplicatedCache() {
         doTestPartitionedTablesUsingReplicatedCache(1, false);
     }
 
+    /** */
     @Test
     public void testPartitionedTablesUsingReplicatedCacheSegmented() {
         doTestPartitionedTablesUsingReplicatedCache(7, false);
     }
 
+    /** */
     @Test
     public void testPartitionedTablesUsingReplicatedCacheClient() {
         doTestPartitionedTablesUsingReplicatedCache(1, true);
     }
 
+    /** */
     @Test
     public void testPartitionedTablesUsingReplicatedCacheSegmentedClient() {
         doTestPartitionedTablesUsingReplicatedCache(7, true);
@@ -519,6 +523,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
         }
     }
 
+    /** */
     @SuppressWarnings("SuspiciousMethodCalls")
     @Test
     public void testExists() {
@@ -1792,7 +1797,6 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
     /**
      *
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1886")
     @Test
     public void testFunctionNpe() {
         IgniteCache<Integer, User> userCache = ignite(0).createCache(

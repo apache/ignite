@@ -80,7 +80,7 @@ public final class ClientCacheConfiguration implements Serializable {
     /** @serial Rebalance throttle. */
     private long rebalanceThrottle = IgniteConfiguration.DFLT_REBALANCE_THROTTLE;
 
-    /** @serial @serial Rebalance timeout. */
+    /** @serial Rebalance timeout. */
     private long rebalanceTimeout = IgniteConfiguration.DFLT_REBALANCE_TIMEOUT;
 
     /** @serial Write synchronization mode. */
@@ -181,6 +181,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param name New cache name.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setName(String name) {
         this.name = name;
@@ -197,6 +198,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param atomicityMode New Atomicity mode.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setAtomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
@@ -213,6 +215,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param backups New number of backups.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setBackups(int backups) {
         this.backups = backups;
@@ -229,6 +232,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param cacheMode New cache mode.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setCacheMode(CacheMode cacheMode) {
         this.cacheMode = cacheMode;
@@ -250,6 +254,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param eagerTtl {@code True} if Ignite should eagerly remove expired cache entries.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setEagerTtl(boolean eagerTtl) {
         this.eagerTtl = eagerTtl;
@@ -263,6 +268,8 @@ public final class ClientCacheConfiguration implements Serializable {
      * Caches with the same group name share single underlying 'physical' cache (partition set),
      * but are logically isolated. Grouping caches reduces overall overhead, since internal data structures are shared.
      * </p>
+     *
+     * @return {@code this} for chaining.
      */
     public String getGroupName() {
         return grpName;
@@ -270,6 +277,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param newVal Group name.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setGroupName(String newVal) {
         grpName = newVal;
@@ -278,15 +286,20 @@ public final class ClientCacheConfiguration implements Serializable {
     }
 
     /**
-     * Gets default lock acquisition timeout. {@code 0} and means that lock acquisition will never timeout.
+     * @return Default lock acquisition timeout. {@code 0} and means that lock acquisition will never timeout.
+     * @deprecated Default lock timeout configuration property has no effect.
      */
+    @Deprecated
     public long getDefaultLockTimeout() {
         return dfltLockTimeout;
     }
 
     /**
      * @param dfltLockTimeout Default lock timeout.
+     * @return {@code this} for chaining.
+     * @deprecated Default lock timeout configuration property has no effect.
      */
+    @Deprecated
     public ClientCacheConfiguration setDefaultLockTimeout(long dfltLockTimeout) {
         this.dfltLockTimeout = dfltLockTimeout;
 
@@ -294,7 +307,7 @@ public final class ClientCacheConfiguration implements Serializable {
     }
 
     /**
-     * Gets partition loss policy. This policy defines how Ignite will react to a situation when all nodes for
+     * @return Partition loss policy. This policy defines how Ignite will react to a situation when all nodes for
      * some partition leave the cluster.
      */
     public PartitionLossPolicy getPartitionLossPolicy() {
@@ -303,6 +316,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param newVal Partition loss policy.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setPartitionLossPolicy(PartitionLossPolicy newVal) {
         partLossPlc = newVal;
@@ -311,7 +325,7 @@ public final class ClientCacheConfiguration implements Serializable {
     }
 
     /**
-     * Gets flag indicating whether data can be read from backup.
+     * @return Flag indicating whether data can be read from backup.
      * If {@code false} always get data from primary node (never from backup).
      */
     public boolean isReadFromBackup() {
@@ -320,6 +334,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param readFromBackup Read from backup.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setReadFromBackup(boolean readFromBackup) {
         this.readFromBackup = readFromBackup;
@@ -328,17 +343,22 @@ public final class ClientCacheConfiguration implements Serializable {
     }
 
     /**
-     * Gets size (in number bytes) to be loaded within a single rebalance message.
+     * @return Size (in number bytes) to be loaded within a single rebalance message.
      * Rebalancing algorithm will split total data set on every node into multiple
      * batches prior to sending data.
+     * @deprecated Use {@link IgniteConfiguration#getRebalanceBatchSize()} instead.
      */
+    @Deprecated
     public int getRebalanceBatchSize() {
         return rebalanceBatchSize;
     }
 
     /**
      * @param rebalanceBatchSize Rebalance batch size.
+     * @return {@code this} for chaining.
+     * @deprecated Use {@link IgniteConfiguration#setRebalanceBatchSize(int)} instead.
      */
+    @Deprecated
     public ClientCacheConfiguration setRebalanceBatchSize(int rebalanceBatchSize) {
         this.rebalanceBatchSize = rebalanceBatchSize;
 
@@ -349,16 +369,21 @@ public final class ClientCacheConfiguration implements Serializable {
      * To gain better rebalancing performance supplier node can provide more than one batch at rebalancing start and
      * provide one new to each next demand request.
      *
-     * Gets number of batches generated by supply node at rebalancing start.
+     * @return Number of batches generated by supply node at rebalancing start.
      * Minimum is 1.
+     * @deprecated Use {@link IgniteConfiguration#getRebalanceBatchesPrefetchCount()} instead
      */
+    @Deprecated
     public long getRebalanceBatchesPrefetchCount() {
         return rebalanceBatchesPrefetchCnt;
     }
 
     /**
      * @param rebalanceBatchesPrefetchCnt Rebalance batches prefetch count.
+     * @return {@code this} for chaining.
+     * @deprecated Use {@link IgniteConfiguration#getRebalanceBatchesPrefetchCount()} instead
      */
+    @Deprecated
     public ClientCacheConfiguration setRebalanceBatchesPrefetchCount(long rebalanceBatchesPrefetchCnt) {
         this.rebalanceBatchesPrefetchCnt = rebalanceBatchesPrefetchCnt;
 
@@ -366,7 +391,7 @@ public final class ClientCacheConfiguration implements Serializable {
     }
 
     /**
-     * Gets delay in milliseconds upon a node joining or leaving topology (or crash) after which rebalancing
+     * @return Delay in milliseconds upon a node joining or leaving topology (or crash) after which rebalancing
      * should be started automatically. Rebalancing should be delayed if you plan to restart nodes
      * after they leave topology, or if you plan to start multiple nodes at once or one after another
      * and don't want to repartition and rebalance until all nodes are started.
@@ -375,14 +400,19 @@ public final class ClientCacheConfiguration implements Serializable {
      * immediately upon node leaving topology. If {@code -1} is returned, then rebalancing
      * will only be started manually.
      * </p>
+     * @deprecated Use baseline topology feature instead. Please, be aware this API will be removed in the next releases.
      */
+    @Deprecated
     public long getRebalanceDelay() {
         return rebalanceDelay;
     }
 
     /**
      * @param rebalanceDelay Rebalance delay.
+     * @return {@code this} for chaining.
+     * @deprecated Use baseline topology feature instead. Please, be aware this API will be removed in the next releases.
      */
+    @Deprecated
     public ClientCacheConfiguration setRebalanceDelay(long rebalanceDelay) {
         this.rebalanceDelay = rebalanceDelay;
 
@@ -391,6 +421,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * Gets rebalance mode.
+     * @return {@code this} for chaining.
      */
     public CacheRebalanceMode getRebalanceMode() {
         return rebalanceMode;
@@ -398,6 +429,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param rebalanceMode Rebalance mode.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setRebalanceMode(CacheRebalanceMode rebalanceMode) {
         this.rebalanceMode = rebalanceMode;
@@ -406,7 +438,7 @@ public final class ClientCacheConfiguration implements Serializable {
     }
 
     /**
-     * Gets cache rebalance order. Rebalance order can be set to non-zero value for caches with
+     * @return Cache rebalance order. Rebalance order can be set to non-zero value for caches with
      * {@link CacheRebalanceMode#SYNC SYNC} or {@link CacheRebalanceMode#ASYNC ASYNC} rebalance modes only.
      * <p/>
      * If cache rebalance order is positive, rebalancing for this cache will be started only when rebalancing for
@@ -424,6 +456,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param rebalanceOrder Rebalance order.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setRebalanceOrder(int rebalanceOrder) {
         this.rebalanceOrder = rebalanceOrder;
@@ -432,7 +465,7 @@ public final class ClientCacheConfiguration implements Serializable {
     }
 
     /**
-     * Time in milliseconds to wait between rebalance messages to avoid overloading of CPU or network.
+     * @return Time in milliseconds to wait between rebalance messages to avoid overloading of CPU or network.
      * When rebalancing large data sets, the CPU or network can get over-consumed with rebalancing messages,
      * which consecutively may slow down the application performance. This parameter helps tune
      * the amount of time to wait between rebalance messages to make sure that rebalancing process
@@ -441,14 +474,19 @@ public final class ClientCacheConfiguration implements Serializable {
      * <p>
      * Default value of {@code 0} means that throttling is disabled.
      * </p>
+     * @deprecated Use {@link IgniteConfiguration#getRebalanceThrottle()} instead.
      */
+    @Deprecated
     public long getRebalanceThrottle() {
         return rebalanceThrottle;
     }
 
     /**
      * @param newVal Rebalance throttle.
+     * @return {@code this} for chaining.
+     * @deprecated Use {@link IgniteConfiguration#setRebalanceThrottle(long)} instead.
      */
+    @Deprecated
     public ClientCacheConfiguration setRebalanceThrottle(long newVal) {
         rebalanceThrottle = newVal;
 
@@ -456,15 +494,20 @@ public final class ClientCacheConfiguration implements Serializable {
     }
 
     /**
-     * Gets rebalance timeout (ms).
+     * @return Rebalance timeout (ms).
+     * @deprecated Use {@link IgniteConfiguration#getRebalanceTimeout()} instead.
      */
+    @Deprecated
     public long getRebalanceTimeout() {
         return rebalanceTimeout;
     }
 
     /**
      * @param newVal Rebalance timeout.
+     * @return {@code this} for chaining.
+     * @deprecated Use {@link IgniteConfiguration#getRebalanceTimeout()} instead.
      */
+    @Deprecated
     public ClientCacheConfiguration setRebalanceTimeout(long newVal) {
         rebalanceTimeout = newVal;
 
@@ -472,7 +515,7 @@ public final class ClientCacheConfiguration implements Serializable {
     }
 
     /**
-     * Gets write synchronization mode. This mode controls whether the main caller should wait for update on other
+     * @return Write synchronization mode. This mode controls whether the main caller should wait for update on other
      * nodes to complete or not.
      */
     public CacheWriteSynchronizationMode getWriteSynchronizationMode() {
@@ -481,6 +524,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param newVal Write synchronization mode.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setWriteSynchronizationMode(CacheWriteSynchronizationMode newVal) {
         writeSynchronizationMode = newVal;
@@ -497,6 +541,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param newVal Copy on read.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setCopyOnRead(boolean newVal) {
         cpOnRead = newVal;
@@ -513,6 +558,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param newVal Max concurrent async operations.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setMaxConcurrentAsyncOperations(int newVal) {
         maxConcurrentAsyncOperations = newVal;
@@ -529,6 +575,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param newVal Data region name.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setDataRegionName(String newVal) {
         dataRegionName = newVal;
@@ -545,6 +592,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param newVal Statistics enabled.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setStatisticsEnabled(boolean newVal) {
         statisticsEnabled = newVal;
@@ -561,6 +609,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param newVal Max query iterators count.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setMaxQueryIteratorsCount(int newVal) {
         maxQryIteratorsCnt = newVal;
@@ -577,6 +626,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param newVal Onheap cache enabled.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setOnheapCacheEnabled(boolean newVal) {
         onheapCacheEnabled = newVal;
@@ -593,6 +643,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param newVal Query detail metrics size.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setQueryDetailMetricsSize(int newVal) {
         qryDetailMetricsSize = newVal;
@@ -609,6 +660,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param newVal Query parallelism.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setQueryParallelism(int newVal) {
         qryParallelism = newVal;
@@ -625,6 +677,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param newVal Sql escape all.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setSqlEscapeAll(boolean newVal) {
         sqlEscapeAll = newVal;
@@ -641,6 +694,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param newVal Sql index max inline size.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setSqlIndexMaxInlineSize(int newVal) {
         sqlIdxMaxInlineSize = newVal;
@@ -657,6 +711,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param newVal Sql schema.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setSqlSchema(String newVal) {
         sqlSchema = newVal;
@@ -673,6 +728,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param newVal Cache key configuration.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setKeyConfiguration(CacheKeyConfiguration... newVal) {
         this.keyCfg = newVal;
@@ -689,6 +745,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param newVal Query entities configurations.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setQueryEntities(QueryEntity... newVal) {
         qryEntities = newVal;
@@ -705,6 +762,7 @@ public final class ClientCacheConfiguration implements Serializable {
 
     /**
      * @param expiryPlc Expiry policy.
+     * @return {@code this} for chaining.
      */
     public ClientCacheConfiguration setExpiryPolicy(ExpiryPolicy expiryPlc) {
         this.expiryPlc = expiryPlc;

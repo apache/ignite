@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log;
 
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.MemoryCalculator;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker;
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager.MemoryCalculator;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageMetaInfoStore;
 
 /**
@@ -129,10 +131,40 @@ public class LockLog extends PageLockTracker<PageLockLogSnapshot> {
             name,
             System.currentTimeMillis(),
             headIdx,
-            log,
+            toList(log),
             nextOp,
             nextOpStructureId,
             nextOpPageId
         );
     }
+
+    /**
+     * Convert log to list {@link LogEntry}.
+     *
+     * @return List of {@link LogEntry}.
+     */
+    private List<LogEntry> toList(PageMetaInfoStore pages) {
+        List<LogEntry> lockLog = new ArrayList<>(pages.capacity());
+
+        for (int itemIdx = 0; itemIdx < headIdx; itemIdx++) {
+            int metaOnLock = pages.getOperation(itemIdx);
+
+            assert metaOnLock != 0;
+
+            int heldLocks = (int)(metaOnLock & LOCK_IDX_MASK) >> OP_OFFSET;
+
+            assert heldLocks >= 0;
+
+            int op = metaOnLock & LOCK_OP_MASK;
+
+            int structureId = pages.getStructureId(itemIdx);
+
+            long pageId = pages.getPageId(itemIdx);
+
+            lockLog.add(new LogEntry(pageId, structureId, op, heldLocks));
+        }
+
+        return lockLog;
+    }
+
 }

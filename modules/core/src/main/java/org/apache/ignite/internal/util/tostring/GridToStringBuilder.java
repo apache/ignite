@@ -30,8 +30,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EventListener;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
@@ -42,6 +44,7 @@ import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -900,9 +903,9 @@ public class GridToStringBuilder {
             if (cls.isArray())
                 addArray(buf, cls, val);
             else if (val instanceof Collection)
-                addCollection(buf, (Collection) val);
+                addCollection(buf, (Collection)val);
             else if (val instanceof Map)
-                addMap(buf, (Map<?, ?>) val);
+                addMap(buf, (Map<?, ?>)val);
             else
                 buf.a(val);
         }
@@ -925,7 +928,7 @@ public class GridToStringBuilder {
             return;
         }
 
-        Object[] arr = (Object[]) obj;
+        Object[] arr = (Object[])obj;
 
         buf.a(arrType.getSimpleName()).a(" [");
 
@@ -1205,7 +1208,8 @@ public class GridToStringBuilder {
                 objArr = Arrays.copyOf(objArr, COLLECTION_LIMIT);
 
             res = Arrays.toString(objArr);
-        } else {
+        }
+        else {
             res = toStringWithLimit(arr, COLLECTION_LIMIT);
 
             arrLen = Array.getLength(arr);
@@ -1768,8 +1772,8 @@ public class GridToStringBuilder {
         Object[] addNames,
         Object[] addVals,
         boolean[] addSens,
-        int addLen)
-    {
+        int addLen
+    ) {
         if (addLen > 0) {
             for (int i = 0; i < addLen; i++) {
                 Object addVal = addVals[i];
@@ -1831,31 +1835,7 @@ public class GridToStringBuilder {
                 else if (!f.isAnnotationPresent(GridToStringExclude.class) &&
                     !type.isAnnotationPresent(GridToStringExclude.class)
                 ) {
-                    if (
-                        // Include only private non-static
-                        Modifier.isPrivate(f.getModifiers()) && !Modifier.isStatic(f.getModifiers()) &&
-
-                        // No direct objects & serializable.
-                        Object.class != type &&
-                        Serializable.class != type &&
-                        Externalizable.class != type &&
-
-                        // No arrays.
-                        !type.isArray() &&
-
-                        // Exclude collections, IO, etc.
-                        !EventListener.class.isAssignableFrom(type) &&
-                        !Map.class.isAssignableFrom(type) &&
-                        !Collection.class.isAssignableFrom(type) &&
-                        !InputStream.class.isAssignableFrom(type) &&
-                        !OutputStream.class.isAssignableFrom(type) &&
-                        !Thread.class.isAssignableFrom(type) &&
-                        !Runnable.class.isAssignableFrom(type) &&
-                        !Lock.class.isAssignableFrom(type) &&
-                        !ReadWriteLock.class.isAssignableFrom(type) &&
-                        !Condition.class.isAssignableFrom(type)
-                    )
-                        add = true;
+                    add = addField(f, type);
                 }
 
                 if (add) {
@@ -1878,16 +1858,42 @@ public class GridToStringBuilder {
         return cd;
     }
 
+    /** @return {@code True} if field should be added. */
+    private static boolean addField(Field f, Class<?> type) {
+        // Include only private non-static
+        return Modifier.isPrivate(f.getModifiers()) && !Modifier.isStatic(f.getModifiers()) &&
+            // No direct objects & serializable.
+            Object.class != type &&
+            Serializable.class != type &&
+            Externalizable.class != type &&
+
+            // No arrays.
+            !type.isArray() &&
+
+            // Exclude collections, IO, etc.
+            !EventListener.class.isAssignableFrom(type) &&
+            !Map.class.isAssignableFrom(type) &&
+            !Collection.class.isAssignableFrom(type) &&
+            !InputStream.class.isAssignableFrom(type) &&
+            !OutputStream.class.isAssignableFrom(type) &&
+            !Thread.class.isAssignableFrom(type) &&
+            !Runnable.class.isAssignableFrom(type) &&
+            !Lock.class.isAssignableFrom(type) &&
+            !ReadWriteLock.class.isAssignableFrom(type) &&
+            !Condition.class.isAssignableFrom(type);
+    }
+
     /**
-     * Returns sorted and compacted string representation of given {@code col}.
-     * Two nearby numbers with difference at most 1 are compacted to one continuous segment.
-     * E.g. collection of [1, 2, 3, 5, 6, 7, 10] will be compacted to [1-3, 5-7, 10].
+     * Creates string representation of a specified collection with preliminary sorting and duplicates removing.
      *
-     * @param col Collection of integers.
-     * @return Compacted string representation of given collections.
+     * @param c Input collection.
+     * @return String representation of collection.
      */
-    public static String compact(Collection<Integer> col) {
-        return compact(col, i -> i + 1);
+    public static String toStringSortedDistinct(Collection<? extends Comparable<?>> c) {
+        if (c.isEmpty())
+            return "[]";
+
+        return '[' + F.concat(new TreeSet<>(c), ",") + ']';
     }
 
     /**
@@ -1943,6 +1949,47 @@ public class GridToStringBuilder {
         sb.a(']');
 
         return sb.toString();
+    }
+
+    /**
+     * Creates a string from the elements separated using <code>separator</code>.
+     *
+     * @param list Elements.
+     * @param separator Separator.
+     * @param truncSuffix String suffix in case of string truncation.
+     * @param maxLen Max length of the output string at which it will be truncated (<code>0</code> - unlimited).
+     * @param maxCnt Max number of added elements at which the string will be truncated (<code>0</code> - unlimited).
+     * @return Result string.
+     */
+    public static <T> String joinToString(
+        @Nullable Iterable<T> list,
+        @Nullable String separator,
+        @Nullable String truncSuffix,
+        int maxLen,
+        int maxCnt
+    ) {
+        if (F.isEmpty(list))
+            return "";
+
+        SB buf = new SB();
+
+        for (Iterator<T> itr = list.iterator(); itr.hasNext(); ) {
+            T obj = itr.next();
+
+            if (separator != null && buf.length() > 0)
+                buf.a(separator);
+
+            buf.a(obj);
+
+            if (itr.hasNext() && (--maxCnt == 0 || maxLen > 0 && buf.length() >= maxLen)) {
+                if (truncSuffix != null)
+                    buf.a(truncSuffix);
+
+                break;
+            }
+        }
+
+        return buf.toString();
     }
 
     /**

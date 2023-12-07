@@ -130,7 +130,7 @@ public class DistributedProcessCoordinatorLeftTest extends GridCommonAbstractTes
                     // A single message will be sent before this latch released.
                     // It is guaranteed by the LIFO order of future listeners notifying.
                     if (!grid.name().equals(getTestIgniteInstanceName(STOP_NODE_IDX)))
-                        fut.listen(f -> msgSendLatch.countDown());
+                        fut.listen(msgSendLatch::countDown);
 
                     startLatch.countDown();
 

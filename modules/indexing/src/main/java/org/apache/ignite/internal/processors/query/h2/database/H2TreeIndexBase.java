@@ -32,9 +32,6 @@ import org.h2.table.TableFilter;
  * H2 tree index base.
  */
 public abstract class H2TreeIndexBase extends GridH2IndexBase {
-    /** Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE} */
-    public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 10;
-
     /**
      * Constructor.
      *
@@ -54,7 +51,7 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
         HashSet<Column> allColumnsSet) {
         long rowCnt = getRowCountApproximation();
 
-        double baseCost = getCostRangeIndexEx(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
+        double baseCost = getCostRangeIndex(ses, masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
 
         int mul = getDistributedMultiplier(ses, filters, filter);
 

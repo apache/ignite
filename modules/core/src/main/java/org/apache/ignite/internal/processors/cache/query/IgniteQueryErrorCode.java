@@ -83,6 +83,12 @@ public final class IgniteQueryErrorCode {
     /** Query canceled. */
     public static final int QUERY_CANCELED = 3014;
 
+    /** Required schema not found. */
+    public static final int SCHEMA_NOT_FOUND = 3015;
+
+    /** Database is closed by some reasons. */
+    public static final int DB_UNRECOVERABLE_ERROR = 3016;
+
     /* 4xxx - cache related runtime errors */
 
     /** Attempt to INSERT a key that is already in cache. */

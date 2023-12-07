@@ -18,26 +18,19 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Ignore;
 import org.junit.Test;
-
 import static org.apache.ignite.internal.util.IgniteUtils.GB;
 
 /** */
 public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocationTest {
-
+    /** */
     public static final long PETA_BYTE = 1024 * GB;
-
-    /** {@inheritDoc} */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11677")
-    @Override public void testLocalCacheOnClientNodeWithLazyAllocation() throws Exception {
-        // No-op.
-    }
 
     /** */
     @Test
@@ -84,7 +77,7 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
 
         startGrid(cfgWithHugeRegion("test-server-2"));
 
-        srv.cluster().active(true);
+        srv.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -94,7 +87,7 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
 
         startGrid(cfgWithHugeRegion("test-server-2"));
 
-        srv.cluster().active(true);
+        srv.cluster().state(ClusterState.ACTIVE);
     }
 
     /** */
@@ -105,7 +98,7 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
         IgniteEx srv = startGrid(cfgWithHugeRegion("test-server")
             .setFailureHandler(new StopNodeFailureHandler()));
 
-        srv.cluster().active(true);
+        srv.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
     }
@@ -121,11 +114,12 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
         IgniteEx clnt = startClientGrid(cfgWithHugeRegion("test-client")
             .setFailureHandler(new StopNodeFailureHandler()));
 
-        srv.cluster().active(true);
+        srv.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
     }
 
+    /** */
     @NotNull private IgniteConfiguration cfgWithHugeRegion(String name) throws Exception {
         IgniteConfiguration cfg = getConfiguration(name);
 

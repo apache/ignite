@@ -62,12 +62,14 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.F;
@@ -77,8 +79,10 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.ignite.thread.IgniteThreadFactory;
@@ -751,6 +755,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         assertTrue(ips.get(ips.size() - 1).isUnresolved());
     }
 
+    /** */
     @Test
     public void testMD5Calculation() throws Exception {
         String md5 = U.calculateMD5(new ByteArrayInputStream("Corrupted information.".getBytes()));
@@ -763,9 +768,9 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testResolveLocalAddresses() throws Exception {
-        InetAddress inetAddr = InetAddress.getByName("0.0.0.0");
+        InetAddress inetAddress = InetAddress.getByName("0.0.0.0");
 
-        IgniteBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(inetAddr);
+        IgniteBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(inetAddress);
 
         Collection<String> hostNames = addrs.get2();
 
@@ -980,12 +985,12 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     public void testDoInParallel() throws Throwable {
         CyclicBarrier barrier = new CyclicBarrier(3);
 
-        ExecutorService executorSrvc = Executors.newFixedThreadPool(3,
+        ExecutorService executorService = Executors.newFixedThreadPool(3,
             new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
         try {
             IgniteUtils.doInParallel(3,
-                executorSrvc,
+                executorService,
                 asList(1, 2, 3),
                 i -> {
                     try {
@@ -998,8 +1003,9 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                     return null;
                 }
             );
-        } finally {
-            executorSrvc.shutdownNow();
+        }
+        finally {
+            executorService.shutdownNow();
         }
     }
 
@@ -1010,12 +1016,12 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     public void testDoInParallelBatch() {
         CyclicBarrier barrier = new CyclicBarrier(3);
 
-        ExecutorService executorSrvc = Executors.newFixedThreadPool(3,
+        ExecutorService executorService = Executors.newFixedThreadPool(3,
             new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
         try {
             IgniteUtils.doInParallel(2,
-                executorSrvc,
+                executorService,
                 asList(1, 2, 3),
                 i -> {
                     try {
@@ -1033,8 +1039,9 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         }
         catch (Exception e) {
             assertTrue(e.toString(), X.hasCause(e, TimeoutException.class));
-        } finally {
-            executorSrvc.shutdownNow();
+        }
+        finally {
+            executorService.shutdownNow();
         }
     }
 
@@ -1075,15 +1082,16 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDoInParallelResultsOrder() throws IgniteCheckedException {
-        ExecutorService executorSrvc = Executors.newFixedThreadPool(4,
+        ExecutorService executorService = Executors.newFixedThreadPool(4,
             new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
         try {
             for (int parallelism = 1; parallelism < 16; parallelism++)
                 for (int size = 0; size < 10_000; size++)
-                    testOrder(executorSrvc, size, parallelism);
-        } finally {
-            executorSrvc.shutdownNow();
+                    testOrder(executorService, size, parallelism);
+        }
+        finally {
+            executorService.shutdownNow();
         }
     }
 
@@ -1093,14 +1101,14 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     @Test
     public void testDoInParallelWithStealingJob() throws IgniteCheckedException {
         // Pool size should be less that input data collection.
-        ExecutorService executorSrvc = Executors
+        ExecutorService executorService = Executors
             .newSingleThreadExecutor(new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
         CountDownLatch mainThreadLatch = new CountDownLatch(1);
         CountDownLatch poolThreadLatch = new CountDownLatch(1);
 
         // Busy one thread from the pool.
-        executorSrvc.submit(new Runnable() {
+        executorService.submit(new Runnable() {
             @Override public void run() {
                 try {
                     poolThreadLatch.await();
@@ -1121,7 +1129,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         AtomicInteger poolThreadCnt = new AtomicInteger();
 
         Collection<Integer> res = U.doInParallel(10,
-            executorSrvc,
+            executorService,
             data,
             new IgniteThrowableFunction<Integer, Integer>() {
                 @Override public Integer apply(Integer cnt) throws IgniteInterruptedCheckedException {
@@ -1166,12 +1174,12 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     @Test
     public void testDoInParallelWithStealingJobRunTaskInExecutor() throws Exception {
         // Pool size should be less that input data collection.
-        ExecutorService executorSrvc = Executors.newFixedThreadPool(2,
+        ExecutorService executorService = Executors.newFixedThreadPool(2,
             new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
-        Future<?> f1 = executorSrvc.submit(() -> runTask(executorSrvc));
-        Future<?> f2 = executorSrvc.submit(() -> runTask(executorSrvc));
-        Future<?> f3 = executorSrvc.submit(() -> runTask(executorSrvc));
+        Future<?> f1 = executorService.submit(() -> runTask(executorService));
+        Future<?> f2 = executorService.submit(() -> runTask(executorService));
+        Future<?> f3 = executorService.submit(() -> runTask(executorService));
 
         f1.get();
         f2.get();
@@ -1264,19 +1272,19 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDoInParallelException() {
-        String expectedE = "ExpectedException";
+        String expectedException = "ExpectedException";
 
-        ExecutorService executorSrvc = Executors
+        ExecutorService executorService = Executors
             .newSingleThreadExecutor(new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
         try {
             IgniteUtils.doInParallel(
                 1,
-                executorSrvc,
+                executorService,
                 asList(1, 2, 3),
                 i -> {
                     if (Integer.valueOf(1).equals(i))
-                        throw new IgniteCheckedException(expectedE);
+                        throw new IgniteCheckedException(expectedException);
 
                     return null;
                 }
@@ -1285,9 +1293,10 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             fail("Should throw ParallelExecutionException");
         }
         catch (IgniteCheckedException e) {
-            assertEquals(expectedE, e.getMessage());
-        } finally {
-            executorSrvc.shutdownNow();
+            assertEquals(expectedException, e.getMessage());
+        }
+        finally {
+            executorService.shutdownNow();
         }
     }
 
@@ -1463,7 +1472,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      * @param consumer Consumer.
      * @throws Exception If failed.
      */
-    private void readLines(String rsrcName, ThrowableConsumer<String> consumer) throws Exception {
+    private void readLines(String rsrcName, ConsumerX<String> consumer) throws Exception {
         byte[] content = readResource(getClass().getClassLoader(), rsrcName);
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(content)))) {
@@ -1479,52 +1488,199 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests that local hostname is ignored if {@link IgniteSystemProperties#IGNITE_IGNORE_LOCAL_HOST_NAME} is
+     * set to {@code true}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_LOCAL_HOST, value = "example.com")
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME, value = "true")
+    public void testResolveLocalAddressesWithHostNameDefined() throws Exception {
+        testAddressResolveWithLocalHostDefined();
+    }
+
+    /**
+     * Tests that local hostname is not ignored if {@link IgniteSystemProperties#IGNITE_IGNORE_LOCAL_HOST_NAME} is
+     * set to {@code false}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_LOCAL_HOST, value = "example.com")
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME, value = "false")
+    public void testResolveLocalAddressesWithHostNameDefinedAndLocalHostNameNotIgnored() throws Exception {
+        testAddressResolveWithLocalHostDefined();
+    }
+
+    /**
+     * Tests {@link IgniteUtils#isLambda(Class)} on lambdas.
+     */
+    @Test
+    public void testIsLambdaOnLambdas() {
+        Runnable someLambda = () -> {};
+
+        int localVar = 0;
+        Runnable capturingLocalLambda = () -> {
+            System.out.println(localVar);
+        };
+
+        Runnable capturingOuterClassLambda = () -> {
+            System.out.println(repeatRule);
+        };
+
+        Runnable methodReference = this::testIsLambdaOnLambdas;
+
+        assertTrue(IgniteUtils.isLambda(someLambda.getClass()));
+        assertTrue(IgniteUtils.isLambda(capturingLocalLambda.getClass()));
+        assertTrue(IgniteUtils.isLambda(capturingOuterClassLambda.getClass()));
+        assertTrue(IgniteUtils.isLambda(methodReference.getClass()));
+    }
+
+    /** Test nested class. */
+    private static class TestNestedClass {
+    }
+
+    /** Test inner class. */
+    private class TestInnerClass {
+    }
+
+    /**
+     * Tests {@link IgniteUtils#isLambda(Class)} on non-lambda classes.
+     */
+    @Test
+    public void testIsLambdaOnOrdinaryClasses() throws Exception {
+        assertFalse(IgniteUtils.isLambda(Object.class));
+
+        Runnable anonCls = new Runnable() {
+            /** {@inheritDoc} */
+            @Override public void run() {
+                // No-op.
+            }
+        };
+
+        assertFalse(IgniteUtils.isLambda(anonCls.getClass()));
+        assertFalse(IgniteUtils.isLambda(TestEnum.class));
+
+        // Loading only inner class with test classloader, while outer class
+        // will be loaded with the default classloader. Thus, if we execute method like isAnonymousClass
+        // on the loaded class, it will fail with the IncompatibleClassChangeError. That's why order in
+        // IgniteUtils isLambda is important.
+        GridTestClassLoader clsLdr = new GridTestClassLoader(
+            TestNestedClass.class.getName(),
+            TestInnerClass.class.getName()
+        );
+
+        Class<?> nestedCls = clsLdr.loadClass(TestNestedClass.class.getName());
+        assertFalse(IgniteUtils.isLambda(nestedCls));
+
+        Class<?> innerCls = clsLdr.loadClass(TestInnerClass.class.getName());
+        assertFalse(IgniteUtils.isLambda(innerCls));
+    }
+
+    /**
+     * Tests {@link IgniteUtils#resolveLocalAddresses(InetAddress)} with different values set to
+     * {@link IgniteSystemProperties#IGNITE_LOCAL_HOST} and {@link IgniteSystemProperties#IGNITE_IGNORE_LOCAL_HOST_NAME}.
+     *
+     * @throws Exception If failed.
+     */
+    private void testAddressResolveWithLocalHostDefined() throws Exception {
+        try {
+            boolean ignoreLocalHostname = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME);
+            String userDefinedHost = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_LOCAL_HOST);
+
+            InetSocketAddress inetSocketAddress = new InetSocketAddress(userDefinedHost, 0);
+            InetAddress addr = inetSocketAddress.getAddress();
+            IgniteBiTuple<Collection<String>, Collection<String>> localAddresses = IgniteUtils.resolveLocalAddresses(addr);
+
+            if (ignoreLocalHostname) {
+                // If local hostname is ignored, then no hostname should be resolved.
+                assertTrue(localAddresses.get2().isEmpty());
+            }
+            else {
+                // If local hostname is not ignored, then we should receive example.com.
+                assertFalse(localAddresses.get2().isEmpty());
+                assertEquals("example.com", F.first(localAddresses.get2()));
+            }
+        }
+        finally {
+            // Clear local address cache as we have polluted it with this test.
+            GridTestUtils.setFieldValue(IgniteUtils.class, "cachedLocalAddrAllHostNames", null);
+            GridTestUtils.setFieldValue(IgniteUtils.class, "cachedLocalAddr", null);
+        }
+    }
+
+    /**
      * Test enum.
      */
     private enum TestEnum {
+        /** */
         E1,
+
+        /** */
         E2,
+
+        /** */
         E3
     }
 
+    /** */
     @Documented @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.TYPE)
     private @interface Ann1 {}
 
+    /** */
     @Documented @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.TYPE)
     private @interface Ann2 {}
 
+    /** */
     private static class A1 implements I3, I5 {}
 
+    /** */
     private static class A2 extends A1 {}
 
+    /** */
     private static class A3 implements I5 {}
 
+    /** */
     @Ann1 private interface I1 {}
 
+    /** */
     private interface I2 extends I1 {}
 
+    /** */
     private interface I3 extends I2 {}
 
+    /** */
     @Ann2 private interface I4 {}
 
+    /** */
     private interface I5 extends I4 {}
 
     /**
-     * Represents an operation that accepts a single input argument and returns
-     * no result. Unlike most other functional interfaces,
-     * {@code ThrowableConsumer} is expected to operate via side-effects.
-     *
-     * Also it is able to throw {@link Exception} unlike {@link Consumer}.
-     *
-     * @param <T> The type of the input to the operation.
+     * Test to verify the {@link U#hashToIndex(int, int)}.
      */
-    @FunctionalInterface
-    private static interface ThrowableConsumer<T> {
-        /**
-         * Performs this operation on the given argument.
-         *
-         * @param t the input argument.
-         */
-        void accept(@Nullable T t) throws Exception;
+    @Test
+    public void testHashToIndexDistribution() {
+        assertEquals(0, U.hashToIndex(1, 1));
+        assertEquals(0, U.hashToIndex(2, 1));
+        assertEquals(1, U.hashToIndex(1, 2));
+        assertEquals(0, U.hashToIndex(2, 2));
+
+        assertEquals(1, U.hashToIndex(1, 4));
+        assertEquals(2, U.hashToIndex(2, 4));
+        assertEquals(3, U.hashToIndex(3, 4));
+        assertEquals(0, U.hashToIndex(4, 4));
+        assertEquals(1, U.hashToIndex(5, 4));
+        assertEquals(0, U.hashToIndex(8, 4));
+        assertEquals(3, U.hashToIndex(15, 4));
+
+        assertEquals(1, U.hashToIndex(-1, 4));
+        assertEquals(2, U.hashToIndex(-2, 4));
+        assertEquals(3, U.hashToIndex(-3, 4));
+        assertEquals(0, U.hashToIndex(-4, 4));
+        assertEquals(1, U.hashToIndex(-5, 4));
+        assertEquals(0, U.hashToIndex(-8, 4));
+        assertEquals(3, U.hashToIndex(-15, 4));
     }
+
 }

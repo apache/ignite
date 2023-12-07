@@ -58,8 +58,8 @@ public class JvmConfigurationSuggestions {
         if (!U.jvmName().toLowerCase().contains("server"))
             suggestions.add("Enable server mode for JVM (add '" + SERVER + "' to JVM options)");
 
-        if (!U.jdkVersion().equals("1.8"))
-            suggestions.add("Switch to the most recent 1.8 JVM version");
+        if (!"11".equals(U.jdkVersion()))
+            suggestions.add("Switch to the most recent 11 JVM version");
 
         if (U.jdkVersion().equals("1.8") && !args.contains(USE_G1_GC))
             suggestions.add("Enable G1 Garbage Collector (add '" + USE_G1_GC + "' to JVM options)");

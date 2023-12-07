@@ -26,14 +26,16 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.logging.Handler;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -48,7 +50,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.commandline.cache.IdleVerify;
+import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommand;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareFutureAdapter;
@@ -57,10 +59,11 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.logger.java.JavaLoggerFileHandler;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.String.join;
@@ -73,10 +76,11 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTA
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.configuration.EncryptionConfiguration.DFLT_REENCRYPTION_BATCH_SIZE;
 import static org.apache.ignite.configuration.EncryptionConfiguration.DFLT_REENCRYPTION_RATE_MBPS;
+import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
-import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
-import static org.apache.ignite.util.GridCommandHandlerTestUtils.addSslParams;
+import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
 
 /**
  * Common abstract class for testing {@link CommandHandler}.
@@ -85,15 +89,9 @@ import static org.apache.ignite.util.GridCommandHandlerTestUtils.addSslParams;
  * {@link GridCommandHandlerClusterByClassAbstractTest}
  */
 @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
-public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
+public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerFactoryAbstractTest {
     /** */
     protected static final String CLIENT_NODE_NAME_PREFIX = "client";
-
-    /** */
-    protected static final String DAEMON_NODE_NAME_PREFIX = "daemon";
-
-    /** Option is used for auto confirmation. */
-    protected static final String CMD_AUTO_CONFIRMATION = "--yes";
 
     /** System out. */
     protected static PrintStream sysOut;
@@ -134,6 +132,9 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
     /** Persistence flag. */
     private boolean persistent = true;
 
+    /** WAL compaction flag. */
+    private boolean walCompaction;
+
     /**
      * Persistence setter.
      *
@@ -141,6 +142,15 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
      **/
     protected void persistenceEnable(boolean pr) {
         persistent = pr;
+    }
+
+    /**
+     * WAL compaction setter.
+     *
+     * @param walCompaction {@code True} If WAL compaction enable.
+     **/
+    protected void walCompactionEnabled(boolean walCompaction) {
+        this.walCompaction = walCompaction;
     }
 
     /**
@@ -165,11 +175,17 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
+        File logDir = JavaLoggerFileHandler.logDirectory(U.defaultWorkDirectory());
+
         // Clean idle_verify log files.
-        for (File f : new File(".").listFiles(n -> n.getName().startsWith(IdleVerify.IDLE_VERIFY_FILE_PREFIX)))
+        for (File f : logDir.listFiles(n -> n.getName().startsWith(CacheIdleVerifyCommand.IDLE_VERIFY_FILE_PREFIX)))
             U.delete(f);
 
         GridClientFactory.stopAll(false);
+
+        stopAllGrids(true);
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -199,13 +215,31 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
     /**
      * @return Logger.
      */
-    protected Logger createTestLogger() {
-        Logger log = CommandHandler.initLogger(null);
+    public static IgniteLogger createTestLogger() {
+        JavaLogger logger = new JavaLogger(initLogger(null), false);
 
-        // Adding logging to console.
-        log.addHandler(CommandHandler.setupStreamHandler());
+        logger.addConsoleAppender(true);
 
-        return log;
+        return logger;
+    }
+
+    /**
+     * Initialises JULs logger with basic settings
+     * @param loggerName logger name. If {@code null} anonymous logger is returned.
+     * @return logger
+     */
+    public static Logger initLogger(@Nullable String loggerName) {
+        Logger result;
+
+        if (loggerName == null)
+            result = Logger.getAnonymousLogger();
+        else
+            result = Logger.getLogger(loggerName);
+
+        result.setLevel(Level.INFO);
+        result.setUseParentHandlers(false);
+
+        return result;
     }
 
     /** */
@@ -230,10 +264,11 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         cfg.setConnectorConfiguration(new ConnectorConfiguration().setSslEnabled(sslEnabled()));
 
         if (sslEnabled())
-            cfg.setSslContextFactory(GridTestUtils.sslFactory());
+            cfg.setSslContextFactory(sslFactory());
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setWalMode(WALMode.LOG_ONLY)
+            .setWalCompactionEnabled(walCompaction)
             .setCheckpointFrequency(checkpointFreq)
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration().setMaxSize(50L * 1024 * 1024).setPersistenceEnabled(persistent)
@@ -248,7 +283,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
 
         cfg.setClientMode(igniteInstanceName.startsWith(CLIENT_NODE_NAME_PREFIX));
 
-        cfg.setDaemon(igniteInstanceName.startsWith(DAEMON_NODE_NAME_PREFIX));
+        cfg.setIncludeEventTypes(EVT_CONSISTENCY_VIOLATION); // Extend if necessary.
 
         if (encryptionEnabled) {
             KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
@@ -290,13 +325,28 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
     }
 
     /**
+     * Executes command and checks its exit code.
+     *
+     * @param expExitCode Expected exit code.
+     * @param args Command lines arguments.
+     * @return Result of command execution.
+     */
+    protected String executeCommand(int expExitCode, String... args) {
+        int res = execute(args);
+
+        assertEquals(expExitCode, res);
+
+        return testOut.toString();
+    }
+
+    /**
      * Before command executed {@link #testOut} reset.
      *
      * @param args Arguments.
      * @return Result of execution
      */
     protected int execute(List<String> args) {
-        return execute(new CommandHandler(createTestLogger()), args);
+        return execute(newCommandHandler(createTestLogger()), args);
     }
 
     /**
@@ -306,14 +356,14 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
      * @param args Arguments.
      * @return Result of execution
      */
-    protected int execute(CommandHandler hnd, String... args) {
+    protected int execute(TestCommandHandler hnd, String... args) {
         return execute(hnd, new ArrayList<>(asList(args)));
     }
 
     /**
      * Before command executed {@link #testOut} reset.
      */
-    protected int execute(CommandHandler hnd, List<String> args) {
+    protected int execute(TestCommandHandler hnd, List<String> args) {
         if (!F.isEmpty(args) && !"--help".equalsIgnoreCase(args.get(0)))
             addExtraArguments(args);
 
@@ -323,8 +373,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         lastOperationResult = hnd.getLastOperationResult();
 
         // Flush all Logger handlers to make log data available to test.
-        Logger logger = U.field(hnd, "logger");
-        Arrays.stream(logger.getHandlers()).forEach(Handler::flush);
+        hnd.flushLogger();
 
         return exitCode;
     }
@@ -341,8 +390,21 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         if (sslEnabled()) {
             // We shouldn't add extra args for --cache help.
             if (args.size() < 2 || !args.get(0).equals("--cache") || !args.get(1).equals("help"))
-                addSslParams(args);
+                extendSslParams(args);
         }
+    }
+
+    /** Custom SSL params. */
+    protected void extendSslParams(List<String> params) {
+        params.add("--keystore");
+        params.add(GridTestUtils.keyStorePath("node01"));
+        params.add("--keystore-password");
+        params.add(GridTestUtils.keyStorePassword());
+    }
+
+    /** Custom SSL factory. */
+    protected Factory<SSLContext> sslFactory() {
+        return GridTestUtils.sslFactory();
     }
 
     /** */
@@ -377,11 +439,11 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
                 if (!fut.isDone()) {
                     //skipping system tx futures if possible
                     if (fut instanceof GridNearTxPrepareFutureAdapter
-                        && ((GridNearTxPrepareFutureAdapter) fut).tx().system())
+                        && ((GridNearTxPrepareFutureAdapter)fut).tx().system())
                         continue;
 
                     if (fut instanceof GridDhtTxPrepareFuture
-                        && ((GridDhtTxPrepareFuture) fut).tx().system())
+                        && ((GridDhtTxPrepareFuture)fut).tx().system())
                         continue;
 
                     log.error("Expecting no active future [node=" + ig.localNode().id() + ", fut=" + fut + ']');
@@ -428,19 +490,21 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
      * </table>
      *
      * @param ignite Ignite.
+     * @param cacheName Cache name.
      * @param countEntries Count of entries.
      * @param partitions Partitions count.
      * @param filter Node filter.
      */
     protected void createCacheAndPreload(
         Ignite ignite,
+        String cacheName,
         int countEntries,
         int partitions,
         @Nullable IgnitePredicate<ClusterNode> filter
     ) {
         assert nonNull(ignite);
 
-        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(cacheName)
             .setAffinity(new RendezvousAffinityFunction(false, partitions))
             .setBackups(1)
             .setEncryptionEnabled(encryptionEnabled);
@@ -450,9 +514,10 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
 
         ignite.createCache(ccfg);
 
-        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
-        for (int i = 0; i < countEntries; i++)
-            cache.put(i, i);
+        try (IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer(cacheName)) {
+            for (int i = 0; i < countEntries; i++)
+                streamer.addData(i, i);
+        }
     }
 
     /**
@@ -462,6 +527,6 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
      * @param countEntries Count of entries.
      */
     protected void createCacheAndPreload(Ignite ignite, int countEntries) {
-        createCacheAndPreload(ignite, countEntries, 32, null);
+        createCacheAndPreload(ignite, DEFAULT_CACHE_NAME, countEntries, 32, null);
     }
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.task;
 import java.util.EventListener;
 import java.util.UUID;
 import org.apache.ignite.internal.GridJobSiblingImpl;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Listener for task events.
@@ -28,7 +29,14 @@ interface GridTaskEventListener extends EventListener {
     /**
      * @param worker Started grid task worker.
      */
-    public void onTaskStarted(GridTaskWorker<?, ?> worker);
+    void onTaskStarted(GridTaskWorker<?, ?> worker);
+
+    /**
+     * Callback on splitting the task into jobs.
+     *
+     * @param worker Grid task worker.
+     */
+    void onJobsMapped(GridTaskWorker<?, ?> worker);
 
     /**
      * @param worker Grid task worker.
@@ -41,16 +49,19 @@ interface GridTaskEventListener extends EventListener {
      * @param sib Job sibling.
      * @param nodeId Failover node ID.
      */
-    public void onJobFailover(GridTaskWorker<?, ?> worker, GridJobSiblingImpl sib, UUID nodeId);
+    void onJobFailover(GridTaskWorker<?, ?> worker, GridJobSiblingImpl sib, UUID nodeId);
 
     /**
      * @param worker Grid task worker.
      * @param sib Job sibling.
      */
-    public void onJobFinished(GridTaskWorker<?, ?> worker, GridJobSiblingImpl sib);
+    void onJobFinished(GridTaskWorker<?, ?> worker, GridJobSiblingImpl sib);
 
     /**
+     * Callback on finish of task execution.
+     *
      * @param worker Task worker for finished grid task.
+     * @param err Reason for the failure of the task, {@code null} if the task completed successfully.
      */
-    public void onTaskFinished(GridTaskWorker<?, ?> worker);
+    void onTaskFinished(GridTaskWorker<?, ?> worker, @Nullable Throwable err);
 }

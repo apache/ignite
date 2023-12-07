@@ -1,0 +1,233 @@
+# name: test/sql/function/interval/test_extract.test
+# description: Extract function
+# group: [interval]
+
+# YEAR-MONTH intervals
+statement ok
+CREATE TABLE intervals_ym(i INTERVAL YEAR TO MONTH)
+
+statement ok
+INSERT INTO intervals_ym VALUES (INTERVAL 1234 YEARS), (INTERVAL 2 YEARS), (INTERVAL 16 MONTHS), (INTERVAL '1-2' YEAR TO MONTH), (NULL)
+
+# extract various parts of the intervals
+query I
+SELECT EXTRACT(year FROM i) FROM intervals_ym ORDER BY i DESC
+----
+1234
+2
+1
+1
+NULL
+
+query I
+SELECT EXTRACT(month FROM i) FROM intervals_ym ORDER BY i DESC
+----
+0
+0
+4
+2
+NULL
+
+query I
+SELECT EXTRACT(decade FROM i) FROM intervals_ym ORDER BY i DESC
+----
+123
+0
+0
+0
+NULL
+
+query I
+SELECT EXTRACT(century FROM i) FROM intervals_ym ORDER BY i DESC
+----
+12
+0
+0
+0
+NULL
+
+query I
+SELECT EXTRACT(millennium FROM i) FROM intervals_ym ORDER BY i DESC
+----
+1
+0
+0
+0
+NULL
+
+query I
+SELECT EXTRACT(quarter FROM i) FROM intervals_ym ORDER BY i DESC
+----
+1
+1
+2
+1
+NULL
+
+statement error
+SELECT EXTRACT(day FROM i) FROM intervals_ym
+
+statement error
+SELECT EXTRACT(dayofweek FROM i) FROM intervals_ym
+
+statement error
+SELECT EXTRACT(isodow FROM i) FROM intervals_ym
+
+statement error
+SELECT EXTRACT(dayofyear FROM i) FROM intervals_ym
+
+statement error
+SELECT EXTRACT(week FROM i) FROM intervals_ym
+
+statement error
+SELECT EXTRACT(day FROM i) FROM intervals_ym
+
+statement error
+SELECT EXTRACT(hour FROM i) FROM intervals_ym
+
+statement error
+SELECT EXTRACT(minute FROM i) FROM intervals_ym
+
+statement error
+SELECT EXTRACT(second FROM i) FROM intervals_ym
+
+statement error
+SELECT EXTRACT(millisecond FROM i) FROM intervals_ym
+
+statement error
+SELECT EXTRACT(microsecond FROM i) FROM intervals_ym
+
+statement error
+SELECT EXTRACT(nanosecond FROM i) FROM intervals_ym
+
+statement error
+SELECT EXTRACT(epoch FROM i) FROM intervals_ym
+
+# DAY-TIME intervals
+statement ok
+CREATE TABLE intervals_dt(i INTERVAL DAY TO SECOND)
+
+statement ok
+INSERT INTO intervals_dt VALUES (INTERVAL 42 DAYS), (INTERVAL '10:20' HOUR TO MINUTE), (INTERVAL '2066.343' SECONDS(4)), (NULL)
+
+statement error
+SELECT EXTRACT(month FROM i) FROM intervals_dt
+
+statement error
+SELECT EXTRACT(quarter FROM i) FROM intervals_dt
+
+statement error
+SELECT EXTRACT(year FROM i) FROM intervals_dt
+
+statement error
+SELECT EXTRACT(decade FROM i) FROM intervals_dt
+
+statement error
+SELECT EXTRACT(century FROM i) FROM intervals_dt
+
+statement error
+SELECT EXTRACT(millennium FROM i) FROM intervals_dt
+
+statement error
+SELECT EXTRACT(dayofweek FROM i) FROM intervals_dt
+
+statement error
+SELECT EXTRACT(isodow FROM i) FROM intervals_dt
+
+statement error
+SELECT EXTRACT(dayofyear FROM i) FROM intervals_dt
+
+statement error
+SELECT EXTRACT(week FROM i) FROM intervals_dt
+
+statement error
+SELECT EXTRACT(epoch FROM i) FROM intervals_dt
+
+query I
+SELECT EXTRACT(microsecond FROM i) FROM intervals_dt ORDER BY i DESC
+----
+0
+0
+26343000
+NULL
+
+query I
+SELECT EXTRACT(millisecond FROM i) FROM intervals_dt ORDER BY i DESC
+----
+0
+0
+26343
+NULL
+
+query I
+SELECT EXTRACT(second FROM i) FROM intervals_dt ORDER BY i DESC
+----
+0
+0
+26
+NULL
+
+query I
+SELECT EXTRACT(minute FROM i) FROM intervals_dt ORDER BY i DESC
+----
+0
+20
+34
+NULL
+
+query I
+SELECT EXTRACT(hour FROM i) FROM intervals_dt ORDER BY i DESC
+----
+0
+10
+0
+NULL
+
+query I
+SELECT EXTRACT(day FROM i) FROM intervals_dt ORDER BY i DESC
+----
+42
+0
+0
+NULL
+
+# negative intervals
+query I
+SELECT EXTRACT(year FROM interval '-14' months)
+----
+-1
+
+query I
+SELECT EXTRACT(month FROM interval '-14' months)
+----
+-2
+
+query I
+SELECT EXTRACT(day FROM interval '-157' days(3))
+----
+-157
+
+query I
+SELECT EXTRACT(decade FROM interval '-140' months(3))
+----
+-1
+
+query I
+SELECT EXTRACT(century FROM interval '-1400' months(4))
+----
+-1
+
+query I
+SELECT EXTRACT(millennium FROM interval '-14000' months(5))
+----
+-1
+
+query I
+SELECT EXTRACT(quarter FROM interval '-14' months)
+----
+4
+
+query I
+SELECT EXTRACT(quarter FROM interval '-21' months)
+----
+1

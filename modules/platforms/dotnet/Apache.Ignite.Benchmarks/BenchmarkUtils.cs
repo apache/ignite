@@ -30,12 +30,12 @@ namespace Apache.Ignite.Benchmarks
     internal static class BenchmarkUtils
     {
         /** Property binding flags. */
-        private static readonly BindingFlags PropFlags = BindingFlags.Instance | BindingFlags.Public;
+        private const BindingFlags PropFlags = BindingFlags.Instance | BindingFlags.Public;
 
         /** Thread-local random. */
         private static readonly ThreadLocal<Random> Rand;
 
-        /** Cached ANSI chcracters. */
+        /** Cached ANSI characters. */
         private static readonly char[] Chars;
 
         /** Seed to randoms. */
@@ -225,7 +225,7 @@ namespace Apache.Ignite.Benchmarks
                 }
             }
             else if (propType == typeof(string))
-                val0 = val;                            
+                val0 = val;
             else
                 throw new Exception("Unsupported property type [property=" + prop.Name +
                     ", type=" + propType.Name + ']');

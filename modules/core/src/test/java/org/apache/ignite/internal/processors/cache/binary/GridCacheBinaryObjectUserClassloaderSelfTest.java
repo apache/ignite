@@ -258,6 +258,7 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
      *
      */
     private static class WrappingClassLoader extends ClassLoader {
+        /** */
         public WrappingClassLoader(ClassLoader parent) {
             super(parent);
         }

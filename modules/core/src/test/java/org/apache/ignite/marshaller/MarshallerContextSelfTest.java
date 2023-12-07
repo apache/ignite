@@ -58,9 +58,11 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
         ctx = newContext();
         execSvc = Executors.newSingleThreadExecutor();
 
-        ctx.setSystemExecutorService(execSvc);
-
-        ctx.add(new PoolProcessor(ctx));
+        ctx.add(new PoolProcessor(ctx) {
+            @Override public ExecutorService getSystemExecutorService() {
+                return execSvc;
+            }
+        });
 
         ctx.add(new GridClosureProcessor(ctx));
     }
@@ -101,13 +103,13 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMultiplatformMappingsCollecting() throws Exception {
-        String nonJavaClsName = "random.platform.Mapping";
+        String nonJavaClassName = "random.platform.Mapping";
 
         MarshallerContextImpl marshCtx = new MarshallerContextImpl(null, null);
 
         marshCtx.onMarshallerProcessorStarted(ctx, null);
 
-        MarshallerMappingItem item = new MarshallerMappingItem((byte) 2, 101, nonJavaClsName);
+        MarshallerMappingItem item = new MarshallerMappingItem((byte)2, 101, nonJavaClassName);
 
         marshCtx.onMappingProposed(item);
 
@@ -127,7 +129,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(nonJavaMappings.get(101));
 
-        assertEquals(nonJavaClsName, nonJavaMappings.get(101).className());
+        assertEquals(nonJavaClassName, nonJavaMappings.get(101).className());
     }
 
     /**
@@ -138,13 +140,13 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMultiplatformMappingsDistributing() throws Exception {
-        String nonJavaClsName = "random.platform.Mapping";
+        String nonJavaClassName = "random.platform.Mapping";
 
         Ignite grid0 = startGrid(0);
 
         MarshallerContextImpl marshCtx0 = ((IgniteKernal)grid0).context().marshallerContext();
 
-        MarshallerMappingItem item = new MarshallerMappingItem((byte) 2, 101, nonJavaClsName);
+        MarshallerMappingItem item = new MarshallerMappingItem((byte)2, 101, nonJavaClassName);
 
         marshCtx0.onMappingProposed(item);
 
@@ -154,7 +156,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         MarshallerContextImpl marshCtx1 = ((IgniteKernal)grid1).context().marshallerContext();
 
-        assertEquals(nonJavaClsName, marshCtx1.getClassName((byte) 2, 101));
+        assertEquals(nonJavaClassName, marshCtx1.getClassName((byte)2, 101));
     }
 
     /**
@@ -176,7 +178,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         checkFileName("java.lang.String", Paths.get(workDir + "/1.classname0"));
 
-        MarshallerMappingItem item2 = new MarshallerMappingItem((byte) 2, 2, "Random.Class.Name");
+        MarshallerMappingItem item2 = new MarshallerMappingItem((byte)2, 2, "Random.Class.Name");
 
         ctx.onMappingProposed(item2);
         ctx.onMappingAccepted(item2);
@@ -203,7 +205,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         ctx.onMappingAccepted(item1);
 
-        MarshallerMappingItem item2 = new MarshallerMappingItem((byte) 2, 2, "Random.Class.Name");
+        MarshallerMappingItem item2 = new MarshallerMappingItem((byte)2, 2, "Random.Class.Name");
 
         ctx.onMappingProposed(item2);
 
@@ -237,7 +239,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         ctx.onMappingAccepted(item1);
 
-        MarshallerMappingItem item2 = new MarshallerMappingItem((byte) 1, 2, "Random.Class.Name");
+        MarshallerMappingItem item2 = new MarshallerMappingItem((byte)1, 2, "Random.Class.Name");
 
         ctx.onMappingProposed(item2);
 

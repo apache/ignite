@@ -75,7 +75,7 @@ public class GridBoundedLinkedHashSet<E> extends GridSerializableSet<E> implemen
     public GridBoundedLinkedHashSet(Collection<? extends E> c, int maxCap) {
         assert maxCap > 0;
 
-        map = new GridBoundedLinkedHashMap<>(Math.max((int) (c.size() / 0.75f) + 1, 16), maxCap);
+        map = new GridBoundedLinkedHashMap<>(Math.max((int)(c.size() / 0.75f) + 1, 16), maxCap);
 
         addAll(c);
     }

@@ -109,9 +109,9 @@ public class GridDifferentLocalDeploymentSelfTest extends GridCommonAbstractTest
 
         ClassLoader clsLdr2 = getExternalClassLoader();
 
-        Class<ComputeTask> taskCls11 = (Class<ComputeTask>) clsLdr1.loadClass(TASK_NAME1);
-        Class<ComputeTask> taskCls12 = (Class<ComputeTask>) clsLdr2.loadClass(TASK_NAME1);
-        Class<ComputeTask> taskCls21 = (Class<ComputeTask>) clsLdr2.loadClass(TASK_NAME2);
+        Class<ComputeTask> taskCls11 = (Class<ComputeTask>)clsLdr1.loadClass(TASK_NAME1);
+        Class<ComputeTask> taskCls12 = (Class<ComputeTask>)clsLdr2.loadClass(TASK_NAME1);
+        Class<ComputeTask> taskCls21 = (Class<ComputeTask>)clsLdr2.loadClass(TASK_NAME2);
 
         IgniteInternalFuture f1 = GridTestUtils.runAsync(() -> {
             for (int i = 0; i < 10; ++i) {

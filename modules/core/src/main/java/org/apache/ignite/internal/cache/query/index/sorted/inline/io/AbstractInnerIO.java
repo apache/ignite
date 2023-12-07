@@ -41,6 +41,7 @@ public abstract class AbstractInnerIO extends BPlusInnerIO<IndexRow> implements 
     /** {@inheritDoc} */
     @Override public void storeByOffset(long pageAddr, int off, IndexRow row) {
         assert row.link() != 0;
+        assertPageType(pageAddr);
 
         IORowHandler.store(pageAddr, off, row, storeMvccInfo());
     }
@@ -58,15 +59,17 @@ public abstract class AbstractInnerIO extends BPlusInnerIO<IndexRow> implements 
             long mvccCntr = mvccCounter(pageAddr, idx);
             int mvccOpCntr = mvccOperationCounter(pageAddr, idx);
 
-            return ((InlineIndexTree) tree).createMvccIndexRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
+            return ((InlineIndexTree)tree).createMvccIndexRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
         }
 
-        return ((InlineIndexTree) tree).createIndexRow(link);
+        return ((InlineIndexTree)tree).createIndexRow(link);
     }
 
     /** {@inheritDoc} */
     @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<IndexRow> srcIo, long srcPageAddr, int srcIdx) {
-        IORowHandler.store(dstPageAddr, offset(dstIdx), (InlineIO) srcIo, srcPageAddr, srcIdx, storeMvccInfo());
+        assertPageType(dstPageAddr);
+
+        IORowHandler.store(dstPageAddr, offset(dstIdx), (InlineIO)srcIo, srcPageAddr, srcIdx, storeMvccInfo());
     }
 
     /** {@inheritDoc} */

@@ -244,8 +244,8 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
                         new DataRegionConfiguration().setName("2").setPersistenceEnabled(true)
                             .setWarmUpConfiguration(new NoOpWarmUpConfiguration())
                     ).setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration().setName("3").setPersistenceEnabled(true)
-                )
+                        new DataRegionConfiguration().setName("3").setPersistenceEnabled(true)
+                    )
             );
 
         startGrid(cfg);

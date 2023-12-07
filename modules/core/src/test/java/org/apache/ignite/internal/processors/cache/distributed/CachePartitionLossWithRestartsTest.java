@@ -22,8 +22,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -43,6 +43,8 @@ import org.apache.ignite.util.AttributeNodeFilter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossWithPersistenceTest.checkLostPartitionAcrossCluster;
 
 /**
  *
@@ -71,33 +73,27 @@ public class CachePartitionLossWithRestartsTest extends GridCommonAbstractTest {
     @Parameterized.Parameter(value = 3)
     public int clientIdx;
 
-    /** Possible values: true, false */
-    @Parameterized.Parameter(value = 4)
-    public boolean mvccEnabled;
-
     /** */
-    @Parameterized.Parameters(name = "{0} {1} {2} {3}")
+    @Parameterized.Parameters(name = "{0} {1} {2}")
     public static List<Object[]> parameters() {
         ArrayList<Object[]> params = new ArrayList<>();
 
-        for (boolean mvcc : new boolean[]{false, true}) {
-            for (boolean persistent : new boolean[] {false, true}) {
-                params.add(new Object[] {-1, false, persistent, 3, mvcc});
-                params.add(new Object[] {0, false, persistent, 3, mvcc});
-                params.add(new Object[] {2, false, persistent, 3, mvcc});
+        for (boolean persistent : new boolean[] {false, true}) {
+            params.add(new Object[] {-1, false, persistent, 3});
+            params.add(new Object[] {0, false, persistent, 3});
+            params.add(new Object[] {2, false, persistent, 3});
 
-                params.add(new Object[] {-1, false, persistent, -1, mvcc});
-                params.add(new Object[] {0, false, persistent, -1, mvcc});
-                params.add(new Object[] {2, false, persistent, -1, mvcc});
+            params.add(new Object[] {-1, false, persistent, -1});
+            params.add(new Object[] {0, false, persistent, -1});
+            params.add(new Object[] {2, false, persistent, -1});
 
-                params.add(new Object[] {-1, true, persistent, 3, mvcc});
-                params.add(new Object[] {0, true, persistent, 3, mvcc});
-                params.add(new Object[] {2, true, persistent, 3, mvcc});
+            params.add(new Object[] {-1, true, persistent, 3});
+            params.add(new Object[] {0, true, persistent, 3});
+            params.add(new Object[] {2, true, persistent, 3});
 
-                params.add(new Object[] {-1, true, persistent, -1, mvcc});
-                params.add(new Object[] {0, true, persistent, -1, mvcc});
-                params.add(new Object[] {2, true, persistent, -1, mvcc});
-            }
+            params.add(new Object[] {-1, true, persistent, -1});
+            params.add(new Object[] {0, true, persistent, -1});
+            params.add(new Object[] {2, true, persistent, -1});
         }
 
         return params;
@@ -135,9 +131,6 @@ public class CachePartitionLossWithRestartsTest extends GridCommonAbstractTest {
                 setBackups(0).
                 setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT));
 
-        if (mvccEnabled)
-            ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
-
         if (startClientCache)
             cfg.setCacheConfiguration(ccfg);
 
@@ -174,7 +167,7 @@ public class CachePartitionLossWithRestartsTest extends GridCommonAbstractTest {
     public void testPartitionLossDetectionOnClientTopology() throws Exception {
         final IgniteEx crd = startGrids(3);
         crd.cluster().baselineAutoAdjustEnabled(false);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         assertTrue(grid(1).cache(DEFAULT_CACHE_NAME).lostPartitions().isEmpty());
         assertTrue(grid(2).cache(DEFAULT_CACHE_NAME).lostPartitions().isEmpty());
@@ -204,6 +197,10 @@ public class CachePartitionLossWithRestartsTest extends GridCommonAbstractTest {
 
         GridDhtPartitionTopology top = startGrid(1).cachex(DEFAULT_CACHE_NAME).context().topology();
         assertEquals(lost1, top.lostPartitions());
+
+        // Check that all lost partitions have the same state on all cluster nodes.
+        for (Integer lostPart : lost1)
+            checkLostPartitionAcrossCluster(DEFAULT_CACHE_NAME, lostPart);
 
         // TODO https://issues.apache.org/jira/browse/IGNITE-13053
         grid(1).resetLostPartitions(Collections.singleton(DEFAULT_CACHE_NAME));

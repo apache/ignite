@@ -42,7 +42,6 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -214,7 +213,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
                 }
             }, EVT_NODE_JOINED);
 
-            final Collection<ClusterNode> remotes = F.concat(false, spiCtx.remoteNodes(), spiCtx.remoteDaemonNodes());
+            final Collection<ClusterNode> remotes = spiCtx.remoteNodes();
 
             for (ClusterNode node : remotes) {
                 checkConfigurationConsistency(spiCtx, node, true);
@@ -405,8 +404,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
      * @param <T> Type of the MBean
      * @throws IgniteSpiException If registration failed.
      */
-    protected final <T extends IgniteSpiManagementMBean> void registerMBean(String igniteInstanceName, T impl, Class<T> mbeanItf
-       ) throws IgniteSpiException {
+    protected final <T extends IgniteSpiManagementMBean> void registerMBean(
+        String igniteInstanceName,
+        T impl,
+        Class<T> mbeanItf
+    ) throws IgniteSpiException {
         if (ignite == null || U.IGNITE_MBEANS_DISABLED)
             return;
 
@@ -847,11 +849,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         /** {@inheritDoc} */
         @Override public ClusterNode localNode() {
             return locNode;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<ClusterNode> remoteDaemonNodes() {
-            return Collections.emptyList();
         }
 
         /** {@inheritDoc} */

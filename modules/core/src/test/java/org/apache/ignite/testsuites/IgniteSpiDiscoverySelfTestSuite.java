@@ -42,6 +42,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoveryUnresolvedHostTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryClientSuspensionSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryConcurrentStartTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryCoordinatorFailureTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryDeadNodeAddressResolvingTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryFailedJoinTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIpFinderCleanerTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIpFinderFailureTest;
@@ -180,7 +181,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 
     DiscoverySpiDataExchangeTest.class,
 
-    TcpDiscoveryIpFinderFailureTest.class
+    TcpDiscoveryIpFinderFailureTest.class,
+
+    TcpDiscoveryDeadNodeAddressResolvingTest.class
 })
 public class IgniteSpiDiscoverySelfTestSuite {
     /** */

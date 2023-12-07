@@ -29,8 +29,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheMode.LOCAL;
-
 /**
  * Based scanCount with offheap index issue.
  */
@@ -44,10 +42,7 @@ public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
 
         CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-        cacheCfg.setCacheMode(LOCAL);
-        cacheCfg.setIndexedTypes(
-            Integer.class, Person.class
-        );
+        cacheCfg.setIndexedTypes(Integer.class, Person.class);
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -91,7 +86,7 @@ public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
             String plan = (String)cache.query(new SqlFieldsQuery(
                 "explain analyze select count(*) from Person where salary = 50")).getAll().get(0).get(0);
 
-            assertTrue(plan, plan.contains("scanCount: 11 "));
+            assertTrue(plan, plan.contains("PERSON_SALARY_IDX: SALARY = 50.0"));
 
             Thread.sleep(100);
         }

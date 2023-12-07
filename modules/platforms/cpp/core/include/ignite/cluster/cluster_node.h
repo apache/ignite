@@ -109,13 +109,6 @@ namespace ignite
             bool IsClient() const;
 
             /**
-             * Check whether or not this node is a daemon.
-             *
-             * @return True if is daemon and false otherwise.
-             */
-            bool IsDaemon() const;
-
-            /**
              * Check whether or not this node is a local node.
              *
              * @return True if is local and false otherwise.

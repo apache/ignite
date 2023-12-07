@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.Collection;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -50,7 +51,7 @@ public class RowStore {
     private final boolean persistenceEnabled;
 
     /** Row cache cleaner. */
-    private volatile GridQueryRowCacheCleaner rowCacheCleaner;
+    private volatile Supplier<GridQueryRowCacheCleaner> rowCacheCleaner = () -> null;
 
     /** */
     protected final CacheGroupContext grp;
@@ -80,8 +81,10 @@ public class RowStore {
     public void removeRow(long link, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert link != 0;
 
-        if (rowCacheCleaner != null)
-            rowCacheCleaner.remove(link);
+        GridQueryRowCacheCleaner rowCacheCleaner0 = rowCacheCleaner.get();
+
+        if (rowCacheCleaner0 != null)
+            rowCacheCleaner0.remove(link);
 
         if (!persistenceEnabled)
             freeList.removeDataRowByLink(link, statHolder);
@@ -146,8 +149,10 @@ public class RowStore {
     public boolean updateRow(long link, CacheDataRow row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert !persistenceEnabled || ctx.database().checkpointLockIsHeldByThread();
 
-        if (rowCacheCleaner != null)
-            rowCacheCleaner.remove(link);
+        GridQueryRowCacheCleaner rowCacheCleaner0 = rowCacheCleaner.get();
+
+        if (rowCacheCleaner0 != null)
+            rowCacheCleaner0.remove(link);
 
         return freeList.updateDataRow(link, row, statHolder);
     }
@@ -188,7 +193,9 @@ public class RowStore {
      *
      * @param rowCacheCleaner Rows cache cleaner.
      */
-    public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
+    public void setRowCacheCleaner(Supplier<GridQueryRowCacheCleaner> rowCacheCleaner) {
+        assert rowCacheCleaner != null;
+
         this.rowCacheCleaner = rowCacheCleaner;
     }
 }

@@ -39,4 +39,17 @@ public abstract class AbstractIndex implements Index {
     public boolean rebuildInProgress() {
         return rebuildInProgress.get();
     }
+
+    /** {@inheritDoc} */
+    @Override public <T extends Index> T unwrap(Class<T> clazz) {
+        if (clazz == null)
+            return null;
+
+        if (clazz.isAssignableFrom(getClass()))
+            return clazz.cast(this);
+
+        throw new IllegalArgumentException(
+            String.format("Cannot unwrap [%s] to [%s]", getClass().getName(), clazz.getName())
+        );
+    }
 }

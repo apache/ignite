@@ -17,13 +17,17 @@
 
 package org.apache.ignite.internal.util.lang.gridfunc;
 
+import org.apache.ignite.internal.processors.security.PublicAccessJob;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
+
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
 
 /**
  * Absolute closure that does nothing.
  */
-public class NoOpClosure extends GridAbsClosure {
+public class NoOpClosure extends GridAbsClosure implements PublicAccessJob {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -35,5 +39,10 @@ public class NoOpClosure extends GridAbsClosure {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(NoOpClosure.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public SecurityPermissionSet requiredPermissions() {
+        return NO_PERMISSIONS;
     }
 }

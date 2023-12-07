@@ -96,13 +96,13 @@ public class GridBoundedConcurrentLinkedHashSetLoadTest {
                     UUID id = UUID.randomUUID();
 
                     try {
-                    while (!finish.get()) {
-                        set.add(IgniteUuid.fromUuid(id));
+                        while (!finish.get()) {
+                            set.add(IgniteUuid.fromUuid(id));
 
-                        execCnt.increment();
-                    }
+                            execCnt.increment();
+                        }
 
-                    return null;
+                        return null;
                     }
                     catch (Throwable t) {
                         t.printStackTrace();

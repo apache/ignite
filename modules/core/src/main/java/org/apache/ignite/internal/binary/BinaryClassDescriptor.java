@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -54,6 +55,7 @@ import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.isGeometryClass;
+import static org.apache.ignite.internal.util.IgniteUtils.isLambda;
 
 /**
  * Binary class descriptor.
@@ -318,61 +320,72 @@ public class BinaryClassDescriptor {
                 // Must not use constructor to honor transient fields semantics.
                 ctor = null;
 
-                Map<Object, BinaryFieldAccessor> fields0;
+                if (isLambda(cls)) {
+                    if (!Serializable.class.isAssignableFrom(cls))
+                        throw new BinaryObjectException("Lambda is not serializable: " + cls);
 
-                if (BinaryUtils.FIELDS_SORTED_ORDER) {
-                    fields0 = new TreeMap<>();
-
-                    stableFieldsMeta = metaDataEnabled ? new TreeMap<String, BinaryFieldMetadata>() : null;
+                    // We don't need fields for serializable lambdas, because we resort to SerializedLambda.
+                    fields = null;
+                    stableFieldsMeta = null;
+                    stableSchema = null;
                 }
                 else {
-                    fields0 = new LinkedHashMap<>();
+                    Map<Object, BinaryFieldAccessor> fields0;
 
-                    stableFieldsMeta = metaDataEnabled ? new LinkedHashMap<String, BinaryFieldMetadata>() : null;
-                }
+                    if (BinaryUtils.FIELDS_SORTED_ORDER) {
+                        fields0 = new TreeMap<>();
 
-                Set<String> duplicates = duplicateFields(cls);
+                        stableFieldsMeta = metaDataEnabled ? new TreeMap<String, BinaryFieldMetadata>() : null;
+                    }
+                    else {
+                        fields0 = new LinkedHashMap<>();
 
-                Collection<String> names = new HashSet<>();
-                Collection<Integer> ids = new HashSet<>();
+                        stableFieldsMeta = metaDataEnabled ? new LinkedHashMap<String, BinaryFieldMetadata>() : null;
+                    }
 
-                for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
-                    for (Field f : c.getDeclaredFields()) {
-                        if (serializeField(f)) {
-                            f.setAccessible(true);
+                    Set<String> duplicates = duplicateFields(cls);
 
-                            String name = f.getName();
+                    Collection<String> names = new HashSet<>();
+                    Collection<Integer> ids = new HashSet<>();
 
-                            if (duplicates.contains(name))
-                                name = BinaryUtils.qualifiedFieldName(c, name);
+                    for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
+                        for (Field f : c.getDeclaredFields()) {
+                            if (serializeField(f)) {
+                                f.setAccessible(true);
 
-                            boolean added = names.add(name);
+                                String name = f.getName();
 
-                            assert added : name;
+                                if (duplicates.contains(name))
+                                    name = BinaryUtils.qualifiedFieldName(c, name);
 
-                            int fieldId = this.mapper.fieldId(typeId, name);
+                                boolean added = names.add(name);
 
-                            if (!ids.add(fieldId))
-                                throw new BinaryObjectException("Duplicate field ID: " + name);
+                                assert added : name;
 
-                            BinaryFieldAccessor fieldInfo = BinaryFieldAccessor.create(f, fieldId);
+                                int fieldId = this.mapper.fieldId(typeId, name);
 
-                            fields0.put(name, fieldInfo);
+                                if (!ids.add(fieldId))
+                                    throw new BinaryObjectException("Duplicate field ID: " + name);
 
-                            if (metaDataEnabled)
-                                stableFieldsMeta.put(name, new BinaryFieldMetadata(fieldInfo));
+                                BinaryFieldAccessor fieldInfo = BinaryFieldAccessor.create(f, fieldId);
+
+                                fields0.put(name, fieldInfo);
+
+                                if (metaDataEnabled)
+                                    stableFieldsMeta.put(name, new BinaryFieldMetadata(fieldInfo));
+                            }
                         }
                     }
+
+                    fields = fields0.values().toArray(new BinaryFieldAccessor[fields0.size()]);
+
+                    BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
+
+                    for (BinaryFieldAccessor field : fields)
+                        schemaBuilder.addField(field.id);
+
+                    stableSchema = schemaBuilder.build();
                 }
-
-                fields = fields0.values().toArray(new BinaryFieldAccessor[fields0.size()]);
-
-                BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
-
-                for (BinaryFieldAccessor field : fields)
-                    schemaBuilder.addField(field.id);
-
-                stableSchema = schemaBuilder.build();
 
                 intfs = null;
 
@@ -756,7 +769,10 @@ public class BinaryClassDescriptor {
                     break;
 
                 case OBJECT_ARR:
-                    writer.doWriteObjectArray((Object[])obj);
+                    if (obj instanceof BinaryArray)
+                        writer.doWriteBinaryArray(((BinaryArray)obj));
+                    else
+                        writer.doWriteObjectArray((Object[])obj);
 
                     break;
 
@@ -781,7 +797,10 @@ public class BinaryClassDescriptor {
                     break;
 
                 case ENUM_ARR:
-                    writer.doWriteEnumArray((Object[])obj);
+                    if (obj instanceof BinaryArray)
+                        writer.doWriteBinaryArray(((BinaryArray)obj));
+                    else
+                        writer.doWriteEnumArray((Object[])obj);
 
                     break;
 
@@ -1070,6 +1089,11 @@ public class BinaryClassDescriptor {
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new BinaryObjectException("Failed to instantiate instance: " + cls, e);
         }
+    }
+
+    /** */
+    Constructor<?> ctor() {
+        return ctor;
     }
 
     /**

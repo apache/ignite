@@ -215,7 +215,7 @@ public class TestJavaObject {
         if (o == null)
             return false;
 
-        TestJavaObject that = (TestJavaObject) o;
+        TestJavaObject that = (TestJavaObject)o;
 
         if (fBoolean != that.fBoolean)
             return false;
@@ -253,15 +253,15 @@ public class TestJavaObject {
         long tmp;
 
         res = (fBoolean ? 1 : 0);
-        res = 31 * res + (int) fByte;
-        res = 31 * res + (int) fShort;
-        res = 31 * res + (int) fChar;
+        res = 31 * res + (int)fByte;
+        res = 31 * res + (int)fShort;
+        res = 31 * res + (int)fChar;
         res = 31 * res + fInt;
-        res = 31 * res + (int) (fLong ^ (fLong >>> 32));
+        res = 31 * res + (int)(fLong ^ (fLong >>> 32));
 
         tmp = Double.doubleToLongBits(fDouble);
 
-        res = 31 * res + (int) (tmp ^ (tmp >>> 32));
+        res = 31 * res + (int)(tmp ^ (tmp >>> 32));
         res = 31 * res + (fFloat != +0.0f ? Float.floatToIntBits(fFloat) : 0);
         res = 31 * res + (fObj != null ? fObj.hashCode() : 0);
         res = 31 * res + (fIntBoxed != null ? fIntBoxed.hashCode() : 0);

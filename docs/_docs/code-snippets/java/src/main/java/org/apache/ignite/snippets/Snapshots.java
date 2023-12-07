@@ -36,18 +36,30 @@ public class Snapshots {
         Ignite ignite = Ignition.start(cfg);
 
         //tag::create[]
-        CacheConfiguration<Long, String> ccfg = new CacheConfiguration<Long, String>("snapshot-cache");
+        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>("snapshot-cache");
 
-        try (IgniteCache<Long, String> cache = ignite.getOrCreateCache(ccfg)) {
+        try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(ccfg)) {
             cache.put(1, "Maxim");
 
-            // Start snapshot operation.
+            // Create snapshot operation.
             ignite.snapshot().createSnapshot("snapshot_02092020").get();
+
+            // Create incremental snapshot operation.
+            ignite.snapshot().createIncrementalSnapshot("snapshot_02092020").get();
         }
         finally {
-            ignite.destroyCache(ccfg);
+            ignite.destroyCache(ccfg.getName());
         }
         //end::create[]
+
+        //tag::restore[]
+        // Restore cache named "snapshot-cache" from the snapshot "snapshot_02092020".
+        ignite.snapshot().restoreSnapshot("snapshot_02092020", Collections.singleton("snapshot-cache")).get();
+
+        // Restore cache named "snapshot-cache" from the snapshot "snapshot_02092020" and its increment with index 1.
+        ignite.snapshot().restoreSnapshot("snapshot_02092020", Collections.singleton("snapshot-cache"), 1).get();
+
+        //end::restore[]
         
         ignite.close();
     }

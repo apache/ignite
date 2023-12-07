@@ -158,27 +158,29 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
             @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteException {
                 if (evt == LifecycleEventType.BEFORE_NODE_START) {
                     // The goal is registering PartitionsExchangeAware listener before the discovery manager is started.
-                    ignite.context().internalSubscriptionProcessor()
-                        .registerDistributedMetastorageListener(new DistributedMetastorageLifecycleListener() {
-                            @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
-                                ignite.context().cache().context().exchange()
-                                    .registerExchangeAwareComponent(new PartitionsExchangeAware() {
-                                        /** {@inheritDoc} */
-                                        @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
-                                            try {
-                                                // Let's start nodes.
-                                                startSrvsLatch.countDown();
+                    DistributedMetastorageLifecycleListener lsnr = new DistributedMetastorageLifecycleListener() {
+                        @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
+                            ignite.context().cache().context().exchange()
+                                .registerExchangeAwareComponent(new PartitionsExchangeAware() {
+                                    /** {@inheritDoc} */
+                                    @Override public void onInitBeforeTopologyLock(
+                                        GridDhtPartitionsExchangeFuture fut) {
+                                        try {
+                                            // Let's start nodes.
+                                            startSrvsLatch.countDown();
 
-                                                // Blocks the initial exchange and waits for other nodes.
-                                                exchangeLatch.await(DEFAULT_TIMEOUT, TimeUnit.MILLISECONDS);
-                                            }
-                                            catch (Exception e) {
-                                                err.compareAndSet(null, e);
-                                            }
+                                            // Blocks the initial exchange and waits for other nodes.
+                                            exchangeLatch.await(DEFAULT_TIMEOUT, TimeUnit.MILLISECONDS);
                                         }
+                                        catch (Exception e) {
+                                            err.compareAndSet(null, e);
+                                        }
+                                    }
                                 });
-                            }
-                    });
+                        }
+                    };
+
+                    ignite.context().internalSubscriptionProcessor().registerDistributedMetastorageListener(lsnr);
                 }
             }
         };

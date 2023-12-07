@@ -24,8 +24,8 @@ import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -33,8 +33,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Base class for  {@link IgnitePdsDestroyCacheTest} and {@link IgnitePdsDestroyCacheWithoutCheckpointsTest}
@@ -121,7 +119,7 @@ public abstract class IgnitePdsDestroyCacheAbstractTest extends GridCommonAbstra
 
         ignite = startGrids(NODES);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         log.warning("Grid started");
 
@@ -156,7 +154,7 @@ public abstract class IgnitePdsDestroyCacheAbstractTest extends GridCommonAbstra
 
         ignite = startGrids(NODES);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         log.warning("Grid started");
 
@@ -188,18 +186,10 @@ public abstract class IgnitePdsDestroyCacheAbstractTest extends GridCommonAbstra
      * @param ignite Ignite instance.
      */
     protected void startGroupCachesDynamically(Ignite ignite) {
-        startGroupCachesDynamically(ignite, false);
-    }
-
-    /**
-     * @param ignite Ignite instance.
-     * @param loc {@code True} for local caches.
-     */
-    protected void startGroupCachesDynamically(Ignite ignite, boolean loc) {
         List<CacheConfiguration> ccfg = new ArrayList<>(CACHES);
 
         for (int i = 0; i < CACHES; i++)
-            ccfg.add(new CacheConfiguration<>(cacheName(i)).setCacheMode(loc ? LOCAL : CacheMode.PARTITIONED)
+            ccfg.add(new CacheConfiguration<>(cacheName(i))
                 .setGroupName(i % 2 == 0 ? "grp-even" : "grp-odd")
                 .setBackups(1)
                 .setAffinity(new RendezvousAffinityFunction(false, 32)));

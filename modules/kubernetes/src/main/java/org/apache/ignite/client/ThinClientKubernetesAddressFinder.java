@@ -47,12 +47,15 @@ public class ThinClientKubernetesAddressFinder implements ClientAddressFinder {
      */
     private final int port;
 
-    /** */
+    /** @param cfg Kubernetes connection configuration. */
     public ThinClientKubernetesAddressFinder(KubernetesConnectionConfiguration cfg) {
         this(cfg, DFLT_PORT);
     }
 
-    /** */
+    /**
+     * @param cfg Kubernetes connection configuration.
+     * @param port Port that Ignite uses to listen client connections.
+     */
     public ThinClientKubernetesAddressFinder(KubernetesConnectionConfiguration cfg, int port) {
         resolver = new KubernetesServiceAddressResolver(cfg);
         this.port = port;

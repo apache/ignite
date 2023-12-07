@@ -51,6 +51,7 @@ class ZkJoinEventDataForJoined implements Serializable {
         this.dupDiscoData = dupDiscoData;
     }
 
+    /** */
     byte[] discoveryDataForNode(long nodeOrder) {
         assert discoData != null;
 

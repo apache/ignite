@@ -138,22 +138,21 @@ public class MemLeakOnSqlWithClientReconnectTest extends AbstractIndexingCommonT
         final AtomicBoolean end = new AtomicBoolean();
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
-                String name = "cli_" + cliNum.getAndIncrement();
+            String name = "cli_" + cliNum.getAndIncrement();
 
-                while (!end.get()) {
-                    try {
-                        startGrid(name);
+            while (!end.get()) {
+                try {
+                    startGrid(name);
 
-                        U.sleep(10);
+                    U.sleep(10);
 
-                        stopGrid(name);
-                    }
-                    catch (Exception e) {
-                        fail("Unexpected exception on start test client node");
-                    }
+                    stopGrid(name);
                 }
-            },
-            10, "cli-restart");
+                catch (Exception e) {
+                    fail("Unexpected exception on start test client node");
+                }
+            }
+        }, 10, "cli-restart");
 
         try {
 

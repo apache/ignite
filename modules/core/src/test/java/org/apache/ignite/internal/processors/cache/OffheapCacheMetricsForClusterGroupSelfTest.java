@@ -44,6 +44,7 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
             startClientGrid("client-" + i);
     }
 
+    /** */
     @Test
     public void testGetOffHeapPrimaryEntriesCount() throws Exception {
         String cacheName = "testGetOffHeapPrimaryEntriesCount";
@@ -73,32 +74,32 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
         assertGetOffHeapPrimaryEntriesCount(cacheName, 1000);
     }
 
+    /** */
     private void assertGetOffHeapPrimaryEntriesCount(String cacheName, int count) throws Exception {
-        long locPrimary = 0L;
-        long locBackups = 0L;
+        long localPrimary = 0L;
+        long localBackups = 0L;
 
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteCache<Integer, Integer> cache = grid("server-" + i).cache(cacheName);
-            assertEquals(count, cache.metrics().getOffHeapPrimaryEntriesCount());
-            assertEquals(count, cache.mxBean().getOffHeapPrimaryEntriesCount());
-            assertEquals(count, cache.metrics().getOffHeapBackupEntriesCount());
-            assertEquals(count, cache.mxBean().getOffHeapBackupEntriesCount());
 
-            locPrimary += cache.localMxBean().getOffHeapPrimaryEntriesCount();
-            locBackups += cache.localMxBean().getOffHeapPrimaryEntriesCount();
+            assertEquals(count, cache.metrics().getOffHeapPrimaryEntriesCount());
+            assertEquals(count, cache.metrics().getOffHeapBackupEntriesCount());
+
+            localPrimary += cache.localMetrics().getOffHeapPrimaryEntriesCount();
+            localBackups += cache.localMetrics().getOffHeapBackupEntriesCount();
         }
 
-        assertEquals(count, locPrimary);
-        assertEquals(count, locBackups);
+        assertEquals(count, localPrimary);
+        assertEquals(count, localBackups);
 
         for (int i = 0; i < CLIENT_CNT; i++) {
             IgniteCache<Integer, Integer> cache = grid("client-" + i).cache(cacheName);
+
             assertEquals(count, cache.metrics().getOffHeapPrimaryEntriesCount());
-            assertEquals(count, cache.mxBean().getOffHeapPrimaryEntriesCount());
             assertEquals(count, cache.metrics().getOffHeapBackupEntriesCount());
-            assertEquals(count, cache.mxBean().getOffHeapBackupEntriesCount());
-            assertEquals(0L, cache.localMxBean().getOffHeapPrimaryEntriesCount());
-            assertEquals(0L, cache.localMxBean().getOffHeapBackupEntriesCount());
+
+            assertEquals(0L, cache.localMetrics().getOffHeapPrimaryEntriesCount());
+            assertEquals(0L, cache.localMetrics().getOffHeapBackupEntriesCount());
         }
     }
 

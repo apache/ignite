@@ -40,6 +40,9 @@ public class GridBinaryMarshaller {
     public static final ThreadLocal<Boolean> USE_CACHE = ThreadLocal.withInitial(() -> Boolean.TRUE);
 
     /** */
+    public static final byte TRANSFORMED = -3;
+
+    /** */
     public static final byte OPTM_MARSH = -2;
 
     /** */
@@ -265,7 +268,7 @@ public class GridBinaryMarshaller {
         BinaryContext oldCtx = pushContext(ctx);
 
         try {
-            return (T) BinaryUtils.unmarshal(BinaryHeapInputStream.create(bytes, 0), ctx, clsLdr);
+            return (T)BinaryUtils.unmarshal(BinaryHeapInputStream.create(bytes, 0), ctx, clsLdr);
         }
         finally {
             popContext(oldCtx);

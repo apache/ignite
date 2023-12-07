@@ -137,7 +137,8 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
             });
 
             fail("Should have exception here.");
-        } catch (IgniteException e) {
+        }
+        catch (IgniteException e) {
             assertTrue(e.getCause() instanceof IgniteSpiException);
         }
 

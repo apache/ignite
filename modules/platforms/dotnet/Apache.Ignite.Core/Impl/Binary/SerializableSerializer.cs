@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
@@ -330,15 +331,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return new TypeResolver().ResolveType(serInfo.FullTypeName, serInfo.AssemblyName);
             }
 
-            if (serInfo.ObjectType != serializable.GetType() &&
-                typeof(ISerializable).IsAssignableFrom(serInfo.ObjectType))
+            if (serInfo.ObjectType != serializable.GetType())
             {
-                // serInfo.ObjectType should be ISerializable. There is a known case for generic collections:
-                // serializable is EnumEqualityComparer : ISerializable 
-                // and serInfo.ObjectType is ObjectEqualityComparer (does not implement ISerializable interface).
-                // Please read a possible explanation here:
-                // http://dotnetstudio.blogspot.ru/2012/06/net-35-to-net-40-enum.html
-
                 return serInfo.ObjectType;
             }
 
@@ -603,13 +597,33 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var ctorFunc = SerializableTypeDescriptor.Get(customType).SerializationCtor;
 
-            var customObj = ctorFunc(serInfo, ctx);
+            var customObj = ctorFunc != null
+                ? ctorFunc(serInfo, ctx)
+                : FormatterServices.GetUninitializedObject(customType);
 
             var wrapper = customObj as IObjectReference;
 
-            return wrapper == null
+            var resObj = wrapper == null
                 ? customObj
                 : wrapper.GetRealObject(ctx);
+
+            // Special case: type is replaced, but there is no serialization ctor.
+            // Example: StringComparer.OrdinalIgnoreCase.
+            if (ctorFunc == null)
+            {
+                // Cached internally.
+                var members = FormatterServices.GetSerializableMembers(resObj.GetType());
+
+                foreach (var memberInfo in members)
+                {
+                    // FormatterServices.InternalGetSerializableMembers actually returns FieldInfo[],
+                    // so this cast is safe.
+                    var fieldInfo = (FieldInfo)memberInfo;
+                    fieldInfo.SetValue(resObj, serInfo.GetValue(fieldInfo.Name, fieldInfo.FieldType));
+                }
+            }
+
+            return resObj;
         }
 
         /// <summary>

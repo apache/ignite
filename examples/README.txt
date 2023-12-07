@@ -13,7 +13,6 @@ The examples folder contains he following subfolders:
 - `rest` - contains PHP script demonstrating how Ignite Cache can be accessed via HTTP API.
 - `sql` - contains sample SQL scripts and data sets.
 - `src/main/java` - contains Java examples for different Ignite modules and features.
-- `src/main/scala` - contains examples demonstrating usage of API provided by Scalar.
 - `src/main/java-lgpl` - contains lgpl-based examples for different Ignite modules and features.
 
 Starting Remote Nodes
@@ -27,15 +26,15 @@ LGPL
 =====
 LGPL examples can be activated by turning lgpl profile on.
 
-lgpl profile required some lgpl-based libs, for example: ignite-hibernate & ignite-schedule.
+lgpl profile required some lgpl-based libs, for example: ignite-schedule.
 In case these libs can not be found by this maven project please download Apache Ignite sources
 at https://ignite.apache.org/download.cgi#sources.
 
 There are some ways to gain required libs from sources:
 
-1) Run "mvn clean install -DskipTests -P lgpl" at Apache Ignite sources.
+1) Run "./mvnw clean install -DskipTests -P lgpl" at Apache Ignite sources.
 This case will install lgpl-based libs to local maven repository.
 
-2) Run "mvn clean package -DskipTests -Prelease,lgpl -Dignite.edition=apache-ignite-lgpl" at Apache Ignite sources.
+2) Run "./mvnw clean package -DskipTests -Prelease,lgpl -Dignite.edition=apache-ignite-lgpl" at Apache Ignite sources.
 Required libs will appear at /target/release-package/libs/optional subfolders.
 Found libs should be copied to global or project's classpath.

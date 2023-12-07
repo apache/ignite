@@ -37,7 +37,7 @@ public class ClientCacheGetAndPutIfAbsentRequest extends ClientCacheKeyValueRequ
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
+    @Override public ClientResponse process0(ClientConnectionContext ctx) {
         Object res = cache(ctx).getAndPutIfAbsent(key(), val());
 
         return new ClientObjectResponse(requestId(), res);

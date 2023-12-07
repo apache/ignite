@@ -81,8 +81,8 @@ public class ClusterStateChangeEventTest extends GridCommonAbstractTest {
         super.afterTest();
     }
 
-    @Test
     /** */
+    @Test
     public void test() throws Exception {
         IgniteEx crd = grid(0);
 

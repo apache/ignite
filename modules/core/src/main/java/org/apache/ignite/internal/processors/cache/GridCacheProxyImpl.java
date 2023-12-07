@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
@@ -46,13 +45,10 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.cache.CacheOperationContext.DFLT_ALLOW_ATOMIC_OPS_IN_TX;
 
 /**
  * Cache proxy.
@@ -194,30 +190,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public CacheMetricsMXBean clusterMxBean() {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.clusterMxBean();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheMetricsMXBean localMxBean() {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.localMxBean();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void localLoadCache(IgniteBiPredicate<K, V> p,
         @Nullable Object[] args) throws IgniteCheckedException {
         CacheOperationContext prev = gate.enter(opCtx);
@@ -279,22 +251,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheProxyImpl<K, V> forSubjectId(UUID subjId) {
-        return new GridCacheProxyImpl<>(ctx, delegate,
-            opCtx != null ? opCtx.forSubjectId(subjId) :
-                new CacheOperationContext(
-                    false,
-                    subjId,
-                    false,
-                    null,
-                    false,
-                    null,
-                    false,
-                    false,
-                    DFLT_ALLOW_ATOMIC_OPS_IN_TX));
-    }
-
-    /** {@inheritDoc} */
     @Override public GridCacheProxyImpl<K, V> setSkipStore(boolean skipStore) {
         CacheOperationContext prev = gate.enter(opCtx);
 
@@ -305,15 +261,13 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
             return new GridCacheProxyImpl<>(ctx, delegate,
                 opCtx != null ? opCtx.setSkipStore(skipStore) :
                     new CacheOperationContext(
-                        true,
-                        null,
+                        skipStore,
                         false,
                         null,
                         false,
                         null,
                         false,
-                        false,
-                        DFLT_ALLOW_ATOMIC_OPS_IN_TX));
+                        null));
         }
         finally {
             gate.leave(prev);
@@ -329,14 +283,12 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
             (GridCacheAdapter<K1, V1>)delegate,
             opCtx != null ? opCtx.keepBinary() :
                 new CacheOperationContext(false,
-                    null,
                     true,
                     null,
                     false,
                     null,
                     false,
-                    false,
-                    DFLT_ALLOW_ATOMIC_OPS_IN_TX));
+                    null));
     }
 
     /** {@inheritDoc} */
@@ -1580,14 +1532,12 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                 opCtx != null ? opCtx.withExpiryPolicy(plc) :
                     new CacheOperationContext(
                         false,
-                        null,
                         false,
                         plc,
                         false,
                         null,
                         false,
-                        false,
-                        DFLT_ALLOW_ATOMIC_OPS_IN_TX));
+                        null));
         }
         finally {
             gate.leave(prev);
@@ -1602,14 +1552,12 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
             return new GridCacheProxyImpl<>(ctx, delegate,
                 new CacheOperationContext(
                     false,
-                    null,
                     false,
                     null,
                     true,
                     null,
                     false,
-                    false,
-                    DFLT_ALLOW_ATOMIC_OPS_IN_TX));
+                    null));
         }
         finally {
             gate.leave(prev);
@@ -1622,18 +1570,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
         try {
             return delegate.lostPartitions();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalCache<K, V> withAllowAtomicOpsInTx() {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return new GridCacheProxyImpl<>(ctx, delegate, opCtx.setAllowAtomicOpsInTx());
         }
         finally {
             gate.leave(prev);

@@ -126,7 +126,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
         if (ctx.clientNode())
             ctx.event().addLocalEventListener(new GridLocalEventListener() {
                 @Override public void onEvent(Event evt) {
-                    DiscoveryEvent evt0 = (DiscoveryEvent) evt;
+                    DiscoveryEvent evt0 = (DiscoveryEvent)evt;
 
                     if (!ctx.isStopping()) {
                         for (ClientRequestFuture fut : clientReqSyncMap.values())
@@ -172,7 +172,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MissingMappingRequestMessage : msg;
 
-            MissingMappingRequestMessage msg0 = (MissingMappingRequestMessage) msg;
+            MissingMappingRequestMessage msg0 = (MissingMappingRequestMessage)msg;
 
             byte platformId = msg0.platformId();
             int typeId = msg0.typeId();
@@ -204,7 +204,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MissingMappingResponseMessage : msg;
 
-            MissingMappingResponseMessage msg0 = (MissingMappingResponseMessage) msg;
+            MissingMappingResponseMessage msg0 = (MissingMappingResponseMessage)msg;
 
             byte platformId = msg0.platformId();
             int typeId = msg0.typeId();
@@ -216,7 +216,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
             if (fut != null) {
                 if (resolvedClsName != null) {
-                    marshallerCtx.onMissedMappingResolved(item, resolvedClsName);
+                    marshallerCtx.onMappingAccepted(new MarshallerMappingItem(platformId, typeId, resolvedClsName));
 
                     fut.onDone(MappingExchangeResult.createSuccessfulResult(resolvedClsName));
                 }
@@ -311,6 +311,11 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
                         lsnr.mappingUpdated(item.platformId(), item.typeId(), item.className());
                 }
             });
+
+            ClientRequestFuture rqFut = clientReqSyncMap.get(new MarshallerMappingItem(item.platformId(), item.typeId(), null));
+
+            if (rqFut != null)
+                rqFut.onDone(MappingExchangeResult.createSuccessfulResult(item.className()));
 
             GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(item);
 

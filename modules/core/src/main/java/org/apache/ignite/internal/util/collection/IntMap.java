@@ -95,6 +95,11 @@ public interface IntMap<V> {
     Collection<V> values();
 
     /**
+     * Removes all of the mappings from this map.
+     */
+    void clear();
+
+    /**
      * If the specified key is not already associated with a value (or is mapped
      * to {@code null}), attempts to compute its value using the given mapping
      * function and enters it into this map unless {@code null}.

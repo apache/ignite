@@ -39,7 +39,7 @@ public class TestKubernetesIpFinderDisconnection extends KubernetesDiscoveryAbst
         IgniteConfiguration cfgSrv = getConfiguration(getTestIgniteInstanceName(), false);
 
         IgniteConfiguration cfgClient = getConfiguration("client", true);
-        ((TcpDiscoverySpi) cfgClient.getDiscoverySpi()).setNetworkTimeout(1000);
+        ((TcpDiscoverySpi)cfgClient.getDiscoverySpi()).setNetworkTimeout(1000);
 
         runSuccessfulDisconnectionTest(cfgSrv, cfgClient);
     }
@@ -51,7 +51,7 @@ public class TestKubernetesIpFinderDisconnection extends KubernetesDiscoveryAbst
         IgniteConfiguration cfgSrv = getConfiguration(getTestIgniteInstanceName(), false);
 
         IgniteConfiguration cfgClient = getConfiguration("client", true);
-        ((TcpDiscoverySpi) cfgClient.getDiscoverySpi()).setNetworkTimeout(6000);
+        ((TcpDiscoverySpi)cfgClient.getDiscoverySpi()).setNetworkTimeout(6000);
 
         runFailureDisconnectionTest(cfgSrv, cfgClient);
     }

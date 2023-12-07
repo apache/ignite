@@ -24,7 +24,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.query.schema.SchemaExchangeWorkerTask;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
@@ -96,7 +95,9 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
             .setIncludeEventTypes(EVT_CACHE_REBALANCE_OBJECT_LOADED)
             .setFailureHandler(hnd));
 
-        grid1.events().localListen(e -> { throw new Error(); }, EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED);
+        grid1.events().localListen(e -> {
+            throw new Error();
+        }, EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED);
 
         grid1.cluster().setBaselineTopology(grid1.cluster().topologyVersion());
 
@@ -110,12 +111,12 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
     /**
      * Custom exchange worker task implementation for delaying exchange worker processing.
      */
-    static class ExchangeWorkerFailureTask extends SchemaExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
+    static class ExchangeWorkerFailureTask extends SchemaExchangeWorkerTask {
         /**
          * Default constructor.
          */
         ExchangeWorkerFailureTask() {
-            super(new SchemaAbstractDiscoveryMessage(null) {
+            super(null, new SchemaAbstractDiscoveryMessage(null) {
                 @Override public boolean exchange() {
                     return false;
                 }

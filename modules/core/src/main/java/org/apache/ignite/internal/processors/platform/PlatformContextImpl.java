@@ -215,7 +215,6 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
             w.writeCollection(node.hostNames());
             w.writeLong(node.order());
             w.writeBoolean(node.isLocal());
-            w.writeBoolean(node.isDaemon());
             w.writeBoolean(node.isClient());
             w.writeObjectDetached(node.consistentId());
             PlatformUtils.writeNodeVersion(w, node.version());
@@ -377,7 +376,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
         else {
             writer.writeBoolean(true);
 
-            BinaryMetadata meta0 = ((BinaryTypeImpl) meta).metadata();
+            BinaryMetadata meta0 = ((BinaryTypeImpl)meta).metadata();
 
             PlatformUtils.writeBinaryMetadata(writer, meta0, includeSchemas);
         }
@@ -408,8 +407,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     @Override public void writeEvent(BinaryRawWriterEx writer, Event evt) {
         assert writer != null;
 
-        if (evt == null)
-        {
+        if (evt == null) {
             writer.writeInt(-1);
 
             return;
@@ -560,13 +558,13 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformJob createJob(Object task, long ptr, @Nullable Object job) {
-        return new PlatformFullJob(this, (PlatformAbstractTask)task, ptr, job);
+    @Override public PlatformJob createJob(Object task, long ptr, @Nullable Object job, String jobName) {
+        return new PlatformFullJob(this, (PlatformAbstractTask)task, ptr, job, jobName);
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformJob createClosureJob(Object task, long ptr, Object job) {
-        return new PlatformClosureJob((PlatformAbstractTask)task, ptr, job);
+    @Override public PlatformJob createClosureJob(Object task, long ptr, Object job, String jobName) {
+        return new PlatformClosureJob((PlatformAbstractTask)task, ptr, job, jobName);
     }
 
     /** {@inheritDoc} */
@@ -607,7 +605,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
 
         Boolean useTls = platformCacheUpdateUseThreadLocal.get();
         if (useTls != null && useTls) {
-            long cacheIdAndPartition = ((long)part << 32) + cacheId;
+            long cacheIdAndPartition = ((long)part << 32) | cacheId;
 
             gateway().platformCacheUpdateFromThreadLocal(
                     cacheIdAndPartition, ver.topologyVersion(), ver.minorTopologyVersion());
@@ -633,7 +631,8 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
                 out.writeInt(part);
                 out.writeLong(ver.topologyVersion());
                 out.writeInt(ver.minorTopologyVersion());
-            } else {
+            }
+            else {
                 out.writeBoolean(false);
             }
 
@@ -681,7 +680,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     }
 
     /** {@inheritDoc} */
-    @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+    @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
         AffinityTopologyVersion ver = fut.topologyVersion();
 
         if (ver != null) {

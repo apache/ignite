@@ -68,5 +68,5 @@ public interface PageIdAllocator {
      * @param grpId Cache Group ID.
      * @param pageId Page ID.
      */
-    public boolean freePage(int grpId, long pageId) throws IgniteCheckedException;
+    public boolean freePage(int grpId, long pageId);
 }

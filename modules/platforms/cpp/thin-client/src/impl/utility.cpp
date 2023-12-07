@@ -159,6 +159,7 @@ namespace ignite
                     return static_cast<uint16_t>(intPort);
                 }
 
+                IGNORE_SIGNED_OVERFLOW
                 int32_t GetCacheId(const char* cacheName)
                 {
                     if (!cacheName)

@@ -84,7 +84,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -128,11 +127,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void beforeTest() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
     }
 
     /** {@inheritDoc} */
@@ -1471,7 +1465,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         assertTrue(((GridNearTxPrepareRequest)msgs.get(0)).firstClientRequest());
 
         for (int i = 1; i < msgs.size(); i++)
-            assertFalse(((GridNearTxPrepareRequest) msgs.get(i)).firstClientRequest());
+            assertFalse(((GridNearTxPrepareRequest)msgs.get(i)).firstClientRequest());
     }
 
     /**
@@ -1604,9 +1598,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     private void checkData(final Map<Integer, Integer> map,
         final Set<Integer> keys,
         IgniteCache<?, ?> clientCache,
-        final int expNodes)
-        throws Exception
-    {
+        final int expNodes
+    ) throws Exception {
         final List<Ignite> nodes = G.allGrids();
 
         final Affinity<Integer> aff = nodes.get(0).affinity(DEFAULT_CACHE_NAME);

@@ -41,6 +41,24 @@ public class SqlAlterTableCommand implements SqlCommand {
     /** Logging flag. */
     private Boolean logging;
 
+    /**
+     * Default constructor.
+     */
+    public SqlAlterTableCommand() {
+    }
+
+    /**
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param ifExists If exists clause.
+     * @param logging LOGGING/NOLOGGING.
+     */
+    public SqlAlterTableCommand(String schemaName, String tblName, boolean ifExists, boolean logging) {
+        this.schemaName = schemaName;
+        this.tblName = tblName;
+        this.logging = logging;
+    }
+
     /** {@inheritDoc} */
     @Override public String schemaName() {
         return schemaName;

@@ -199,7 +199,7 @@ public abstract class GridCachePreloadLifecycleAbstractTest extends GridCommonAb
                 return true;
 
             if (obj instanceof MyValue) {
-                MyValue myObj = (MyValue) obj;
+                MyValue myObj = (MyValue)obj;
 
                 return data.equals(myObj.data);
             }

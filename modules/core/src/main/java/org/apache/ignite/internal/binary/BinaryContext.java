@@ -268,11 +268,18 @@ public class BinaryContext {
         registerPredefinedType(BinaryMetadata.class, 0);
         registerPredefinedType(BinaryEnumObjectImpl.class, 0);
         registerPredefinedType(BinaryTreeMap.class, 0);
+        registerPredefinedType(BinaryArray.class, 0);
+        registerPredefinedType(BinaryEnumArray.class, 0);
 
         registerPredefinedType(PlatformDotNetSessionData.class, 0);
         registerPredefinedType(PlatformDotNetSessionLockResult.class, 0);
 
         // IDs range [200..1000] is used by Ignite internal APIs.
+
+        if (U.sunReflectionFactory() == null) {
+            U.warn(log, "ReflectionFactory not found, deserialization of binary objects for classes without " +
+                "default constructor is not possible");
+        }
     }
 
     /**
@@ -397,12 +404,26 @@ public class BinaryContext {
                     for (String clsName0 : classesInPackage(pkgName)) {
                         String affField = affFields.remove(clsName0);
 
+                        if (affField == null) {
+                            Class<?> cls = U.classForName(clsName0, null);
+
+                            if (cls != null)
+                                affField = affinityFieldName(cls);
+                        }
+
                         descs.add(clsName0, mapper, serializer, identity, affField,
                             typeCfg.isEnum(), typeCfg.getEnumValues(), true);
                     }
                 }
                 else {
                     String affField = affFields.remove(clsName);
+
+                    if (affField == null) {
+                        Class<?> cls = U.classForName(clsName, null);
+
+                        if (cls != null)
+                            affField = affinityFieldName(cls);
+                    }
 
                     descs.add(clsName, mapper, serializer, identity, affField,
                         typeCfg.isEnum(), typeCfg.getEnumValues(), false);
@@ -601,7 +622,7 @@ public class BinaryContext {
      * @return A descriptor for the given class. If the class hasn't been registered yet, then a new descriptor will be
      * created, but its {@link BinaryClassDescriptor#registered()} will be {@code false}.
      */
-    @NotNull BinaryClassDescriptor descriptorForClass(Class<?> cls) {
+    @NotNull public BinaryClassDescriptor descriptorForClass(Class<?> cls) {
         assert cls != null;
 
         BinaryClassDescriptor desc = descByCls.get(cls);
@@ -646,7 +667,10 @@ public class BinaryContext {
 
             BinarySerializer serializer = serializerForClass(cls);
 
+            // Firstly check annotations, then check in cache key configurations.
             String affFieldName = affinityFieldName(cls);
+            if (affFieldName == null)
+                affFieldName = affKeyFieldNames.get(typeId);
 
             return new BinaryClassDescriptor(this,
                 cls,
@@ -1409,6 +1433,9 @@ public class BinaryContext {
             if (e.getValue().userType())
                 it.remove();
         }
+
+        // Unregister Serializable and Externalizable type descriptors.
+        optmMarsh.clearClassDescriptorsCache();
     }
 
     /**
@@ -1438,6 +1465,8 @@ public class BinaryContext {
             }
         }
 
+        optmMarsh.onUndeploy(ldr);
+
         U.clearClassCache(ldr);
     }
 
@@ -1446,6 +1475,11 @@ public class BinaryContext {
      */
     public synchronized void removeType(int typeId) {
         schemas.remove(typeId);
+    }
+
+    /** */
+    Collection<BinaryClassDescriptor> predefinedTypes() {
+        return Collections.unmodifiableCollection(predefinedTypes.values());
     }
 
     /**

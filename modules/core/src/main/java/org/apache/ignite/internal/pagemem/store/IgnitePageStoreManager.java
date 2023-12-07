@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.pagemem.store;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -26,7 +25,6 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
-import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
@@ -50,21 +48,21 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      *
      * @param cacheId Cache id.
      * @param partitions Partitions count.
-     * @param workingDir Working directory.
+     * @param cacheName Cache name.
      * @param pageMetrics Page metrics.
      * @throws IgniteCheckedException If failed.
      */
-    public void initialize(int cacheId, int partitions, String workingDir, PageMetrics pageMetrics)
+    public void initialize(int cacheId, int partitions, String cacheName, PageMetrics pageMetrics)
         throws IgniteCheckedException;
 
     /**
      * Callback called when a cache is starting.
      *
      * @param grpDesc Cache group descriptor.
-     * @param cacheData Cache data of the cache being started.
+     * @param ccfg Cache configuration.
      * @throws IgniteCheckedException If failed to handle cache start callback.
      */
-    public void initializeForCache(CacheGroupDescriptor grpDesc, StoredCacheData cacheData)
+    public void initializeForCache(CacheGroupDescriptor grpDesc, CacheConfiguration<?, ?> ccfg)
         throws IgniteCheckedException;
 
     /**
@@ -83,15 +81,6 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
     public void shutdownForCacheGroup(CacheGroupContext grp, boolean destroy) throws IgniteCheckedException;
 
     /**
-     * Callback called when a partition is created on the local node.
-     *
-     * @param grpId Cache group ID where the partition is being created.
-     * @param partId ID of the partition being created.
-     * @throws IgniteCheckedException If failed to handle partition create callback.
-     */
-    public void onPartitionCreated(int grpId, int partId) throws IgniteCheckedException;
-
-    /**
      * Callback called when a partition for the given cache is evicted from the local node.
      * After this callback is invoked, no data associated with the partition will be stored on disk.
      *
@@ -100,7 +89,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param tag Partition tag (growing 1-based partition file version).
      * @throws IgniteCheckedException If failed to handle partition destroy callback.
      */
-    public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException;
+    public void truncate(int grpId, int partId, int tag) throws IgniteCheckedException;
 
     /**
      * Checks if partition store exists.
@@ -186,27 +175,6 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
     public int pages(int grpId, int partId) throws IgniteCheckedException;
 
     /**
-     * @return Saved cache configurations.
-     * @throws IgniteCheckedException If failed.
-     */
-    public Map<String, StoredCacheData> readCacheConfigurations() throws IgniteCheckedException;
-
-    /**
-     * @param cacheData Cache configuration.
-     * @param overwrite Whether stored configuration should be overwritten if it exists.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void storeCacheData(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException;
-
-    /**
-     * Remove cache configuration data file.
-     *
-     * @param cacheData Cache configuration.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void removeCacheData(StoredCacheData cacheData) throws IgniteCheckedException;
-
-    /**
      * @param grpId Cache group ID.
      * @return {@code True} if index store for given cache group existed before node started.
      */
@@ -240,14 +208,4 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param cleanFiles {@code True} to delete all persisted files related to particular store.
      */
     public void cleanupPageStoreIfMatch(Predicate<Integer> cacheGrpPred, boolean cleanFiles);
-
-    /**
-     * Creates and initializes cache work directory retrieved from {@code cacheCfg}.
-     *
-     * @param cacheCfg Cache configuration.
-     * @return {@code True} if work directory already exists.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    public boolean checkAndInitCacheWorkDir(CacheConfiguration cacheCfg) throws IgniteCheckedException;
 }

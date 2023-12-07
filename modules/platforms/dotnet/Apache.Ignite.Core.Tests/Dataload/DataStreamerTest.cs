@@ -25,6 +25,8 @@ namespace Apache.Ignite.Core.Tests.Dataload
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Datastream;
     using NUnit.Framework;
 
@@ -147,6 +149,22 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ldr.Timeout = TimeSpan.FromSeconds(1.5);
                 Assert.AreEqual(1.5, ldr.Timeout.TotalSeconds);
             }
+        }
+
+        /// <summary>
+        /// Tests removal without <see cref="IDataStreamer{TK,TV}.AllowOverwrite"/>.
+        /// </summary>
+        [Test]
+        public void TestRemoveNoOverwrite()
+        {
+            _cache.Put(1, 1);
+
+            using (var ldr = _grid.GetDataStreamer<int, int>(CacheName))
+            {
+                ldr.Remove(1);
+            }
+
+            Assert.IsTrue(_cache.ContainsKey(1));
         }
 
         /// <summary>
@@ -792,6 +810,66 @@ namespace Apache.Ignite.Core.Tests.Dataload
         }
 
 
+        /// <summary>
+        /// Tests that streaming binary objects with a thin client results in those objects being
+        /// available through SQL in the cache's table.
+        /// </summary>
+        [Test]
+        public void TestBinaryStreamerCreatesSqlRecord()
+        {
+            var cacheCfg = new CacheConfiguration
+            {
+                Name = "TestBinaryStreamerCreatesSqlRecord",
+                SqlSchema = "persons",
+                QueryEntities = new[]
+                {
+                    new QueryEntity
+                    {
+                        ValueTypeName = "Person",
+                        Fields = new List<QueryField>
+                        {
+                            new QueryField
+                            {
+                                Name = "Name",
+                                FieldType = typeof(string),
+                            },
+                            new QueryField
+                            {
+                                Name = "Age",
+                                FieldType = typeof(int)
+                            }
+                        }
+                    }
+                }
+            };
+
+            var cacheClientBinary = _grid.GetOrCreateCache<int, IBinaryObject>(cacheCfg)
+                .WithKeepBinary<int, IBinaryObject>();
+
+            // Prepare a binary object.
+            var jane = _grid.GetBinary().GetBuilder("Person")
+                .SetStringField("Name", "Jane")
+                .SetIntField("Age", 43)
+                .Build();
+
+            const int key = 1;
+
+            // Stream the binary object to the server.
+            using (var streamer = _grid.GetDataStreamer<int, IBinaryObject>(cacheCfg.Name))
+            {
+                streamer.Add(key, jane);
+                streamer.Flush();
+            }
+
+            // Check that SQL works.
+            var query = new SqlFieldsQuery("SELECT Name, Age FROM \"PERSONS\".PERSON");
+            var fullResultAfterClientStreamer = cacheClientBinary.Query(query).GetAll();
+            Assert.IsNotNull(fullResultAfterClientStreamer);
+            Assert.AreEqual(1, fullResultAfterClientStreamer.Count);
+            Assert.AreEqual("Jane", fullResultAfterClientStreamer[0][0]);
+            Assert.AreEqual(43, fullResultAfterClientStreamer[0][1]);
+        }
+
 #if NETCOREAPP
         /// <summary>
         /// Tests async streamer usage.
@@ -826,7 +904,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 Assert.AreSame(batchTask, flushTask2);
                 await flushTask2;
-                
+
                 Assert.IsTrue(batchTask.IsCompleted);
                 Assert.IsFalse(await _cache.ContainsKeyAsync(1));
 

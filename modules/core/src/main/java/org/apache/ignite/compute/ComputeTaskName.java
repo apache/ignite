@@ -33,7 +33,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE})
 public @interface ComputeTaskName {
     /**
-     * Optional task name.
+     * @return Optional task name.
      */
     String value();
 }

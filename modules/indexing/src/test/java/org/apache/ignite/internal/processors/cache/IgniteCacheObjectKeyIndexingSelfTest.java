@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -119,7 +120,7 @@ public class IgniteCacheObjectKeyIndexingSelfTest extends GridCommonAbstractTest
 
         Ignite ign1 = startGrid(getTestIgniteInstanceName(1), createIgniteCfg(1));
 
-        ign1.cluster().active(true);
+        ign1.cluster().state(ClusterState.ACTIVE);
 
         ign1.getOrCreateCache(cacheCfg());
 

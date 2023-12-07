@@ -299,9 +299,9 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
     /**
      * @return Indexes of keys for which values were generated on primary node.
      */
-   @Nullable public List<Integer> nearValuesIndexes() {
+    @Nullable public List<Integer> nearValuesIndexes() {
         return nearUpdates != null ? nearUpdates.nearValuesIndexes() : null;
-   }
+    }
 
     /**
      * @param idx Index.

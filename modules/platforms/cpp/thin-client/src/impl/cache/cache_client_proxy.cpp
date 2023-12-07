@@ -15,10 +15,14 @@
  * limitations under the License.
  */
 
+#include <ignite/thin/cache/query/continuous/continuous_query_handle.h>
+
 #include <ignite/impl/thin/cache/cache_client_proxy.h>
 #include <impl/cache/cache_client_impl.h>
 
 using namespace ignite::impl::thin;
+using namespace ignite::thin::cache::query;
+using namespace ignite::thin::cache::query::continuous;
 using namespace cache;
 
 namespace
@@ -150,12 +154,25 @@ namespace ignite
                     GetCacheImpl(impl).GetAndPutIfAbsent(key, valIn, valOut);
                 }
 
-                ignite::thin::cache::query::QueryFieldsCursor CacheClientProxy::Query(
-                        const ignite::thin::cache::query::SqlFieldsQuery &qry)
+                QueryFieldsCursor CacheClientProxy::Query(const SqlFieldsQuery &qry)
                 {
                     query::SP_QueryFieldsCursorImpl cursorImpl = GetCacheImpl(impl).Query(qry);
 
-                    return ignite::thin::cache::query::QueryFieldsCursor(cursorImpl);
+                    return QueryFieldsCursor(cursorImpl);
+                }
+
+                query::QueryCursorProxy CacheClientProxy::Query(const ScanQuery& qry)
+                {
+                    query::SP_QueryCursorImpl cursorImpl = GetCacheImpl(impl).Query(qry);
+
+                    return query::QueryCursorProxy(cursorImpl);
+                }
+
+                ContinuousQueryHandleClient CacheClientProxy::QueryContinuous(
+                    const query::continuous::SP_ContinuousQueryClientHolderBase &continuousQuery,
+                    const ignite::thin::cache::event::JavaCacheEntryEventFilter& filter)
+                {
+                    return ContinuousQueryHandleClient(GetCacheImpl(impl).QueryContinuous(continuousQuery, filter));
                 }
             }
         }

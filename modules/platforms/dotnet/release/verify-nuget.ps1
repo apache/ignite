@@ -41,6 +41,8 @@ param (
     [string]$packageDir="..\nupkg"
 )
 
+echo ".NET SDKs:"
+dotnet --list-sdks
 
 # Find NuGet packages (*.nupkg)
 $dir = If ([System.IO.Path]::IsPathRooted($packageDir)) { $packageDir } Else { Join-Path $PSScriptRoot $packageDir }
@@ -76,7 +78,8 @@ if ($LastExitCode -ne 0) {
 
 $packages | % {
     $packageId = $_.Name -replace '(.*?)\.\d+\.\d+\.\d+\.nupkg', '$1'
-    dotnet add package $packageId -s $dir
+    $packageVer = $_.Name -replace '.*?\.(\d+\.\d+\.\d+(.*)?)\.nupkg', '$1'
+    dotnet add package $packageId --version $packageVer
 
     if ($LastExitCode -ne 0) {
         throw "Failed to install package $packageId"

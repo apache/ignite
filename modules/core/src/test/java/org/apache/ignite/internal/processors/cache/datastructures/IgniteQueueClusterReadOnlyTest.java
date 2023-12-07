@@ -63,6 +63,7 @@ public class IgniteQueueClusterReadOnlyTest extends IgniteCollectionsClusterRead
         performAction(c -> cast(c).close());
     }
 
+    /** {@inheritDoc} */
     @Override public void testRemoveDenied() {
         super.testRemoveDenied();
 

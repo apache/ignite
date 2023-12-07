@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -149,7 +150,7 @@ public class CheckpointFailBeforeWriteMarkTest extends GridCommonAbstractTest {
         //given: one node with persistence.
         IgniteEx ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         //It is necessary to understanding when page replacement would be started.
         PageMemory pageMemory = ignite0.context().cache().context().database().dataRegion("default").pageMemory();
@@ -183,7 +184,7 @@ public class CheckpointFailBeforeWriteMarkTest extends GridCommonAbstractTest {
         //then: Data recovery after node start should be successful.
         ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Object> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 

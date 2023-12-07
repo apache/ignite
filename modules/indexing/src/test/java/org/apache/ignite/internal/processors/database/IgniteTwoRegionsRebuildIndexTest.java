@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.database;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -98,7 +99,7 @@ public class IgniteTwoRegionsRebuildIndexTest extends GridCommonAbstractTest {
         startGrid("server");
         Ignite client = startClientGrid("client");
 
-        client.cluster().active(true);
+        client.cluster().state(ClusterState.ACTIVE);
 
         populateData(client, PERSISTED_CACHE);
         populateData(client, INMEMORY_CACHE);

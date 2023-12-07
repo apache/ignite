@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -45,11 +44,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheE
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -86,9 +83,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
     /** Mappings. */
     @GridToStringExclude
     protected Map<UUID, GridDhtAtomicAbstractUpdateRequest> mappings;
-
-    /** Continuous query closures. */
-    private Collection<CI1<Boolean>> cntQryClsrs;
 
     /** Response count. */
     private volatile int resCnt;
@@ -135,27 +129,10 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
     }
 
     /**
-     * @param clsr Continuous query closure.
-     * @param sync Synchronous continuous query flag.
-     */
-    public final void addContinuousQueryClosure(CI1<Boolean> clsr, boolean sync) {
-        assert !isDone() : this;
-
-        if (sync)
-            clsr.apply(true);
-        else {
-            if (cntQryClsrs == null)
-                cntQryClsrs = new ArrayList<>(10);
-
-            cntQryClsrs.add(clsr);
-        }
-    }
-
-    /**
      * @param affAssignment Affinity assignment.
      * @param entry Entry to map.
      * @param val Value to write.
-     * @param entryProcessor Entry processor.
+     * @param entryProc Entry processor.
      * @param ttl TTL (optional).
      * @param conflictExpireTime Conflict expire time (optional).
      * @param conflictVer Conflict version (optional).
@@ -163,20 +140,22 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
      * @param prevVal Previous value.
      * @param updateCntr Partition update counter.
      * @param cacheOp Corresponding cache operation.
+     * @param readRepairRecovery Recovery on Read Repair.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     final void addWriteEntry(
         AffinityAssignment affAssignment,
         GridDhtCacheEntry entry,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProcessor,
+        EntryProcessor<Object, Object, Object> entryProc,
         long ttl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer,
         boolean addPrevVal,
         @Nullable CacheObject prevVal,
         long updateCntr,
-        GridCacheOperation cacheOp) {
+        GridCacheOperation cacheOp,
+        boolean readRepairRecovery) {
         AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
         List<ClusterNode> affNodes = affAssignment.get(entry.partition());
@@ -212,14 +191,15 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
                         topVer,
                         ttl,
                         conflictExpireTime,
-                        conflictVer);
+                        conflictVer,
+                        readRepairRecovery);
 
                     mappings.put(nodeId, updateReq);
                 }
 
                 updateReq.addWriteValue(entry.key(),
                     val,
-                    entryProcessor,
+                    entryProc,
                     ttl,
                     conflictExpireTime,
                     conflictVer,
@@ -248,18 +228,20 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
      * @param readers Entry readers.
      * @param entry Entry.
      * @param val Value.
-     * @param entryProcessor Entry processor..
+     * @param entryProc Entry processor..
      * @param ttl TTL for near cache update (optional).
      * @param expireTime Expire time for near cache update (optional).
+     * @param readRepairRecovery Recovery on Read Repair.
      */
     final void addNearWriteEntries(
         ClusterNode nearNode,
         GridDhtCacheEntry.ReaderId[] readers,
         GridDhtCacheEntry entry,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProcessor,
+        EntryProcessor<Object, Object, Object> entryProc,
         long ttl,
-        long expireTime) {
+        long expireTime,
+        boolean readRepairRecovery) {
         assert readers != null;
 
         CacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
@@ -299,7 +281,8 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
                     topVer,
                     ttl,
                     expireTime,
-                    null);
+                    null,
+                    readRepairRecovery);
 
                 mappings.put(node.id(), updateReq);
 
@@ -308,7 +291,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
 
             updateReq.addNearWriteValue(entry.key(),
                 val,
-                entryProcessor,
+                entryProc,
                 ttl,
                 expireTime);
         }
@@ -389,7 +372,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
         GridNearAtomicUpdateResponse updateRes,
         GridDhtAtomicCache.UpdateReplyClosure completionCb) {
         if (F.isEmpty(mappings)) {
-            updateRes.mapping(Collections.<UUID>emptyList());
+            updateRes.mapping(Collections.emptyList());
 
             completionCb.apply(updateReq, updateRes);
 
@@ -464,9 +447,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
                         req.hasResult(true);
                 }
 
-                if (cntQryClsrs != null)
-                    req.replyWithoutDelay(true);
-
                 cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
 
                 if (msgLog.isDebugEnabled()) {
@@ -535,6 +515,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
      * @param ttl TTL.
      * @param conflictExpireTime Conflict expire time.
      * @param conflictVer Conflict version.
+     * @param readRepairRecovery Recovery on Read Repair.
      * @return Request.
      */
     protected abstract GridDhtAtomicAbstractUpdateRequest createRequest(
@@ -545,20 +526,14 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
         @NotNull AffinityTopologyVersion topVer,
         long ttl,
         long conflictExpireTime,
-        @Nullable GridCacheVersion conflictVer
+        @Nullable GridCacheVersion conflictVer,
+        boolean readRepairRecovery
     );
 
     /** {@inheritDoc} */
     @Override public final boolean onDone(@Nullable Void res, @Nullable Throwable err) {
         if (super.onDone(res, err)) {
             cctx.mvcc().removeAtomicFuture(futId);
-
-            boolean suc = err == null;
-
-            if (cntQryClsrs != null) {
-                for (CI1<Boolean> clsr : cntQryClsrs)
-                    clsr.apply(suc);
-            }
 
             return true;
         }
@@ -580,14 +555,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
     @Override public String toString() {
         synchronized (this) {
             Map<UUID, String> dhtRes = F.viewReadOnly(mappings,
-                new IgniteClosure<GridDhtAtomicAbstractUpdateRequest, String>() {
-                    @Override public String apply(GridDhtAtomicAbstractUpdateRequest req) {
-                        return "[res=" + req.hasResponse() +
-                            ", size=" + req.size() +
-                            ", nearSize=" + req.nearSize() + ']';
-                    }
-                }
-            );
+                req -> "[res=" + req.hasResponse() + ", size=" + req.size() + ", nearSize=" + req.nearSize() + ']');
 
             return S.toString(GridDhtAtomicAbstractUpdateFuture.class, this, "dhtRes", dhtRes);
         }

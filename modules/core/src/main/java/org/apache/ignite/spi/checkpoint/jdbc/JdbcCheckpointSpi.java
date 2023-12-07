@@ -397,7 +397,7 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
      * @param pwd Checkpoint database password to set. {@code null} is a valid value that means that no password
      *      provided. Authentication won't be performed in this case.
      * @see #setUser(String)
-     ** @return {@code this} for chaining.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
     public JdbcCheckpointSpi setPwd(String pwd) {
@@ -571,7 +571,7 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
 
                     if (log.isDebugEnabled()) {
                         log.debug("Failed to create checkpoint table as it may already exist (will try again): " +
-                          tblName);
+                            tblName);
                     }
                 }
             }

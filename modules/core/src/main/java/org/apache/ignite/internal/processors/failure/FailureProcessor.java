@@ -31,7 +31,8 @@ import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.CorruptedPersistenceException;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.persistence.CorruptedDataStructureException;
 import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -181,12 +182,24 @@ public class FailureProcessor extends GridProcessorAdapter {
         if (reserveBuf != null && X.hasCause(failureCtx.error(), OutOfMemoryError.class))
             reserveBuf = null;
 
-        if (X.hasCause(failureCtx.error(), CorruptedPersistenceException.class))
-            log.error("A critical problem with persistence data structures was detected." +
-                " Please make backup of persistence storage and WAL files for further analysis." +
-                " Persistence storage path: " + ctx.config().getDataStorageConfiguration().getStoragePath() +
-                " WAL path: " + ctx.config().getDataStorageConfiguration().getWalPath() +
-                " WAL archive path: " + ctx.config().getDataStorageConfiguration().getWalArchivePath());
+        CorruptedDataStructureException corruptedDataStructureEx =
+            X.cause(failureCtx.error(), CorruptedDataStructureException.class);
+
+        if (corruptedDataStructureEx != null) {
+            CacheGroupContext grpCtx = ctx.cache().cacheGroup(corruptedDataStructureEx.groupId());
+
+            if (grpCtx != null && grpCtx.dataRegion() != null) {
+                if (grpCtx.dataRegion().config().isPersistenceEnabled()) {
+                    log.error("A critical problem with persistence data structures was detected." +
+                        " Please make backup of persistence storage and WAL files for further analysis." +
+                        " Persistence storage path: " + ctx.config().getDataStorageConfiguration().getStoragePath() +
+                        " WAL path: " + ctx.config().getDataStorageConfiguration().getWalPath() +
+                        " WAL archive path: " + ctx.config().getDataStorageConfiguration().getWalArchivePath());
+                }
+                else
+                    log.error("A critical problem with in-memory data structures was detected.");
+            }
+        }
 
         if (igniteDumpThreadsOnFailure && !throttleThreadDump(failureCtx.type()))
             U.dumpThreads(log, !failureTypeIgnored(failureCtx, hnd));
@@ -226,7 +239,7 @@ public class FailureProcessor extends GridProcessorAdapter {
         if (dumpThreadsTrottlingTimeout <= 0)
             return false;
 
-        long curr = U.currentTimeMillis();
+        long curr = System.currentTimeMillis();
 
         Long last = threadDumpPerFailureTypeTs.get(type);
 

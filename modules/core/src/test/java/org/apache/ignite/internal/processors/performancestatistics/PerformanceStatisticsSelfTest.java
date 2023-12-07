@@ -71,20 +71,20 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
     /** Test entry processor. */
     private static final EntryProcessor<Object, Object, Object> ENTRY_PROC =
         new EntryProcessor<Object, Object, Object>() {
-        @Override public Object process(MutableEntry<Object, Object> entry, Object... arguments)
-            throws EntryProcessorException {
-            return null;
-        }
-    };
+            @Override public Object process(MutableEntry<Object, Object> entry, Object... arguments)
+                throws EntryProcessorException {
+                return null;
+            }
+        };
 
     /** Test cache entry processor. */
     private static final CacheEntryProcessor<Object, Object, Object> CACHE_ENTRY_PROC =
         new CacheEntryProcessor<Object, Object, Object>() {
-        @Override public Object process(MutableEntry<Object, Object> entry, Object... arguments)
-            throws EntryProcessorException {
-            return null;
-        }
-    };
+            @Override public Object process(MutableEntry<Object, Object> entry, Object... arguments)
+                throws EntryProcessorException {
+                return null;
+            }
+        };
 
     /** Client type to run operations from. */
     @Parameterized.Parameter
@@ -204,6 +204,9 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
         checkCacheOperation(CACHE_GET_ALL, cache -> cache.getAll(Collections.singleton(1)));
         checkCacheOperation(CACHE_GET_ALL, cache -> cache.getAllAsync(Collections.singleton(2)).get());
+
+        checkCacheOperation(CACHE_GET_ALL, cache -> cache.getAllOutTx(Collections.singleton(1)));
+        checkCacheOperation(CACHE_GET_ALL, cache -> cache.getAllOutTxAsync(Collections.singleton(2)).get());
 
         checkCacheOperation(CACHE_REMOVE, cache -> cache.remove(1));
         checkCacheOperation(CACHE_REMOVE, cache -> cache.removeAsync(2).get());

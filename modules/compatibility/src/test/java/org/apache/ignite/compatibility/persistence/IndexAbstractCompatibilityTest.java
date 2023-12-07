@@ -19,15 +19,19 @@
 package org.apache.ignite.compatibility.persistence;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.compatibility.IgniteReleasedVersion;
 import org.apache.ignite.compatibility.testframework.junits.Dependency;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -62,7 +66,7 @@ public abstract class IndexAbstractCompatibilityTest extends IgnitePersistenceCo
     @Override @NotNull protected Collection<Dependency> getDependencies(String igniteVer) {
         Collection<Dependency> dependencies = super.getDependencies(igniteVer);
 
-        if ("2.6.0".equals(igniteVer)) {
+        if (IgniteProductVersion.fromString(igniteVer).compareTo(IgniteReleasedVersion.VER_2_7_0.version()) < 0) {
             dependencies.add(new Dependency("h2", "com.h2database", "h2", "1.4.195", false));
 
             dependencies.add(new Dependency("h2", "org.apache.lucene", "lucene-core", "5.5.2", false));
@@ -79,7 +83,7 @@ public abstract class IndexAbstractCompatibilityTest extends IgnitePersistenceCo
     @Override protected Set<String> getExcluded(String ver, Collection<Dependency> dependencies) {
         Set<String> excluded = super.getExcluded(ver, dependencies);
 
-        if ("2.6.0".equals(ver))
+        if (IgniteProductVersion.fromString(ver).compareTo(IgniteReleasedVersion.VER_2_7_0.version()) < 0)
             excluded.add("h2");
 
         return excluded;
@@ -88,5 +92,17 @@ public abstract class IndexAbstractCompatibilityTest extends IgnitePersistenceCo
     /** */
     protected void checkIndexUsed(IgniteCache<?, ?> cache, SqlFieldsQuery qry, String idxName) {
         assertTrue("Query does not use index.", queryPlan(cache, qry).toLowerCase().contains(idxName.toLowerCase()));
+    }
+
+    /**
+     * Run SQL statement on specified node.
+     *
+     * @param node node to execute query.
+     * @param stmt Statement to run.
+     * @param args arguments of statements
+     * @return Run result.
+     */
+    protected static List<List<?>> executeSql(IgniteEx node, String stmt, Object... args) {
+        return node.context().query().querySqlFields(new SqlFieldsQuery(stmt).setArgs(args), true).getAll();
     }
 }

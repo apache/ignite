@@ -159,7 +159,8 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
                 s += sep + "java.lang.RuntimeException: " + e.getMessage();
 
             assertTrue(log0.toString().contains(s));
-        } else
+        }
+        else
             assertEquals(log0.toString(), "");
 
         log0.reset();

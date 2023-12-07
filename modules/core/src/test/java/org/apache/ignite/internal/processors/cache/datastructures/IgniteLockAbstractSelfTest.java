@@ -28,11 +28,14 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -60,12 +63,10 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -106,9 +107,6 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
      */
     @Test
     public void testFailover() throws Exception {
-        if (atomicsCacheMode() == LOCAL)
-            return;
-
         checkFailover(true, false);
 
         checkFailover(false, false);
@@ -116,6 +114,55 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
         checkFailover(true, true);
 
         checkFailover(false, true);
+    }
+
+    /**
+     * Tests that {@link IgniteLock} can be acquired after release, especially while running on JDK 17.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testFairLockIsAbleToBeAcquiredAfterRelease() throws Exception {
+        List<IgniteLock> locks = IntStream.range(0, NODES_CNT)
+            .mapToObj(i -> grid(i).reentrantLock("test", true, true, true))
+            .collect(Collectors.toList());
+
+        CountDownLatch lockEnterLatch = new CountDownLatch(NODES_CNT - 1);
+        locks.get(0).lock();
+        try {
+            acquireLockInSeparateThreads(locks.subList(1, NODES_CNT), lockEnterLatch);
+        }
+        finally {
+            locks.get(0).unlock();
+        }
+
+        assertTrue(lockEnterLatch.await(GridTestUtils.DFLT_TEST_TIMEOUT, TimeUnit.SECONDS));
+
+        // Try to acquire the first lock in separate thread.
+        lockEnterLatch = new CountDownLatch(1);
+        acquireLockInSeparateThreads(locks.subList(0, 1), lockEnterLatch);
+        assertTrue(lockEnterLatch.await(GridTestUtils.DFLT_TEST_TIMEOUT, TimeUnit.SECONDS));
+    }
+
+    /** */
+    private void acquireLockInSeparateThreads(List<IgniteLock> locks, CountDownLatch lockEnterLatch) throws Exception {
+        CountDownLatch startLatch = new CountDownLatch(locks.size());
+
+        for (IgniteLock lock: locks) {
+            GridTestUtils.runAsync(() -> {
+                startLatch.countDown();
+
+                lock.lock();
+                try {
+                    lockEnterLatch.countDown();
+                }
+                finally {
+                    lock.unlock();
+                }
+            });
+        }
+
+        assertTrue(startLatch.await(GridTestUtils.DFLT_TEST_TIMEOUT, TimeUnit.SECONDS));
     }
 
     /**
@@ -1579,7 +1626,8 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
         lock1.close();
         try {
             lock2.lock();
-        } catch (IgniteException e) {
+        }
+        catch (IgniteException e) {
             String msg = String.format("Failed to find reentrant lock with given name: " + lockName);
             assertEquals(msg, e.getMessage());
             throw e;
@@ -1644,7 +1692,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                                 l.lock();
 
                                 try {
-                                    long opsCounter = (long) ignite.getOrCreateCache(OPS_COUNTER).get(OPS_COUNTER);
+                                    long opsCounter = (long)ignite.getOrCreateCache(OPS_COUNTER).get(OPS_COUNTER);
 
                                     if (opsCounter == opsCnt)
                                         break;

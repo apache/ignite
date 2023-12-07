@@ -47,7 +47,7 @@ import static org.junit.Assert.assertEquals;
 public class IgniteBinaryQueryTest {
     /** Per test timeout */
     @Rule
-    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
 
     /**
      * Test queries in Ignite binary.

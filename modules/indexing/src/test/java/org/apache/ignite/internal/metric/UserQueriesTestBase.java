@@ -31,7 +31,7 @@ import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
+import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -39,7 +39,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
-import static org.apache.ignite.internal.processors.query.RunningQueryManager.SQL_USER_QUERIES_REG_NAME;
+import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_USER_QUERIES_REG_NAME;
 
 /**
  * Test base for the tests for user metrics. Contains methods that are common for the scenarios that require and don't
@@ -226,7 +226,7 @@ public class UserQueriesTestBase extends SqlStatisticsAbstractTest {
     private void killAsyncAllQueriesOn(int nodeIdx) {
         IgniteEx node = grid(nodeIdx);
 
-        Collection<GridRunningQueryInfo> queries = node.context().query().getIndexing().runningQueries(-1);
+        Collection<GridRunningQueryInfo> queries = node.context().query().runningQueries(-1);
 
         for (GridRunningQueryInfo qryInfo : queries) {
             String killId = qryInfo.globalQueryId();

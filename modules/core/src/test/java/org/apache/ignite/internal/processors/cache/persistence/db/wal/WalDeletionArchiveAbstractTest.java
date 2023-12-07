@@ -38,6 +38,8 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -51,6 +53,10 @@ import static org.apache.ignite.internal.util.IgniteUtils.KB;
 import static org.apache.ignite.internal.util.IgniteUtils.MB;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThan;
 
 /**
  *
@@ -310,6 +316,96 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
     }
 
     /**
+     * Check that if the maximum archive size is equal to one WAL segment size, then when the archive is overflowing,
+     * segments that are needed for binary recovery will not be deleted from the archive until the checkpoint occurs
+     * and finishes.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMaxWalArchiveSizeEqualsOneWalSegmentSize() throws Exception {
+        int walSegmentSize = (int)MB;
+
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
+            .setCacheConfiguration(cacheConfiguration())
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration()
+                    .setCheckpointFrequency(Long.MAX_VALUE)
+                    .setMaxWalArchiveSize(walSegmentSize)
+                    .setWalSegmentSize(walSegmentSize)
+                    .setWalSegments(2)
+                    .setDefaultDataRegionConfiguration(
+                        new DataRegionConfiguration()
+                            .setPersistenceEnabled(true)
+                            .setMaxSize(GB)
+                            .setCheckpointPageBufferSize(GB)
+                    )
+            );
+
+        IgniteEx n = startGrid(cfg);
+
+        n.cluster().state(ClusterState.ACTIVE);
+
+        // Let's not let a checkpoint happen.
+        gridDatabase(n).checkpointReadLock();
+
+        FileWriteAheadLogManager wal = wal(n);
+
+        try {
+            long idxLastCp = lastCheckpointPtr(n).index();
+
+            // Let's reserve the very first segment that will definitely be needed for the checkpoint.
+            assertTrue(wal.reserve(new WALPointer(idxLastCp, 0, 0)));
+
+            for (int i = 0; wal.lastArchivedSegment() < 20L; i++)
+                n.cache(DEFAULT_CACHE_NAME).put(i, new byte[(int)(512 * KB)]);
+
+            // Make sure nothing has been deleted from the archive.
+            assertThat(walArchiveSize(n), greaterThanOrEqualTo(20L * walSegmentSize));
+            assertThat(wal.lastTruncatedSegment(), equalTo(-1L));
+
+            // Let's try to reserve all the segments and then immediately release them.
+            long lastWalSegmentIndex = wal.lastWritePointer().index();
+
+            for (int i = (int)(idxLastCp + 1); i < lastWalSegmentIndex; i++) {
+                WALPointer pointer = new WALPointer(i, 0, 0);
+
+                // Should be able to reserve segments because the checkpoint has not happened yet.
+                assertTrue(String.valueOf(i), wal.reserve(pointer));
+
+                wal.release(pointer);
+            }
+
+            assertTrue(
+                String.valueOf(lastWalSegmentIndex),
+                wal.reserve(new WALPointer(lastWalSegmentIndex, 0, 0))
+            );
+
+            wal.release(new WALPointer(lastWalSegmentIndex, 0, 0));
+
+            // Let's wait a bit, suddenly there will be a deletion from the archive?
+            assertFalse(waitForCondition(() -> wal.lastTruncatedSegment() >= 0, 1_000, 100));
+
+            // Make sure nothing has been deleted from the archive.
+            assertThat(walArchiveSize(n), greaterThanOrEqualTo(20L * walSegmentSize));
+            assertThat(wal.lastTruncatedSegment(), equalTo(-1L));
+        }
+        finally {
+            gridDatabase(n).checkpointReadUnlock();
+        }
+
+        // Now let's run a checkpoint and make sure that only one segment remains in the archive.
+        forceCheckpoint(n);
+
+        assertTrue(
+            IgniteUtils.humanReadableByteCount(walArchiveSize(n)),
+            waitForCondition(() -> walArchiveSize(n) <= walSegmentSize, 1_000, 100)
+        );
+
+        assertThat(wal.lastTruncatedSegment(), lessThan(lastCheckpointPtr(n).index()));
+    }
+
+    /**
      * Extract GridCacheDatabaseSharedManager.
      */
     private GridCacheDatabaseSharedManager gridDatabase(Ignite ignite) {
@@ -331,5 +427,15 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
      */
     private long walArchiveSize(Ignite n) {
         return Arrays.stream(wal(n).walArchiveFiles()).mapToLong(fd -> fd.file().length()).sum();
+    }
+
+    /**
+     * Returns the value of field {@code FileWriteAheadLogManager#lastCheckpointPtr}.
+     *
+     * @param n Node.
+     * @return Field value {@code FileWriteAheadLogManager#lastCheckpointPtr}.
+     */
+    private WALPointer lastCheckpointPtr(Ignite n) {
+        return getFieldValueHierarchy(wal(n), "lastCheckpointPtr");
     }
 }

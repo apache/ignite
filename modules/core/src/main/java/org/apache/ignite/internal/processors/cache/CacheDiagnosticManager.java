@@ -65,7 +65,7 @@ public class CacheDiagnosticManager extends GridCacheSharedManagerAdapter {
     /**
      * Getter.
      *
-     * @return Page lock tracker mananger.
+     * @return Page lock tracker manager.
      */
     public PageLockTrackerManager pageLockTracker() {
         return pageLockTrackerManager;

@@ -32,7 +32,7 @@
             <bean class="org.apache.ignite.configuration.CacheConfiguration">
                 <property name="name" value="test-cache"/>
 
-                <property name="cacheMode" value="LOCAL"/>
+                <property name="cacheMode" value="REPLICATED"/>
 
                 <property name="swapEnabled" value="true"/>
 

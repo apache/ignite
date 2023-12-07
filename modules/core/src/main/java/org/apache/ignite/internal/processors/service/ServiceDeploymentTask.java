@@ -31,7 +31,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -44,7 +43,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.jetbrains.annotations.NotNull;
@@ -134,7 +132,7 @@ class ServiceDeploymentTask {
         this.depId = depId;
         this.ctx = ctx;
 
-        srvcProc = (IgniteServiceProcessor)ctx.service();
+        srvcProc = ctx.service();
         log = ctx.log(getClass());
     }
 
@@ -242,7 +240,7 @@ class ServiceDeploymentTask {
                     return;
                 }
 
-                depActions = new ServiceDeploymentActions();
+                depActions = new ServiceDeploymentActions(ctx);
 
                 depActions.servicesToDeploy(toDeploy);
             }
@@ -429,7 +427,7 @@ class ServiceDeploymentTask {
     protected void onReceiveSingleDeploymentsMessage(UUID snd, ServiceSingleNodeDeploymentResultBatch msg) {
         assert depId.equals(msg.deploymentId()) : "Wrong message's deployment process id, msg=" + msg;
 
-        initCrdFut.listen((IgniteInClosure<IgniteInternalFuture<?>>)fut -> {
+        initCrdFut.listen(() -> {
             if (isCompleted())
                 return;
 
@@ -454,7 +452,7 @@ class ServiceDeploymentTask {
     protected void onReceiveFullDeploymentsMessage(ServiceClusterDeploymentResultBatch msg) {
         assert depId.equals(msg.deploymentId()) : "Wrong message's deployment process id, msg=" + msg;
 
-        initTaskFut.listen((IgniteInClosure<IgniteInternalFuture<?>>)fut -> {
+        initTaskFut.listen(() -> {
             if (isCompleted())
                 return;
 
@@ -698,7 +696,7 @@ class ServiceDeploymentTask {
      * @param nodeId Left node id.
      */
     protected void onNodeLeft(UUID nodeId) {
-        initTaskFut.listen((IgniteInClosure<IgniteInternalFuture<?>>)fut -> {
+        initTaskFut.listen(() -> {
             if (isCompleted())
                 return;
 

@@ -30,17 +30,17 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.AbstractBinaryArraysTest;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
-public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonAbstractTest {
+public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends AbstractBinaryArraysTest {
     /** */
     protected final Marshaller marsh;
 
@@ -209,7 +209,7 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            Person person = (Person) o;
+            Person person = (Person)o;
 
             return id == person.id && name.equals(person.name) && secondName.equals(person.secondName);
 

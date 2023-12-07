@@ -114,7 +114,7 @@ class GridAffinityUtils {
             U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
         // Resource injection.
-        ctx.resource().inject(dep, dep.deployedClass(msg.sourceClassName()), src);
+        ctx.resource().inject(dep, dep.deployedClass(msg.sourceClassName()).get1(), src);
 
         return src;
     }
@@ -170,7 +170,7 @@ class GridAffinityUtils {
             assert ignite != null;
             assert log != null;
 
-            IgniteKernal kernal = ((IgniteKernal) ignite);
+            IgniteKernal kernal = ((IgniteKernal)ignite);
 
             GridCacheContext<Object, Object> cctx = kernal.internalCache(cacheName).context();
 

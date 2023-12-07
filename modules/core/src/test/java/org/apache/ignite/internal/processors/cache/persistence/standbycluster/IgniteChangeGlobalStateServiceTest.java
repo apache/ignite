@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.standbycluster;
 
 import java.util.Collection;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.Service;
@@ -69,7 +70,7 @@ public class IgniteChangeGlobalStateServiceTest extends IgniteChangeGlobalStateA
 
         stopAllPrimary();
 
-        ig1B.active(true);
+        ig1B.cluster().state(ClusterState.ACTIVE);
 
         U.sleep(3000);
 

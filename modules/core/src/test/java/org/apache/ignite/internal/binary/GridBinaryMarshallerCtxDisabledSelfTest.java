@@ -28,7 +28,6 @@ import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
@@ -50,9 +49,9 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), cfg, new NullLogger());
+        BinaryContext context = new BinaryContext(BinaryCachingMetadataHandler.create(), cfg, new NullLogger());
 
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, cfg);
+        marsh.setBinaryContext(context, cfg);
 
         SimpleObject simpleObj = new SimpleObject();
 
@@ -141,7 +140,20 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
     /**
      */
     private enum TestEnum {
-        A, B, C, D, E
+        /** */
+        A,
+
+        /** */
+        B,
+
+        /** */
+        C,
+
+        /** */
+        D,
+
+        /** */
+        E
     }
 
     /**
@@ -165,6 +177,7 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
         /** */
         private TestEnum[] enumArr;
 
+        /** */
         private SimpleObject otherObj;
 
         /** {@inheritDoc} */
@@ -175,29 +188,29 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            SimpleObject obj = (SimpleObject)o;
+            SimpleObject object = (SimpleObject)o;
 
-            if (b != obj.b)
+            if (b != object.b)
                 return false;
 
-            if (c != obj.c)
+            if (c != object.c)
                 return false;
 
-            if (!Arrays.equals(bArr, obj.bArr))
-                return false;
-
-            // Probably incorrect - comparing Object[] arrays with Arrays.equals
-            if (!Arrays.equals(objArr, obj.objArr))
-                return false;
-
-            if (enumVal != obj.enumVal)
+            if (!Arrays.equals(bArr, object.bArr))
                 return false;
 
             // Probably incorrect - comparing Object[] arrays with Arrays.equals
-            if (!Arrays.equals(enumArr, obj.enumArr))
+            if (!Arrays.equals(objArr, object.objArr))
                 return false;
 
-            return !(otherObj != null ? !otherObj.equals(obj.otherObj) : obj.otherObj != null);
+            if (enumVal != object.enumVal)
+                return false;
+
+            // Probably incorrect - comparing Object[] arrays with Arrays.equals
+            if (!Arrays.equals(enumArr, object.enumArr))
+                return false;
+
+            return !(otherObj != null ? !otherObj.equals(object.otherObj) : object.otherObj != null);
         }
     }
 

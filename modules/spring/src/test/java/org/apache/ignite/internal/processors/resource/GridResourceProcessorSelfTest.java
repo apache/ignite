@@ -210,13 +210,17 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
              * @param str3 New value.
              */
             @TestAnnotation2
-            public void setValue3(String str3) { this.str3 = str3; }
+            public void setValue3(String str3) {
+                this.str3 = str3;
+            }
 
             /**
              * @param str4 New value.
              */
             @TestAnnotation2
-            public void setValue4(String str4) { this.str4 = str4; }
+            public void setValue4(String str4) {
+                this.str4 = str4;
+            }
 
             /** */
             private class TestClassWithAnnotationsDeep {
@@ -228,6 +232,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
                 @TestAnnotation
                 private String str6;
 
+                /** */
                 private Callable<String> c = new Callable<String>() {
                     @TestAnnotation
                     private String cStr;
@@ -258,13 +263,17 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
                  * @param str5 New value.
                  */
                 @TestAnnotation2
-                public void setValue5(String str5) { this.str5 = str5; }
+                public void setValue5(String str5) {
+                    this.str5 = str5;
+                }
 
                 /**
                  * @param str6 New value.
                  */
                 @TestAnnotation2
-                public void setValue6(String str6) { this.str6 = str6; }
+                public void setValue6(String str6) {
+                    this.str6 = str6;
+                }
             }
         }
     }

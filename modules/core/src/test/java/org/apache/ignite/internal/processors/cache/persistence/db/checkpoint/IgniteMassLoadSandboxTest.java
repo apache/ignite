@@ -41,6 +41,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -191,7 +192,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
             final IgniteEx ignite = startGrid(1);
 
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             final IgniteCache<Object, HugeIndexedObject> cache = ignite.cache(CACHE_NAME);
             final int threads = Runtime.getRuntime().availableProcessors();
@@ -253,7 +254,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
             final IgniteEx ignite = startGrid(1);
 
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             final int threads = 1;
             Runtime.getRuntime().availableProcessors();
@@ -330,7 +331,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
             final Ignite ignite = G.start(cfg);
 
-            ignite.cluster().active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             final IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
 
@@ -416,7 +417,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     private void runVerification(int threads, final int recsPerThread) throws Exception {
         final Ignite restartedIgnite = startGrid(1);
 
-        restartedIgnite.active(true);
+        restartedIgnite.cluster().state(ClusterState.ACTIVE);
 
         final IgniteCache<Integer, HugeIndexedObject> restartedCache = restartedIgnite.cache(CACHE_NAME);
 
@@ -499,7 +500,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
         try {
             final IgniteEx ignite = startGrid(1);
 
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
             checkpointFrequency = 20 * 1000;
             final IgniteCache<Object, HugeIndexedObject> cache = ignite.cache(CACHE_NAME);
             int totalRecs = 400_000;
@@ -545,7 +546,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
             final Ignite restartedIgnite = startGrid(1);
 
-            restartedIgnite.active(true);
+            restartedIgnite.cluster().state(ClusterState.ACTIVE);
 
             final IgniteCache<Object, HugeIndexedObject> restartedCache = restartedIgnite.cache(CACHE_NAME);
 

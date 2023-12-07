@@ -349,4 +349,4 @@ tab:C++[unsupported]
 
 == Example
 
-The Ignite Community Edition distribution package includes a ready-to-run `SqlDmlExample` as a part of its link:{githubUrl}/examples/src/main/java/org/apache/ignite/examples/sql/SqlDmlExample.java[source code]. This example demonstrates the usage of all the above-mentioned DML operations.
+The Ignite distribution package includes a ready-to-run `SqlDmlExample` as a part of its link:{githubUrl}/examples/src/main/java/org/apache/ignite/examples/sql/SqlDmlExample.java[source code, window=_blank]. This example demonstrates the usage of all the above-mentioned DML operations.

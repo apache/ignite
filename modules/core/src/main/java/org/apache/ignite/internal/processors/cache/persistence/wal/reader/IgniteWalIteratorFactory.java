@@ -31,9 +31,11 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
@@ -56,6 +58,8 @@ import static java.lang.System.arraycopy;
 import static java.nio.file.Files.walkFileTree;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readPosition;
 
@@ -172,19 +176,44 @@ public class IgniteWalIteratorFactory {
     ) throws IgniteCheckedException, IllegalArgumentException {
         iteratorParametersBuilder.validate();
 
-        return new StandaloneWalRecordsIterator(
-            iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
-            iteratorParametersBuilder.sharedCtx == null ? prepareSharedCtx(iteratorParametersBuilder) :
+        if (iteratorParametersBuilder.sharedCtx == null) {
+            GridCacheSharedContext<?, ?> sctx = prepareSharedCtx(iteratorParametersBuilder);
+
+            startAllComponents(sctx.kernalContext());
+
+            return new StandaloneWalRecordsIterator(
+                iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
+                sctx,
+                iteratorParametersBuilder.ioFactory,
+                resolveWalFiles(iteratorParametersBuilder),
+                iteratorParametersBuilder.filter,
+                iteratorParametersBuilder.lowBound,
+                iteratorParametersBuilder.highBound,
+                iteratorParametersBuilder.keepBinary,
+                iteratorParametersBuilder.bufferSize,
+                iteratorParametersBuilder.strictBoundsCheck
+            ) {
+                @Override protected void onClose() throws IgniteCheckedException {
+                    super.onClose();
+
+                    closeAllComponents(sctx.kernalContext());
+                }
+            };
+        }
+        else {
+            return new StandaloneWalRecordsIterator(
+                iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
                 iteratorParametersBuilder.sharedCtx,
-            iteratorParametersBuilder.ioFactory,
-            resolveWalFiles(iteratorParametersBuilder),
-            iteratorParametersBuilder.filter,
-            iteratorParametersBuilder.lowBound,
-            iteratorParametersBuilder.highBound,
-            iteratorParametersBuilder.keepBinary,
-            iteratorParametersBuilder.bufferSize,
-            iteratorParametersBuilder.strictBoundsCheck
-        );
+                iteratorParametersBuilder.ioFactory,
+                resolveWalFiles(iteratorParametersBuilder),
+                iteratorParametersBuilder.filter,
+                iteratorParametersBuilder.lowBound,
+                iteratorParametersBuilder.highBound,
+                iteratorParametersBuilder.keepBinary,
+                iteratorParametersBuilder.bufferSize,
+                iteratorParametersBuilder.strictBoundsCheck
+            );
+        }
     }
 
     /**
@@ -366,19 +395,26 @@ public class IgniteWalIteratorFactory {
     ) throws IgniteCheckedException {
         GridKernalContext kernalCtx = new StandaloneGridKernalContext(log,
             iteratorParametersBuilder.binaryMetadataFileStoreDir,
-            iteratorParametersBuilder.marshallerMappingFileStoreDir
-        );
+            iteratorParametersBuilder.marshallerMappingFileStoreDir) {
+            @Override protected IgniteConfiguration prepareIgniteConfiguration() {
+                IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
-        StandaloneIgniteCacheDatabaseSharedManager dbMgr = new StandaloneIgniteCacheDatabaseSharedManager();
+                Consumer<IgniteConfiguration> modifier = iteratorParametersBuilder.ignCfgMod;
+
+                if (modifier != null)
+                    modifier.accept(cfg);
+
+                return cfg;
+            }
+        };
+
+        StandaloneIgniteCacheDatabaseSharedManager dbMgr = new StandaloneIgniteCacheDatabaseSharedManager(kernalCtx);
 
         dbMgr.setPageSize(iteratorParametersBuilder.pageSize);
 
-        return new GridCacheSharedContext<>(
-            kernalCtx, null, null, null,
-            null, null, null, dbMgr, null, null,
-            null, null, null, null, null,
-            null, null, null, null, null, null
-        );
+        return GridCacheSharedContext.builder()
+            .setDatabaseManager(dbMgr)
+            .build(kernalCtx, null);
     }
 
     /**
@@ -429,6 +465,11 @@ public class IgniteWalIteratorFactory {
          * {@link #marshallerMappingFileStoreDir} fields.
          * */
         @Nullable private GridCacheSharedContext sharedCtx;
+
+        /**
+         * Ignite configuration modifier.
+         */
+        @Nullable private Consumer<IgniteConfiguration> ignCfgMod;
 
         /** */
         @Nullable private IgniteBiPredicate<RecordType, WALPointer> filter;
@@ -558,6 +599,16 @@ public class IgniteWalIteratorFactory {
         }
 
         /**
+         * @param ignCfgMod Ignite configuration modifier.
+         * @return IteratorParametersBuilder Self reference.
+         */
+        public IteratorParametersBuilder igniteConfigurationModifier(Consumer<IgniteConfiguration> ignCfgMod) {
+            this.ignCfgMod = ignCfgMod;
+
+            return this;
+        }
+
+        /**
          * @param filter Record filter for skip records during iteration.
          * @return IteratorParametersBuilder Self reference.
          */
@@ -662,9 +713,9 @@ public class IgniteWalIteratorFactory {
     /**
      *
      */
-    private static class ConsoleLogger implements IgniteLogger {
+    public static class ConsoleLogger implements IgniteLogger {
         /** */
-        private static final ConsoleLogger INSTANCE = new ConsoleLogger();
+        public static final ConsoleLogger INSTANCE = new ConsoleLogger();
 
         /** */
         private static final PrintStream OUT = System.out;

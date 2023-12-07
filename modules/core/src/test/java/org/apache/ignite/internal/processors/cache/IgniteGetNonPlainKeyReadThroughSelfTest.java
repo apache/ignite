@@ -58,9 +58,12 @@ public class IgniteGetNonPlainKeyReadThroughSelfTest extends GridCommonAbstractT
         return cfg;
     }
 
+    /** */
     private static class StoreFactory implements Factory<CacheStore<Object, Object>> {
+        /** */
         private boolean nullVal;
 
+        /** */
         public StoreFactory(boolean nullVal) {
             this.nullVal = nullVal;
         }
@@ -78,8 +81,10 @@ public class IgniteGetNonPlainKeyReadThroughSelfTest extends GridCommonAbstractT
      *
      */
     private static class Store extends CacheStoreAdapter<Object, Object> implements Serializable {
+        /** */
         private boolean nullVal;
 
+        /** */
         public Store(boolean nullVal) {
             this.nullVal = nullVal;
         }

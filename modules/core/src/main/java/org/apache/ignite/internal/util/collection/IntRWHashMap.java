@@ -152,6 +152,17 @@ public class IntRWHashMap<V> implements IntMap<V> {
     }
 
     /** {@inheritDoc} */
+    @Override public void clear() {
+        lock.writeLock().lock();
+        try {
+            delegate.clear();
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         lock.readLock().lock();
         try {

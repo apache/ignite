@@ -91,7 +91,7 @@ public class DisappearedCacheWasNotFoundMessageSelfTest extends AbstractIndexing
                     GridIoMessage gridMsg = (GridIoMessage)msg;
 
                     if (GridH2QueryRequest.class.isAssignableFrom(gridMsg.message().getClass())) {
-                        GridH2QueryRequest req = (GridH2QueryRequest) (gridMsg.message());
+                        GridH2QueryRequest req = (GridH2QueryRequest)(gridMsg.message());
 
                         req.requestId();
 

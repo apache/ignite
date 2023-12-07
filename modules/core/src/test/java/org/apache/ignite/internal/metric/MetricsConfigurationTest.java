@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.metric;
 
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -25,6 +26,8 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.MetricsMxBeanImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.PeriodicHistogramMetricImpl;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -37,6 +40,8 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.HIT
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_EXEC_TIME;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -57,7 +62,16 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
         cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -129,6 +143,49 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
                 .findMetric(METRIC_SYSTEM_TIME_HISTOGRAM);
 
             assertArrayEquals(BOUNDS, sysTime.bounds());
+        }
+    }
+
+    /** Tests configuration of {@link PeriodicHistogramMetricImpl}. */
+    @Test
+    public void testPageTimestampHistogramConfiguration() throws Exception {
+        String registry = "io.dataregion.default";
+        String metricName = "PageTimestampHistogram";
+
+        IgniteEx g = startGrid("persistent-0");
+
+        try {
+            g.cluster().state(ClusterState.ACTIVE);
+
+            MetricsMxBean bean = metricsBean(g);
+
+            PeriodicHistogramMetricImpl histogram = g.context().metric().registry(registry).findMetric(metricName);
+
+            // Check buckets count including dummy bucket.
+            assertEquals(PeriodicHistogramMetricImpl.DFLT_BUCKETS_CNT + 1, histogram.bucketsCount());
+
+            // Reconfigure with 5 buckets and 1 minute interval.
+            long interval = 60_000L;
+            long[] bounds = new long[] {0L, interval, 0L, 0L, 0L};
+
+            bean.configureHistogramMetric(metricName(registry, metricName), bounds);
+
+            assertEquals(bounds.length + 1, histogram.bucketsCount());
+            assertEquals(interval, histogram.bucketsInterval());
+
+            // Check configuration after restart.
+            stopGrid("persistent-0", false);
+
+            g = startGrid("persistent-0");
+            g.cluster().state(ClusterState.ACTIVE);
+
+            histogram = g.context().metric().registry(registry).findMetric(metricName);
+
+            assertEquals(bounds.length + 1, histogram.bucketsCount());
+            assertEquals(interval, histogram.bucketsInterval());
+        }
+        finally {
+            g.close();
         }
     }
 
@@ -261,6 +318,34 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
         });
     }
 
+    /**
+     * Tests that histogram configuration is read again after node restart.
+     */
+    @Test
+    public void testHistogramConfigIsKeptAfterNodeRestart() throws Exception {
+        IgniteEx ignite = startGrid("persistent-0");
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        String regName = metricName(THREAD_POOLS, "StripedExecutor");
+
+        HistogramMetric hist = ignite.context().metric().registry(regName).findMetric(TASK_EXEC_TIME);
+
+        assertFalse(F.arrayEq(BOUNDS, hist.bounds()));
+
+        ignite.context().metric().configureHistogram(metricName(regName, TASK_EXEC_TIME), BOUNDS);
+
+        assertTrue(F.arrayEq(BOUNDS, hist.bounds()));
+
+        stopGrid("persistent-0", false);
+
+        ignite = startGrid("persistent-0");
+
+        hist = ignite.context().metric().registry(regName).findMetric(TASK_EXEC_TIME);
+
+        assertTrue(F.arrayEq(BOUNDS, hist.bounds()));
+    }
+
     /** Tests metric configuration removed on registry remove. */
     @Test
     public void testConfigRemovedOnCacheGroupRemove() throws Exception {
@@ -311,7 +396,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
         IgniteEx g1 = startGrid("persistent-1");
 
         try {
-            g0.cluster().active(true);
+            g0.cluster().state(ClusterState.ACTIVE);
 
             afterStart.apply(g0, g1);
 
@@ -321,7 +406,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
             g0 = startGrid("persistent-0");
             g1 = startGrid("persistent-1");
 
-            g0.cluster().active(true);
+            g0.cluster().state(ClusterState.ACTIVE);
 
             afterRestart.apply(g0, g1);
         }

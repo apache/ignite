@@ -91,6 +91,8 @@ public class TrackingPageIO extends PageIO {
      * @return <code>-1</code> if everything is ok, otherwise last saved tag.
      */
     public long markChanged(ByteBuffer buf, long pageId, long nextSnapshotTag, long lastSuccessfulSnapshotTag, int pageSize) {
+        assertPageType(buf);
+
         long tag = validateSnapshotTag(buf, nextSnapshotTag, lastSuccessfulSnapshotTag, pageSize);
 
         int cntOfPage = countOfPageToTrack(pageSize);
@@ -152,7 +154,8 @@ public class TrackingPageIO extends PageIO {
             setLastSnasphotTag(buf, nextSnapshotTag);
 
             PageHandler.zeroMemory(buf, SIZE_FIELD_OFFSET, buf.capacity() - SIZE_FIELD_OFFSET);
-        } else { //we can't drop data, it is still necessary for incremental snapshots
+        }
+        else { //we can't drop data, it is still necessary for incremental snapshots
             int len = cntOfPage >> 3;
 
             int sizeOff = useLeftHalf(nextSnapshotTag) ? SIZE_FIELD_OFFSET : BITMAP_OFFSET + len;
@@ -162,7 +165,8 @@ public class TrackingPageIO extends PageIO {
                 //new data will be written in the same half, we should move old data to another half
                 if ((nextSnapshotTag - last) % 2 == 0)
                     PageHandler.copyMemory(buf, sizeOff, buf, sizeOff2, len + SIZE_FIELD_SIZE);
-            } else { //last - lastSuccessfulSnapshotId > 1, e.g. we should merge two half in one
+            }
+            else { //last - lastSuccessfulSnapshotId > 1, e.g. we should merge two half in one
                 int newSize = 0;
                 int i = 0;
 
@@ -175,7 +179,7 @@ public class TrackingPageIO extends PageIO {
                 }
 
                 for (; i < len; i++) {
-                    byte newVal = (byte) (buf.get(sizeOff + SIZE_FIELD_SIZE + i) | buf.get(sizeOff2 + SIZE_FIELD_SIZE + i));
+                    byte newVal = (byte)(buf.get(sizeOff + SIZE_FIELD_SIZE + i) | buf.get(sizeOff2 + SIZE_FIELD_SIZE + i));
 
                     newSize += Integer.bitCount(newVal & 0xFF);
 
@@ -266,6 +270,8 @@ public class TrackingPageIO extends PageIO {
      * @param buf Buffer.
      */
     public void resetCorruptFlag(ByteBuffer buf) {
+        assertPageType(buf);
+
         setLastSnasphotTag0(buf, getLastSnapshotTag(buf));
     }
 
@@ -275,6 +281,8 @@ public class TrackingPageIO extends PageIO {
      * @param addr Buffer.
      */
     public void resetCorruptFlag(long addr) {
+        assertPageType(addr);
+
         setLastSnasphotTag0(addr, getLastSnapshotTag(addr));
     }
 
@@ -291,6 +299,8 @@ public class TrackingPageIO extends PageIO {
      */
     public boolean wasChanged(ByteBuffer buf, long pageId, long curSnapshotTag, long lastSuccessfulSnapshotTag, int pageSize)
         throws TrackingPageIsCorruptedException {
+        assertPageType(buf);
+
         if (isCorrupted(buf))
             throw TrackingPageIsCorruptedException.INSTANCE;
 
@@ -340,10 +350,10 @@ public class TrackingPageIO extends PageIO {
     /**
      * @param snapshotTag Snapshot id.
      *
-     * @return true if snapshotTag is odd, otherwise - false.
+     * @return true if snapshotTag is even, otherwise - false.
      */
     private boolean useLeftHalf(long snapshotTag) {
-        return (snapshotTag & 0b1) == 0;
+        return (snapshotTag & 1) == 0;
     }
 
     /**
@@ -388,6 +398,8 @@ public class TrackingPageIO extends PageIO {
      */
     @Nullable public Long findNextChangedPage(ByteBuffer buf, long start, long curSnapshotTag,
         long lastSuccessfulSnapshotTag, int pageSize) throws TrackingPageIsCorruptedException {
+        assertPageType(buf);
+
         if (isCorrupted(buf))
             throw TrackingPageIsCorruptedException.INSTANCE;
 
@@ -478,5 +490,10 @@ public class TrackingPageIO extends PageIO {
                  + SIZE_FIELD_SIZE + i));
 
         sb.a("}\n\t}\n]");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getFreeSpace(int pageSize, long pageAddr) {
+        return 0;
     }
 }

@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.processors.metric.impl;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.metric.HistogramMetric;
+import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
@@ -64,10 +68,21 @@ public class MetricUtils {
      * @return Array consist of registry name and metric name.
      */
     public static T2<String, String> fromFullName(String name) {
-        return new T2<>(
-            name.substring(0, name.lastIndexOf(SEPARATOR)),
-            name.substring(name.lastIndexOf(SEPARATOR) + 1)
-        );
+        int metricNamePos = name.lastIndexOf(SEPARATOR);
+
+        String regName;
+        String metricName;
+
+        if (metricNamePos == -1) {
+            regName = name;
+            metricName = "";
+        }
+        else {
+            regName = name.substring(0, metricNamePos);
+            metricName = name.substring(metricNamePos + 1);
+        }
+
+        return new T2<>(regName, metricName);
     }
 
     /**
@@ -187,5 +202,23 @@ public class MetricUtils {
         return name
             .replaceAll("([A-Z])", "_$1")
             .replaceAll('\\' + SEPARATOR, "_").toUpperCase();
+    }
+
+    /**
+     * Extract attributes for system view.
+     *
+     * @param sysView System view.
+     * @return Attributes map.
+     */
+    public static Map<String, Class<?>> systemViewAttributes(SystemView<?> sysView) {
+        Map<String, Class<?>> attrs = new LinkedHashMap<>(sysView.walker().count());
+
+        sysView.walker().visitAll(new SystemViewRowAttributeWalker.AttributeVisitor() {
+            @Override public <T> void accept(int idx, String name, Class<T> clazz) {
+                attrs.put(name, clazz);
+            }
+        });
+
+        return attrs;
     }
 }

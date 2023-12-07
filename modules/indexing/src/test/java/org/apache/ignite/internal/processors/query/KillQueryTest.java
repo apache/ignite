@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservati
 import org.apache.ignite.internal.processors.query.h2.twostep.ReducePartitionMapResult;
 import org.apache.ignite.internal.processors.query.h2.twostep.ReducePartitionMapper;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
+import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1063,7 +1064,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
      * no queries are executed at the moment; {@code false} otherwise.
      */
     private boolean queryPoolIsEmpty(IgniteEx node) {
-        ThreadPoolExecutor qryPool = (ThreadPoolExecutor)node.context().getQueryExecutorService();
+        ThreadPoolExecutor qryPool = (ThreadPoolExecutor)node.context().pools().getQueryExecutorService();
 
         return qryPool.getQueue().isEmpty() && qryPool.getActiveCount() == 0;
     }

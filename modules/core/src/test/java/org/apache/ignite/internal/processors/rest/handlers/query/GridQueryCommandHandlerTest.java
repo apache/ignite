@@ -153,7 +153,7 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals(GridRestResponse.STATUS_SUCCESS, resp.result().getSuccessStatus());
         assertNotNull(resp.result().getResponse());
 
-        CacheQueryResult res = (CacheQueryResult) resp.result().getResponse();
+        CacheQueryResult res = (CacheQueryResult)resp.result().getResponse();
 
         assertTrue(res.getLast());
     }

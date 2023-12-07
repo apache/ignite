@@ -23,8 +23,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -178,7 +178,7 @@ public class CacheCreateDestroyClusterReadOnlyModeTest extends CacheCreateDestro
     }
 
     /** */
-    private void executeAndCheckException(GridTestUtils.RunnableX clo, String cacheName) {
+    private void executeAndCheckException(RunnableX clo, String cacheName) {
         Throwable ex = assertThrows(log, clo, Exception.class, null);
 
         ClusterReadOnlyModeTestUtils.checkRootCause(ex, cacheName);

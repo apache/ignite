@@ -37,9 +37,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
@@ -62,12 +60,6 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static volatile boolean loadedFromClient;
-
-    /** */
-    @Before
-    public void beforeCacheClientStoreSelfTest() {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -230,57 +222,6 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
         cache.removeAll();
         cache.invoke(0, new EP());
         cache.invokeAll(F.asSet(0, 1), new EP());
-    }
-
-    /**
-     * Load cache created on client as LOCAL and see if it only loaded on client
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testLocalLoadClient() throws Exception {
-        cacheMode = CacheMode.LOCAL;
-        factory = new Factory3();
-
-        startGrids(2);
-
-        Ignite client = startClientGrid("client-1");
-
-        IgniteCache<Object, Object> cache = client.cache(CACHE_NAME);
-
-        cache.loadCache(null);
-
-        assertEquals(10, cache.localSize(CachePeekMode.ALL));
-
-        assertEquals(0, grid(0).cache(CACHE_NAME).localSize(CachePeekMode.ALL));
-        assertEquals(0, grid(1).cache(CACHE_NAME).localSize(CachePeekMode.ALL));
-
-        assert loadedFromClient;
-    }
-
-    /**
-     * Load cache from server that created on client as LOCAL and see if it only loaded on server
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testLocalLoadServer() throws Exception {
-        cacheMode = CacheMode.LOCAL;
-        factory = new Factory3();
-
-        startGrids(2);
-
-        Ignite client = startClientGrid("client-1");
-
-        IgniteCache cache = grid(0).cache(CACHE_NAME);
-
-        cache.loadCache(null);
-
-        assertEquals(10, cache.localSize(CachePeekMode.ALL));
-        assertEquals(0, grid(1).cache(CACHE_NAME).localSize(CachePeekMode.ALL));
-        assertEquals(0, client.cache(CACHE_NAME).localSize(CachePeekMode.ALL));
-
-        assert !loadedFromClient : "Loaded data from client!";
     }
 
     /**

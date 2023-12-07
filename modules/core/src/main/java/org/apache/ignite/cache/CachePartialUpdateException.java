@@ -38,6 +38,8 @@ public class CachePartialUpdateException extends CacheException {
 
     /**
      * Gets collection of failed keys.
+     *
+     * @param <K> Type of keys.
      * @return Collection of failed keys.
      */
     public <K> Collection<K> failedKeys() {

@@ -69,49 +69,42 @@ public class DepthFirstSearchTest {
     public void testNoCycle() throws Exception {
         assertNull(findCycle(Collections.<GridCacheVersion, Set<GridCacheVersion>>emptyMap(), T1));
 
-        HashMap<GridCacheVersion, Set<GridCacheVersion>> wfg;
+        HashMap<GridCacheVersion, Set<GridCacheVersion>> wfg = new HashMap<>();
 
-        wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
-            put(T1, null);
-        }};
+        wfg.put(T1, null);
 
         assertAllNull(wfg);
 
-        wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
-            put(T1, null);
-            put(T2, null);
-        }};
+        wfg.clear();
+        wfg.put(T1, null);
+        wfg.put(T2, null);
 
         assertAllNull(wfg);
 
-        wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
-            put(T1, Collections.singleton(T2));
-            put(T3, Collections.singleton(T4));
-        }};
+        wfg.clear();
+        wfg.put(T1, Collections.singleton(T2));
+        wfg.put(T3, Collections.singleton(T4));
 
         assertAllNull(wfg);
 
-        wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
-            put(T1, new HashSet<GridCacheVersion>() {{ add(T2); }});
-            put(T2, new HashSet<GridCacheVersion>() {{ add(T3); }});
-            put(T4, new HashSet<GridCacheVersion>() {{ add(T1); add(T3); }});
-        }};
+        wfg.clear();
+        wfg.put(T1, new HashSet<GridCacheVersion>() {{ add(T2); }});
+        wfg.put(T2, new HashSet<GridCacheVersion>() {{ add(T3); }});
+        wfg.put(T4, new HashSet<GridCacheVersion>() {{ add(T1); add(T3); }});
 
         assertAllNull(wfg);
 
-        wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
-            put(T1, new HashSet<GridCacheVersion>() {{ add(T2); }});
-            put(T2, new HashSet<GridCacheVersion>() {{ add(T3); }});
-            put(T4, new HashSet<GridCacheVersion>() {{ add(T1); add(T2); add(T3); }});
-        }};
+        wfg.clear();
+        wfg.put(T1, new HashSet<GridCacheVersion>() {{ add(T2); }});
+        wfg.put(T2, new HashSet<GridCacheVersion>() {{ add(T3); }});
+        wfg.put(T4, new HashSet<GridCacheVersion>() {{ add(T1); add(T2); add(T3); }});
 
         assertAllNull(wfg);
 
-        wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
-            put(T1, new HashSet<GridCacheVersion>() {{ add(T2); }});
-            put(T3, new HashSet<GridCacheVersion>() {{ add(T4); }});
-            put(T4, new HashSet<GridCacheVersion>() {{ add(T1); }});
-        }};
+        wfg.clear();
+        wfg.put(T1, new HashSet<GridCacheVersion>() {{ add(T2); }});
+        wfg.put(T3, new HashSet<GridCacheVersion>() {{ add(T4); }});
+        wfg.put(T4, new HashSet<GridCacheVersion>() {{ add(T1); }});
 
         assertAllNull(wfg);
     }
@@ -121,43 +114,40 @@ public class DepthFirstSearchTest {
      */
     @Test
     public void testFindCycle2() throws Exception {
-        Map<GridCacheVersion, Set<GridCacheVersion>> wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
-            put(T1, Collections.singleton(T2));
-            put(T2, Collections.singleton(T1));
-        }};
+        Map<GridCacheVersion, Set<GridCacheVersion>> wfg = new HashMap<>();
+
+        wfg.put(T1, Collections.singleton(T2));
+        wfg.put(T2, Collections.singleton(T1));
 
         assertEquals(F.asList(T2, T1, T2), findCycle(wfg, T1));
         assertEquals(F.asList(T1, T2, T1), findCycle(wfg, T2));
         assertAllNull(wfg, T1, T2);
 
-        wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
-            put(T1, Collections.singleton(T2));
-            put(T2, Collections.singleton(T3));
-            put(T3, asLinkedHashSet(T2, T4));
-        }};
+        wfg.clear();
+        wfg.put(T1, Collections.singleton(T2));
+        wfg.put(T2, Collections.singleton(T3));
+        wfg.put(T3, asLinkedHashSet(T2, T4));
 
         assertEquals(F.asList(T3, T2, T3), findCycle(wfg, T1));
         assertEquals(F.asList(T3, T2, T3), findCycle(wfg, T2));
         assertEquals(F.asList(T2, T3, T2), findCycle(wfg, T3));
         assertAllNull(wfg, T1, T2, T3);
 
-        wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
-            put(T1, Collections.singleton(T2));
-            put(T2, asLinkedHashSet(T3, T1));
-            put(T3, Collections.singleton(T2));
-        }};
+        wfg.clear();
+        wfg.put(T1, Collections.singleton(T2));
+        wfg.put(T2, asLinkedHashSet(T3, T1));
+        wfg.put(T3, Collections.singleton(T2));
 
         assertEquals(F.asList(T2, T1, T2), findCycle(wfg, T1));
         assertEquals(F.asList(T1, T2, T1), findCycle(wfg, T2));
         assertEquals(F.asList(T2, T3, T2), findCycle(wfg, T3));
         assertAllNull(wfg, T1, T2, T3);
 
-        wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
-            put(T1, Collections.singleton(T2));
-            put(T2, asLinkedHashSet(T1, T3));
-            put(T3, Collections.singleton(T4));
-            put(T4, Collections.singleton(T3));
-        }};
+        wfg.clear();
+        wfg.put(T1, Collections.singleton(T2));
+        wfg.put(T2, asLinkedHashSet(T1, T3));
+        wfg.put(T3, Collections.singleton(T4));
+        wfg.put(T4, Collections.singleton(T3));
 
         assertEquals(F.asList(T2, T1, T2), findCycle(wfg, T1));
         assertEquals(F.asList(T4, T3, T4), findCycle(wfg, T2));
@@ -165,14 +155,13 @@ public class DepthFirstSearchTest {
         assertEquals(F.asList(T3, T4, T3), findCycle(wfg, T4));
         assertAllNull(wfg, T1, T2, T3, T4);
 
-        wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
-            put(T1, Collections.singleton(T2));
-            put(T2, Collections.singleton(T3));
-            put(T3, Collections.singleton(T4));
-            put(T4, Collections.singleton(T5));
-            put(T5, Collections.singleton(T6));
-            put(T6, Collections.singleton(T5));
-        }};
+        wfg.clear();
+        wfg.put(T1, Collections.singleton(T2));
+        wfg.put(T2, Collections.singleton(T3));
+        wfg.put(T3, Collections.singleton(T4));
+        wfg.put(T4, Collections.singleton(T5));
+        wfg.put(T5, Collections.singleton(T6));
+        wfg.put(T6, Collections.singleton(T5));
 
         assertEquals(F.asList(T6, T5, T6), findCycle(wfg, T1));
         assertEquals(F.asList(T6, T5, T6), findCycle(wfg, T2));
@@ -187,23 +176,22 @@ public class DepthFirstSearchTest {
      */
     @Test
     public void testFindCycle3() throws Exception {
-        Map<GridCacheVersion, Set<GridCacheVersion>> wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
-            put(T1, Collections.singleton(T2));
-            put(T2, Collections.singleton(T3));
-            put(T3, Collections.singleton(T1));
-        }};
+        Map<GridCacheVersion, Set<GridCacheVersion>> wfg = new HashMap<>();
+
+        wfg.put(T1, Collections.singleton(T2));
+        wfg.put(T2, Collections.singleton(T3));
+        wfg.put(T3, Collections.singleton(T1));
 
         assertEquals(F.asList(T3, T2, T1, T3), findCycle(wfg, T1));
         assertEquals(F.asList(T1, T3, T2, T1), findCycle(wfg, T2));
         assertEquals(F.asList(T2, T1, T3, T2), findCycle(wfg, T3));
         assertAllNull(wfg, T1, T2, T3);
 
-        wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
-            put(T1, Collections.singleton(T2));
-            put(T2, Collections.singleton(T3));
-            put(T3, Collections.singleton(T4));
-            put(T4, asLinkedHashSet(T2, T5));
-        }};
+        wfg.clear();
+        wfg.put(T1, Collections.singleton(T2));
+        wfg.put(T2, Collections.singleton(T3));
+        wfg.put(T3, Collections.singleton(T4));
+        wfg.put(T4, asLinkedHashSet(T2, T5));
 
         assertEquals(F.asList(T4, T3, T2, T4), findCycle(wfg, T1));
         assertEquals(F.asList(T4, T3, T2, T4), findCycle(wfg, T2));
@@ -211,28 +199,25 @@ public class DepthFirstSearchTest {
         assertEquals(F.asList(T3, T2, T4, T3), findCycle(wfg, T4));
         assertAllNull(wfg, T1, T2, T3, T4);
 
-        wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
-            put(T1, Collections.singleton(T2));
-            put(T2, asLinkedHashSet(T3, T4));
-            put(T3, Collections.singleton(T1));
-            put(T4, Collections.singleton(T5));
-            put(T5, Collections.singleton(T6));
-            put(T6, Collections.singleton(T4));
-
-        }};
+        wfg.clear();
+        wfg.put(T1, Collections.singleton(T2));
+        wfg.put(T2, asLinkedHashSet(T3, T4));
+        wfg.put(T3, Collections.singleton(T1));
+        wfg.put(T4, Collections.singleton(T5));
+        wfg.put(T5, Collections.singleton(T6));
+        wfg.put(T6, Collections.singleton(T4));
 
         assertEquals(F.asList(T6, T5, T4, T6), findCycle(wfg, T1));
         assertEquals(F.asList(T6, T5, T4, T6), findCycle(wfg, T2));
         assertEquals(F.asList(T2, T1, T3, T2), findCycle(wfg, T3));
 
-        wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
-            put(T1, Collections.singleton(T2));
-            put(T2, Collections.singleton(T3));
-            put(T3, Collections.singleton(T4));
-            put(T4, Collections.singleton(T5));
-            put(T5, Collections.singleton(T6));
-            put(T6, Collections.singleton(T4));
-        }};
+        wfg.clear();
+        wfg.put(T1, Collections.singleton(T2));
+        wfg.put(T2, Collections.singleton(T3));
+        wfg.put(T3, Collections.singleton(T4));
+        wfg.put(T4, Collections.singleton(T5));
+        wfg.put(T5, Collections.singleton(T6));
+        wfg.put(T6, Collections.singleton(T4));
 
         assertEquals(F.asList(T6, T5, T4, T6), findCycle(wfg, T1));
         assertEquals(F.asList(T6, T5, T4, T6), findCycle(wfg, T2));
@@ -248,13 +233,13 @@ public class DepthFirstSearchTest {
      */
     @Test
     public void testFindCycle4() throws Exception {
-        Map<GridCacheVersion, Set<GridCacheVersion>> wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
-            put(T1, Collections.singleton(T2));
-            put(T2, asLinkedHashSet(T3, T4));
-            put(T3, Collections.singleton(T4));
-            put(T4, Collections.singleton(T5));
-            put(T6, Collections.singleton(T3));
-        }};
+        Map<GridCacheVersion, Set<GridCacheVersion>> wfg = new HashMap<>();
+
+        wfg.put(T1, Collections.singleton(T2));
+        wfg.put(T2, asLinkedHashSet(T3, T4));
+        wfg.put(T3, Collections.singleton(T4));
+        wfg.put(T4, Collections.singleton(T5));
+        wfg.put(T6, Collections.singleton(T3));
 
         assertNull(findCycle(wfg, T1));
     }

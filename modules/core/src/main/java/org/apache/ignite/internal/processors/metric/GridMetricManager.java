@@ -28,13 +28,8 @@ import java.lang.management.ThreadMXBean;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
@@ -48,10 +43,8 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -63,11 +56,9 @@ import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
-import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.fromFullName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -80,55 +71,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
  * @see MetricRegistry
  */
 public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> implements ReadOnlyMetricManager {
-    /** Class name for a SQL view metrics exporter. */
-    public static final String SQL_SPI = "org.apache.ignite.internal.processors.metric.sql.SqlViewMetricExporterSpi";
-
-    /** */
-    public static final String ACTIVE_COUNT_DESC = "Approximate number of threads that are actively executing tasks.";
-
-    /** */
-    public static final String COMPLETED_TASK_DESC = "Approximate total number of tasks that have completed execution.";
-
-    /** */
-    public static final String CORE_SIZE_DESC = "The core number of threads.";
-
-    /** */
-    public static final String LARGEST_SIZE_DESC = "Largest number of threads that have ever simultaneously been in the pool.";
-
-    /** */
-    public static final String MAX_SIZE_DESC = "The maximum allowed number of threads.";
-
-    /** */
-    public static final String POOL_SIZE_DESC = "Current number of threads in the pool.";
-
-    /** */
-    public static final String TASK_COUNT_DESC = "Approximate total number of tasks that have been scheduled for execution.";
-
-    /** */
-    public static final String QUEUE_SIZE_DESC = "Current size of the execution queue.";
-
-    /** */
-    public static final String KEEP_ALIVE_TIME_DESC = "Thread keep-alive time, which is the amount of time which threads in excess of " +
-        "the core pool size may remain idle before being terminated.";
-
-    /** */
-    public static final String IS_SHUTDOWN_DESC = "True if this executor has been shut down.";
-
-    /** */
-    public static final String IS_TERMINATED_DESC = "True if all tasks have completed following shut down.";
-
-    /** */
-    public static final String IS_TERMINATING_DESC = "True if terminating but not yet terminated.";
-
-    /** */
-    public static final String REJ_HND_DESC = "Class name of current rejection handler.";
-
-    /** */
-    public static final String THRD_FACTORY_DESC = "Class name of thread factory used to create new threads.";
-
-    /** Group for a thread pools. */
-    public static final String THREAD_POOLS = "threadPools";
-
     /** Metrics update frequency. */
     private static final long METRICS_UPDATE_FREQ = 3000;
 
@@ -143,6 +85,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
     /** Cluster metrics prefix. */
     public static final String CLUSTER_METRICS = "cluster";
+
+    /** Client metrics prefix. */
+    public static final String CLIENT_CONNECTOR_METRICS = metricName("client", "connector");
 
     /** Transaction metrics prefix. */
     public static final String TX_METRICS = "tx";
@@ -240,6 +185,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Nonheap memory metrics. */
     private final MemoryUsageMetrics nonHeap;
 
+    /** */
+    private final SunOperatingSystemMXBeanAccessor sunOs;
+
     /**
      * @param ctx Kernal context.
      */
@@ -247,7 +195,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         super(ctx, ((Supplier<MetricExporterSpi[]>)() -> {
             MetricExporterSpi[] spi = ctx.config().getMetricExporterSpi();
 
-            if (!IgniteComponentType.INDEXING.inClassPath())
+            if (!IgniteComponentType.INDEXING.inClassPath() && !IgniteComponentType.QUERY_ENGINE.inClassPath())
                 return spi;
 
             MetricExporterSpi[] spiWithSql = new MetricExporterSpi[spi != null ? spi.length + 1 : 1];
@@ -255,15 +203,12 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             if (!F.isEmpty(spi))
                 System.arraycopy(spi, 0, spiWithSql, 0, spi.length);
 
-            try {
-                spiWithSql[spiWithSql.length - 1] = U.newInstance(SQL_SPI);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+            spiWithSql[spiWithSql.length - 1] = new SqlViewMetricExporterSpi();
 
             return spiWithSql;
         }).get());
+
+        sunOs = sunOperatingSystemMXBeanAccessor();
 
         ctx.addNodeAttribute(ATTR_PHY_RAM, totalSysMemory());
 
@@ -310,6 +255,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         startSpi();
 
+        // In case standalone kernal start.
+        if (ctx.internalSubscriptionProcessor() == null)
+            return;
+
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
             new DistributedMetastorageLifecycleListener() {
                 /** {@inheritDoc} */
@@ -318,10 +267,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
                     try {
                         metastorage.iterate(HITRATE_CFG_PREFIX, (name, val) -> onHitRateConfigChanged(
-                            name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long) val));
+                            name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long)val));
 
                         metastorage.iterate(HISTOGRAM_CFG_PREFIX, (name, val) -> onHistogramConfigChanged(
-                            name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[]) val));
+                            name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[])val));
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -329,11 +278,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
                     metastorage.listen(n -> n.startsWith(HITRATE_CFG_PREFIX),
                         (name, oldVal, newVal) -> onHitRateConfigChanged(
-                            name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long) newVal));
+                            name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long)newVal));
 
                     metastorage.listen(n -> n.startsWith(HISTOGRAM_CFG_PREFIX),
                         (name, oldVal, newVal) -> onHistogramConfigChanged(
-                            name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[]) newVal));
+                            name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[])newVal));
                 }
 
                 /** {@inheritDoc} */
@@ -410,10 +359,23 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param regName Metric registry name.
      */
     public void remove(String regName) {
+        remove(regName, true);
+    }
+
+    /**
+     * Removes metric registry.
+     *
+     * @param regName Metric registry name.
+     * @param removeCfg {@code True} if remove metric configurations.
+     */
+    public void remove(String regName, boolean removeCfg) {
         GridCompoundFuture opsFut = new GridCompoundFuture<>();
 
         registries.computeIfPresent(regName, (key, mreg) -> {
             notifyListeners(mreg, metricRegRemoveLsnrs, log);
+
+            if (!removeCfg)
+                return null;
 
             DistributedMetaStorage metastorage0 = metastorage;
 
@@ -463,6 +425,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
+        ensureMetricRegistered(name, HitRateMetric.class);
+
         metastorage.write(metricName(HITRATE_CFG_PREFIX, name), rateTimeInterval);
     }
 
@@ -481,6 +445,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
+        ensureMetricRegistered(name, HistogramMetric.class);
+
         metastorage.write(metricName(HISTOGRAM_CFG_PREFIX, name), bounds);
     }
 
@@ -489,7 +455,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      *
      * @param name Metric name.
      * @param rateTimeInterval New rateTimeInterval.
-     * @see HistogramMetricImpl#reset(long[])
+     * @see HitRateMetric#reset(long)
      */
     private void onHitRateConfigChanged(String name, @Nullable Long rateTimeInterval) {
         if (rateTimeInterval == null)
@@ -515,12 +481,18 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         if (bounds == null)
             return;
 
-        HistogramMetricImpl m = find(name, HistogramMetricImpl.class);
+        ConfigurableHistogramMetric m = find(name, ConfigurableHistogramMetric.class);
 
         if (m == null)
             return;
 
-        m.reset(bounds);
+        try {
+            m.bounds(bounds);
+        }
+        catch (RuntimeException e) {
+            // Can't throw exceptions here since method is invoked by metastorage listener.
+            log.error("Error during histogram bounds reconfiguration", e);
+        }
     }
 
     /**
@@ -551,192 +523,13 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             return null;
         }
 
-        if (!m.getClass().isAssignableFrom(type)) {
+        if (!type.isAssignableFrom(m.getClass())) {
             log.error("Metric '" + name + "' has wrong type[type=" + m.getClass().getSimpleName() + ']');
 
             return null;
         }
 
-        return (T) m;
-    }
-
-    /**
-     * Registers all metrics for thread pools.
-     *
-     * @param utilityCachePool Utility cache pool.
-     * @param execSvc Executor service.
-     * @param svcExecSvc Services' executor service.
-     * @param sysExecSvc System executor service.
-     * @param stripedExecSvc Striped executor.
-     * @param p2pExecSvc P2P executor service.
-     * @param mgmtExecSvc Management executor service.
-     * @param dataStreamExecSvc Data stream executor service.
-     * @param restExecSvc Reset executor service.
-     * @param affExecSvc Affinity executor service.
-     * @param idxExecSvc Indexing executor service.
-     * @param callbackExecSvc Callback executor service.
-     * @param qryExecSvc Query executor service.
-     * @param schemaExecSvc Schema executor service.
-     * @param rebalanceExecSvc Rebalance executor service.
-     * @param rebalanceStripedExecSvc Rebalance striped executor service.
-     * @param customExecSvcs Custom named executors.
-     */
-    public void registerThreadPools(
-        ExecutorService utilityCachePool,
-        ExecutorService execSvc,
-        ExecutorService svcExecSvc,
-        ExecutorService sysExecSvc,
-        StripedExecutor stripedExecSvc,
-        ExecutorService p2pExecSvc,
-        ExecutorService mgmtExecSvc,
-        StripedExecutor dataStreamExecSvc,
-        ExecutorService restExecSvc,
-        ExecutorService affExecSvc,
-        @Nullable ExecutorService idxExecSvc,
-        IgniteStripedThreadPoolExecutor callbackExecSvc,
-        ExecutorService qryExecSvc,
-        ExecutorService schemaExecSvc,
-        ExecutorService rebalanceExecSvc,
-        IgniteStripedThreadPoolExecutor rebalanceStripedExecSvc,
-        @Nullable final Map<String, ? extends ExecutorService> customExecSvcs
-    ) {
-        // Executors
-        monitorExecutor("GridUtilityCacheExecutor", utilityCachePool);
-        monitorExecutor("GridExecutionExecutor", execSvc);
-        monitorExecutor("GridServicesExecutor", svcExecSvc);
-        monitorExecutor("GridSystemExecutor", sysExecSvc);
-        monitorExecutor("GridClassLoadingExecutor", p2pExecSvc);
-        monitorExecutor("GridManagementExecutor", mgmtExecSvc);
-        monitorExecutor("GridAffinityExecutor", affExecSvc);
-        monitorExecutor("GridCallbackExecutor", callbackExecSvc);
-        monitorExecutor("GridQueryExecutor", qryExecSvc);
-        monitorExecutor("GridSchemaExecutor", schemaExecSvc);
-        monitorExecutor("GridRebalanceExecutor", rebalanceExecSvc);
-        monitorExecutor("GridRebalanceStripedExecutor", rebalanceStripedExecSvc);
-
-        monitorStripedPool("GridDataStreamExecutor", dataStreamExecSvc);
-
-        if (idxExecSvc != null)
-            monitorExecutor("GridIndexingExecutor", idxExecSvc);
-
-        if (ctx.config().getConnectorConfiguration() != null)
-            monitorExecutor("GridRestExecutor", restExecSvc);
-
-        if (stripedExecSvc != null) {
-            // Striped executor uses a custom adapter.
-            monitorStripedPool("StripedExecutor", stripedExecSvc);
-        }
-
-        if (customExecSvcs != null) {
-            for (Map.Entry<String, ? extends ExecutorService> entry : customExecSvcs.entrySet())
-                monitorExecutor(entry.getKey(), entry.getValue());
-        }
-    }
-
-    /**
-     * Creates a MetricSet for an executor.
-     *
-     * @param name Name of the bean to register.
-     * @param execSvc Executor to register a bean for.
-     */
-    private void monitorExecutor(String name, ExecutorService execSvc) {
-        MetricRegistry mreg = registry(metricName(THREAD_POOLS, name));
-
-        if (execSvc instanceof ThreadPoolExecutor) {
-            ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
-
-            mreg.register("ActiveCount", exec::getActiveCount, ACTIVE_COUNT_DESC);
-            mreg.register("CompletedTaskCount", exec::getCompletedTaskCount, COMPLETED_TASK_DESC);
-            mreg.register("CorePoolSize", exec::getCorePoolSize, CORE_SIZE_DESC);
-            mreg.register("LargestPoolSize", exec::getLargestPoolSize, LARGEST_SIZE_DESC);
-            mreg.register("MaximumPoolSize", exec::getMaximumPoolSize, MAX_SIZE_DESC);
-            mreg.register("PoolSize", exec::getPoolSize, POOL_SIZE_DESC);
-            mreg.register("TaskCount", exec::getTaskCount, TASK_COUNT_DESC);
-            mreg.register("QueueSize", () -> exec.getQueue().size(), QUEUE_SIZE_DESC);
-            mreg.register("KeepAliveTime", () -> exec.getKeepAliveTime(MILLISECONDS), KEEP_ALIVE_TIME_DESC);
-            mreg.register("Shutdown", exec::isShutdown, IS_SHUTDOWN_DESC);
-            mreg.register("Terminated", exec::isTerminated, IS_TERMINATED_DESC);
-            mreg.register("Terminating", exec::isTerminating, IS_TERMINATING_DESC);
-            mreg.register("RejectedExecutionHandlerClass", () -> {
-                RejectedExecutionHandler hnd = exec.getRejectedExecutionHandler();
-
-                return hnd == null ? "" : hnd.getClass().getName();
-            }, String.class, REJ_HND_DESC);
-            mreg.register("ThreadFactoryClass", () -> {
-                ThreadFactory factory = exec.getThreadFactory();
-
-                return factory == null ? "" : factory.getClass().getName();
-            }, String.class, THRD_FACTORY_DESC);
-        }
-        else {
-            mreg.longMetric("ActiveCount", ACTIVE_COUNT_DESC).value(0);
-            mreg.longMetric("CompletedTaskCount", COMPLETED_TASK_DESC).value(0);
-            mreg.longMetric("CorePoolSize", CORE_SIZE_DESC).value(0);
-            mreg.longMetric("LargestPoolSize", LARGEST_SIZE_DESC).value(0);
-            mreg.longMetric("MaximumPoolSize", MAX_SIZE_DESC).value(0);
-            mreg.longMetric("PoolSize", POOL_SIZE_DESC).value(0);
-            mreg.longMetric("TaskCount", TASK_COUNT_DESC);
-            mreg.longMetric("QueueSize", QUEUE_SIZE_DESC).value(0);
-            mreg.longMetric("KeepAliveTime", KEEP_ALIVE_TIME_DESC).value(0);
-            mreg.register("Shutdown", execSvc::isShutdown, IS_SHUTDOWN_DESC);
-            mreg.register("Terminated", execSvc::isTerminated, IS_TERMINATED_DESC);
-            mreg.longMetric("Terminating", IS_TERMINATING_DESC);
-            mreg.objectMetric("RejectedExecutionHandlerClass", String.class, REJ_HND_DESC).value("");
-            mreg.objectMetric("ThreadFactoryClass", String.class, THRD_FACTORY_DESC).value("");
-        }
-    }
-
-    /**
-     * Creates a MetricSet for an stripped executor.
-     *
-     * @param name name of the bean to register
-     * @param svc Executor.
-     */
-    private void monitorStripedPool(String name, StripedExecutor svc) {
-        MetricRegistry mreg = registry(metricName(THREAD_POOLS, name));
-
-        mreg.register("DetectStarvation",
-            svc::detectStarvation,
-            "True if possible starvation in striped pool is detected.");
-
-        mreg.register("StripesCount",
-            svc::stripesCount,
-            "Stripes count.");
-
-        mreg.register("Shutdown",
-            svc::isShutdown,
-            "True if this executor has been shut down.");
-
-        mreg.register("Terminated",
-            svc::isTerminated,
-            "True if all tasks have completed following shut down.");
-
-        mreg.register("TotalQueueSize",
-            svc::queueSize,
-            "Total queue size of all stripes.");
-
-        mreg.register("TotalCompletedTasksCount",
-            svc::completedTasks,
-            "Completed tasks count of all stripes.");
-
-        mreg.register("StripesCompletedTasksCounts",
-            svc::stripesCompletedTasks,
-            long[].class,
-            "Number of completed tasks per stripe.");
-
-        mreg.register("ActiveCount",
-            svc::activeStripesCount,
-            "Number of active tasks of all stripes.");
-
-        mreg.register("StripesActiveStatuses",
-            svc::stripesActiveStatuses,
-            boolean[].class,
-            "Number of active tasks per stripe.");
-
-        mreg.register("StripesQueueSizes",
-            svc::stripesQueueSizes,
-            int[].class,
-            "Size of queue per stripe.");
+        return (T)m;
     }
 
     /**
@@ -776,18 +569,55 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         }
     }
 
+    /** */
+    private <T extends Metric> void ensureMetricRegistered(String name, Class<T> cls) {
+        if (find(name, cls) == null)
+            throw new IgniteException("Failed to find registered metric with specified name [metricName=" + name + ']');
+    }
+
     /**
      * @return Total system memory.
      */
     private long totalSysMemory() {
         try {
-            com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean) os;
-
             return sunOs.getTotalPhysicalMemorySize();
         }
         catch (RuntimeException ignored) {
             return -1;
         }
+    }
+
+    /** @return Accessor for {@link com.sun.management.OperatingSystemMXBean}. */
+    private SunOperatingSystemMXBeanAccessor sunOperatingSystemMXBeanAccessor() {
+        try {
+            if (os instanceof com.sun.management.OperatingSystemMXBean) {
+                com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean)os;
+
+                return new SunOperatingSystemMXBeanAccessor() {
+                    @Override public long getProcessCpuTime() {
+                        return sunOs.getProcessCpuTime();
+                    }
+
+                    @Override public long getTotalPhysicalMemorySize() {
+                        return sunOs.getTotalPhysicalMemorySize();
+                    }
+                };
+            }
+        }
+        catch (@SuppressWarnings("ErrorNotRethrown") NoClassDefFoundError ignored) {
+            log.warning("The 'com.sun.management.OperatingSystemMXBean' class is not available for class loader. " +
+                "System/JVM memory and CPU statistics may be not available.");
+        }
+
+        return new SunOperatingSystemMXBeanAccessor() {
+            @Override public long getProcessCpuTime() {
+                return U.<Long>property(os, "processCpuTime");
+            }
+
+            @Override public long getTotalPhysicalMemorySize() {
+                return U.<Long>property(os, "totalPhysicalMemorySize");
+            }
+        };
     }
 
     /** */
@@ -842,8 +672,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             long cpuTime;
 
             try {
-                com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean) os;
-
                 cpuTime = sunOs.getProcessCpuTime();
             }
             catch (RuntimeException ignored) {
@@ -907,5 +735,14 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             committed.value(usage.getCommitted());
             max.value(usage.getMax());
         }
+    }
+
+    /** Accessor for {@link com.sun.management.OperatingSystemMXBean} methods. */
+    private interface SunOperatingSystemMXBeanAccessor {
+        /** @see com.sun.management.OperatingSystemMXBean#getProcessCpuTime() */
+        long getProcessCpuTime();
+
+        /** @see com.sun.management.OperatingSystemMXBean#getTotalPhysicalMemorySize() */
+        long getTotalPhysicalMemorySize();
     }
 }

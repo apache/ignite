@@ -34,13 +34,11 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -72,13 +70,6 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 6 * 60 * 1000;
-    }
-
-    /** */
-    @Before
-    public void beforeCrossCacheTxRandomOperationsTest() {
-        if (nearCacheEnabled())
-            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
     }
 
     /** {@inheritDoc} */
@@ -179,6 +170,8 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
         Ignite ignite,
         String name) {
         ignite.createCache(cacheConfiguration(name, cacheMode, writeSync, nearCache));
+
+        awaitCacheOnClient(ignite(GRID_CNT - 1), name);
     }
 
     /**
@@ -187,16 +180,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
      * @param crossCacheTx If {@code true} uses cross cache transaction.
      * @throws Exception If failed.
      */
-    private void txOperations(CacheMode cacheMode,
-        CacheWriteSynchronizationMode writeSync,
-        boolean crossCacheTx) throws Exception {
-        if (MvccFeatureChecker.forcedMvcc()) {
-            assert !nearCacheEnabled();
-
-            if (writeSync != CacheWriteSynchronizationMode.FULL_SYNC)
-                return;
-        }
-
+    private void txOperations(CacheMode cacheMode, CacheWriteSynchronizationMode writeSync, boolean crossCacheTx) throws Exception {
         Ignite ignite = ignite(0);
 
         try {
@@ -206,14 +190,12 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
             txOperations(PESSIMISTIC, REPEATABLE_READ, crossCacheTx, false);
             txOperations(PESSIMISTIC, REPEATABLE_READ, crossCacheTx, true);
 
-            if (!MvccFeatureChecker.forcedMvcc()) {
-                txOperations(OPTIMISTIC, REPEATABLE_READ, crossCacheTx, false);
-                txOperations(OPTIMISTIC, REPEATABLE_READ, crossCacheTx, true);
+            txOperations(OPTIMISTIC, REPEATABLE_READ, crossCacheTx, false);
+            txOperations(OPTIMISTIC, REPEATABLE_READ, crossCacheTx, true);
 
-                if (writeSync == FULL_SYNC) {
-                    txOperations(OPTIMISTIC, SERIALIZABLE, crossCacheTx, false);
-                    txOperations(OPTIMISTIC, SERIALIZABLE, crossCacheTx, true);
-                }
+            if (writeSync == FULL_SYNC) {
+                txOperations(OPTIMISTIC, SERIALIZABLE, crossCacheTx, false);
+                txOperations(OPTIMISTIC, SERIALIZABLE, crossCacheTx, true);
             }
         }
         finally {

@@ -29,9 +29,6 @@ git-patch-prop-local.sh
 **/dotnet/libs/
 *.classname*
 *.exe
-.mvn/
-mvnw
-mvnw.cmd
 
 #Ignore all Intellij IDEA files (except default inspections config)
 .idea/
@@ -71,12 +68,10 @@ ipch/
 [Rr]elease*/
 packages
 *.nupkg
+CMakeSettings.json
 
 #CMake temp files
 /modules/platforms/cpp/**/cmake-build**
-
-#Files related to ML manual-runnable tests
-/modules/ml/src/test/resources/manualrun/trees/columntrees.manualrun.properties
 
 #NodeJs files
 /modules/platforms/nodejs/node_modules
@@ -86,3 +81,15 @@ packages
 **/venv
 **/.pytest_cache
 **/pyignite.egg-info
+
+#Ducktape
+/results
+.ducktape
+*.pyc
+/tests/venv
+modules/ducktests/tests/docker/build/**
+modules/ducktests/tests/.tox
+modules/ducktests/tests/certs/*
+modules/ducktests/tests/ignitetest.egg-info/**
+modules/ducktests/tests/build/**
+modules/ducktests/tests/dist/**

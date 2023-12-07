@@ -128,7 +128,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             assertTrue(GRID_CNT >= grid(0).cluster().nodes().size());
 
             for (Ignite ignite : G.allGrids()) {
-                IgniteEx grid = (IgniteEx) ignite;
+                IgniteEx grid = (IgniteEx)ignite;
 
                 GridContinuousProcessor proc = grid.context().continuous();
 
@@ -1114,7 +1114,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < GRID_CNT; i++) {
                 grid(0).events().localListen(new IgnitePredicate<Event>() {
                     @Override public boolean apply(Event evt) {
-                        if (nodeId.equals(((DiscoveryEvent) evt).eventNode().id()))
+                        if (nodeId.equals(((DiscoveryEvent)evt).eventNode().id()))
                             discoLatch.countDown();
 
                         return true;
@@ -1198,7 +1198,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                 return null;
             }, 6, "consume-starter");
 
-            starterFut.listen((fut) -> stop.set(true));
+            starterFut.listen(() -> stop.set(true));
 
             IgniteInternalFuture<?> stopperFut = multithreadedAsync(() -> {
                 while (!stop.get() || !queue.isEmpty()) {

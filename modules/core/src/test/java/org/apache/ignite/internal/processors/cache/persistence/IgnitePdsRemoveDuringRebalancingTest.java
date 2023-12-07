@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -61,7 +62,6 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
                     .setMaxSize(100L * 1024 * 1024)
                     .setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY)
-            .setPageSize(1024)
             .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -94,7 +94,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
     public void testRemovesDuringRebalancing() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
             streamer.allowOverwrite(true);

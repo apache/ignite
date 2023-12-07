@@ -74,18 +74,6 @@ public interface IgniteSpiContext {
     public ClusterNode localNode();
 
     /**
-     * Gets a collection of all remote daemon nodes in topology. The daemon nodes are discovered via
-     * underlying {@link org.apache.ignite.spi.discovery.DiscoverySpi} implementation used.
-     *
-     * @return Collection of all daemon nodes.
-     * @see #localNode()
-     * @see #remoteNodes()
-     * @see #nodes()
-     * @see org.apache.ignite.spi.discovery.DiscoverySpi
-     */
-    public Collection<ClusterNode> remoteDaemonNodes();
-
-    /**
      * Gets a node instance based on its ID.
      *
      * @param nodeId ID of a node to get.
@@ -224,6 +212,8 @@ public interface IgniteSpiContext {
      *
      * @param cacheName Cache name.
      * @param key Object key.
+     * @param <K> Key type.
+     * @param <V> Value type.
      * @return Cached object.
      * @throws CacheException Thrown if any exception occurs.
      */
@@ -301,6 +291,7 @@ public interface IgniteSpiContext {
     /**
      * @param node Node.
      * @param discoData Disco data.
+     * @return Validation result or {@code null} in case of success.
      */
     @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag discoData);
 

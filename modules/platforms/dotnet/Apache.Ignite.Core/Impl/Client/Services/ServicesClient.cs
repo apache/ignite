@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Core.Impl.Client.Services
 {
     using System;
+    using System.Collections.Generic;
+    using System.Collections;
     using System.Diagnostics;
     using System.Reflection;
     using Apache.Ignite.Core.Client;
@@ -25,6 +27,8 @@ namespace Apache.Ignite.Core.Impl.Client.Services
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Services;
+    using Apache.Ignite.Core.Platform;
+    using Apache.Ignite.Core.Services;
 
     /// <summary>
     /// Services client.
@@ -84,9 +88,50 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         /** <inheritdoc /> */
         public T GetServiceProxy<T>(string serviceName) where T : class
         {
-            IgniteArgumentCheck.NotNullOrEmpty(serviceName, "name");
+            return GetServiceProxy<T>(serviceName, null);
+        }
 
-            return ServiceProxyFactory<T>.CreateProxy((method, args) => InvokeProxyMethod(serviceName, method, args));
+        /** <inheritdoc /> */
+        public T GetServiceProxy<T>(string serviceName, IServiceCallContext callCtx) where T : class
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(serviceName, "name");
+            IgniteArgumentCheck.Ensure(callCtx == null || callCtx is ServiceCallContext, "callCtx",
+                "custom implementation of " + typeof(ServiceCallContext).Name + " is not supported." +
+                " Please use " + typeof(ServiceCallContextBuilder).Name + " to create it.");
+
+            var platformType = GetServiceDescriptor(serviceName).PlatformType;
+            IDictionary callAttrs = callCtx == null ? null : ((ServiceCallContext) callCtx).Values();
+
+            return ServiceProxyFactory<T>.CreateProxy(
+                (method, args) => InvokeProxyMethod(serviceName, method, args, platformType, callAttrs)
+            );
+        }
+
+        /** <inheritdoc /> */
+        public ICollection<IClientServiceDescriptor> GetServiceDescriptors()
+        {
+            return _ignite.Socket.DoOutInOp(
+                ClientOp.ServiceGetDescriptors,
+                ctx => { },
+                ctx =>
+                {
+                    var cnt = ctx.Reader.ReadInt();
+                    var res = new List<IClientServiceDescriptor>(cnt);
+
+                    for (var i = 0; i < cnt; i++)
+                        res.Add(new ClientServiceDescriptor(ctx.Reader));
+
+                    return res;
+                });
+        }
+
+        /** <inheritdoc /> */
+        public IClientServiceDescriptor GetServiceDescriptor(string serviceName)
+        {
+            return _ignite.Socket.DoOutInOp(
+                ClientOp.ServiceGetDescriptor,
+                ctx => ctx.Writer.WriteString(serviceName),
+                ctx => new ClientServiceDescriptor(ctx.Reader));
         }
 
         /** <inheritdoc /> */
@@ -104,10 +149,10 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         /// <summary>
         /// Invokes the proxy method.
         /// </summary>
-        private object InvokeProxyMethod(string serviceName, MethodBase method, object[] args)
+        private object InvokeProxyMethod(string serviceName, MethodBase method, object[] args,
+            PlatformType platformType, IDictionary callAttrs)
         {
-            return _ignite.Socket.DoOutInOp(
-                ClientOp.ServiceInvoke,
+            return _ignite.Socket.DoOutInOp(ClientOp.ServiceInvoke,
                 ctx =>
                 {
                     var w = ctx.Writer;
@@ -138,10 +183,16 @@ namespace Apache.Ignite.Core.Impl.Client.Services
 
                     w.WriteString(method.Name);
 
-                    w.WriteInt(args.Length);
-                    foreach (var arg in args)
+                    ServiceProxySerializer.WriteMethodArguments(w, null, args, platformType);
+
+                    if (ctx.Features.HasFeature(ClientBitmaskFeature.ServiceInvokeCtx))
                     {
-                        w.WriteObjectDetached(arg);
+                        w.WriteDictionary(callAttrs);
+                    }
+                    else if (callAttrs != null)
+                    {
+                        throw new IgniteClientException(
+                            "Passing caller context to the service is not supported by the server");
                     }
                 },
                 ctx =>

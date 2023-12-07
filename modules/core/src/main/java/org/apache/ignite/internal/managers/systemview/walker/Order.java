@@ -33,5 +33,6 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface Order {
+    /** */
     public int value() default 0;
 }

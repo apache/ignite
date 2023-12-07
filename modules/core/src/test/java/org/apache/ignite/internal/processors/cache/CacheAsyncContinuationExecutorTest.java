@@ -137,7 +137,8 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
 
             try {
                 barrier.await(10, TimeUnit.SECONDS);
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 e.printStackTrace();
             }
         }, Runnable::run);
@@ -190,7 +191,8 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
 
             try {
                 barrier.await(10, TimeUnit.SECONDS);
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 e.printStackTrace();
             }
         };
@@ -239,7 +241,8 @@ public class CacheAsyncContinuationExecutorTest extends GridCacheAbstractSelfTes
                 @Override public void write(Cache.Entry entry) {
                     try {
                         Thread.sleep(100);
-                    } catch (InterruptedException e) {
+                    }
+                    catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }

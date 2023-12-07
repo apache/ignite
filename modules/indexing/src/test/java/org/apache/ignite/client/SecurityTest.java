@@ -26,6 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -51,7 +52,7 @@ import static org.junit.Assert.assertTrue;
 public class SecurityTest {
     /** Per test timeout */
     @Rule
-    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
 
     /** Ignite home. */
     private static final String IGNITE_HOME = U.getIgniteHome();
@@ -149,10 +150,12 @@ public class SecurityTest {
         testInvalidUserAuthentication(client -> {
             try {
                 client.getOrCreateCacheAsync("testAuthentication").get();
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
                 throw new RuntimeException(e);
-            } catch (ExecutionException e) {
-                throw (IgniteClientException) e.getCause();
+            }
+            catch (ExecutionException e) {
+                throw (IgniteClientException)e.getCause();
             }
         });
     }
@@ -232,7 +235,7 @@ public class SecurityTest {
             )
         );
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         for (SimpleEntry<String, String> u : users)
             createUser(u.getKey(), u.getValue());

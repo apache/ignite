@@ -72,7 +72,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * @param forcePrimary If {@code true} get will be performed on primary node even if
      *      called on backup node.
      * @param tx Transaction.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
@@ -86,7 +85,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         boolean readThrough,
         boolean forcePrimary,
         @Nullable IgniteTxLocalEx tx,
-        @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -100,7 +98,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             keys,
             readThrough,
             forcePrimary,
-            subjId,
             taskName,
             deserializeBinary,
             expiryPlc,
@@ -242,7 +239,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         false,
                         readThrough,
                         topVer,
-                        subjId,
                         taskName == null ? 0 : taskName.hashCode(),
                         expiryPlc,
                         skipVals,
@@ -273,9 +269,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 }
 
                 // Add new future.
-                add(fut.chain(f -> {
+                add(fut.chain(() -> {
                     try {
-                        return loadEntries(n.id(), mappedKeys.keySet(), f.get(), saved, topVer);
+                        return loadEntries(n.id(), mappedKeys.keySet(), fut.get(), saved, topVer);
                     }
                     catch (Exception e) {
                         U.error(log, "Failed to get values from dht cache [fut=" + fut + "]", e);
@@ -301,7 +297,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyCheckedException)
-                        miniFut.onNodeLeft((ClusterTopologyCheckedException)e);
+                        miniFut.onNodeLeft();
                     else
                         miniFut.onResult(e);
                 }
@@ -356,7 +352,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             null,
                             /*update-metrics*/true,
                             /*event*/!skipVals,
-                            subjId,
                             null,
                             taskName,
                             expiryPlc,
@@ -375,7 +370,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             /*read-through*/false,
                             /*metrics*/true,
                             /*events*/!skipVals,
-                            subjId,
                             null,
                             taskName,
                             expiryPlc,
@@ -437,10 +431,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     if (!addRdr && tx.readCommitted() && !tx.writeSet().contains(cctx.txKey(key)))
                         addRdr = true;
 
-                    LinkedHashMap<KeyCacheObject, Boolean> old = mappings.get(affNode);
-
-                    if (old == null)
-                        mappings.put(affNode, old = new LinkedHashMap<>(3, 1f));
+                    LinkedHashMap<KeyCacheObject, Boolean> old =
+                        mappings.computeIfAbsent(affNode, k -> new LinkedHashMap<>(3, 1f));
 
                     old.put(key, addRdr);
                 }
@@ -503,7 +495,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             null,
                             /*update-metrics*/false,
                             /*event*/!nearRead && !skipVals,
-                            subjId,
                             null,
                             taskName,
                             expiryPlc,
@@ -522,7 +513,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             /*read-through*/false,
                             /*update-metrics*/false,
                             /*events*/!nearRead && !skipVals,
-                            subjId,
                             null,
                             taskName,
                             expiryPlc,
@@ -589,8 +579,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             K key0 = (K)cctx.unwrapBinaryIfNeeded(key, !deserializeBinary, false, null);
             V val0 = needVer ?
                 (V)new EntryGetResult(!skipVals ?
-                    (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false, null) :
-                    (V)Boolean.TRUE, ver) :
+                    cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false, null) :
+                    Boolean.TRUE, ver) :
                 !skipVals ?
                     (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false, null) :
                     (V)Boolean.TRUE;
@@ -630,7 +620,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     ) {
         boolean empty = F.isEmpty(keys);
 
-        Map<K, V> map = empty ? Collections.<K, V>emptyMap() : new GridLeanMap<K, V>(keys.size());
+        Map<K, V> map = empty ? Collections.emptyMap() : new GridLeanMap<>(keys.size());
 
         if (!empty) {
             boolean atomic = cctx.atomic();
@@ -658,8 +648,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             info.expireTime(),
                             true,
                             !deserializeBinary,
-                            topVer,
-                            subjId);
+                            topVer);
                     }
 
                     CacheObject val = info.value();
@@ -698,12 +687,10 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     /**
      * @param keys Keys.
      * @param saved Saved entries.
-     * @param topVer Topology version.
      */
     private void releaseEvictions(
         Collection<KeyCacheObject> keys,
-        Map<KeyCacheObject, GridNearCacheEntry> saved,
-        AffinityTopologyVersion topVer
+        Map<KeyCacheObject, GridNearCacheEntry> saved
     ) {
         for (KeyCacheObject key : keys) {
             GridNearCacheEntry entry = saved.get(key);
@@ -756,7 +743,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 keys,
                 readThrough,
                 topVer,
-                subjId,
                 taskName == null ? 0 : taskName.hashCode(),
                 expiryPlc != null ? expiryPlc.forCreate() : -1L,
                 expiryPlc != null ? expiryPlc.forAccess() : -1L,
@@ -777,7 +763,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Map<K, V> res, @Nullable Throwable err) {
             if (super.onDone(res, err)) {
-                releaseEvictions(keys.keySet(), savedEntries, topVer);
+                releaseEvictions(keys.keySet(), savedEntries);
 
                 return true;
             }

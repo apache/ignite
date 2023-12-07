@@ -24,10 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,10 +32,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -47,18 +43,14 @@ import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageWriteListener;
+import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -67,49 +59,43 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
-import org.apache.ignite.internal.processors.marshaller.MappedName;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.C3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.copy;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaFile;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaIndexFile;
 
 /**
- *
+ * The requested map of cache groups and its partitions to include into snapshot represented as <tt>Map<Integer, Set<Integer>></tt>.
+ * If array of partitions is {@code null} than all OWNING partitions for given cache groups will be included into snapshot.
+ * In this case if all partitions have OWNING state the index partition also will be included.
+ * <p>
+ * If partitions for particular cache group are not provided that they will be collected and added
+ * on checkpoint under the write-lock.
  */
-class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implements CheckpointListener {
-    /** Shared context. */
-    private final GridCacheSharedContext<?, ?> cctx;
-
+class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements CheckpointListener {
     /** File page store manager for accessing cache group associated files. */
     private final FilePageStoreManager pageStore;
 
-    /** Ignite logger. */
-    private final IgniteLogger log;
-
-    /** Node id which cause snapshot operation. */
-    private final UUID srcNodeId;
-
-    /** Unique identifier of snapshot process. */
-    private final String snpName;
+    /** Local buffer to perform copy-on-write operations for {@link PageStoreSerialWriter}. */
+    private final ThreadLocal<ByteBuffer> locBuff;
 
     /** Snapshot working directory on file system. */
     private final File tmpSnpWorkDir;
-
-    /** Local buffer to perform copy-on-write operations for {@link PageStoreSerialWriter}. */
-    private final ThreadLocal<ByteBuffer> locBuff;
 
     /** IO factory which will be used for creating snapshot delta-writers. */
     private final FileIOFactory ioFactory;
@@ -135,25 +121,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
      */
     private final List<CacheConfigurationSender> ccfgSndrs = new CopyOnWriteArrayList<>();
 
-    /** Snapshot data sender. */
-    @GridToStringExclude
-    private final SnapshotSender snpSndr;
-
-    /**
-     * Requested map of cache groups and its partitions to include into snapshot. If array of partitions
-     * is {@code null} than all OWNING partitions for given cache groups will be included into snapshot.
-     * In this case if all of partitions have OWNING state the index partition also will be included.
-     * <p>
-     * If partitions for particular cache group are not provided that they will be collected and added
-     * on checkpoint under the write lock.
-     */
-    private final Map<Integer, Set<Integer>> parts;
-
     /** {@code true} if all metastorage data must be also included into snapshot. */
     private final boolean withMetaStorage;
-
-    /** Cache group and corresponding partitions collected under the checkpoint write lock. */
-    private final Map<Integer, Set<Integer>> processed = new HashMap<>();
 
     /** Checkpoint end future. */
     private final CompletableFuture<Boolean> cpEndFut = new CompletableFuture<>();
@@ -164,47 +133,37 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
     /** Absolute path to save intermediate results of cache partitions of this node. */
     private volatile File tmpConsIdDir;
 
-    /** Future which will be completed when task requested to be closed. Will be executed on system pool. */
-    private volatile CompletableFuture<Void> closeFut;
-
-    /** An exception which has been occurred during snapshot processing. */
-    private final AtomicReference<Throwable> err = new AtomicReference<>();
+    /** Pointer to {@link ClusterSnapshotRecord}. */
+    private volatile @Nullable WALPointer snpPtr;
 
     /** Flag indicates that task already scheduled on checkpoint. */
     private final AtomicBoolean started = new AtomicBoolean();
 
-    /**
-     * @param e Finished snapshot task future with particular exception.
-     */
-    public SnapshotFutureTask(IgniteCheckedException e) {
-        assert e != null : "Exception for a finished snapshot task must be not null";
+    /** Estimated snapshot size in bytes. The value may grow during snapshot creation. */
+    private final AtomicLong totalSize = new AtomicLong();
 
-        cctx = null;
-        pageStore = null;
-        log = null;
-        snpName = null;
-        srcNodeId = null;
-        tmpSnpWorkDir = null;
-        snpSndr = null;
+    /** Processed snapshot size in bytes. */
+    private final AtomicLong processedSize = new AtomicLong();
 
-        err.set(e);
-        startedFut.onDone(e);
-        onDone(e);
-        parts = null;
-        withMetaStorage = false;
-        ioFactory = null;
-        locBuff = null;
-    }
+    /** Delta writer factory. */
+    private final C3<PageStore, File, Integer, PageStoreSerialWriter> deltaWriterFactory =
+        cctx.snapshotMgr().sequentialWrite() ? IndexedPageStoreSerialWriter::new : PageStoreSerialWriter::new;
 
     /**
-     * @param snpName Unique identifier of snapshot task.
-     * @param ioFactory Factory to working with delta as file storage.
+     * @param cctx Shared context.
+     * @param srcNodeId Node id which cause snapshot task creation.
+     * @param reqId Snapshot operation request ID.
+     * @param snpName Unique identifier of snapshot process.
+     * @param tmpWorkDir Working directory for intermediate snapshot results.
+     * @param ioFactory Factory to working with snapshot files.
+     * @param snpSndr Factory which produces snapshot receiver instance.
      * @param parts Map of cache groups and its partitions to include into snapshot, if set of partitions
      * is {@code null} than all OWNING partitions for given cache groups will be included into snapshot.
      */
     public SnapshotFutureTask(
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
+        UUID reqId,
         String snpName,
         File tmpWorkDir,
         FileIOFactory ioFactory,
@@ -213,71 +172,35 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         boolean withMetaStorage,
         ThreadLocal<ByteBuffer> locBuff
     ) {
+        super(cctx, srcNodeId, reqId, snpName, snpSndr, parts);
+
         assert snpName != null : "Snapshot name cannot be empty or null.";
         assert snpSndr != null : "Snapshot sender which handles execution tasks must be not null.";
         assert snpSndr.executor() != null : "Executor service must be not null.";
         assert cctx.pageStore() instanceof FilePageStoreManager : "Snapshot task can work only with physical files.";
         assert !parts.containsKey(MetaStorage.METASTORAGE_CACHE_ID) : "The withMetaStorage must be used instead.";
 
-        this.parts = parts;
-        this.withMetaStorage = withMetaStorage;
-        this.cctx = cctx;
-        this.pageStore = (FilePageStoreManager)cctx.pageStore();
-        this.log = cctx.logger(SnapshotFutureTask.class);
-        this.snpName = snpName;
-        this.srcNodeId = srcNodeId;
         this.tmpSnpWorkDir = new File(tmpWorkDir, snpName);
-        this.snpSndr = snpSndr;
         this.ioFactory = ioFactory;
+        this.withMetaStorage = withMetaStorage;
+        this.pageStore = (FilePageStoreManager)cctx.pageStore();
         this.locBuff = locBuff;
-    }
-
-    /**
-     * @return Snapshot name.
-     */
-    public String snapshotName() {
-        return snpName;
-    }
-
-    /**
-     * @return Node id which triggers this operation.
-     */
-    public UUID sourceNodeId() {
-        return srcNodeId;
-    }
-
-    /**
-     * @return Type of snapshot operation.
-     */
-    public Class<? extends SnapshotSender> type() {
-        return snpSndr.getClass();
-    }
-
-    /**
-     * @return Set of cache groups included into snapshot operation.
-     */
-    public Set<Integer> affectedCacheGroups() {
-        return parts.keySet();
     }
 
     /**
      * @param th An exception which occurred during snapshot processing.
      */
-    public void acceptException(Throwable th) {
+    @Override public void acceptException(Throwable th) {
         if (th == null)
             return;
 
-        if (err.compareAndSet(null, th))
-            closeAsync();
+        super.acceptException(th);
 
         startedFut.onDone(th);
-
-        if (!(th instanceof IgniteFutureCancelledCheckedException))
-            U.error(log, "Snapshot task has accepted exception to stop", th);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Set<GroupPartitionId> res, @Nullable Throwable err) {
+    @Override public boolean onDone(@Nullable SnapshotFutureTaskResult res, @Nullable Throwable err) {
         for (PageStoreSerialWriter writer : partDeltaWriters.values())
             U.closeQuiet(writer);
 
@@ -312,18 +235,11 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
     }
 
     /**
-     * @return {@code true} if current task requested to be stopped.
-     */
-    private boolean stopping() {
-        return err.get() != null;
-    }
-
-    /**
      * Initiates snapshot task.
      *
      * @return {@code true} if task started by this call.
      */
-    public boolean start() {
+    @Override public boolean start() {
         if (stopping())
             return false;
 
@@ -344,9 +260,6 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                 if (!CU.isPersistentCache(gctx.config(), cctx.kernalContext().config().getDataStorageConfiguration()))
                     throw new IgniteCheckedException("In-memory cache groups are not allowed to be snapshot: " + grpId);
 
-                if (gctx.config().isEncryptionEnabled())
-                    throw new IgniteCheckedException("Encrypted cache groups are not allowed to be snapshot: " + grpId);
-
                 // Create cache group snapshot directory on start in a single thread.
                 U.ensureDirectory(cacheWorkDir(tmpConsIdDir, FilePageStoreManager.cacheDirName(gctx.config())),
                     "directory for snapshotting cache group",
@@ -359,7 +272,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                     log);
             }
 
-            startedFut.listen(f ->
+            startedFut.listen(() ->
                 ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(this)
             );
 
@@ -394,7 +307,14 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
 
         if (withMetaStorage) {
             try {
+                long start = U.currentTimeMillis();
+
                 U.get(((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage()).flush());
+
+                if (log.isInfoEnabled()) {
+                    log.info("Finished waiting for all the concurrent operations over the metadata store before snapshot " +
+                        "[snpName=" + snpName + ", time=" + (U.currentTimeMillis() - start) + "ms]");
+                }
             }
             catch (IgniteCheckedException ignore) {
                 // Flushing may be cancelled or interrupted due to the local node stopping.
@@ -409,66 +329,16 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
             return;
 
         try {
-            for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
-                int grpId = e.getKey();
-                Set<Integer> grpParts = e.getValue();
+            // Here we have the following warranties:
+            // 1. Checkpoint holds write acquire lock and Snapshot holds PME. Then there are not any concurrent updates.
+            // 2. This record is written before the related CheckpointRecord, and is flushed with CheckpointRecord or instead it.
+            if (cctx.wal() != null) {
+                snpPtr = cctx.wal().log(new ClusterSnapshotRecord(snpName));
 
-                CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
-
-                Iterator<GridDhtLocalPartition> iter;
-
-                if (grpParts == null)
-                    iter = gctx.topology().currentLocalPartitions().iterator();
-                else {
-                    if (grpParts.contains(INDEX_PARTITION)) {
-                        throw new IgniteCheckedException("Index partition cannot be included into snapshot if " +
-                            " set of cache group partitions has been explicitly provided [grpId=" + grpId + ']');
-                    }
-
-                    iter = F.iterator(grpParts, gctx.topology()::localPartition, false);
-                }
-
-                Set<Integer> owning = new HashSet<>();
-                Set<Integer> missed = new HashSet<>();
-
-                // Iterate over partitions in particular cache group.
-                while (iter.hasNext()) {
-                    GridDhtLocalPartition part = iter.next();
-
-                    // Partition can be in MOVING\RENTING states.
-                    // Index partition will be excluded if not all partition OWNING.
-                    // There is no data assigned to partition, thus it haven't been created yet.
-                    if (part.state() == GridDhtPartitionState.OWNING)
-                        owning.add(part.id());
-                    else
-                        missed.add(part.id());
-                }
-
-                boolean affNode = gctx.nodeFilter() == null || gctx.nodeFilter().apply(cctx.localNode());
-
-                if (grpParts != null) {
-                    // Partition has been provided for cache group, but some of them are not in OWNING state.
-                    // Exit with an error.
-                    if (!missed.isEmpty()) {
-                        throw new IgniteCheckedException("Snapshot operation cancelled due to " +
-                            "not all of requested partitions has OWNING state on local node [grpId=" + grpId +
-                            ", missed" + missed + ']');
-                    }
-                }
-                else {
-                    // Partitions has not been provided for snapshot task and all partitions have
-                    // OWNING state, so index partition must be included into snapshot.
-                    if (!missed.isEmpty()) {
-                        log.warning("All local cache group partitions in OWNING state have been included into a snapshot. " +
-                            "Partitions which have different states skipped. Index partitions has also been skipped " +
-                            "[snpName=" + snpName + ", grpId=" + grpId + ", missed=" + missed + ']');
-                    }
-                    else if (affNode && missed.isEmpty() && cctx.kernalContext().query().moduleEnabled())
-                        owning.add(INDEX_PARTITION);
-                }
-
-                processed.put(grpId, owning);
+                ctx.walFlush(true);
             }
+
+            processPartitions();
 
             List<CacheConfiguration<?, ?>> ccfgs = new ArrayList<>();
 
@@ -491,7 +361,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                     MetaStorage.METASTORAGE_DIR_NAME);
             }
 
-            pageStore.readConfigurationFiles(ccfgs,
+            cctx.cache().configManager().readConfigurationFiles(ccfgs,
                 (ccfg, ccfgFile) -> ccfgSndrs.add(new CacheConfigurationSender(ccfg.getName(),
                     FilePageStoreManager.cacheDirName(ccfg), ccfgFile)));
         }
@@ -515,97 +385,81 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         if (!startedFut.onDone())
             return;
 
-        // Submit all tasks for partitions and deltas processing.
-        List<CompletableFuture<Void>> futs = new ArrayList<>();
+        if (log.isInfoEnabled()) {
+            log.info("Submit partition processing tasks to the snapshot execution pool " +
+                "[map=" + groupByGroupId(partFileLengths.keySet()) +
+                ", totalSize=" + U.humanReadableByteCount(partFileLengths.values().stream().mapToLong(v -> v).sum()) + ']');
+        }
 
-        if (log.isInfoEnabled())
-            log.info("Submit partition processing tasks with partition allocated lengths: " + partFileLengths);
+        saveSnapshotData();
+    }
 
-        Collection<BinaryType> binTypesCopy = cctx.kernalContext()
-            .cacheObjects()
-            .metadata(Collections.emptyList())
-            .values();
+    /** {@inheritDoc} */
+    @Override protected List<CompletableFuture<Void>> saveGroup(int grpId, Set<Integer> grpParts) throws IgniteCheckedException {
+        String cacheDirName = pageStore.cacheDirName(grpId);
 
-        // Process binary meta.
-        futs.add(CompletableFuture.runAsync(
-            wrapExceptionIfStarted(() -> snpSndr.sendBinaryMeta(binTypesCopy)),
-            snpSndr.executor()));
+        // Process partitions for a particular cache group.
+        return grpParts.stream().map(partId -> {
+            GroupPartitionId pair = new GroupPartitionId(grpId, partId);
 
-        List<Map<Integer, MappedName>> mappingsCopy = cctx.kernalContext()
-            .marshallerContext()
-            .getCachedMappings();
+            Long partLen = partFileLengths.get(pair);
 
-        // Process marshaller meta.
-        futs.add(CompletableFuture.runAsync(
-            wrapExceptionIfStarted(() -> snpSndr.sendMarshallerMeta(mappingsCopy)),
-            snpSndr.executor()));
+            totalSize.addAndGet(partLen);
 
-        // Send configuration files of all cache groups.
-        for (CacheConfigurationSender ccfgSndr : ccfgSndrs)
-            futs.add(CompletableFuture.runAsync(wrapExceptionIfStarted(ccfgSndr::sendCacheConfig), snpSndr.executor()));
+            return runAsync(() -> {
+                snpSndr.sendPart(
+                    getPartitionFile(pageStore.workDir(), cacheDirName, partId),
+                    cacheDirName,
+                    pair,
+                    partLen);
 
-        try {
-            for (Map.Entry<Integer, Set<Integer>> e : processed.entrySet()) {
-                int grpId = e.getKey();
-                String cacheDirName = pageStore.cacheDirName(grpId);
+                // Stop partition writer.
+                partDeltaWriters.get(pair).markPartitionProcessed();
 
-                // Process partitions for a particular cache group.
-                for (int partId : e.getValue()) {
-                    GroupPartitionId pair = new GroupPartitionId(grpId, partId);
+                processedSize.addAndGet(partLen);
 
-                    Long partLen = partFileLengths.get(pair);
+                // Wait for the completion of both futures - checkpoint end, copy partition.
+            }).runAfterBothAsync(cpEndFut, wrapExceptionIfStarted(() -> {
+                PageStoreSerialWriter writer = partDeltaWriters.get(pair);
 
-                    CompletableFuture<Void> fut0 = CompletableFuture.runAsync(
-                        wrapExceptionIfStarted(() -> {
-                            snpSndr.sendPart(
-                                getPartitionFile(pageStore.workDir(), cacheDirName, partId),
-                                cacheDirName,
-                                pair,
-                                partLen);
+                writer.close();
 
-                            // Stop partition writer.
-                            partDeltaWriters.get(pair).markPartitionProcessed();
-                        }),
-                        snpSndr.executor())
-                        // Wait for the completion of both futures - checkpoint end, copy partition.
-                        .runAfterBothAsync(cpEndFut,
-                            wrapExceptionIfStarted(() -> {
-                                File delta = partDeltaWriters.get(pair).deltaFile;
+                File delta = writer.deltaFile;
 
-                                try {
-                                    // Atomically creates a new, empty delta file if and only if
-                                    // a file with this name does not yet exist.
-                                    delta.createNewFile();
-                                }
-                                catch (IOException ex) {
-                                    throw new IgniteCheckedException(ex);
-                                }
-
-                                snpSndr.sendDelta(delta, cacheDirName, pair);
-
-                                boolean deleted = delta.delete();
-
-                                assert deleted;
-                            }),
-                            snpSndr.executor());
-
-                    futs.add(fut0);
+                try {
+                    // Atomically creates a new, empty delta file if and only if
+                    // a file with this name does not yet exist.
+                    delta.createNewFile();
                 }
-            }
+                catch (IOException ex) {
+                    throw new IgniteCheckedException(ex);
+                }
 
-            int futsSize = futs.size();
+                snpSndr.sendDelta(delta, cacheDirName, pair);
 
-            CompletableFuture.allOf(futs.toArray(new CompletableFuture[futsSize]))
-                .whenComplete((res, t) -> {
-                    assert t == null : "Exception must never be thrown since a wrapper is used " +
-                        "for each snapshot task: " + t;
+                processedSize.addAndGet(delta.length());
 
-                    closeAsync();
-                });
-        }
-        catch (IgniteCheckedException e) {
-            acceptException(e);
-        }
+                boolean deleted = delta.delete();
+
+                assert deleted;
+
+                File deltaIdx = partDeltaIndexFile(delta);
+
+                if (deltaIdx.exists()) {
+                    deleted = deltaIdx.delete();
+
+                    assert deleted;
+                }
+            }), snpSndr.executor());
+        }).collect(Collectors.toList());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected List<CompletableFuture<Void>> saveCacheConfigs() {
+        // Send configuration files of all cache groups.
+        return ccfgSndrs.stream()
+            .map(ccfgSndr -> runAsync(ccfgSndr::sendCacheConfig))
+            .collect(Collectors.toList());
     }
 
     /**
@@ -614,42 +468,23 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
      * @param dirName Directory name to init.
      * @throws IgniteCheckedException If fails.
      */
-    private void addPartitionWriters(int grpId, Set<Integer> parts, String dirName) throws IgniteCheckedException {
+    void addPartitionWriters(int grpId, Set<Integer> parts, String dirName) throws IgniteCheckedException {
+        Integer encGrpId = cctx.cache().isEncrypted(grpId) ? grpId : null;
+
         for (int partId : parts) {
             GroupPartitionId pair = new GroupPartitionId(grpId, partId);
 
             PageStore store = pageStore.getStore(grpId, partId);
+            File delta = partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId);
 
-            partDeltaWriters.put(pair,
-                new PageStoreSerialWriter(store,
-                    partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId)));
+            partDeltaWriters.put(pair, deltaWriterFactory.apply(store, delta, encGrpId));
 
             partFileLengths.put(pair, store.size());
         }
     }
 
-    /**
-     * @param exec Runnable task to execute.
-     * @return Wrapped task.
-     */
-    private Runnable wrapExceptionIfStarted(IgniteThrowableRunner exec) {
-        return () -> {
-            if (stopping())
-                return;
-
-            try {
-                exec.run();
-            }
-            catch (Throwable t) {
-                acceptException(t);
-            }
-        };
-    }
-
-    /**
-     * @return Future which will be completed when operations truly stopped.
-     */
-    public synchronized CompletableFuture<Void> closeAsync() {
+    /** {@inheritDoc} */
+    @Override public synchronized CompletableFuture<Void> closeAsync() {
         if (closeFut == null) {
             Throwable err0 = err.get();
 
@@ -659,28 +494,36 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
 
-            closeFut = CompletableFuture.runAsync(() -> onDone(taken, err0),
-                cctx.kernalContext().getSystemExecutorService());
+            closeFut = CompletableFuture.runAsync(() -> onDone(new SnapshotFutureTaskResult(taken, snpPtr), err0),
+                cctx.kernalContext().pools().getSystemExecutorService());
         }
 
         return closeFut;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean cancel() {
-        acceptException(new IgniteFutureCancelledCheckedException("Snapshot operation has been cancelled " +
-            "by external process [snpName=" + snpName + ']'));
+    /** @return Estimated snapshot size in bytes. The value may grow during snapshot creation. */
+    public long totalSize() {
+        return totalSize.get();
+    }
 
-        try {
-            closeAsync().get();
-        }
-        catch (InterruptedException | ExecutionException e) {
-            U.error(log, "SnapshotFutureTask cancellation failed", e);
+    /** @return Processed snapshot size in bytes. */
+    public long processedSize() {
+        return processedSize.get();
+    }
 
-            return false;
-        }
-
-        return true;
+    /**
+     * @param grps List of processing pairs.
+     *
+     * @return Map with cache group id's associated to corresponding partitions.
+     */
+    private static Map<Integer, String> groupByGroupId(Collection<GroupPartitionId> grps) {
+        return grps.stream()
+            .collect(Collectors.groupingBy(GroupPartitionId::getGroupId,
+                Collectors.mapping(GroupPartitionId::getPartitionId,
+                    Collectors.toSet())))
+            .entrySet()
+            .stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> S.toStringSortedDistinct(e.getValue())));
     }
 
     /** {@inheritDoc} */
@@ -703,7 +546,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SnapshotFutureTask.class, this);
+        return S.toString(SnapshotFutureTask.class, this, super.toString());
     }
 
     /** */
@@ -738,7 +581,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
             this.cacheDirName = cacheDirName;
             this.ccfgFile = ccfgFile;
 
-            pageStore.addConfigurationChangeListener(this);
+            cctx.cache().configManager().addConfigurationChangeListener(this);
         }
 
         /**
@@ -800,7 +643,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         /** Close writer and remove listener. */
         private void close0() {
             sent = true;
-            pageStore.removeConfigurationChangeListener(this);
+            cctx.cache().configManager().removeConfigurationChangeListener(this);
 
             if (fromTemp)
                 U.delete(ccfgFile);
@@ -823,10 +666,13 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
     private class PageStoreSerialWriter implements PageWriteListener, Closeable {
         /** Page store to which current writer is related to. */
         @GridToStringExclude
-        private final PageStore store;
+        protected final PageStore store;
 
         /** Partition delta file to store delta pages into. */
-        private final File deltaFile;
+        protected final File deltaFile;
+
+        /** Id of encrypted cache group. If {@code null}, no encrypted IO is used. */
+        private final Integer encryptedGrpId;
 
         /** Busy lock to protect write operations. */
         private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -852,8 +698,9 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         /**
          * @param store Partition page store.
          * @param deltaFile Destination file to write pages to.
+         * @param encryptedGrpId Id of encrypted cache group. If {@code null}, no encrypted IO is used.
          */
-        public PageStoreSerialWriter(PageStore store, File deltaFile) {
+        public PageStoreSerialWriter(PageStore store, File deltaFile, @Nullable Integer encryptedGrpId) {
             assert store != null;
             assert cctx.database().checkpointLockIsHeldByThread();
 
@@ -863,6 +710,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
             // This guarantee us that no pages will be modified and it's safe to init pages
             // list which needs to be processed.
             writtenPages = new AtomicBitSet(store.pages());
+            this.encryptedGrpId = encryptedGrpId;
 
             store.addWriteListener(this);
         }
@@ -888,6 +736,12 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
             }
         }
 
+        /** */
+        protected void init() throws IOException {
+            deltaFileIo = (encryptedGrpId == null ? ioFactory :
+                pageStore.encryptedFileIoFactory(ioFactory, encryptedGrpId)).create(deltaFile);
+        }
+
         /** {@inheritDoc} */
         @Override public void accept(long pageId, ByteBuffer buf) {
             assert buf.position() == 0 : buf.position();
@@ -901,7 +755,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                         return;
 
                     if (deltaFileIo == null)
-                        deltaFileIo = ioFactory.create(deltaFile);
+                        init();
                 }
                 catch (IOException e) {
                     acceptException(e);
@@ -935,12 +789,27 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                     if (!store.read(pageId, locBuf, true))
                         return;
 
-                    locBuf.flip();
+                    locBuf.clear();
 
                     writePage0(pageId, locBuf);
                 }
                 else {
                     // Direct buffer is needs to be written, associated checkpoint not finished yet.
+                    if (PageIO.getCompressionType(GridUnsafe.bufferAddress(buf)) != CompressionProcessor.UNCOMPRESSED_PAGE) {
+                        final ByteBuffer locBuf = locBuff.get();
+
+                        assert locBuf.capacity() == store.getPageSize();
+
+                        locBuf.clear();
+
+                        GridUnsafe.copyOffheapOffheap(GridUnsafe.bufferAddress(buf), GridUnsafe.bufferAddress(locBuf), buf.limit());
+
+                        locBuf.limit(locBuf.capacity());
+                        locBuf.position(0);
+
+                        buf = locBuf;
+                    }
+
                     writePage0(pageId, buf);
 
                     // Page marked as written to delta file, so there is no need to
@@ -963,7 +832,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
          * @param pageBuf Page buffer to write.
          * @throws IOException If page writing failed (IO error occurred).
          */
-        private void writePage0(long pageId, ByteBuffer pageBuf) throws IOException {
+        protected synchronized void writePage0(long pageId, ByteBuffer pageBuf) throws IOException {
             assert deltaFileIo != null : "Delta pages storage is not inited: " + this;
             assert pageBuf.position() == 0;
             assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
@@ -980,7 +849,11 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
             }
 
             // Write buffer to the end of the file.
-            deltaFileIo.writeFully(pageBuf);
+            int len = deltaFileIo.writeFully(pageBuf);
+
+            assert len == pageBuf.capacity();
+
+            totalSize.addAndGet(len);
         }
 
         /** {@inheritDoc} */
@@ -1002,6 +875,69 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(PageStoreSerialWriter.class, this);
+        }
+    }
+
+    /** @see IgniteSnapshotManager.DeltaSortedIterator */
+    private class IndexedPageStoreSerialWriter extends PageStoreSerialWriter {
+        /** Delta index file IO. */
+        @GridToStringExclude
+        private volatile FileIO idxIo;
+
+        /** Buffer of page indexes written to the delta. */
+        private volatile ByteBuffer pageIdxs;
+
+        /** */
+        public IndexedPageStoreSerialWriter(PageStore store, File deltaFile, @Nullable Integer encryptedGrpId) {
+            super(store, deltaFile, encryptedGrpId);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void init() throws IOException {
+            super.init();
+
+            idxIo = ioFactory.create(partDeltaIndexFile(deltaFile));
+
+            pageIdxs = ByteBuffer.allocate(store.getPageSize()).order(ByteOrder.nativeOrder());
+
+            assert pageIdxs.capacity() % 4 == 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected synchronized void writePage0(long pageId, ByteBuffer pageBuf) throws IOException {
+            super.writePage0(pageId, pageBuf);
+
+            pageIdxs.putInt(PageIdUtils.pageIndex(pageId));
+
+            if (!pageIdxs.hasRemaining())
+                flush();
+        }
+
+        /** Flush buffer with page indexes to the file. */
+        private void flush() throws IOException {
+            pageIdxs.flip();
+
+            idxIo.writeFully(pageIdxs);
+
+            pageIdxs.clear();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            super.close();
+
+            try {
+                if (idxIo != null)
+                    flush();
+            }
+            catch (IOException e) {
+                acceptException(new IgniteCheckedException("Error during writing page indexes to delta " +
+                    "partition index file [writer=" + this + ']', e));
+            }
+
+            U.closeQuiet(idxIo);
+
+            idxIo = null;
         }
     }
 

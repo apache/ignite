@@ -248,6 +248,13 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
                 try
                 {
                     _nativeQry.InLongOutLong(0, 0);
+
+                    var cur = _nativeInitialQueryCursor;
+
+                    if (cur != null)
+                    {
+                        cur.Dispose();
+                    }
                 }
                 finally
                 {

@@ -405,7 +405,8 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
             assertTrue(LATCH.await(10, TimeUnit.SECONDS));
 
-        } finally {
+        }
+        finally {
             ignite.message().stopRemoteListen(opId);
         }
 

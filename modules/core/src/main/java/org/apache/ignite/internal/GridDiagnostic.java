@@ -22,6 +22,7 @@ import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -34,6 +35,9 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 final class GridDiagnostic {
     /** */
     private static final int REACH_TIMEOUT = 2000;
+
+    /** Check local host reachability and print warning only once per JVM instance. */
+    private static final AtomicBoolean locHostChecked = new AtomicBoolean();
 
     /**
      * Ensure singleton.
@@ -59,7 +63,7 @@ final class GridDiagnostic {
                     try {
                         InetAddress locHost = U.getLocalHost();
 
-                        if (!locHost.isReachable(REACH_TIMEOUT)) {
+                        if (locHostChecked.compareAndSet(false, true) && !locHost.isReachable(REACH_TIMEOUT)) {
                             U.warn(log, "Default local host is unreachable. This may lead to delays on " +
                                 "grid network operations. Check your OS network setting to correct it.");
                         }

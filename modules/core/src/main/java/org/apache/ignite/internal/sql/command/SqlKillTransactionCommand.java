@@ -33,6 +33,20 @@ public class SqlKillTransactionCommand implements SqlCommand {
     /** Transaction xid. */
     private String xid;
 
+    /**
+     * Default constructor.
+     */
+    public SqlKillTransactionCommand() {
+        // No-op.
+    }
+
+    /**
+     * @param xid Transaction id.
+     */
+    public SqlKillTransactionCommand(String xid) {
+        this.xid = xid;
+    }
+
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
         if (lex.shift()) {

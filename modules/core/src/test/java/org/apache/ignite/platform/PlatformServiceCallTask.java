@@ -49,6 +49,8 @@ public class PlatformServiceCallTask extends AbstractPlatformServiceCallTask {
             checkUuidProp(srv);
             checkObjectProp(srv);
             checkErrorMethod(srv);
+            checkContextAttribute(srv);
+            checkInterceptedMethod(srv);
         }
 
         /** */
@@ -78,6 +80,18 @@ public class PlatformServiceCallTask extends AbstractPlatformServiceCallTask {
                 .getCause();
 
             assertTrue(nativeEx.toString().contains("Failed method"));
+        }
+
+        /** */
+        protected void checkContextAttribute(TestPlatformService srv) {
+            assertEquals("value", srv.contextAttribute("attr"));
+        }
+
+        /** */
+        protected void checkInterceptedMethod(TestPlatformService srv) {
+            int val = 2;
+
+            assertEquals(val * val, srv.intercepted(val));
         }
     }
 }

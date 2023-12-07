@@ -88,7 +88,7 @@ namespace ignite
                          *
                          * @throw IgniteError class instance in case of failure.
                          */
-                        bool HasNext()
+                        bool HasNext() const
                         {
                             return !endReached;
                         }
@@ -147,8 +147,8 @@ namespace ignite
                          */
                         void Update()
                         {
-                            SqlFieldsCursorGetPageRequest req(id);
-                            SqlFieldsCursorGetPageResponse rsp;
+                            QueryCursorGetPageRequest<MessageType::QUERY_SQL_FIELDS_CURSOR_GET_PAGE> req(id);
+                            QueryCursorGetPageResponse rsp;
 
                             DataChannel* channel0 = channel.Get();
 

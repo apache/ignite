@@ -140,7 +140,8 @@ public class DelayedOwningDuringExchangeTest extends GridCommonAbstractTest {
 
                     try {
                         assertTrue(U.await(l2, 30_000, TimeUnit.MILLISECONDS));
-                    } catch (IgniteInterruptedCheckedException e) {
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
                         fail(X.getFullStackTrace(e));
                     }
                 }

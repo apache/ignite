@@ -25,6 +25,7 @@
 #include "ignite/ignition.h"
 #include "ignite/cache/cache.h"
 #include "ignite/test_utils.h"
+#include "ignite/test_type.h"
 
 using namespace ignite;
 using namespace ignite::cache;
@@ -133,8 +134,9 @@ public:
      * @param key Key.
      * @param oldVal Old value.
      * @param val Current value.
+     * @param eType Evenet type.
      */
-    void CheckNextEvent(const K& key, boost::optional<V> oldVal, boost::optional<V> val)
+    void CheckNextEvent(const K& key, boost::optional<V> oldVal, boost::optional<V> val, CacheEntryEventType::T eType)
     {
         CacheEntryEvent<K, V> event;
         bool success = eventQueue.Pull(event, boost::chrono::seconds(1));
@@ -144,12 +146,13 @@ public:
         BOOST_CHECK_EQUAL(event.GetKey(), key);
         BOOST_CHECK_EQUAL(event.HasOldValue(), oldVal.is_initialized());
         BOOST_CHECK_EQUAL(event.HasValue(), val.is_initialized());
+        BOOST_CHECK_EQUAL(event.GetEventType(), eType);
 
         if (oldVal && event.HasOldValue())
-            BOOST_CHECK_EQUAL(event.GetOldValue().value, oldVal->value);
+            BOOST_CHECK_EQUAL(event.GetOldValue(), *oldVal);
 
         if (val && event.HasValue())
-            BOOST_CHECK_EQUAL(event.GetValue().value, val->value);
+            BOOST_CHECK_EQUAL(event.GetValue(), *val);
     }
 
     /*
@@ -247,6 +250,14 @@ struct TestEntry
         // No-op.
     }
 
+    /**
+     * Converting to int32_t.
+     */
+    operator int32_t() const
+    {
+        return value;
+    }
+
     /* Value */
     int32_t value;
 };
@@ -334,16 +345,16 @@ struct ContinuousQueryTestSuiteFixture
 void CheckEvents(Cache<int, TestEntry>& cache, Listener<int, TestEntry>& lsnr)
 {
     cache.Put(1, TestEntry(10));
-    lsnr.CheckNextEvent(1, boost::none, TestEntry(10));
+    lsnr.CheckNextEvent(1, boost::none, TestEntry(10), CacheEntryEventType::CREATE);
 
     cache.Put(1, TestEntry(20));
-    lsnr.CheckNextEvent(1, TestEntry(10), TestEntry(20));
+    lsnr.CheckNextEvent(1, TestEntry(10), TestEntry(20), CacheEntryEventType::UPDATE);
 
     cache.Put(2, TestEntry(20));
-    lsnr.CheckNextEvent(2, boost::none, TestEntry(20));
+    lsnr.CheckNextEvent(2, boost::none, TestEntry(20), CacheEntryEventType::CREATE);
 
     cache.Remove(1);
-    lsnr.CheckNextEvent(1, TestEntry(20), TestEntry(20));
+    lsnr.CheckNextEvent(1, TestEntry(20), TestEntry(20), CacheEntryEventType::REMOVE);
 }
 
 IGNITE_EXPORTED_CALL void IgniteModuleInit0(ignite::IgniteBindingContext& context)
@@ -684,14 +695,14 @@ BOOST_AUTO_TEST_CASE(TestFilterSingleNode)
     cache.Put(150, TestEntry(1502));
     cache.Remove(150);
 
-    lsnr.CheckNextEvent(100, boost::none, TestEntry(1000));
-    lsnr.CheckNextEvent(101, boost::none, TestEntry(1010));
+    lsnr.CheckNextEvent(100, boost::none, TestEntry(1000), CacheEntryEventType::CREATE);
+    lsnr.CheckNextEvent(101, boost::none, TestEntry(1010), CacheEntryEventType::CREATE);
 
-    lsnr.CheckNextEvent(142, boost::none, TestEntry(1420));
-    lsnr.CheckNextEvent(142, TestEntry(1420), TestEntry(1421));
-    lsnr.CheckNextEvent(142, TestEntry(1421), TestEntry(1421));
+    lsnr.CheckNextEvent(142, boost::none, TestEntry(1420), CacheEntryEventType::CREATE);
+    lsnr.CheckNextEvent(142, TestEntry(1420), TestEntry(1421), CacheEntryEventType::UPDATE);
+    lsnr.CheckNextEvent(142, TestEntry(1421), TestEntry(1421), CacheEntryEventType::REMOVE);
 
-    lsnr.CheckNextEvent(149, boost::none, TestEntry(1490));
+    lsnr.CheckNextEvent(149, boost::none, TestEntry(1490), CacheEntryEventType::CREATE);
 }
 
 BOOST_AUTO_TEST_CASE(TestFilterMultipleNodes)
@@ -734,14 +745,104 @@ BOOST_AUTO_TEST_CASE(TestFilterMultipleNodes)
     for (int i = 200; i < 250; ++i)
         cache2.Put(i, TestEntry(i * 10));
 
-    lsnr.CheckNextEvent(100, boost::none, TestEntry(1000));
-    lsnr.CheckNextEvent(101, boost::none, TestEntry(1010));
+    lsnr.CheckNextEvent(100, boost::none, TestEntry(1000), CacheEntryEventType::CREATE);
+    lsnr.CheckNextEvent(101, boost::none, TestEntry(1010), CacheEntryEventType::CREATE);
 
-    lsnr.CheckNextEvent(142, boost::none, TestEntry(1420));
-    lsnr.CheckNextEvent(142, TestEntry(1420), TestEntry(1421));
-    lsnr.CheckNextEvent(142, TestEntry(1421), TestEntry(1421));
+    lsnr.CheckNextEvent(142, boost::none, TestEntry(1420), CacheEntryEventType::CREATE);
+    lsnr.CheckNextEvent(142, TestEntry(1420), TestEntry(1421), CacheEntryEventType::UPDATE);
+    lsnr.CheckNextEvent(142, TestEntry(1421), TestEntry(1421), CacheEntryEventType::REMOVE);
 
-    lsnr.CheckNextEvent(149, boost::none, TestEntry(1490));
+    lsnr.CheckNextEvent(149, boost::none, TestEntry(1490), CacheEntryEventType::CREATE);
+}
+
+BOOST_AUTO_TEST_CASE(TestJavaFilterFactory)
+{
+    Cache<int, std::string> cacheStr = node.GetCache<int, std::string>("transactional_no_backup");
+
+    Listener<int, std::string> lsnr;
+
+    JavaCacheEntryEventFilter filter("org.apache.ignite.platform.PlatformCacheEntryEventFilterFactory");
+    filter.SetProperty<std::string>("startsWith", "valid");
+
+    ContinuousQuery<int, std::string> qry(MakeReference(lsnr), filter);
+    ContinuousQueryHandle<int, std::string> handle = cacheStr.QueryContinuous(qry);
+
+    cacheStr.Put(1, "notValid");
+    cacheStr.Put(2, "validValue");
+    cacheStr.Put(3, "alsoNotValid");
+    cacheStr.Put(3, "validReplacement");
+
+    cacheStr.Remove(2);
+    cacheStr.Remove(1);
+    cacheStr.Remove(3);
+
+    lsnr.CheckNextEvent(2, boost::none, std::string("validValue"), CacheEntryEventType::CREATE);
+    lsnr.CheckNextEvent(3, std::string("alsoNotValid"), std::string("validReplacement"), CacheEntryEventType::UPDATE);
+
+    lsnr.CheckNextEvent(2, std::string("validValue"), std::string("validValue"), CacheEntryEventType::REMOVE);
+    lsnr.CheckNextEvent(3, std::string("validReplacement"), std::string("validReplacement"), CacheEntryEventType::REMOVE);
+}
+
+BOOST_AUTO_TEST_CASE(TestJavaFilter)
+{
+    Cache<int, std::string> cacheStr = node.GetCache<int, std::string>("transactional_no_backup");
+
+    Listener<int, std::string> lsnr;
+
+    JavaCacheEntryEventFilter filter("org.apache.ignite.platform.PlatformCacheEntryEventFilter");
+    filter.SetProperty<std::string>("startsWith", "valid");
+    filter.SetProperty<uint16_t>("charField", static_cast<uint16_t>('a'));
+    filter.SetProperty<int8_t>("byteField", 1);
+    filter.SetProperty<int16_t>("shortField", 3);
+    filter.SetProperty<int32_t>("intField", 5);
+    filter.SetProperty<int64_t>("longField", 7);
+    filter.SetProperty<float>("floatField", 9.99f);
+    filter.SetProperty<double>("doubleField", 10.123);
+    filter.SetProperty<bool>("boolField", true);
+    filter.SetProperty<ignite::Guid>("guidField", ignite::Guid(0x1c579241509d47c6, 0xa1a087462ae31e59));
+
+    TestType objField;
+    objField.i32Field = 1;
+    objField.strField = "2";
+    filter.SetProperty("objField", objField);
+
+    std::vector<uint16_t> charArr;
+    charArr.push_back(static_cast<uint16_t>('a'));
+    filter.SetProperty("charArr", charArr);
+
+    std::vector<int8_t> byteArr;
+    charArr.push_back(1);
+    filter.SetProperty("byteArr", byteArr);
+
+    std::vector<int16_t> shortArr;
+    charArr.push_back(3);
+    filter.SetProperty("shortArr", shortArr);
+
+    std::vector<int32_t> intArr;
+    charArr.push_back(5);
+    filter.SetProperty("intArr", intArr);
+
+    std::vector<int64_t> longArr;
+    charArr.push_back(7);
+    filter.SetProperty("longArr", longArr);
+
+    ContinuousQuery<int, std::string> qry(MakeReference(lsnr), filter);
+    ContinuousQueryHandle<int, std::string> handle = cacheStr.QueryContinuous(qry);
+
+    cacheStr.Put(1, "notValid");
+    cacheStr.Put(2, "validValue");
+    cacheStr.Put(3, "alsoNotValid");
+    cacheStr.Put(3, "validReplacement");
+
+    cacheStr.Remove(2);
+    cacheStr.Remove(1);
+    cacheStr.Remove(3);
+
+    lsnr.CheckNextEvent(2, boost::none, std::string("validValue"), CacheEntryEventType::CREATE);
+    lsnr.CheckNextEvent(3, std::string("alsoNotValid"), std::string("validReplacement"), CacheEntryEventType::UPDATE);
+
+    lsnr.CheckNextEvent(2, std::string("validValue"), std::string("validValue"), CacheEntryEventType::REMOVE);
+    lsnr.CheckNextEvent(3, std::string("validReplacement"), std::string("validReplacement"), CacheEntryEventType::REMOVE);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

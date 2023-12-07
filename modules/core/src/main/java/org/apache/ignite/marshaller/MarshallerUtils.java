@@ -125,6 +125,7 @@ public class MarshallerUtils {
     /**
      * Returns class name filter for marshaller.
      *
+     * @param clsLdr Class loader.
      * @return Class name filter for marshaller.
      */
     public static IgnitePredicate<String> classNameFilter(ClassLoader clsLdr) throws IgniteCheckedException {

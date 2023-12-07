@@ -44,7 +44,7 @@ public class PlatformTestPluginProvider extends AbstractTestPluginProvider {
     /** {@inheritDoc} */
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
         registry.registerExtension(PlatformPluginExtension.class,
-                new PlatformTestPluginExtension((IgniteEx) ctx.grid()));
+                new PlatformTestPluginExtension((IgniteEx)ctx.grid()));
     }
 
     /** {@inheritDoc} */

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 
 /** */
 public class StringIndexKey implements IndexKey {
@@ -35,15 +35,20 @@ public class StringIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int type() {
-        return IndexKeyTypes.STRING;
+    @Override public IndexKeyType type() {
+        return IndexKeyType.STRING;
     }
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        String okey = (String) o.key();
+        String okey = (String)o.key();
 
         return key.compareTo(okey);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return key;
     }
 }
 

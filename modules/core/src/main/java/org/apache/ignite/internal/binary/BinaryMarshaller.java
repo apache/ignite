@@ -73,7 +73,7 @@ public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
      * <p/>
      * @param ctx Binary context.
      */
-    private void setBinaryContext(BinaryContext ctx, IgniteConfiguration cfg) {
+    public void setBinaryContext(BinaryContext ctx, IgniteConfiguration cfg) {
         ctx.configure(this, cfg != null ? cfg.getBinaryConfiguration() : null);
 
         impl = new GridBinaryMarshaller(ctx);

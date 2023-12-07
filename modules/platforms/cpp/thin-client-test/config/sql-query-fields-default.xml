@@ -79,6 +79,12 @@
         <property name="cacheMode" value="PARTITIONED"/>
         <property name="atomicityMode" value="TRANSACTIONAL"/>
 
+        <property name="affinity">
+            <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
+                <property name="partitions" value="256"/>
+            </bean>
+        </property>
+
         <!-- Configure type metadata to enable queries. -->
         <property name="queryEntities">
             <list>

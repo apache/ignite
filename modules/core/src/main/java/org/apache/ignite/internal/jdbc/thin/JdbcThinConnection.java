@@ -132,6 +132,7 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static org.apache.ignite.internal.processors.odbc.SqlStateCode.CLIENT_CONNECTION_FAILED;
 import static org.apache.ignite.internal.processors.odbc.SqlStateCode.CONNECTION_CLOSED;
 import static org.apache.ignite.internal.processors.odbc.SqlStateCode.CONNECTION_FAILURE;
+import static org.apache.ignite.internal.processors.odbc.SqlStateCode.DATA_EXCEPTION;
 import static org.apache.ignite.internal.processors.odbc.SqlStateCode.INTERNAL_ERROR;
 import static org.apache.ignite.marshaller.MarshallerUtils.processSystemClasses;
 
@@ -1017,6 +1018,18 @@ public class JdbcThinConnection implements Connection {
                         LOG.log(Level.FINE, "Exception during sending an sql request.", e);
 
                     throw e;
+                }
+                catch (BinaryObjectException e) {
+                    String err = "Serialization error during sending an sql request. " +
+                        "The error can be caused by the fact that the classes used on the node are missing " +
+                        "on the client. Try to use JDBC connection option 'keepBinary=true' " +
+                        "to to avoid deserialization. Also you can use system property " +
+                        "IGNITE_SENSITIVE_DATA_LOGGING=\"plain\" to readable print content of a BinaryObject";
+
+                    if (LOG.isLoggable(Level.FINE))
+                        LOG.log(Level.FINE, err, e);
+
+                    throw new SQLException(err, DATA_EXCEPTION, e);
                 }
                 catch (Exception e) {
                     if (LOG.isLoggable(Level.FINE))

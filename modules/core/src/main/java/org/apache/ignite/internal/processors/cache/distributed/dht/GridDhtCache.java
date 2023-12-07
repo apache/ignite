@@ -76,8 +76,6 @@ public class GridDhtCache<K, V> extends GridDhtTransactionalCacheAdapter<K, V> {
         metrics.delegate(ctx.dht().near().metrics0());
 
         ctx.dr().resetMetrics();
-
-        super.start();
     }
 
     /**

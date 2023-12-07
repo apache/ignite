@@ -36,7 +36,6 @@ import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
 import org.apache.ignite.internal.client.marshaller.jdk.GridClientJdkMarshaller;
 import org.apache.ignite.internal.client.marshaller.optimized.GridClientOptimizedMarshaller;
 import org.apache.ignite.internal.client.marshaller.optimized.GridClientZipOptimizedMarshaller;
-import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 import org.apache.ignite.internal.processors.rest.protocols.GridRestProtocolAdapter;
@@ -53,6 +52,8 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+
 /**
  * TCP binary protocol implementation.
  */
@@ -62,6 +63,9 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
     /** NIO server listener. */
     private GridTcpRestNioListener lsnr;
+
+    /** The name of the metric registry associated with the REST TCP connector. */
+    public static final String REST_CONNECTOR_METRIC_REGISTRY_NAME = metricName("rest", "client");
 
     /** @param ctx Context. */
     public GridTcpRestProtocol(GridKernalContext ctx) {
@@ -95,17 +99,12 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
                 Factory<SSLContext> factory = cfg.getSslFactory();
 
-                // This factory deprecated and will be removed.
-                GridSslContextFactory depFactory = cfg.getSslContextFactory();
-
-                if (factory == null && depFactory == null && igniteFactory == null)
+                if (factory == null && igniteFactory == null)
                     // Thrown SSL exception instead of IgniteCheckedException for writing correct warning message into log.
                     throw new SSLException("SSL is enabled, but SSL context factory is not specified.");
 
                 if (factory != null)
                     sslCtx = factory.create();
-                else if (depFactory != null)
-                    sslCtx = depFactory.createSslContext();
                 else
                     sslCtx = igniteFactory.create();
             }
@@ -210,8 +209,12 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
             GridNioFilter[] filters;
 
             if (sslCtx != null) {
-                GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx,
-                    cfg.isDirectBuffer(), ByteOrder.nativeOrder(), log);
+                GridNioSslFilter sslFilter = new GridNioSslFilter(
+                    sslCtx,
+                    cfg.isDirectBuffer(),
+                    ByteOrder.nativeOrder(),
+                    log,
+                    ctx.metric().registry(REST_CONNECTOR_METRIC_REGISTRY_NAME));
 
                 sslFilter.directMode(false);
 
@@ -245,6 +248,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 .sendQueueLimit(cfg.getSendQueueLimit())
                 .filters(filters)
                 .directMode(false)
+                .metricRegistry(ctx.metric().registry(REST_CONNECTOR_METRIC_REGISTRY_NAME))
                 .build();
 
             srv.idleTimeout(cfg.getIdleTimeout());

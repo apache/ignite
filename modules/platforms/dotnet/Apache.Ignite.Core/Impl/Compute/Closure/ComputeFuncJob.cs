@@ -81,5 +81,11 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
             _clo = reader.ReadObject<IComputeFunc>();
             _arg = reader.ReadObject<object>();
         }
+
+        /** <inheritDoc /> */
+        public string GetName()
+        {
+            return _clo.GetName();
+        }
     }
 }

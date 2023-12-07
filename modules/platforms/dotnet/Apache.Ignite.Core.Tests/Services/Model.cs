@@ -120,18 +120,30 @@ namespace Apache.Ignite.Platform.Model
     /// <summary>
     /// A enum is a clone of Java class User with the same namespace.
     /// </summary>
-    // ReSharper disable once InconsistentNaming
+    // ReSharper disable InconsistentNaming
     public enum ACL
     {
-        Allow, Deny
+        ALLOW, DENY
+    }
+    
+    /// <summary>
+    /// A enum is a clone of Java class AccessLevel with the same namespace.
+    /// </summary>
+    public enum AccessLevel
+    {
+        USER, SUPER
     }
 
+    // ReSharper enable InconsistentNaming
     /// <summary>
     /// A class is a clone of Java class Role with the same namespace.
     /// </summary>
     public class Role
     {
         public String Name { get; set; }
+
+        /** Tests declaration as System.Enum. */
+        public Enum AccessLevel { get; set; }
     }
 
     /// <summary>

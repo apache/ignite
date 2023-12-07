@@ -602,7 +602,7 @@ public class FullPageIdTable implements LoadedPagesMap {
      *
      */
     public void clear() {
-        GridUnsafe.setMemory(valPtr, (long)capacity * BYTES_PER_ENTRY + 8, (byte)0);
+        GridUnsafe.zeroMemory(valPtr, (long)capacity * BYTES_PER_ENTRY + 8);
     }
 
     /**

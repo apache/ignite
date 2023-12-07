@@ -68,7 +68,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
         guard();
 
         try {
-            return new IgniteFutureImpl<>(ctx.closure().runLocalSafe(securityRunnable(r), false));
+            return new IgniteFutureImpl<>(ctx.closure().runLocalSafe(localSecureRunnable(r), false));
         }
         finally {
             unguard();
@@ -83,7 +83,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
         guard();
 
         try {
-            return ctx.timeout().schedule(securityRunnable(r), timeUnit.toMillis(delay), -1);
+            return ctx.timeout().schedule(localSecureRunnable(r), timeUnit.toMillis(delay), -1);
         }
         finally {
             unguard();
@@ -97,7 +97,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
         guard();
 
         try {
-            return new IgniteFutureImpl<>(ctx.closure().callLocalSafe(securityCallable(c), false));
+            return new IgniteFutureImpl<>(ctx.closure().callLocalSafe(localSecureCallable(c), false));
         }
         finally {
             unguard();
@@ -111,7 +111,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
         guard();
 
         try {
-            return ctx.schedule().schedule(securityRunnable(job), ptrn);
+            return ctx.schedule().schedule(localSecureRunnable(job), ptrn);
         }
         finally {
             unguard();
@@ -125,7 +125,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
         guard();
 
         try {
-            return ctx.schedule().schedule(securityCallable(job), ptrn);
+            return ctx.schedule().schedule(localSecureCallable(job), ptrn);
         }
         finally {
             unguard();
@@ -166,20 +166,20 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
         return ctx.grid().scheduler();
     }
 
-    /**
-     * @return Security aware runnable.
-     */
-    private Runnable securityRunnable(Runnable original) {
-        return ctx.security().enabled() ?
-            new SecurityAwareClosure<Void>(ctx.security().securityContext().subject().id(), original) : original;
+    /** @return Security aware runnable. */
+    private Runnable localSecureRunnable(Runnable original) {
+        if (!ctx.security().enabled() || ctx.security().isDefaultContext())
+            return original;
+
+        return new SecurityAwareClosure<Void>(ctx.security().securityContext().subject().id(), original);
     }
 
-    /**
-     * @return Security aware callable.
-     */
-    private <T> Callable<T> securityCallable(Callable<T> original) {
-        return ctx.security().enabled() ?
-            new SecurityAwareClosure<>(ctx.security().securityContext().subject().id(), original) : original;
+    /** @return Security aware callable. */
+    private <T> Callable<T> localSecureCallable(Callable<T> original) {
+        if (!ctx.security().enabled() || ctx.security().isDefaultContext())
+            return original;
+
+        return new SecurityAwareClosure<>(ctx.security().securityContext().subject().id(), original);
     }
 
     /** */

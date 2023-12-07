@@ -131,7 +131,10 @@ BOOST_AUTO_TEST_CASE(TestConnectionSslReject)
     BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
 
     // Checking that error is the connection error.
-    BOOST_CHECK_EQUAL(std::string("08001"), GetOdbcErrorState(SQL_HANDLE_DBC, dbc));
+    std::set<std::string> codes;
+    codes.insert(std::string("08001")); // Client unable to establish connection.
+    codes.insert(std::string("08S01")); // Communication link failure. Returned on newest UnixODBC.
+    BOOST_CHECK_EQUAL(codes.count(GetOdbcErrorState(SQL_HANDLE_DBC, dbc)), 1);
 }
 
 BOOST_AUTO_TEST_CASE(TestLoginTimeout)

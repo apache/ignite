@@ -33,7 +33,7 @@ public class NoopSpan implements Span {
     /**
      * Constructor.
      */
-    private NoopSpan(){
+    private NoopSpan() {
 
     }
 

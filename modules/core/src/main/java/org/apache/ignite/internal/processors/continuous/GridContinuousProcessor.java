@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -71,7 +72,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
-import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -192,9 +192,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (discoProtoVer == 2)
             routinesInfo = new ContinuousRoutinesInfo();
 
-        if (ctx.config().isDaemon())
-            return;
-
         retryDelay = ctx.config().getNetworkSendRetryDelay();
         retryCnt = ctx.config().getNetworkSendRetryCount();
 
@@ -313,9 +310,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         ctx.cacheObjects().onContinuousProcessorStarted(ctx);
 
-        if (ctx.service() instanceof GridServiceProcessor)
-            ((GridServiceProcessor)ctx.service()).onContinuousProcessorStarted(ctx);
-
         if (log.isDebugEnabled())
             log.debug("Continuous processor started.");
     }
@@ -339,6 +333,21 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             fut.onDone(e);
         }
+    }
+
+    /** */
+    Map<UUID, RemoteRoutineInfo> remoteRoutineInfos() {
+        return Collections.unmodifiableMap(rmtInfos);
+    }
+
+    /** */
+    Map<UUID, LocalRoutineInfo> localRoutineInfos() {
+        return Collections.unmodifiableMap(locInfos);
+    }
+
+    /** */
+    Map<UUID, Map<UUID, LocalRoutineInfo>> clientRoutineInfos() {
+        return Collections.unmodifiableMap(clientInfos);
     }
 
     /**
@@ -380,9 +389,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
-            return;
-
         ctx.io().removeMessageListener(TOPIC_CONTINUOUS);
 
         for (IgniteThread thread : bufCheckThreads.values()) {
@@ -401,9 +407,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        if (ctx.isDaemon())
-            return;
-
         if (discoProtoVer == 2) {
             routinesInfo.collectJoiningNodeData(dataBag);
 
@@ -418,9 +421,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        if (ctx.isDaemon())
-            return;
-
         if (discoProtoVer == 2) {
             routinesInfo.collectGridNodeData(dataBag);
 
@@ -532,16 +532,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
         else {
             if (data.hasJoiningNodeData())
-                onDiscoveryDataReceivedV1((DiscoveryData) data.joiningNodeData());
+                onDiscoveryDataReceivedV1((DiscoveryData)data.joiningNodeData());
         }
     }
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
         if (discoProtoVer == 2) {
-            if (ctx.isDaemon())
-                return;
-
             if (data.commonData() != null) {
                 ContinuousRoutinesCommonDiscoveryData commonData =
                     (ContinuousRoutinesCommonDiscoveryData)data.commonData();
@@ -561,7 +558,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             if (nodeSpecData != null) {
                 for (Map.Entry<UUID, Serializable> e : nodeSpecData.entrySet())
-                    onDiscoveryDataReceivedV1((DiscoveryData) e.getValue());
+                    onDiscoveryDataReceivedV1((DiscoveryData)e.getValue());
             }
         }
     }
@@ -573,7 +570,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param data received discovery data.
      */
     private void onDiscoveryDataReceivedV1(DiscoveryData data) {
-        if (!ctx.isDaemon() && data != null) {
+        if (data != null) {
             for (DiscoveryDataItem item : data.items) {
                 if (!locInfos.containsKey(item.routineId)) {
                     registerHandlerOnJoin(data.nodeId, item.routineId, item.prjPred,
@@ -963,9 +960,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         int bufSize,
         long interval,
         boolean autoUnsubscribe,
-        @Nullable IgnitePredicate<ClusterNode> nodeFilter)
-        throws IgniteCheckedException
-    {
+        @Nullable IgnitePredicate<ClusterNode> nodeFilter
+    ) throws IgniteCheckedException {
         hnd = hnd.clone();
 
         String clsName = null;
@@ -1468,7 +1464,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         if (proc != null) {
                             GridCacheAdapter cache = ctx.cache().internalCache(hnd.cacheName());
 
-                            if (cache != null && !cache.isLocal() && cache.context().userCache())
+                            if (cache != null && cache.context().userCache())
                                 req.addUpdateCounters(ctx.localNodeId(), hnd.updateCounters());
                         }
                     }
@@ -1533,7 +1529,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         final DiscoCache discoCache = ctx.discovery().discoCache(topVer);
 
         // Should not use marshaller and send messages from discovery thread.
-        ctx.getSystemExecutorService().execute(new Runnable() {
+        ctx.pools().getSystemExecutorService().execute(new Runnable() {
             @Override public void run() {
                 if (snd.id().equals(ctx.localNodeId())) {
                     StartFuture fut = startFuts.get(msg.routineId());
@@ -1626,7 +1622,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                             if (proc != null) {
                                 GridCacheAdapter cache = ctx.cache().internalCache(hnd.cacheName());
 
-                                if (cache != null && !cache.isLocal() && cache.context().userCache()) {
+                                if (cache != null && cache.context().userCache()) {
                                     CachePartitionPartialCountersMap cntrsMap =
                                         cache.context().topology().localUpdateCounters(false);
 
@@ -1658,8 +1654,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     private void sendMessageStartResult(final ClusterNode node,
         final UUID routineId,
         byte[] cntrsMapBytes,
-        @Nullable final Exception err)
-    {
+        @Nullable final Exception err
+    ) {
         byte[] errBytes = null;
 
         if (err != null) {
@@ -2114,8 +2110,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             GridContinuousHandler hnd,
             int bufSize,
             long interval,
-            boolean autoUnsubscribe)
-        {
+            boolean autoUnsubscribe
+        ) {
             assert hnd != null;
             assert bufSize > 0;
             assert interval >= 0;
@@ -2500,8 +2496,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             GridContinuousHandler hnd,
             int bufSize,
             long interval,
-            boolean autoUnsubscribe)
-        {
+            boolean autoUnsubscribe
+        ) {
             assert routineId != null;
             assert hnd != null;
             assert bufSize > 0;
@@ -2656,7 +2652,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                         GridCacheContext cctx = interCache != null ? interCache.context() : null;
 
-                        if (cctx != null && cntrsPerNode != null && !cctx.isLocal() && cctx.affinityNode())
+                        if (cctx != null && cntrsPerNode != null && cctx.affinityNode())
                             cntrsPerNode.put(ctx.localNodeId(),
                                 toCountersMap(cctx.topology().localUpdateCounters(false)));
 

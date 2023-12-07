@@ -32,5 +32,27 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             get { return new ServicesAsyncWrapper(Grid1.GetServices()); }
         }
+
+        /** */
+        public ServicesTestAsync()
+        {
+            // No-op.
+        }
+
+        /** */
+        public ServicesTestAsync(bool useBinaryArray) : base(useBinaryArray)
+        {
+            // No-op.
+        }
+    }
+
+    /// <summary> Tests with UseBinaryArray = true. </summary>
+    public class ServicesTestAsyncBinaryArrays : ServicesTestAsync
+    {
+        /** */
+        public ServicesTestAsyncBinaryArrays() : base(true)
+        {
+            // No-op.
+        }
     }
 }

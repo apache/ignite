@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 
 /**
@@ -92,5 +95,70 @@ public class MetaPageInfo {
      */
     public boolean inlineObjectHash() {
         return inlineObjHash;
+    }
+
+    /**
+     * Reads meta page info from page memory.
+     *
+     * @param metaPageId Meta page ID.
+     * @param grpId Cache group ID.
+     * @param pageMemory Page memory.
+     * @return Meta page info.
+     * @throws IgniteCheckedException If something went wrong.
+     */
+    public static MetaPageInfo read(long metaPageId, int grpId, PageMemory pageMemory) throws IgniteCheckedException {
+        final long metaPage = pageMemory.acquirePage(grpId, metaPageId);
+
+        try {
+            long pageAddr = pageMemory.readLock(grpId, metaPageId, metaPage); // Meta can't be removed.
+
+            assert pageAddr != 0 : "Failed to read lock meta page [metaPageId=" + U.hexLong(metaPageId) + ']';
+
+            try {
+                BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
+
+                return new MetaPageInfo(io, pageAddr);
+            }
+            finally {
+                pageMemory.readUnlock(grpId, metaPageId, metaPage);
+            }
+        }
+        finally {
+            pageMemory.releasePage(grpId, metaPageId, metaPage);
+        }
+    }
+
+    /**
+     * Writes meta page info into page memory.
+     *
+     * @param metaPageId Meta page ID.
+     * @param grpId Cache group ID.
+     * @param pageMemory Page memory.
+     * @throws IgniteCheckedException If something went wrong.
+     */
+    public void write(long metaPageId, int grpId, PageMemory pageMemory) throws IgniteCheckedException {
+        final long metaPage = pageMemory.acquirePage(grpId, metaPageId);
+
+        try {
+            long pageAddr = pageMemory.writeLock(grpId, metaPageId, metaPage); // Meta can't be removed.
+
+            assert pageAddr != 0 : "Failed to write lock meta page [metaPageId=" + U.hexLong(metaPageId) + ']';
+
+            try {
+                BPlusMetaIO.setValues(
+                    pageAddr,
+                    inlineSize(),
+                    useUnwrappedPk(),
+                    inlineObjectSupported(),
+                    inlineObjectHash()
+                );
+            }
+            finally {
+                pageMemory.writeUnlock(grpId, metaPageId, metaPage, null, true);
+            }
+        }
+        finally {
+            pageMemory.releasePage(grpId, metaPageId, metaPage);
+        }
     }
 }

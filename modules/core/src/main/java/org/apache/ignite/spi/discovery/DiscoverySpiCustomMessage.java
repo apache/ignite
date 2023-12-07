@@ -45,10 +45,9 @@ public interface DiscoverySpiCustomMessage extends Serializable {
      * then message is not passed to others nodes, if after this method {@link #ackMessage()} returns non-null ack
      * message, it is sent to all nodes.
      *
-     * @return {@code True} if message should not be sent to all nodes.
+     * Note: this method is used then and only then the zookeeper discovery is configured.
      *
-     * @deprecated Is not used anymore and will be removed at 3.0.
+     * @return {@code True} if message should not be sent to all nodes.
      */
-    @Deprecated
     public boolean stopProcess();
 }

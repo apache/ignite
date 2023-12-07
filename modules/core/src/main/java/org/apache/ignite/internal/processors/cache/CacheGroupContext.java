@@ -27,6 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -36,10 +37,13 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderCache;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -53,7 +57,9 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapM
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
+import org.apache.ignite.internal.processors.compress.CompressionHandler;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
@@ -65,11 +71,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.CacheTopologyValidatorProvider;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_MISSED;
@@ -171,6 +176,9 @@ public class CacheGroupContext {
     /** */
     private volatile boolean globalWalEnabled;
 
+    /** @see IndexesRebuildTask */
+    private volatile boolean idxWalEnabled;
+
     /** Flag indicates that cache group is under recovering and not attached to topology. */
     private final AtomicBoolean recoveryMode;
 
@@ -186,6 +194,15 @@ public class CacheGroupContext {
     /** Cache group metrics. */
     private final CacheGroupMetricsImpl metrics;
 
+    /** Topology validators. */
+    private final Collection<TopologyValidator> topValidators;
+
+    /** Disk page compression method. */
+    private final CompressionHandler compressHandler;
+
+    /** Cache is prepared to stop. */
+    private volatile boolean preparedToStop;
+
     /**
      * @param ctx Context.
      * @param grpId Group ID.
@@ -200,6 +217,7 @@ public class CacheGroupContext {
      * @param locStartVer Topology version when group was started on local node.
      * @param persistenceEnabled Persistence enabled flag.
      * @param walEnabled Wal enabled flag.
+     * @param compressHandler Compresion handler.
      */
     public CacheGroupContext(
         GridCacheSharedContext ctx,
@@ -215,7 +233,8 @@ public class CacheGroupContext {
         AffinityTopologyVersion locStartVer,
         boolean persistenceEnabled,
         boolean walEnabled,
-        boolean recoveryMode
+        boolean recoveryMode,
+        CompressionHandler compressHandler
     ) {
         assert ccfg != null;
         assert dataRegion != null || !affNode;
@@ -235,7 +254,9 @@ public class CacheGroupContext {
         this.globalWalEnabled = walEnabled;
         this.persistenceEnabled = persistenceEnabled;
         this.localWalEnabled = true;
+        this.idxWalEnabled = true;
         this.recoveryMode = new AtomicBoolean(recoveryMode);
+        this.compressHandler = compressHandler;
 
         ioPlc = cacheType.ioPolicy();
 
@@ -243,7 +264,7 @@ public class CacheGroupContext {
 
         storeCacheId = affNode && dataRegion.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
 
-        mvccEnabled = ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
+        mvccEnabled = false;
 
         log = ctx.kernalContext().log(getClass());
 
@@ -261,13 +282,8 @@ public class CacheGroupContext {
         }
 
         hasAtomicCaches = ccfg.getAtomicityMode() == ATOMIC;
-    }
 
-    /**
-     * @return Mvcc flag.
-     */
-    public boolean mvccEnabled() {
-        return mvccEnabled;
+        topValidators = Collections.unmodifiableCollection(topologyValidators(ccfg, ctx.kernalContext().plugins()));
     }
 
     /**
@@ -421,6 +437,9 @@ public class CacheGroupContext {
      */
     public GridCacheContext singleCacheContext() {
         List<GridCacheContext> caches = this.caches;
+
+        if (caches.isEmpty()) // Cache stopped.
+            return null;
 
         assert !sharedGroup() && caches.size() == 1 :
             "stopping=" + ctx.kernalContext().isStopping() + ", groupName=" + ccfg.getGroupName() +
@@ -598,7 +617,6 @@ public class CacheGroupContext {
                     hasOldVal,
                     null,
                     null,
-                    null,
                     keepBinary);
     }
 
@@ -640,7 +658,7 @@ public class CacheGroupContext {
     /**
      * @return Cache shared context.
      */
-    public GridCacheSharedContext shared() {
+    public GridCacheSharedContext<?, ?> shared() {
         return ctx;
     }
 
@@ -695,13 +713,6 @@ public class CacheGroupContext {
     /**
      * @return {@code True} if cache is local.
      */
-    public boolean isLocal() {
-        return ccfg.getCacheMode() == LOCAL;
-    }
-
-    /**
-     * @return {@code True} if cache is local.
-     */
     public boolean isReplicated() {
         return ccfg.getCacheMode() == REPLICATED;
     }
@@ -728,10 +739,10 @@ public class CacheGroupContext {
     }
 
     /**
-     * @return Configured topology validator.
+     * @return Configured topology validators.
      */
-    @Nullable public TopologyValidator topologyValidator() {
-        return ccfg.getTopologyValidator();
+    public Collection<TopologyValidator> topologyValidators() {
+        return topValidators;
     }
 
     /**
@@ -759,14 +770,7 @@ public class CacheGroupContext {
      * @return Group name if it is specified, otherwise cache name.
      */
     public String cacheOrGroupName() {
-        return cacheOrGroupName(ccfg);
-    }
-
-    /**
-     * @return Group name if it is specified, otherwise cache name.
-     */
-    public static String cacheOrGroupName(CacheConfiguration<?, ?> ccfg) {
-        return ccfg.getGroupName() != null ? ccfg.getGroupName() : ccfg.getName();
+        return CU.cacheOrGroupName(ccfg);
     }
 
     /**
@@ -876,18 +880,14 @@ public class CacheGroupContext {
     private void initializeIO() throws IgniteCheckedException {
         assert !recoveryMode.get() : "Couldn't initialize I/O handlers, recovery mode is on for group " + this;
 
-        if (ccfg.getCacheMode() != LOCAL) {
-            if (!ctx.kernalContext().clientNode()) {
-                ctx.io().addCacheGroupHandler(groupId(), GridDhtAffinityAssignmentRequest.class,
-                    (IgniteBiInClosure<UUID, GridDhtAffinityAssignmentRequest>) this::processAffinityAssignmentRequest);
-            }
-
-            preldr = new GridDhtPreloader(this);
-
-            preldr.start();
+        if (!ctx.kernalContext().clientNode()) {
+            ctx.io().addCacheGroupHandler(groupId(), GridDhtAffinityAssignmentRequest.class,
+                (IgniteBiInClosure<UUID, GridDhtAffinityAssignmentRequest>)this::processAffinityAssignmentRequest);
         }
-        else
-            preldr = new GridCachePreloaderAdapter(this);
+
+        preldr = new GridDhtPreloader(this);
+
+        preldr.start();
     }
 
     /**
@@ -942,7 +942,6 @@ public class CacheGroupContext {
     public void addCacheWithContinuousQuery(GridCacheContext cctx) {
         assert sharedGroup() : cacheOrGroupName();
         assert cctx.group() == this : cctx.name();
-        assert !cctx.isLocal() : cctx.name();
 
         List<GridCacheContext> contQryCaches = this.contQryCaches;
 
@@ -960,7 +959,6 @@ public class CacheGroupContext {
     public void removeCacheWithContinuousQuery(GridCacheContext cctx) {
         assert sharedGroup() : cacheOrGroupName();
         assert cctx.group() == this : cctx.name();
-        assert !cctx.isLocal() : cctx.name();
         assert listenerLock.isWriteLockedByCurrentThread();
 
         List<GridCacheContext> contQryCaches = this.contQryCaches;
@@ -996,11 +994,9 @@ public class CacheGroupContext {
         int part,
         long cntr,
         AffinityTopologyVersion topVer,
-        boolean primary) {
+        boolean primary
+    ) {
         assert sharedGroup();
-
-        if (isLocal())
-            return;
 
         List<GridCacheContext> contQryCaches;
 
@@ -1061,23 +1057,11 @@ public class CacheGroupContext {
     public void start() throws IgniteCheckedException {
         GridAffinityAssignmentCache affCache = ctx.affinity().groupAffinity(grpId);
 
-        if (affCache != null)
-            aff = affCache;
-        else
-            aff = new GridAffinityAssignmentCache(ctx.kernalContext(),
-                cacheOrGroupName(),
-                grpId,
-                ccfg.getAffinity(),
-                ccfg.getNodeFilter(),
-                ccfg.getBackups(),
-                ccfg.getCacheMode() == LOCAL
-            );
+        aff = affCache == null ? GridAffinityAssignmentCache.create(ctx.kernalContext(), ccfg.getAffinity(), ccfg) : affCache;
 
-        if (ccfg.getCacheMode() != LOCAL) {
-            top = ctx.kernalContext().resource().resolve(new GridDhtPartitionTopologyImpl(ctx, this));
+        top = ctx.kernalContext().resource().resolve(new GridDhtPartitionTopologyImpl(ctx, this));
 
-            metrics.onTopologyInitialized();
-        }
+        metrics.onTopologyInitialized();
 
         try {
             offheapMgr = ctx.kernalContext().resource().resolve(persistenceEnabled
@@ -1104,6 +1088,19 @@ public class CacheGroupContext {
      */
     public boolean persistenceEnabled() {
         return persistenceEnabled;
+    }
+
+    /**
+     * @return {@code True} if {@link DataRecord} should be loged in the WAL.
+     */
+    public boolean logDataRecords() {
+        return walEnabled() && (persistenceEnabled || cdcEnabled());
+    }
+
+    /** @return {@code True} if CDC enabled. */
+    public boolean cdcEnabled() {
+        // Data region is null for client and non affinity nodes.
+        return dataRegion != null && dataRegion.config().isCdcEnabled();
     }
 
     /**
@@ -1138,22 +1135,38 @@ public class CacheGroupContext {
             log.debug("Affinity is ready for topology version, will send response [topVer=" + topVer +
                 ", node=" + nodeId + ']');
 
-        AffinityAssignment assignment = aff.cachedAffinity(topVer);
+        AffinityAssignment assignment;
+        GridDhtAffinityAssignmentResponse res;
+        try {
+            assignment = aff.cachedAffinity(topVer);
 
-        GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(
-            req.futureId(),
-            grpId,
-            topVer,
-            assignment.assignment());
+            res = new GridDhtAffinityAssignmentResponse(
+                req.futureId(),
+                grpId,
+                topVer,
+                assignment.assignment());
 
-        if (aff.centralizedAffinityFunction()) {
-            assert assignment.idealAssignment() != null;
+            if (aff.centralizedAffinityFunction()) {
+                assert assignment.idealAssignment() != null;
 
-            res.idealAffinityAssignment(assignment.idealAssignment());
+                res.idealAffinityAssignment(assignment.idealAssignment());
+            }
+
+            if (req.sendPartitionsState())
+                res.partitionMap(top.partitionMap(true));
         }
+        catch (IllegalStateException err) {
+            res = new GridDhtAffinityAssignmentResponse(
+                req.futureId(),
+                grpId,
+                topVer,
+                Collections.emptyList());
 
-        if (req.sendPartitionsState())
-            res.partitionMap(top.partitionMap(true));
+            res.affinityAssignmentsError(
+                new IgniteCheckedException("Failed to prepare the required affinity assignment " +
+                    "[nodeId=" + nodeId + ", topVer=" + topVer + ']',
+                    err));
+        }
 
         try {
             ctx.io().send(nodeId, res, AFFINITY_POOL);
@@ -1199,7 +1212,11 @@ public class CacheGroupContext {
     }
 
     /**
-     * WAL enabled flag.
+     * Value returned by this method can be changed runtime by the user or during rebalance.
+     *
+     * @return WAL enabled flag.
+     * @see IgniteCluster#disableWal(String)
+     * @see IgniteCluster#enableWal(String)
      */
     public boolean walEnabled() {
         return localWalEnabled && globalWalEnabled;
@@ -1219,6 +1236,16 @@ public class CacheGroupContext {
      */
     public boolean globalWalEnabled() {
         return globalWalEnabled;
+    }
+
+    /** @return {@code True} if WAL for index operations enabled. */
+    public boolean indexWalEnabled() {
+        return idxWalEnabled;
+    }
+
+    /** @param idxWalEnabled Index WAL enabled flag. */
+    public void indexWalEnabled(boolean idxWalEnabled) {
+        this.idxWalEnabled = idxWalEnabled;
     }
 
     /**
@@ -1262,7 +1289,7 @@ public class CacheGroupContext {
     }
 
     /**
-     * @param enabled Enabled flag..
+     * @param enabled Enabled flag.
      */
     private void persistGlobalWalState(boolean enabled) {
         shared().database().walEnabled(grpId, enabled, false);
@@ -1305,12 +1332,70 @@ public class CacheGroupContext {
 
     /**
      * Removes statistics metrics registries.
+     *
+     * @param destroy Group destroy flag.
      */
-    public void removeIOStatistic() {
+    public void removeIOStatistic(boolean destroy) {
         if (statHolderData != IoStatisticsHolderNoOp.INSTANCE)
-            ctx.kernalContext().metric().remove(statHolderData.metricRegistryName());
+            ctx.kernalContext().metric().remove(statHolderData.metricRegistryName(), destroy);
 
         if (statHolderIdx != IoStatisticsHolderNoOp.INSTANCE)
-            ctx.kernalContext().metric().remove(statHolderIdx.metricRegistryName());
+            ctx.kernalContext().metric().remove(statHolderIdx.metricRegistryName(), destroy);
+    }
+
+    /**
+     * @return Write ahead log manager.
+     */
+    public IgniteWriteAheadLogManager wal() {
+        return ctx.wal(cdcEnabled());
+    }
+
+    /** */
+    public CompressionHandler compressionHandler() {
+        return compressHandler;
+    }
+
+    /** Prepare cache to stop (prohibit any futher updates). */
+    public void prepareToStop() {
+        preparedToStop = true;
+
+        offheap().prepareToStop();
+    }
+
+    /** */
+    public boolean isPreparedToStop() {
+        return preparedToStop;
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @param plugins Ignite plugin processor.
+     * @return Comprehensive collection of topology validators for the cache based on its configuration
+     * and plugin extensions.
+     */
+    private Collection<TopologyValidator> topologyValidators(
+        CacheConfiguration<?, ?> ccfg,
+        IgnitePluginProcessor plugins
+    ) {
+        List<TopologyValidator> res = new ArrayList<>();
+
+        TopologyValidator ccfgTopValidator = ccfg.getTopologyValidator();
+
+        if (ccfgTopValidator != null)
+            res.add(ccfgTopValidator);
+
+        CacheTopologyValidatorProvider[] topValidatorProviders = plugins.extensions(CacheTopologyValidatorProvider.class);
+
+        if (F.isEmpty(topValidatorProviders))
+            return res;
+
+        for (CacheTopologyValidatorProvider topValidatorProvider : topValidatorProviders) {
+            TopologyValidator validator = topValidatorProvider.topologyValidator(cacheOrGroupName());
+
+            if (validator != null)
+                res.add(validator);
+        }
+
+        return res;
     }
 }

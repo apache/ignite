@@ -18,6 +18,7 @@
 package org.apache.ignite.client;
 
 import java.util.concurrent.Callable;
+import javax.net.ssl.SSLHandshakeException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -28,6 +29,7 @@ import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -44,6 +46,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
     private volatile String[] protocols;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("rawtypes")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -224,6 +227,29 @@ public class SslParametersTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("Outdated machines do not consider TLS 1.1 deprecated.")
+    public void testDeprecatedProtocolThrows() throws Exception {
+        protocols = new String[] {
+            "TLSv1.1",
+            "TLSv1.2"
+        };
+
+        startGrid();
+
+        checkClientStartFailure(
+            null,
+            new String[] {
+                "TLSv1.1",
+            },
+            SSLHandshakeException.class,
+            "No appropriate protocol (protocol is disabled or cipher suites are inappropriate)"
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testSameProtocols() throws Exception {
         protocols = new String[] {
             "TLSv1.1",
@@ -255,7 +281,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
 
         checkSuccessfulClientStart(null,
             new String[] {
-                "TLSv1.1",
+                "TLSv1.2",
                 "SSLv3"
             }
         );
@@ -264,9 +290,8 @@ public class SslParametersTest extends GridCommonAbstractTest {
     /**
      * @param cipherSuites list of cipher suites
      * @param protocols list of protocols
-     * @throws Exception If failed.
      */
-    private void checkSuccessfulClientStart(String[] cipherSuites, String[] protocols) throws Exception {
+    private void checkSuccessfulClientStart(String[] cipherSuites, String[] protocols) {
         this.cipherSuites = F.isEmpty(cipherSuites) ? null : cipherSuites;
         this.protocols = F.isEmpty(protocols) ? null : protocols;
 

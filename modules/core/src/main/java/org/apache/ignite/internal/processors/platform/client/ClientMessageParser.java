@@ -53,14 +53,17 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGe
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetOrCreateWithNameRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetSizeRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheIndexQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheLocalPeekRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheNodePartitionsRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePartitionsRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutAllConflictRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutAllRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutIfAbsentRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryContinuousRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryNextPageRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveAllConflictRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveAllRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveIfEqualsRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveKeyRequest;
@@ -78,7 +81,34 @@ import org.apache.ignite.internal.processors.platform.client.cluster.ClientClust
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalChangeStateRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalGetStateRequest;
 import org.apache.ignite.internal.processors.platform.client.compute.ClientExecuteTaskRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongCreateRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongExistsRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongRemoveRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueAddAndGetRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueCompareAndSetAndGetRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueCompareAndSetRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueGetAndSetRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueGetRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetClearRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetCloseRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetExistsRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetGetOrCreateRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetIteratorGetPageRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetIteratorStartRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetSizeRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueAddAllRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueAddRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueContainsAllRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueContainsRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueRemoveAllRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueRemoveRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueRetainAllRequest;
+import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorRequest;
+import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorsRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceInvokeRequest;
+import org.apache.ignite.internal.processors.platform.client.service.ClientServiceTopologyRequest;
+import org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerAddDataRequest;
+import org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerStartRequest;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxEndRequest;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartRequest;
 
@@ -89,6 +119,12 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /* General-purpose operations. */
     /** */
     private static final short OP_RESOURCE_CLOSE = 0;
+
+    /** */
+    private static final short OP_HEARTBEAT = 1;
+
+    /** */
+    private static final short OP_GET_IDLE_TIMEOUT = 2;
 
     /* Cache operations */
     /** */
@@ -157,6 +193,12 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** */
     private static final short OP_CACHE_LOCAL_PEEK = 1021;
 
+    /** */
+    private static final short OP_CACHE_PUT_ALL_CONFLICT = 1022;
+
+    /** */
+    private static final short OP_CACHE_REMOVE_ALL_CONFLICT = 1023;
+
     /* Cache create / destroy, configuration. */
     /** */
     private static final short OP_CACHE_GET_NAMES = 1050;
@@ -212,6 +254,12 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** */
     public static final short OP_QUERY_CONTINUOUS_EVENT_NOTIFICATION = 2007;
 
+    /** */
+    private static final short OP_QUERY_INDEX = 2008;
+
+    /** */
+    private static final short OP_QUERY_INDEX_CURSOR_GET_PAGE = 2009;
+
     /* Binary metadata operations. */
     /** */
     private static final short OP_BINARY_TYPE_NAME_GET = 3000;
@@ -265,6 +313,89 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
     /** Service invocation. */
     private static final short OP_SERVICE_INVOKE = 7000;
+
+    /** Get service descriptors. */
+    private static final short OP_SERVICE_GET_DESCRIPTORS = 7001;
+
+    /** Get service descriptor. */
+    private static final short OP_SERVICE_GET_DESCRIPTOR = 7002;
+
+    /** Data streamers. */
+    /** */
+    private static final short OP_DATA_STREAMER_START = 8000;
+
+    /** */
+    private static final short OP_DATA_STREAMER_ADD_DATA = 8001;
+
+    /** Data structures. */
+    /** Create an AtomicLong. */
+    private static final short OP_ATOMIC_LONG_CREATE = 9000;
+
+    /** Remove an AtomicLong. */
+    private static final short OP_ATOMIC_LONG_REMOVE = 9001;
+
+    /** Check if AtomicLong exists. */
+    private static final short OP_ATOMIC_LONG_EXISTS = 9002;
+
+    /** AtomicLong.get. */
+    private static final short OP_ATOMIC_LONG_VALUE_GET = 9003;
+
+    /** AtomicLong.addAndGet (also covers incrementAndGet, getAndIncrement, getAndAdd, decrementAndGet, getAndDecrement).  */
+    private static final short OP_ATOMIC_LONG_VALUE_ADD_AND_GET = 9004;
+
+    /** AtomicLong.getAndSet. */
+    private static final short OP_ATOMIC_LONG_VALUE_GET_AND_SET = 9005;
+
+    /** AtomicLong.compareAndSet. */
+    private static final short OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET = 9006;
+
+    /** AtomicLong.compareAndSetAndGet. */
+    private static final short OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET_AND_GET = 9007;
+
+    /** Create an IgniteSet. */
+    private static final short OP_SET_GET_OR_CREATE = 9010;
+
+    /** Remove an IgniteSet. */
+    private static final short OP_SET_CLOSE = 9011;
+
+    /** IgniteSet.removed. */
+    private static final short OP_SET_EXISTS = 9012;
+
+    /** IgniteSet.add. */
+    private static final short OP_SET_VALUE_ADD = 9013;
+
+    /** IgniteSet.addAll. */
+    private static final short OP_SET_VALUE_ADD_ALL = 9014;
+
+    /** IgniteSet.remove. */
+    private static final short OP_SET_VALUE_REMOVE = 9015;
+
+    /** IgniteSet.removeAll. */
+    private static final short OP_SET_VALUE_REMOVE_ALL = 9016;
+
+    /** IgniteSet.contains. */
+    private static final short OP_SET_VALUE_CONTAINS = 9017;
+
+    /** IgniteSet.containsAll. */
+    private static final short OP_SET_VALUE_CONTAINS_ALL = 9018;
+
+    /** IgniteSet.retainAll. */
+    private static final short OP_SET_VALUE_RETAIN_ALL = 9019;
+
+    /** IgniteSet.size. */
+    private static final short OP_SET_SIZE = 9020;
+
+    /** IgniteSet.clear. */
+    private static final short OP_SET_CLEAR = 9021;
+
+    /** IgniteSet.iterator. */
+    private static final short OP_SET_ITERATOR_START = 9022;
+
+    /** IgniteSet.iterator page. */
+    private static final short OP_SET_ITERATOR_GET_PAGE = 9023;
+
+    /** Get service topology. */
+    private static final short OP_SERVICE_GET_TOPOLOGY = 7003;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
@@ -339,10 +470,18 @@ public class ClientMessageParser implements ClientListenerMessageParser {
             case OP_QUERY_SCAN_CURSOR_GET_PAGE:
 
             case OP_QUERY_SQL_CURSOR_GET_PAGE:
+
+            case OP_QUERY_INDEX_CURSOR_GET_PAGE:
                 return new ClientCacheQueryNextPageRequest(reader);
 
             case OP_RESOURCE_CLOSE:
                 return new ClientResourceCloseRequest(reader);
+
+            case OP_HEARTBEAT:
+                return new ClientRequest(reader);
+
+            case OP_GET_IDLE_TIMEOUT:
+                return new ClientGetIdleTimeoutRequest(reader);
 
             case OP_CACHE_CONTAINS_KEY:
                 return new ClientCacheContainsKeyRequest(reader);
@@ -404,6 +543,12 @@ public class ClientMessageParser implements ClientListenerMessageParser {
             case OP_CACHE_REMOVE_ALL:
                 return new ClientCacheRemoveAllRequest(reader);
 
+            case OP_CACHE_PUT_ALL_CONFLICT:
+                return new ClientCachePutAllConflictRequest(reader, ctx);
+
+            case OP_CACHE_REMOVE_ALL_CONFLICT:
+                return new ClientCacheRemoveAllConflictRequest(reader);
+
             case OP_CACHE_CREATE_WITH_NAME:
                 return new ClientCacheCreateWithNameRequest(reader);
 
@@ -417,7 +562,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientCacheNodePartitionsRequest(reader);
 
             case OP_CACHE_PARTITIONS:
-                return new ClientCachePartitionsRequest(reader);
+                return new ClientCachePartitionsRequest(reader, protocolCtx);
 
             case OP_CACHE_GET_NAMES:
                 return new ClientCacheGetNamesRequest(reader);
@@ -442,6 +587,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_QUERY_CONTINUOUS:
                 return new ClientCacheQueryContinuousRequest(reader);
+
+            case OP_QUERY_INDEX:
+                return new ClientCacheIndexQueryRequest(reader, protocolCtx);
 
             case OP_TX_START:
                 return new ClientTxStartRequest(reader);
@@ -474,7 +622,88 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientExecuteTaskRequest(reader);
 
             case OP_SERVICE_INVOKE:
-                return new ClientServiceInvokeRequest(reader);
+                return new ClientServiceInvokeRequest(reader, protocolCtx);
+
+            case OP_SERVICE_GET_DESCRIPTORS:
+                return new ClientServiceGetDescriptorsRequest(reader);
+
+            case OP_SERVICE_GET_DESCRIPTOR:
+                return new ClientServiceGetDescriptorRequest(reader);
+
+            case OP_DATA_STREAMER_START:
+                return new ClientDataStreamerStartRequest(reader);
+
+            case OP_DATA_STREAMER_ADD_DATA:
+                return new ClientDataStreamerAddDataRequest(reader);
+
+            case OP_ATOMIC_LONG_CREATE:
+                return new ClientAtomicLongCreateRequest(reader);
+
+            case OP_ATOMIC_LONG_REMOVE:
+                return new ClientAtomicLongRemoveRequest(reader);
+
+            case OP_ATOMIC_LONG_EXISTS:
+                return new ClientAtomicLongExistsRequest(reader);
+
+            case OP_ATOMIC_LONG_VALUE_GET:
+                return new ClientAtomicLongValueGetRequest(reader);
+
+            case OP_ATOMIC_LONG_VALUE_ADD_AND_GET:
+                return new ClientAtomicLongValueAddAndGetRequest(reader);
+
+            case OP_ATOMIC_LONG_VALUE_GET_AND_SET:
+                return new ClientAtomicLongValueGetAndSetRequest(reader);
+
+            case OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET:
+                return new ClientAtomicLongValueCompareAndSetRequest(reader);
+
+            case OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET_AND_GET:
+                return new ClientAtomicLongValueCompareAndSetAndGetRequest(reader);
+
+            case OP_SET_GET_OR_CREATE:
+                return new ClientIgniteSetGetOrCreateRequest(reader);
+
+            case OP_SET_CLOSE:
+                return new ClientIgniteSetCloseRequest(reader);
+
+            case OP_SET_EXISTS:
+                return new ClientIgniteSetExistsRequest(reader);
+
+            case OP_SET_VALUE_ADD:
+                return new ClientIgniteSetValueAddRequest(reader);
+
+            case OP_SET_VALUE_ADD_ALL:
+                return new ClientIgniteSetValueAddAllRequest(reader);
+
+            case OP_SET_VALUE_REMOVE:
+                return new ClientIgniteSetValueRemoveRequest(reader);
+
+            case OP_SET_VALUE_REMOVE_ALL:
+                return new ClientIgniteSetValueRemoveAllRequest(reader);
+
+            case OP_SET_VALUE_CONTAINS:
+                return new ClientIgniteSetValueContainsRequest(reader);
+
+            case OP_SET_VALUE_CONTAINS_ALL:
+                return new ClientIgniteSetValueContainsAllRequest(reader);
+
+            case OP_SET_VALUE_RETAIN_ALL:
+                return new ClientIgniteSetValueRetainAllRequest(reader);
+
+            case OP_SET_SIZE:
+                return new ClientIgniteSetSizeRequest(reader);
+
+            case OP_SET_CLEAR:
+                return new ClientIgniteSetClearRequest(reader);
+
+            case OP_SET_ITERATOR_START:
+                return new ClientIgniteSetIteratorStartRequest(reader);
+
+            case OP_SET_ITERATOR_GET_PAGE:
+                return new ClientIgniteSetIteratorGetPageRequest(reader);
+
+            case OP_SERVICE_GET_TOPOLOGY:
+                return new ClientServiceTopologyRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,

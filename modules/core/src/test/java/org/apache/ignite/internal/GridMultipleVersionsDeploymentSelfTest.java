@@ -58,6 +58,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
 public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTest {
     /** Excluded classes. */
     private static final String[] EXCLUDE_CLASSES = new String[] {
+        GridMultipleVersionsDeploymentSelfTest.class.getName(),
         GridDeploymentTestTask.class.getName(),
         GridDeploymentTestJob.class.getName()
     };

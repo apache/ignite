@@ -783,7 +783,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 int size = readInt();
                 byte colType = arr[pos++];
 
-                Object res = objMap.get(pos);
+                Object res = objMap.get(valPos);
                 Object parseRes;
 
                 switch (colType) {
@@ -808,8 +808,8 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                         throw new BinaryObjectException("Unknown collection type: " + colType);
                 }
 
-                if (res == null) {
-                    objMap.put(pos, parseRes);
+                if (res == null || res instanceof LazyCollection) {
+                    objMap.put(valPos, parseRes);
 
                     res = parseRes;
                 }
@@ -818,11 +818,11 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             }
 
             case GridBinaryMarshaller.MAP: {
-                Object res = objMap.get(pos);
+                Object res = objMap.get(valPos);
                 Object parseRes = BinaryLazyMap.parseMap(this);
 
-                if (res == null) {
-                    objMap.put(pos, parseRes);
+                if (res == null || res instanceof LazyCollection) {
+                    objMap.put(valPos, parseRes);
 
                     res = parseRes;
                 }
@@ -843,8 +843,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
                 int start = readInt();
 
-                BinaryObjectImpl binaryObj = new BinaryObjectImpl(ctx, arr,
-                    pos - 4 - size + start);
+                BinaryObjectImpl binaryObj = new BinaryObjectImpl(ctx, arr, pos - 4 - size + start);
 
                 return new BinaryPlainBinaryObject(binaryObj);
             }

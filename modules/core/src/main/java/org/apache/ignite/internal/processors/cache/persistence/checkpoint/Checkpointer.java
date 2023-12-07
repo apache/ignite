@@ -44,11 +44,10 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
@@ -75,7 +74,6 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
-import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.LOCK_RELEASED;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointReadWriteLock.CHECKPOINT_RUNNER_THREAD_PREFIX;
@@ -135,9 +133,6 @@ public class Checkpointer extends GridWorker {
     /** Failure processor. */
     private final FailureProcessor failureProcessor;
 
-    /** Snapshot manager. */
-    private final IgniteCacheSnapshotManager snapshotMgr;
-
     /** Metrics. */
     private final DataStorageMetricsImpl persStoreMetrics;
 
@@ -191,7 +186,6 @@ public class Checkpointer extends GridWorker {
      * @param logger Logger.
      * @param detector Long JVM pause detector.
      * @param failureProcessor Failure processor.
-     * @param snapshotManager Snapshot manager.
      * @param dsMetrics Data storage metrics.
      * @param cacheProcessor Cache processor.
      * @param checkpoint Implementation of checkpoint.
@@ -207,7 +201,6 @@ public class Checkpointer extends GridWorker {
         Function<Class<?>, IgniteLogger> logger,
         LongJVMPauseDetector detector,
         FailureProcessor failureProcessor,
-        IgniteCacheSnapshotManager snapshotManager,
         DataStorageMetricsImpl dsMetrics,
         GridCacheProcessor cacheProcessor,
         CheckpointWorkflow checkpoint,
@@ -220,7 +213,6 @@ public class Checkpointer extends GridWorker {
         this.pauseDetector = detector;
         this.checkpointFreq = checkpointFrequency;
         this.failureProcessor = failureProcessor;
-        this.snapshotMgr = snapshotManager;
         this.checkpointWorkflow = checkpoint;
         this.checkpointPagesWriterFactory = factory;
         this.persStoreMetrics = dsMetrics;
@@ -260,7 +252,7 @@ public class Checkpointer extends GridWorker {
 
                 if (skipCheckpointOnNodeStop && (isCancelled() || shutdownNow)) {
                     if (log.isInfoEnabled())
-                        log.warning("Skipping last checkpoint because node is stopping.");
+                        log.info("Skipping last checkpoint because node is stopping.");
 
                     return;
                 }
@@ -273,7 +265,7 @@ public class Checkpointer extends GridWorker {
                     this.enableChangeApplied = null;
                 }
 
-                if (checkpointsEnabled)
+                if (checkpointsEnabled && !shutdownNow)
                     doCheckpoint();
                 else {
                     synchronized (this) {
@@ -294,7 +286,7 @@ public class Checkpointer extends GridWorker {
             throw t;
         }
         finally {
-            if (err == null && !(isCancelled))
+            if (err == null && !(isCancelled.get()))
                 err = new IllegalStateException("Thread is terminated unexpectedly: " + name());
 
             if (err instanceof OutOfMemoryError)
@@ -382,29 +374,6 @@ public class Checkpointer extends GridWorker {
     }
 
     /**
-     * @param snapshotOperation Snapshot operation.
-     */
-    public IgniteInternalFuture wakeupForSnapshotCreation(SnapshotOperation snapshotOperation) {
-        GridFutureAdapter<Object> ret;
-
-        synchronized (this) {
-            scheduledCp.nextCpNanos(System.nanoTime());
-
-            scheduledCp.reason("snapshot");
-
-            scheduledCp.nextSnapshot(true);
-
-            scheduledCp.snapshotOperation(snapshotOperation);
-
-            ret = scheduledCp.futureFor(LOCK_RELEASED);
-
-            notifyAll();
-        }
-
-        return ret;
-    }
-
-    /**
      *
      */
     private void doCheckpoint() {
@@ -436,24 +405,23 @@ public class Checkpointer extends GridWorker {
                 if (log.isInfoEnabled()) {
                     long possibleJvmPauseDur = possibleLongJvmPauseDuration(tracker);
 
-                    if (log.isInfoEnabled())
-                        log.info(
-                            String.format(
-                                CHECKPOINT_STARTED_LOG_FORMAT,
-                                chp.cpEntry == null ? "" : chp.cpEntry.checkpointId(),
-                                chp.cpEntry == null ? "" : chp.cpEntry.checkpointMark(),
-                                tracker.beforeLockDuration(),
-                                tracker.lockWaitDuration(),
-                                tracker.listenersExecuteDuration(),
-                                tracker.lockHoldDuration(),
-                                tracker.walCpRecordFsyncDuration(),
-                                tracker.writeCheckpointEntryDuration(),
-                                tracker.splitAndSortCpPagesDuration(),
-                                possibleJvmPauseDur > 0 ? "possibleJvmPauseDuration=" + possibleJvmPauseDur + "ms, " : "",
-                                chp.pagesSize,
-                                chp.progress.reason()
-                            )
-                        );
+                    log.info(
+                        String.format(
+                            CHECKPOINT_STARTED_LOG_FORMAT,
+                            chp.cpEntry == null ? "" : chp.cpEntry.checkpointId(),
+                            chp.cpEntry == null ? "" : chp.cpEntry.checkpointMark(),
+                            tracker.beforeLockDuration(),
+                            tracker.lockWaitDuration(),
+                            tracker.listenersExecuteDuration(),
+                            tracker.lockHoldDuration(),
+                            tracker.walCpRecordFsyncDuration(),
+                            tracker.writeCheckpointEntryDuration(),
+                            tracker.splitAndSortCpPagesDuration(),
+                            possibleJvmPauseDur > 0 ? "possibleJvmPauseDuration=" + possibleJvmPauseDur + "ms, " : "",
+                            chp.pagesSize,
+                            chp.progress.reason()
+                        )
+                    );
                 }
 
                 if (!writePages(tracker, chp.cpPages, chp.progress, this, this::isShutdownNow))
@@ -475,8 +443,6 @@ public class Checkpointer extends GridWorker {
                 tracker.onPagesWriteStart();
                 tracker.onFsyncStart();
             }
-
-            snapshotMgr.afterCheckpointPageWritten();
 
             int destroyedPartitionsCnt = destroyEvictedPartitions();
 
@@ -622,6 +588,8 @@ public class Checkpointer extends GridWorker {
         }
 
         if (persStoreMetrics.metricsEnabled()) {
+            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cacheProcessor.context().database();
+
             persStoreMetrics.onCheckpoint(
                 tracker.beforeLockDuration(),
                 tracker.lockWaitDuration(),
@@ -637,7 +605,9 @@ public class Checkpointer extends GridWorker {
                 tracker.checkpointStartTime(),
                 chp.pagesSize,
                 tracker.dataPagesWritten(),
-                tracker.cowPagesWritten()
+                tracker.cowPagesWritten(),
+                dbMgr.forAllPageStores(PageStore::size),
+                dbMgr.forAllPageStores(PageStore::getSparseSize)
             );
         }
     }
@@ -699,7 +669,7 @@ public class Checkpointer extends GridWorker {
 
             Runnable destroyPartTask = () -> {
                 try {
-                    offheap.destroyPartitionStore(grpId, partId);
+                    offheap.destroyPartitionStore(partId);
 
                     req.onDone(null);
 
@@ -826,7 +796,7 @@ public class Checkpointer extends GridWorker {
         catch (InterruptedException ignored) {
             Thread.currentThread().interrupt();
 
-            isCancelled = true;
+            isCancelled.set(true);
         }
     }
 
@@ -887,7 +857,7 @@ public class Checkpointer extends GridWorker {
             log.debug("Cancelling grid runnable: " + this);
 
         // Do not interrupt runner thread.
-        isCancelled = true;
+        isCancelled.set(true);
 
         synchronized (this) {
             notifyAll();
@@ -915,7 +885,7 @@ public class Checkpointer extends GridWorker {
     public void shutdownNow() {
         shutdownNow = true;
 
-        if (!isCancelled)
+        if (!isCancelled.get())
             cancel();
     }
 

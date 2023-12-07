@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -95,7 +96,7 @@ public class WalCompactionNoArchiverTest extends GridCommonAbstractTest {
     @WithSystemProperty(key = "IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT", value = "1")
     public void testNoCompressionErrors() throws Exception {
         IgniteEx ig = startGrid(0);
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, byte[]> cache = ig.cache(CACHE_NAME);
 

@@ -46,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Provided implementations may be used for test purposes:
  * <ul>
- *     <li>{@ignitelink org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStore}</li>
+ *     <li>{@code org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStore}</li>
  *     <li>{@link CacheJdbcBlobStore}</li>
  * </ul>
  * <p>

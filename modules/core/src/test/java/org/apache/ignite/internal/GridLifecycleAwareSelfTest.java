@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal;
 
+import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorMessageInterceptor;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
@@ -75,7 +74,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
     /**
      */
-    private static class TestContextFactory extends TestLifecycleAware implements GridSslContextFactory {
+    private static class TestContextFactory extends TestLifecycleAware implements Factory<SSLContext> {
         /**
          */
         TestContextFactory() {
@@ -83,7 +82,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
         }
 
         /** {@inheritDoc} */
-        @Override public SSLContext createSslContext() throws SSLException {
+        @Override public SSLContext create() {
             return null;
         }
     }
@@ -173,7 +172,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
         TestContextFactory ctxFactory = new TestContextFactory();
 
-        clientCfg.setSslContextFactory(ctxFactory);
+        clientCfg.setSslFactory(ctxFactory);
 
         lifecycleAwares.add(ctxFactory);
 

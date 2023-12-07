@@ -90,7 +90,7 @@ public class IgniteCreateIndexBenchmark extends IgniteCacheAbstractBenchmark<Int
 
         final int testThreads = cfg.threads();
 
-         if (testThreads != 1)
+        if (testThreads != 1)
             throw new IllegalArgumentException("Invalid number of threads. IgniteCreateIndexBenchmark should be run" +
                 " with a single thread. [threads=" + testThreads + ']');
 

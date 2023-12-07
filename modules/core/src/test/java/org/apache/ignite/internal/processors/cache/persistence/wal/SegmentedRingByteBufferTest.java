@@ -354,7 +354,8 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
                         if (seg == null) {
                             try {
                                 restartBarrier.await(getTestTimeout(), TimeUnit.MILLISECONDS);
-                            } catch (InterruptedException | TimeoutException | BrokenBarrierException e) {
+                            }
+                            catch (InterruptedException | TimeoutException | BrokenBarrierException e) {
                                 break;
                             }
 

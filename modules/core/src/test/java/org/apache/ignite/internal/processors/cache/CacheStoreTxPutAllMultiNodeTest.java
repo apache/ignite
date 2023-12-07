@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.CacheStoreSessionResource;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -62,8 +61,6 @@ public class CacheStoreTxPutAllMultiNodeTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
         startGrid(1);
         startGrid(2);
 
@@ -95,7 +92,7 @@ public class CacheStoreTxPutAllMultiNodeTest extends GridCommonAbstractTest {
 
         startGrid(3);
 
-        IgniteTxManager txMgr = ((IgniteEx) client).context().cache().context().tm();
+        IgniteTxManager txMgr = ((IgniteEx)client).context().cache().context().tm();
 
         long curTime = U.currentTimeMillis();
 

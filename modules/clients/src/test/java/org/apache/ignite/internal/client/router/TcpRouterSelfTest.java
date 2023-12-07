@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.client.router;
 
-import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 
 /**
  * Tests the simplest use case for router: singe router proxies connections to a single node.
@@ -29,7 +30,7 @@ public class TcpRouterSelfTest extends TcpRouterAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridSslContextFactory sslContextFactory() {
+    @Override protected Factory<SSLContext> sslContextFactory() {
         return null;
     }
 }

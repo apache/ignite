@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.managers.deployment.P2PClassLoadingIssues;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -143,6 +144,9 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
                 receiver.receive(cache, col);
 
             return null;
+        }
+        catch (NoClassDefFoundError e) {
+            return P2PClassLoadingIssues.rethrowDisarmedP2PClassLoadingFailure(e);
         }
         finally {
             if (ignoreDepOwnership)

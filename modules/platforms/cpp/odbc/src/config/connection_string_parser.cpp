@@ -54,6 +54,7 @@ namespace ignite
             const std::string ConnectionStringParser::Key::uid                    = "uid";
             const std::string ConnectionStringParser::Key::pwd                    = "pwd";
             const std::string ConnectionStringParser::Key::nestedTxMode           = "nested_tx_mode";
+            const std::string ConnectionStringParser::Key::engineMode             = "query_engine";
 
             ConnectionStringParser::ConnectionStringParser(Configuration& cfg):
                 cfg(cfg)
@@ -455,6 +456,23 @@ namespace ignite
                     }
 
                     cfg.SetNestedTxMode(mode);
+                }
+                else if (lKey == Key::engineMode)
+                {
+                    EngineMode::Type mode = EngineMode::FromString(value);
+
+                    if (mode == EngineMode::UNKNOWN)
+                    {
+                        if (diag)
+                        {
+                            diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                                "Specified SQL engine is not supported. Default value used ('error').");
+                        }
+
+                        return;
+                    }
+
+                    cfg.SetEngineMode(mode);
                 }
                 else if (diag)
                 {

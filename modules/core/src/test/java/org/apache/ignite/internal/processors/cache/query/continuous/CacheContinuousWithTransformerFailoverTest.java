@@ -183,7 +183,8 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
 
                 assertTrue(latch.await(10, SECONDS));
             }
-        } finally {
+        }
+        finally {
             stopAllGrids();
         }
     }
@@ -252,7 +253,8 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
                 assertTrue(latch1.await(10, SECONDS));
                 assertTrue(latch2.await(10, SECONDS));
             }
-        } finally {
+        }
+        finally {
             stopAllGrids();
         }
     }

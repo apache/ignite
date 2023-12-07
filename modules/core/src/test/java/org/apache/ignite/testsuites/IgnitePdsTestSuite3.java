@@ -20,7 +20,6 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.apache.ignite.internal.processors.cache.persistence.EagerTtlTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsNodeJoinWithCachesStopping;
@@ -45,22 +44,10 @@ public class IgnitePdsTestSuite3 {
     public static List<Class<?>> suite(Collection<Class> ignoredTests) {
         List<Class<?>> suite = new ArrayList<>();
 
-        addRealPageStoreTestsNotForDirectIo(suite, ignoredTests);
-
-        return suite;
-    }
-
-    /**
-     * Fills {@code suite} with PDS test subset, which operates with real page store, but requires long time to execute.
-     *
-     * @param suite suite to add tests into.
-     * @param ignoredTests Ignored tests list.`
-     */
-    private static void addRealPageStoreTestsNotForDirectIo(List<Class<?>> suite, Collection<Class> ignoredTests) {
-        // Rebalancing test
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsContinuousRestartTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsContinuousRestartTestWithExpiryPolicy.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsNodeJoinWithCachesStopping.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, EagerTtlTest.class, ignoredTests);
+
+        return suite;
     }
 }

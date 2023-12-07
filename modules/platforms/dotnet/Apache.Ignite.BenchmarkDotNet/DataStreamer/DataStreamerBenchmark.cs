@@ -25,7 +25,7 @@ namespace Apache.Ignite.BenchmarkDotNet.DataStreamer
     /// <summary>
     /// Data streamer benchmark.
     /// <para />
-    /// Results on Core i7-9700K, Ubuntu 20.04, .NET Core 2.0:
+    /// Results on Core i7-9700K, Ubuntu 20.04, .NET Core 5.0.5:
     /// |                 Method |     Mean |   Error |  StdDev | Ratio | RatioSD |
     /// |----------------------- |---------:|--------:|--------:|------:|--------:|
     /// |               Streamer | 182.6 ms | 3.60 ms | 5.05 ms |  1.00 |    0.00 |

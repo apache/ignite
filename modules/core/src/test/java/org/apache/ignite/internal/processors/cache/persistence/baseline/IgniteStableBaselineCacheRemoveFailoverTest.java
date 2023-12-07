@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -87,7 +88,7 @@ public class IgniteStableBaselineCacheRemoveFailoverTest extends GridCacheAbstra
 
         startGrids(GRIDS_COUNT);
 
-        grid(0).active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         startGrid(OUT_OF_BASELINE_GRID_ID);
 

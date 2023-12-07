@@ -84,6 +84,7 @@ public abstract class AbstractEvictionPolicyFactory<T> implements Factory<T> {
     /**
      * Sets maximum allowed cache size in bytes.
      *
+     * @param maxMemSize Maximum allowed cache size in bytes.
      * @return {@code this} for chaining.
      */
     public AbstractEvictionPolicyFactory setMaxMemorySize(long maxMemSize) {

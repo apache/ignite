@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.util.GridLogThrottle;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -63,8 +64,8 @@ public class WarningOnBigQueryResultsBaseTest extends AbstractIndexingCommonTest
 
     /** Log message pattern. */
     private static final Pattern logPtrn = Pattern.compile(
-        "fetched=([0-9]+), duration=([0-9]+)ms, type=(MAP|LOCAL|REDUCE), distributedJoin=(true|false), enforceJoinOrder=(true|false), " +
-            "lazy=(true|false), schema=(\\S+), sql");
+        "fetched=([0-9]+), duration=([0-9]+)ms, type=(MAP|LOCAL|REDUCE), distributedJoin=(true|false), " +
+            "enforceJoinOrder=(true|false), lazy=(true|false), schema=(\\S+), sql");
 
     /** Test log. */
     private static Map<String, BigResultsLogListener> logListeners = new HashMap<>();
@@ -108,14 +109,14 @@ public class WarningOnBigQueryResultsBaseTest extends AbstractIndexingCommonTest
                 getTestIgniteInstanceIndex(igniteInstanceName) < 2 ? TEST0_ATTR : TEST1_ATTR, true));
         }
 
-        ListeningTestLogger testLog = new ListeningTestLogger(false, log);
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
         BigResultsLogListener lst = new BigResultsLogListener();
 
         testLog.registerListener(lst);
 
         logListeners.put(igniteInstanceName, lst);
 
-        cfg.setGridLogger(new ListeningTestLogger(false, testLog));
+        cfg.setGridLogger(new ListeningTestLogger(testLog));
 
         return cfg;
     }
@@ -123,6 +124,9 @@ public class WarningOnBigQueryResultsBaseTest extends AbstractIndexingCommonTest
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
+
+        // Negative timeout to disable a throttling of the huge results warning messages.
+        GridLogThrottle.throttleTimeout(-1);
 
         // Starts the first node.
         startGrid(0);
@@ -161,6 +165,8 @@ public class WarningOnBigQueryResultsBaseTest extends AbstractIndexingCommonTest
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        GridLogThrottle.throttleTimeout(GridLogThrottle.DFLT_THROTTLE_TIMEOUT);
 
         super.afterTestsStopped();
     }
@@ -269,10 +275,7 @@ public class WarningOnBigQueryResultsBaseTest extends AbstractIndexingCommonTest
                 schema = m.group(7);
 
                 sql = s.substring(s.indexOf(", sql='") + 7, s.indexOf("', plan="));
-                if ("REDUCE".equals(type))
-                    plan = s.substring(s.indexOf("', plan=") + 8, s.indexOf(", reqId="));
-                else
-                    plan = s.substring(s.indexOf("', plan=") + 8, s.indexOf(", node="));
+                plan = s.substring(s.indexOf("', plan=") + 8, s.indexOf(", reqId="));
 
                 assertTrue(sql.contains("SELECT"));
                 assertTrue(plan.contains("SELECT"));

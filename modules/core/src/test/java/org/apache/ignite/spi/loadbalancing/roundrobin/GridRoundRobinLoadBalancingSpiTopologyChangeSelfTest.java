@@ -43,7 +43,9 @@ public class GridRoundRobinLoadBalancingSpiTopologyChangeSelfTest
      * @return Per-task configuration parameter.
      */
     @GridSpiTestConfig
-    public boolean getPerTask() { return false; }
+    public boolean getPerTask() {
+        return false;
+    }
 
     /** {@inheritDoc} */
     @Override protected GridSpiTestContext initSpiContext() throws Exception {

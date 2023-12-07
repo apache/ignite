@@ -41,6 +41,7 @@ public class JmhKeystoreEncryptionSpiBenchmark extends JmhAbstractBenchmark {
     /** Data amount. */
     private static final int DATA_AMOUNT = 100;
 
+    /** */
     public static final int PAGE_SIZE = 1024 * 4;
 
     /** */
@@ -62,16 +63,22 @@ public class JmhKeystoreEncryptionSpiBenchmark extends JmhAbstractBenchmark {
         }
     }
 
+    /** */
     @State(Scope.Thread)
     public static class EncryptionData {
+        /** */
         KeystoreEncryptionSpi encSpi;
 
+        /** */
         KeystoreEncryptionKey[] keys = new KeystoreEncryptionKey[4];
 
+        /** */
         ByteBuffer[][] randomData = new ByteBuffer[DATA_AMOUNT][2];
 
+        /** */
         ByteBuffer res = ByteBuffer.allocate(PAGE_SIZE);
 
+        /** */
         public EncryptionData() {
             encSpi = new KeystoreEncryptionSpi();
 
@@ -82,6 +89,7 @@ public class JmhKeystoreEncryptionSpiBenchmark extends JmhAbstractBenchmark {
             encSpi.spiStart("test-instance");
         }
 
+        /** */
         @Setup(Level.Invocation)
         public void prepareCollection() {
             for (int i = 0; i < keys.length; i++)
@@ -97,12 +105,14 @@ public class JmhKeystoreEncryptionSpiBenchmark extends JmhAbstractBenchmark {
             }
         }
 
+        /** */
         @TearDown(Level.Iteration)
         public void tearDown() {
             //No - op
         }
     }
 
+    /** */
     public static void main(String[] args) throws Exception {
         Options opt = new OptionsBuilder()
             .include(JmhKeystoreEncryptionSpiBenchmark.class.getSimpleName())

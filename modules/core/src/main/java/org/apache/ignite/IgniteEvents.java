@@ -83,6 +83,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param p Predicate filter used to query events on remote nodes.
      * @param timeout Maximum time to wait for result, {@code 0} to wait forever.
      * @param types Event types to be queried.
+     * @param <T> Type of the result events.
      * @return Collection of grid events returned from specified nodes.
      * @throws IgniteException If query failed.
      */
@@ -97,6 +98,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param p Predicate filter used to query events on remote nodes.
      * @param timeout Maximum time to wait for result, {@code 0} to wait forever.
      * @param types Event types to be queried.
+     * @param <T> Type of the result events.
      * @return a Future representing pending completion of the query. The completed future contains
      *      collection of grid events returned from specified nodes.
      * @throws IgniteException If query failed.
@@ -288,6 +290,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param filter Optional filtering predicate. Only if predicates evaluates to {@code true} will the event
      *      end the wait.
      * @param types Types of the events to wait for. If not provided, all events will be passed to the filter.
+     * @param <T> Type of the result event instance.
      * @return Grid event.
      * @throws IgniteException If wait was interrupted.
      */
@@ -301,6 +304,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param filter Optional filtering predicate. Only if predicates evaluates to {@code true} will the event
      *      end the wait.
      * @param types Types of the events to wait for. If not provided, all events will be passed to the filter.
+     * @param <T> type of the result event instance.
      * @return a Future representing pending completion of the operation. The completed future contains grid event.
      * @throws IgniteException If wait was interrupted.
      */
@@ -313,6 +317,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param p Predicate to filter events. All predicates must be satisfied for the
      *      event to be returned.
      * @param types Event types to be queried.
+     * @param <T> Type of the result events.
      * @return Collection of grid events found on local node.
      */
     public <T extends Event> Collection<T> localQuery(IgnitePredicate<T> p, @Nullable int... types);

@@ -200,9 +200,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         GridCacheVersion ver,
         GridCacheVersion dhtVer,
         UUID primaryNodeId,
-        AffinityTopologyVersion topVer)
-        throws GridCacheEntryRemovedException
-    {
+        AffinityTopologyVersion topVer
+    ) throws GridCacheEntryRemovedException {
         assert dhtVer != null;
 
         cctx.versions().onReceived(primaryNodeId, dhtVer);
@@ -245,8 +244,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         long expireTime,
         long ttl,
         UUID primaryNodeId,
-        AffinityTopologyVersion topVer)
-    {
+        AffinityTopologyVersion topVer
+    ) {
         assert dhtVer != null;
 
         cctx.versions().onReceived(primaryNodeId, dhtVer);
@@ -265,7 +264,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                     if (!markObsolete(cctx.cache().nextVersion())) {
                         value(val);
 
-                        ttlAndExpireTimeExtras((int) ttl, expireTime);
+                        ttlAndExpireTimeExtras((int)ttl, expireTime);
 
                         primaryNode(primaryNodeId, topVer);
                     }
@@ -349,11 +348,10 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override protected Object readThrough(IgniteInternalTx tx, KeyCacheObject key, boolean reload,
-        UUID subjId, String taskName) throws IgniteCheckedException {
+        String taskName) throws IgniteCheckedException {
         return cctx.near().loadAsync(tx,
             F.asList(key),
             /*force primary*/false,
-            subjId,
             taskName,
             true,
             /*recovery should have already been checked*/
@@ -375,7 +373,6 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @param expireTime Expiration time.
      * @param evt Event flag.
      * @param topVer Topology version.
-     * @param subjId Subject ID.
      * @return {@code True} if initial value was set.
      * @throws IgniteCheckedException In case of error.
      * @throws GridCacheEntryRemovedException If entry was removed.
@@ -389,8 +386,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         long expireTime,
         boolean evt,
         boolean keepBinary,
-        AffinityTopologyVersion topVer,
-        UUID subjId)
+        AffinityTopologyVersion topVer)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert dhtVer != null;
 
@@ -401,8 +397,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         try {
             checkObsolete();
 
-                if (cctx.statisticsEnabled())
-                    cctx.cache().metrics0().onRead(false);
+            if (cctx.statisticsEnabled())
+                cctx.cache().metrics0().onRead(false);
 
             boolean ret = false;
 
@@ -444,7 +440,6 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                     val != null,
                     old,
                     hasVal,
-                    subjId,
                     null,
                     null,
                     keepBinary);
@@ -471,14 +466,19 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion ver, long expireTime, long updCntr)
-        throws IgniteCheckedException {
+    @Override protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion ver, long expireTime,
+        long updCntr, boolean primary) {
         // No-op: queries are disabled for near cache.
     }
 
     /** {@inheritDoc} */
-    @Override protected WALPointer logTxUpdate(IgniteInternalTx tx, CacheObject val, long expireTime, long updCntr)
-        throws IgniteCheckedException {
+    @Override protected WALPointer logTxUpdate(
+        IgniteInternalTx tx,
+        CacheObject val,
+        GridCacheVersion writeVer,
+        long expireTime,
+        long updCntr
+    ) {
         return null;
     }
 

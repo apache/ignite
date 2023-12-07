@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -137,7 +136,7 @@ public class TcpCommunicationHandshakeTimeoutTest extends GridCommonAbstractTest
 
         /** {@inheritDoc} */
         @Override public long tcpHandshake(SocketChannel ch, UUID rmtNodeId, GridSslMeta sslMeta,
-            HandshakeMessage msg) throws IgniteCheckedException, IOException {
+            HandshakeMessage msg) throws IgniteCheckedException {
             if (needToDelayd.get()) {
                 needToDelayd.set(false);
 

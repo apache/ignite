@@ -332,7 +332,7 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
     /** {@inheritDoc} */
     @Override public <T> GridCloseableIterator<T> iterator(final CX2<T2<Long, Integer>, T2<Long, Integer>, T> c,
        int part) {
-       return mapFor(part).iterator(c);
+        return mapFor(part).iterator(c);
     }
 
     /** {@inheritDoc} */

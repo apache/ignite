@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -36,15 +37,19 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -55,58 +60,97 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotStartRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static java.nio.file.Files.newDirectoryStream;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
+import static org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction.DFLT_PARTITION_COUNT;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TMP_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotMetaFileName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Base snapshot tests.
  */
+@RunWith(Parameterized.class)
 public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Default snapshot name. */
-    protected static final String SNAPSHOT_NAME = "testSnapshot";
-
-    /** Default number of partitions for cache. */
-    protected static final int CACHE_PARTS_COUNT = 8;
+    public static final String SNAPSHOT_NAME = "testSnapshot";
 
     /** Number of cache keys to pre-create at node start. */
     protected static final int CACHE_KEYS_RANGE = 1024;
 
+    /** Number of partitions within a snapshot cache group. */
+    protected static final int CACHE_PARTITIONS_COUNT = GridTestUtils.SF.apply(DFLT_PARTITION_COUNT);
+
     /** Timeout in milliseconds to await for snapshot operation being completed. */
     protected static final long TIMEOUT = 15_000;
+
+    /** */
+    protected static final DiskPageCompression DISK_PAGE_COMPRESSION =
+        IgniteSystemProperties.getEnum(IGNITE_DEFAULT_DISK_PAGE_COMPRESSION, DiskPageCompression.DISABLED);
+
+    /** */
+    protected static final int PAGE_SIZE =
+        IgniteSystemProperties.getInteger(IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE, DFLT_PAGE_SIZE);
 
     /** List of collected snapshot test events. */
     protected final List<Integer> locEvts = new CopyOnWriteArrayList<>();
@@ -117,6 +161,46 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Enable default data region persistence. */
     protected boolean persistence = true;
 
+    /** Master key name. */
+    protected String masterKeyName;
+
+    /** */
+    protected int[] primaries;
+
+    /** Cache value builder. */
+    protected Function<Integer, Object> valBuilder = String::valueOf;
+
+    /**
+     * @return Cache value builder.
+     */
+    protected Function<Integer, Object> valueBuilder() {
+        return valBuilder;
+    }
+
+    /** Enable encryption of all caches in {@code IgniteConfiguration} before start. */
+    @Parameterized.Parameter
+    public boolean encryption;
+
+    /** . */
+    @Parameterized.Parameter(1)
+    public boolean onlyPrimary;
+
+    /** Parameters. */
+    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}")
+    public static Collection<Object[]> params() {
+        boolean[] encVals = DISK_PAGE_COMPRESSION != DiskPageCompression.DISABLED
+            ? new boolean[] {false}
+            : new boolean[] {false, true};
+
+        List<Object[]> res = new ArrayList<>();
+
+        for (boolean enc: encVals)
+            for (boolean onlyPrimary: new boolean[] {true, false})
+                res.add(new Object[] { enc, onlyPrimary});
+
+        return res;
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -125,20 +209,49 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         discoSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
 
+        cfg.setDiscoverySpi(discoSpi);
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
+
         if (dfltCacheCfg != null)
             cfg.setCacheConfiguration(dfltCacheCfg);
 
+        if (cfg.isClientMode())
+            return cfg;
+
         return cfg.setConsistentId(igniteInstanceName)
-            .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setMaxSize(100L * 1024 * 1024)
+                    .setMaxSize(512L * 1024 * 1024)
                     .setPersistenceEnabled(persistence))
                 .setCheckpointFrequency(3000)
-                .setPageSize(DFLT_PAGE_SIZE))
+                .setPageSize(PAGE_SIZE)
+                .setWalCompactionEnabled(true))
             .setClusterStateOnStart(INACTIVE)
-            .setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT)
-            .setDiscoverySpi(discoSpi);
+            .setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg,
+        GridSpringResourceContext ctx) throws Exception {
+
+        if (encryption && persistence) {
+            KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
+
+            encSpi.setKeyStorePath(AbstractEncryptionTest.KEYSTORE_PATH);
+            encSpi.setKeyStorePassword(AbstractEncryptionTest.KEYSTORE_PASSWORD.toCharArray());
+
+            if (masterKeyName != null)
+                encSpi.setMasterKeyName(masterKeyName);
+
+            cfg.setEncryptionSpi(encSpi);
+
+            if (cfg.getCacheConfiguration() != null) {
+                for (CacheConfiguration<?, ?> cacheCfg : cfg.getCacheConfiguration())
+                    cacheCfg.setEncryptionEnabled(true);
+            }
+        }
+
+        return super.startGrid(igniteInstanceName, cfg, ctx);
     }
 
     /** @throws Exception If fails. */
@@ -178,10 +291,42 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @param evts Events to check.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    protected void waitForEvents(List<Integer> evts) throws IgniteInterruptedCheckedException {
-        boolean caught = waitForCondition(() -> locEvts.containsAll(evts), 10_000);
+    protected void waitForEvents(Integer... evts) throws IgniteInterruptedCheckedException {
+        boolean caught = waitForCondition(() -> locEvts.containsAll(Arrays.asList(evts)), TIMEOUT);
 
         assertTrue("Events must be caught [locEvts=" + locEvts + ']', caught);
+    }
+
+    /**
+     * @param ccfg Ensures the cache is absent.
+     * @throws IgniteCheckedException if failed.
+     */
+    protected void ensureCacheAbsent(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException, InterruptedException {
+        String cacheName = ccfg.getName();
+
+        for (Ignite ignite : G.allGrids()) {
+            GridKernalContext kctx = ((IgniteEx)ignite).context();
+
+            if (kctx.clientNode())
+                continue;
+
+            CacheGroupDescriptor desc = kctx.cache().cacheGroupDescriptors().get(CU.cacheId(cacheName));
+
+            assertNull("nodeId=" + kctx.localNodeId() + ", cache=" + cacheName, desc);
+
+            boolean success = GridTestUtils.waitForCondition(
+                () -> !kctx.cache().context().snapshotMgr().isRestoring(),
+                TIMEOUT);
+
+            assertTrue("The process has not finished on the node " + kctx.localNodeId(), success);
+
+            File dir = ((FilePageStoreManager)kctx.cache().context().pageStore()).cacheWorkDir(ccfg);
+
+            String errMsg = String.format("%s, dir=%s, exists=%b, files=%s",
+                ignite.name(), dir, dir.exists(), Arrays.toString(dir.list()));
+
+            assertTrue(errMsg, !dir.exists() || dir.list().length == 0);
+        }
     }
 
     /**
@@ -192,7 +337,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         return ccfg.setCacheMode(CacheMode.PARTITIONED)
             .setBackups(2)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTS_COUNT));
+            .setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTITIONS_COUNT))
+            .setEncryptionEnabled(encryption);
     }
 
     /**
@@ -273,23 +419,54 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         Function<Integer, V> factory,
         CacheConfiguration<Integer, V>... ccfgs
     ) throws Exception {
-        for (int g = 0; g < grids; g++)
-            startGrid(optimize(getConfiguration(getTestIgniteInstanceName(g))
-                .setCacheConfiguration(ccfgs)));
+        return startGridsWithCache(grids, keys, factory, (id, cfg) -> cfg.getWorkDirectory(), ccfgs);
+    }
+
+    /**
+     * @param grids Number of ignite instances to start.
+     * @param keys Number of keys to create.
+     * @param factory Factory which produces values.
+     * @param <V> Cache value type.
+     * @return Ignite coordinator instance.
+     * @throws Exception If fails.
+     */
+    protected <V> IgniteEx startGridsWithCache(
+        int grids,
+        int keys,
+        Function<Integer, V> factory,
+        BiFunction<Integer, IgniteConfiguration, String> newWorkDir,
+        CacheConfiguration<Integer, V>... ccfgs
+    ) throws Exception {
+        for (int g = 0; g < grids; g++) {
+            IgniteConfiguration cfg = optimize(getConfiguration(getTestIgniteInstanceName(g))
+                .setCacheConfiguration(ccfgs));
+
+            cfg.setWorkDirectory(newWorkDir.apply(g, cfg));
+
+            startGrid(cfg);
+        }
 
         IgniteEx ig = grid(0);
 
         ig.cluster().baselineAutoAdjustEnabled(false);
         ig.cluster().state(ClusterState.ACTIVE);
 
-        for (int i = 0; i < keys; i++) {
-            for (CacheConfiguration<Integer, V> ccfg : ccfgs)
-                ig.getOrCreateCache(ccfg.getName()).put(i, factory.apply(i));
+        for (CacheConfiguration<Integer, V> ccfg : ccfgs) {
+            try (IgniteDataStreamer<Integer, V> ds = ig.dataStreamer(ccfg.getName())) {
+                for (int i = 0; i < keys; i++)
+                    ds.addData(i, factory.apply(i));
+            }
         }
 
         forceCheckpoint();
 
         ig.events().localListen(e -> locEvts.add(e.type()), EVTS_CLUSTER_SNAPSHOT);
+
+        if (dfltCacheCfg != null) {
+            primaries = ig.cacheNames().contains(dfltCacheCfg.getName())
+                ? ig.affinity(dfltCacheCfg.getName()).primaryPartitions(ig.localNode())
+                : null;
+        }
 
         return ig;
     }
@@ -371,6 +548,169 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param nodesCnt Nodes count.
+     * @param keysCnt Number of keys to create.
+     * @param startClient {@code True} to start an additional client node.
+     * @return Ignite coordinator instance.
+     * @throws Exception if failed.
+     */
+    protected IgniteEx startGridsWithSnapshot(int nodesCnt, int keysCnt, boolean startClient) throws Exception {
+        return startGridsWithSnapshot(nodesCnt, keysCnt, startClient, false);
+    }
+
+    /**
+     * @param nodesCnt Nodes count.
+     * @param keysCnt Number of keys to create.
+     * @param startClient {@code True} to start an additional client node.
+     * @param skipCheck Skip check of snapshot.
+     * @return Ignite coordinator instance.
+     * @throws Exception if failed.
+     */
+    protected IgniteEx startGridsWithSnapshot(
+        int nodesCnt,
+        int keysCnt,
+        boolean startClient,
+        boolean skipCheck
+    ) throws Exception {
+        IgniteEx ignite = startGridsWithCache(nodesCnt, keysCnt, valueBuilder(), dfltCacheCfg);
+
+        if (startClient)
+            ignite = startClientGrid("client");
+
+        snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(TIMEOUT);
+
+        if (!skipCheck)
+            checkSnapshot(SNAPSHOT_NAME, null);
+
+        ignite.cache(dfltCacheCfg.getName()).destroy();
+
+        awaitPartitionMapExchange();
+
+        return ignite;
+    }
+
+    /** */
+    protected void createAndCheckSnapshot(IgniteEx ig, String snpName) throws IgniteCheckedException {
+        createAndCheckSnapshot(ig, snpName, null);
+    }
+
+    /** */
+    protected void createAndCheckSnapshot(IgniteEx ig, String snpName, String snpPath) throws IgniteCheckedException {
+        createAndCheckSnapshot(ig, snpName, snpPath, 0);
+    }
+
+    /** */
+    protected void createAndCheckSnapshot(
+        IgniteEx ig,
+        String snpName,
+        String snpPath,
+        long timeout
+    ) throws IgniteCheckedException {
+        IgniteFutureImpl<Void> fut = snp(ig).createSnapshot(snpName, snpPath, false, onlyPrimary);
+
+        if (timeout == 0)
+            fut.get();
+        else
+            fut.get(timeout);
+
+        checkSnapshot(snpName, snpPath);
+    }
+
+    /** @param snpName Snapshot name. */
+    protected void checkSnapshot(String snpName, String snpPath) throws IgniteCheckedException {
+        Map<String, Map<Integer, Integer>> cachesParts = new HashMap<>();
+
+        Predicate<Ignite> filter = node -> !node.configuration().isClientMode() &&
+            node.cluster().currentBaselineTopology()
+                .stream()
+                .anyMatch(n -> Objects.equals(n.consistentId(), node.cluster().localNode().consistentId()));
+
+        int nodesCnt = 0;
+
+        for (Ignite node: G.allGrids()) {
+            if (!filter.test(node))
+                continue;
+
+            nodesCnt++;
+
+            IgniteEx node0 = (IgniteEx)node;
+
+            File nodeSnapDir = new File(
+                snp(node0).snapshotLocalDir(snpName, snpPath).getAbsolutePath(),
+                databaseRelativePath(node0.context().pdsFolderResolver().resolveFolders().folderName())
+            );
+
+            if (!nodeSnapDir.exists())
+                continue;
+
+            File[] cacheDirs = nodeSnapDir.listFiles(f -> f.isDirectory() && !f.getName().equals(METASTORAGE_DIR_NAME));
+
+            for (File cacheDir : cacheDirs) {
+                String name = cacheDir.getName().startsWith(CACHE_GRP_DIR_PREFIX)
+                    ? cacheDir.getName().substring(CACHE_GRP_DIR_PREFIX.length())
+                    : cacheDir.getName().substring(CACHE_DIR_PREFIX.length());
+
+                Map<Integer, Integer> cacheParts = cachesParts.computeIfAbsent(name, k -> new HashMap<>());
+
+                File[] parts = cacheDir.listFiles(f ->
+                    f.getName().startsWith(PART_FILE_PREFIX)
+                        && f.getName().endsWith(FILE_SUFFIX));
+
+                for (File partFile : parts) {
+                    int part = Integer.parseInt(partFile.getName()
+                        .substring(PART_FILE_PREFIX.length())
+                        .replace(FILE_SUFFIX, ""));
+
+                    cacheParts.compute(part, (part0, cnt) -> (cnt == null ? 0 : cnt) + 1);
+                }
+            }
+        }
+
+        assertTrue(nodesCnt > 0);
+
+        for (Map.Entry<String, Map<Integer, Integer>> entry : cachesParts.entrySet()) {
+            String cache = entry.getKey();
+
+            int parts = -1;
+            Integer expPartCopiesInSnp;
+
+            if (onlyPrimary)
+                expPartCopiesInSnp = 1;
+            else {
+                int backups = -1;
+                int affinityNodes = 0;
+
+                for (Ignite node: G.allGrids()) {
+                    if (!filter.test(node))
+                        continue;
+
+                    CacheGroupContext grpCtx = ((IgniteEx)node).context().cache().cacheGroup(CU.cacheId(cache));
+
+                    if (grpCtx != null) {
+                        backups = grpCtx.config().getBackups();
+                        parts = grpCtx.affinity().partitions();
+
+                        affinityNodes++;
+                    }
+                }
+
+                assertTrue(backups != -1);
+                assertTrue(parts != -1);
+                assertTrue(affinityNodes > 0);
+
+                expPartCopiesInSnp = backups == Integer.MAX_VALUE
+                    ? affinityNodes
+                    : Math.min(backups + 1, affinityNodes);
+            }
+
+            Map<Integer, Integer> cacheParts = entry.getValue();
+
+            for (int i = 0; i < parts; i++)
+                assertEquals("[cache=" + cache + ", part=" + i + ']', expPartCopiesInSnp, cacheParts.get(i));
+        }
+    }
+
+    /**
      * @param ignite Ignite instance.
      * @return Snapshot manager related to given ignite instance.
      */
@@ -401,6 +741,17 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param cache Cache.
+     * @param keysCnt Expected number of keys.
+     */
+    protected void assertCacheKeys(IgniteCache<Object, Object> cache, int keysCnt) {
+        assertEquals(keysCnt, cache.size());
+
+        for (int i = 0; i < keysCnt; i++)
+            assertEquals(valueBuilder().apply(i), cache.get(i));
+    }
+
+    /**
      * @param grids Grids to block snapshot executors.
      * @return Wrapped snapshot executor list.
      */
@@ -409,13 +760,13 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         for (Ignite grid : grids) {
             IgniteSnapshotManager mgr = snp((IgniteEx)grid);
-            Function<String, SnapshotSender> old = mgr.localSnapshotSenderFactory();
+            BiFunction<String, String, SnapshotSender> old = mgr.localSnapshotSenderFactory();
 
             BlockingExecutor block = new BlockingExecutor(mgr.snapshotExecutorService());
             execs.add(block);
 
-            mgr.localSnapshotSenderFactory((snpName) ->
-                new DelegateSnapshotSender(log, block, old.apply(snpName)));
+            mgr.localSnapshotSenderFactory((snpName, snpPath) ->
+                new DelegateSnapshotSender(log, block, old.apply(snpName, snpPath)));
         }
 
         return execs;
@@ -457,6 +808,98 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             "Execution of snapshot tasks has been cancelled by external process");
 
         assertEquals("Snapshot directory must be empty due to snapshot cancelled", 0, snpDir.list().length);
+    }
+
+    /**
+     * @param snpName Unique snapshot name.
+     * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
+     * @param snpSndr Sender which used for snapshot sub-task processing.
+     * @return Future which will be completed when snapshot is done.
+     */
+    protected static IgniteInternalFuture<?> startLocalSnapshotTask(
+        GridCacheSharedContext<?, ?> cctx,
+        String snpName,
+        Map<Integer, Set<Integer>> parts,
+        boolean withMetaStorage,
+        SnapshotSender snpSndr
+    ) throws IgniteCheckedException {
+        AbstractSnapshotFutureTask<?> task = cctx.snapshotMgr().registerSnapshotTask(snpName,
+            null,
+            cctx.localNodeId(),
+            null,
+            parts,
+            withMetaStorage,
+            false,
+            false,
+            snpSndr
+        );
+
+        if (!(task instanceof SnapshotFutureTask))
+            throw new IgniteCheckedException("Snapshot task hasn't been registered: " + task);
+
+        SnapshotFutureTask snpFutTask = (SnapshotFutureTask)task;
+
+        snpFutTask.start();
+
+        // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
+        // due to checkpoint already running and we need to schedule the next one
+        // right after current will be completed.
+        cctx.database().forceCheckpoint(String.format(CP_SNAPSHOT_REASON, snpName));
+
+        snpFutTask.started().get();
+
+        return snpFutTask;
+    }
+
+    /** Checks incremental snapshot exists. */
+    protected boolean checkIncremental(IgniteEx node, String snpName, String snpPath, int incIdx) {
+        File incSnpDir = snp(node).incrementalSnapshotLocalDir(snpName, snpPath, incIdx);
+
+        if (incSnpDir.exists()) {
+            checkIncrementalSnapshotWalRecords(node, incSnpDir);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /** */
+    private void checkIncrementalSnapshotWalRecords(IgniteEx node, File incSnpDir) {
+        try {
+            IncrementalSnapshotMetadata incSnpMeta = snp(node).readFromFile(
+                new File(incSnpDir, snapshotMetaFileName(node.localNode().consistentId().toString())));
+
+            File incSnpWalDir = incrementalSnapshotWalsDir(incSnpDir, incSnpMeta.folderName());
+
+            WALIterator it = new IgniteWalIteratorFactory(log).iterator(
+                new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(incSnpWalDir));
+
+            boolean started = false;
+            boolean finished = false;
+
+            for (IgniteBiTuple<WALPointer, WALRecord> entry: it) {
+                assertFalse("IncrementalSnapshotFinishRecord must be the last record in snapshot", finished);
+
+                WALRecord rec = entry.getValue();
+
+                if (rec.type() == WALRecord.RecordType.INCREMENTAL_SNAPSHOT_START_RECORD) {
+                    if (((IncrementalSnapshotStartRecord)rec).id().equals(incSnpMeta.requestId()))
+                        started = true;
+                }
+
+                if (rec.type() == WALRecord.RecordType.INCREMENTAL_SNAPSHOT_FINISH_RECORD) {
+                    if (((IncrementalSnapshotFinishRecord)rec).id().equals(incSnpMeta.requestId()))
+                        finished = true;
+                }
+            }
+
+            assertTrue(started);
+            assertTrue(finished);
+        }
+        catch (IOException | IgniteCheckedException | IllegalArgumentException e) {
+            assert false : "Unexpected exception while checking segments: " + e;
+        }
     }
 
     /**
@@ -592,10 +1035,12 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         /** User id. */
         @QuerySqlField(index = true)
-        private final int id;
+        @GridToStringInclude
+        protected final int id;
 
         /** Order value. */
         @QuerySqlField
+        @GridToStringInclude
         protected int balance;
 
         /**

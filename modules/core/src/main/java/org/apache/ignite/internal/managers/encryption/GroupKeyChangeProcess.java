@@ -108,7 +108,7 @@ class GroupKeyChangeProcess {
      */
     public IgniteFuture<Void> start(Collection<String> cacheOrGrpNames) {
         if (ctx.clientNode())
-            throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
+            throw new UnsupportedOperationException("Client nodes can not perform this operation.");
 
         if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), CACHE_GROUP_KEY_CHANGE))
             throw new IllegalStateException("Not all nodes in the cluster support this operation.");
@@ -197,6 +197,12 @@ class GroupKeyChangeProcess {
                 "The previous change was not completed."));
         }
 
+        if (ctx.cache().context().snapshotMgr().isSnapshotCreating()
+            || ctx.cache().context().snapshotMgr().isRestoring()) {
+            return new GridFinishedFuture<>(new IgniteException("Cache group key change was rejected. " +
+                "Snapshot operation is in progress."));
+        }
+
         this.req = req;
 
         try {
@@ -267,7 +273,7 @@ class GroupKeyChangeProcess {
      * @param res Results.
      * @param err Errors.
      */
-    private void finishPrepare(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Exception> err) {
+    private void finishPrepare(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Throwable> err) {
         if (!err.isEmpty()) {
             if (req != null && req.requestId().equals(id))
                 req = null;
@@ -294,9 +300,11 @@ class GroupKeyChangeProcess {
 
             if (!ctx.clientNode())
                 ctx.encryption().changeCacheGroupKeyLocal(req.groupIds(), req.keyIds(), req.keys());
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             return new GridFinishedFuture<>(e);
-        } finally {
+        }
+        finally {
             this.req = null;
         }
 
@@ -310,7 +318,7 @@ class GroupKeyChangeProcess {
      * @param res Results.
      * @param err Errors.
      */
-    private void finishPerform(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Exception> err) {
+    private void finishPerform(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Throwable> err) {
         completeFuture(id, err, fut);
     }
 
@@ -320,7 +328,7 @@ class GroupKeyChangeProcess {
      * @param fut Key change future.
      * @return {@code True} if future was completed by this call.
      */
-    private boolean completeFuture(UUID reqId, Map<UUID, Exception> err, GroupKeyChangeFuture fut) {
+    private boolean completeFuture(UUID reqId, Map<UUID, Throwable> err, GroupKeyChangeFuture fut) {
         boolean isInitiator = fut != null && fut.id().equals(reqId);
 
         if (!isInitiator || fut.isDone())

@@ -163,6 +163,12 @@ public class GridNioServer<T> {
     /** */
     public static final String SENT_BYTES_METRIC_DESC = "Total number of bytes sent by current node";
 
+    /** The name of the metric that indicates whether SSL is enabled for the connector. */
+    public static final String SSL_ENABLED_METRIC_NAME = "SslEnabled";
+
+    /** The name of the metric that provides the active TCP sessions count. */
+    public static final String SESSIONS_CNT_METRIC_NAME = "ActiveSessionsCount";
+
     /** Defines how many times selector should do {@code selectNow()} before doing {@code select(long)}. */
     private long selectorSpins;
 
@@ -451,6 +457,14 @@ public class GridNioServer<T> {
             OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
             OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
         );
+
+        if (mreg != null) {
+            mreg.register(SESSIONS_CNT_METRIC_NAME, sessions::size, "Active TCP sessions count.");
+
+            boolean sslEnabled = Arrays.stream(filters).anyMatch(filter -> filter instanceof GridNioSslFilter);
+
+            mreg.register(SSL_ENABLED_METRIC_NAME, () -> sslEnabled, "Whether SSL is enabled");
+        }
     }
 
     /**
@@ -1411,7 +1425,8 @@ public class GridNioServer<T> {
             try {
                 boolean writeFinished = writeSslSystem(ses, sockCh);
 
-                if (!handshakeFinished) {
+                // If post-handshake message is not written fully (possible on JDK 17), we should retry.
+                if (!handshakeFinished || !writeFinished) {
                     if (writeFinished)
                         stopPollingForWrite(key, ses);
 
@@ -2119,6 +2134,7 @@ public class GridNioServer<T> {
                                         f.movedSocketChannel((SocketChannel)key.channel());
 
                                         key.cancel();
+                                        commitKeyCancellation();
 
                                         clientWorkers.get(f.toIndex()).offer(f);
                                     }
@@ -2206,12 +2222,14 @@ public class GridNioServer<T> {
                         }
                     }
 
-                    int res = 0;
+                    for (long i = 0; i < selectorSpins && selector.selectedKeys().isEmpty(); i++) {
+                        // We ignore selectNow() returned value and look at selectedKeys() size because we might
+                        // call a selectNow() during session migration (to make sure the selector is deregistered
+                        // before trying to re-register it again), and in such a case our selectNow() could return 0,
+                        // even though the selection set is not empty.
+                        selector.selectNow();
 
-                    for (long i = 0; i < selectorSpins && res == 0; i++) {
-                        res = selector.selectNow();
-
-                        if (res > 0) {
+                        if (!selector.selectedKeys().isEmpty()) {
                             // Walk through the ready keys collection and process network events.
                             updateHeartbeat();
 
@@ -2247,11 +2265,16 @@ public class GridNioServer<T> {
                         blockingSectionBegin();
 
                         // Wake up every 2 seconds to check if closed.
-                        int numKeys = selector.select(2000);
+
+                        // We ignore select() returned value and look at selectedKeys() size because we might
+                        // call a selectNow() during session migration (to make sure the selector is deregistered
+                        // before trying to re-register it again), and in such a case our select() could return 0,
+                        // even though the selection set is not empty.
+                        selector.select(2000);
 
                         blockingSectionEnd();
 
-                        if (numKeys > 0) {
+                        if (!selector.selectedKeys().isEmpty()) {
                             // Walk through the ready keys collection and process network events.
                             if (selectedKeys == null)
                                 processSelectedKeys(selector.selectedKeys());
@@ -2262,7 +2285,7 @@ public class GridNioServer<T> {
                         }
 
                         // select() call above doesn't throw on interruption; checking it here to propagate timely.
-                        if (!closed && !isCancelled && Thread.interrupted())
+                        if (!closed && !isCancelled.get() && Thread.interrupted())
                             throw new InterruptedException();
                     }
                     finally {
@@ -2308,6 +2331,16 @@ public class GridNioServer<T> {
                     U.close(selector, log);
                 }
             }
+        }
+
+        /**
+         * Makes sure that pending key cancellations are executed and the corresponding channels can be
+         * re-registered with our selector without causing {@link java.nio.channels.CancelledKeyException}s.
+         *
+         * @throws IOException If something goes wrong.
+         */
+        private void commitKeyCancellation() throws IOException {
+            selector.selectNow();
         }
 
         /**
@@ -2835,35 +2868,35 @@ public class GridNioServer<T> {
 
                 IOException err = new IOException("Failed to send message (connection was closed): " + ses);
 
-                if (outRecovery != null || inRecovery != null) {
-                    try {
+                try {
+                    if (outRecovery != null || inRecovery != null) {
                         // Poll will update recovery data.
                         while ((req = ses.pollFuture()) != null) {
                             if (req.skipRecovery())
                                 req.onError(err);
                         }
                     }
-                    finally {
-                        if (outRecovery != null)
-                            outRecovery.release();
+                    else {
+                        if (req != null)
+                            req.onError(err);
 
-                        if (inRecovery != null && inRecovery != outRecovery)
-                            inRecovery.release();
+                        while ((req = ses.pollFuture()) != null)
+                            req.onError(err);
+                    }
+
+                    try {
+                        filterChain.onSessionClosed(ses);
+                    }
+                    catch (IgniteCheckedException e1) {
+                        filterChain.onExceptionCaught(ses, e1);
                     }
                 }
-                else {
-                    if (req != null)
-                        req.onError(err);
+                finally {
+                    if (outRecovery != null)
+                        outRecovery.release();
 
-                    while ((req = ses.pollFuture()) != null)
-                        req.onError(err);
-                }
-
-                try {
-                    filterChain.onSessionClosed(ses);
-                }
-                catch (IgniteCheckedException e1) {
-                    filterChain.onExceptionCaught(ses, e1);
+                    if (inRecovery != null && inRecovery != outRecovery)
+                        inRecovery.release();
                 }
 
                 return true;
@@ -2954,7 +2987,7 @@ public class GridNioServer<T> {
         if (outboundMessagesQueueSizeMetric == null)
             return -1;
 
-        return (int) outboundMessagesQueueSizeMetric.value();
+        return (int)outboundMessagesQueueSizeMetric.value();
     }
 
     /**
@@ -4389,6 +4422,9 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override public void run() {
+            if (clientWorkers.size() < 2)
+                return;
+
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
             int w1 = rnd.nextInt(clientWorkers.size());

@@ -27,11 +27,12 @@ import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -40,7 +41,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.parseSubFolderName;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.parseSubFolderName;
 
 /**
  * Test for new and old style persistent storage folders generation
@@ -306,12 +307,12 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
             assertPdsDirsDefaultExist(genNewStyleSubfolderName(0, ignite));
 
             uuid = (UUID)ignite.cluster().localNode().consistentId();
-            ignite.active(false);
+            ignite.cluster().state(ClusterState.INACTIVE);
         }
         {
             final Ignite igniteRestart = startActivateGrid(1);
 
-            grid(0).active(true);
+            grid(0).cluster().state(ClusterState.ACTIVE);
             final Object consIdRestart = igniteRestart.cluster().localNode().consistentId();
 
             assertPdsDirsDefaultExist(genNewStyleSubfolderName(1, igniteRestart));
@@ -346,7 +347,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     @NotNull private Ignite startActivateGrid(int idx) throws Exception {
         final Ignite ignite = startGrid(idx);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         return ignite;
     }
@@ -365,7 +366,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
                 " but actual class is " + (consistentId == null ? null : consistentId.getClass()),
             consistentId instanceof UUID);
 
-        return PdsConsistentIdProcessor.genNewStyleSubfolderName(nodeIdx, (UUID)consistentId);
+        return PdsFolderResolver.genNewStyleSubfolderName(nodeIdx, (UUID)consistentId);
     }
 
     /**
@@ -378,7 +379,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         final Ignite ignite0 = startGrid(0);
         final Ignite ignite1 = startGrid(1);
 
-        ignite0.active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         ignite0.getOrCreateCache(CACHE_NAME).put("hi", "there!");
         ignite1.getOrCreateCache(CACHE_NAME).put("hi1", "there!");
@@ -403,7 +404,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         final Ignite ignite2 = startGrid(2);
         final Ignite ignite3 = startGrid(3);
 
-        ignite0.active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         ignite0.getOrCreateCache(CACHE_NAME).put("hi", "there!");
         ignite3.getOrCreateCache(CACHE_NAME).put("hi1", "there!");
@@ -433,7 +434,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     public void testNewStyleAlwaysSmallestNodeIndexIsCreatedMultithreaded() throws Exception {
         final Ignite ignite0 = startGridsMultiThreaded(11);
 
-        ignite0.active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         ignite0.getOrCreateCache(CACHE_NAME).put("hi", "there!");
         ignite0.getOrCreateCache(CACHE_NAME).put("hi1", "there!");
@@ -469,7 +470,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         this.configuredConsistentId = expDfltConsistentId2; //this is for create old node folder
         final Ignite ignite2 = startGrid(1);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         final String expVal = "there is compatible mode with old style folders!";
 
@@ -484,7 +485,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         final Ignite igniteRestart = startGrid(0);
         final Ignite igniteRestart2 = startGrid(1);
 
-        igniteRestart2.active(true);
+        igniteRestart2.cluster().state(ClusterState.ACTIVE);
 
         assertEquals(expDfltConsistentId1, igniteRestart.cluster().localNode().consistentId());
         assertEquals(expDfltConsistentId2, igniteRestart2.cluster().localNode().consistentId());
@@ -515,7 +516,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         final Ignite ignite1 = startGrid(0);
         final Ignite ignite2 = startGrid(1);
 
-        ignite1.active(true);
+        ignite1.cluster().state(ClusterState.ACTIVE);
 
         final String expVal = "there is compatible mode with old style folders!";
 
@@ -535,7 +536,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         final Ignite igniteRestart = startGrid(0);
         final Ignite igniteRestart2 = startGrid(1);
 
-        igniteRestart2.active(true);
+        igniteRestart2.cluster().state(ClusterState.ACTIVE);
 
         assertEquals(consistentId1, igniteRestart.cluster().localNode().consistentId());
         assertEquals(consistentId2, igniteRestart2.cluster().localNode().consistentId());
@@ -558,7 +559,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
         final Ignite ignite1 = startGrid(0);
 
-        ignite1.active(true);
+        ignite1.cluster().state(ClusterState.ACTIVE);
 
         final String expVal = "there is compatible mode with old style folders!";
 
@@ -575,7 +576,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
         final Ignite igniteRestart = startGrid(0);
 
-        igniteRestart.active(true);
+        igniteRestart.cluster().state(ClusterState.ACTIVE);
 
         assertEquals(consistentId1, igniteRestart.cluster().localNode().consistentId());
 
@@ -655,12 +656,12 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * @throws IgniteCheckedException if failed.
      */
     @NotNull private Set<Integer> getAllNodeIndexesInFolder() throws IgniteCheckedException {
-        final File curFolder = new File(U.defaultWorkDirectory(), PdsConsistentIdProcessor.DB_DEFAULT_FOLDER);
+        final File curFolder = new File(U.defaultWorkDirectory(), PdsFolderResolver.DB_DEFAULT_FOLDER);
         final Set<Integer> indexes = new TreeSet<>();
-        final File[] files = curFolder.listFiles(PdsConsistentIdProcessor.DB_SUBFOLDERS_NEW_STYLE_FILTER);
+        final File[] files = curFolder.listFiles(PdsFolderResolver.DB_SUBFOLDERS_NEW_STYLE_FILTER);
 
         for (File file : files) {
-            final PdsConsistentIdProcessor.FolderCandidate uid = parseSubFolderName(file, log);
+            final PdsFolderResolver.FolderCandidate uid = parseSubFolderName(file, log);
 
             if (uid != null)
                 indexes.add(uid.nodeIndex());
@@ -679,7 +680,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         assertDirectoryExist(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, subDirName);
         assertDirectoryExist(DataStorageConfiguration.DFLT_WAL_PATH, subDirName);
         assertDirectoryExist(DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, subDirName);
-        assertDirectoryExist(PdsConsistentIdProcessor.DB_DEFAULT_FOLDER, subDirName);
+        assertDirectoryExist(PdsFolderResolver.DB_DEFAULT_FOLDER, subDirName);
     }
 
     /**

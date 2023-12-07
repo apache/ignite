@@ -23,22 +23,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
     public enum CacheMode
     {
         /// <summary>
-        /// Specifies local-only cache behaviour. In this mode caches residing on
-        /// different grid nodes will not know about each other.
-        /// <para />
-        /// Other than distribution, <see cref="Local"/> caches still have all
-        /// the caching features, such as eviction, expiration, swapping,
-        /// querying, etc... This mode is very useful when caching read-only data
-        /// or data that automatically expires at a certain interval and
-        /// then automatically reloaded from persistence store.
-        /// </summary>
-        Local,
-
-        /// <summary>
         /// Specifies fully replicated cache behavior. In this mode all the keys are distributed
         /// to all participating nodes. 
         /// </summary>
-        Replicated,
+        Replicated = 1,
 
         /// <summary>
         /// Specifies partitioned cache behaviour. In this mode the overall
@@ -47,6 +35,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <para />
         /// Note that partitioned cache is always fronted by local 'near' cache which stores most recent data. 
         /// </summary>
-        Partitioned
+        Partitioned = 2
     }
 }

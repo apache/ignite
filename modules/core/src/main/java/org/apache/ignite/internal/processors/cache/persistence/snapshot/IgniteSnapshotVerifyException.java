@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Compound snapshot verification exception from the nodes where the verification process executed.
@@ -36,6 +37,8 @@ public class IgniteSnapshotVerifyException extends IgniteException {
      * @param map Map of received exceptions.
      */
     public IgniteSnapshotVerifyException(Map<ClusterNode, ? extends Exception> map) {
+        super(F.first(map.values()));
+
         exs.putAll(map);
     }
 

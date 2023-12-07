@@ -35,7 +35,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /** Test concurrent putAll/removeAll operations with unordered set of keys on atomic caches. */
@@ -61,9 +60,7 @@ public class IgniteCacheAtomicConcurrentUnorderedUpdateAllTest extends GridCommo
             new Object[] {CacheMode.PARTITIONED, Boolean.TRUE, Boolean.FALSE},
             new Object[] {CacheMode.PARTITIONED, Boolean.FALSE, Boolean.TRUE},
             new Object[] {CacheMode.REPLICATED, Boolean.FALSE, Boolean.FALSE},
-            new Object[] {CacheMode.REPLICATED, Boolean.TRUE, Boolean.FALSE},
-            new Object[] {CacheMode.LOCAL, Boolean.FALSE, Boolean.FALSE},
-            new Object[] {CacheMode.LOCAL, Boolean.TRUE, Boolean.FALSE}
+            new Object[] {CacheMode.REPLICATED, Boolean.TRUE, Boolean.FALSE}
         );
     }
 
@@ -115,7 +112,8 @@ public class IgniteCacheAtomicConcurrentUnorderedUpdateAllTest extends GridCommo
             if (threadIdx % 2 == 0) {
                 for (int i = 0; i < CACHE_SIZE; i++)
                     map.put(i, i);
-            } else {
+            }
+            else {
                 for (int i = CACHE_SIZE - 1; i >= 0; i--)
                     map.put(i, i);
             }
@@ -123,7 +121,8 @@ public class IgniteCacheAtomicConcurrentUnorderedUpdateAllTest extends GridCommo
             for (int i = 0; i < 20; i++) {
                 try {
                     barrier.await();
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     fail(e.getMessage());
                 }
 

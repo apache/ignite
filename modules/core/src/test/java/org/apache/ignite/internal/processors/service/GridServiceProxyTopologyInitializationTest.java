@@ -34,8 +34,6 @@ import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assume;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -72,7 +70,7 @@ public class GridServiceProxyTopologyInitializationTest extends GridCommonAbstra
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (getTestIgniteInstanceName(NODES_CNT - 1).equals(igniteInstanceName)) {
-            ((TestTcpDiscoverySpi) cfg.getDiscoverySpi()).discoveryHook(new DiscoveryHook() {
+            ((TestTcpDiscoverySpi)cfg.getDiscoverySpi()).discoveryHook(new DiscoveryHook() {
                 @Override public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
                     if (customMsg instanceof ServiceClusterDeploymentResultBatch) {
                         fullMsgReceivedLatch.countDown();
@@ -96,14 +94,6 @@ public class GridServiceProxyTopologyInitializationTest extends GridCommonAbstra
         }
 
         return cfg;
-    }
-
-    /**
-     * Ignores the test in case the legacy service processor is used.
-     */
-    @BeforeClass
-    public static void checkServiceProcessorType() {
-        Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
     }
 
     /** {@inheritDoc} */

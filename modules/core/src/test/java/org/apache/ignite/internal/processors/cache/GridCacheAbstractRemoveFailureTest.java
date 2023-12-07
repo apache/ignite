@@ -188,7 +188,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
     private void putAndRemove(long duration,
         final TransactionConcurrency txConcurrency,
         final TransactionIsolation txIsolation) throws Exception {
-        assertEquals(testClientNode(), (boolean) grid(0).configuration().isClientMode());
+        assertEquals(testClientNode(), (boolean)grid(0).configuration().isClientMode());
 
         grid(0).destroyCache(DEFAULT_CACHE_NAME);
 

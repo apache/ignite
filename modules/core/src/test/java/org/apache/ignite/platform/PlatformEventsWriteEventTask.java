@@ -73,6 +73,7 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
         /** Stream ptr. */
         private final long ptr;
 
+        /** */
         private final ClusterNode node;
 
         /**

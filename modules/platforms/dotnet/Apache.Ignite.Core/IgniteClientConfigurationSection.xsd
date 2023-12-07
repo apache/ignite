@@ -282,6 +282,18 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="retryPolicy" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Retry policy for failed operations.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="type" type="xs:string" use="required">
+                            <xs:annotation>
+                                <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
             </xs:all>
             <xs:attribute name="host" type="xs:string" use="required">
                 <xs:annotation>
@@ -323,6 +335,11 @@
                     <xs:documentation>Enables affinity-aware connection: client will establish connection to every known server and route requests to primary nodes for cache operations.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="enableClusterDiscovery" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Enables cluster discovery: client will maintain an actual list of all server nodes and connect to all of them.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="userName" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>Username to be used to connect to secured cluster.</xs:documentation>
@@ -331,6 +348,21 @@
             <xs:attribute name="password" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>Password to be used to connect to secured cluster.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="retryLimit" type="xs:int">
+                <xs:annotation>
+                    <xs:documentation>Operation retry limit when RetryPolicy is set.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="heartbeatInterval" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Heartbeat interval.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="enableHeartbeats" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Enables periodic heartbeat messages.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
         </xs:complexType>

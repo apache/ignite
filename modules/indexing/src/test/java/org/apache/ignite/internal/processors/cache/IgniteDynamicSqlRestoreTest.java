@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -56,9 +57,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
  */
 @SuppressWarnings("Duplicates")
 public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implements Serializable {
-
+    /** */
     public static final String TEST_CACHE_NAME = "test";
 
+    /** */
     public static final String TEST_INDEX_OBJECT = "TestIndexObject";
 
     /** {@inheritDoc} */
@@ -103,7 +105,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             Ignite ig = startGrid(0);
             startGrid(1);
 
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             IgniteCache cache = ig.getOrCreateCache(getTestTableConfiguration());
 
@@ -125,7 +127,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             IgniteEx ig = startGrid(1);
             startGrid(0);
 
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             //and: change data
             try (IgniteDataStreamer<Object, Object> s = ig.dataStreamer(TEST_CACHE_NAME)) {
@@ -142,7 +144,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             IgniteEx ig0 = startGrid(0);
             IgniteEx ig1 = startGrid(1);
 
-            ig0.cluster().active(true);
+            ig0.cluster().state(ClusterState.ACTIVE);
 
             //then: everything is ok
             try (IgniteDataStreamer<Object, Object> s = ig1.dataStreamer(TEST_CACHE_NAME)) {
@@ -176,7 +178,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
         Ignite srv2 = startGrid(1);
         Ignite cli = startClientGrid(2);
 
-        cli.cluster().active(true);
+        cli.cluster().state(ClusterState.ACTIVE);
 
         // Create table, add some data.
         int entryCnt = 50;
@@ -288,7 +290,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             Ignite ig = startGrid(0);
             startGrid(1);
 
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             IgniteCache cache = ig.getOrCreateCache(getTestTableConfiguration());
 
@@ -308,7 +310,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             IgniteEx ig = startGrid(1);
             startGrid(0);
 
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             //then: config for cache was applying successful
             IgniteCache<Object, Object> cache = ig.cache(TEST_CACHE_NAME);
@@ -328,7 +330,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             Ignite ig = startGrid(0);
             startGrid(1);
 
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             IgniteCache cache = ig.getOrCreateCache(getTestTableConfiguration());
 
@@ -348,7 +350,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             IgniteEx ig = startGrid(1);
             startGrid(0);
 
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             stopAllGrids();
         }
@@ -357,7 +359,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             //then: start only one node which originally was without index
             IgniteEx ig = startGrid(1);
 
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
             resetBaselineTopology();
             ig.resetLostPartitions(Collections.singleton(TEST_CACHE_NAME));
 
@@ -379,7 +381,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             Ignite ig = startGrid(0);
             startGrid(1);
 
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
             LinkedHashMap<String, String> fields = new LinkedHashMap<>();
             fields.put("A", "java.lang.Integer");
             fields.put("B", "java.lang.String");
@@ -415,7 +417,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             IgniteEx ig0 = startGrid(0);
             IgniteEx ig1 = startGrid(1);
 
-            ig0.cluster().active(true);
+            ig0.cluster().state(ClusterState.ACTIVE);
 
             //then: config should be merged
             try (IgniteDataStreamer<Object, Object> s = ig1.dataStreamer(TEST_CACHE_NAME)) {
@@ -467,7 +469,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             Ignite ig = startGrid(0);
             startGrid(1);
 
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             IgniteCache cache = ig.getOrCreateCache(getTestTableConfiguration());
 
@@ -486,7 +488,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
         {
             //and: start cluster
             IgniteEx ig = startGrid(0);
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             ig = startGrid(1);
             ig.resetLostPartitions(Collections.singleton(TEST_CACHE_NAME));
@@ -524,7 +526,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             Ignite ig = startGrid(0);
             startGrid(1);
 
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             IgniteCache cache = ig.getOrCreateCache(getTestTableConfiguration());
 
@@ -570,7 +572,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             Ignite ig = startGrid(0);
             startGrid(1);
 
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             IgniteCache cache = ig.getOrCreateCache(getTestTableConfiguration());
 
@@ -615,7 +617,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
 
             Ignite ig = ignite(0);
 
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             IgniteCache cache = ig.getOrCreateCache(ccfg);
 
@@ -631,7 +633,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
 
         {
             IgniteEx ig = startGrid(1);
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             try {
                 startGrid(0);

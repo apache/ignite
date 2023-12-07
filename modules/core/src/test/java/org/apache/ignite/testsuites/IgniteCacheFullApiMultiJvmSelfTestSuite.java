@@ -17,30 +17,18 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicClientOnlyMultiJvmFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicClientOnlyMultiJvmP2PDisabledFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicCopyOnReadDisabledMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicMultiJvmP2PDisabledFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicNearEnabledMultiJvmFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicNearOnlyMultiJvmFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicNearOnlyMultiJvmP2PDisabledFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicOnheapMultiJvmFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.multijvm.GridCacheNearOnlyMultiJvmFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.multijvm.GridCacheNearOnlyMultiJvmP2PDisabledFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedCopyOnReadDisabledMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedMultiJvmP2PDisabledFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedNearDisabledAtomicOnheapMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedNearDisabledMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedNearDisabledMultiJvmP2PDisabledFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedNearDisabledOnheapMultiJvmFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedOnheapMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheReplicatedAtomicMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheReplicatedMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheReplicatedMultiJvmP2PDisabledFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.multijvm.GridCacheReplicatedNearOnlyMultiJvmFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.multijvm.GridCacheReplicatedOnheapMultiJvmFullApiSelfTest;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -63,23 +51,7 @@ import org.junit.runners.Suite;
     GridCacheAtomicNearEnabledMultiJvmFullApiSelfTest.class,
 
     GridCachePartitionedNearDisabledMultiJvmFullApiSelfTest.class,
-    GridCachePartitionedNearDisabledMultiJvmP2PDisabledFullApiSelfTest.class,
-
-    GridCacheNearOnlyMultiJvmFullApiSelfTest.class,
-    GridCacheNearOnlyMultiJvmP2PDisabledFullApiSelfTest.class,
-    GridCacheReplicatedNearOnlyMultiJvmFullApiSelfTest.class,
-
-    GridCacheAtomicClientOnlyMultiJvmFullApiSelfTest.class,
-    GridCacheAtomicClientOnlyMultiJvmP2PDisabledFullApiSelfTest.class,
-
-    GridCacheAtomicNearOnlyMultiJvmFullApiSelfTest.class,
-    GridCacheAtomicNearOnlyMultiJvmP2PDisabledFullApiSelfTest.class,
-
-    GridCacheAtomicOnheapMultiJvmFullApiSelfTest.class,
-    GridCachePartitionedNearDisabledAtomicOnheapMultiJvmFullApiSelfTest.class,
-    GridCachePartitionedNearDisabledOnheapMultiJvmFullApiSelfTest.class,
-    GridCachePartitionedOnheapMultiJvmFullApiSelfTest.class,
-    GridCacheReplicatedOnheapMultiJvmFullApiSelfTest.class
+    GridCachePartitionedNearDisabledMultiJvmP2PDisabledFullApiSelfTest.class
 })
 public class IgniteCacheFullApiMultiJvmSelfTestSuite {
     /** */

@@ -37,7 +37,7 @@ public class ClientCacheGetRequest extends ClientCacheKeyRequest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
+    @Override public ClientResponse process0(ClientConnectionContext ctx) {
         Object val = cache(ctx).get(key());
 
         return new ClientObjectResponse(requestId(), val);

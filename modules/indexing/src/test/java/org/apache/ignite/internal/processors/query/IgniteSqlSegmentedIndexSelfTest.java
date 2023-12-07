@@ -99,7 +99,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
     @Test
     public void testSegmentedIndex() {
         ignite(0).createCache(cacheConfig(PERSON_CAHE_NAME, true, PersonKey.class, Person.class));
-        ignite(0).createCache(cacheConfig(ORG_CACHE_NAME, true, Integer.class, Organization.class));
+        ignite(0).createCache(cacheConfig(ORG_CACHE_NAME, true, OrgKey.class, Organization.class));
 
         fillCache();
 
@@ -108,6 +108,36 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
         checkLocalQueryWithSegmentedIndex();
 
         checkLocalSizeQueryWithSegmentedIndex();
+    }
+
+    /** Test execution correctness of ordered reducer and query parallelizm. */
+    @Test
+    public void testMissedSegmentWithSortedReducer() {
+        IgniteCache<Object, Object> cache =
+            ignite(0).createCache(cacheConfig(PERSON_CAHE_NAME, true, PersonKey.class, Person.class));
+
+        ignite(0).createCache(cacheConfig(ORG_CACHE_NAME, true, OrgKey.class, Organization.class));
+
+        String joinOrdered = "SELECT p.name, p.id FROM \"pers\".Person p INNER JOIN \"org\".Organization o ON " +
+            "p.orgId = o.id WHERE p.orgId in (3, 4) ORDER BY p.id";
+
+        List<List<?>> res = cache.query(new SqlFieldsQuery(joinOrdered).setDistributedJoins(true)).getAll();
+
+        assertTrue(res.isEmpty());
+
+        res = cache.query(new SqlFieldsQuery(joinOrdered)).getAll();
+
+        assertTrue(res.isEmpty());
+
+        fillCachesLinear();
+
+        res = cache.query(new SqlFieldsQuery(joinOrdered).setDistributedJoins(true)).getAll();
+
+        assertEquals(2, res.size());
+
+        res = cache.query(new SqlFieldsQuery(joinOrdered)).getAll();
+
+        assertEquals(2, res.size());
     }
 
     /**
@@ -243,7 +273,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
                     expPersons++;
             }
 
-            String select0 = "select o.name n1, p.name n2 from \"pers\".Person p, \"org\".Organization o where p.orgId = o._key";
+            String select0 = "select o.name n1, p.name n2 from \"pers\".Person p, \"org\".Organization o where p.orgId = o.id";
 
             List<List<?>> res = c1.query(new SqlFieldsQuery(select0).setDistributedJoins(true)).getAll();
 
@@ -259,12 +289,12 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
             final Ignite node = ignite(i);
 
             IgniteCache<PersonKey, Person> c1 = node.cache(PERSON_CAHE_NAME);
-            IgniteCache<Integer, Organization> c2 = node.cache(ORG_CACHE_NAME);
+            IgniteCache<OrgKey, Organization> c2 = node.cache(ORG_CACHE_NAME);
 
             Set<Integer> locOrgIds = new HashSet<>();
 
-            for (Cache.Entry<Integer, Organization> e : c2.localEntries())
-                locOrgIds.add(e.getKey());
+            for (Cache.Entry<OrgKey, Organization> e : c2.localEntries())
+                locOrgIds.add(e.getKey().id);
 
             long expPersons = 0;
 
@@ -275,7 +305,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
                     expPersons++;
             }
 
-            String select0 = "select o.name n1, p.name n2 from \"pers\".Person p, \"org\".Organization o where p.orgId = o._key";
+            String select0 = "select o.name n1, p.name n2 from \"pers\".Person p, \"org\".Organization o where p.orgId = o.id";
 
             List<List<?>> res = c1.query(new SqlFieldsQuery(select0).setLocal(true)).getAll();
 
@@ -291,12 +321,12 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
             final Ignite node = ignite(i);
 
             IgniteCache<PersonKey, Person> c1 = node.cache(PERSON_CAHE_NAME);
-            IgniteCache<Integer, Organization> c2 = node.cache(ORG_CACHE_NAME);
+            IgniteCache<OrgKey, Organization> c2 = node.cache(ORG_CACHE_NAME);
 
             Set<Integer> locOrgIds = new HashSet<>();
 
-            for (Cache.Entry<Integer, Organization> e : c2.localEntries())
-                locOrgIds.add(e.getKey());
+            for (Cache.Entry<OrgKey, Organization> e : c2.localEntries())
+                locOrgIds.add(e.getKey().id);
 
             int expPersons = 0;
 
@@ -307,11 +337,11 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
                     expPersons++;
             }
 
-            String select0 = "select count(*) from \"pers\".Person p, \"org\".Organization o where p.orgId = o._key";
+            String select0 = "select count(*) from \"pers\".Person p, \"org\".Organization o where p.orgId = o.id";
 
             List<List<?>> res = c1.query(new SqlFieldsQuery(select0).setLocal(true)).getAll();
 
-            assertEquals((long) expPersons, res.get(0).get(0));
+            assertEquals((long)expPersons, res.get(0).get(0));
         }
     }
 
@@ -321,7 +351,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
         IgniteCache<Object, Object> c2 = ignite(0).cache(ORG_CACHE_NAME);
 
         for (int i = 0; i < ORG_CACHE_SIZE; i++)
-            c2.put(i, new Organization("org-" + i));
+            c2.put(new OrgKey(i), new Organization("org-" + i));
 
         final Random random = new Random();
 
@@ -333,8 +363,21 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
         }
     }
 
+    /** Fill caches without random data. */
+    private void fillCachesLinear() {
+        IgniteCache<Object, Object> c1 = ignite(0).cache(PERSON_CAHE_NAME);
+        IgniteCache<Object, Object> c2 = ignite(0).cache(ORG_CACHE_NAME);
+
+        for (int i = 0; i < ORG_CACHE_SIZE; i++) {
+            c1.put(new PersonKey(i, i), new Person("pers-" + i));
+            c2.put(new OrgKey(i), new Organization("org-" + i));
+        }
+    }
+
+    /** */
     private static class PersonKey {
-        @QuerySqlField
+        /** */
+        @QuerySqlField(index = true)
         int id;
 
         /** */
@@ -342,6 +385,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
         @QuerySqlField
         Integer orgId;
 
+        /** */
         public PersonKey(int id, Integer orgId) {
             this.id = id;
             this.orgId = orgId;
@@ -361,6 +405,19 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
          */
         public Person(String name) {
             this.name = name;
+        }
+    }
+
+    /** */
+    private static class OrgKey {
+        /** */
+        @AffinityKeyMapped
+        @QuerySqlField
+        int id;
+
+        /** */
+        public OrgKey(int id) {
+            this.id = id;
         }
     }
 

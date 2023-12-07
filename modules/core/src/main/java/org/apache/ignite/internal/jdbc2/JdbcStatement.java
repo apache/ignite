@@ -27,9 +27,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-
-import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -37,7 +36,9 @@ import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  * JDBC statement implementation.
@@ -101,7 +102,7 @@ public class JdbcStatement implements Statement {
         if (F.isEmpty(sql))
             throw new SQLException("SQL query is empty");
 
-        Ignite ignite = conn.ignite();
+        IgniteEx ignite = conn.ignite();
 
         UUID nodeId = conn.nodeId();
 
@@ -126,8 +127,13 @@ public class JdbcStatement implements Statement {
         }
 
         try {
-            List<JdbcStatementResultInfo> rsInfos =
-                loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+            List<JdbcStatementResultInfo> rsInfos = loc
+                ? qryTask.call()
+                : ignite.context().closure().callAsync(
+                    BALANCE,
+                    qryTask,
+                    options(ignite.cluster().forNodeId(nodeId).nodes())
+                ).get();
 
             results = new ArrayList<>(rsInfos.size());
 
@@ -151,7 +157,7 @@ public class JdbcStatement implements Statement {
     private void executeSingle(String sql, Boolean isQuery) throws SQLException {
         ensureNotClosed();
 
-        Ignite ignite = conn.ignite();
+        IgniteEx ignite = conn.ignite();
 
         UUID nodeId = conn.nodeId();
 
@@ -170,8 +176,13 @@ public class JdbcStatement implements Statement {
             conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy(), false, conn.skipReducerOnUpdate());
 
         try {
-            JdbcQueryTaskResult qryRes =
-                loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+            JdbcQueryTaskResult qryRes = loc
+                ? qryTask.call()
+                : ignite.context().closure().callAsync(
+                    BALANCE,
+                    qryTask,
+                    options(ignite.cluster().forNodeId(nodeId).nodes())
+                ).get();
 
             JdbcResultSet rs = new JdbcResultSet(qryRes.isQuery(), uuid, this, qryRes.getTbls(), qryRes.getCols(),
                 qryRes.getTypes(), qryRes.getRows(), qryRes.isFinished());
@@ -453,7 +464,7 @@ public class JdbcStatement implements Statement {
         if ((F.isEmpty(command) || F.isEmpty(batchArgs)) && F.isEmpty(batch))
             throw new SQLException("Batch is empty.");
 
-        Ignite ignite = conn.ignite();
+        IgniteEx ignite = conn.ignite();
 
         UUID nodeId = conn.nodeId();
 
@@ -463,11 +474,17 @@ public class JdbcStatement implements Statement {
             throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
 
         JdbcBatchUpdateTask task = new JdbcBatchUpdateTask(loc ? ignite : null, conn.cacheName(),
-            conn.schemaName(), command, batch, batchArgs, loc, getFetchSize(), conn.isLocalQuery(),
+            conn.schemaName(), command, batch, batchArgs, getFetchSize(), conn.isLocalQuery(),
             conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {
-            int[] res = loc ? task.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(task);
+            int[] res = loc
+                ? task.call()
+                : ignite.context().closure().callAsync(
+                    BALANCE,
+                    task,
+                    options(ignite.cluster().forNodeId(nodeId).nodes())
+                ).get();
 
             long updateCnt = F.isEmpty(res) ? -1 : res[res.length - 1];
 

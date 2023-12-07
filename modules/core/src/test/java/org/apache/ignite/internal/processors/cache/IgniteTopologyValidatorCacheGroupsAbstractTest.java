@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
 import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.plugin.CacheTopologyValidatorProvider;
 import org.junit.Test;
 
 /**
@@ -45,36 +47,29 @@ public abstract class IgniteTopologyValidatorCacheGroupsAbstractTest extends Ign
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration icfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration[] ccfgs = icfg.getCacheConfiguration();
-
-        TopologyValidator val1 = new TopologyValidator() {
-            @Override public boolean validate(Collection<ClusterNode> nodes) {
-                return nodes.size() == 2;
-            }
-        };
-
-        TopologyValidator val2 = new TopologyValidator() {
-            @Override public boolean validate(Collection<ClusterNode> nodes) {
-                return nodes.size() >= 2;
-            }
-        };
+        CacheConfiguration[] ccfgs = F.concat(
+            icfg.getCacheConfiguration(),
+            cacheConfiguration(igniteInstanceName).setName(CACHE_NAME_3),
+            cacheConfiguration(igniteInstanceName).setName(CACHE_NAME_4)
+        );
 
         for (CacheConfiguration ccfg : ccfgs) {
             if (CACHE_NAME_1.equals(ccfg.getName()) || CACHE_NAME_2.equals(ccfg.getName()))
-                ccfg.setGroupName(GROUP_1).setTopologyValidator(val1);
+                ccfg.setGroupName(GROUP_1);
+            else if (CACHE_NAME_3.equals(ccfg.getName()) || CACHE_NAME_4.equals(ccfg.getName()))
+                ccfg.setGroupName(GROUP_2);
         }
 
-        CacheConfiguration ccfg3 = cacheConfiguration(igniteInstanceName)
-            .setName(CACHE_NAME_3)
-            .setGroupName(GROUP_2)
-            .setTopologyValidator(val2);
+        TestCacheGroupTopologyValidatorProvider topValidatorProvider = new TestCacheGroupTopologyValidatorProvider();
 
-        CacheConfiguration ccfg4 = cacheConfiguration(igniteInstanceName)
-            .setName(CACHE_NAME_4)
-            .setGroupName(GROUP_2)
-            .setTopologyValidator(val2);
+        if (isPluginTopValidatorProvider)
+            icfg.setPluginProviders(new TestCacheTopologyValidatorPluginProvider(topValidatorProvider));
+        else {
+            for (CacheConfiguration ccfg : ccfgs)
+                ccfg.setTopologyValidator(topValidatorProvider.topologyValidator(ccfg.getGroupName()));
+        }
 
-        return icfg.setCacheConfiguration(F.concat(ccfgs, ccfg3, ccfg4));
+        return icfg.setCacheConfiguration(ccfgs);
     }
 
     /**
@@ -82,6 +77,8 @@ public abstract class IgniteTopologyValidatorCacheGroupsAbstractTest extends Ign
      */
     @Test
     @Override public void testTopologyValidator() throws Exception {
+        startGrid(0);
+
         putValid(DEFAULT_CACHE_NAME);
         remove(DEFAULT_CACHE_NAME);
 
@@ -129,5 +126,28 @@ public abstract class IgniteTopologyValidatorCacheGroupsAbstractTest extends Ign
 
         putValid(CACHE_NAME_4);
         remove(CACHE_NAME_4);
+    }
+
+    /** */
+    private static class TestCacheGroupTopologyValidatorProvider implements CacheTopologyValidatorProvider, Serializable {
+        /** {@inheritDoc} */
+        @Override public TopologyValidator topologyValidator(String grpName) {
+            if (GROUP_1.equals(grpName)) {
+                return new TopologyValidator() {
+                    @Override public boolean validate(Collection<ClusterNode> nodes) {
+                        return nodes.size() == 2;
+                    }
+                };
+            }
+            else if (GROUP_2.equals(grpName)) {
+                return new TopologyValidator() {
+                    @Override public boolean validate(Collection<ClusterNode> nodes) {
+                        return nodes.size() >= 2;
+                    }
+                };
+            }
+            else
+                return null;
+        }
     }
 }

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.StringIndexKey;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Skip optimized String comparison implemented in {@link StringInlineIndexKeyType}.
@@ -30,7 +30,7 @@ public class StringNoCompareInlineIndexKeyType extends NullableInlineIndexKeyTyp
 
     /** */
     public StringNoCompareInlineIndexKeyType() {
-        super(IndexKeyTypes.STRING, (short) -1);
+        super(IndexKeyType.STRING, (short)-1);
     }
 
     /** {@inheritDoc} */
@@ -39,17 +39,22 @@ public class StringNoCompareInlineIndexKeyType extends NullableInlineIndexKeyTyp
     }
 
     /** {@inheritDoc} */
-    @Override protected @Nullable StringIndexKey get0(long pageAddr, int off) {
+    @Override protected StringIndexKey get0(long pageAddr, int off) {
         return delegate.get0(pageAddr, off);
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, StringIndexKey key) {
+    @Override public int compare0(long pageAddr, int off, IndexKey key) {
         return COMPARE_UNSUPPORTED;
     }
 
     /** {@inheritDoc} */
     @Override protected int inlineSize0(StringIndexKey key) {
         return delegate.inlineSize0(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean inlinedFullValue(long pageAddr, int off, int maxSize) {
+        return delegate.inlinedFullValue(pageAddr, off, maxSize);
     }
 }

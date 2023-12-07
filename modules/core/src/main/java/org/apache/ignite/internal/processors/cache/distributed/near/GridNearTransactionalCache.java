@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -57,6 +58,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 
 /**
@@ -84,20 +86,22 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
-        super.start();
+    @Override public void onKernalStart() throws IgniteCheckedException {
+        super.onKernalStart();
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse>() {
-            @Override public void apply(UUID nodeId, GridNearGetResponse res) {
-                processGetResponse(nodeId, res);
-            }
-        });
+        assert !ctx.isRecoveryMode() : "Registering message handlers in recovery mode [cacheName=" + name() + ']';
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearLockResponse.class, new CI2<UUID, GridNearLockResponse>() {
-            @Override public void apply(UUID nodeId, GridNearLockResponse res) {
-                processLockResponse(nodeId, res);
-            }
-        });
+        ctx.io().addCacheHandler(
+            ctx.cacheId(),
+            ctx.startTopologyVersion(),
+            GridNearGetResponse.class,
+            (CI2<UUID, GridNearGetResponse>)this::processGetResponse);
+
+        ctx.io().addCacheHandler(
+            ctx.cacheId(),
+            ctx.startTopologyVersion(),
+            GridNearLockResponse.class,
+            (CI2<UUID, GridNearLockResponse>)this::processLockResponse);
     }
 
     /**
@@ -117,11 +121,10 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable final Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
-        @Nullable UUID subjId,
         String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
-        final boolean readRepair,
+        final ReadRepairStrategy readRepairStrategy,
         final boolean skipVals,
         final boolean needVer
     ) {
@@ -149,18 +152,15 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         false,
                         skipStore,
                         recovery,
-                        readRepair,
+                        readRepairStrategy,
                         needVer);
                 }
             }, opCtx, /*retry*/false);
         }
 
-        subjId = ctx.subjectIdPerCall(subjId, opCtx);
-
         return loadAsync(null,
             ctx.cacheKeysView(keys),
             forcePrimary,
-            subjId,
             taskName,
             deserializeBinary,
             recovery,
@@ -198,7 +198,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             readThrough,
             forcePrimary,
             tx,
-            CU.subjectId(tx, ctx.shared()),
             tx.resolveTaskName(),
             deserializeBinary,
             expiryPlc,
@@ -331,7 +330,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         req.isInvalidate(),
                                         req.timeout(),
                                         req.txSize(),
-                                        req.subjectId(),
+                                        securitySubjectId(ctx),
                                         req.taskNameHash(),
                                         req.txLabel()
                                     );

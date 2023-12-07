@@ -189,7 +189,8 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         receiverCtx.metricsRegistryProducer((name) -> {
             try {
                 Thread.sleep(100);
-            } catch (Exception ignored) {
+            }
+            catch (Exception ignored) {
                 // No-op.
             }
 
@@ -211,7 +212,8 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         IgniteInternalFuture initFut = GridTestUtils.runAsync(() -> {
             try {
                 receiverSpi.onContextInitialized(receiverCtx);
-            } catch (Exception ignored) {
+            }
+            catch (Exception ignored) {
                 // No-op.
             }
         });

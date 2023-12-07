@@ -249,6 +249,8 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < CACHE_ELEMENT_COUNT; i++)
             srvNode.cache(PERSON_CACHE).put(i, new Person(i, "name-" + i));
+
+        awaitCacheOnClient(clientNode, PERSON_CACHE);
     }
 
     /**

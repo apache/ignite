@@ -108,8 +108,8 @@ public interface TracingConfigurationManager {
      * @throws IgniteException If failed to get tracing configuration.
      */
     default @NotNull TracingConfigurationParameters get(
-        @NotNull TracingConfigurationCoordinates coordinates) throws IgniteException
-    {
+        @NotNull TracingConfigurationCoordinates coordinates
+    ) throws IgniteException {
         switch (coordinates.scope()) {
             case TX: {
                 return DEFAULT_TX_CONFIGURATION;

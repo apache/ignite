@@ -66,7 +66,7 @@ public class GridLuceneOutputStream extends IndexOutput implements Accountable {
      * @param f File.
      */
     public GridLuceneOutputStream(GridLuceneFile f) {
-        super("RAMOutputStream(name=\"noname\")", "noname");
+        super("RAMOutputStream(name=\"" + f.getName() + "\")", f.getName());
 
         file = f;
 

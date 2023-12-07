@@ -96,9 +96,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     /** Busy lock to control activity of threads. */
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
 
-    /** Is local node daemon? */
-    private final boolean isDaemon;
-
     /** Recordable events arrays length. */
     private final int len;
 
@@ -140,8 +137,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         super(ctx, ctx.config().getEventStorageSpi());
 
         marsh = ctx.config().getMarshaller();
-
-        isDaemon = ctx.isDaemon();
 
         int[] cfgInclEvtTypes0 = ctx.config().getIncludeEventTypes();
 
@@ -271,6 +266,11 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
 
+        Map<IgnitePredicate<? extends Event>, int[]> evtLsnrs = ctx.config().getLocalEventListeners();
+
+        if (evtLsnrs != null)
+            U.stopLifecycleAware(log, evtLsnrs.keySet());
+
         if (log.isDebugEnabled())
             log.debug(stopInfo());
     }
@@ -280,8 +280,12 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         Map<IgnitePredicate<? extends Event>, int[]> evtLsnrs = ctx.config().getLocalEventListeners();
 
         if (evtLsnrs != null) {
-            for (IgnitePredicate<? extends Event> lsnr : evtLsnrs.keySet())
+            Set<IgnitePredicate<? extends Event>> lsnrs = evtLsnrs.keySet();
+
+            for (IgnitePredicate<? extends Event> lsnr : lsnrs)
                 addLocalEventListener(lsnr, evtLsnrs.get(lsnr));
+
+            U.startLifecycleAware(lsnrs);
         }
 
         startSpi();
@@ -336,8 +340,8 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                     U.gridEventName(type));
             }
 
-            // Override user recordable settings for daemon node.
-            if ((isDaemon || isUserRecordable(type)) && !isHiddenEvent(type)) {
+            // Override user recordable settings.
+            if (isUserRecordable(type) && !isHiddenEvent(type)) {
                 try {
                     getSpi().record(evt);
                 }
@@ -1223,7 +1227,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                     filter = U.unmarshal(marsh, req.filter(), U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
                     // Resource injection.
-                    ctx.resource().inject(dep, dep.deployedClass(req.filterClassName()), filter);
+                    ctx.resource().inject(dep, dep.deployedClass(req.filterClassName()).get1(), filter);
 
                     // Get local events.
                     evts = localEvents(filter);

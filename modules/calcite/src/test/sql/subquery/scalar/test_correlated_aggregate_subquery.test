@@ -1,0 +1,110 @@
+statement ok
+PRAGMA enable_verification
+
+statement ok
+CREATE TABLE integers(i INTEGER)
+
+statement ok
+INSERT INTO integers VALUES (1), (2), (3), (NULL)
+
+# correlated COUNT(*)
+query II
+SELECT i, (SELECT COUNT(*) FROM integers i2 WHERE i2.i>i1.i) FROM integers i1 ORDER BY i;
+----
+NULL	0
+1	2
+2	1
+3	0
+
+# aggregate with correlation inside aggregation
+query II
+SELECT i, (SELECT MIN(i+2*i1.i) FROM integers) FROM integers i1 ORDER BY i;
+----
+NULL	NULL
+1	3
+2	5
+3	7
+
+# this will fail, because "i" is not an aggregate but the SUM(i1.i) turns this query into an aggregate
+statement error
+SELECT i, (SELECT SUM(i1.i)) FROM integers i1;
+
+statement error
+SELECT i+1, (SELECT SUM(i1.i)) FROM integers i1;
+
+# subquery inside aggregation
+query RR
+SELECT SUM(i), SUM((SELECT i FROM integers WHERE i=i1.i)) FROM integers i1;
+----
+6.000000	6.000000
+
+# aggregate with correlation in filter
+query II
+SELECT i, (SELECT MIN(i) FROM integers WHERE i>i1.i) FROM integers i1 ORDER BY i;
+----
+NULL	NULL
+1	2
+2	3
+3	NULL
+
+# aggregate with correlation in GROUP BY
+query II
+SELECT i, (SELECT MIN(i) FROM integers GROUP BY i1.i) AS j FROM integers i1 ORDER BY i;
+----
+NULL	1
+1	1
+2	1
+3	1
+
+query R
+SELECT (SELECT SUM(i)+SUM((CASE WHEN i IS NOT NULL THEN i*0 ELSE 0 END)+i1.i) FROM integers) FROM integers i1 ORDER BY 1;
+----
+NULL
+10.000000
+14.000000
+18.000000
+
+# subquery inside aggregate
+query R
+SELECT SUM((SELECT i+i1.i FROM integers WHERE i=1)) FROM integers i1;
+----
+9.000000
+
+query R
+SELECT (SELECT SUM(i1.i*i) FROM integers) FROM integers i1 ORDER BY i;
+----
+NULL
+6.000000
+12.000000
+18.000000
+
+# correlated subquery in WHERE
+query R
+SELECT SUM(i) FROM integers i1 WHERE i>(SELECT (i+i1.i)/2 FROM integers WHERE i=1);
+----
+5.000000
+
+# use scalar subquery as argument to ALL/ANY
+query IT
+SELECT i, (SELECT MIN(i) FROM integers WHERE i=i1.i) >= ALL(SELECT i FROM integers WHERE i IS NOT NULL) FROM integers i1 ORDER BY i;
+----
+NULL	NULL
+1	false
+2	false
+3	true
+
+query IT
+SELECT i, (SELECT MIN(i) FROM integers WHERE i<>i1.i) > ANY(SELECT i FROM integers WHERE i IS NOT NULL) FROM integers i1 ORDER BY i;
+----
+NULL	NULL
+1	true
+2	false
+3	false
+
+query IT
+SELECT i, NOT((SELECT MIN(i) FROM integers WHERE i<>i1.i) > ANY(SELECT i FROM integers WHERE i IS NOT NULL)) FROM integers i1 ORDER BY i;
+----
+NULL	NULL
+1	false
+2	true
+3	true

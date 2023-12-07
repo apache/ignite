@@ -23,8 +23,6 @@ import java.util.concurrent.ExecutorService;
 import javax.management.MBeanServer;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
-import org.apache.ignite.DataStorageMetrics;
-import org.apache.ignite.DataStorageMetricsAdapter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -51,7 +49,6 @@ import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.MemoryMetrics;
-import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -378,8 +375,8 @@ public class IgniteMock implements Ignite {
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteAtomicReference<T> atomicReference(String name,
         @Nullable T initVal,
-        boolean create)
-    {
+        boolean create
+    ) {
         return null;
     }
 
@@ -393,8 +390,8 @@ public class IgniteMock implements Ignite {
     @Nullable @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
         @Nullable T initVal,
         @Nullable S initStamp,
-        boolean create)
-    {
+        boolean create
+    ) {
         return null;
     }
 
@@ -408,8 +405,8 @@ public class IgniteMock implements Ignite {
     @Nullable @Override public IgniteCountDownLatch countDownLatch(String name,
         int cnt,
         boolean autoDel,
-        boolean create)
-    {
+        boolean create
+    ) {
         return null;
     }
 
@@ -417,8 +414,8 @@ public class IgniteMock implements Ignite {
     @Nullable @Override public IgniteSemaphore semaphore(String name,
         int cnt,
         boolean failoverSafe,
-        boolean create)
-    {
+        boolean create
+    ) {
         return null;
     }
 
@@ -426,23 +423,23 @@ public class IgniteMock implements Ignite {
     @Nullable @Override public IgniteLock reentrantLock(String name,
         boolean failoverSafe,
         boolean fair,
-        boolean create)
-    {
+        boolean create
+    ) {
         return null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteQueue<T> queue(String name,
         int cap,
-        CollectionConfiguration cfg)
-    {
+        CollectionConfiguration cfg
+    ) {
         return null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteSet<T> set(String name,
-        CollectionConfiguration cfg)
-    {
+        CollectionConfiguration cfg
+    ) {
         return null;
     }
 
@@ -477,11 +474,6 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public DataStorageMetrics dataStorageMetrics() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteEncryption encryption() {
         return null;
     }
@@ -504,11 +496,6 @@ public class IgniteMock implements Ignite {
     /** {@inheritDoc} */
     @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
         return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PersistenceMetrics persistentStoreMetrics() {
-        return DataStorageMetricsAdapter.valueOf(dataStorageMetrics());
     }
 
     /**

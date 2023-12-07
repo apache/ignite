@@ -70,7 +70,8 @@ public class IgniteCachePartitionMapUpdateSafeLossPolicyTest extends IgniteCache
 
                 try {
                     testGrid.resetLostPartitions(Collections.singleton(cache));
-                } catch (ClusterTopologyException ignored) {
+                }
+                catch (ClusterTopologyException ignored) {
                     // No-op.
                 }
             }

@@ -241,9 +241,9 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
         return startGrid(gridIdx);
     }
 
-    /* Different affinityBackupFilters have different goals */
+    /** Different affinityBackupFilters have different goals */
     protected int expectedNodesForEachPartition() {
-       return backups + 1;
+        return backups + 1;
     }
 
     /**

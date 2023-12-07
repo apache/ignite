@@ -60,7 +60,10 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
+import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryClassDescriptor;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryEnumArray;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -96,7 +99,6 @@ import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserKeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
@@ -259,7 +261,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     CU.isPersistenceEnabled(ctx.config()) && binaryMetadataFileStoreDir == null ?
                         resolveBinaryWorkDir(ctx.config().getWorkDirectory(),
                             ctx.pdsFolderResolver().resolveFolders().folderName()) :
-                        binaryMetadataFileStoreDir);
+                        binaryMetadataFileStoreDir,
+                    false);
 
                 metadataFileStore.start();
             }
@@ -324,7 +327,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
             transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, binaryCtx, ctx, log);
 
-            IgniteUtils.invoke(BinaryMarshaller.class, bMarsh0, "setBinaryContext", binaryCtx, ctx.config());
+            bMarsh0.setBinaryContext(binaryCtx, ctx.config());
 
             binaryMarsh = new GridBinaryMarshaller(binaryCtx);
 
@@ -499,7 +502,35 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             for (int i = 0; i < arr.length; i++)
                 pArr[i] = marshalToBinary(arr[i], failIfUnregistered);
 
-            return pArr;
+            if (!BinaryArray.useBinaryArrays())
+                return pArr;
+
+            Class<?> compCls = obj.getClass().getComponentType();
+
+            boolean isBinaryArr = BinaryObject.class.isAssignableFrom(compCls);
+
+            String compClsName = isBinaryArr ? Object.class.getName() : compCls.getName();
+
+            // In case of interface or multidimensional array rely on class name.
+            // Interfaces and array not registered as binary types.
+            BinaryClassDescriptor desc = binaryCtx.descriptorForClass(compCls);
+
+            if (compCls.isEnum() || compCls == BinaryEnumObjectImpl.class) {
+                return new BinaryEnumArray(
+                    binaryCtx,
+                    desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
+                    compClsName,
+                    pArr
+                );
+            }
+            else {
+                return new BinaryArray(
+                    binaryCtx,
+                    desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
+                    compClsName,
+                    pArr
+                );
+            }
         }
 
         if (obj instanceof IgniteBiTuple) {
@@ -679,6 +710,11 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public void addMetaLocally(int typeId, BinaryType newMeta) throws BinaryObjectException {
+        addMetaLocally(typeId, newMeta, true);
+    }
+
+    /** */
+    private void addMetaLocally(int typeId, BinaryType newMeta, boolean writeToFile) {
         assert newMeta != null;
         assert newMeta instanceof BinaryTypeImpl;
 
@@ -691,7 +727,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         try {
             BinaryMetadata mergedMeta = mergeMetadata(oldMeta, newMeta0);
 
-            if (!ctx.clientNode())
+            if (!ctx.clientNode() && writeToFile)
                 metadataFileStore.mergeAndWriteMetadata(mergedMeta);
 
             metadataLocCache.put(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
@@ -984,7 +1020,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 ctx,
                 log,
                 resolveBinaryWorkDir(dir.getAbsolutePath(),
-                    ctx.pdsFolderResolver().resolveFolders().folderName()));
+                    ctx.pdsFolderResolver().resolveFolders().folderName()),
+                true
+            );
 
             for (BinaryType type : types)
                 writer.mergeAndWriteMetadata(((BinaryTypeImpl)type).metadata());
@@ -1002,7 +1040,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         try {
             ConcurrentMap<Integer, BinaryMetadataHolder> metaCache = new ConcurrentHashMap<>();
 
-            new BinaryMetadataFileStore(metaCache, ctx, log, metadataDir)
+            new BinaryMetadataFileStore(metaCache, ctx, log, metadataDir, false)
                 .restoreMetadata();
 
             Collection<BinaryMetadata> metadata = F.viewReadOnly(metaCache.values(), BinaryMetadataHolder::metadata);
@@ -1025,9 +1063,22 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
                 addMeta(newMeta.typeId(), newMeta.wrap(binaryContext()), false);
             }
-        } catch (BinaryObjectException e) {
+        }
+        catch (BinaryObjectException e) {
             throw new IgniteCheckedException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cacheMetadataLocally(File metadataDir, int typeId) throws IgniteCheckedException {
+        if (!metadataDir.exists())
+            return;
+
+        ConcurrentMap<Integer, BinaryMetadataHolder> metaCache = new ConcurrentHashMap<>();
+
+        new BinaryMetadataFileStore(metaCache, ctx, log, metadataDir, false).restoreMetadata(typeId);
+
+        addMetaLocally(typeId, metaCache.get(typeId).metadata().wrap(binaryContext()), false);
     }
 
     /** {@inheritDoc} */
@@ -1239,7 +1290,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         obj = toBinary(obj, false);
 
         if (obj instanceof BinaryObjectImpl) {
-            ((KeyCacheObject) obj).partition(partition(ctx, cctx, obj));
+            ((KeyCacheObject)obj).partition(partition(ctx, cctx, obj));
 
             return (KeyCacheObject)obj;
         }
@@ -1331,7 +1382,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     @Override public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) {
         switch (type) {
             case BinaryObjectImpl.TYPE_BINARY:
-                return new BinaryObjectImpl(binaryContext(), bytes, 0);
+                return new BinaryObjectImpl(binaryContext(), bytes, ctx);
 
             case BinaryObjectImpl.TYPE_BINARY_ENUM:
                 return new BinaryEnumObjectImpl(binaryContext(), bytes);
@@ -1351,7 +1402,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         throws IgniteCheckedException {
         switch (type) {
             case BinaryObjectImpl.TYPE_BINARY:
-                return new BinaryObjectImpl(binaryContext(), bytes, 0);
+                return new BinaryObjectImpl(binaryContext(), bytes);
 
             case CacheObject.TYPE_BYTE_ARR:
                 throw new IllegalArgumentException("Byte arrays cannot be used as cache keys.");
@@ -1526,7 +1577,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     res.put(e.getKey(), e.getValue());
             }
 
-            dataBag.addGridCommonData(BINARY_PROC.ordinal(), (Serializable) res);
+            dataBag.addGridCommonData(BINARY_PROC.ordinal(), (Serializable)res);
         }
     }
 
@@ -1537,12 +1588,12 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         for (Map.Entry<Integer, BinaryMetadataHolder> e : metadataLocCache.entrySet())
             res.put(e.getKey(), e.getValue());
 
-        dataBag.addJoiningNodeData(BINARY_PROC.ordinal(), (Serializable) res);
+        dataBag.addJoiningNodeData(BINARY_PROC.ordinal(), (Serializable)res);
     }
 
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
-        Map<Integer, BinaryMetadataHolder> newNodeMeta = (Map<Integer, BinaryMetadataHolder>) data.joiningNodeData();
+        Map<Integer, BinaryMetadataHolder> newNodeMeta = (Map<Integer, BinaryMetadataHolder>)data.joiningNodeData();
 
         if (newNodeMeta == null)
             return;
@@ -1597,7 +1648,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        Map<Integer, BinaryMetadataHolder> receivedData = (Map<Integer, BinaryMetadataHolder>) data.commonData();
+        Map<Integer, BinaryMetadataHolder> receivedData = (Map<Integer, BinaryMetadataHolder>)data.commonData();
 
         if (receivedData != null) {
             for (Map.Entry<Integer, BinaryMetadataHolder> e : receivedData.entrySet()) {
@@ -1660,6 +1711,13 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
             throw new BinaryObjectException("Failed to remove metadata for type: " + typeId, ex);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryType registerClass(Class<?> cls) throws BinaryObjectException {
+        BinaryClassDescriptor clsDesc = binaryCtx.registerClass(cls, true, false);
+
+        return metadata(clsDesc.typeId());
     }
 
     /** */

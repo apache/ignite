@@ -20,6 +20,7 @@ package org.apache.ignite.util;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 
@@ -51,7 +52,7 @@ public abstract class GridCommandHandlerClusterByClassAbstractTest extends GridC
 
         client = startGrid(CLIENT_NODE_NAME_PREFIX);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */
@@ -75,7 +76,7 @@ public abstract class GridCommandHandlerClusterByClassAbstractTest extends GridC
         Set<String> rmvCacheNames = new HashSet<>(crd.cacheNames());
         rmvCacheNames.removeAll(cfgCacheNames);
 
-        crd.destroyCaches(rmvCacheNames);
+        client.destroyCaches(rmvCacheNames);
 
         cfgCacheNames.stream()
             .map(crd::cache)

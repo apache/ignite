@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.junits.common;
 
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,6 +66,7 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskFuture;
@@ -78,6 +80,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommandArg;
+import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyTaskV2;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
@@ -105,17 +110,19 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
+import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -123,8 +130,6 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -146,17 +151,18 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
-import static org.apache.ignite.IgniteSystemProperties.getBoolean;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_NETWORK_TIMEOUT;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Super class for all common tests.
@@ -185,7 +191,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache(int idx) {
-        return grid(idx).cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        return grid(idx).cache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -316,7 +322,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache() {
-        return grid().cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        return grid().cache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -331,13 +337,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             res.add(entry.getKey());
 
         return res;
-    }
-
-    /**
-     * @return Cache.
-     */
-    protected <K, V> GridLocalCache<K, V> local() {
-        return (GridLocalCache<K, V>)((IgniteKernal)grid()).<K, V>internalCache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -557,8 +556,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         Ignite g = super.startGridsMultiThreaded(cnt);
 
         if (awaitPartMapExchange) {
-            if (!g.active())
-                g.active(true);
+            if (!g.cluster().state().active())
+                g.cluster().state(ClusterState.ACTIVE);
 
             awaitPartitionMapExchange();
         }
@@ -673,9 +672,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             else
                 startTime = g0.context().discovery().gridStartTime();
 
-            if (g.cluster().localNode().isDaemon())
-                continue;
-
             IgniteInternalFuture<?> exchFut =
                 g0.context().cache().context().exchange().affinityReadyFuture(waitTopVer);
 
@@ -695,8 +691,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 if (cfg == null || cacheNames != null && !cacheNames.contains(cfg.getName()))
                     continue;
 
-                if (cfg.getCacheMode() != LOCAL &&
-                    cfg.getRebalanceMode() != NONE &&
+                if (cfg.getRebalanceMode() != NONE &&
                     g.cluster().nodes().size() > 1) {
                     AffinityFunction aff = cfg.getAffinity();
 
@@ -970,7 +965,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             IgniteCacheProxy<?, ?> cache = null;
             try {
                 cache = g0.context().cache().jcache(cacheName);
-            } catch (IllegalArgumentException e) {
+            }
+            catch (IllegalArgumentException e) {
                 continue; // Client topology.
             }
 
@@ -1102,6 +1098,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         /** */
         private final String cacheName;
 
+        /** */
         public ManualRebalancer(String cacheName) {
             this.cacheName = cacheName;
         }
@@ -1530,20 +1527,16 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param cache Cache.
      * @return Collection of keys for which given cache is primary.
-     * @throws IgniteCheckedException If failed.
      */
-    protected Integer primaryKey(IgniteCache<?, ?> cache)
-        throws IgniteCheckedException {
+    protected Integer primaryKey(IgniteCache<?, ?> cache) {
         return primaryKeys(cache, 1, 1).get(0);
     }
 
     /**
      * @param cache Cache.
      * @return Keys for which given cache is backup.
-     * @throws IgniteCheckedException If failed.
      */
-    protected Integer backupKey(IgniteCache<?, ?> cache)
-        throws IgniteCheckedException {
+    protected Integer backupKey(IgniteCache<?, ?> cache) {
         return backupKeys(cache, 1, 1).get(0);
     }
 
@@ -1853,10 +1846,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * Compares ordered collection.
+     *
      * @param exp Expected.
      * @param act Actual.
      */
-    protected void assertEqualsCollections(Collection<?> exp, Collection<?> act) {
+    protected static void assertEqualsCollections(Collection<?> exp, Collection<?> act) {
         if (exp.size() != act.size())
             fail("Collections are not equal:\nExpected:\t" + exp + "\nActual:\t" + act);
 
@@ -1873,6 +1868,38 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 fail("Collections are not equal (position " + idx + "):\nExpected: " + exp + "\nActual:   " + act);
 
             idx++;
+        }
+    }
+
+    /**
+     * Compares unordered collection.
+     *
+     * @param exp Expected.
+     * @param act Actual.
+     */
+    protected static <T> void assertEqualsCollectionsIgnoringOrder(Collection<T> exp, Collection<T> act) {
+        assertTrue("Collections are not equal:\nExpected:\t" + exp + "\nActual:\t" + act,
+            (exp.size() == act.size()));
+
+        for (T obj : exp)
+            assertEquals("Collections are not equal (element " + obj + " frequency is different)." +
+                    "\nCollections: " + exp + ", " + act,
+                Collections.frequency(exp, obj), Collections.frequency(act, obj));
+    }
+
+    /**
+     * @param exp Expected.
+     * @param act Actual.
+     */
+    protected static <K, V> void assertEqualsMaps(Map<K, V> exp, Map<K, V> act) {
+        if (exp.size() != act.size())
+            fail("Maps are not equal:\nExpected:\t" + exp + "\nActual:\t" + act);
+
+        for (Map.Entry<K, V> e : exp.entrySet()) {
+            if (!act.containsKey(e.getKey()))
+                fail("Maps are not equal (missing key " + e.getKey() + "):\nExpected:\t" + exp + "\nActual:\t" + act);
+            else if (!F.eq(e.getValue(), act.get(e.getKey())))
+                fail("Maps are not equal (key " + e.getKey() + "):\nExpected:\t" + exp + "\nActual:\t" + act);
         }
     }
 
@@ -1930,6 +1957,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *
      */
     protected void cleanPersistenceDir() throws Exception {
+        cleanPersistenceDir(false);
+    }
+
+    /**
+     * @param saveSnp Do not clean snapshot directory if {@code true}.
+     */
+    protected void cleanPersistenceDir(boolean saveSnp) throws Exception {
         assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
 
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
@@ -1937,7 +1971,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH,
             false));
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false));
+
+        if (!saveSnp)
+            U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false));
     }
 
     /**
@@ -2160,14 +2196,20 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @throws IgniteCheckedException If checkpoint was failed.
      */
     protected void forceCheckpoint(Collection<Ignite> nodes) throws IgniteCheckedException {
+        forceCheckpoint(nodes, "test");
+    }
+
+    /**
+     * Forces checkpoint on all specified nodes.
+     *
+     * @param nodes Nodes to force checkpoint on them.
+     * @param reason Reason for checkpoint wakeup if it would be required.
+     * @throws IgniteCheckedException If checkpoint was failed.
+     */
+    protected void forceCheckpoint(Collection<Ignite> nodes, String reason) throws IgniteCheckedException {
         for (Ignite ignite : nodes) {
-            if (ignite.cluster().localNode().isClient())
-                continue;
-
-            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
-                    .cache().context().database();
-
-            dbMgr.waitForCheckpoint("test");
+            if (!ignite.cluster().localNode().isClient())
+                dbMgr((IgniteEx)ignite).waitForCheckpoint(reason);
         }
     }
 
@@ -2201,10 +2243,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         if (node == null)
             throw new IgniteException("None server node for verification.");
 
-        VisorIdleVerifyTaskArg taskArg = new VisorIdleVerifyTaskArg(cacheNames);
+        CacheIdleVerifyCommandArg taskArg = new CacheIdleVerifyCommandArg();
+
+        taskArg.caches(cacheNames.toArray(U.EMPTY_STRS));
 
         return ig.compute().execute(
-            VisorIdleVerifyTaskV2.class.getName(),
+            IdleVerifyTaskV2.class.getName(),
             new VisorTaskArgument<>(node.id(), taskArg, false)
         );
     }
@@ -2306,14 +2350,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * @return {@code false} if value of a system property "IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED" is "false",
-     * otherwise {@code true}.
-     */
-    protected static boolean isEventDrivenServiceProcessorEnabled() {
-        return getBoolean(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, true);
-    }
-
-    /**
      * Wait for {@link EventType#EVT_NODE_METRICS_UPDATED} event will be receieved.
      *
      * @param countUpdate Number of events.
@@ -2352,6 +2388,31 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             for (Ignite g : grids)
                 g.events().stopLocalListen(lsnr);
+        }
+    }
+
+    /**
+     * Awaits for the cache to be available on the client node.
+     * <p/>
+     * Client nodes receive the created cache descriptor asynchronously:
+     * <pre name="code" class="java">
+     *      server.createCache("cache");
+     *      ...
+     *      IgniteCache cache = client.cache("cache"); // May be null.
+     * </pre>
+     *
+     * @param client Client node.
+     * @param cacheName Cache name.
+     */
+    public static void awaitCacheOnClient(Ignite client, String cacheName) {
+        if (!client.cluster().localNode().isClient())
+            return;
+
+        try {
+            assertTrue(waitForCondition(() -> client.cacheNames().contains(cacheName), DFLT_NETWORK_TIMEOUT));
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            throw U.convertException(e);
         }
     }
 
@@ -2608,7 +2669,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             assert dbMgr instanceof GridCacheDatabaseSharedManager;
 
-            GridCacheDatabaseSharedManager dbMgr0 = (GridCacheDatabaseSharedManager) dbMgr;
+            GridCacheDatabaseSharedManager dbMgr0 = (GridCacheDatabaseSharedManager)dbMgr;
 
             fut.add(dbMgr0.enableCheckpoints(enable));
         }
@@ -2648,15 +2709,15 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
     }
 
-     /**
-      * Getting WAL manager.
-      *
-      * @param n Node.
-      * @return WAL manger.
+    /**
+     * Getting WAL manager.
+     *
+     * @param n Node.
+     * @return WAL manger.
      */
-     protected static FileWriteAheadLogManager walMgr(IgniteEx n) {
-         return (FileWriteAheadLogManager)n.context().cache().context().wal();
-     }
+    protected static FileWriteAheadLogManager walMgr(IgniteEx n) {
+        return (FileWriteAheadLogManager)n.context().cache().context().wal();
+    }
 
     /**
      * Disable/enable VAL.
@@ -2723,5 +2784,42 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected GridCacheDatabaseSharedManager dbMgr(IgniteEx n) {
         return (GridCacheDatabaseSharedManager)n.context().cache().context().database();
+    }
+
+    /**
+     * Performing an operation on a MetaStorage.
+     *
+     * @param n Node.
+     * @param fun Function for working with MetaStorage, the argument can be {@code null}.
+     * @return The function result.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected <R> R metaStorageOperation(
+        IgniteEx n,
+        IgniteThrowableFunction<MetaStorage, R> fun
+    ) throws IgniteCheckedException {
+        GridCacheDatabaseSharedManager dbMgr = dbMgr(n);
+
+        dbMgr.checkpointReadLock();
+
+        try {
+            return fun.apply(dbMgr.metaStorage());
+        }
+        finally {
+            dbMgr.checkpointReadUnlock();
+        }
+    }
+
+    /**
+     * @param n Node.
+     * @return Distributed property: {@code GridJobProcessor#computeJobWorkerInterruptTimeout}.
+     */
+    protected DistributedChangeableProperty<Serializable> computeJobWorkerInterruptTimeout(Ignite n) {
+        DistributedChangeableProperty<Serializable> timeoutProperty = ((IgniteEx)n).context().distributedConfiguration()
+            .property(GridJobProcessor.COMPUTE_JOB_WORKER_INTERRUPT_TIMEOUT);
+
+        assertThat(timeoutProperty, notNullValue());
+
+        return timeoutProperty;
     }
 }

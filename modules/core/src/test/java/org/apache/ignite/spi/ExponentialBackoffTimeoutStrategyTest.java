@@ -86,7 +86,8 @@ public class ExponentialBackoffTimeoutStrategyTest extends GridCommonAbstractTes
                     strategy.nextTimeout();
 
                     fail("Should fail with IgniteSpiOperationTimeoutException");
-                } catch (IgniteSpiOperationTimeoutException ignored) {
+                }
+                catch (IgniteSpiOperationTimeoutException ignored) {
                     //No-op
                 }
 

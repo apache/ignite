@@ -63,7 +63,8 @@ public class PluginNodeValidationTest extends GridCommonAbstractTest {
 
         try {
             startGrid(1);
-        } catch (Exception ex) {
+        }
+        catch (Exception ex) {
             assertTrue("Wrong exception type for validation error", X.hasCause(ex, IgniteSpiException.class));
 
             return;

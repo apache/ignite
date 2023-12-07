@@ -41,7 +41,7 @@ import org.apache.ignite.plugin.security.SecurityException;
  * Sql query request.
  */
 @SuppressWarnings("unchecked")
-public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest implements ClientTxAwareRequest {
+public class ClientCacheSqlFieldsQueryRequest extends ClientCacheQueryRequest implements ClientTxAwareRequest {
     /** Query. */
     private final SqlFieldsQuery qry;
 
@@ -77,7 +77,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
         boolean enforceJoinOrder = reader.readBoolean();
         boolean collocated = reader.readBoolean();
         boolean lazy = reader.readBoolean();
-        int timeout = (int) reader.readLong();
+        int timeout = (int)reader.readLong();
         includeFieldNames = reader.readBoolean();
 
         SqlFieldsQuery qry = stmtType == JdbcStatementType.ANY_STATEMENT_TYPE
@@ -111,11 +111,13 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
 
                 for (int i = 0; i < partCnt; i++)
                     partitions[i] = reader.readInt();
-            } else
+            }
+            else
                 partitions = null;
 
             updateBatchSize = reader.readInt();
-        } else {
+        }
+        else {
             partitions = null;
             updateBatchSize = null;
         }

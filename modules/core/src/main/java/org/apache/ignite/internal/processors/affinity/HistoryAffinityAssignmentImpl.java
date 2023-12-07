@@ -260,7 +260,7 @@ public class HistoryAffinityAssignmentImpl implements HistoryAffinityAssignment 
                     ? assignments2ids(nodes)
                     : F.viewReadOnly(nodes, F.node2id());
         }
-     }
+    }
 
     /** {@inheritDoc} */
     @Override public Set<ClusterNode> nodes() {

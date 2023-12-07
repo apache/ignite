@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -40,7 +41,7 @@ public class ClientTcpSslMultiThreadedSelfTest extends ClientAbstractMultiThread
     }
 
     /** {@inheritDoc} */
-    @Override protected GridSslContextFactory sslContextFactory() {
-        return GridTestUtils.sslContextFactory();
+    @Override protected Factory<SSLContext> sslContextFactory() {
+        return GridTestUtils.sslFactory();
     }
 }

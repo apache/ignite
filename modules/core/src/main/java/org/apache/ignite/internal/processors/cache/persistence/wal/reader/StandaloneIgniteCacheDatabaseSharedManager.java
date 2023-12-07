@@ -17,12 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 
 /**
  * Fake implementation for publishing setter and for creation in standalone WAL reader tool
  */
 class StandaloneIgniteCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedManager {
+    /** @param ctx Kernal context. */
+    public StandaloneIgniteCacheDatabaseSharedManager(GridKernalContext ctx) {
+        super(ctx);
+    }
+
     /** {@inheritDoc} */
     @Override public void setPageSize(int pageSize) {
         super.setPageSize(pageSize);

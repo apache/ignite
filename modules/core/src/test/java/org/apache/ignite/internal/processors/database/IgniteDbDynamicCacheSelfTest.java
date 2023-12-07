@@ -24,12 +24,12 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -86,7 +86,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
 
         Ignite ignite = ignite(0);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -94,11 +94,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
-
-        if (MvccFeatureChecker.forcedMvcc())
-            ccfg.setRebalanceDelay(Long.MAX_VALUE);
-        else
-            ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
+        ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
 
         for (int k = 0; k < iterations; k++) {
             System.out.println("Iteration: " + k);
@@ -126,18 +122,14 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
 
         Ignite ignite = ignite(0);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
-
-        if (MvccFeatureChecker.forcedMvcc())
-            ccfg.setRebalanceDelay(Long.MAX_VALUE);
-        else
-            ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
+        ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
 
         ccfg.setIndexedTypes(Integer.class, String.class);
 

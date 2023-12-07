@@ -56,11 +56,9 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.startup.servlet.ServletContextListenerStartup;
 import org.apache.ignite.transactions.Transaction;
-
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -345,10 +343,6 @@ public class WebSessionFilter implements Filter {
             throw new IgniteException("Cache for web sessions cannot operate with lazy TTL. " +
                 "Consider setting eagerTtl to true for cache: " + cacheName);
 
-        if (cacheCfg.getCacheMode() == LOCAL)
-            U.quietAndWarn(webSesIgnite.log(), "Using LOCAL cache for web sessions caching " +
-                "(this is only OK in test mode): " + cacheName);
-
         if (cacheCfg.getCacheMode() == PARTITIONED && cacheCfg.getAtomicityMode() != ATOMIC)
             U.quietAndWarn(webSesIgnite.log(), "Using " + cacheCfg.getAtomicityMode() + " atomicity for web sessions " +
                 "caching (switch to ATOMIC mode for better performance)");
@@ -486,7 +480,7 @@ public class WebSessionFilter implements Filter {
         HttpSession ses = httpReq.getSession(false);
 
         if (ses != null && ses instanceof WebSession) {
-            Collection<T2<String, Object>> updates = ((WebSession) ses).updates();
+            Collection<T2<String, Object>> updates = ((WebSession)ses).updates();
 
             if (updates != null)
                 updateAttributes(transformSessionId(sesId), updates, ses.getMaxInactiveInterval());
@@ -1012,7 +1006,7 @@ public class WebSessionFilter implements Filter {
 
                 if (create) {
                     try {
-                        ses = createSessionV2((HttpServletRequest) getRequest());
+                        ses = createSessionV2((HttpServletRequest)getRequest());
                     }
                     catch (IOException e) {
                         throw new IgniteException(e);
@@ -1032,7 +1026,7 @@ public class WebSessionFilter implements Filter {
 
         /** {@inheritDoc} */
         @Override public String changeSessionId() {
-            final HttpServletRequest req = (HttpServletRequest) getRequest();
+            final HttpServletRequest req = (HttpServletRequest)getRequest();
 
             final String newId = req.changeSessionId();
 

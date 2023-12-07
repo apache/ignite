@@ -18,7 +18,10 @@
 package org.apache.ignite.testsuites;
 
 import java.util.List;
+
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.InterceptorCacheConfigVariationsFullApiTest;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -31,6 +34,11 @@ public class InterceptorCacheConfigVariationsFullApiTestSuite {
     /** */
     public static List<Class<?>> suite() {
         return new ConfigVariationsTestSuiteBuilder(InterceptorCacheConfigVariationsFullApiTest.class)
+            .withIgniteConfigFilters(new IgnitePredicate<IgniteConfiguration>() {
+                @Override public boolean apply(IgniteConfiguration cfg) {
+                    return !cfg.isPeerClassLoadingEnabled();
+                }
+            })
             .withBasicCacheParams()
             .gridsCount(5).backups(1)
             .testedNodesCount(3).withClients()

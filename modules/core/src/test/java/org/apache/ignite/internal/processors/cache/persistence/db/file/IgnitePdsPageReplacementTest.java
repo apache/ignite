@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -118,7 +119,7 @@ public class IgnitePdsPageReplacementTest extends GridCommonAbstractTest {
     public void testPageReplacement() throws Exception {
         final IgniteEx ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         final PageMemory memory = getMemory(ig);
 

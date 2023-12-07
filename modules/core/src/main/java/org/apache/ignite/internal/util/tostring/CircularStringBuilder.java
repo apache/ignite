@@ -63,7 +63,9 @@ public class CircularStringBuilder {
      * @return  the length of the sequence of characters currently
      *          represented by this object
      */
-    public int length() { return full ? value.length : finishAt + 1; }
+    public int length() {
+        return full ? value.length : finishAt + 1;
+    }
 
     /**
      * Returns the current capacity.
@@ -171,7 +173,9 @@ public class CircularStringBuilder {
     /**
      * @return Count of skipped elements.
      */
-    public int getSkipped() { return skipped; }
+    public int getSkipped() {
+        return skipped;
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

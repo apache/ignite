@@ -139,7 +139,8 @@ public abstract class IgniteAbstractPageReplacementBenchmark extends IgniteCache
 
                     try {
                         Thread.sleep(backgroundScanInterval);
-                    } catch (InterruptedException e) {
+                    }
+                    catch (InterruptedException e) {
                         return;
                     }
                 }

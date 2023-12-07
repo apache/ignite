@@ -27,7 +27,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.NotNull;
 
 /** */
-class ReadWriteMetaStorageMock implements ReadWriteMetastorage {
+public class ReadWriteMetaStorageMock implements ReadWriteMetastorage {
     /** */
     public final Map<String, byte[]> cache = new ConcurrentSkipListMap<>();
 

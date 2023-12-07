@@ -48,7 +48,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// <summary>
         /// Initializes a new instance of <see cref="ContinuousQueryTest"/>.
         /// </summary>
-        public ContinuousQueryTest() : base(2)
+        public ContinuousQueryTest()
+            : base(
+                gridCount: 2,
+                enableServerListLogging: true,
+                serverListLoggerLevels: new [] { LogLevel.Error, LogLevel.Warn })
         {
             // No-op.
         }
@@ -268,7 +272,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestClientContinuousQueryReceivesEventsFromServerCache()
         {
-            const int count = 10000;
+            const int count = 100;
 
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName);
 
@@ -654,7 +658,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName)
                 .WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(100), null, null));
-            
+
             var events = new ConcurrentQueue<ICacheEntryEvent<int, int>>();
             var qry = new ContinuousQueryClient<int, int>(new DelegateListener<int, int>(events.Enqueue));
             Assert.IsFalse(qry.IncludeExpired);
@@ -667,7 +671,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
                 cache[2] = 3;
             }
-            
+
             Assert.AreEqual(2, events.Count);
             Assert.AreEqual(CacheEntryEventType.Created, events.First().EventType);
             Assert.AreEqual(CacheEntryEventType.Created, events.Last().EventType);
@@ -686,7 +690,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var cache = Client.GetOrCreateCache<int, int>(TestUtils.TestName)
                 .WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(100), null, null));
-            
+
             var events = new ConcurrentQueue<ICacheEntryEvent<int, int>>();
             var qry = new ContinuousQueryClient<int, int>(new DelegateListener<int, int>(events.Enqueue))
             {
@@ -699,11 +703,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
                 TestUtils.WaitForTrueCondition(() => events.Count == 2, 5000);
             }
-            
+
             Assert.AreEqual(2, events.Count);
             Assert.AreEqual(CacheEntryEventType.Created, events.First().EventType);
             Assert.AreEqual(CacheEntryEventType.Expired, events.Last().EventType);
-            
+
             Assert.IsTrue(events.Last().HasValue);
             Assert.IsTrue(events.Last().HasOldValue);
             Assert.AreEqual(2, events.Last().Value);

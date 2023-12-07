@@ -20,6 +20,8 @@
 
 #include <stdint.h>
 #include <string>
+#include <sstream>
+#include <vector>
 
 namespace ignite
 {
@@ -50,6 +52,19 @@ namespace ignite
                 port(port)
             {
                 // No-op.
+            }
+
+            /**
+             * Convert to string.
+             *
+             * @return String form.
+             */
+            std::string ToString() const
+            {
+                std::stringstream ss;
+                ss << host << ':' << port;
+
+                return ss.str();
             }
 
             /**

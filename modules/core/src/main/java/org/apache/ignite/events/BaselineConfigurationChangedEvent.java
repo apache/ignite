@@ -88,12 +88,12 @@ public class BaselineConfigurationChangedEvent extends EventAdapter {
         this.autoAdjustTimeout = autoAdjustTimeout;
     }
 
-    /** Auto-adjust "enabled" flag value. */
+    /** @return Auto-adjust "enabled" flag value. */
     public boolean isAutoAdjustEnabled() {
         return autoAdjustEnabled;
     }
 
-    /** Auto-adjust timeout value in milliseconds. */
+    /** @return Auto-adjust timeout value in milliseconds. */
     public long autoAdjustTimeout() {
         return autoAdjustTimeout;
     }

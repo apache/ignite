@@ -158,8 +158,8 @@ public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstract
      *
      */
     static class TestValueNegativeInlineSize {
-         /** */
-         @QuerySqlField(index = true, inlineSize = -10)
-         String val;
-     }
+        /** */
+        @QuerySqlField(index = true, inlineSize = -10)
+        String val;
+    }
 }

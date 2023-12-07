@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import java.util.Collection;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -56,14 +57,14 @@ public abstract class UnsortedBaseReducer extends AbstractReducer {
     }
 
     /** {@inheritDoc} */
-    @Override public void setSources(Collection<ClusterNode> nodes, int segmentsCnt) {
-        super.setSources(nodes, segmentsCnt);
+    @Override public void setSources(Map<ClusterNode, BitSet> nodesToSegmentsCnt) {
+        super.setSources(nodesToSegmentsCnt);
 
-        int x = srcNodes.size() * segmentsCnt;
+        int totalSegmentsCnt = nodesToSegmentsCnt.values().stream().mapToInt(BitSet::cardinality).sum();
 
-        assert x > 0 : x;
+        assert totalSegmentsCnt > 0 : totalSegmentsCnt;
 
-        activeSourcesCnt.set(x);
+        activeSourcesCnt.set(totalSegmentsCnt);
     }
 
     /** {@inheritDoc} */

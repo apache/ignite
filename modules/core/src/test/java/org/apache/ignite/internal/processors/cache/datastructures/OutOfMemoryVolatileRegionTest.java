@@ -21,10 +21,12 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SystemDataRegionConfiguration;
 import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
@@ -55,8 +57,11 @@ public class OutOfMemoryVolatileRegionTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setPageSize(4096)
-            .setSystemRegionInitialSize(DATA_REGION_SIZE)
-            .setSystemRegionMaxSize(DATA_REGION_SIZE)
+            .setSystemDataRegionConfiguration(
+                    new SystemDataRegionConfiguration()
+                            .setInitialSize(DATA_REGION_SIZE)
+                            .setMaxSize(DATA_REGION_SIZE)
+            )
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setPersistenceEnabled(true)
@@ -129,7 +134,7 @@ public class OutOfMemoryVolatileRegionTest extends GridCommonAbstractTest {
      * @param attempts Number of attempts to load and clear the cache.
      */
     private void loadAndClearCache(CacheAtomicityMode mode, int attempts) {
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         failure = false;
 

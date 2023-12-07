@@ -60,9 +60,8 @@ class ZkDistributedCollectDataFuture extends GridFutureAdapter<Void> {
         ZookeeperDiscoveryImpl impl,
         ZkRuntimeState rtState,
         String futPath,
-        Callable<Void> lsnr)
-        throws Exception
-    {
+        Callable<Void> lsnr
+    ) throws Exception {
         this.log = impl.log();
         this.futPath = futPath;
         this.lsnr = lsnr;
@@ -130,6 +129,7 @@ class ZkDistributedCollectDataFuture extends GridFutureAdapter<Void> {
         client.createIfNeeded(futResPath, data, CreateMode.PERSISTENT);
     }
 
+    /** */
     static byte[] readResult(ZookeeperClient client, ZkIgnitePaths paths, UUID futId) throws Exception {
         return client.getData(paths.distributedFutureResultPath(futId));
     }

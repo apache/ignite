@@ -51,9 +51,7 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
     /**
      * Cache store with {@link SpringResource} fields to be injected.
      */
-    public static class IgniteCacheStoreWithSpringResource<K, V> extends CacheStoreAdapter<K, V>
-        implements Serializable
-    {
+    public static class IgniteCacheStoreWithSpringResource<K, V> extends CacheStoreAdapter<K, V> implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -195,7 +193,7 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
                 /** {@inheritDoc} */
                 @Override Integer getInjectedBean() {
                     IgniteCacheStoreWithSpringResource cacheStore = (IgniteCacheStoreWithSpringResource)
-                        ((IgniteEx) G.allGrids().get(0)).cachex("cache1").context().store().store();
+                        ((IgniteEx)G.allGrids().get(0)).cachex("cache1").context().store().store();
 
                     return cacheStore.getInjectedSpringField();
                 }

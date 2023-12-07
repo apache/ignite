@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -75,16 +76,16 @@ public class IgniteWalIteratorExceptionDuringReadTest extends GridCommonAbstract
      */
     @Test
     public void test() throws Exception {
-        IgniteEx ig = (IgniteEx)startGrid();
+        IgniteEx ig = startGrid();
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, byte[]> cache = ig.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 20 * 4; i++)
             cache.put(i, new byte[1024 * 1024]);
 
-        ig.cluster().active(false);
+        ig.cluster().state(ClusterState.INACTIVE);
 
         IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory(log);
 
@@ -106,21 +107,21 @@ public class IgniteWalIteratorExceptionDuringReadTest extends GridCommonAbstract
 
             boolean failed = false;
 
-            while (it.hasNext()) {
-                try {
+            try {
+                while (it.hasNext()) {
+
                     IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
                     ptr = tup.get1();
-                }
-                catch (IgniteException e) {
-                    Assert.assertNotNull(ptr);
-                    Assert.assertEquals(failOnPtr.index(), ptr.index());
-                    Assert.assertTrue(ptr.compareTo(failOnPtr) < 0);
 
-                    failed = X.hasCause(e, TestRuntimeException.class);
-
-                    break;
                 }
+            }
+            catch (IgniteException e) {
+                Assert.assertNotNull(ptr);
+                Assert.assertEquals(failOnPtr.index(), ptr.index());
+                Assert.assertTrue(ptr.compareTo(failOnPtr) < 0);
+
+                failed = X.hasCause(e, TestRuntimeException.class);
             }
 
             assertTrue(failed);

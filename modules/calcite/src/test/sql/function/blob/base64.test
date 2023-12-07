@@ -1,0 +1,27 @@
+# name: test/sql/function/blob/base64.test
+# description: Test blob base64 functions
+# group: [blob]
+
+query I
+SELECT to_base64(NULL)
+----
+NULL
+
+query I
+SELECT to_base64('GRIDGAIN')
+----
+R1JJREdBSU4=
+
+query I
+select from_base64('AAAA');
+----
+000000
+
+# malformed base64
+# must be multiple of 4
+statement error
+SELECT from_base64('ab');
+
+# unknown bytes
+statement error
+SELECT from_base64('üab');

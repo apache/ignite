@@ -34,6 +34,7 @@ import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -67,8 +68,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -381,7 +380,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             cctx.database().checkpointReadLock();
 
             try {
-                if ((txEntry.op() == CREATE || txEntry.op() == UPDATE) &&
+                if ((txEntry.op() == CREATE || txEntry.op() == UPDATE || txEntry.op() == TRANSFORM) &&
                     txEntry.conflictExpireTime() == CU.EXPIRE_TIME_CALCULATE) {
                     if (expiry != null) {
                         cached.unswap(true);
@@ -420,7 +419,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         readThrough,
                         /*metrics*/retVal,
                         /*event*/evt,
-                        tx.subjectId(),
                         entryProc,
                         tx.resolveTaskName(),
                         null,
@@ -498,6 +496,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             }
 
                             txEntry.entryProcessorCalculatedValue(new T2<>(op, op == NOOP ? null : val));
+                            txEntry.noop(op == NOOP);
 
                             if (retVal) {
                                 if (err != null || procRes != null)
@@ -528,8 +527,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
 
                 // Send old value in case if rebalancing is not finished.
-                final boolean sndOldVal = !cacheCtx.isLocal() &&
-                    !cacheCtx.topology().rebalanceFinished(tx.topologyVersion());
+                final boolean sndOldVal = !cacheCtx.topology().rebalanceFinished(tx.topologyVersion());
 
                 if (sndOldVal) {
                     if (oldVal == null && !readOld) {
@@ -539,15 +537,11 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             /*readThrough*/false,
                             /*metrics*/false,
                             /*event*/false,
-                            /*subjectId*/tx.subjectId(),
                             /*transformClo*/null,
                             /*taskName*/null,
                             /*expiryPlc*/null,
                             /*keepBinary*/true);
                     }
-
-                    if (oldVal != null)
-                        oldVal.prepareMarshal(cacheCtx.cacheObjectContext());
 
                     txEntry.oldValue(oldVal);
                 }
@@ -617,7 +611,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      */
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (this) {
+        compoundsReadLock();
+
+        try {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.
@@ -636,6 +632,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         return null;
                 }
             }
+        }
+        finally {
+            compoundsReadUnlock();
         }
 
         return null;
@@ -663,9 +662,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     private void readyLocks(Iterable<IgniteTxEntry> checkEntries) {
         for (IgniteTxEntry txEntry : checkEntries) {
             GridCacheContext cacheCtx = txEntry.context();
-
-            if (cacheCtx.isLocal())
-                continue;
 
             GridDistributedCacheEntry entry = (GridDistributedCacheEntry)txEntry.cached();
 
@@ -727,7 +723,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 try {
                     prepare0();
                 }
-                catch (IgniteTxRollbackCheckedException e) {
+                catch (IgniteTxRollbackCheckedException | IgniteException e) {
                     onError(e);
                 }
             else {
@@ -880,7 +876,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
 
             try {
-                cctx.io().send(tx.nearNodeId(), res, tx.ioPolicy());
+                cctx.tm().sendTransactionMessage(tx.nearNodeId(), res, tx, tx.ioPolicy());
 
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("DHT prepare fut, sent response [txId=" + tx.nearXidVersion() +
@@ -1040,7 +1036,14 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             tx.setRollbackOnly();
         }
         else if (!tx.onePhaseCommit() && ((last || tx.isSystemInvalidate()) && !(tx.near() && tx.local())))
-            tx.state(PREPARED);
+            try {
+                tx.state(PREPARED);
+            }
+            catch (IgniteException e) {
+                tx.setRollbackOnly();
+
+                res.error(e);
+            }
 
         if (super.onDone(res, res == null ? err : null)) {
             // Don't forget to clean up.
@@ -1078,7 +1081,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             if (tx.empty() && !req.queryUpdate()) {
                 tx.setRollbackOnly();
 
-                onDone((GridNearTxPrepareResponse) null);
+                onDone((GridNearTxPrepareResponse)null);
             }
 
             this.req = req;
@@ -1345,11 +1348,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 return;
 
             if (last) {
-                if (!tx.txState().mvccEnabled()) {
-                    /** For MVCC counters are assigned on enlisting. */
-                    /** See usage of {@link TxCounters#incrementUpdateCounter(int, int)} ) */
-                    tx.calculatePartitionUpdateCounters();
-                }
+                tx.calculatePartitionUpdateCounters();
 
                 recheckOnePhaseCommit();
 
@@ -1389,8 +1388,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      *
      */
     private void sendPrepareRequests() {
-        assert !tx.txState().mvccEnabled() || !tx.onePhaseCommit() || tx.mvccSnapshot() != null;
-
         int miniId = 0;
 
         assert tx.transactionNodes() != null;
@@ -1438,7 +1435,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 tx.nearXidVersion(),
                 true,
                 tx.onePhaseCommit(),
-                tx.subjectId(),
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
                 tx.storeWriteThrough(),
@@ -1510,7 +1506,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             assert req.transactionNodes() != null;
 
             try {
-                cctx.io().send(n, req, tx.ioPolicy());
+                cctx.tm().sendTransactionMessage(n, req, tx, tx.ioPolicy());
 
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("DHT prepare fut, sent request dht [txId=" + tx.nearXidVersion() +
@@ -1553,7 +1549,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     tx.nearXidVersion(),
                     true,
                     tx.onePhaseCommit(),
-                    tx.subjectId(),
                     tx.taskNameHash(),
                     tx.activeCachesDeploymentEnabled(),
                     tx.storeWriteThrough(),
@@ -1986,20 +1981,21 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         try {
                             if (entry.initialValue(info.value(),
                                 info.version(),
-                                cacheCtx.mvccEnabled() ? ((MvccVersionAware)info).mvccVersion() : null,
-                                cacheCtx.mvccEnabled() ? ((MvccUpdateVersionAware)info).newMvccVersion() : null,
-                                cacheCtx.mvccEnabled() ? ((MvccVersionAware)info).mvccTxState() : TxState.NA,
-                                cacheCtx.mvccEnabled() ? ((MvccUpdateVersionAware)info).newMvccTxState() : TxState.NA,
+                                null,
+                                null,
+                                TxState.NA,
+                                TxState.NA,
                                 info.ttl(),
                                 info.expireTime(),
                                 true,
                                 topVer,
                                 drType,
+                                false,
                                 false)) {
                                 if (rec && !entry.isInternal())
                                     cacheCtx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
                                         null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
-                                        false, null, null, null, false);
+                                        false, null, null, false);
 
                                 if (retVal && !invoke) {
                                     ret.value(

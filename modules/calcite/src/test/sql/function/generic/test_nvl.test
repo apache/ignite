@@ -1,0 +1,29 @@
+# name: test/sql/function/generic/test_nvl.test
+# description: Test NVL function
+# group: [generic]
+
+
+query I
+SELECT NVL(102, 101)
+----
+102
+
+query I
+SELECT NVL(NULL, 101)
+----
+101
+
+query I
+SELECT NVL('102', '101')
+----
+102
+
+query I
+SELECT NVL(null, '101')
+----
+101
+
+query I
+SELECT NVL(null, null)
+----
+NULL

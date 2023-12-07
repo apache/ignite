@@ -17,105 +17,59 @@
   ~ limitations under the License.
   -->
 
-<!DOCTYPE log4j:configuration PUBLIC "-//APACHE//DTD LOG4J 1.2//EN"
-    "http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/xml/doc-files/log4j.dtd">
+
 <!--
-    Log4j configuration.
+    Log4j2 configuration.
 -->
-<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">
-    <!--
-        Logs System.out messages to console.
-    -->
-    <appender name="CONSOLE" class="org.apache.log4j.ConsoleAppender">
-        <!-- Log to STDOUT. -->
-        <param name="Target" value="System.out"/>
+<Configuration>
+    <Appenders>
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
+            <LevelRangeFilter minLevel="INFO" maxLevel="DEBUG"/>
+        </Console>
 
-        <!-- Log from DEBUG and higher. -->
-        <param name="Threshold" value="DEBUG"/>
+        <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
+        </Console>
 
-        <!-- The default pattern: Date Priority [Category] Message\n -->
-        <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
-        </layout>
+        <RollingFile name="FILE"
+                     fileName="${sys:IGNITE_HOME}/work/log/ignite.log"
+                     filePattern="${sys:IGNITE_HOME}/work/log/ignite.log.%i"
+                     append="true">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="10 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="10"/>
+        </RollingFile>
+    </Appenders>
 
-        <!-- Do not log beyond INFO level. -->
-        <filter class="org.apache.log4j.varia.LevelRangeFilter">
-            <param name="levelMin" value="DEBUG"/>
-            <param name="levelMax" value="INFO"/>
-        </filter>
-    </appender>
+    <Loggers>
+        <Logger name="org.apache.ignite.internal.diagnostic" level="INFO">
+            <AppenderRef ref="CONSOLE" level="INFO"/>
+        </Logger>
 
-    <!--
-        Logs all System.err messages to console.
-    -->
-    <appender name="CONSOLE_ERR" class="org.apache.log4j.ConsoleAppender">
-        <!-- Log to STDERR. -->
-        <param name="Target" value="System.err"/>
+        <!--
+            Uncomment to enable Ignite query execution debugging.
+        -->
+        <!--
+            <Logger name="org.apache.ignite.internal.processors.query" level="DEBUG"/>
+        -->
 
-        <!-- Log from WARN and higher. -->
-        <param name="Threshold" value="WARN"/>
+        <!--
+            Uncomment to enable Exchange, Rebalance and Partitions workflow debugging.
+        -->
+        <!--
+            <Logger name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader" level="DEBUG"/>
+            <Logger name="org.apache.ignite.internal.processors.cache.distributed.dht.topology" level="DEBUG"/>
+        -->
 
-        <!-- The default pattern: Date Priority [Category] Message\n -->
-        <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
-        </layout>
-    </appender>
+        <Logger name="org" level="INFO"/>
+        <Logger name="org.eclipse.jetty" level="INFO"/>
 
-    <!--
-        Logs all output to specified file.
-    -->
-    <appender name="FILE" class="org.apache.log4j.FileAppender">
-        <param name="Threshold" value="DEBUG"/>
-        <param name="File" value="${IGNITE_HOME}/work/log/ignite.log"/>
-        <param name="Append" value="true"/>
-        <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
-        </layout>
-    </appender>
-
-    <logger name="org.apache.ignite.internal.diagnostic">
-        <level value="INFO"/>
-        <appender-ref ref="CONSOLE"/>
-    </logger>
-
-    <!--
-        Uncomment to enable Ignite query execution debugging.
-    -->
-    <!--
-    <category name="org.apache.ignite.internal.processors.query">
-        <level value="DEBUG"/>
-    </category>
-    -->
-
-    <!--
-        Uncomment to enable Exchange, Rebalance and Partitions workflow debugging.
-    -->
-    <!--
-         <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader">
-             <level value="DEBUG"/>
-         </category>
-
-        <category name="org.apache.ignite.internal.processors.cache.distributed.dht.topology">
-            <level value="DEBUG"/>
-        </category>
-    -->
-
-    <!-- Disable all open source debugging. -->
-    <category name="org">
-        <level value="INFO"/>
-    </category>
-
-    <category name="org.eclipse.jetty">
-        <level value="INFO"/>
-    </category>
-
-    <!-- Default settings. -->
-    <root>
-        <!-- Print at info by default. -->
-        <level value="INFO"/>
-
-        <!-- Append to file and console. -->
-        <appender-ref ref="FILE"/>
-        <appender-ref ref="CONSOLE_ERR"/>
-    </root>
-</log4j:configuration>
+        <Root level="INFO">
+            <AppenderRef ref="FILE" level="DEBUG"/>
+            <AppenderRef ref="CONSOLE_ERR" level="WARN"/>
+        </Root>
+    </Loggers>
+</Configuration>

@@ -61,7 +61,7 @@ public class ClientResourceRegistry {
                 "Failed to find resource with id: " + hnd
             );
 
-        return (T) obj;
+        return (T)obj;
     }
 
     /**

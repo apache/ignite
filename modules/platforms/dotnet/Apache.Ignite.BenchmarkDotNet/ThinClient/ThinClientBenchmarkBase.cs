@@ -49,7 +49,7 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
         public virtual void GlobalCleanup()
         {
             Client.Dispose();
-            Ignite.Dispose();
+            Ignition.StopAll(true);
         }
     }
 }

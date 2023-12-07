@@ -19,11 +19,10 @@ package org.apache.ignite.internal.managers.collision;
 
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.SkipDaemon;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.collision.CollisionContext;
 import org.apache.ignite.spi.collision.CollisionExternalListener;
 import org.apache.ignite.spi.collision.CollisionJobContext;
@@ -33,7 +32,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * This class defines a collision manager.
  */
-@SkipDaemon
 public class GridCollisionManager extends GridManagerAdapter<CollisionSpi> {
     /** Reference for external listener. */
     private final AtomicReference<CollisionExternalListener> extLsnr =
@@ -61,7 +59,7 @@ public class GridCollisionManager extends GridManagerAdapter<CollisionSpi> {
             });
         }
         else
-            U.warn(log, "Collision resolution is disabled (all jobs will be activated upon arrival).");
+            log.info("Collision resolution is disabled (all jobs will be activated upon arrival).");
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -69,9 +67,6 @@ public class GridCollisionManager extends GridManagerAdapter<CollisionSpi> {
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
-            return;
-
         stopSpi();
 
         // Unsubscribe.
@@ -104,27 +99,33 @@ public class GridCollisionManager extends GridManagerAdapter<CollisionSpi> {
     }
 
     /**
-     * @param waitJobs List of waiting jobs.
-     * @param activeJobs List of active jobs.
-     * @param heldJobs List of held jobs.
+     * Invoke collision SPI.
+     *
+     * @param waitJobs Collection of waiting jobs.
+     * @param activeJobs Collection of active jobs.
+     * @param heldJobs Collection of held jobs.
      */
     public void onCollision(
         final Collection<CollisionJobContext> waitJobs,
         final Collection<CollisionJobContext> activeJobs,
-        final Collection<CollisionJobContext> heldJobs) {
+        final Collection<CollisionJobContext> heldJobs
+    ) {
         if (enabled()) {
             if (log.isDebugEnabled())
                 log.debug("Resolving job collisions [waitJobs=" + waitJobs + ", activeJobs=" + activeJobs + ']');
 
             getSpi().onCollision(new CollisionContext() {
+                /** {@inheritDoc} */
                 @Override public Collection<CollisionJobContext> activeJobs() {
                     return activeJobs;
                 }
 
+                /** {@inheritDoc} */
                 @Override public Collection<CollisionJobContext> waitingJobs() {
                     return waitJobs;
                 }
 
+                /** {@inheritDoc} */
                 @Override public Collection<CollisionJobContext> heldJobs() {
                     return heldJobs;
                 }

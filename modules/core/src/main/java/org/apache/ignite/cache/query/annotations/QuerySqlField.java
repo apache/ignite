@@ -64,9 +64,9 @@ public @interface QuerySqlField {
     boolean notNull() default false;
 
     /**
-     * Specifies precision for a decimal field.
+     * Specifies field precision for variable length types - decimal, string and byte array.
      *
-     * @return precision for a decimal field.
+     * @return field precision for variable length types - decimal, string and byte array.
      */
     int precision() default -1;
 

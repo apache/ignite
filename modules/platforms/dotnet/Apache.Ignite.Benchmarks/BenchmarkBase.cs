@@ -115,7 +115,7 @@ namespace Apache.Ignite.Benchmarks
 
             ValidateArguments();
 
-            if (ResultWriter.ToLower().Equals(ResultWriterConsole))
+            if (ResultWriter.Equals(ResultWriterConsole, StringComparison.OrdinalIgnoreCase))
                 _writer = new BenchmarkConsoleResultWriter();
             else
                 _writer = new BenchmarkFileResultWriter();
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Benchmarks
                     var sb = new StringBuilder("Operations: ");
 
                     foreach (var opName in opNames)
-                        sb.Append(opName).Append(" ");
+                        sb.Append(opName).Append(' ');
 
                     return sb.ToString();
                 });
@@ -435,11 +435,11 @@ namespace Apache.Ignite.Benchmarks
                 if (MaxErrors < 0)
                     throw new Exception("MaxErrors cannot be negative: " + MaxErrors);
 
-                if (ResultWriter == null || !ResultWriter.ToLower().Equals(ResultWriterConsole)
-                    && !ResultWriter.ToLower().Equals(ResultWriterFile))
+                if (ResultWriter == null || !ResultWriter.Equals(ResultWriterConsole, StringComparison.OrdinalIgnoreCase)
+                    && !ResultWriter.Equals(ResultWriterFile, StringComparison.OrdinalIgnoreCase))
                     throw new Exception("Invalid ResultWriter: " + ResultWriter);
 
-                if (ResultWriter.ToLower().Equals(ResultWriterFile) && ResultFolder == null)
+                if (ResultWriter.Equals(ResultWriterFile, StringComparison.OrdinalIgnoreCase) && ResultFolder == null)
                     throw new Exception("ResultFolder must be set for file result writer.");
 
                 if (ResultBucketCount <= 0)

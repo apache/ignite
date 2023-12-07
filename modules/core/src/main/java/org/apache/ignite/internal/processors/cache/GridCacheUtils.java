@@ -68,7 +68,6 @@ import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.affinity.LocalAffinityFunction;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
@@ -119,7 +118,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -336,29 +334,6 @@ public class GridCacheUtils {
         }
     };
 
-    /** Transaction entry to key. */
-    private static final IgniteClosure tx2key = new C1<IgniteTxEntry, Object>() {
-        @Override public Object apply(IgniteTxEntry e) {
-            return e.key();
-        }
-
-        @Override public String toString() {
-            return "Cache transaction entry to key converter.";
-        }
-    };
-
-    /** Transaction entry to key. */
-    private static final IgniteClosure txCol2key = new C1<Collection<IgniteTxEntry>, Collection<Object>>() {
-        @SuppressWarnings( {"unchecked"})
-        @Override public Collection<Object> apply(Collection<IgniteTxEntry> e) {
-            return F.viewReadOnly(e, tx2key);
-        }
-
-        @Override public String toString() {
-            return "Cache transaction entry collection to key collection converter.";
-        }
-    };
-
     /** Converts transaction to XID version. */
     private static final IgniteClosure tx2xidVer = new C1<IgniteInternalTx, GridCacheVersion>() {
         @Override public GridCacheVersion apply(IgniteInternalTx tx) {
@@ -367,13 +342,6 @@ public class GridCacheUtils {
 
         @Override public String toString() {
             return "Transaction to XID version converter.";
-        }
-    };
-
-    /** Converts tx entry to entry. */
-    private static final IgniteClosure tx2entry = new C1<IgniteTxEntry, GridCacheEntryEx>() {
-        @Override public GridCacheEntryEx apply(IgniteTxEntry e) {
-            return e.cached();
         }
     };
 
@@ -496,9 +464,6 @@ public class GridCacheUtils {
      */
     @SuppressWarnings("SimplifiableIfStatement")
     public static boolean isNearEnabled(CacheConfiguration cfg) {
-        if (cfg.getCacheMode() == LOCAL)
-            return false;
-
         return cfg.getNearConfiguration() != null;
     }
 
@@ -846,6 +811,17 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param tx Transaction.
+     * @return {@code True} if transaction is on primary node.
+     */
+    public static boolean txOnPrimary(IgniteInternalTx tx) {
+        if (tx.near() && tx.local() && ((GridNearTxLocal)tx).colocatedLocallyMapped())
+            return true;
+
+        return tx.dht() && tx.local();
+    }
+
+    /**
      * Alias for {@link #txString(IgniteInternalTx)}.
      */
     public static String txDump(@Nullable IgniteInternalTx tx) {
@@ -1099,6 +1075,22 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param ccfg Cache configuration.
+     * @return Group ID.
+     */
+    public static int cacheGroupId(CacheConfiguration<?, ?> ccfg) {
+        return CU.cacheId(cacheOrGroupName(ccfg));
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @return Group name if it is specified, otherwise cache name.
+     */
+    public static String cacheOrGroupName(CacheConfiguration<?, ?> ccfg) {
+        return ccfg.getGroupName() == null ? ccfg.getName() : ccfg.getGroupName();
+    }
+
+    /**
      * Convert TTL to expire time.
      *
      * @param ttl TTL.
@@ -1152,21 +1144,6 @@ public class GridCacheUtils {
 
             tx.commit();
         }
-    }
-
-    /**
-     * Gets subject ID by transaction.
-     *
-     * @param tx Transaction.
-     * @return Subject ID.
-     */
-    public static <K, V> UUID subjectId(IgniteInternalTx tx, GridCacheSharedContext<K, V> ctx) {
-        if (tx == null)
-            return ctx.localNodeId();
-
-        UUID subjId = tx.subjectId();
-
-        return subjId != null ? subjId : tx.originatingNodeId();
     }
 
     /**
@@ -1320,7 +1297,7 @@ public class GridCacheUtils {
      * @return {@code True} if node is not client node and pass given filter.
      */
     public static boolean affinityNode(ClusterNode node, IgnitePredicate<ClusterNode> filter) {
-        return !node.isDaemon() && !node.isClient() && filter.apply(node);
+        return !node.isClient() && filter.apply(node);
     }
 
     /**
@@ -1715,22 +1692,12 @@ public class GridCacheUtils {
 
                 cfg.setAffinity(aff);
             }
-            else if (cfg.getCacheMode() == REPLICATED) {
+            else {
                 RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false, 512);
 
                 cfg.setAffinity(aff);
 
                 cfg.setBackups(Integer.MAX_VALUE);
-            }
-            else
-                cfg.setAffinity(new LocalAffinityFunction());
-        }
-        else {
-            if (cfg.getCacheMode() == LOCAL && !(cfg.getAffinity() instanceof LocalAffinityFunction)) {
-                cfg.setAffinity(new LocalAffinityFunction());
-
-                U.warn(log, "AffinityFunction configuration parameter will be ignored for local cache" +
-                    " [cacheName=" + U.maskName(cfg.getName()) + ']');
             }
         }
 
@@ -1775,8 +1742,10 @@ public class GridCacheUtils {
 
         Collection<QueryEntity> entities = cfg.getQueryEntities();
 
-        if (!F.isEmpty(entities))
-            cfg.clearQueryEntities().setQueryEntities(QueryUtils.normalizeQueryEntities(entities, cfg));
+        if (!F.isEmpty(entities)) {
+            cfg.clearQueryEntities().setQueryEntities(
+                QueryUtils.normalizeQueryEntities(cacheObjCtx.kernalContext(), entities, cfg));
+        }
     }
 
     /**
@@ -1809,7 +1778,7 @@ public class GridCacheUtils {
         boolean readThrough,
         boolean skipVals
     ) {
-        if (cctx.mvccEnabled() || !readThrough || skipVals ||
+        if (!readThrough || skipVals ||
             (key != null && !cctx.affinity().backupsByKey(key, topVer).contains(cctx.localNode())))
             return null;
 
@@ -1831,7 +1800,8 @@ public class GridCacheUtils {
                             true,
                             topVer,
                             GridDrType.DR_BACKUP,
-                            true);
+                            true,
+                            false);
 
                         break;
                     }
@@ -1921,6 +1891,27 @@ public class GridCacheUtils {
     }
 
     /**
+     * Finds data region by name.
+     *
+     * @param dsCfg Data storage configuration.
+     * @param drName Data region name.
+     *
+     * @return Found data region.
+     */
+    @Nullable public static DataRegionConfiguration findDataRegion(DataStorageConfiguration dsCfg, String drName) {
+        if (dsCfg.getDataRegionConfigurations() == null || drName == null)
+            return dsCfg.getDefaultDataRegionConfiguration();
+
+        if (dsCfg.getDefaultDataRegionConfiguration().getName().equals(drName))
+            return dsCfg.getDefaultDataRegionConfiguration();
+
+        return Arrays.stream(dsCfg.getDataRegionConfigurations())
+            .filter(drCfg -> drCfg.getName().equals(drName))
+            .findFirst()
+            .orElse(null);
+    }
+
+    /**
      * @param nodes Nodes to check.
      * @param marshaller JdkMarshaller
      * @param clsLdr Class loader.
@@ -1950,6 +1941,58 @@ public class GridCacheUtils {
         }
 
         return null;
+    }
+
+    /**
+     * Finds and returns a data region configuration with the specified name.
+     *
+     * @param dsCfg Data storage configuration.
+     * @param name Name of data region configuration to find.
+     * @return Data region configuration with the specified name
+     *          or {@code null} if the given data storage configuration does not contain such data region.
+     *          If the {@code name} of required data region is {@code null}, the default data region is returned.
+     */
+    @Nullable public static DataRegionConfiguration findDataRegionConfiguration(
+        @Nullable DataStorageConfiguration dsCfg,
+        @Nullable String name
+    ) {
+        if (dsCfg == null)
+            return null;
+
+        if (name == null || dsCfg.getDefaultDataRegionConfiguration().getName().equals(name))
+            return dsCfg.getDefaultDataRegionConfiguration();
+
+        DataRegionConfiguration[] regions = dsCfg.getDataRegionConfigurations();
+
+        if (regions == null)
+            return null;
+
+        for (int i = 0; i < regions.length; ++i) {
+            if (regions[i].getName().equals(name))
+                return regions[i];
+        }
+
+        return null;
+    }
+
+    /**
+     * Finds and returns a data region configuration with the specified name that is configured on remote node.
+     *
+     * @param node Remote node.
+     * @param marshaller JDK marshaller that is used in order to extract data storage configuration.
+     * @param clsLdr Classloader  that is used in order to extract data storage configuration.
+     * @param name Name of data region configuration to find.
+     * @return Data region configuration with the specified name
+     *          or {@code null} if the given data storage configuration does not contain such data region.
+     *          If the {@code name} of required data region is {@code null}, the default data region is returned.
+     */
+    @Nullable public static DataRegionConfiguration findRemoteDataRegionConfiguration(
+        ClusterNode node,
+        JdkMarshaller marshaller,
+        ClassLoader clsLdr,
+        @Nullable String name
+    ) {
+        return findDataRegionConfiguration(extractDataStorage(node, marshaller, clsLdr), name);
     }
 
     /**
@@ -2003,6 +2046,50 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param cfg Ignite configuration.
+     * @return {@code true} if CDC enabled.
+     */
+    public static boolean isCdcEnabled(IgniteConfiguration cfg) {
+        DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
+
+        if (dsCfg == null)
+            return false;
+
+        DataRegionConfiguration dfltReg = dsCfg.getDefaultDataRegionConfiguration();
+
+        if (dfltReg != null && dfltReg.isCdcEnabled())
+            return true;
+
+        DataRegionConfiguration[] regCfgs = dsCfg.getDataRegionConfigurations();
+
+        if (regCfgs == null)
+            return false;
+
+        for (DataRegionConfiguration regCfg : regCfgs) {
+            if (regCfg.isCdcEnabled())
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks whether given cache configuration should be persisted.
+     *
+     * @param cacheCfg Cache config.
+     * @return {@code True} if cache configuration should be persisted, {@code false} in other case.
+     */
+    public static boolean storeCacheConfig(GridCacheSharedContext<?, ?> cctx, CacheConfiguration<?, ?> cacheCfg) {
+        if (cctx.kernalContext().clientNode())
+            return false;
+
+        DataRegionConfiguration drCfg =
+            findDataRegion(cctx.gridConfig().getDataStorageConfiguration(), cacheCfg.getDataRegionName());
+
+        return drCfg != null && (drCfg.isPersistenceEnabled() || drCfg.isCdcEnabled());
+    }
+
+    /**
      * @param pageSize Page size.
      * @param encSpi Encryption spi.
      * @return Page size without encryption overhead.
@@ -2029,7 +2116,7 @@ public class GridCacheUtils {
             if (cctx == null)
                 throw new CacheException("Failed to find cache.");
 
-            if (!cctx.isLocal() && !cctx.isReplicated())
+            if (!cctx.isReplicated())
                 return cctx;
         }
 
@@ -2048,7 +2135,7 @@ public class GridCacheUtils {
             if (cctx == null)
                 throw new CacheException("Failed to find cache.");
 
-            if (!cctx.isLocal() && !cctx.isReplicated())
+            if (!cctx.isReplicated())
                 return cctx;
         }
 

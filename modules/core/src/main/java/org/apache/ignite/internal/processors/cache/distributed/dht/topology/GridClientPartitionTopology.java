@@ -304,9 +304,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Override public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut,
         boolean initParts,
-        boolean updateMoving)
-        throws IgniteCheckedException
-    {
+        boolean updateMoving
+    ) throws IgniteCheckedException {
         ClusterNode loc = cctx.localNode();
 
         U.writeLock(lock);
@@ -1099,7 +1098,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             }
 
             lostParts = null;
-        } finally {
+        }
+        finally {
             lock.writeLock().unlock();
         }
     }
@@ -1308,16 +1308,26 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                     U.warn(log, "Partitions have been scheduled for rebalancing due to outdated update counter "
                         + "[grpId=" + grpId
                         + ", nodeId=" + nodeId
-                        + ", partsFull=" + S.compact(partsToRebalance)
-                        + ", partsHistorical=" + S.compact(historical) + "]");
+                        + ", partsFull=" + S.toStringSortedDistinct(partsToRebalance)
+                        + ", partsHistorical=" + S.toStringSortedDistinct(historical) + "]");
                 }
             }
 
             for (Map.Entry<Integer, Set<UUID>> entry : ownersByUpdCounters.entrySet())
                 part2node.put(entry.getKey(), entry.getValue());
 
+            if (lostParts != null) {
+                for (Integer lostPart : lostParts) {
+                    for (GridDhtPartitionMap partMap : node2part.values()) {
+                        if (partMap.containsKey(lostPart))
+                            partMap.put(lostPart, LOST);
+                    }
+                }
+            }
+
             updateSeq.incrementAndGet();
-        } finally {
+        }
+        finally {
             lock.writeLock().unlock();
         }
 

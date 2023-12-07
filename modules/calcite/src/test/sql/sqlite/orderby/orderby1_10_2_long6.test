@@ -1,0 +1,125 @@
+statement ok
+CREATE TABLE tab0(pk INTEGER PRIMARY KEY, col0 INTEGER, col1 FLOAT, col2 VARCHAR, col3 INTEGER, col4 FLOAT, col5 VARCHAR)
+
+statement ok
+INSERT INTO tab0 VALUES(0,544,473.59,'lupfg',846,31.38,'crmer')
+
+statement ok
+INSERT INTO tab0 VALUES(1,551,716.92,'sxtsd',562,145.36,'xxacr')
+
+statement ok
+INSERT INTO tab0 VALUES(2,481,975.35,'uxrjj',652,750.52,'rdgic')
+
+statement ok
+INSERT INTO tab0 VALUES(3,345,371.4,'nxyqi',51,199.34,'lekdd')
+
+statement ok
+INSERT INTO tab0 VALUES(4,908,772.92,'owifa',256,154.36,'xophl')
+
+statement ok
+INSERT INTO tab0 VALUES(5,309,912.32,'iganw',957,707.84,'tewpl')
+
+statement ok
+INSERT INTO tab0 VALUES(6,691,521.59,'fstmf',656,504.37,'ptkph')
+
+statement ok
+INSERT INTO tab0 VALUES(7,823,447.70,'rrwze',294,877.49,'fvoic')
+
+statement ok
+INSERT INTO tab0 VALUES(8,725,784.91,'iaoqu',878,963.31,'razqy')
+
+statement ok
+INSERT INTO tab0 VALUES(9,297,993.36,'eoujh',105,829.18,'kvyce')
+
+statement ok
+CREATE TABLE tab1(pk INTEGER PRIMARY KEY, col0 INTEGER, col1 FLOAT, col2 VARCHAR, col3 INTEGER, col4 FLOAT, col5 VARCHAR)
+
+statement ok
+CREATE INDEX idx_tab1_0 on tab1 (col0)
+
+statement ok
+CREATE INDEX idx_tab1_1 on tab1 (col1)
+
+statement ok
+CREATE INDEX idx_tab1_3 on tab1 (col3)
+
+statement ok
+CREATE INDEX idx_tab1_4 on tab1 (col4)
+
+statement ok
+INSERT INTO tab1 SELECT * FROM tab0
+
+statement ok
+CREATE TABLE tab2(pk INTEGER PRIMARY KEY, col0 INTEGER, col1 FLOAT, col2 VARCHAR, col3 INTEGER, col4 FLOAT, col5 VARCHAR)
+
+statement ok
+CREATE INDEX idx_tab2_0 ON tab2 (col0 DESC,col4 DESC)
+
+statement ok
+CREATE INDEX idx_tab2_1 ON tab2 (col3,col1)
+
+statement ok
+CREATE INDEX idx_tab2_3 ON tab2 (col0,col1 DESC)
+
+statement ok
+CREATE INDEX idx_tab2_5 ON tab2 (col4 DESC)
+
+statement ok
+INSERT INTO tab2 SELECT * FROM tab0
+
+statement ok
+CREATE TABLE tab3(pk INTEGER PRIMARY KEY, col0 INTEGER, col1 FLOAT, col2 VARCHAR, col3 INTEGER, col4 FLOAT, col5 VARCHAR)
+
+statement ok
+CREATE INDEX idx_tab3_0 ON tab3 (col4)
+
+statement ok
+CREATE INDEX idx_tab3_2 ON tab3 (col0 DESC,col3)
+
+statement ok
+CREATE INDEX idx_tab3_3 ON tab3 (col1 DESC)
+
+statement ok
+INSERT INTO tab3 SELECT * FROM tab0
+
+statement ok
+CREATE TABLE tab4(pk INTEGER PRIMARY KEY, col0 INTEGER, col1 FLOAT, col2 VARCHAR, col3 INTEGER, col4 FLOAT, col5 VARCHAR)
+
+statement ok
+CREATE INDEX idx_tab4_1 ON tab4 (col3)
+
+statement ok
+CREATE INDEX idx_tab4_2 ON tab4 (col4)
+
+statement ok
+CREATE INDEX idx_tab4_3 ON tab4 (col1,col0 DESC)
+
+statement ok
+INSERT INTO tab4 SELECT * FROM tab0
+
+query II valuesort label-1210
+SELECT pk, col0 FROM tab0 WHERE (col3 < 204) AND col3 IN (SELECT col0 FROM tab0 WHERE col3 >= 218) AND col4 IN (SELECT col1 FROM tab0 WHERE (((((col3 IN (427) OR col3 <= 404)))) OR ((col0 IS NULL AND (col4 > 802.10 AND col0 = 651))) OR col3 BETWEEN 851 AND 573)) ORDER BY 1,2
+----
+
+query II valuesort label-1210
+SELECT pk, col0 FROM tab1 WHERE (col3 < 204) AND col3 IN (SELECT col0 FROM tab1 WHERE col3 >= 218) AND col4 IN (SELECT col1 FROM tab1 WHERE (((((col3 IN (427) OR col3 <= 404)))) OR ((col0 IS NULL AND (col4 > 802.10 AND col0 = 651))) OR col3 BETWEEN 851 AND 573)) ORDER BY 1,2
+----
+
+query II valuesort label-1210
+SELECT pk, col0 FROM tab2 WHERE (col3 < 204) AND col3 IN (SELECT col0 FROM tab2 WHERE col3 >= 218) AND col4 IN (SELECT col1 FROM tab2 WHERE (((((col3 IN (427) OR col3 <= 404)))) OR ((col0 IS NULL AND (col4 > 802.10 AND col0 = 651))) OR col3 BETWEEN 851 AND 573)) ORDER BY 1,2
+----
+
+query II valuesort label-1210
+SELECT pk, col0 FROM tab3 WHERE (col3 < 204) AND col3 IN (SELECT col0 FROM tab3 WHERE col3 >= 218) AND col4 IN (SELECT col1 FROM tab3 WHERE (((((col3 IN (427) OR col3 <= 404)))) OR ((col0 IS NULL AND (col4 > 802.10 AND col0 = 651))) OR col3 BETWEEN 851 AND 573)) ORDER BY 1,2
+----
+
+query II valuesort label-1210
+SELECT pk, col0 FROM tab4 WHERE (col3 < 204) AND col3 IN (SELECT col0 FROM tab4 WHERE col3 >= 218) AND col4 IN (SELECT col1 FROM tab4 WHERE (((((col3 IN (427) OR col3 <= 404)))) OR ((col0 IS NULL AND (col4 > 802.10 AND col0 = 651))) OR col3 BETWEEN 851 AND 573)) ORDER BY 1,2
+----
+
+query I valuesort label-1200
+SELECT pk FROM tab2 WHERE (col3 < 204) AND col3 IN (SELECT col0 FROM tab2 WHERE col3 >= 218) AND col4 IN (SELECT col1 FROM tab2 WHERE (((((col3 IN (427) OR col3 <= 404)))) OR ((col0 IS NULL AND (col4 > 802.10 AND col0 = 651))) OR col3 BETWEEN 851 AND 573)) ORDER BY 1
+----
+
+
+

@@ -24,9 +24,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
     /// Replicated caches will try to load the full set of cache entries from other nodes, 
     /// while partitioned caches will only load the entries for which current node is primary or backup.
     /// <para />
-    /// Note that rebalance mode only makes sense for <see cref="CacheMode.Replicated"/> 
-    /// and <see cref="CacheMode.Partitioned"/> caches. Caches with <see cref="CacheMode.Local"/> 
-    /// mode are local by definition and therefore cannot rebalance any values from neighboring nodes.
+    /// The rebalance mode affects both <see cref="CacheMode.Replicated"/> and
+    /// <see cref="CacheMode.Partitioned"/> caches.
     /// </summary>
     public enum CacheRebalanceMode
     {

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.annotations.QueryTextField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -96,7 +97,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
 
         // Create query.
         final CacheQuery<Map.Entry<Integer, H2TextValue>> qry = c.context().queries().createFullTextQuery(
-            H2TextValue.class.getSimpleName(), txt, limit, false);
+            H2TextValue.class.getSimpleName(), txt, limit, Query.DFLT_PAGE_SIZE, false);
 
         qry.enableDedup(false);
         qry.includeBackups(false);

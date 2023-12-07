@@ -107,6 +107,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
 import static org.apache.zookeeper.CreateMode.EPHEMERAL_SEQUENTIAL;
 import static org.apache.zookeeper.CreateMode.PERSISTENT;
 
@@ -511,7 +513,7 @@ public class ZookeeperDiscoveryImpl {
                     rtState.evtsData.topVer,
                     locNode,
                     rtState.top.topologySnapshot(),
-                    Collections.emptyMap(),
+                    Collections.emptyNavigableMap(),
                     null,
                     null
                 )
@@ -584,7 +586,7 @@ public class ZookeeperDiscoveryImpl {
                 rtState.evtsData != null ? rtState.evtsData.topVer : 1L,
                 locNode,
                 nodes,
-                Collections.emptyMap(),
+                Collections.emptyNavigableMap(),
                 null,
                 null
             )
@@ -722,8 +724,7 @@ public class ZookeeperDiscoveryImpl {
      * @throws InterruptedException If interrupted.
      */
     private void saveCustomMessage(ZookeeperClient zkClient, byte[] msgBytes)
-        throws ZookeeperClientFailedException, InterruptedException
-    {
+        throws ZookeeperClientFailedException, InterruptedException {
         String prefix = UUID.randomUUID().toString();
 
         int partCnt = 1;
@@ -984,8 +985,7 @@ public class ZookeeperDiscoveryImpl {
      * @throws InterruptedException If interrupted.
      */
     private int saveMultipleParts(ZookeeperClient zkClient, String basePath, List<byte[]> parts)
-        throws ZookeeperClientFailedException, InterruptedException
-    {
+        throws ZookeeperClientFailedException, InterruptedException {
         assert parts.size() > 1;
 
         for (int i = 0; i < parts.size(); i++) {
@@ -1112,24 +1112,12 @@ public class ZookeeperDiscoveryImpl {
      * @throws IgniteSpiException If any error occurs.
      */
     private void localAuthentication(DiscoverySpiNodeAuthenticator nodeAuth, SecurityCredentials locCred) {
-        assert nodeAuth != null;
-        assert locCred != null;
-
         try {
-            SecurityContext subj = nodeAuth.authenticateNode(locNode, locCred);
-
-            // Note: exception message is checked in tests.
-            if (subj == null)
-                throw new IgniteSpiException("Authentication failed for local node.");
-
-            if (!(subj instanceof Serializable))
-                throw new IgniteSpiException("Authentication subject is not Serializable.");
-
-            Map<String, Object> attrs = new HashMap<>(locNode.attributes());
-
-            attrs.put(ATTR_SECURITY_SUBJECT_V2, U.marshal(marsh, subj));
-
-            locNode.setAttributes(attrs);
+            locNode.setAttributes(withSecurityContext(
+                authenticateLocalNode(locNode, locCred, nodeAuth),
+                locNode.attributes(),
+                marsh
+            ));
         }
         catch (Exception e) {
             throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
@@ -1754,47 +1742,46 @@ public class ZookeeperDiscoveryImpl {
      */
     private void generateJoinEvents(TreeMap<Long, ZookeeperClusterNode> curTop,
         TreeMap<Long, String> alives,
-        final int MAX_NEW_EVTS) throws Exception
-    {
-       ZkBulkJoinContext joinCtx = new ZkBulkJoinContext();
+        final int MAX_NEW_EVTS) throws Exception {
+        ZkBulkJoinContext joinCtx = new ZkBulkJoinContext();
 
-       for (Map.Entry<Long, String> e : alives.entrySet()) {
-           Long internalId = e.getKey();
+        for (Map.Entry<Long, String> e : alives.entrySet()) {
+            Long internalId = e.getKey();
 
-           if (!rtState.top.nodesByInternalId.containsKey(internalId)) {
-               UUID rslvFutId = rtState.evtsData.communicationErrorResolveFutureId();
+            if (!rtState.top.nodesByInternalId.containsKey(internalId)) {
+                UUID rslvFutId = rtState.evtsData.communicationErrorResolveFutureId();
 
-               if (rslvFutId != null) {
-                   if (log.isInfoEnabled()) {
-                       log.info("Delay alive nodes change process while communication error resolve " +
-                           "is in progress [reqId=" + rslvFutId + ']');
-                   }
+                if (rslvFutId != null) {
+                    if (log.isInfoEnabled()) {
+                        log.info("Delay alive nodes change process while communication error resolve " +
+                            "is in progress [reqId=" + rslvFutId + ']');
+                    }
 
-                   break;
-               }
+                    break;
+                }
 
-               processJoinOnCoordinator(joinCtx, curTop, internalId, e.getValue());
+                processJoinOnCoordinator(joinCtx, curTop, internalId, e.getValue());
 
-               if (joinCtx.nodes() == MAX_NEW_EVTS) {
-                   generateBulkJoinEvent(curTop, joinCtx);
+                if (joinCtx.nodes() == MAX_NEW_EVTS) {
+                    generateBulkJoinEvent(curTop, joinCtx);
 
-                   if (log.isInfoEnabled()) {
-                       log.info("Delay alive nodes change process, max event threshold reached [" +
-                           "newEvts=" + joinCtx.nodes() +
-                           ", totalEvts=" + rtState.evtsData.evts.size() + ']');
-                   }
+                    if (log.isInfoEnabled()) {
+                        log.info("Delay alive nodes change process, max event threshold reached [" +
+                            "newEvts=" + joinCtx.nodes() +
+                            ", totalEvts=" + rtState.evtsData.evts.size() + ']');
+                    }
 
-                   throttleNewEventsGeneration();
+                    throttleNewEventsGeneration();
 
-                   rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, rtState.watcher, rtState.watcher);
+                    rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, rtState.watcher, rtState.watcher);
 
-                   return;
-               }
-           }
-       }
+                    return;
+                }
+            }
+        }
 
-       if (joinCtx.nodes() > 0)
-           generateBulkJoinEvent(curTop, joinCtx);
+        if (joinCtx.nodes() > 0)
+            generateBulkJoinEvent(curTop, joinCtx);
     }
 
     /**
@@ -1803,8 +1790,7 @@ public class ZookeeperDiscoveryImpl {
      * @throws Exception If failed.
      */
     private void generateBulkJoinEvent(TreeMap<Long, ZookeeperClusterNode> curTop, ZkBulkJoinContext joinCtx)
-        throws Exception
-    {
+        throws Exception {
         rtState.evtsData.evtIdGen++;
 
         long evtId = rtState.evtsData.evtIdGen;
@@ -2007,9 +1993,8 @@ public class ZookeeperDiscoveryImpl {
         ZkBulkJoinContext joinCtx,
         TreeMap<Long, ZookeeperClusterNode> curTop,
         long internalId,
-        String aliveNodePath)
-        throws Exception
-    {
+        String aliveNodePath
+    ) throws Exception {
         UUID nodeId = ZkIgnitePaths.aliveNodeId(aliveNodePath);
         UUID prefixId = ZkIgnitePaths.aliveNodePrefixId(aliveNodePath);
 
@@ -2160,11 +2145,7 @@ public class ZookeeperDiscoveryImpl {
         try {
             secSubjZipBytes = marshalZip(subj);
 
-            Map<String, Object> attrs = new HashMap<>(node.getAttributes());
-
-            attrs.put(ATTR_SECURITY_SUBJECT_V2, U.marshal(marsh, subj));
-
-            node.setAttributes(attrs);
+            node.setAttributes(withSecurityContext(subj, node.getAttributes(), marsh));
         }
         catch (Exception e) {
             U.error(log, "Failed to marshal node security subject: " + e, e);
@@ -2259,9 +2240,8 @@ public class ZookeeperDiscoveryImpl {
         ZkJoiningNodeData joiningNodeData,
         long internalId,
         UUID prefixId,
-        @Nullable byte[] secSubjZipBytes)
-        throws Exception
-    {
+        @Nullable byte[] secSubjZipBytes
+    ) throws Exception {
         ZookeeperClusterNode joinedNode = joiningNodeData.node();
 
         UUID nodeId = joinedNode.id();
@@ -2387,7 +2367,7 @@ public class ZookeeperDiscoveryImpl {
                     1L,
                     locNode,
                     topSnapshot,
-                    Collections.emptyMap(),
+                    Collections.emptyNavigableMap(),
                     null,
                     null
                 )
@@ -2541,8 +2521,8 @@ public class ZookeeperDiscoveryImpl {
      */
     private void generateAndProcessCustomEventOnCoordinator(String evtPath,
         ZookeeperClusterNode sndNode,
-        DiscoverySpiCustomMessage msg) throws Exception
-    {
+        DiscoverySpiCustomMessage msg
+    ) throws Exception {
         ZookeeperClient zkClient = rtState.zkClient;
         ZkDiscoveryEventsData evtsData = rtState.evtsData;
 
@@ -2608,10 +2588,38 @@ public class ZookeeperDiscoveryImpl {
         if (log.isDebugEnabled())
             log.debug("Generated CUSTOM event [evt=" + evtData + ", msg=" + msg + ']');
 
+        boolean fastStopProcess = false;
+
         if (msg instanceof ZkInternalMessage)
             processInternalMessage(evtData, (ZkInternalMessage)msg);
-        else
+        else {
             notifyCustomEvent(evtData, msg);
+
+            if (msg.stopProcess()) {
+                if (log.isDebugEnabled())
+                    log.debug("Fast stop process custom event [evt=" + evtData + ", msg=" + msg + ']');
+
+                fastStopProcess = true;
+
+                // No need to process this event on others nodes, skip this event.
+                evtsData.evts.remove(evtData.eventId());
+
+                evtsData.evtIdGen--;
+
+                DiscoverySpiCustomMessage ack = msg.ackMessage();
+
+                if (ack != null) {
+                    evtData = createAckEvent(ack, evtData);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Generated CUSTOM event (ack for fast stop process) [evt=" + evtData + ", msg=" + msg + ']');
+
+                    notifyCustomEvent(evtData, ack);
+                }
+                else
+                    evtData = null;
+            }
+        }
 
         if (evtData != null) {
             evtsData.addEvent(rtState.top.nodesByOrder.values(), evtData);
@@ -2619,6 +2627,9 @@ public class ZookeeperDiscoveryImpl {
             rtState.locNodeInfo.lastProcEvt = evtData.eventId();
 
             saveAndProcessNewEvents();
+
+            if (fastStopProcess)
+                deleteCustomEventDataAsync(zkClient, evtPath);
 
             if (failedNode != null) {
                 deleteAliveNode(failedNode.internalId());
@@ -2853,9 +2864,9 @@ public class ZookeeperDiscoveryImpl {
             commErrFut.onTopologyChange(rtState.top); // This can add new event, notify out of event process loop.
     }
 
+    /** */
     private boolean processBulkJoin(ZkDiscoveryEventsData evtsData, ZkDiscoveryNodeJoinEventData evtData)
-        throws Exception
-    {
+        throws Exception {
         boolean evtProcessed = false;
 
         for (int i = 0; i < evtData.joinedNodes.size(); i++) {
@@ -2910,8 +2921,8 @@ public class ZookeeperDiscoveryImpl {
      */
     private void onEventProcessed(ZkRuntimeState rtState,
         boolean updateNodeInfo,
-        boolean evtProcessed) throws Exception
-    {
+        boolean evtProcessed
+    ) throws Exception {
         synchronized (stateMux) {
             if (updateNodeInfo) {
                 assert rtState.locNodeZkPath != null;
@@ -2950,8 +2961,7 @@ public class ZookeeperDiscoveryImpl {
      * @throws Exception If failed.
      */
     private void updateProcessedEventsOnTimeout(ZkRuntimeState rtState, ZkTimeoutObject procEvtsUpdateTo)
-        throws Exception
-    {
+        throws Exception {
         synchronized (stateMux) {
             if (rtState.procEvtsUpdateTo == procEvtsUpdateTo && rtState.locNodeInfo.needUpdate) {
                 if (log.isDebugEnabled())
@@ -3001,9 +3011,8 @@ public class ZookeeperDiscoveryImpl {
      */
     private void processLocalJoin(ZkDiscoveryEventsData evtsData,
         ZkJoinedNodeEvtData joinedEvtData,
-        ZkDiscoveryNodeJoinEventData evtData)
-        throws Exception
-    {
+        ZkDiscoveryNodeJoinEventData evtData
+    ) throws Exception {
         synchronized (stateMux) {
             if (connState == ConnectionState.STOPPED)
                 return;
@@ -3066,7 +3075,7 @@ public class ZookeeperDiscoveryImpl {
                     joinedEvtData.topVer,
                     locNode,
                     topSnapshot,
-                    Collections.emptyMap(),
+                    Collections.emptyNavigableMap(),
                     null,
                     null
                 )
@@ -3079,7 +3088,7 @@ public class ZookeeperDiscoveryImpl {
                         joinedEvtData.topVer,
                         locNode,
                         topSnapshot,
-                        Collections.emptyMap(),
+                        Collections.emptyNavigableMap(),
                         null,
                         null
                     )
@@ -3165,8 +3174,7 @@ public class ZookeeperDiscoveryImpl {
      * @throws Exception If failed.
      */
     private void processCommunicationErrorResolveFinishMessage(ZkCommunicationErrorResolveFinishMessage msg)
-        throws Exception
-    {
+        throws Exception {
         UUID futId = msg.futId;
 
         assert futId != null;
@@ -3539,7 +3547,7 @@ public class ZookeeperDiscoveryImpl {
                 evtData.topologyVersion(),
                 sndNode,
                 topSnapshot,
-                Collections.emptyMap(),
+                Collections.emptyNavigableMap(),
                 msg,
                 null
             )
@@ -3569,7 +3577,7 @@ public class ZookeeperDiscoveryImpl {
                 joinedEvtData.topVer,
                 joinedNode,
                 topSnapshot,
-                Collections.emptyMap(),
+                Collections.emptyNavigableMap(),
                 null,
                 null
             )
@@ -3619,7 +3627,7 @@ public class ZookeeperDiscoveryImpl {
                 topVer,
                 leftNode,
                 topSnapshot,
-                Collections.emptyMap(),
+                Collections.emptyNavigableMap(),
                 null,
                 null
             )
@@ -4445,6 +4453,7 @@ public class ZookeeperDiscoveryImpl {
      * See {@link #cleanupPreviousClusterData}.
      */
     private class ClientLocalNodeWatcher extends PreviousNodeWatcher {
+        /** */
         final CheckJoinErrorWatcher joinErrorWatcher;
 
         /**
@@ -4491,8 +4500,7 @@ public class ZookeeperDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public void processResult0(int rc, String path, Object ctx, List<String> children, Stat stat)
-            throws Exception
-        {
+            throws Exception {
             assert rc == 0 : KeeperException.Code.get(rc);
 
             checkIsCoordinator(children);
@@ -4512,8 +4520,7 @@ public class ZookeeperDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override void processResult0(int rc, String path, Object ctx, List<String> children, Stat stat)
-            throws Exception
-        {
+            throws Exception {
             assert rc == 0 : KeeperException.Code.get(rc);
 
             checkClientsStatus(children);
@@ -4660,7 +4667,7 @@ public class ZookeeperDiscoveryImpl {
             return null;
 
         return rtState0.top.nodesByOrder.values().stream()
-                .filter(n -> !n.isClient() && !n.isDaemon())
+                .filter(n -> !n.isClient())
                 .map(ZookeeperClusterNode::id)
                 .findFirst()
                 .orElse(null);

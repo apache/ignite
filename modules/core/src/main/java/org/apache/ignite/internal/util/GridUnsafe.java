@@ -62,6 +62,12 @@ public abstract class GridUnsafe {
     /** Unsafe. */
     private static final Unsafe UNSAFE = unsafe();
 
+    /** Page size. */
+    private static final int PAGE_SIZE = UNSAFE.pageSize();
+
+    /** Empty page. */
+    private static final byte[] EMPTY_PAGE = new byte[PAGE_SIZE];
+
     /** Unaligned flag. */
     private static final boolean UNALIGNED = unaligned();
 
@@ -107,6 +113,15 @@ public abstract class GridUnsafe {
 
     /** {@link java.nio.Buffer#address} field offset. */
     private static final long DIRECT_BUF_ADDR_OFF = bufferAddressOffset();
+
+    /** Whether to use newDirectByteBuffer(long, long) constructor */
+    private static final boolean IS_DIRECT_BUF_LONG_CAP = majorJavaVersion(jdkVersion()) >= 21;
+
+    /** Whether {@link jdk.internal.access.JavaNioAccess} has new byte buffer api. */
+    private static final boolean HAS_JAVA_NIO_ACCESS_NEW_API = majorJavaVersion(jdkVersion()) >= 14;
+
+    /** Whether {@link jdk.internal.access.JavaNioAccess#newDirectByteBuffer} has param of type {@link java.lang.foreign.MemorySegment}. */
+    private static final boolean HAS_JAVA_NIO_ACCESS_MEMORY_SEGMENT_PARAM = majorJavaVersion(jdkVersion()) >= 19;
 
     /** Cleaner code for direct {@code java.nio.ByteBuffer}. */
     private static final DirectBufferCleaner DIRECT_BUF_CLEANER =
@@ -165,6 +180,9 @@ public abstract class GridUnsafe {
                 directBufCtor = createAndTestNewDirectBufferCtor();
             }
             catch (Exception e) {
+                if (!HAS_JAVA_NIO_ACCESS_NEW_API)
+                    throw e;
+
                 try {
                     nioAccessObj = javaNioAccessObject();
                     directBufMtd = newDirectBufferMethod(nioAccessObj);
@@ -248,7 +266,11 @@ public abstract class GridUnsafe {
         @NotNull Method newDirectBufMtd,
         @NotNull Object javaNioAccessObj) {
         try {
-            ByteBuffer buf = (ByteBuffer)newDirectBufMtd.invoke(javaNioAccessObj, ptr, len, null);
+            ByteBuffer buf;
+            if (HAS_JAVA_NIO_ACCESS_NEW_API)
+                buf = (ByteBuffer)newDirectBufMtd.invoke(javaNioAccessObj, ptr, len, null, null);
+            else
+                buf = (ByteBuffer)newDirectBufMtd.invoke(javaNioAccessObj, ptr, len, null);
 
             assert buf.isDirect();
 
@@ -1234,6 +1256,22 @@ public abstract class GridUnsafe {
     }
 
     /**
+     * Fills memory with zeroes.
+     *
+     * @param addr Address.
+     * @param len Length.
+     */
+    public static void zeroMemory(long addr, long len) {
+        long off = 0;
+
+        for (; off + PAGE_SIZE <= len; off += PAGE_SIZE)
+            UNSAFE.copyMemory(EMPTY_PAGE, BYTE_ARR_OFF, null, addr + off, PAGE_SIZE);
+
+        if (len != off)
+            UNSAFE.copyMemory(EMPTY_PAGE, BYTE_ARR_OFF, null, addr + off, len - off);
+    }
+
+    /**
      * Copy memory between offheap locations.
      *
      * @param srcAddr Source address.
@@ -1329,6 +1367,16 @@ public abstract class GridUnsafe {
      */
     public static int arrayBaseOffset(Class cls) {
         return UNSAFE.arrayBaseOffset(cls);
+    }
+
+    /**
+     * Returns the scale factor for addressing elements in the storage allocation of a given array class.
+     *
+     * @param cls Class.
+     * @return the scale factor for addressing elements in the storage allocation of a given array class.
+     */
+    public static int arrayIndexScale(Class<?> cls) {
+        return UNSAFE.arrayIndexScale(cls);
     }
 
     /**
@@ -1582,17 +1630,17 @@ public abstract class GridUnsafe {
      * @throws RuntimeException If getting access to the private API is failed.
      */
     private static Object javaNioAccessObject() {
-        String pkgName = miscPackage();
+        String pkgName = getSharedSecretsPackage();
 
         try {
-            Class<?> cls = Class.forName(pkgName + ".misc.SharedSecrets");
+            Class<?> cls = Class.forName(pkgName + ".SharedSecrets");
 
             Method mth = cls.getMethod("getJavaNioAccess");
 
             return mth.invoke(null);
         }
         catch (ReflectiveOperationException e) {
-            throw new RuntimeException(pkgName + ".misc.JavaNioAccess class is unavailable."
+            throw new RuntimeException(pkgName + ".JavaNioAccess class is unavailable."
                 + FeatureChecker.JAVA_VER_SPECIFIC_WARN, e);
         }
     }
@@ -1609,25 +1657,41 @@ public abstract class GridUnsafe {
         try {
             Class<?> cls = nioAccessObj.getClass();
 
-            Method mtd = cls.getMethod("newDirectByteBuffer", long.class, int.class, Object.class);
+            Method mtd;
+            if (HAS_JAVA_NIO_ACCESS_NEW_API) {
+                Class<?> forthParamCls;
+                if (HAS_JAVA_NIO_ACCESS_MEMORY_SEGMENT_PARAM)
+                    forthParamCls = Class.forName("java.lang.foreign.MemorySegment");
+                else
+                    forthParamCls = Class.forName("jdk.internal.access.foreign.MemorySegmentProxy");
+
+                mtd = cls.getMethod("newDirectByteBuffer", long.class, int.class, Object.class, forthParamCls);
+            }
+            else
+                mtd = cls.getMethod("newDirectByteBuffer", long.class, int.class, Object.class);
 
             mtd.setAccessible(true);
 
             return mtd;
         }
         catch (ReflectiveOperationException e) {
-            throw new RuntimeException(miscPackage() + ".JavaNioAccess#newDirectByteBuffer() method is unavailable."
+            throw new RuntimeException(getSharedSecretsPackage() + ".JavaNioAccess#newDirectByteBuffer() method is unavailable."
                 + FeatureChecker.JAVA_VER_SPECIFIC_WARN, e);
         }
     }
 
     /** */
-    @NotNull private static String miscPackage() {
+    @NotNull private static String getSharedSecretsPackage() {
         int javaVer = majorJavaVersion(jdkVersion());
 
-        return javaVer < 9 ? "sun" : "jdk.internal";
-    }
+        if (javaVer < 9)
+            return "sun.misc";
 
+        if (javaVer < 12)
+            return "jdk.internal.misc";
+
+        return "jdk.internal.access";
+    }
 
     /**
      * Creates and tests contructor for Direct ByteBuffer. Test is wrapping one-byte unsafe memory into a buffer.
@@ -1664,7 +1728,8 @@ public abstract class GridUnsafe {
         try {
             ByteBuffer buf = ByteBuffer.allocateDirect(1).order(NATIVE_BYTE_ORDER);
 
-            Constructor<?> ctor = buf.getClass().getDeclaredConstructor(long.class, int.class);
+            Constructor<?> ctor = IS_DIRECT_BUF_LONG_CAP ? buf.getClass().getDeclaredConstructor(long.class, long.class) :
+                    buf.getClass().getDeclaredConstructor(long.class, int.class);
 
             ctor.setAccessible(true);
 

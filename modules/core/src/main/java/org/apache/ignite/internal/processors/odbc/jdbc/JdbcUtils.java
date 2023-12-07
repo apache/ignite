@@ -71,7 +71,8 @@ public class JdbcUtils {
             }
 
             return items;
-        } else
+        }
+        else
             return Collections.emptyList();
     }
 

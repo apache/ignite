@@ -35,8 +35,8 @@ import org.apache.ignite.examples.DeploymentExamplesSelfTest;
 import org.apache.ignite.examples.EncryptedCacheExampleSelfTest;
 import org.apache.ignite.examples.EventsExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.EventsExamplesSelfTest;
+import org.apache.ignite.examples.IgniteServiceExamplesSelfTest;
 import org.apache.ignite.examples.LifecycleExamplesSelfTest;
-import org.apache.ignite.examples.MLTutorialExamplesSelfTest;
 import org.apache.ignite.examples.MemcacheRestExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.MemcacheRestExamplesSelfTest;
 import org.apache.ignite.examples.MessagingExamplesSelfTest;
@@ -84,14 +84,11 @@ import org.junit.runners.Suite;
     TaskExamplesMultiNodeSelfTest.class,
     MemcacheRestExamplesMultiNodeSelfTest.class,
     MonteCarloExamplesMultiNodeSelfTest.class,
+    IgniteServiceExamplesSelfTest.class,
 
     // Binary.
     CacheClientBinaryExampleTest.class,
     ComputeClientBinaryExampleTest.class,
-
-    // Machine Learning.
-    IgniteExamplesMLTestSuite.class,
-    MLTutorialExamplesSelfTest.class,
 
     // Encryption.
     EncryptedCacheExampleSelfTest.class,

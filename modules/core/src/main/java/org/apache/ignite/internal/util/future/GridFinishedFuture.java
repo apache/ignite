@@ -26,6 +26,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Future that is completed at creation time.
@@ -125,6 +128,13 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
     }
 
     /** {@inheritDoc} */
+    @Override public void listen(IgniteRunnable lsnr) {
+        assert lsnr != null;
+
+        lsnr.run();
+    }
+
+    /** {@inheritDoc} */
     @Override public <R> IgniteInternalFuture<R> chain(final IgniteClosure<? super IgniteInternalFuture<T>, R> doneCb) {
         try {
             return new GridFinishedFuture<>(doneCb.apply(this));
@@ -138,26 +148,84 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
     }
 
     /** {@inheritDoc} */
+    @Override public <R> IgniteInternalFuture<R> chain(final IgniteOutClosure<R> doneCb) {
+        return chain(ignored -> doneCb.apply());
+    }
+
+    /** {@inheritDoc} */
     @Override public <T1> IgniteInternalFuture<T1> chain(final IgniteClosure<? super IgniteInternalFuture<T>, T1> doneCb, Executor exec) {
+        assert doneCb != null;
+
         final GridFutureAdapter<T1> fut = new GridFutureAdapter<>();
 
-        exec.execute(new Runnable() {
-            @Override public void run() {
-                try {
-                    fut.onDone(doneCb.apply(GridFinishedFuture.this));
-                }
-                catch (GridClosureException e) {
-                    fut.onDone(e.unwrap());
-                }
-                catch (RuntimeException | Error e) {
-                    fut.onDone(e);
+        exec.execute(() -> {
+            try {
+                fut.onDone(doneCb.apply(this));
+            }
+            catch (GridClosureException e) {
+                fut.onDone(e.unwrap());
+            }
+            catch (RuntimeException | Error e) {
+                fut.onDone(e);
 
-                    throw e;
-                }
+                throw e;
             }
         });
 
         return fut;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> IgniteInternalFuture<R> chain(final IgniteOutClosure<R> doneCb, Executor exec) {
+        return chain(ignored -> doneCb.apply(), exec);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> IgniteInternalFuture<R> chainCompose(
+        IgniteClosure<? super IgniteInternalFuture<T>, IgniteInternalFuture<R>> doneCb
+    ) {
+        try {
+            return doneCb.apply(this);
+        }
+        catch (GridClosureException e) {
+            return new GridFinishedFuture<>(e.unwrap());
+        }
+        catch (RuntimeException | Error e) {
+            return new GridFinishedFuture<>(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> IgniteInternalFuture<R> chainCompose(
+        IgniteClosure<? super IgniteInternalFuture<T>, IgniteInternalFuture<R>> doneCb,
+        @Nullable Executor exec
+    ) {
+        final GridFutureAdapter<R> res = new GridFutureAdapter<>();
+
+        exec.execute(() -> {
+            IgniteInternalFuture<R> doneCbFut;
+
+            try {
+                doneCbFut = doneCb.apply(this);
+            }
+            catch (GridClosureException e) {
+                doneCbFut = new GridFinishedFuture<>(e.unwrap());
+            }
+            catch (RuntimeException e) {
+                doneCbFut = new GridFinishedFuture<>(e);
+            }
+
+            doneCbFut.listen(f -> {
+                try {
+                    res.onDone(f.get(), null);
+                }
+                catch (Exception e) {
+                    res.onDone(e);
+                }
+            });
+        });
+
+        return res;
     }
 
     /** {@inheritDoc} */

@@ -53,6 +53,11 @@ public class SecurityAwareFilter<K, V> extends AbstractSecurityAwareExternalizab
 
     /** {@inheritDoc} */
     @Override public boolean evaluate(CacheEntryEvent<? extends K, ? extends V> evt) throws CacheEntryListenerException {
+        // Even if there is no custom filter, the platform filter is always present (for proper resource release),
+        // but only the custom filter is serialized.
+        if (original == null)
+            return true;
+
         IgniteSecurity security = ignite.context().security();
 
         try (OperationSecurityContext c = security.withContext(subjectId)) {

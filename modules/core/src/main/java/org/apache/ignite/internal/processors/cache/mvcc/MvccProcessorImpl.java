@@ -35,11 +35,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -58,9 +55,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
-import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -111,8 +106,6 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -142,10 +135,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.CacheDataR
 @SuppressWarnings("unchecked")
 public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, DatabaseLifecycleListener {
     /** */
-    private static final boolean FORCE_MVCC =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, false);
-
-    /** */
     private static final IgniteProductVersion MVCC_SUPPORTED_SINCE = IgniteProductVersion.fromString("2.7.0");
 
     /** */
@@ -167,6 +156,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     private volatile MvccCoordinator curCrd = MvccCoordinator.UNASSIGNED_COORDINATOR;
 
     /** */
+    @Nullable
     private TxLog txLog;
 
     /** */
@@ -216,7 +206,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** */
     private final GridFutureAdapter<Void> initFut = new GridFutureAdapter<>();
 
-    /** Flag whether at least one cache with {@code CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT} mode is registered. */
+    /** Flag whether at least one mvcc cache is registered. */
     private volatile boolean mvccEnabled;
 
     /** Flag whether all nodes in cluster support MVCC. */
@@ -258,7 +248,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         customLsnr = new CustomEventListener<DynamicCacheChangeBatch>() {
             @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
                 DynamicCacheChangeBatch msg) {
-                checkMvccCacheStarted(msg);
+                // No-op.
             }
         };
     }
@@ -270,39 +260,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         ctx.io().addMessageListener(TOPIC_CACHE_COORDINATOR, msgLsnr);
 
         ctx.discovery().setCustomEventListener(DynamicCacheChangeBatch.class, customLsnr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean mvccEnabled() {
-        return mvccEnabled;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void preProcessCacheConfiguration(CacheConfiguration ccfg) {
-        if (FORCE_MVCC && ccfg.getAtomicityMode() == TRANSACTIONAL && !CU.isSystemCache(ccfg.getName())) {
-            ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-            //noinspection unchecked
-            ccfg.setNearConfiguration(null);
-        }
-
-        if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
-            if (!mvccSupported)
-                throw new IgniteException("Cannot start MVCC transactional cache. " +
-                    "MVCC is unsupported by the cluster.");
-
-            mvccEnabled = true;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void validateCacheConfiguration(CacheConfiguration ccfg) {
-        if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
-            if (!mvccSupported)
-                throw new IgniteException("Cannot start MVCC transactional cache. " +
-                    "MVCC is unsupported by the cluster.");
-
-            mvccEnabled = true;
-        }
     }
 
     /** {@inheritDoc} */
@@ -318,33 +275,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public void ensureStarted() throws IgniteCheckedException {
-        if (!ctx.clientNode()) {
-            assert mvccEnabled && mvccSupported;
-
-            synchronized (mux) {
-                if (txLog == null)
-                    txLog = new TxLog(ctx, ctx.cache().context().database());
-            }
-
-            startVacuumWorkers();
-
-            if (log.isInfoEnabled())
-                log.info("Mvcc processor started.");
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void onCacheStop(final GridCacheContext cctx) {
-        if (cctx.mvccEnabled() && txLog != null) {
-            assert mvccEnabled && mvccSupported;
-
-            boolean hasMvccCaches = ctx.cache().cacheDescriptors().values().stream()
-                .anyMatch(c -> c.cacheConfiguration().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
-
-            if (!hasMvccCaches)
-                stopTxLog();
-        }
+        // No-op.
     }
 
 
@@ -356,6 +288,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** {@inheritDoc} */
     @Override public void stopTxLog() {
         stopVacuumWorkers();
+
+        if (txLog != null)
+            txLog.close();
 
         txLog = null;
 
@@ -387,15 +322,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** {@inheritDoc} */
     @Override public void afterBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr,
         GridCacheDatabaseSharedManager.RestoreBinaryState restoreState) throws IgniteCheckedException {
-
-        boolean hasMvccCaches = ctx.cache().persistentCaches().stream()
-            .anyMatch(c -> c.cacheConfiguration().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
-
-        if (hasMvccCaches) {
-            txLog = new TxLog(ctx, mgr);
-
-            mvccEnabled = true;
-        }
+        // No-op.
     }
 
     /**
@@ -598,7 +525,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             prevQueries.init(nodes, ctx.discovery()::alive);
         }
         else if (sndQrys) {
-            ctx.getSystemExecutorService().submit(() -> {
+            ctx.pools().getSystemExecutorService().submit(() -> {
                 try {
                     sendMessage(newCrd.nodeId(), new MvccActiveQueriesMessage(qryIds));
                 }
@@ -733,13 +660,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         if (!waiter.hasLocalTransaction() && (waiter = waitMap.remove(key)) != null)
             waiter.run(ctx);
-        else {
-            DeadlockDetectionManager.DelayedDeadlockComputation delayedComputation
-                = ctx.cache().context().deadlockDetectionMgr().initDelayedComputation(waiterVer, blockerVer);
-
-            if (delayedComputation != null)
-                fut.listen(fut0 -> delayedComputation.cancel());
-        }
 
         return fut;
     }
@@ -971,8 +891,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         DataRegionConfiguration cfg = new DataRegionConfiguration();
 
         cfg.setName(TX_LOG_CACHE_NAME);
-        cfg.setInitialSize(dscfg.getSystemRegionInitialSize());
-        cfg.setMaxSize(dscfg.getSystemRegionMaxSize());
+        cfg.setInitialSize(dscfg.getSystemDataRegionConfiguration().getInitialSize());
+        cfg.setMaxSize(dscfg.getSystemDataRegionConfiguration().getMaxSize());
         cfg.setPersistenceEnabled(CU.isPersistenceEnabled(dscfg));
         cfg.setLazyMemoryAllocation(false);
 
@@ -1055,24 +975,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** */
     private boolean supportsMvcc(ClusterNode node) {
         return node.version().compareToIgnoreTimestamp(MVCC_SUPPORTED_SINCE) >= 0;
-    }
-
-    /** */
-    private void checkMvccCacheStarted(DynamicCacheChangeBatch cacheMsg) {
-        if (!mvccEnabled) {
-            for (DynamicCacheChangeRequest req : cacheMsg.requests()) {
-                CacheConfiguration ccfg = req.startCacheConfiguration();
-
-                if (ccfg == null)
-                    continue;
-
-                if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
-                    assert mvccSupported;
-
-                    mvccEnabled = true;
-                }
-            }
-        }
     }
 
     /** */
@@ -1199,12 +1101,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 cleanupQueue = null;
             }
 
-            if (workers == null) {
-                if (log.isDebugEnabled() && mvccEnabled())
-                    log.debug("Attempting to stop inactive vacuum.");
-
+            if (workers == null)
                 return;
-            }
 
             assert queue != null;
 
@@ -1305,44 +1203,27 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                                         }
                                     };
 
-                                for (CacheGroupContext grp : ctx.cache().cacheGroups()) {
-                                    if (grp.mvccEnabled()) {
-                                        grp.topology().readLock();
-
-                                        try {
-                                            for (GridDhtLocalPartition part : grp.topology().localPartitions()) {
-                                                VacuumTask task = new VacuumTask(snapshot, part);
-
-                                                cleanupQueue.offer(task);
-
-                                                res0.add(task);
-                                            }
-                                        }
-                                        finally {
-                                            grp.topology().readUnlock();
-                                        }
-                                    }
-                                }
-
                                 res0.markInitialized();
 
-                                res0.listen(future -> {
+                                res0.listen(() -> {
                                     VacuumMetrics metrics = null; Throwable ex = null;
 
                                     try {
-                                        metrics = future.get();
+                                        metrics = res0.get();
 
                                         txLog.removeUntil(snapshot.coordinatorVersion(), snapshot.cleanupVersion());
 
                                         if (log.isDebugEnabled())
                                             log.debug("Vacuum completed. " + metrics);
-                                    } catch (Throwable e) {
+                                    }
+                                    catch (Throwable e) {
                                         if (X.hasCause(e, NodeStoppingException.class)) {
                                             if (log.isDebugEnabled())
                                                 log.debug("Cannot complete vacuum (node is stopping).");
 
                                             metrics = new VacuumMetrics();
-                                        } else
+                                        }
+                                        else
                                             ex = new GridClosureException(e);
                                     }
 
@@ -2165,7 +2046,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 }
                 catch (Throwable e) {
                     if (e instanceof Error)
-                        throw (Error) e;
+                        throw (Error)e;
 
                     if (log.isDebugEnabled())
                         U.warn(log, "Failed to perform vacuum.", e);
@@ -2210,7 +2091,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                             break;
                         case MOVING:
-                            task.part().group().preloader().rebalanceFuture().listen(f -> cleanupQueue.add(task));
+                            task.part().group().preloader().rebalanceFuture().listen(() -> cleanupQueue.add(task));
 
                             break;
                         case OWNING:
@@ -2237,7 +2118,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                     }
 
                     if (e instanceof Error)
-                        throw (Error) e;
+                        throw (Error)e;
                 }
             }
         }
@@ -2430,7 +2311,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                         if (rest != null) {
                             if (rest.getClass() == ArrayList.class) {
-                                for (MvccDataRow row : ((List<MvccDataRow>) rest))
+                                for (MvccDataRow row : ((List<MvccDataRow>)rest))
                                     part.dataStore().updateTxState(cctx, row);
                             }
                             else

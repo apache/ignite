@@ -30,16 +30,16 @@ namespace Apache.Ignite.Core.Tests.Process
     public class IgniteProcess
     {
         /** Executable file name. */
-        private static readonly string ExeName = "Apache.Ignite.exe";
+        private const string ExeName = "Apache.Ignite.exe";
 
         /** Executable process name. */
         private static readonly string ExeProcName = ExeName.Substring(0, ExeName.LastIndexOf('.'));
 
         /** Executable configuration file name. */
-        private static readonly string ExeCfgName = ExeName + ".config";
+        private const string ExeCfgName = ExeName + ".config";
 
         /** Executable backup configuration file name. */
-        private static readonly string ExeCfgBakName = ExeCfgName + ".bak";
+        private const string ExeCfgBakName = ExeCfgName + ".bak";
 
         /** Directory where binaries are stored. */
         private static readonly string ExeDir;
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Tests.Process
         static IgniteProcess()
         {
             // 1. Locate executable file and related stuff.
-            DirectoryInfo dir = new FileInfo(new Uri(typeof(IgniteProcess).Assembly.CodeBase).LocalPath).Directory;
+            DirectoryInfo dir = new FileInfo(new Uri(typeof(IgniteProcess).Assembly.Location).LocalPath).Directory;
 
             // ReSharper disable once PossibleNullReferenceException
             ExeDir = dir.FullName;

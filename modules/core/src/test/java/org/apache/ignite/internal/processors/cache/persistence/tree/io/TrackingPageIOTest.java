@@ -71,6 +71,8 @@ public class TrackingPageIOTest {
 
         buf.order(ByteOrder.nativeOrder());
 
+        PageIO.setType(GridUnsafe.bufferAddress(buf), PageIO.T_PAGE_UPDATE_TRACKING);
+
         return buf;
     }
 
@@ -183,10 +185,10 @@ public class TrackingPageIOTest {
                 Long foundNextChangedPage = io.findNextChangedPage(buf, pageId, backupId, backupId - 1, PAGE_SIZE);
 
                 if (io.trackingPageFor(pageId, PAGE_SIZE) == pageId)
-                    assertEquals((Long) pageId, foundNextChangedPage);
+                    assertEquals((Long)pageId, foundNextChangedPage);
 
                 else if (setIdx.contains(pageId))
-                    assertEquals((Long) pageId, foundNextChangedPage);
+                    assertEquals((Long)pageId, foundNextChangedPage);
 
                 else {
                     NavigableSet<Long> tailSet = setIdx.tailSet(pageId, false);

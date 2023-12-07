@@ -47,8 +47,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 
@@ -56,9 +54,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  * ScanQuery failover test. Tests scenario where user supplied closures throw unhandled errors.
  */
 public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
-    /** */
-    private static final String LOCAL_CACHE_NAME = "local";
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -101,18 +96,6 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
         queryCachesWithFailedPredicates(srv, cfg);
 
         assertEquals(client.cluster().nodes().size(), 5);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testScanQueryOverLocalCacheWithFailedClosures() throws Exception {
-        Ignite srv = startGridsMultiThreaded(4);
-
-        queryCachesWithFailedPredicates(srv, new CacheConfiguration(LOCAL_CACHE_NAME).setCacheMode(LOCAL));
-
-        assertEquals(srv.cluster().nodes().size(), 4);
     }
 
     /**
@@ -172,7 +155,7 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
         // Force checkpoint to destroy evicted partitions store.
         forceCheckpoint(grid0);
 
-        GridTestUtils.assertThrowsAnyCause(log, iter1::next, IgniteException.class, "Failed to get next data row");
+        assertFalse(iter1.hasNext());
 
         GridTestUtils.assertThrowsAnyCause(log, () -> {
             while (iter2.hasNext())
@@ -234,13 +217,13 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
 
     /** Failed filter. */
     private static IgniteBiPredicate<Integer, BinaryObject> filter = (key, value) -> {
-            throw new Error("Poison pill");
-        };
+        throw new Error("Poison pill");
+    };
 
     /** Failed entry transformer. */
     private static IgniteClosure<Cache.Entry<Integer, BinaryObject>, Cache.Entry<Integer, BinaryObject>> transformer =
-            integerBinaryObjectEntry -> {
-                throw new Error("Poison pill");
+        integerBinaryObjectEntry -> {
+            throw new Error("Poison pill");
         };
 
     /**

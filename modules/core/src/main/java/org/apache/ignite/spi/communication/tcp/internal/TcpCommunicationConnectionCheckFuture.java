@@ -99,8 +99,8 @@ public class TcpCommunicationConnectionCheckFuture
     public TcpCommunicationConnectionCheckFuture(TcpCommunicationSpi spi,
         IgniteLogger log,
         GridNioServer nioSrvr,
-        List<ClusterNode> nodes)
-    {
+        List<ClusterNode> nodes
+    ) {
         this.spi = spi;
         this.log = log;
         this.nioSrvr = nioSrvr;

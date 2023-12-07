@@ -17,7 +17,7 @@
 package org.apache.ignite.spi.discovery;
 
 import java.util.Collection;
-import java.util.Map;
+import java.util.NavigableMap;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.jetbrains.annotations.Nullable;
@@ -39,7 +39,7 @@ public class DiscoveryNotification {
     private final Collection<ClusterNode> topSnapshot;
 
     /** Topology history. */
-    private @Nullable Map<Long, Collection<ClusterNode>> topHist;
+    private @Nullable NavigableMap<Long, Collection<ClusterNode>> topHist;
 
     /** Custom message data. */
     private @Nullable DiscoverySpiCustomMessage customMsgData;
@@ -74,7 +74,7 @@ public class DiscoveryNotification {
         long topVer,
         ClusterNode node,
         Collection<ClusterNode> topSnapshot,
-        @Nullable Map<Long, Collection<ClusterNode>> topHist,
+        @Nullable NavigableMap<Long, Collection<ClusterNode>> topHist,
         @Nullable DiscoverySpiCustomMessage customMsgData,
         SpanContainer spanContainer
     ) {
@@ -118,7 +118,7 @@ public class DiscoveryNotification {
     /**
      * @return Topology history.
      */
-    public Map<Long, Collection<ClusterNode>> getTopHist() {
+    public NavigableMap<Long, Collection<ClusterNode>> getTopHist() {
         return topHist;
     }
 

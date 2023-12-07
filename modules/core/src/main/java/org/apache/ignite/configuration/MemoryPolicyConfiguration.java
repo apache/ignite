@@ -20,7 +20,6 @@ import java.io.Serializable;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 import org.apache.ignite.mxbean.MetricsMxBean;
 
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
@@ -294,8 +293,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
     }
 
     /**
-     * Gets whether memory metrics are enabled by default on node startup. Memory metrics can be enabled and disabled
-     * at runtime via memory metrics {@link DataRegionMetricsMXBean MX bean}.
+     * Gets whether memory metrics are enabled by default on node startup.
      *
      * @return Metrics enabled flag.
      */
@@ -305,7 +303,6 @@ public final class MemoryPolicyConfiguration implements Serializable {
 
     /**
      * Sets memory metrics enabled flag. If this flag is {@code true}, metrics will be enabled on node startup.
-     * Memory metrics can be enabled and disabled at runtime via memory metrics {@link DataRegionMetricsMXBean MX bean}.
      *
      * @param metricsEnabled Metrics enabled flag.
      * @return {@code this} for chaining.

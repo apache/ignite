@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -29,10 +30,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Test;
 
 /**
@@ -66,10 +65,7 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
             .setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT));
 
         // Disable rebalance to prevent owning MOVING partitions.
-        if (MvccFeatureChecker.forcedMvcc())
-            ccfg.setRebalanceDelay(Long.MAX_VALUE);
-        else
-            ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
+        ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -103,7 +99,7 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
     public void testPartitionsStateConsistencyAfterRecovery() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -143,11 +139,9 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
      */
     @Test
     public void testPartitionsStateConsistencyAfterRecoveryNoCheckpoints() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10603", MvccFeatureChecker.forcedMvcc());
-
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 

@@ -21,7 +21,7 @@ import org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactorySelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactorySelfTest;
 import org.apache.ignite.cache.store.jdbc.CachePojoStoreXmlSelfTest;
 import org.apache.ignite.cache.store.jdbc.CachePojoStoreXmlWithSqlEscapeSelfTest;
-import org.apache.ignite.cache.store.spring.CacheSpringStoreSessionListenerSelfTest;
+import org.apache.ignite.cdc.CdcConfigurationTest;
 import org.apache.ignite.cluster.ClusterStateXmlPropertiesTest;
 import org.apache.ignite.encryption.SpringEncryptedCacheRestartClientTest;
 import org.apache.ignite.encryption.SpringEncryptedCacheRestartTest;
@@ -30,6 +30,7 @@ import org.apache.ignite.internal.GridSpringBeanSerializationSelfTest;
 import org.apache.ignite.internal.IgniteClientSpringBeanTest;
 import org.apache.ignite.internal.IgniteDynamicCacheConfigTest;
 import org.apache.ignite.internal.IgniteSpringBeanTest;
+import org.apache.ignite.internal.metric.RegexpMetricFilterTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtMultiBackupTest;
 import org.apache.ignite.internal.processors.resource.GridTransformSpringInjectionSelfTest;
 import org.apache.ignite.p2p.GridP2PUserVersionChangeSelfTest;
@@ -62,8 +63,6 @@ import org.junit.runners.Suite;
 
     IgniteStartFromStreamConfigurationTest.class,
 
-    CacheSpringStoreSessionListenerSelfTest.class,
-
     CacheJdbcBlobStoreFactorySelfTest.class,
     CacheJdbcPojoStoreFactorySelfTest.class,
     CachePojoStoreXmlSelfTest.class,
@@ -81,7 +80,12 @@ import org.junit.runners.Suite;
 
     GridCacheDhtMultiBackupTest.class,
 
-    ClusterStateXmlPropertiesTest.class
+    ClusterStateXmlPropertiesTest.class,
+
+    RegexpMetricFilterTest.class,
+
+    // CDC tests.
+    CdcConfigurationTest.class
 })
 public class IgniteSpringTestSuite {
 }

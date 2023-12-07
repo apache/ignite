@@ -26,6 +26,7 @@
 #include "ignite/odbc/config/settable_value.h"
 #include "ignite/odbc/ssl_mode.h"
 #include "ignite/odbc/end_point.h"
+#include "ignite/odbc/engine_mode.h"
 #include "ignite/odbc/nested_tx_mode.h"
 
 namespace ignite
@@ -108,6 +109,9 @@ namespace ignite
 
                     /** Default value for nestedTxMode attribute. */
                     static const NestedTxMode::Type nestedTxMode;
+
+                    /** Default value for SQL engine attribute. */
+                    static const EngineMode::Type engineMode;
                 };
 
                 /**
@@ -562,6 +566,27 @@ namespace ignite
                 bool IsNestedTxModeSet() const;
 
                 /**
+                 * Get SQL engine mode.
+                 *
+                 * @return SQL engine mode.
+                 */
+                EngineMode::Type GetEngineMode() const;
+
+                /**
+                 * Set SQL engine mode.
+                 *
+                 * @param mode SQL engine mode.
+                 */
+                void SetEngineMode(EngineMode::Type mode);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsEngineModeSet() const;
+
+                /**
                  * Get argument map.
                  *
                  * @param res Resulting argument map.
@@ -641,6 +666,9 @@ namespace ignite
 
                 /** Nested transaction mode. */
                 SettableValue<NestedTxMode::Type> nestedTxMode;
+
+                /** SQL engine mode. */
+                SettableValue<EngineMode::Type> engineMode;
             };
 
             template<>
@@ -674,6 +702,10 @@ namespace ignite
             template<>
             void Configuration::AddToMap<NestedTxMode::Type>(ArgumentMap& map, const std::string& key,
                 const SettableValue<NestedTxMode::Type>& value);
+
+            template<>
+            void Configuration::AddToMap(ArgumentMap& map, const std::string& key,
+                                         const SettableValue<EngineMode::Type>& value);
         }
     }
 }

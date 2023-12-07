@@ -498,9 +498,9 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
         GridNioFuture<Boolean> fut = super.close();
 
         if (!fut.isDone()) {
-            fut.listen(fut0 -> {
+            fut.listen(() -> {
                 try {
-                    fut0.get();
+                    fut.get();
                 }
                 catch (IgniteCheckedException e) {
                     log.error("Failed to close session [ses=" + GridSelectorNioSessionImpl.this + ']', e);

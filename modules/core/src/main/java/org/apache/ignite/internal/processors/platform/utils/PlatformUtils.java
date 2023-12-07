@@ -53,20 +53,27 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinarySchemaRegistry;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cacheobject.PlatformCacheObjectImpl;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
+import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServiceImpl;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.processors.service.LazyServiceConfiguration;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -76,6 +83,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.services.ServiceConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
@@ -623,10 +631,10 @@ public class PlatformUtils {
      */
     private static void writeEventType(BinaryRawWriterEx writer, EventType evtType) {
         switch (evtType) {
-            case CREATED: writer.writeByte((byte) 0); break;
-            case UPDATED: writer.writeByte((byte) 1); break;
-            case REMOVED: writer.writeByte((byte) 2); break;
-            case EXPIRED: writer.writeByte((byte) 3); break;
+            case CREATED: writer.writeByte((byte)0); break;
+            case UPDATED: writer.writeByte((byte)1); break;
+            case REMOVED: writer.writeByte((byte)2); break;
+            case EXPIRED: writer.writeByte((byte)3); break;
             default:
                 throw new IllegalArgumentException("Unknown event type: " + evtType);
         }
@@ -717,7 +725,7 @@ public class PlatformUtils {
      * @return Platform processor.
      */
     public static PlatformProcessor platformProcessor(Ignite grid) {
-        GridKernalContext ctx = ((IgniteKernal) grid).context();
+        GridKernalContext ctx = ((IgniteKernal)grid).context();
 
         return ctx.platform();
     }
@@ -793,8 +801,7 @@ public class PlatformUtils {
      * @param resObj Result.
      * @param err Error.
      */
-    public static void writeInvocationResult(BinaryRawWriterEx writer, Object resObj, Throwable err)
-    {
+    public static void writeInvocationResult(BinaryRawWriterEx writer, Object resObj, Throwable err) {
         if (err == null) {
             writer.writeBoolean(true);
             writer.writeObject(resObj);
@@ -1063,12 +1070,17 @@ public class PlatformUtils {
                     throw new IgniteException("Java object/factory class field is not found [" +
                         "className=" + clsName + ", fieldName=" + fieldName + ']');
 
+                Object val = prop.getValue();
+
                 try {
-                    field.set(obj, prop.getValue());
+                    field.set(
+                        obj,
+                        BinaryUtils.isObjectArray(field.getType()) ? BinaryUtils.rawArrayFromBinary(val) : val
+                    );
                 }
                 catch (Exception e) {
                     throw new IgniteException("Failed to set Java object/factory field [className=" + clsName +
-                        ", fieldName=" + fieldName + ", fieldValue=" + prop.getValue() + ']', e);
+                        ", fieldName=" + fieldName + ", fieldValue=" + val + ']', e);
                 }
             }
         }
@@ -1279,7 +1291,8 @@ public class PlatformUtils {
                 writer.writeString(e.getKey());
                 writer.writeObjectDetached(e.getValue());
             }
-        } else {
+        }
+        else {
             writer.writeInt(0);
         }
     }
@@ -1334,6 +1347,55 @@ public class PlatformUtils {
             strings.add(reader.readString());
 
         return strings;
+    }
+
+    /**
+     * Get service platform.
+     *
+     * @param svcCfg Service configuration.
+     * @return Service platform or empty string if this is a java service.
+     */
+    public static String servicePlatform(ServiceConfiguration svcCfg) {
+        if (svcCfg instanceof LazyServiceConfiguration) {
+            String svcClsName = ((LazyServiceConfiguration)svcCfg).serviceClassName();
+
+            if (PlatformDotNetServiceImpl.class.getName().equals(svcClsName))
+                return PLATFORM_DOTNET;
+        }
+        else if (svcCfg instanceof ServiceConfiguration && svcCfg.getService() instanceof PlatformDotNetServiceImpl)
+            return PLATFORM_DOTNET;
+
+        return "";
+    }
+
+    /**
+     * Read cache object from the stream as raw bytes to avoid marshalling.
+     *
+     * @param reader Reader.
+     * @param isKey {@code True} if object is a key.
+     */
+    public static <T extends CacheObject> T readCacheObject(BinaryReaderExImpl reader, boolean isKey) {
+        BinaryInputStream in = reader.in();
+
+        int pos0 = in.position();
+
+        Object obj = reader.readObjectDetached();
+
+        if (obj == null)
+            return null;
+
+        if (obj instanceof CacheObject)
+            return (T)obj;
+
+        int pos1 = in.position();
+
+        in.position(pos0);
+
+        byte[] objBytes = in.readByteArray(pos1 - pos0);
+
+        return isKey ?
+            (T)new KeyCacheObjectImpl(obj, objBytes, -1) :
+            (T)new PlatformCacheObjectImpl(obj, objBytes);
     }
 
     /**

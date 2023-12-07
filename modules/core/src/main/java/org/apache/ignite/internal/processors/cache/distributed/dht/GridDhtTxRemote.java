@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -52,23 +51,19 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
  */
 public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     /** Near node ID. */
-    private UUID nearNodeId;
-
-    /** Remote future ID. */
-    private IgniteUuid rmtFutId;
+    private final UUID nearNodeId;
 
     /** Near transaction ID. */
-    private GridCacheVersion nearXidVer;
+    private final GridCacheVersion nearXidVer;
 
     /** Store write through flag. */
-    private boolean storeWriteThrough;
+    private final boolean storeWriteThrough;
 
     /**
      * This constructor is meant for optimistic transactions.
      *
      * @param ctx Cache context.
      * @param nearNodeId Near node ID.
-     * @param rmtFutId Remote future ID.
      * @param nodeId Node ID.
      * @param topVer Topology version.
      * @param xidVer XID version.
@@ -87,7 +82,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     public GridDhtTxRemote(
         GridCacheSharedContext ctx,
         UUID nearNodeId,
-        IgniteUuid rmtFutId,
         UUID nodeId,
         AffinityTopologyVersion topVer,
         GridCacheVersion xidVer,
@@ -124,18 +118,16 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         );
 
         assert nearNodeId != null;
-        assert rmtFutId != null;
 
         this.nearNodeId = nearNodeId;
-        this.rmtFutId = rmtFutId;
         this.nearXidVer = nearXidVer;
         this.txNodes = txNodes;
         this.storeWriteThrough = storeWriteThrough;
 
         txState = single ? new IgniteTxRemoteSingleStateImpl() :
             new IgniteTxRemoteStateImpl(
-            Collections.<IgniteTxKey, IgniteTxEntry>emptyMap(),
-            new ConcurrentLinkedHashMap<IgniteTxKey, IgniteTxEntry>(U.capacity(txSize), 0.75f, 1));
+                Collections.emptyMap(),
+                new ConcurrentLinkedHashMap<>(U.capacity(txSize), 0.75f, 1));
 
         assert topVer != null && topVer.topologyVersion() > 0 : topVer;
 
@@ -147,7 +139,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      *
      * @param ctx Cache context.
      * @param nearNodeId Near node ID.
-     * @param rmtFutId Remote future ID.
      * @param nodeId Node ID.
      * @param nearXidVer Near transaction ID.
      * @param topVer Topology version.
@@ -165,7 +156,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     public GridDhtTxRemote(
         GridCacheSharedContext ctx,
         UUID nearNodeId,
-        IgniteUuid rmtFutId,
         UUID nodeId,
         GridCacheVersion nearXidVer,
         AffinityTopologyVersion topVer,
@@ -200,27 +190,18 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         );
 
         assert nearNodeId != null;
-        assert rmtFutId != null;
 
         this.nearXidVer = nearXidVer;
         this.nearNodeId = nearNodeId;
-        this.rmtFutId = rmtFutId;
         this.storeWriteThrough = storeWriteThrough;
 
         txState = new IgniteTxRemoteStateImpl(
-            Collections.<IgniteTxKey, IgniteTxEntry>emptyMap(),
-            new ConcurrentLinkedHashMap<IgniteTxKey, IgniteTxEntry>(U.capacity(txSize), 0.75f, 1));
+            Collections.emptyMap(),
+            new ConcurrentLinkedHashMap<>(U.capacity(txSize), 0.75f, 1));
 
         assert topVer != null && topVer.topologyVersion() > 0 : topVer;
 
         topologyVersion(topVer);
-    }
-
-    /**
-     * @param txNodes Transaction nodes.
-     */
-    @Override public void transactionNodes(Map<UUID, Collection<UUID>> txNodes) {
-        this.txNodes = txNodes;
     }
 
     /** {@inheritDoc} */
@@ -268,13 +249,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      */
     public UUID nearNodeId() {
         return nearNodeId;
-    }
-
-    /**
-     * @return Remote future ID.
-     */
-    IgniteUuid remoteFutureId() {
-        return rmtFutId;
     }
 
     /** {@inheritDoc} */

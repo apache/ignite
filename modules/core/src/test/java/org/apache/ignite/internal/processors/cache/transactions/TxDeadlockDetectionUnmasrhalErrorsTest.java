@@ -87,6 +87,8 @@ public class TxDeadlockDetectionUnmasrhalErrorsTest extends GridCommonAbstractTe
             cache0 = getCache(ignite(0), "cache0");
             cache1 = getCache(ignite(0), "cache1");
 
+            awaitCacheOnClient(grid(1), "cache0");
+
             IgniteCache<Integer, Integer> clientCache0 = grid(1).cache("cache0");
 
             awaitPartitionMapExchange();

@@ -21,9 +21,12 @@ package org.apache.ignite.internal.processors.cache.mvcc;
  *
  */
 public interface MvccLongList {
+    /** */
     public int size();
 
+    /** */
     public long get(int i);
 
+    /** */
     public boolean contains(long val);
 }

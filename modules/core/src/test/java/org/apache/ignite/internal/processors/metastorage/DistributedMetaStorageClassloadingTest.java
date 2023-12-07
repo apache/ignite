@@ -116,7 +116,9 @@ public class DistributedMetaStorageClassloadingTest extends GridCommonAbstractTe
         try {
             Serializable hey = ignite.context().distributedMetastorage().read("hey");
         }
-        catch (Exception ignored) { }
+        catch (Exception ignored) {
+            // Ignore.
+        }
 
         assertEquals(0, failureHandler.getCount());
     }
@@ -151,7 +153,9 @@ public class DistributedMetaStorageClassloadingTest extends GridCommonAbstractTe
         try {
             client.context().distributedMetastorage().write("hey", new BamboozleClass(0));
         }
-        catch (Exception ignored) {}
+        catch (Exception ignored) {
+            // Ignore.
+        }
 
         assertEquals(1, failureHandler.getCount());
     }
@@ -166,13 +170,15 @@ public class DistributedMetaStorageClassloadingTest extends GridCommonAbstractTe
      * Class that would be excluded on the certain npde.
      */
     public static final class BamboozleClass implements Serializable {
-
+        /** */
         private final int i;
 
+        /** */
         public BamboozleClass(int i) {
             this.i = i;
         }
 
+        /** */
         public int getI() {
             return i;
         }

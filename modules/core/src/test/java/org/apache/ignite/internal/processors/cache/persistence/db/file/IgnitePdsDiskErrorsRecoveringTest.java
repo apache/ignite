@@ -29,6 +29,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -137,7 +138,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             try {
                 IgniteEx grid = startGrid(0);
 
-                grid.cluster().active(true);
+                grid.cluster().state(ClusterState.ACTIVE);
             }
             catch (Exception e) {
                 throw new RuntimeException("Failed to start node.", e);
@@ -160,7 +161,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
 
         IgniteEx grid = startGrid(0);
 
-        grid.cluster().active(true);
+        grid.cluster().state(ClusterState.ACTIVE);
     }
 
     /**
@@ -177,10 +178,10 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         );
 
         final IgniteEx grid = startGrid(0);
-        grid.cluster().active(true);
+        grid.cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < 1000; i++) {
-            byte payload = (byte) i;
+            byte payload = (byte)i;
             byte[] data = new byte[2048];
             Arrays.fill(data, payload);
 
@@ -207,14 +208,14 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         ioFactory = null;
 
         IgniteEx recoveredGrid = startGrid(0);
-        recoveredGrid.cluster().active(true);
+        recoveredGrid.cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < 1000; i++) {
-            byte payload = (byte) i;
+            byte payload = (byte)i;
             byte[] data = new byte[2048];
             Arrays.fill(data, payload);
 
-            byte[] actualData = (byte[]) recoveredGrid.cache(CACHE_NAME).get(i);
+            byte[] actualData = (byte[])recoveredGrid.cache(CACHE_NAME).get(i);
             Assert.assertArrayEquals(data, actualData);
         }
     }
@@ -228,10 +229,10 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         ioFactory = new FilteringFileIOFactory(".bin", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 128 * PAGE_SIZE));
 
         final IgniteEx grid = startGrid(0);
-        grid.cluster().active(true);
+        grid.cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < 1000; i++) {
-            byte payload = (byte) i;
+            byte payload = (byte)i;
             byte[] data = new byte[2048];
             Arrays.fill(data, payload);
 
@@ -257,14 +258,14 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         ioFactory = null;
 
         IgniteEx recoveredGrid = startGrid(0);
-        recoveredGrid.cluster().active(true);
+        recoveredGrid.cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < 1000; i++) {
-            byte payload = (byte) i;
+            byte payload = (byte)i;
             byte[] data = new byte[2048];
             Arrays.fill(data, payload);
 
-            byte[] actualData = (byte[]) recoveredGrid.cache(CACHE_NAME).get(i);
+            byte[] actualData = (byte[])recoveredGrid.cache(CACHE_NAME).get(i);
             Assert.assertArrayEquals(data, actualData);
         }
     }
@@ -290,7 +291,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         // Fail somewhere on the second wal segment.
         ioFactory = new FilteringFileIOFactory(
             ".wal",
-            new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), (long) (1.5 * WAL_SEGMENT_SIZE))
+            new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), (long)(1.5 * WAL_SEGMENT_SIZE))
         );
 
         System.setProperty(IGNITE_WAL_MMAP, "false");
@@ -308,16 +309,16 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
 
         wal.setFileIOFactory(ioFactory);
 
-        grid.cluster().active(true);
+        grid.cluster().state(ClusterState.ACTIVE);
 
         int failedPosition = -1;
 
-        final int keysCnt = 2000;
+        final int keysCount = 2000;
 
         final int dataSize = 2048;
 
-        for (int i = 0; i < keysCnt; i++) {
-            byte payload = (byte) i;
+        for (int i = 0; i < keysCount; i++) {
+            byte payload = (byte)i;
             byte[] data = new byte[dataSize];
             Arrays.fill(data, payload);
 
@@ -342,14 +343,14 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         // Grid should be successfully recovered after stopping.
         grid = startGrid(0);
 
-        grid.cluster().active(true);
+        grid.cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < failedPosition; i++) {
-            byte payload = (byte) i;
+            byte payload = (byte)i;
             byte[] data = new byte[dataSize];
             Arrays.fill(data, payload);
 
-            byte[] actualData = (byte[]) grid.cache(CACHE_NAME).get(i);
+            byte[] actualData = (byte[])grid.cache(CACHE_NAME).get(i);
             Assert.assertArrayEquals(data, actualData);
         }
     }

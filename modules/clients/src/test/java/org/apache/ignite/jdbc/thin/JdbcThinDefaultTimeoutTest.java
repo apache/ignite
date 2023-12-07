@@ -115,15 +115,14 @@ public class JdbcThinDefaultTimeoutTest extends GridCommonAbstractTest {
             Statement stmt = conn.createStatement();
 
             GridTestUtils.assertThrows(log, () -> {
-                    ResultSet rs = stmt.executeQuery("select _key, _val, delay(5) from Integer");
+                ResultSet rs = stmt.executeQuery("select _key, _val, delay(5) from Integer");
 
-                    int cnt = 0;
-                    while (rs.next())
-                        cnt++;
+                int cnt = 0;
+                while (rs.next())
+                    cnt++;
 
-                    return null;
-                },
-                SQLException.class, "The query was cancelled while executing");
+                return null;
+            }, SQLException.class, "The query was cancelled while executing");
         }
     }
 }

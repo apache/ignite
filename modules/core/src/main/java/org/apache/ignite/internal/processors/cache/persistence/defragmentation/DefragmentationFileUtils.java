@@ -295,6 +295,8 @@ public class DefragmentationFileUtils {
         File defragmentedIdxFile = defragmentedIndexFile(workDir);
 
         try {
+            Files.deleteIfExists(defragmentedIdxFile.toPath());
+
             Files.move(defragmentedIdxTmpFile.toPath(), defragmentedIdxFile.toPath(), ATOMIC_MOVE);
         }
         catch (IOException e) {

@@ -33,6 +33,8 @@ import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.ServerSocket;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -48,6 +50,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
@@ -65,17 +68,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import javax.management.Attribute;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
+import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -85,8 +92,6 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
-import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -94,13 +99,17 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -110,7 +119,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -121,6 +129,9 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Long.parseLong;
+import static java.util.Comparator.comparingLong;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
@@ -140,7 +151,7 @@ public final class GridTestUtils {
     public static final long DFLT_TEST_TIMEOUT = 5 * 60 * 1000;
 
     /** */
-    static final String ALPHABETH = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890_";
+    private static final String ALPHABETH = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890_";
 
     /**
      * Hook object intervenes to discovery message handling
@@ -369,7 +380,8 @@ public final class GridTestUtils {
     public static void assertNotContains(@Nullable IgniteLogger log, String str, String substr) {
         try {
             assertFalse(str.contains(substr));
-        } catch (AssertionError e) {
+        }
+        catch (AssertionError e) {
             U.warn(log, String.format("String contain substring: '%s', but shouldn't:", substr));
             U.warn(log, "String:");
             U.warn(log, str);
@@ -389,7 +401,8 @@ public final class GridTestUtils {
     public static void assertContains(@Nullable IgniteLogger log, String str, String substr) {
         try {
             assertTrue(str != null && str.contains(substr));
-        } catch (AssertionError e) {
+        }
+        catch (AssertionError e) {
             U.warn(log, String.format("String does not contain substring: '%s':", substr));
             U.warn(log, "String:");
             U.warn(log, str);
@@ -409,7 +422,8 @@ public final class GridTestUtils {
     public static <C extends Collection<T>, T> void assertContains(@Nullable IgniteLogger log, C col, T elem) {
         try {
             assertTrue(col.contains(elem));
-        } catch (AssertionError e) {
+        }
+        catch (AssertionError e) {
             U.warn(log, String.format("Collection does not contain: '%s':", elem));
             U.warn(log, "Collection:");
             U.warn(log, col);
@@ -429,7 +443,8 @@ public final class GridTestUtils {
     public static <C extends Collection<T>, T> void assertNotContains(@Nullable IgniteLogger log, C col, T elem) {
         try {
             assertFalse(col.contains(elem));
-        } catch (AssertionError e) {
+        }
+        catch (AssertionError e) {
             U.warn(log, String.format("Collection contain element: '%s' but shouldn't:", elem));
             U.warn(log, "Collection:");
             U.warn(log, col);
@@ -444,8 +459,7 @@ public final class GridTestUtils {
      * @param log Logger (optional).
      * @param run Runnable.
      * @param cls Exception class.
-     * @param msg Exception message (optional). If provided exception message
-     *      and this message should be equal.
+     * @param msg Exception message (optional). Check that raised exception message contains this substring.
      * @return Thrown throwable.
      */
     public static Throwable assertThrows(
@@ -473,6 +487,22 @@ public final class GridTestUtils {
      */
     public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
         Class<? extends Throwable> cls, @Nullable String msg) {
+        return assertThrows(log, call, cls, msg, null);
+    }
+
+    /**
+     * Checks whether callable throws expected exception or not.
+     *
+     * @param log Logger (optional).
+     * @param call Callable.
+     * @param cls Exception class.
+     * @param msg Exception message (optional). If provided exception message
+     *      and this message should be equal.
+     * @param notThrowsMsg Optional exception message if expected exception wasn't thrown.
+     * @return Thrown throwable.
+     */
+    public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
+        Class<? extends Throwable> cls, @Nullable String msg, @Nullable String notThrowsMsg) {
         assert call != null;
         assert cls != null;
 
@@ -506,7 +536,9 @@ public final class GridTestUtils {
             return e;
         }
 
-        throw new AssertionError("Exception has not been thrown.");
+        String asrtMsg = notThrowsMsg == null ? "Exception has not been thrown." : notThrowsMsg;
+
+        throw new AssertionError(asrtMsg);
     }
 
     /**
@@ -1021,9 +1053,9 @@ public final class GridTestUtils {
             }
         };
 
-        runFut.listen(fut -> {
+        runFut.listen(() -> {
             try {
-                resFut.onDone(fut.get());
+                resFut.onDone(runFut.get());
             }
             catch (IgniteFutureCancelledCheckedException e) {
                 resFut.onCancelled();
@@ -1081,7 +1113,8 @@ public final class GridTestUtils {
         try {
             for (Thread t : threads)
                 t.join();
-        } catch (InterruptedException e) {
+        }
+        catch (InterruptedException e) {
             for (Thread t : threads)
                 t.interrupt();
 
@@ -1102,7 +1135,7 @@ public final class GridTestUtils {
      * @param task Runnable.
      * @return Future with task result.
      */
-    public static IgniteInternalFuture runAsync(final Runnable task) {
+    public static <T> IgniteInternalFuture<T> runAsync(final Runnable task) {
         return runAsync(task, "async-runnable-runner");
     }
 
@@ -1112,7 +1145,31 @@ public final class GridTestUtils {
      * @param task Runnable.
      * @return Future with task result.
      */
-    public static IgniteInternalFuture runAsync(final Runnable task, String threadName) {
+    public static <T> IgniteInternalFuture<T> runAsync(final RunnableX task) {
+        return runAsync(task, "async-runnable-runner");
+    }
+
+    /**
+     * Runs runnable task asyncronously.
+     *
+     * @param task Runnable.
+     * @return Future with task result.
+     */
+    public static <T> IgniteInternalFuture<T> runAsync(final Runnable task, String threadName) {
+        return runAsync(() -> {
+            task.run();
+
+            return null;
+        }, threadName);
+    }
+
+    /**
+     * Runs runnable task asyncronously.
+     *
+     * @param task Runnable.
+     * @return Future with task result.
+     */
+    public static <T> IgniteInternalFuture<T> runAsync(final RunnableX task, String threadName) {
         return runAsync(() -> {
             task.run();
 
@@ -1228,6 +1285,26 @@ public final class GridTestUtils {
         }
         finally {
             busyLock.unblock();
+        }
+    }
+
+    /**
+     * Initialize {@link IgniteSystemProperties#IGNITE_HOME IGNITE_HOME} system property.
+     */
+    public static void initTestProjectHome() {
+        String igniteHome = U.getIgniteHome();
+
+        if (F.isEmpty(igniteHome)) {
+            // We failed to automatically resolve IGNITE_HOME. This can happen if Ignite Test Framework is used as a
+            // library in some external project. Let's forcibly set IGNITE_HOME to the user's working directory.
+            // Setting the IGNITE_HOME system property is crucial because Ignite Test Logging system relies on it
+            // to resolve log file paths.
+            igniteHome = new File(System.getProperty("user.dir"), "ignite").getAbsolutePath();
+
+            U.nullifyHomeDirectory();
+            U.setIgniteHome(igniteHome);
+
+            U.warn(null, '"' + IGNITE_HOME + "\" system property was automatically set to " + igniteHome);
         }
     }
 
@@ -1723,6 +1800,14 @@ public final class GridTestUtils {
             if (isFinal && isStatic)
                 throw new IgniteException("Modification of static final field through reflection.");
 
+            if (isFinal && U.majorJavaVersion(U.jdkVersion()) >= 12) {
+                long fieldOffset = GridUnsafe.objectFieldOffset(field);
+
+                GridUnsafe.putObjectField(obj, fieldOffset, val);
+
+                return;
+            }
+
             if (isFinal) {
                 Field modifiersField = Field.class.getDeclaredField("modifiers");
 
@@ -1777,10 +1862,10 @@ public final class GridTestUtils {
                     Throwable cause = e.getCause();
 
                     if (cause instanceof Error)
-                        throw (Error) cause;
+                        throw (Error)cause;
 
                     if (cause instanceof Exception)
-                        throw (Exception) cause;
+                        throw (Exception)cause;
 
                     throw new RuntimeException("Failed to invoke method)" +
                         " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']', e);
@@ -1858,7 +1943,7 @@ public final class GridTestUtils {
         assert file.exists();
         assert file.length() < Integer.MAX_VALUE;
 
-        byte[] bytes = new byte[(int) file.length()];
+        byte[] bytes = new byte[(int)file.length()];
 
         try (FileInputStream fis = new FileInputStream(file)) {
             int readBytesCnt = fis.read(bytes);
@@ -1918,11 +2003,30 @@ public final class GridTestUtils {
      * @return {@code true} if condition was achieved, {@code false} otherwise.
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      */
-    public static boolean waitForCondition(GridAbsPredicate cond, long timeout) throws IgniteInterruptedCheckedException {
+    public static boolean waitForCondition(
+        GridAbsPredicate cond,
+        long timeout
+    ) throws IgniteInterruptedCheckedException {
+        return waitForCondition(cond, timeout, DFLT_BUSYWAIT_SLEEP_INTERVAL);
+    }
+
+    /**
+     * Waits for condition, polling in busy wait loop.
+     *
+     * @param cond Condition to wait for.
+     * @param timeout Max time to wait in milliseconds.
+     * @return {@code true} if condition was achieved, {@code false} otherwise.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
+     */
+    public static boolean waitForCondition(
+        GridAbsPredicate cond,
+        long timeout,
+        long checkInterval
+    ) throws IgniteInterruptedCheckedException {
         long endTime = U.currentTimeMillis() + timeout;
         long endTime0 = endTime < 0 ? Long.MAX_VALUE : endTime;
 
-        return waitForCondition(cond, () -> U.currentTimeMillis() < endTime0);
+        return waitForCondition(cond, () -> U.currentTimeMillis() < endTime0, checkInterval);
     }
 
     /**
@@ -1931,12 +2035,30 @@ public final class GridTestUtils {
      * @return {@code true} if condition was achieved, {@code false} otherwise.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    public static boolean waitForCondition(GridAbsPredicate cond, BooleanSupplier wait) throws IgniteInterruptedCheckedException {
+    public static boolean waitForCondition(
+        GridAbsPredicate cond,
+        BooleanSupplier wait
+    ) throws IgniteInterruptedCheckedException {
+        return waitForCondition(cond, wait, DFLT_BUSYWAIT_SLEEP_INTERVAL);
+    }
+
+    /**
+     * @param cond Condition to wait for.
+     * @param wait Wait predicate.
+     * @return {@code true} if condition was achieved, {@code false} otherwise.
+     * @param checkInterval Time interval between two consecutive condition checks.
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    public static boolean waitForCondition(
+        GridAbsPredicate cond,
+        BooleanSupplier wait,
+        long checkInterval
+    ) throws IgniteInterruptedCheckedException {
         while (wait.getAsBoolean()) {
             if (cond.apply())
                 return true;
 
-            U.sleep(DFLT_BUSYWAIT_SLEEP_INTERVAL);
+            U.sleep(checkInterval);
         }
 
         return false;
@@ -1964,26 +2086,9 @@ public final class GridTestUtils {
         keyMgrFactory.init(keyStore, storePass);
 
         ctx.init(keyMgrFactory.getKeyManagers(),
-            new TrustManager[]{GridSslBasicContextFactory.getDisabledTrustManager()}, null);
+            new TrustManager[]{SslContextFactory.getDisabledTrustManager()}, null);
 
         return ctx;
-    }
-
-    /**
-     * Creates test-purposed SSL context factory from test key store with disabled trust manager.
-     *
-     * @return SSL context factory used in test.
-     */
-    public static GridSslContextFactory sslContextFactory() {
-        GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
-
-        factory.setKeyStoreFilePath(
-            U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
-        factory.setKeyStorePassword(keyStorePassword().toCharArray());
-
-        factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
-
-        return factory;
     }
 
     /**
@@ -2021,10 +2126,12 @@ public final class GridTestUtils {
         return factory;
     }
 
+    /** */
     public static String keyStorePassword() {
         return GridTestProperties.getProperty("ssl.keystore.password");
     }
 
+    /** */
     @NotNull public static String keyStorePath(String keyStore) {
         return U.resolveIgnitePath(GridTestProperties.getProperty(
             "ssl.keystore." + keyStore + ".path")).getAbsolutePath();
@@ -2125,7 +2232,9 @@ public final class GridTestUtils {
     public static void benchmark(@Nullable String name, long warmup, long executionTime, @NotNull Runnable run) {
         final AtomicBoolean stop = new AtomicBoolean();
 
+        /** */
         class Stopper extends TimerTask {
+            /** {@inheritDoc} */
             @Override public void run() {
                 stop.set(true);
             }
@@ -2196,6 +2305,46 @@ public final class GridTestUtils {
 
         for (File grp : new File(workDir, U.maskForFileName(igniteInstanceName)).listFiles()) {
             new File(grp, "index.bin").delete();
+        }
+    }
+
+    /**
+     * Removing the directory cache groups.
+     * Deletes all directory satisfy the {@code cacheGrpFilter}.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param cacheGrpFilter Filter cache groups.
+     * @throws Exception If failed.
+     */
+    public static void deleteCacheGrpDir(String igniteInstanceName, FilenameFilter cacheGrpFilter) throws Exception {
+        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
+
+        String nodeDirName = U.maskForFileName(igniteInstanceName);
+
+        for (File cacheGrpDir : new File(workDir, nodeDirName).listFiles(cacheGrpFilter))
+            U.delete(cacheGrpDir);
+    }
+
+    /**
+     * Removes the last checkpoint end marker for the given node.
+     *
+     * @param ignite Ignite node.
+     */
+    public static void deleteLastCheckpointEndMarker(IgniteEx ignite) throws IOException {
+        IgniteCacheDatabaseSharedManager dbSharedMgr = ignite.context().cache().context().database();
+
+        Path cpDir = ((GridCacheDatabaseSharedManager)dbSharedMgr).checkpointDirectory().toPath();
+
+        try (Stream<Path> files = Files.list(cpDir)) {
+            Optional<Path> endMarker = files
+                .map(path -> path.getFileName().toString())
+                .filter(fileName -> fileName.endsWith("START.bin"))
+                .max(comparingLong(fileName -> parseLong(fileName.split("-")[0])))
+                .map(fileName -> fileName.replace("START.bin", "END.bin"))
+                .map(cpDir::resolve);
+
+            if (endMarker.isPresent())
+                Files.delete(endMarker.get());
         }
     }
 
@@ -2298,6 +2447,13 @@ public final class GridTestUtils {
      */
     public static void assertInactive(ClusterState state) {
         assertFalse(state + " isn't inactive state", state.active());
+    }
+
+    /** @return Cartesian product of collections. See {@link Lists#cartesianProduct(List)}. */
+    public static Collection<Object[]> cartesianProduct(Collection<?>... c) {
+        List<List<?>> lists = F.asList(c).stream().map(ArrayList::new).collect(Collectors.toList());
+
+        return F.transform(Lists.cartesianProduct(lists), List::toArray);
     }
 
     /** Test parameters scale factor util. */
@@ -2476,52 +2632,6 @@ public final class GridTestUtils {
             can_fail();
 
             return sleep;
-        }
-    }
-
-    /**
-     * Runnable that can throw exceptions.
-     */
-    @FunctionalInterface
-    public interface RunnableX extends Runnable {
-        /**
-         * Runnable body.
-         *
-         * @throws Exception If failed.
-         */
-        void runx() throws Exception;
-
-        /** {@inheritdoc} */
-        @Override default void run() {
-            try {
-                runx();
-            }
-            catch (Exception e) {
-                throw new IgniteException(e);
-            }
-        }
-    }
-
-    /**
-     * IgniteRunnable that can throw exceptions.
-     */
-    @FunctionalInterface
-    public interface IgniteRunnableX extends IgniteRunnable {
-        /**
-         * Runnable body.
-         *
-         * @throws Exception If failed.
-         */
-        void runx() throws Exception;
-
-        /** {@inheritdoc} */
-        @Override default void run() {
-            try {
-                runx();
-            }
-            catch (Exception e) {
-                throw new IgniteException(e);
-            }
         }
     }
 

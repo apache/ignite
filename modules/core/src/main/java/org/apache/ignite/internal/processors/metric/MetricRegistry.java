@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMe
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -268,16 +269,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @see HitRateMetric
      */
     public HitRateMetric hitRateMetric(String name, @Nullable String desc, long rateTimeInterval, int size) {
-        String fullName = metricName(regName, name);
-
-        HitRateMetric metric = addMetric(name, new HitRateMetric(fullName, desc, rateTimeInterval, size));
-
-        Long cfgRateTimeInterval = hitRateCfgProvider.apply(fullName);
-
-        if (cfgRateTimeInterval != null)
-            metric.reset(cfgRateTimeInterval, DFLT_SIZE);
-
-        return metric;
+        return addMetric(name, new HitRateMetric(metricName(regName, name), desc, rateTimeInterval, size));
     }
 
     /**
@@ -301,16 +293,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @return {@link HistogramMetricImpl}
      */
     public HistogramMetricImpl histogram(String name, long[] bounds, @Nullable String desc) {
-        String fullName = metricName(regName, name);
-
-        HistogramMetricImpl metric = addMetric(name, new HistogramMetricImpl(fullName, desc, bounds));
-
-        long[] cfgBounds = histogramCfgProvider.apply(fullName);
-
-        if (cfgBounds != null)
-            metric.reset(cfgBounds);
-
-        return metric;
+        return addMetric(name, new HistogramMetricImpl(metricName(regName, name), desc, bounds));
     }
 
     /**
@@ -322,12 +305,34 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @return Registered metric.
      */
     private <T extends Metric> T addMetric(String name, T metric) {
+        assert !F.isEmpty(name);
+
         T old = (T)metrics.putIfAbsent(name, metric);
 
         if (old != null)
             return old;
 
+        configureMetrics(metric);
+
         return metric;
+    }
+
+    /**
+     * Assigns metric settings if {@code metric} is configurable.
+     */
+    private void configureMetrics(Metric metric) {
+        if (metric instanceof HistogramMetricImpl) {
+            long[] cfgBounds = histogramCfgProvider.apply(metric.name());
+
+            if (cfgBounds != null)
+                ((HistogramMetricImpl)metric).reset(cfgBounds);
+        }
+        else if (metric instanceof HitRateMetric) {
+            Long cfgRateTimeInterval = hitRateCfgProvider.apply(metric.name());
+
+            if (cfgRateTimeInterval != null)
+                ((HitRateMetric)metric).reset(cfgRateTimeInterval, DFLT_SIZE);
+        }
     }
 
     /** {@inheritDoc} */

@@ -91,7 +91,7 @@ public class SqlNotNullKeyValueFieldTest extends GridCommonAbstractTest {
 
         QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(qry));
 
-        assertEquals(1, ((Number) cursor.getAll().get(0).get(0)).intValue());
+        assertEquals(1, ((Number)cursor.getAll().get(0).get(0)).intValue());
     }
 
     /** */
@@ -117,6 +117,6 @@ public class SqlNotNullKeyValueFieldTest extends GridCommonAbstractTest {
 
         QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(qry));
 
-        assertEquals(1, ((Number) cursor.getAll().get(0).get(0)).intValue());
+        assertEquals(1, ((Number)cursor.getAll().get(0).get(0)).intValue());
     }
 }

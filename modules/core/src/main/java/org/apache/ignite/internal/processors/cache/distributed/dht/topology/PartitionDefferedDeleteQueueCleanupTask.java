@@ -72,12 +72,13 @@ public class PartitionDefferedDeleteQueueCleanupTask implements GridTimeoutObjec
             @Override public void run() {
                 try {
                     for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                        if (!grp.isLocal() && grp.affinityNode()) {
+                        if (grp.affinityNode()) {
                             GridDhtPartitionTopology top = null;
 
                             try {
                                 top = grp.topology();
-                            } catch (IllegalStateException ignore) {
+                            }
+                            catch (IllegalStateException ignore) {
                                 // Cache stopped.
                             }
 

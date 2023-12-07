@@ -476,7 +476,7 @@ public class BaselineTopology implements Serializable {
 
         for (BaselineNode node : nodes) {
             if (bltConsIds.contains(node.consistentId()))
-                res += (long) node.consistentId().hashCode();
+                res += (long)node.consistentId().hashCode();
         }
 
         return res;

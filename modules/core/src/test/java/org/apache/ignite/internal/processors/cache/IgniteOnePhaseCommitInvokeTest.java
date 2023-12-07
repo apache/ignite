@@ -101,9 +101,8 @@ public class IgniteOnePhaseCommitInvokeTest extends GridCommonAbstractTest {
      */
     private void onePhaseInvoke(final boolean withOldVal,
         final boolean setVal,
-        final boolean retPrev)
-        throws Exception
-    {
+        final boolean retPrev
+    ) throws Exception {
         log.info("Test onePhaseInvoke [withOldVal=" + withOldVal + ", setVal=" + setVal + ", retPrev=" + retPrev + ']');
 
         Ignite srv0 = startGrid(0);

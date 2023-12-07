@@ -112,20 +112,17 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     /** Trackable flag. */
     private boolean trackable;
 
-    /** Subject ID. */
-    private final UUID subjId;
-
     /** Task name. */
     private final String taskName;
 
     /** Whether to deserialize binary objects. */
-    private boolean deserializeBinary;
+    private final boolean deserializeBinary;
 
     /** Skip values flag. */
-    private boolean skipVals;
+    private final boolean skipVals;
 
     /** Expiry policy. */
-    private IgniteCacheExpiryPolicy expiryPlc;
+    private final IgniteCacheExpiryPolicy expiryPlc;
 
     /** Flag indicating that get should be done on a locked topology version. */
     private final boolean canRemap;
@@ -137,7 +134,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private final boolean keepCacheObjects;
 
     /** */
-    private boolean recovery;
+    private final boolean recovery;
 
     /** */
     @GridToStringInclude
@@ -168,7 +165,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param topVer Topology version.
      * @param readThrough Read through flag.
      * @param forcePrimary If {@code true} then will force network trip to primary node even if called on backup node.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
@@ -183,7 +179,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         AffinityTopologyVersion topVer,
         boolean readThrough,
         boolean forcePrimary,
-        @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -195,7 +190,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         @Nullable MvccSnapshot mvccSnapshot
     ) {
         assert key != null;
-        assert mvccSnapshot == null || cctx.mvccEnabled();
+        assert mvccSnapshot == null;
 
         AffinityTopologyVersion lockedTopVer = cctx.shared().lockedTopologyVersion(null);
 
@@ -211,7 +206,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         this.key = key;
         this.readThrough = readThrough;
         this.forcePrimary = forcePrimary;
-        this.subjId = subjId;
         this.taskName = taskName;
         this.deserializeBinary = deserializeBinary;
         this.expiryPlc = expiryPlc;
@@ -221,7 +215,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         this.recovery = recovery;
         this.topVer = topVer;
         this.mvccSnapshot = mvccSnapshot;
-        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
+        deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         this.txLbl = txLbl;
 
@@ -302,7 +296,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                     false,
                     readThrough,
                     topVer,
-                    subjId,
                     taskName == null ? 0 : taskName.hashCode(),
                     expiryPlc,
                     skipVals,
@@ -322,9 +315,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 map(updTopVer);
             }
             else {
-                fut0.listen(f -> {
+                fut0.listen(() -> {
                     try {
-                        GridCacheEntryInfo info = f.get();
+                        GridCacheEntryInfo info = fut0.get();
 
                         setResult(info);
                     }
@@ -364,7 +357,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 key,
                 readThrough,
                 topVer,
-                subjId,
                 taskName == null ? 0 : taskName.hashCode(),
                 expiryPlc != null ? expiryPlc.forCreate() : -1L,
                 expiryPlc != null ? expiryPlc.forAccess() : -1L,
@@ -435,10 +427,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         AffinityTopologyVersion topVer,
         List<ClusterNode> affNodes
     ) {
-        // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
-        boolean fastLocGet = !cctx.mvccEnabled() &&
-            (!forcePrimary || affNodes.get(0).isLocal()) &&
-            cctx.reserveForFastLocalGet(part, topVer);
+        boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) && cctx.reserveForFastLocalGet(part, topVer);
 
         if (fastLocGet) {
             try {
@@ -496,7 +485,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                     null,
                                     txLbl,
                                     row.value(),
-                                    subjId,
                                     taskName,
                                     !deserializeBinary);
                             }
@@ -519,7 +507,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 null,
                                 /*update-metrics*/false,
                                 /*event*/evt,
-                                subjId,
                                 null,
                                 taskName,
                                 expiryPlc,
@@ -538,7 +525,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 /*read-through*/false,
                                 /*update-metrics*/false,
                                 /*event*/evt,
-                                subjId,
                                 null,
                                 taskName,
                                 expiryPlc,
@@ -714,9 +700,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (invalidParts) {
             addNodeAsInvalid(cctx.node(nodeId));
 
-            if (canRemap) {
+            if (canRemap)
                 awaitVersionAndRemap(rmtTopVer);
-            }
             else
                 map(topVer);
 
@@ -837,7 +822,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
             onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " +
                 MAX_REMAP_CNT + " attempts (key got remapped to the same node) [key=" + key + ", node=" +
-                (node0 != null ? U.toShortString(node0) : node0) + ", invalidNodes=" + invalidNodes + ']'));
+                (node0 != null ? U.toShortString(node0) : null) + ", invalidNodes=" + invalidNodes + ']'));
 
             return false;
         }
@@ -901,12 +886,11 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param topVer Topology version.
      */
     private void awaitVersionAndRemap(AffinityTopologyVersion topVer) {
-        IgniteInternalFuture<AffinityTopologyVersion> awaitTopVerFut =
-            cctx.shared().exchange().affinityReadyFuture(topVer);
+        IgniteInternalFuture<AffinityTopologyVersion> awaitTopVerFut = cctx.shared().exchange().affinityReadyFuture(topVer);
 
-        awaitTopVerFut.listen(f -> {
+        awaitTopVerFut.listen(() -> {
             try {
-                remap(f.get());
+                remap(awaitTopVerFut.get());
             }
             catch (IgniteCheckedException e) {
                 onDone(e);

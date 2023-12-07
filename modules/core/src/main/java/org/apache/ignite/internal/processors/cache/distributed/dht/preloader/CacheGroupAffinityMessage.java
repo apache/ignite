@@ -96,6 +96,7 @@ public class CacheGroupAffinityMessage implements Message {
         }
     }
 
+    /** */
     private List<GridLongList> createAssigns(List<List<ClusterNode>> assign0) {
         if (assign0 != null) {
             List<GridLongList> assigns = new ArrayList<>(assign0.size());

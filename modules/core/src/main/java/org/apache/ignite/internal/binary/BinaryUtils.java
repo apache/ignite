@@ -17,8 +17,13 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.Externalizable;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Array;
@@ -28,6 +33,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -48,6 +54,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryCollectionFactory;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
@@ -63,6 +70,7 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cacheobject.PlatformCacheObjectImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserKeyCacheObjectImpl;
@@ -71,15 +79,26 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.platform.PlatformType;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
 
 /**
  * Binary utils.
  */
 public class BinaryUtils {
+    /** Binary metadata file suffix. */
+    public static final String METADATA_FILE_SUFFIX = ".bin";
+
+    /**
+     * Actual file name "{type_id}.classname{platform_id}".
+     * Where {@code type_id} is integer type id and {@code platform_id} is byte from {@link PlatformType}
+     */
+    public static final String MAPPING_FILE_EXTENSION = ".classname";
+
     /** */
     public static final Map<Class<?>, Byte> PLAIN_CLASS_TO_FLAG = new HashMap<>();
 
@@ -610,6 +629,12 @@ public class BinaryUtils {
             return cls.getComponentType().isEnum() || cls.getComponentType() == Enum.class ?
                 GridBinaryMarshaller.ENUM_ARR : GridBinaryMarshaller.OBJ_ARR;
 
+        if (cls == BinaryArray.class)
+            return GridBinaryMarshaller.OBJ_ARR;
+
+        if (cls == BinaryEnumArray.class)
+            return GridBinaryMarshaller.ENUM_ARR;
+
         if (isSpecialCollection(cls))
             return GridBinaryMarshaller.COL;
 
@@ -725,6 +750,7 @@ public class BinaryUtils {
             cls == BinaryEnumObjectImpl.class ||
             cls == UserKeyCacheObjectImpl.class ||
             cls == UserCacheObjectImpl.class ||
+            cls == PlatformCacheObjectImpl.class ||
             cls == UserCacheObjectByteArrayImpl.class;
     }
 
@@ -1161,6 +1187,10 @@ public class BinaryUtils {
             return BinaryWriteMode.TIME_ARR;
         else if (cls.isArray())
             return cls.getComponentType().isEnum() ? BinaryWriteMode.ENUM_ARR : BinaryWriteMode.OBJECT_ARR;
+        else if (cls == BinaryArray.class)
+            return BinaryWriteMode.OBJECT_ARR;
+        else if (cls == BinaryEnumArray.class)
+            return BinaryWriteMode.ENUM_ARR;
         else if (cls == BinaryObjectImpl.class)
             return BinaryWriteMode.BINARY_OBJ;
         else if (Binarylizable.class.isAssignableFrom(cls))
@@ -2004,7 +2034,10 @@ public class BinaryUtils {
                 return doReadTimeArray(in);
 
             case GridBinaryMarshaller.OBJ_ARR:
-                return doReadObjectArray(in, ctx, ldr, handles, detach, deserialize);
+                if (BinaryArray.useBinaryArrays() && !deserialize)
+                    return doReadBinaryArray(in, ctx, ldr, handles, detach, deserialize, false);
+                else
+                    return doReadObjectArray(in, ctx, ldr, handles, detach, deserialize);
 
             case GridBinaryMarshaller.COL:
                 return doReadCollection(in, ctx, ldr, handles, detach, deserialize, null);
@@ -2020,9 +2053,13 @@ public class BinaryUtils {
                 return doReadBinaryEnum(in, ctx, doReadEnumType(in));
 
             case GridBinaryMarshaller.ENUM_ARR:
-                doReadEnumType(in); // Simply skip this part as we do not need it.
+                if (BinaryArray.useBinaryArrays() && !deserialize)
+                    return doReadBinaryArray(in, ctx, ldr, handles, detach, deserialize, true);
+                else {
+                    doReadEnumType(in); // Simply skip this part as we do not need it.
 
-                return doReadBinaryEnumArray(in, ctx);
+                    return doReadBinaryEnumArray(in, ctx);
+                }
 
             case GridBinaryMarshaller.CLASS:
                 return doReadClass(in, ctx, ldr);
@@ -2056,14 +2093,58 @@ public class BinaryUtils {
 
         int len = in.readInt();
 
-        Object[] arr = deserialize ? (Object[])Array.newInstance(compType, len) : new Object[len];
+        Object[] arr = (deserialize && !BinaryObject.class.isAssignableFrom(compType))
+            ? (Object[])Array.newInstance(compType, len)
+            : new Object[len];
 
         handles.setHandle(arr, hPos);
+
+        for (int i = 0; i < len; i++) {
+            Object res = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
+
+            if (deserialize && BinaryArray.useBinaryArrays() && res instanceof BinaryObject)
+                arr[i] = ((BinaryObject)res).deserialize(ldr);
+            else
+                arr[i] = res;
+        }
+
+        return arr;
+    }
+
+    /**
+     * @param in Binary input stream.
+     * @param ctx Binary context.
+     * @param ldr Class loader.
+     * @param handles Holder for handles.
+     * @param detach Detach flag.
+     * @param deserialize Deep flag.
+     * @return Value.
+     * @throws BinaryObjectException In case of error.
+     */
+    public static BinaryArray doReadBinaryArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize, boolean isEnumArray) {
+        int hPos = positionForHandle(in);
+
+        int compTypeId = in.readInt();
+        String compClsName = null;
+
+        if (compTypeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+            compClsName = doReadClassName(in);
+
+        int len = in.readInt();
+
+        Object[] arr = new Object[len];
+
+        BinaryArray res = isEnumArray
+            ? new BinaryEnumArray(ctx, compTypeId, compClsName, arr)
+            : new BinaryArray(ctx, compTypeId, compClsName, arr);
+
+        handles.setHandle(res, hPos);
 
         for (int i = 0; i < len; i++)
             arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
 
-        return arr;
+        return res;
     }
 
     /**
@@ -2466,6 +2547,80 @@ public class BinaryUtils {
     }
 
     /**
+     * @param typeId Type id.
+     * @return Binary metadata file name.
+     */
+    public static String binaryMetaFileName(int typeId) {
+        return typeId + METADATA_FILE_SUFFIX;
+    }
+
+    /** @param fileName Name of file with marshaller mapping information. */
+    public static int mappedTypeId(String fileName) {
+        try {
+            return Integer.parseInt(fileName.substring(0, fileName.indexOf(MAPPING_FILE_EXTENSION)));
+        }
+        catch (NumberFormatException e) {
+            throw new IgniteException("Reading marshaller mapping from file "
+                + fileName
+                + " failed; type ID is expected to be numeric.", e);
+        }
+    }
+
+    /** @param fileName Name of file with marshaller mapping information. */
+    public static byte mappedFilePlatformId(String fileName) {
+        try {
+            return Byte.parseByte(fileName.substring(fileName.length() - 1));
+        }
+        catch (NumberFormatException e) {
+            throw new IgniteException("Reading marshaller mapping from file "
+                + fileName
+                + " failed; last symbol of file name is expected to be numeric.", e);
+        }
+    }
+
+    /** @param file File. */
+    public static String readMapping(File file) {
+        try (FileInputStream in = new FileInputStream(file)) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                if (file.length() == 0)
+                    return null;
+
+                return reader.readLine();
+            }
+
+        }
+        catch (IOException ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * @param platformId Platform id.
+     * @param typeId Type id.
+     */
+    public static String mappingFileName(byte platformId, int typeId) {
+        return typeId + MAPPING_FILE_EXTENSION + platformId;
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file is regular(not temporary).
+     */
+    public static boolean notTmpFile(File f) {
+        return !f.getName().endsWith(TMP_SUFFIX);
+    }
+
+    /**
+     * @param fileName File name.
+     * @return Type id
+     * @see #binaryMetaFileName(int)
+     * @see #METADATA_FILE_SUFFIX
+     */
+    public static int typeId(String fileName) {
+        return Integer.parseInt(fileName.substring(0, fileName.length() - METADATA_FILE_SUFFIX.length()));
+    }
+
+    /**
      * Get predefined write-replacer associated with class.
      *
      * @param cls Class.
@@ -2552,6 +2707,32 @@ public class BinaryUtils {
         }
 
         return mergedMap;
+    }
+
+    /**
+     * @param obj {@link BinaryArray} or {@code Object[]}.
+     * @return Objects array.
+     */
+    public static Object[] rawArrayFromBinary(Object obj) {
+        if (obj instanceof BinaryArray)
+            // We want raw data(no deserialization).
+            return ((BinaryArray)obj).array();
+        else
+            // This can happen even in BinaryArray.USE_TYPED_ARRAY = true.
+            // In case user pass special array type to arguments, String[], for example.
+            return (Object[])obj;
+    }
+
+    /** */
+    public static boolean isObjectArray(Class<?> cls) {
+        return Object[].class == cls || BinaryArray.class == cls || BinaryEnumArray.class == cls;
+    }
+
+    /** @return Type name of the specified object. If {@link BinaryObject} was specified its type will be returned. */
+    public static String typeName(Object obj) {
+        return obj instanceof BinaryObject
+            ? ((BinaryObject)obj).type().typeName()
+            : obj == null ? null : obj.getClass().getSimpleName();
     }
 
     /**

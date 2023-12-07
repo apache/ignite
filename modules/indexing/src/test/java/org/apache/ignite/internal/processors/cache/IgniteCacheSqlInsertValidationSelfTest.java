@@ -273,16 +273,21 @@ public class IgniteCacheSqlInsertValidationSelfTest extends AbstractIndexingComm
         return cache;
     }
 
+    /** */
     private static class Key {
+        /** */
         private long fk1;
 
+        /** */
         private long fk2;
 
+        /** */
         public Key(long fk1, long fk2) {
             this.fk1 = fk1;
             this.fk2 = fk2;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
@@ -293,49 +298,65 @@ public class IgniteCacheSqlInsertValidationSelfTest extends AbstractIndexingComm
                 fk2 == key.fk2;
         }
 
+        /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(fk1, fk2);
         }
     }
 
+    /** */
     private static class SuperKey {
+        /** */
         @QuerySqlField
         private long superKeyId;
 
+        /** */
         @QuerySqlField
         private NestedKey nestedKey;
 
+        /** */
         public SuperKey(long superKeyId, NestedKey nestedKey) {
             this.superKeyId = superKeyId;
             this.nestedKey = nestedKey;
         }
     }
 
+    /** */
     private static class NestedKey {
+        /** */
         @QuerySqlField
         private String name;
 
+        /** */
         public NestedKey(String name) {
             this.name = name;
         }
     }
 
+    /** */
     private static class Val {
+        /** */
         private long fv1;
 
+        /** */
         private long fv2;
 
+        /** */
         public Val(long fv1, long fv2) {
             this.fv1 = fv1;
             this.fv2 = fv2;
         }
     }
 
+    /** */
     private static class Val2 {
+        /** */
         private long fv1;
 
+        /** */
         private long fv2;
 
+        /** */
         public Val2(long fv1, long fv2) {
             this.fv1 = fv1;
             this.fv2 = fv2;

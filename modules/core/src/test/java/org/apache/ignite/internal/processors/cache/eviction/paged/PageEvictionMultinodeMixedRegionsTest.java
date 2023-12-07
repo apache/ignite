@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -47,7 +48,7 @@ public class PageEvictionMultinodeMixedRegionsTest extends PageEvictionMultinode
 
         super.beforeTestsStarted();
 
-        clientGrid().cluster().active(true);
+        clientGrid().cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */

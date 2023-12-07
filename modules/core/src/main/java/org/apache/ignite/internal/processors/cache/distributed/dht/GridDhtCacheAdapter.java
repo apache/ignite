@@ -31,6 +31,7 @@ import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -71,7 +72,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
@@ -232,30 +232,16 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                         entry.unswap();
 
-                        if (ctx.mvccEnabled()) {
-                            List<GridCacheEntryInfo> infos = entry.allVersionsInfo();
+                        GridCacheEntryInfo info = entry.info();
 
-                            if (infos == null) {
-                                assert entry.obsolete() : entry;
+                        if (info == null) {
+                            assert entry.obsolete() : entry;
 
-                                continue;
-                            }
-
-                            for (int i = 0; i < infos.size(); i++)
-                                res.addInfo(infos.get(i));
+                            continue;
                         }
-                        else {
-                            GridCacheEntryInfo info = entry.info();
 
-                            if (info == null) {
-                                assert entry.obsolete() : entry;
-
-                                continue;
-                            }
-
-                            if (!info.isNew())
-                                res.addInfo(info);
-                        }
+                        if (!info.isNew())
+                            res.addInfo(info);
 
                         entry.touch();
 
@@ -386,8 +372,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
-        ctx.io().addCacheHandler(ctx.cacheId(), GridCacheTtlUpdateRequest.class,
+    @Override public void onKernalStart() throws IgniteCheckedException {
+        super.onKernalStart();
+
+        assert !ctx.isRecoveryMode() : "Registering message handlers in recovery mode [cacheName=" + name() + ']';
+
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridCacheTtlUpdateRequest.class,
             (CI2<UUID, GridCacheTtlUpdateRequest>)this::processTtlUpdateRequest);
 
         ctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
@@ -498,9 +488,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             return;
         }
 
-        //TODO IGNITE-7954
-        MvccUtils.verifyMvccOperationSupport(ctx, "Load");
-
         final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         // Version for all loaded entries.
@@ -586,6 +573,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         false,
                         topVer,
                         replicate ? DR_LOAD : DR_NONE,
+                        true,
                         false);
                 }
                 catch (IgniteCheckedException e) {
@@ -655,11 +643,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
-        @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
-        boolean readRepair,
+        ReadRepairStrategy readRepairStrategy,
         boolean skipVals,
         boolean needVer
     ) {
@@ -669,11 +656,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             null,
             opCtx == null || !opCtx.skipStore(),
             /*don't check local tx. */false,
-            subjId,
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),
-            readRepair,
+            readRepairStrategy,
             forcePrimary,
             null,
             skipVals,
@@ -684,7 +670,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param keys Keys to get
      * @param readerArgs Reader will be added if not null.
      * @param readThrough Read through flag.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param expiry Expiry policy.
      * @param skipVals Skip values flag.
@@ -696,7 +681,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         Collection<KeyCacheObject> keys,
         @Nullable final ReaderArguments readerArgs,
         boolean readThrough,
-        @Nullable UUID subjId,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
@@ -708,14 +692,13 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             readerArgs,
             readThrough,
             /*don't check local tx. */false,
-            subjId,
             taskName,
             false,
             expiry,
             skipVals,
             /*keep cache objects*/true,
             recovery,
-            false,
+            null,
             /*need version*/true,
             txLbl,
             mvccSnapshot);
@@ -728,7 +711,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param addReaders Add readers flag.
      * @param readThrough Read through flag.
      * @param topVer Topology version.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param expiry Expiry policy.
      * @param skipVals Skip values flag.
@@ -742,7 +724,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean addReaders,
         boolean readThrough,
         AffinityTopologyVersion topVer,
-        @Nullable UUID subjId,
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
@@ -756,7 +737,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             keys,
             readThrough,
             topVer,
-            subjId,
             taskNameHash,
             expiry,
             skipVals,
@@ -777,7 +757,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param addRdr Add reader flag.
      * @param readThrough Read through flag.
      * @param topVer Topology version flag.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
      * @param expiry Expiry.
      * @param skipVals Skip vals flag.
@@ -792,7 +771,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean addRdr,
         boolean readThrough,
         AffinityTopologyVersion topVer,
-        @Nullable UUID subjId,
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
@@ -808,7 +786,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             addRdr,
             readThrough,
             topVer,
-            subjId,
             taskNameHash,
             expiry,
             skipVals,
@@ -838,7 +815,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 req.addReader(),
                 req.readThrough(),
                 req.topologyVersion(),
-                req.subjectId(),
                 req.taskNameHash(),
                 expiryPlc,
                 req.skipValues(),
@@ -944,7 +920,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 req.addReaders(),
                 req.readThrough(),
                 req.topologyVersion(),
-                req.subjectId(),
                 req.taskNameHash(),
                 expiryPlc,
                 req.skipValues(),
@@ -1003,7 +978,21 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param expiryPlc Expiry policy.
      */
     public void sendTtlUpdateRequest(@Nullable final IgniteCacheExpiryPolicy expiryPlc) {
-        if (expiryPlc != null && !F.isEmpty(expiryPlc.entries())) {
+        if (expiryPlc != null)
+            sendTtlUpdateRequest(expiryPlc, ctx.shared().exchange().readyAffinityVersion(), null);
+    }
+
+    /**
+     * @param expiryPlc Expiry policy.
+     * @param topVer Topology version.
+     * @param srcNodeId ID of the node that sent the initial ttl request.
+     */
+    private void sendTtlUpdateRequest(
+        IgniteCacheExpiryPolicy expiryPlc,
+        AffinityTopologyVersion topVer,
+        @Nullable UUID srcNodeId
+    ) {
+        if (!F.isEmpty(expiryPlc.entries())) {
             ctx.closures().runLocalSafe(new GridPlainRunnable() {
                 @SuppressWarnings({"ForLoopReplaceableByForEach"})
                 @Override public void run() {
@@ -1013,8 +1002,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                     Map<ClusterNode, GridCacheTtlUpdateRequest> reqMap = new HashMap<>();
 
-                    AffinityTopologyVersion topVer = ctx.shared().exchange().readyAffinityVersion();
-
                     for (Map.Entry<KeyCacheObject, GridCacheVersion> e : entries.entrySet()) {
                         ClusterNode primaryNode = ctx.affinity().primaryByKey(e.getKey(), topVer);
 
@@ -1023,6 +1010,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                             for (Iterator<ClusterNode> nodesIter = nodes.iterator(); nodesIter.hasNext(); ) {
                                 ClusterNode node = nodesIter.next();
+
+                                // There's no need to re-send ttl update request to the node
+                                // that sent the initial ttl update request.
+                                if (srcNodeId != null && srcNodeId.equals(node.id()))
+                                    continue;
+
                                 GridCacheTtlUpdateRequest req = reqMap.get(node);
 
                                 if (req == null) {
@@ -1035,6 +1028,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                             }
                         }
                         else {
+                            // There is no need to re-send ttl update requests if we are not on the primary node.
+                            if (srcNodeId != null)
+                                continue;
+
                             GridCacheTtlUpdateRequest req = reqMap.get(primaryNode);
 
                             if (req == null) {
@@ -1089,121 +1086,37 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /**
-     * @param srcNodeId The Id of a node that sends original ttl request.
-     * @param incomingReq Original ttl request.
-     */
-    private void sendTtlUpdateRequest(UUID srcNodeId, GridCacheTtlUpdateRequest incomingReq) {
-        ctx.closures().runLocalSafe(new GridPlainRunnable() {
-            @SuppressWarnings({"ForLoopReplaceableByForEach"})
-            @Override public void run() {
-                Map<ClusterNode, GridCacheTtlUpdateRequest> reqMap = new HashMap<>();
-
-                for (int i = 0; i < incomingReq.keys().size(); i++) {
-                    KeyCacheObject key = incomingReq.keys().get(i);
-
-                    // It's only required to broadcast ttl update requests if we are on primary node for given key.
-                    if (!ctx.affinity().primaryByKey(key, incomingReq.topologyVersion()).isLocal())
-                        continue;
-
-                    Collection<ClusterNode> nodes = ctx.affinity().backupsByKey(key, incomingReq.topologyVersion());
-
-                    for (Iterator<ClusterNode> nodesIter = nodes.iterator(); nodesIter.hasNext(); ) {
-                        ClusterNode node = nodesIter.next();
-
-                        // There's no need to send and update ttl request to the node that send us the initial
-                        // ttl update request.
-                        if (node.id().equals(srcNodeId))
-                            continue;
-
-                        GridCacheTtlUpdateRequest req = reqMap.get(node);
-
-                        if (req == null) {
-                            reqMap.put(node, req = new GridCacheTtlUpdateRequest(ctx.cacheId(),
-                                incomingReq.topologyVersion(),
-                                incomingReq.ttl()));
-                        }
-
-                        req.addEntry(key, incomingReq.version(i));
-                    }
-
-                    GridDhtCacheEntry entry = ctx.dht().entryExx(key, incomingReq.topologyVersion());
-
-                    Collection<UUID> readers = null;
-
-                    try {
-                        readers = entry.readers();
-                    }
-                    catch (GridCacheEntryRemovedException e) {
-                        U.error(log, "Failed to send TTL update request.", e);
-                    }
-
-                    for (UUID reader : readers) {
-                        // There's no need to send and update ttl request to the node that send us the initial
-                        // ttl update request.
-                        if (reader.equals(srcNodeId))
-                            continue;
-
-                        ClusterNode node = ctx.node(reader);
-
-                        if (node != null) {
-                            GridCacheTtlUpdateRequest req = reqMap.get(node);
-
-                            if (req == null) {
-                                reqMap.put(node, req = new GridCacheTtlUpdateRequest(ctx.cacheId(),
-                                    incomingReq.topologyVersion(),
-                                    incomingReq.ttl()));
-                            }
-
-                            req.addNearEntry(key, incomingReq.version(i));
-                        }
-                    }
-                }
-
-                for (Map.Entry<ClusterNode, GridCacheTtlUpdateRequest> req : reqMap.entrySet()) {
-                    try {
-                        ctx.io().send(req.getKey(), req.getValue(), ctx.ioPolicy());
-                    }
-                    catch (IgniteCheckedException e) {
-                        if (e instanceof ClusterTopologyCheckedException) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to send TTC update request, node left: " + req.getKey());
-                        }
-                        else
-                            U.error(log, "Failed to send TTL update request.", e);
-                    }
-                }
-            }
-        });
-    }
-
-    /**
      * @param req Request.
      */
     private void processTtlUpdateRequest(UUID srcNodeId, GridCacheTtlUpdateRequest req) {
+        final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.fromRemote(CU.TTL_NOT_CHANGED, req.ttl());
+
         if (req.keys() != null)
-            updateTtl(this, req.keys(), req.versions(), req.ttl());
+            updateTtl(this, req.keys(), req.versions(), expiryPlc);
 
         if (req.nearKeys() != null) {
             GridNearCacheAdapter<K, V> near = near();
 
             assert near != null;
 
-            updateTtl(near, req.nearKeys(), req.nearVersions(), req.ttl());
+            updateTtl(near, req.nearKeys(), req.nearVersions(), expiryPlc);
         }
 
-        sendTtlUpdateRequest(srcNodeId, req);
+        sendTtlUpdateRequest(expiryPlc, req.topologyVersion(), srcNodeId);
     }
 
     /**
      * @param cache Cache.
      * @param keys Entries keys.
      * @param vers Entries versions.
-     * @param ttl TTL.
+     * @param expiryPlc Expiry policy.
      */
-    private void updateTtl(GridCacheAdapter<K, V> cache,
+    private void updateTtl(
+        GridCacheAdapter<K, V> cache,
         List<KeyCacheObject> keys,
         List<GridCacheVersion> vers,
-        long ttl) {
+        IgniteCacheExpiryPolicy expiryPlc
+    ) {
         assert !F.isEmpty(keys);
         assert keys.size() == vers.size();
 
@@ -1220,7 +1133,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                             entry.unswap(false);
 
-                            entry.updateTtl(vers.get(i), ttl);
+                            entry.updateTtl(vers.get(i), expiryPlc);
 
                             break;
                         }
@@ -1276,36 +1189,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /**
-     * @param mapVer Mapped topology version.
-     * @param curVer Current topology version.
+     * @param rmtVer Topology version that the cache request was mapped to by the remote node.
      * @return {@code True} if cache affinity changed and operation should be remapped.
      */
-    protected final boolean needRemap(AffinityTopologyVersion mapVer, AffinityTopologyVersion curVer) {
-        if (curVer.equals(mapVer))
-            return false;
-
-        AffinityTopologyVersion lastAffChangedTopVer = ctx.shared().exchange().lastAffinityChangedTopologyVersion(mapVer);
-
-        if (curVer.isBetween(lastAffChangedTopVer, mapVer))
-            return false;
-
+    protected final boolean needRemap(AffinityTopologyVersion rmtVer) {
         // TODO IGNITE-7164 check mvcc crd for mvcc enabled txs.
-
-        Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), mapVer);
-        Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), curVer);
-
-        if (!cacheNodes0.equals(cacheNodes1) || ctx.affinity().affinityTopologyVersion().before(curVer))
-            return true;
-
-        try {
-            List<List<ClusterNode>> aff1 = ctx.affinity().assignments(mapVer);
-            List<List<ClusterNode>> aff2 = ctx.affinity().assignments(curVer);
-
-            return !aff1.equals(aff2);
-        }
-        catch (IllegalStateException ignored) {
-            return true;
-        }
+        return !ctx.affinity().isCompatibleWithCurrentTopologyVersion(rmtVer);
     }
 
     /**

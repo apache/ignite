@@ -121,10 +121,10 @@ public class EncryptionUtil {
     private void storeCRC(ByteBuffer res) {
         int crc = FastCrc.calcCrc(res, encryptedDataSize());
 
-        res.put((byte) (crc >> 24));
-        res.put((byte) (crc >> 16));
-        res.put((byte) (crc >> 8));
-        res.put((byte) crc);
+        res.put((byte)(crc >> 24));
+        res.put((byte)(crc >> 16));
+        res.put((byte)(crc >> 8));
+        res.put((byte)crc);
     }
 
     /**

@@ -114,16 +114,6 @@ namespace ignite
                 }
 
                 /**
-                 * Get column metadata.
-                 *
-                 * @return Column metadata.
-                 */
-                virtual const meta::ColumnMetaVector* GetMeta()
-                {
-                    return 0;
-                }
-
-                /**
                  * Check if data is available.
                  *
                  * @return True if data is available.

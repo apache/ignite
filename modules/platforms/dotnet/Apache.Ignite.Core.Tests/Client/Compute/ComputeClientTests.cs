@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
     public class ComputeClientTests : ClientTestBase
     {
         /** */
-        private const string TestTask = "org.apache.ignite.internal.client.thin.TestTask";
+        public const string TestTask = "org.apache.ignite.internal.client.thin.TestTask";
 
         /** */
         private const string TestResultCacheTask = "org.apache.ignite.internal.client.thin.TestResultCacheTask";
@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                 }
             }
 
-            Assert.IsEmpty(Client.GetActiveNotificationListeners());
+            TestUtils.WaitForTrueCondition(() => Client.GetActiveNotificationListeners().Count == 0);
         }
 
         /// <summary>

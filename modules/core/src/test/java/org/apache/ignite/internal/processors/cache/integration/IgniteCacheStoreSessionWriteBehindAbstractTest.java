@@ -184,7 +184,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
 
         /** {@inheritDoc} */
         @Override public void sessionEnd(boolean commit) throws CacheWriterException {
-            fail();
+            // No-op.
         }
 
         /** {@inheritDoc} */

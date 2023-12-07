@@ -36,7 +36,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  * Scan query request.
  */
 @SuppressWarnings({"unchecked", "rawtypes"})
-public class ClientCacheScanQueryRequest extends ClientCacheDataRequest implements ClientTxAwareRequest {
+public class ClientCacheScanQueryRequest extends ClientCacheQueryRequest implements ClientTxAwareRequest {
     /** Local flag. */
     private final boolean loc;
 
@@ -82,6 +82,9 @@ public class ClientCacheScanQueryRequest extends ClientCacheDataRequest implemen
             .setPartition(part)
             .setFilter(createFilter(ctx.kernalContext(), filterObj, filterPlatform));
 
+        if (part != null)
+            updateAffinityMetrics(ctx, part);
+
         ctx.incrementCursors();
 
         try {
@@ -108,7 +111,7 @@ public class ClientCacheScanQueryRequest extends ClientCacheDataRequest implemen
      * @return Filter.
      * @param ctx Context.
      */
-    public static IgniteBiPredicate createFilter(GridKernalContext ctx, Object filterObj, byte filterPlatform) {
+    private static IgniteBiPredicate createFilter(GridKernalContext ctx, Object filterObj, byte filterPlatform) {
         if (filterObj == null)
             return null;
 

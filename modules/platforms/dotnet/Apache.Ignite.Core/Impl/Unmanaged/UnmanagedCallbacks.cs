@@ -466,9 +466,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// Called on cache stop.
         /// </summary>
         /// <param name="cacheId">Cache id.</param>
-        private long OnCacheStopped(long cacheId)
+        /// <param name="cancel">Cancel flag.</param>
+        /// <param name="destroy">Destroy flag.</param>
+        /// <param name="arg">Ignored.</param>
+        private long OnCacheStopped(long cacheId, long cancel, long destroy, void* arg)
         {
-            _ignite.PlatformCacheManager.Stop((int) cacheId);
+            _ignite.PlatformCacheManager.Stop((int) cacheId, destroy == 1L);
 
             return 0;
         }
@@ -1021,10 +1024,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     var srvKeepBinary = reader.ReadBoolean();
                     var svc = reader.ReadObject<IService>();
+                    var interceptors = reader.ReadObject<ICollection<IServiceCallInterceptor>>();
+                    var svcCtx = new ServiceContext(svc, WrapInterceptors(interceptors),
+                        srvKeepBinary ? _ignite.Marshaller.StartUnmarshal(stream, true) : reader);
 
                     ResourceProcessor.Inject(svc, _ignite);
 
-                    svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
+                    svc.Init(svcCtx);
 
                     stream.Reset();
 
@@ -1032,7 +1038,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     stream.SynchronizeOutput();
 
-                    return _handleRegistry.Allocate(svc);
+                    return _handleRegistry.Allocate(svcCtx);
                 }
                 catch (Exception e)
                 {
@@ -1051,22 +1057,36 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        /// <summary>
+        /// Wraps a collection of interceptors into a composite interceptor.
+        /// </summary>
+        /// <param name="interceptors">Service call interceptors.</param>
+        /// <returns>Composite service call interceptor or null.</returns>
+        private IServiceCallInterceptor WrapInterceptors(ICollection<IServiceCallInterceptor> interceptors)
+        {
+            if (interceptors == null || interceptors.Count == 0)
+                return null;
+            
+            // Inject Ignite instance resource.
+            foreach (var interceptor in interceptors)
+                ResourceProcessor.Inject(interceptor, _ignite);
+
+            // Wrap into a composite interceptor if necessary.
+            return interceptors.Count == 1 ? interceptors.First() : new CompositeServiceCallInterceptor(interceptors);
+        }
+
         private long ServiceExecute(long memPtr)
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var svc = _handleRegistry.Get<IService>(stream.ReadLong());
+                var svcCtx = _handleRegistry.Get<ServiceContext>(stream.ReadLong());
 
                 // Ignite does not guarantee that Cancel is called after Execute exits
                 // So missing handle is a valid situation
-                if (svc == null)
+                if (svcCtx == null)
                     return 0;
 
-                var reader = _ignite.Marshaller.StartUnmarshal(stream);
-
-                bool srvKeepBinary = reader.ReadBoolean();
-
-                svc.Execute(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
+                svcCtx.Service.Execute(svcCtx);
 
                 return 0;
             }
@@ -1080,13 +1100,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 try
                 {
-                    var svc = _handleRegistry.Get<IService>(svcPtr, true);
+                    var svcCtx = _handleRegistry.Get<ServiceContext>(svcPtr, true);
 
-                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
+                    svcCtx.IsCancelled = true;
 
-                    bool srvKeepBinary = reader.ReadBoolean();
-
-                    svc.Cancel(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
+                    svcCtx.Service.Cancel(svcCtx);
 
                     return 0;
                 }
@@ -1101,20 +1119,38 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var svc = _handleRegistry.Get<IService>(stream.ReadLong(), true);
+                var svcCtx = _handleRegistry.Get<ServiceContext>(stream.ReadLong(), true);
 
                 string mthdName;
                 object[] mthdArgs;
+                IServiceCallContext callCtx;
+                IServiceCallContext prevCallCtx = null;
 
-                ServiceProxySerializer.ReadProxyMethod(stream, _ignite.Marshaller, out mthdName, out mthdArgs);
+                ServiceProxySerializer.ReadProxyMethod(stream, _ignite.Marshaller, out mthdName, out mthdArgs, out callCtx);
 
-                var result = ServiceProxyInvoker.InvokeServiceMethod(svc, mthdName, mthdArgs);
+                if (callCtx != null)
+                {
+                    // One service can be called from another in the same thread.
+                    prevCallCtx = svcCtx.CurrentCallContext;
 
-                stream.Reset();
+                    ServiceContext.SetCurrentCallContext(callCtx);
+                }
 
-                ServiceProxySerializer.WriteInvocationResult(stream, _ignite.Marshaller, result.Key, result.Value);
+                try
+                {
+                    var result = ServiceProxyInvoker.InvokeServiceMethod(svcCtx, mthdName, mthdArgs);
 
-                stream.SynchronizeOutput();
+                    stream.Reset();
+
+                    ServiceProxySerializer.WriteInvocationResult(stream, _ignite.Marshaller, result.Key, result.Value);
+
+                    stream.SynchronizeOutput();
+                }
+                finally
+                {
+                    if (callCtx != null)
+                        ServiceContext.SetCurrentCallContext(prevCallCtx);
+                }
 
                 return 0;
             }
@@ -1150,6 +1186,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return 0;
         }
 
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
+            Justification = "proc0 is saved for later use.")]
         private long OnStart(long memPtr, long unused, long unused1, void* proc)
         {
             var proc0 = _jvm.AttachCurrentThread().NewGlobalRef((IntPtr) proc);

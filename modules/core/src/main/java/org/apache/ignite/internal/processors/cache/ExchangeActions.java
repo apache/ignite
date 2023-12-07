@@ -57,6 +57,9 @@ public class ExchangeActions {
     private Map<String, CacheActionData> cachesToResetLostParts;
 
     /** */
+    private DynamicCacheChangeRequest finalizePartitionCountersReq;
+
+    /** */
     private LocalJoinCachesContext locJoinCtx;
 
     /** */
@@ -93,7 +96,8 @@ public class ExchangeActions {
             F.isEmpty(cachesToStop) &&
             F.isEmpty(cacheGrpsToStart) &&
             F.isEmpty(cacheGrpsToStop) &&
-            F.isEmpty(cachesToResetLostParts);
+            F.isEmpty(cachesToResetLostParts) &&
+            finalizePartitionCountersReq == null;
     }
 
     /**
@@ -118,6 +122,9 @@ public class ExchangeActions {
         completeRequestFutures(cachesToStart, ctx, err);
         completeRequestFutures(cachesToStop, ctx, err);
         completeRequestFutures(cachesToResetLostParts, ctx, err);
+
+        if (finalizePartitionCountersReq != null)
+            ctx.cache().completeCacheStartFuture(finalizePartitionCountersReq, (err == null), err);
     }
 
     /**
@@ -165,7 +172,14 @@ public class ExchangeActions {
         if (cachesToResetLostParts != null)
             caches = new HashSet<>(cachesToResetLostParts.keySet());
 
-        return caches != null ? caches : Collections.<String>emptySet();
+        return caches != null ? caches : Collections.emptySet();
+    }
+
+    /**
+     * @return Partitons update counters finalization required.
+     */
+    public boolean finalizePartitionCounters() {
+        return finalizePartitionCountersReq != null;
     }
 
     /**
@@ -293,6 +307,15 @@ public class ExchangeActions {
     }
 
     /**
+     * @param req Request.
+     */
+    void addFinalizePartitionCounters(DynamicCacheChangeRequest req) {
+        assert req.finalizePartitionCounters() : req;
+
+        finalizePartitionCountersReq = req;
+    }
+
+    /**
      * @param grpDesc Group descriptor.
      */
     void addCacheGroupToStart(CacheGroupDescriptor grpDesc) {
@@ -387,6 +410,7 @@ public class ExchangeActions {
             F.isEmpty(cacheGrpsToStart) &&
             F.isEmpty(cacheGrpsToStop) &&
             F.isEmpty(cachesToResetLostParts) &&
+            finalizePartitionCountersReq == null &&
             stateChangeReq == null &&
             locJoinCtx == null;
     }
@@ -446,10 +470,10 @@ public class ExchangeActions {
      *
      */
     public static class CacheGroupActionData {
-        /** */
+        /** Cache group descriptor. */
         private final CacheGroupDescriptor desc;
 
-        /** */
+        /** Destroy flag. */
         private final boolean destroy;
 
         /**
@@ -503,6 +527,7 @@ public class ExchangeActions {
             ", startGrps=" + startGrps +
             ", stopGrps=" + stopGrps +
             ", resetParts=" + (cachesToResetLostParts != null ? cachesToResetLostParts.keySet() : null) +
+            ", finalizePartitionCounters=" + (finalizePartitionCountersReq != null) +
             ", stateChangeRequest=" + stateChangeReq + ']';
     }
 }

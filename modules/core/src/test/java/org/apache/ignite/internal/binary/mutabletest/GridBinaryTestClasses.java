@@ -323,7 +323,14 @@ public class GridBinaryTestClasses {
      *
      */
     public enum TestObjectEnum {
-        A, B, C
+        /** */
+        A,
+
+        /** */
+        B,
+
+        /** */
+        C
     }
 
     /**

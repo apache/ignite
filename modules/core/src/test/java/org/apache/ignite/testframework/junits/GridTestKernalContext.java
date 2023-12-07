@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -40,6 +39,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 
 /**
  * Test context.
@@ -68,24 +69,6 @@ public class GridTestKernalContext extends GridKernalContextImpl {
                 new IgniteKernal(null),
                 cfg,
                 new GridKernalGatewayImpl(null),
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
                 cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0 ?
                     Arrays.asList(cfg.getPluginProviders()) : U.allPluginProviders(),
                 null,
@@ -113,8 +96,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      * @throws IgniteCheckedException If failed
      */
     public void start() throws IgniteCheckedException {
-        for (GridComponent comp : this)
-            comp.start();
+        startAllComponents(this);
     }
 
     /**
@@ -131,24 +113,6 @@ public class GridTestKernalContext extends GridKernalContextImpl {
 
             comp.stop(cancel);
         }
-    }
-
-    /**
-     * Sets system executor service.
-     *
-     * @param sysExecSvc Executor service
-     */
-    public void setSystemExecutorService(ExecutorService sysExecSvc) {
-        this.sysExecSvc = sysExecSvc;
-    }
-
-    /**
-     * Sets executor service.
-     *
-     * @param execSvc Executor service
-     */
-    public void setExecutorService(ExecutorService execSvc) {
-        this.execSvc = execSvc;
     }
 
     /** {@inheritDoc} */

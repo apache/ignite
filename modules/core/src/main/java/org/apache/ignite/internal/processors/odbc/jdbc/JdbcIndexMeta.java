@@ -20,11 +20,15 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
+import org.apache.ignite.internal.cache.query.index.SortOrder;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -58,26 +62,24 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
     }
 
     /**
-     * @param schemaName Schema name.
-     * @param tblName Table name.
-     * @param idx Index info.
+     * @param idx Index descriptor.
      */
-    JdbcIndexMeta(String schemaName, String tblName, GridQueryIndexDescriptor idx) {
-        assert tblName != null;
-        assert idx != null;
-        assert idx.fields() != null;
-
-        this.schemaName = schemaName;
-        this.tblName = tblName;
-
+    JdbcIndexMeta(IndexDescriptor idx) {
+        schemaName = idx.table().type().schemaName();
+        tblName = idx.table().type().tableName();
         idxName = idx.name();
+
         type = idx.type();
-        fields = new ArrayList(idx.fields());
 
-        fieldsAsc = new ArrayList<>(fields.size());
+        Set<Map.Entry<String, IndexKeyDefinition>> keyDefinitions = idx.keyDefinitions().entrySet();
 
-        for (int i = 0; i < fields.size(); ++i)
-            fieldsAsc.add(!idx.descending(fields.get(i)));
+        fields = new ArrayList<>(keyDefinitions.size());
+        fieldsAsc = new ArrayList<>(keyDefinitions.size());
+
+        for (Map.Entry<String, IndexKeyDefinition> keyDef : keyDefinitions) {
+            fields.add(keyDef.getKey());
+            fieldsAsc.add(keyDef.getValue().order().sortOrder() == SortOrder.ASC);
+        }
     }
 
     /**

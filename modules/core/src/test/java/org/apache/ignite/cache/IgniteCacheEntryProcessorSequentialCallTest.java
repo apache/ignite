@@ -40,9 +40,6 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
     private static final String CACHE = "cache";
 
     /** */
-    private static final String MVCC_CACHE = "mvccCache";
-
-    /** */
     private String cacheName;
 
     /** {@inheritDoc} */
@@ -68,10 +65,7 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
 
         CacheConfiguration ccfg = cacheConfiguration(CACHE);
 
-        CacheConfiguration mvccCfg = cacheConfiguration(MVCC_CACHE)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
-
-        cfg.setCacheConfiguration(ccfg, mvccCfg);
+        cfg.setCacheConfiguration(ccfg);
 
         return cfg;
     }
@@ -151,18 +145,6 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
         transactionInvokeSequentialCallOnPrimaryNode(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
 
         transactionInvokeSequentialCallOnNearNode(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testMvccTxInvokeSequentialCall() throws Exception {
-        cacheName = MVCC_CACHE;
-
-        transactionInvokeSequentialCallOnPrimaryNode(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
-
-        transactionInvokeSequentialCallOnNearNode(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
     }
 
     /**

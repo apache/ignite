@@ -57,7 +57,7 @@ public class IgniteDiscoveryCacheReuseSelfTest extends GridCommonAbstractTest {
         GridTestUtils.waitForCondition(() -> {
             boolean verChanged = true;
             for (Ignite ignite : G.allGrids())
-                verChanged &= ((IgniteEx) ignite).context().discovery().topologyVersionEx().equals(waited);
+                verChanged &= ((IgniteEx)ignite).context().discovery().topologyVersionEx().equals(waited);
             return verChanged;
         }, 5000);
 
@@ -73,7 +73,7 @@ public class IgniteDiscoveryCacheReuseSelfTest extends GridCommonAbstractTest {
     private void assertDiscoCacheReuse(AffinityTopologyVersion v1, AffinityTopologyVersion v2) {
         for (Ignite ignite : G.allGrids()) {
             GridBoundedConcurrentLinkedHashMap<AffinityTopologyVersion, DiscoCache> discoCacheHist =
-                U.field(((IgniteEx) ignite).context().discovery(), "discoCacheHist");
+                U.field(((IgniteEx)ignite).context().discovery(), "discoCacheHist");
 
             DiscoCache discoCache1 = discoCacheHist.get(v1);
             DiscoCache discoCache2 = discoCacheHist.get(v2);
@@ -82,7 +82,7 @@ public class IgniteDiscoveryCacheReuseSelfTest extends GridCommonAbstractTest {
             assertEquals(v2, discoCache2.version());
 
             String[] props = new String[] {
-                "state", "loc", "rmtNodes", "allNodes", "srvNodes", "daemonNodes", "rmtNodesWithCaches",
+                "state", "loc", "rmtNodes", "allNodes", "srvNodes", "rmtNodesWithCaches",
                 "allCacheNodes", "allCacheNodes", "cacheGrpAffNodes", "nodeMap", "minNodeVer"
             };
 

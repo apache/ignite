@@ -67,11 +67,9 @@ namespace Apache.Ignite.Linq.Impl
             GetParameterizedTrimMethod("Trim", "trim"),
             GetParameterizedTrimMethod("TrimStart", "ltrim"),
             GetParameterizedTrimMethod("TrimEnd", "rtrim"),
-#if NETCOREAPP
             GetCharTrimMethod("Trim", "trim"),
             GetCharTrimMethod("TrimStart", "ltrim"),
             GetCharTrimMethod("TrimEnd", "rtrim"),
-#endif
             GetStringMethod("Replace", "replace", typeof(string), typeof(string)),
             GetStringMethod("PadLeft", "lpad", typeof (int)),
             GetStringMethod("PadLeft", "lpad", typeof (int), typeof (char)),
@@ -128,7 +126,9 @@ namespace Apache.Ignite.Linq.Impl
             GetMathMethod("Tanh", typeof (double)),
             GetMathMethod("Truncate", typeof (double)),
             GetMathMethod("Truncate", typeof (decimal)),
-        }.ToDictionary(x => x.Key, x => x.Value);
+        }
+            .Where(x => x.Key != null)
+            .ToDictionary(x => x.Key, x => x.Value);
 
         /// <summary> RegexOptions transformations. </summary>
         private static readonly Dictionary<RegexOptions, string> RegexOptionFlags = new Dictionary<RegexOptions, string>
@@ -217,7 +217,7 @@ namespace Apache.Ignite.Linq.Impl
         private static void VisitFunc(MethodCallExpression expression, CacheQueryExpressionVisitor visitor,
             string func, string suffix, params int[] adjust)
         {
-            visitor.ResultBuilder.Append(func).Append("(");
+            visitor.ResultBuilder.Append(func).Append('(');
 
             var isInstanceMethod = expression.Object != null;
 
@@ -236,7 +236,7 @@ namespace Apache.Ignite.Linq.Impl
                 AppendAdjustment(visitor, adjust, i + 1);
             }
 
-            visitor.ResultBuilder.Append(suffix).Append(")");
+            visitor.ResultBuilder.Append(suffix).Append(')');
 
             AppendAdjustment(visitor, adjust, 0);
         }
@@ -247,7 +247,7 @@ namespace Apache.Ignite.Linq.Impl
         private static void VisitParameterizedTrimFunc(MethodCallExpression expression,
             CacheQueryExpressionVisitor visitor, string func)
         {
-            visitor.ResultBuilder.Append(func).Append("(");
+            visitor.ResultBuilder.Append(func).Append('(');
 
             visitor.Visit(expression.Object);
 
@@ -291,7 +291,7 @@ namespace Apache.Ignite.Linq.Impl
                 }
             }
 
-            visitor.ResultBuilder.Append(")");
+            visitor.ResultBuilder.Append(')');
         }
 
         /// <summary>
@@ -316,7 +316,7 @@ namespace Apache.Ignite.Linq.Impl
         private static void VisitSqlLike(MethodCallExpression expression, CacheQueryExpressionVisitor visitor,
             string likeFormat)
         {
-            visitor.ResultBuilder.Append("(");
+            visitor.ResultBuilder.Append('(');
 
             visitor.Visit(expression.Object);
 
@@ -380,7 +380,7 @@ namespace Apache.Ignite.Linq.Impl
             visitor.Visit(expression.Arguments[idx]);
 
             if (lower)
-                visitor.ResultBuilder.Append(")");
+                visitor.ResultBuilder.Append(')');
         }
 
         /// <summary>
@@ -431,7 +431,6 @@ namespace Apache.Ignite.Linq.Impl
                 (e, v) => VisitParameterizedTrimFunc(e, v, sqlName));
         }
 
-#if NETCOREAPP
         /// <summary>
         /// Gets string parameterized Trim(TrimStart, TrimEnd) method that takes a single char.
         /// </summary>
@@ -441,8 +440,7 @@ namespace Apache.Ignite.Linq.Impl
             return GetMethod(typeof(string), name, new[] {typeof(char)},
                 (e, v) => VisitParameterizedTrimFunc(e, v, sqlName));
         }
-#endif
-        
+
         /// <summary>
         /// Gets the math method.
         /// </summary>

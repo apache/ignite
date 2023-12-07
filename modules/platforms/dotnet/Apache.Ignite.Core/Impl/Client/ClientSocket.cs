@@ -74,6 +74,8 @@ namespace Apache.Ignite.Core.Impl.Client
         private const byte ClientType = 2;
 
         /** Underlying socket. */
+        [SuppressMessage("Microsoft.Design", "CA2213:DisposableFieldsShouldBeDisposed",
+            Justification = "Disposed by _stream.Close call.")]
         private readonly Socket _socket;
 
         /** Underlying socket stream. */
@@ -84,6 +86,9 @@ namespace Apache.Ignite.Core.Impl.Client
 
         /** Request timeout checker. */
         private readonly Timer _timeoutCheckTimer;
+
+        /** Heartbeat timer. */
+        private readonly Timer _heartbeatTimer;
 
         /** Callback checker guard. */
         private volatile bool _checkingTimeouts;
@@ -135,6 +140,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Features. */
         private readonly ClientFeatures _features;
 
+        /** Effective heartbeat interval. */
+        private readonly TimeSpan _heartbeatInterval;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientSocket" /> class.
         /// </summary>
@@ -168,6 +176,21 @@ namespace Apache.Ignite.Core.Impl.Client
 
             _features = Handshake(clientConfiguration, ServerVersion);
 
+            if (clientConfiguration.EnableHeartbeats)
+            {
+                if (_features.HasFeature(ClientBitmaskFeature.Heartbeat))
+                {
+                    _heartbeatInterval = GetHeartbeatInterval(clientConfiguration);
+
+                    _heartbeatTimer = new Timer(SendHeartbeat, null, dueTime: _heartbeatInterval,
+                        period: TimeSpan.FromMilliseconds(-1));
+                }
+                else
+                {
+                    _logger.Warn("Heartbeats are enabled, but server does not support heartbeat feature.");
+                }
+            }
+
             // Check periodically if any request has timed out.
             if (_timeout > TimeSpan.Zero)
             {
@@ -178,6 +201,46 @@ namespace Apache.Ignite.Core.Impl.Client
             // Continuously and asynchronously wait for data from server.
             // TaskCreationOptions.LongRunning actually means a new thread.
             TaskRunner.Run(WaitForMessages, TaskCreationOptions.LongRunning);
+        }
+
+        /// <summary>
+        /// Gets the heartbeat interval according to server-side and client-side configuration.
+        /// </summary>
+        private TimeSpan GetHeartbeatInterval(IgniteClientConfiguration clientConfiguration)
+        {
+            var serverIdleTimeoutMs = DoOutInOp(
+                ClientOp.GetIdleTimeout, null, r => r.Reader.ReadLong());
+
+            // ReSharper disable once PossibleLossOfFraction
+            var recommendedHeartbeatInterval = TimeSpan.FromMilliseconds(serverIdleTimeoutMs / 3);
+
+            if (recommendedHeartbeatInterval > TimeSpan.Zero)
+            {
+                if (clientConfiguration.HeartbeatInterval < recommendedHeartbeatInterval)
+                {
+                    _logger.Info(
+                        $"Server-side IdleTimeout is {serverIdleTimeoutMs}ms, " +
+                        $"using configured {nameof(IgniteClientConfiguration)}." +
+                        $"{nameof(IgniteClientConfiguration.HeartbeatInterval)}: " +
+                        clientConfiguration.HeartbeatInterval);
+
+                    return clientConfiguration.HeartbeatInterval;
+                }
+
+                _logger.Warn(
+                    $"Server-side IdleTimeout is {serverIdleTimeoutMs}ms, configured " +
+                    $"{nameof(IgniteClientConfiguration)}.{nameof(IgniteClientConfiguration.HeartbeatInterval)} " +
+                    $"is {clientConfiguration.HeartbeatInterval}, which is longer than recommended IdleTimeout / 3. " +
+                    $"Overriding heartbeat interval with IdleTimeout / 3: {recommendedHeartbeatInterval}");
+
+                return recommendedHeartbeatInterval;
+            }
+
+            _logger.Info(
+                $"Server-side IdleTimeout is not set, using configured {nameof(IgniteClientConfiguration)}." +
+                $"{nameof(IgniteClientConfiguration.HeartbeatInterval)}: {clientConfiguration.HeartbeatInterval}");
+
+            return clientConfiguration.HeartbeatInterval;
         }
 
         /// <summary>
@@ -203,11 +266,20 @@ namespace Apache.Ignite.Core.Impl.Client
                 if (cfg.UserName == null)
                     throw new IgniteClientException("IgniteClientConfiguration.UserName cannot be null when Password is set.");
             }
+
+            if (cfg.HeartbeatInterval <= TimeSpan.Zero)
+            {
+                throw new IgniteClientException(
+                    $"{nameof(IgniteClientConfiguration)}.{nameof(IgniteClientConfiguration.HeartbeatInterval)} " +
+                    "cannot be zero or less.");
+            }
         }
 
         /// <summary>
         /// Performs a send-receive operation.
         /// </summary>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
+            Justification = "BinaryHeapStream does not need to be disposed.")]
         public T DoOutInOp<T>(ClientOp opId, Action<ClientRequestContext> writeAction,
             Func<ClientResponseContext, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
         {
@@ -225,7 +297,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// Performs a send-receive operation asynchronously.
         /// </summary>
         public Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<ClientRequestContext> writeAction,
-            Func<ClientResponseContext, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
+            Func<ClientResponseContext, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null,
+            bool syncCallback = false)
         {
             // Encode.
             var reqMsg = WriteMessage(writeAction, opId);
@@ -234,6 +307,12 @@ namespace Apache.Ignite.Core.Impl.Client
             var task = SendRequestAsync(ref reqMsg);
 
             // Decode.
+            if (syncCallback)
+            {
+                return task.ContWith(responseTask => DecodeResponse(responseTask.Result, readFunc, errorFunc),
+                    TaskContinuationOptions.ExecuteSynchronously);
+            }
+
             // NOTE: ContWith explicitly uses TaskScheduler.Default,
             // which runs DecodeResponse (and any user continuations) on a thread pool thread,
             // so that WaitForMessages thread does not do anything except reading from the socket.
@@ -405,6 +484,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Handles the response.
         /// </summary>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
+            Justification = "BinaryHeapStream does not need to be disposed.")]
         private void HandleResponse(byte[] response)
         {
             var stream = new BinaryHeapStream(response);
@@ -754,6 +835,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Writes the message to a byte array.
         /// </summary>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
+            Justification = "BinaryHeapStream does not need to be disposed.")]
         private static byte[] WriteMessage(Action<IBinaryStream> writeAction, int bufSize, out int messageLen)
         {
             var stream = new BinaryHeapStream(bufSize);
@@ -769,6 +852,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Writes the message to a byte array.
         /// </summary>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
+            Justification = "BinaryHeapStream does not need to be disposed.")]
         private RequestMessage WriteMessage(Action<ClientRequestContext> writeAction, ClientOp opId)
         {
             _features.ValidateOp(opId);
@@ -804,6 +889,9 @@ namespace Apache.Ignite.Core.Impl.Client
             try
             {
                 _stream.Write(buf, 0, len);
+
+                // Reset heartbeat timer - don't sent heartbeats when connection is active anyway.
+                _heartbeatTimer?.Change(dueTime: _heartbeatInterval, period: TimeSpan.FromMilliseconds(-1));
             }
             catch (Exception e)
             {
@@ -866,6 +954,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets the socket stream.
         /// </summary>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
+            Justification = "Stream is returned from this method.")]
         private static Stream GetSocketStream(Socket socket, IgniteClientConfiguration cfg, string host)
         {
             var stream = new NetworkStream(socket, ownsSocket: true)
@@ -915,6 +1005,24 @@ namespace Apache.Ignite.Core.Impl.Client
             finally
             {
                 _checkingTimeouts = false;
+            }
+        }
+
+        /// <summary>
+        /// Sends heartbeat message.
+        /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "Thread root must catch all exceptions to avoid crashing the process.")]
+        private void SendHeartbeat(object unused)
+        {
+            try
+            {
+                DoOutInOp<object>(ClientOp.Heartbeat, null, null);
+            }
+            catch (Exception e)
+            {
+                _exception = e;
+                Dispose();
             }
         }
 
@@ -989,22 +1097,29 @@ namespace Apache.Ignite.Core.Impl.Client
                     return;
                 }
 
+                // Set disposed state before ending requests so that request continuations see disconnected socket.
+                _isDisposed = true;
+
+                // Stop heartbeat timer before closing the socket.
+                _heartbeatTimer?.Dispose();
+
                 _exception = _exception ?? new ObjectDisposedException(typeof(ClientSocket).FullName);
                 EndRequestsWithError();
-                
+
                 // This will call Socket.Shutdown and Socket.Close.
                 _stream.Close();
-                
+
                 _listenerEvent.Set();
                 _listenerEvent.Dispose();
 
-                if (_timeoutCheckTimer != null)
-                {
-                    _timeoutCheckTimer.Dispose();
-                }
-
-                _isDisposed = true;
+                _timeoutCheckTimer?.Dispose();
             }
+        }
+
+        /** <inheritDoc /> */
+        public override string ToString()
+        {
+            return string.Format("ClientSocket [RemoteEndPoint={0}]", RemoteEndPoint);
         }
 
         /// <summary>

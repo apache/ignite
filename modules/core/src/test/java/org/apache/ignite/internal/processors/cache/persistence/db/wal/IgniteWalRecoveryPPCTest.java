@@ -22,6 +22,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -143,7 +144,7 @@ public class IgniteWalRecoveryPPCTest extends GridCommonAbstractTest {
         try {
             IgniteEx ignite = startGrid(1);
 
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_NAME_1);
             IgniteCache<Object, Object> cache2 = ignite.cache(CACHE_NAME_2);
@@ -201,7 +202,7 @@ public class IgniteWalRecoveryPPCTest extends GridCommonAbstractTest {
 
             ignite = startGrid(1);
 
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             cache1 = ignite.cache(CACHE_NAME_1);
             cache2 = ignite.cache(CACHE_NAME_2);
@@ -240,7 +241,7 @@ public class IgniteWalRecoveryPPCTest extends GridCommonAbstractTest {
         try {
             IgniteEx ignite = startGrid(1);
 
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             IgniteCache<Integer, Object> dynamicPersistent = ignite.getOrCreateCache(
                 new CacheConfiguration<Integer, Object>()
@@ -266,7 +267,7 @@ public class IgniteWalRecoveryPPCTest extends GridCommonAbstractTest {
 
             ignite = startGrid(1);
 
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             dynamicPersistent = ignite.cache("dynamicPersistent");
             dynamicVolatile = ignite.cache("dynamicVolatile");

@@ -46,12 +46,16 @@ public class LruEvictionPolicyFactory<K, V> extends AbstractEvictionPolicyFactor
     public LruEvictionPolicyFactory() {
     }
 
-    /** */
+    /** @param maxSize Maximum allowed size of cache before entry will start getting evicted. */
     public LruEvictionPolicyFactory(int maxSize) {
         setMaxSize(maxSize);
     }
 
-    /** */
+    /**
+     * @param maxSize Maximum allowed size of cache before entry will start getting evicted.
+     * @param batchSize Batch size.
+     * @param maxMemSize Maximum allowed cache size in bytes.
+     */
     public LruEvictionPolicyFactory(int maxSize, int batchSize, long maxMemSize) {
         setMaxSize(maxSize);
         setBatchSize(batchSize);

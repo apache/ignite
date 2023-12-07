@@ -48,7 +48,7 @@ public class AffinityKey {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        AffinityKey that = (AffinityKey) o;
+        AffinityKey that = (AffinityKey)o;
 
         return key == that.key && aff == that.aff;
     }

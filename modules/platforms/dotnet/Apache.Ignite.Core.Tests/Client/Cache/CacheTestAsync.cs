@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
-    using System;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client.Cache;
@@ -43,14 +42,23 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestAsyncContinuationIsExecutedOnThreadPool()
         {
             var cache = base.GetClientCache<int>();
-            var task = cache.PutAsync(1, 1).ContinueWith(_ =>
+            int? threadId1 = null;
+            int? threadId2 = null;
+
+            cache.PutAsync(1, 1).ContinueWith(_ =>
             {
-                Thread.CurrentThread.Abort();
+                threadId1 = Thread.CurrentThread.ManagedThreadId;
+                Thread.Sleep(3000);
             }, TaskContinuationOptions.ExecuteSynchronously);
 
-            Assert.Throws<AggregateException>(() => task.Wait());
+            cache.PutAsync(1, 1).ContinueWith(_ =>
+            {
+                threadId2 = Thread.CurrentThread.ManagedThreadId;
+                Thread.Sleep(3000);
+            }, TaskContinuationOptions.ExecuteSynchronously);
 
-            Assert.AreEqual(1, cache.GetAsync(1).Result);
+            TestUtils.WaitForTrueCondition(
+                () => threadId1 != null && threadId2 != null && threadId1.Value != threadId2.Value);
         }
     }
 }

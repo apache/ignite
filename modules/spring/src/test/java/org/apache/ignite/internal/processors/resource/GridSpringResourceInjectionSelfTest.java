@@ -282,6 +282,25 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
         }, grid, NoSuchBeanDefinitionException.class, "No bean named 'nonExistentResource' available");
     }
 
+    /** */
+    @Test
+    public void testClosureMethodWithNotRequiredWrongResourceName() {
+        grid.compute().call(new IgniteCallable<Object>() {
+            private AnotherDummyResourceBean dummyRsrcBean;
+
+            @SpringResource(resourceName = "nonExistentResource", required = false)
+            private void setDummyResourceBean(AnotherDummyResourceBean dummyRsrcBean) {
+                this.dummyRsrcBean = dummyRsrcBean;
+            }
+
+            @Override public Object call() {
+                assertNull(dummyRsrcBean);
+
+                return null;
+            }
+        });
+    }
+
     /**
      * Resource injection with non-existing resource class.
      */
@@ -302,6 +321,46 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
             }
         }, grid, NoSuchBeanDefinitionException.class, "No qualifying bean of type 'org.apache.ignite.internal.processors.resource" +
             ".GridSpringResourceInjectionSelfTest$AnotherDummyResourceBean' available");
+    }
+
+
+    /** */
+    @Test
+    public void testClosureMethodWithDuplicatedResourceClass() {
+        assertError(new IgniteCallable<Object>() {
+            private DuplicatedResourceBean rsrcBean;
+
+            @SpringResource(resourceClass = DuplicatedResourceBean.class, required = false)
+            private void setDummyResourceBean(DuplicatedResourceBean rsrcBean) {
+                this.rsrcBean = rsrcBean;
+            }
+
+            @Override public Object call() {
+                fail();
+
+                return null;
+            }
+        }, grid, NoUniqueBeanDefinitionException.class, "No qualifying bean of type '" +
+            DuplicatedResourceBean.class.getName() + "' available: expected single matching bean but found 2");
+    }
+
+    /** */
+    @Test
+    public void testClosureMethodWithNotRequiredWrongResourceClass() {
+        grid.compute().call(new IgniteCallable<Object>() {
+            private AnotherDummyResourceBean dummyRsrcBean;
+
+            @SpringResource(resourceClass = AnotherDummyResourceBean.class, required = false)
+            private void setDummyResourceBean(AnotherDummyResourceBean dummyRsrcBean) {
+                this.dummyRsrcBean = dummyRsrcBean;
+            }
+
+            @Override public Object call() {
+                assertNull(dummyRsrcBean);
+
+                return null;
+            }
+        });
     }
 
     /**
@@ -374,6 +433,14 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
          *
          */
         public AnotherDummyResourceBean() {
+            // No-op.
+        }
+    }
+
+    /** Resource bean to test scenario with multiple beans of the same type in the Spring Context. */
+    private static class DuplicatedResourceBean {
+        /** */
+        public DuplicatedResourceBean() {
             // No-op.
         }
     }

@@ -148,7 +148,10 @@ abstract class GridDeploymentStoreAdapter implements GridDeploymentStore {
 
         f.setAccessible(true);
 
-        ((Map)f.get(null)).clear();
+        Object fieldVal = f.get(null);
+
+        if (fieldVal instanceof Map)
+            ((Map<?, ?>)fieldVal).clear();
     }
 
     /** {@inheritDoc} */

@@ -171,7 +171,10 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
         try {
             IgniteEx igniteCrd = startGrid(0);
 
-            IgniteMXBean igniteMXBean = (IgniteMXBean)startGrid(1);
+            startGrid(1);
+
+            IgniteMXBean igniteMXBean = getMxBean(getTestIgniteInstanceName(1), "Kernal", "IgniteKernal",
+                IgniteMXBean.class);
 
             assertNotNull(igniteMXBean.getUserAttributesFormatted());
             assertNotNull(igniteMXBean.getLifecycleBeansFormatted());

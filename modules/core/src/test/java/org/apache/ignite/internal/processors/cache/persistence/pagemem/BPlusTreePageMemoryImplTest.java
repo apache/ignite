@@ -26,7 +26,6 @@ import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
-import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -39,7 +38,6 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
-import org.apache.ignite.internal.util.typedef.CIX3;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
@@ -66,7 +64,8 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
         cfg.setEncryptionSpi(new NoopEncryptionSpi());
         cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
         cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setPersistenceEnabled(true)));
 
         GridTestKernalContext cctx = new GridTestKernalContext(log, cfg);
 
@@ -77,35 +76,20 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
         cctx.add(new GridMetricManager(cctx));
         cctx.add(new GridSystemViewManager(cctx));
 
-        GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContext<>(
-            cctx,
-            null,
-            null,
-            null,
-            new NoOpPageStoreManager(),
-            new NoOpWALManager(),
-            null,
-            new IgniteCacheDatabaseSharedManager(),
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            new CacheDiagnosticManager()
-        );
+        GridCacheSharedContext<Object, Object> sharedCtx = GridCacheSharedContext.builder()
+            .setPageStoreManager(new NoOpPageStoreManager())
+            .setWalManager(new NoOpWALManager())
+            .setDatabaseManager(new IgniteCacheDatabaseSharedManager(cctx))
+            .setDiagnosticManager(new CacheDiagnosticManager())
+            .build(cctx, null);
 
         IgniteOutClosure<CheckpointProgress> clo = new IgniteOutClosure<CheckpointProgress>() {
             @Override public CheckpointProgress apply() {
                 return Mockito.mock(CheckpointProgressImpl.class);
             }
         };
+
+        DataRegionConfiguration regCfg = new DataRegionConfiguration();
 
         PageMemory mem = new PageMemoryImpl(
             provider, sizes,
@@ -115,12 +99,10 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
             (fullPageId, byteBuf, tag) -> {
                 assert false : "No page replacement should happen during the test";
             },
-            new CIX3<Long, FullPageId, PageMemoryEx>() {
-                @Override public void applyx(Long aLong, FullPageId fullPageId, PageMemoryEx ex) {
-                }
-            },
+            true,
             () -> true,
-            new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx),
+            new DataRegionMetricsImpl(regCfg, cctx),
+            regCfg,
             PageMemoryImpl.ThrottlingPolicy.DISABLED,
             clo
         );

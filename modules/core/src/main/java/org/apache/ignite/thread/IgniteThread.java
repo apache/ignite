@@ -96,6 +96,7 @@ public class IgniteThread extends Thread {
      * @param igniteInstanceName Name of the Ignite instance this thread is created for.
      * @param threadName Name of thread.
      * @param r Runnable to execute.
+     * @param plc {@link GridIoPolicy} policy.
      * @param grpIdx Thread index within a group.
      * @param stripe Non-negative stripe number if this thread is striped pool thread.
      */
@@ -188,6 +189,8 @@ public class IgniteThread extends Thread {
 
     /**
      * Callback before entry processor execution is started.
+     *
+     * @param holdsTopLock Whether to hold topology lock.
      */
     public static void onEntryProcessorEntered(boolean holdsTopLock) {
         Thread curThread = Thread.currentThread();

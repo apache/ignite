@@ -23,6 +23,7 @@ import java.util.Arrays;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -125,13 +126,13 @@ public class LightweightCheckpointTest extends GridCommonAbstractTest {
     public void testLightCheckpointAbleToStoreOnlyGivenDataRegion() throws Exception {
         //given: One started node with default cache and cache which won't be checkpointed.
         IgniteEx ignite0 = startGrid(0);
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Object> checkpointedCache = ignite0.cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, Object> notCheckpointedCache = ignite0.cache(NOT_CHECKPOINTED_CACHE);
 
-        GridKernalContext ctx = ignite0.context();
-        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)(ctx.cache().context().database());
+        GridKernalContext context = ignite0.context();
+        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)(context.cache().context().database());
 
         waitForCondition(() -> !db.getCheckpointer().currentProgress().inProgress(), 10_000);
 
@@ -141,29 +142,28 @@ public class LightweightCheckpointTest extends GridCommonAbstractTest {
         DataRegion regionForCheckpoint = db.dataRegion(DFLT_DATA_REG_DEFAULT_NAME);
 
         //and: Create light checkpoint with only one region.
-        LightweightCheckpointManager lightweightCheckpointMgr = new LightweightCheckpointManager(
-            ctx::log,
-            ctx.igniteInstanceName(),
+        LightweightCheckpointManager lightweightCheckpointManager = new LightweightCheckpointManager(
+            context::log,
+            context.igniteInstanceName(),
             "light-test-checkpoint",
-            ctx.workersRegistry(),
-            ctx.config().getDataStorageConfiguration(),
+            context.workersRegistry(),
+            context.config().getDataStorageConfiguration(),
             () -> Arrays.asList(regionForCheckpoint),
-            grpId -> getPageMemoryForCacheGroup(grpId, db, ctx),
+            grpId -> getPageMemoryForCacheGroup(grpId, db, context),
             PageMemoryImpl.ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY,
-            ctx.cache().context().snapshot(),
-            db.persistentStoreMetricsImpl(),
-            ctx.longJvmPauseDetector(),
-            ctx.failure(),
-            ctx.cache()
+            db.dataStorageMetricsImpl(),
+            context.longJvmPauseDetector(),
+            context.failure(),
+            context.cache()
         );
 
         //and: Add checkpoint listener for DEFAULT_CACHE in order of storing the meta pages.
-        lightweightCheckpointMgr.addCheckpointListener(
-            (CheckpointListener)ctx.cache().cacheGroup(groupIdForCache(ignite0, DEFAULT_CACHE_NAME)).offheap(),
+        lightweightCheckpointManager.addCheckpointListener(
+            (CheckpointListener)context.cache().cacheGroup(groupIdForCache(ignite0, DEFAULT_CACHE_NAME)).offheap(),
             regionForCheckpoint
         );
 
-        lightweightCheckpointMgr.start();
+        lightweightCheckpointManager.start();
 
         //when: Fill the caches
         for (int j = 0; j < 1024; j++) {
@@ -172,7 +172,7 @@ public class LightweightCheckpointTest extends GridCommonAbstractTest {
         }
 
         //and: Trigger and wait for the checkpoint.
-        lightweightCheckpointMgr.forceCheckpoint("test", null)
+        lightweightCheckpointManager.forceCheckpoint("test", null)
             .futureFor(CheckpointState.FINISHED)
             .get();
 
@@ -180,7 +180,7 @@ public class LightweightCheckpointTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         ignite0 = startGrid(0);
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         checkpointedCache = ignite0.cache(DEFAULT_CACHE_NAME);
         notCheckpointedCache = ignite0.cache(NOT_CHECKPOINTED_CACHE);

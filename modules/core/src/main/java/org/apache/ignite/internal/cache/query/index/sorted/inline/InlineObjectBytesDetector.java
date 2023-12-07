@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collection;
+import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.JavaObjectIndexKey;
@@ -46,7 +47,7 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
     private final int inlineSize;
 
     /** Inline helpers. */
-    private final List<IndexKeyDefinition> keyDefs;
+    private final Collection<IndexKeyDefinition> keyDefs;
 
     /** Inline object supported flag. */
     private boolean inlineObjSupported = true;
@@ -63,7 +64,7 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
      * @param idxName Index name.
      * @param log Ignite logger.
      */
-    public InlineObjectBytesDetector(int inlineSize, List<IndexKeyDefinition> keyDefs, IndexName idxName,
+    public InlineObjectBytesDetector(int inlineSize, Collection<IndexKeyDefinition> keyDefs, IndexName idxName,
         IgniteLogger log) {
         this.inlineSize = inlineSize;
         this.keyDefs = keyDefs;
@@ -85,13 +86,15 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
 
         IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings();
 
+        Iterator<IndexKeyDefinition> it = keyDefs.iterator();
+
         for (int i = 0; i < keyDefs.size(); ++i) {
-            IndexKeyDefinition keyDef = keyDefs.get(i);
+            IndexKeyDefinition keyDef = it.next();
 
             if (fieldOff >= inlineSize)
                 return false;
 
-            if (keyDef.idxType() != IndexKeyTypes.JAVA_OBJECT) {
+            if (keyDef.idxType() != IndexKeyType.JAVA_OBJECT) {
                 InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(keyDef.idxType(), keyTypeSettings);
 
                 if (keyType.inlineSize() < 0)
@@ -107,15 +110,15 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
             if (key == NullIndexKey.INSTANCE)
                 return false;
 
-            int type = PageUtils.getByte(pageAddr, off + fieldOff);
+            int typeCode = PageUtils.getByte(pageAddr, off + fieldOff);
 
             // We can have garbage in memory and need to compare data.
-            if (type == IndexKeyTypes.JAVA_OBJECT) {
+            if (typeCode == IndexKeyType.JAVA_OBJECT.code()) {
                 int len = PageUtils.getShort(pageAddr, off + fieldOff + 1);
 
                 len &= 0x7FFF;
 
-                byte[] originalObjBytes = ((JavaObjectIndexKey) key).bytesNoCopy();
+                byte[] originalObjBytes = ((JavaObjectIndexKey)key).bytesNoCopy();
 
                 // Read size more then available space or more then origin length.
                 if (len > inlineSize - fieldOff - 3 || len > originalObjBytes.length) {
@@ -138,14 +141,14 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
                 return true;
             }
 
-            if (type == IndexKeyTypes.UNKNOWN && varLenPresents) {
+            if (typeCode == IndexKeyType.UNKNOWN.code() && varLenPresents) {
                 // We can't guarantee in case unknown type and should check next row:
                 // 1: long string, UNKNOWN for java object.
                 // 2: short string, inlined java object
                 return false;
             }
 
-            inlineObjectSupportedDecision(false, "inline type " + type);
+            inlineObjectSupportedDecision(false, "inline type " + typeCode);
 
             return true;
         }
@@ -172,14 +175,14 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
      *
      * @return {@code true} If the object may be inlined.
      */
-    public static boolean objectMayBeInlined(int inlineSize, List<IndexKeyDefinition> keyDefs) {
+    public static boolean objectMayBeInlined(int inlineSize, Collection<IndexKeyDefinition> keyDefs) {
         int remainSize = inlineSize;
 
         // The settings does not affect on inline size.
         IndexKeyTypeSettings settings = new IndexKeyTypeSettings();
 
         for (IndexKeyDefinition def: keyDefs) {
-            if (def.idxType() == IndexKeyTypes.JAVA_OBJECT)
+            if (def.idxType() == IndexKeyType.JAVA_OBJECT)
                 break;
 
             InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(def.idxType(), settings);

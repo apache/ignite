@@ -42,9 +42,23 @@ import org.jetbrains.annotations.Nullable;
  * This way batches can be applied within transaction(s) on target node.
  * See {@link #receiver(StreamReceiver)} for details.
  * <p>
- * Note that streamer will stream data concurrently by multiple internal threads, so the
- * data may get to remote nodes in different order from which it was added to
- * the streamer.
+ * Data streamer doesn’t guarantee:
+ * <ul>
+ *  <li>Data order. Data records may be loaded into a cache in a different order compared to putting into the
+ *  streamer;</li>
+ *  <li>Immediate data loading. Data can be kept for a while before loading;</li>
+ *  <li>By default, data consistency until successfully finished;</li>
+ *  <li>By default, working with external storages.</li>
+ * </ul>
+ * <p>
+ * If {@link #allowOverwrite()} setting is {@code false} (default), consider:
+ * <ul>
+ *  <li>You should not have the same keys repeating in the data being streamed;</li>
+ *  <li>Streamer cancelation or streamer node failure can cause data inconsistency;</li>
+ *  <li>If loading into a persistent cache, concurrently created snapshot may contain inconsistent data and might not
+ *  be restored entirely.</li>
+ * </ul>
+ * Most important behaviour of data streamer is defined by {@link StreamReceiver} and {@link #allowOverwrite()} property.
  * <p>
  * Also note that {@code IgniteDataStreamer} is not the only way to add data into cache.
  * Alternatively you can use {@link IgniteCache#loadCache(IgniteBiPredicate, Object...)}
@@ -138,7 +152,8 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * <p>
      * This flag is disabled by default (default is {@code false}).
      *
-     * @return {@code True} if overwriting is allowed, {@code false} otherwise..
+     * @return {@code True} if overwriting is allowed or if receiver is changed by {@link #receiver(StreamReceiver)}.
+     * {@code False} otherwise.
      */
     public boolean allowOverwrite();
 
@@ -318,6 +333,8 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
 
     /**
      * Sets custom stream receiver to this data streamer.
+     * <p>
+     * Disables {@link #allowOverwrite(boolean)} and sets {@link #allowOverwrite()} returning {@code true}.
      *
      * @param rcvr Stream receiver.
      */

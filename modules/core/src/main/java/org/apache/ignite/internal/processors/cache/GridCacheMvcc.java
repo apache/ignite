@@ -839,8 +839,8 @@ public final class GridCacheMvcc {
         GridCacheVersion mappedVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledBackVers,
-        Collection<GridCacheVersion> pending)
-    {
+        Collection<GridCacheVersion> pending
+    ) {
         GridCacheMvccCandidate cand = candidate(locs, ver);
 
         if (cand != null) {

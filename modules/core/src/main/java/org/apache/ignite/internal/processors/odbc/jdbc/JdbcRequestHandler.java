@@ -32,7 +32,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import javax.cache.configuration.Factory;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -53,14 +52,16 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
+import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
@@ -68,7 +69,6 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -76,11 +76,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
-import org.apache.ignite.transactions.TransactionDuplicateKeyException;
-import org.apache.ignite.transactions.TransactionMixedModeException;
-import org.apache.ignite.transactions.TransactionSerializationException;
-import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
@@ -179,6 +174,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param autoCloseCursors Flag to automatically close server cursors.
      * @param lazy Lazy query execution flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
+     * @param qryEngine Name of SQL query engine to use.
      * @param dataPageScanEnabled Enable scan data page mode.
      * @param updateBatchSize Size of internal batch for DML queries.
      * @param protocolVer Protocol version.
@@ -195,6 +191,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         boolean autoCloseCursors,
         boolean lazy,
         boolean skipReducerOnUpdate,
+        @Nullable String qryEngine,
         NestedTxMode nestedTxMode,
         @Nullable Boolean dataPageScanEnabled,
         @Nullable Integer updateBatchSize,
@@ -222,7 +219,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             lazy,
             skipReducerOnUpdate,
             dataPageScanEnabled,
-            updateBatchSize
+            updateBatchSize,
+            qryEngine
         );
 
         this.busyLock = busyLock;
@@ -239,25 +237,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerResponse handle(ClientListenerRequest req0) {
-        assert req0 != null;
+    @Override public ClientListenerResponse handle(ClientListenerRequest req) {
+        assert req != null;
 
-        assert req0 instanceof JdbcRequest;
+        assert req instanceof JdbcRequest;
 
-        JdbcRequest req = (JdbcRequest)req0;
-
-        if (!MvccUtils.mvccEnabled(connCtx.kernalContext()))
-            return doHandle(req);
-        else {
-            GridFutureAdapter<ClientListenerResponse> fut = worker.process(req);
-
-            try {
-                return fut.get();
-            }
-            catch (IgniteCheckedException e) {
-                return exceptionToResult(e);
-            }
-        }
+        return doHandle((JdbcRequest)req);
     }
 
     /** {@inheritDoc} */
@@ -412,7 +397,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             }
         }
 
-       return null;
+        return null;
     }
 
     /**
@@ -432,7 +417,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             }
 
             sender.send(resp);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             U.error(null, "Error processing file batch", e);
 
             sender.send(new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e));
@@ -560,7 +546,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Execute query request.
      * @return Response.
      */
-    @SuppressWarnings("unchecked")
     private JdbcResponse executeQuery(JdbcQueryExecuteRequest req) {
         GridQueryCancel cancel = null;
 
@@ -637,8 +622,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            List<FieldsQueryCursor<List<?>>> results = connCtx.kernalContext().query().querySqlFields(null, qry,
-                cliCtx, true, protocolVer.compareTo(VER_2_3_0) < 0, cancel);
+            List<FieldsQueryCursor<List<?>>> results = querySqlFields(qry, cancel);
 
             FieldsQueryCursor<List<?>> fieldsCur = results.get(0);
 
@@ -658,7 +642,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             if (results.size() == 1) {
                 JdbcQueryCursor cur = new JdbcQueryCursor(req.pageSize(), req.maxRows(),
-                    (QueryCursorImpl)fieldsCur, req.requestId());
+                    (QueryCursorEx<List<?>>)fieldsCur, req.requestId());
 
                 jdbcCursors.put(cur.cursorId(), cur);
 
@@ -666,7 +650,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 JdbcQueryExecuteResult res;
 
-                PartitionResult partRes = ((QueryCursorImpl<List<?>>)fieldsCur).partitionResult();
+                PartitionResult partRes = null;
+
+                if (fieldsCur instanceof QueryCursorImpl)
+                    partRes = ((QueryCursorImpl<List<?>>)fieldsCur).partitionResult();
 
                 if (cur.isQuery())
                     res = new JdbcQueryExecuteResult(cur.cursorId(), cur.fetchRows(), !cur.hasNext(),
@@ -703,7 +690,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 boolean last = true;
 
                 for (FieldsQueryCursor<List<?>> c : results) {
-                    QueryCursorImpl qryCur = (QueryCursorImpl)c;
+                    QueryCursorEx<List<?>> qryCur = (QueryCursorEx<List<?>>)c;
 
                     JdbcResultInfo jdbcRes;
 
@@ -736,16 +723,39 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             unregisterReq = true;
 
-            U.error(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
+            if (X.cause(e, QueryCancelledException.class) != null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Failed to execute SQL query " +
+                        "[reqId=" + req.requestId() +
+                        ", req=" + req +
+                        "]. Error:" + X.getFullStackTrace(e));
+                }
 
-            if (X.cause(e, QueryCancelledException.class) != null)
                 return exceptionToResult(new QueryCancelledException());
-            else
+            }
+            else if (X.cause(e, IgniteSQLException.class) != null) {
+                IgniteSQLException e0 = X.cause(e, IgniteSQLException.class);
+
+                if (isNeedToNodeLog(e0))
+                    U.warn(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+                return exceptionToResult(e0);
+            }
+            else {
+                U.warn(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
                 return exceptionToResult(e);
+            }
         }
         finally {
             cleanupQueryCancellationMeta(unregisterReq, req.requestId());
         }
+    }
+
+    /** */
+    private List<FieldsQueryCursor<List<?>>> querySqlFields(SqlFieldsQueryEx qry, GridQueryCancel cancel) {
+        return connCtx.kernalContext().query().querySqlFields(null, qry,
+            cliCtx, true, protocolVer.compareTo(VER_2_3_0) < 0, cancel);
     }
 
     /**
@@ -1037,7 +1047,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 if (cur instanceof BulkLoadContextCursor)
                     throw new IgniteSQLException("COPY command cannot be executed in batch mode.");
 
-                assert !((QueryCursorImpl)cur).isQuery();
+                assert !((QueryCursorEx)cur).isQuery();
 
                 Iterator<List<?>> it = cur.iterator();
 
@@ -1264,8 +1274,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         setupQuery(qry, schemaName);
 
         try {
-            List<JdbcParameterMeta> meta = connCtx.kernalContext().query().getIndexing().
-                parameterMetaData(schemaName, qry);
+            List<JdbcParameterMeta> meta = connCtx.kernalContext().query().parameterMetaData(qry, cliCtx);
 
             JdbcMetaParamsResult res = new JdbcMetaParamsResult(meta);
 
@@ -1322,22 +1331,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return resulting {@link JdbcResponse}.
      */
     private JdbcResponse exceptionToResult(Throwable e) {
-        if (e instanceof QueryCancelledException)
-            return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, e.getMessage());
-        if (e instanceof TransactionSerializationException)
-            return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR, e.getMessage());
-        if (e instanceof TransactionAlreadyCompletedException)
-            return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_COMPLETED, e.getMessage());
-        if (e instanceof TransactionDuplicateKeyException)
-            return new JdbcResponse(IgniteQueryErrorCode.DUPLICATE_KEY, e.getMessage());
-        if (e instanceof TransactionMixedModeException)
-            return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH, e.getMessage());
-        if (e instanceof TransactionUnsupportedConcurrencyException)
-            return new JdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION, e.getMessage());
-        if (e instanceof IgniteSQLException)
-            return new JdbcResponse(((IgniteSQLException)e).statusCode(), e.getMessage());
-        else
-            return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, e.getMessage());
+        return new JdbcResponse(SqlListenerUtils.exceptionToSqlErrorCode(e), e.getMessage());
     }
 
     /**
@@ -1611,5 +1605,15 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** {@inheritDoc} */
     @Override public ClientListenerProtocolVersion protocolVersion() {
         return protocolVer;
+    }
+
+    /**
+     * Checks SQL error to print into node log.
+     *
+     * @param e Exception to handle.
+     * @return {@code true} is the exception should be printed into node log. Otherwise, returns {@code false}.
+     */
+    private static boolean isNeedToNodeLog(IgniteSQLException e) {
+        return SqlStateCode.INTERNAL_ERROR.equals(e.sqlState());
     }
 }

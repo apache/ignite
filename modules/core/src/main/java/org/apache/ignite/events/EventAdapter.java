@@ -60,6 +60,7 @@ public class EventAdapter implements Event {
     /**
      * Creates event based with given parameters.
      *
+     * @param node Event initiator node.
      * @param msg Optional message.
      * @param type Event type.
      */

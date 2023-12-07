@@ -115,7 +115,8 @@ public class IgniteClientReconnectQueriesTest extends IgniteClientReconnectAbstr
                     clnCache.query(qry);
 
                     fail();
-                } catch (CacheException e) {
+                }
+                catch (CacheException e) {
                     check(e);
                 }
             }
@@ -180,7 +181,7 @@ public class IgniteClientReconnectQueriesTest extends IgniteClientReconnectAbstr
 
         reconnectClientNode(cln, srv, null);
 
-        assertTrue((Boolean) fut.get(2, SECONDS));
+        assertTrue((Boolean)fut.get(2, SECONDS));
 
         QueryCursor<Cache.Entry<Integer, Person>> cur2 = clnCache.query(qry);
 
@@ -225,7 +226,8 @@ public class IgniteClientReconnectQueriesTest extends IgniteClientReconnectAbstr
                     clnCache.query(scanQry);
 
                     fail();
-                } catch (CacheException e) {
+                }
+                catch (CacheException e) {
                     check(e);
                 }
             }

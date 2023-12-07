@@ -17,20 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near.consistency;
 
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 
 /**
- * Possible consistency violation exception.
- * Each such case should be rechecked under locks.
+ * Consistency violation exception.
  */
-public class IgniteConsistencyViolationException extends IgniteCheckedException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public abstract class IgniteConsistencyViolationException extends IgniteCheckedException {
     /**
-     * @param msg Message.
+     * Inconsistent entries keys.
      */
-    public IgniteConsistencyViolationException(String msg) {
-        super(msg);
-    }
+    public abstract Set<KeyCacheObject> keys();
 }

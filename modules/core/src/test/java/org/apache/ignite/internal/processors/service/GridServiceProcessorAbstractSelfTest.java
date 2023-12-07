@@ -42,6 +42,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -216,19 +217,27 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         IgniteFuture<?> fut2 = svcs2.future();
 
-        info("Deployed service: " + name);
+        Exception err1 = null;
 
-        fut1.get();
-
-        info("Finished waiting for service future: " + name);
+        try {
+            fut1.get();
+        }
+        catch (ServiceDeploymentException e) {
+            if (e.getMessage().contains("Failed to deploy some services."))
+                err1 = e;
+            else
+                throw new IllegalStateException("An unexpeted error caught while deploying service.", e);
+        }
 
         try {
             fut2.get();
 
-            fail("Failed to receive mismatching configuration exception.");
+            if (err1 == null)
+                fail("Failed to receive mismatching configuration exception.");
         }
-        catch (IgniteException e) {
-            info("Received mismatching configuration exception: " + e.getMessage());
+        catch (Exception e) {
+            if (!e.getMessage().contains("Failed to deploy some service"))
+                throw new IllegalStateException("An unexpeted error caught while concurrent deploying.", e);
         }
     }
 

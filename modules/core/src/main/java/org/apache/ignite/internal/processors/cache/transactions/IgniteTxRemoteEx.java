@@ -48,9 +48,4 @@ public interface IgniteTxRemoteEx extends IgniteInternalTx {
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
         Collection<GridCacheVersion> pendingVers) throws GridDhtInvalidPartitionException;
-
-    /**
-     * @param cntrs Partition update indexes.
-     */
-    public void setPartitionUpdateCounters(long[] cntrs);
 }

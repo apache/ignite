@@ -1,0 +1,64 @@
+{
+  "environments": [
+    {
+      "JAVA_HOME": "<PATH_TO_JDK>",
+      "BOOST_ROOT": "<PATH_TO_BOOST",
+      "OPENSSL_ROOT_DIR": "<PATH_TO_OPENSSL>",
+      "BuildDir": "${env.USERPROFILE}\\CMakeBuilds\\ignite-cpp\\${workspaceHash}",
+      "InstallDir": "<INSTALL_DIR>"
+    }
+  ],
+
+  "configurations": [
+    {
+      "name": "x64-Debug",
+      "generator": "Visual Studio 15 2017 Win64",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x64" ],
+      "buildRoot": "${env.BuildDir}}\\cmake-build-debug",
+      "variables": [
+        {
+          "name": "CMAKE_INSTALL_PREFIX",
+          "value": "${env.InstallDir}\\debug"
+        },
+        {
+          "name": "WITH_ODBC",
+          "value": "ON"
+        },
+        {
+          "name": "WITH_THIN_CLIENT",
+          "value": "ON"
+        },
+        {
+          "name": "WITH_TESTS",
+          "value": "OFF"
+        }
+      ]
+    },
+    {
+      "name": "x64-Release",
+      "generator": "Visual Studio 15 2017 Win64",
+      "configurationType": "Release",
+      "inheritEnvironments": [ "msvc_x64" ],
+      "buildRoot": "${env.BuildDir}\\cmake-build-release",
+      "variables": [
+        {
+          "name": "CMAKE_INSTALL_PREFIX",
+          "value": "${env.InstallDir}\\release"
+        },
+        {
+          "name": "WITH_ODBC",
+          "value": "ON"
+        },
+        {
+          "name": "WITH_THIN_CLIENT",
+          "value": "ON"
+        },
+        {
+          "name": "WITH_TESTS",
+          "value": "OFF"
+        }
+      ]
+    }
+  ]
+}

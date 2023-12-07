@@ -18,10 +18,22 @@
 package org.apache.ignite.internal.cluster;
 
 import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterState;
 
 /**
  *
  */
 public interface IgniteClusterEx extends IgniteCluster, ClusterGroupEx {
-    // No-op.
+    /**
+     * Changes current cluster state to given {@code newState} cluster state.
+     * <p>
+     * <b>NOTE:</b>
+     * Deactivation clears in-memory caches (without persistence) including the system caches.
+     *
+     * @param newState New cluster state.
+     * @param force Force deactivation.
+     * @throws IgniteException If there is an already started transaction or lock in the same thread.
+     */
+    public void state(ClusterState newState, boolean force) throws IgniteException;
 }

@@ -37,7 +37,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  *      &lt;property name="gridLogger"&gt;
  *          &lt;bean class="org.apache.ignite.logger.jcl.JclLogger"&gt;
  *              &lt;constructor-arg type="org.apache.commons.logging.Log"&gt;
- *                  &lt;bean class="org.apache.commons.logging.impl.Log4JLogger"&gt;
+ *                  &lt;bean class="org.apache.commons.logging.impl.Log42JLogger"&gt;
  *                      &lt;constructor-arg type="java.lang.String" value="config/ignite-log4j.xml"/&gt;
  *                  &lt;/bean&gt;
  *              &lt;/constructor-arg&gt;
@@ -57,7 +57,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * <pre name="code" class="java">
  *      IgniteConfiguration cfg = new IgniteConfiguration();
  *      ...
- *      IgniteLogger log = new JclLogger(new Log4JLogger("config/ignite-log4j.xml"));
+ *      IgniteLogger log = new JclLogger(new Log4J2Logger("config/ignite-log4j.xml"));
  *      ...
  *      cfg.setGridLogger(log);
  * </pre>

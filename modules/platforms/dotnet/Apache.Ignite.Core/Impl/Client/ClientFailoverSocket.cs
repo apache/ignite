@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -96,6 +97,11 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Logger. */
         private readonly ILogger _logger;
 
+        /** Key types that are not supported in partition awareness.
+         * We log warning once for those types, then bypass partition awareness for them. */
+        private readonly ConcurrentDictionary<Type, object> _partitionAwarenessUnsupportedKeyTypes =
+            new ConcurrentDictionary<Type, object>();
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientFailoverSocket"/> class.
         /// </summary>
@@ -114,6 +120,7 @@ namespace Apache.Ignite.Core.Impl.Client
             _config = config;
             _marsh = marsh;
             _transactions = transactions;
+            _logger = (_config.Logger ?? NoopLogger.Instance).GetLogger(GetType());
 
 #pragma warning disable 618 // Type or member is obsolete
             if (config.Host == null && (config.Endpoints == null || config.Endpoints.Count == 0))
@@ -130,8 +137,6 @@ namespace Apache.Ignite.Core.Impl.Client
                 throw new IgniteClientException("Failed to resolve all specified hosts.");
             }
 
-            _logger = (_config.Logger ?? NoopLogger.Instance).GetLogger(GetType());
-
             ConnectDefaultSocket();
             OnFirstConnection();
         }
@@ -143,7 +148,23 @@ namespace Apache.Ignite.Core.Impl.Client
             Func<ClientResponseContext, T> readFunc,
             Func<ClientStatusCode, string, T> errorFunc = null)
         {
-            return GetSocket().DoOutInOp(opId, writeAction, readFunc, errorFunc);
+            var attempt = 0;
+            List<Exception> errors = null;
+
+            while (true)
+            {
+                try
+                {
+                    return GetSocket().DoOutInOp(opId, writeAction, readFunc, errorFunc);
+                }
+                catch (Exception e)
+                {
+                    if (!HandleOpError(e, opId, ref attempt, ref errors))
+                    {
+                        throw;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -157,15 +178,31 @@ namespace Apache.Ignite.Core.Impl.Client
             TKey key,
             Func<ClientStatusCode, string, T> errorFunc = null)
         {
-            var socket = GetAffinitySocket(cacheId, key) ?? GetSocket();
+            var attempt = 0;
+            List<Exception> errors = null;
 
-            return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
+            while (true)
+            {
+                try
+                {
+                    var socket = GetAffinitySocket(cacheId, key) ?? GetSocket();
+
+                    return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
+                }
+                catch (Exception e)
+                {
+                    if (!HandleOpError(e, opId, ref attempt, ref errors))
+                    {
+                        throw;
+                    }
+                }
+            }
         }
 
         /// <summary>
         /// Performs an async send-receive operation with partition awareness.
         /// </summary>
-        public Task<T> DoOutInOpAffinityAsync<T, TKey>(
+        public async Task<T> DoOutInOpAffinityAsync<T, TKey>(
             ClientOp opId,
             Action<ClientRequestContext> writeAction,
             Func<ClientResponseContext, T> readFunc,
@@ -173,18 +210,51 @@ namespace Apache.Ignite.Core.Impl.Client
             TKey key,
             Func<ClientStatusCode, string, T> errorFunc = null)
         {
-            var socket = GetAffinitySocket(cacheId, key) ?? GetSocket();
+            var attempt = 0;
+            List<Exception> errors = null;
 
-            return socket.DoOutInOpAsync(opId, writeAction, readFunc, errorFunc);
+            while (true)
+            {
+                try
+                {
+                    var socket = GetAffinitySocket(cacheId, key) ?? GetSocket();
+
+                    return await socket.DoOutInOpAsync(opId, writeAction, readFunc, errorFunc).ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    if (!HandleOpError(e, opId, ref attempt, ref errors))
+                    {
+                        throw;
+                    }
+                }
+            }
         }
 
         /// <summary>
         /// Performs an async send-receive operation.
         /// </summary>
-        public Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<ClientRequestContext> writeAction,
+        public async Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<ClientRequestContext> writeAction,
             Func<ClientResponseContext, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
         {
-            return GetSocket().DoOutInOpAsync(opId, writeAction, readFunc, errorFunc);
+            var attempt = 0;
+            List<Exception> errors = null;
+
+            while (true)
+            {
+                try
+                {
+                    return await GetSocket().DoOutInOpAsync(opId, writeAction, readFunc, errorFunc)
+                        .ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    if (!HandleOpError(e, opId, ref attempt, ref errors))
+                    {
+                        throw;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -258,7 +328,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Checks the disposed state.
         /// </summary>
-        private ClientSocket GetSocket()
+        internal ClientSocket GetSocket()
         {
             var tx = _transactions.Tx;
             if (tx != null)
@@ -279,7 +349,7 @@ namespace Apache.Ignite.Core.Impl.Client
             }
         }
 
-        private ClientSocket GetAffinitySocket<TKey>(int cacheId, TKey key)
+        internal ClientSocket GetAffinitySocket<TKey>(int cacheId, TKey key)
         {
             ThrowIfDisposed();
 
@@ -298,9 +368,8 @@ namespace Apache.Ignite.Core.Impl.Client
 
             var distributionMap = _distributionMap;
             var socketMap = _nodeSocketMap;
-            ClientCachePartitionMap cachePartMap;
 
-            if (socketMap == null || !distributionMap.CachePartitionMap.TryGetValue(cacheId, out cachePartMap))
+            if (socketMap == null || !distributionMap.CachePartitionMap.TryGetValue(cacheId, out var cachePartMap))
             {
                 return null;
             }
@@ -311,10 +380,13 @@ namespace Apache.Ignite.Core.Impl.Client
             }
 
             var partition = GetPartition(key, cachePartMap.PartitionNodeIds.Count, cachePartMap.KeyConfiguration);
-            var nodeId = cachePartMap.PartitionNodeIds[partition];
+            if (partition == null)
+            {
+                return null;
+            }
 
-            ClientSocket socket;
-            if (socketMap.TryGetValue(nodeId, out socket) && !socket.IsDisposed)
+            var nodeId = cachePartMap.PartitionNodeIds[partition.Value];
+            if (socketMap.TryGetValue(nodeId, out var socket) && !socket.IsDisposed)
             {
                 return socket;
             }
@@ -339,7 +411,7 @@ namespace Apache.Ignite.Core.Impl.Client
             Justification = "There is no finalizer.")]
         public void Dispose()
         {
-            // Lock order: same as in OnAffinityTopologyVersionChange. 
+            // Lock order: same as in OnAffinityTopologyVersionChange.
             lock (_topologyUpdateLock)
             lock (_socketLock)
             {
@@ -445,7 +517,12 @@ namespace Apache.Ignite.Core.Impl.Client
                 );
             }
 
-            if (!_socket.Features.HasFeature(ClientBitmaskFeature.ClusterGroupGetNodesEndpoints))
+            if (!_config.EnableClusterDiscovery)
+            {
+                _enableDiscovery = false;
+            }
+
+            if (_enableDiscovery && !_socket.Features.HasFeature(ClientBitmaskFeature.ClusterGroupGetNodesEndpoints))
             {
                 _enableDiscovery = false;
 
@@ -523,27 +600,34 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             _affinityTopologyVersion = affinityTopologyVersion;
 
-            if (_discoveryTopologyVersion < affinityTopologyVersion.Version &&_config.EnablePartitionAwareness)
+            if (!_config.EnablePartitionAwareness && !_enableDiscovery)
             {
-                ThreadPool.QueueUserWorkItem(_ =>
+                return;
+            }
+
+            if (_discoveryTopologyVersion >= affinityTopologyVersion.Version)
+            {
+                return;
+            }
+
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try
                 {
-                    try
+                    lock (_topologyUpdateLock)
                     {
-                        lock (_topologyUpdateLock)
+                        if (!_disposed)
                         {
-                            if (!_disposed)
-                            {
-                                DiscoverEndpoints();
-                                InitSocketMap();
-                            }
+                            DiscoverEndpoints();
+                            InitSocketMap();
                         }
                     }
-                    catch (Exception e)
-                    {
-                        _logger.Log(LogLevel.Error, e, "Failed to update topology information");
-                    }
-                });
-            }
+                }
+                catch (Exception e)
+                {
+                    _logger.Log(LogLevel.Error, e, "Failed to update topology information");
+                }
+            });
         }
 
         /// <summary>
@@ -716,10 +800,28 @@ namespace Apache.Ignite.Core.Impl.Client
             }
         }
 
-        private int GetPartition<TKey>(TKey key, int partitionCount, IDictionary<int, int> keyConfiguration)
+        private int? GetPartition<TKey>(TKey key, int partitionCount, IDictionary<int, int> keyConfiguration)
         {
+            var keyType = key.GetType();
+            if (_partitionAwarenessUnsupportedKeyTypes.ContainsKey(keyType))
+            {
+                return null;
+            }
+
             var keyHash = BinaryHashCodeUtils.GetHashCode(key, _marsh, keyConfiguration);
-            return ClientRendezvousAffinityFunction.GetPartitionForKey(keyHash, partitionCount);
+
+            if (keyHash == null)
+            {
+                if (_partitionAwarenessUnsupportedKeyTypes.TryAdd(keyType, null))
+                {
+                    // Log warning only once for the given type.
+                    _logger.Warn("Failed to compute partition awareness hash code for type '{0}'", keyType);
+                }
+
+                return null;
+            }
+
+            return ClientRendezvousAffinityFunction.GetPartitionForKey(keyHash.Value, partitionCount);
         }
 
         private void InitSocketMap()
@@ -924,6 +1026,95 @@ namespace Apache.Ignite.Core.Impl.Client
                 : basicMapper.IsSimpleName
                     ? BinaryNameMapperMode.BasicSimple
                     : BinaryNameMapperMode.BasicFull;
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether a failed operation should be retried.
+        /// </summary>
+        /// <param name="exception">Exception that caused the operation to fail.</param>
+        /// <param name="op">Operation code.</param>
+        /// <param name="attempt">Current attempt.</param>
+        /// <returns>
+        /// <c>true</c> if the operation should be retried on another connection, <c>false</c> otherwise.
+        /// </returns>
+        private bool ShouldRetry(Exception exception, ClientOp op, int attempt)
+        {
+            var e = exception;
+
+            while (e != null && !(e is SocketException))
+            {
+                e = e.InnerException;
+            }
+
+            if (e == null)
+            {
+                // Only retry socket exceptions.
+                return false;
+            }
+
+            if (_config.RetryPolicy == null)
+            {
+                return false;
+            }
+
+            if (_config.RetryLimit > 0 && attempt >= _config.RetryLimit)
+            {
+                return false;
+            }
+
+            var publicOpType = op.ToPublicOperationsType();
+
+            if (publicOpType == null)
+            {
+                // System operation.
+                return true;
+            }
+
+            var ctx = new ClientRetryPolicyContext(_config, publicOpType.Value, attempt, exception);
+
+            return _config.RetryPolicy.ShouldRetry(ctx);
+        }
+
+        /// <summary>
+        /// Handles operation error.
+        /// </summary>
+        /// <param name="exception">Error.</param>
+        /// <param name="op">Operation code.</param>
+        /// <param name="attempt">Current attempt.</param>
+        /// <param name="errors">Previous errors.</param>
+        /// <returns>True if the error was handled, false otherwise.</returns>
+        private bool HandleOpError(
+            Exception exception,
+            ClientOp op,
+            ref int attempt,
+            ref List<Exception> errors)
+        {
+            if (!ShouldRetry(exception, op, attempt))
+            {
+                if (errors == null)
+                {
+                    return false;
+                }
+
+                var inner = new AggregateException(errors);
+
+                throw new IgniteClientException(
+                    $"Operation failed after {attempt} retries, examine InnerException for details.",
+                    inner);
+            }
+
+            if (errors == null)
+            {
+                errors = new List<Exception> { exception };
+            }
+            else
+            {
+                errors.Add(exception);
+            }
+
+            attempt++;
+
+            return true;
         }
     }
 }

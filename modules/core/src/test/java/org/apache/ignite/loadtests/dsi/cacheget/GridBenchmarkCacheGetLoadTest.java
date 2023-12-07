@@ -34,6 +34,7 @@ public class GridBenchmarkCacheGetLoadTest {
     /** */
     private static AtomicLong id = new AtomicLong();
 
+    /** */
     private static Thread t;
 
     /**

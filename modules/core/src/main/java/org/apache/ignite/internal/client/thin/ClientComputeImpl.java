@@ -150,7 +150,7 @@ class ClientComputeImpl implements ClientCompute {
      */
     private ClientException convertException(Throwable t) {
         if (t instanceof ClientException)
-            return (ClientException) t;
+            return (ClientException)t;
         else if (t.getCause() instanceof ClientException)
             return (ClientException)t.getCause();
         else
@@ -204,7 +204,7 @@ class ClientComputeImpl implements ClientCompute {
             // 1. initFut has not completed - store cancellation flag.
             // 2. initFut has completed - cancel compute future.
             if (!cancellationToken.compareAndSet(null, mayInterruptIfRunning)) {
-                GridFutureAdapter<?> fut = (GridFutureAdapter<?>) cancellationToken.get();
+                GridFutureAdapter<?> fut = (GridFutureAdapter<?>)cancellationToken.get();
 
                 if (!cancelGridFuture(fut, mayInterruptIfRunning))
                     return false;
@@ -235,7 +235,7 @@ class ClientComputeImpl implements ClientCompute {
             resFut.completeExceptionally(new ClientException(err));
         else {
             if (!cancellationToken.compareAndSet(null, task.fut))
-                cancelGridFuture(task.fut, (Boolean) cancellationToken.get());
+                cancelGridFuture(task.fut, (Boolean)cancellationToken.get());
 
             tasksCnt.incrementAndGet();
 
@@ -368,13 +368,13 @@ class ClientComputeImpl implements ClientCompute {
         /** {@inheritDoc} */
         @Override public ClientCompute withNoFailover() {
             return (flags & NO_FAILOVER_FLAG_MASK) != 0 ? this :
-                new ClientComputeModificator(delegate, clusterGrp, (byte) (flags | NO_FAILOVER_FLAG_MASK), timeout);
+                new ClientComputeModificator(delegate, clusterGrp, (byte)(flags | NO_FAILOVER_FLAG_MASK), timeout);
         }
 
         /** {@inheritDoc} */
         @Override public ClientCompute withNoResultCache() {
             return (flags & NO_RESULT_CACHE_FLAG_MASK) != 0 ? this :
-                new ClientComputeModificator(delegate, clusterGrp, (byte) (flags | NO_RESULT_CACHE_FLAG_MASK), timeout);
+                new ClientComputeModificator(delegate, clusterGrp, (byte)(flags | NO_RESULT_CACHE_FLAG_MASK), timeout);
         }
     }
 

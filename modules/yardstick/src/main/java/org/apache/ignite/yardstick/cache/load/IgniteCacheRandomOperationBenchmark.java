@@ -50,7 +50,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -339,8 +338,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
             valuesCacheClasses.put(cacheName, determineValueClasses(cacheName));
 
-            if (configuration.getCacheMode() != CacheMode.LOCAL)
-                affCaches.add(cache);
+            affCaches.add(cache);
 
             if (configuration.getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL)
                 txCaches.add(cache);
@@ -954,7 +952,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      * @param cache Ignite cache.
      * @throws Exception If failed.
      */
-    private void doSqlQuery(IgniteCache<Object, Object> cache) throws Exception {
+    private void doSqlQuery(IgniteCache<Object, Object> cache) {
         List<SqlCacheDescriptor> descriptors = cacheSqlDescriptors.get(cache.getName());
 
         if (descriptors != null) {

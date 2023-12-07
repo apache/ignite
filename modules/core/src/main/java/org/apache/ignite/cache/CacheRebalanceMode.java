@@ -31,8 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * current node is primary or back up.
  * <p>
  * Note that rebalance mode only makes sense for {@link CacheMode#REPLICATED} and {@link CacheMode#PARTITIONED}
- * caches. Caches with {@link CacheMode#LOCAL} mode are local by definition and therefore cannot rebalance
- * any values from neighboring nodes.
+ * caches.
  */
 public enum CacheRebalanceMode {
     /**

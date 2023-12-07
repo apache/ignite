@@ -53,4 +53,16 @@
     cls(const cls& src); \
     cls& operator= (const cls& other)
 
+#if (defined(__GNUC__) && (__GNUC__ > 7)) || __has_attribute(no_sanitize)
+#define IGNORE_SIGNED_OVERFLOW  __attribute__((no_sanitize("signed-integer-overflow")))
+#else
+#define IGNORE_SIGNED_OVERFLOW
+#endif
+
+#if (defined(__GNUC__) && (__GNUC__ > 7)) || __has_attribute(no_sanitize)
+#define IGNORE_FALSE_UNDEFINED __attribute__((no_sanitize("undefined")))
+#else
+#define IGNORE_FALSE_UNDEFINED
+#endif
+
 #endif //_IGNITE_COMMON_COMMON

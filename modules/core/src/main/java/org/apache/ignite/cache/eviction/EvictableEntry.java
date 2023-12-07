@@ -54,6 +54,7 @@ public interface EvictableEntry<K, V> extends Cache.Entry<K, V> {
     /**
      * Gets metadata added by eviction policy.
      *
+     * @param <T> Type of the metadata value.
      * @return Metadata value or {@code null}.
      */
     @Nullable public <T> T meta();
@@ -62,6 +63,7 @@ public interface EvictableEntry<K, V> extends Cache.Entry<K, V> {
      * Adds a new metadata.
      *
      * @param val Metadata value.
+     * @param <T> Type of the metadata value.
      * @return Metadata previously added, or
      *      {@code null} if there was none.
      */
@@ -71,6 +73,7 @@ public interface EvictableEntry<K, V> extends Cache.Entry<K, V> {
      * Adds given metadata value only if it was absent.
      *
      * @param val Value to add if it's not attached already.
+     * @param <T> Type of the metadata value.
      * @return {@code null} if new value was put, or current value if put didn't happen.
      */
     @Nullable public <T> T putMetaIfAbsent(T val);
@@ -81,6 +84,7 @@ public interface EvictableEntry<K, V> extends Cache.Entry<K, V> {
      *
      * @param curVal Current value to check.
      * @param newVal New value.
+     * @param <T> Type of the metadata value.
      * @return {@code true} if replacement occurred, {@code false} otherwise.
      */
     public <T> boolean replaceMeta(T curVal, T newVal);
@@ -88,6 +92,7 @@ public interface EvictableEntry<K, V> extends Cache.Entry<K, V> {
     /**
      * Removes metadata by name.
      *
+     * @param <T> Type of the metadata value.
      * @return Value of removed metadata or {@code null}.
      */
     @Nullable public <T> T removeMeta();
@@ -96,6 +101,7 @@ public interface EvictableEntry<K, V> extends Cache.Entry<K, V> {
      * Removes metadata only if its current value is equal to {@code val} passed in.
      *
      * @param val Value to compare.
+     * @param <T> Type of the metadata value.
      * @return {@code True} if value was removed, {@code false} otherwise.
      */
     public <T> boolean removeMeta(T val);

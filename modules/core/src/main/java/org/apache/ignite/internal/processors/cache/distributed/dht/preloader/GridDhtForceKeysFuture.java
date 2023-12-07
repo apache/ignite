@@ -42,8 +42,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
@@ -235,8 +233,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         boolean ret = false;
 
         if (mappings != null) {
-            assert !cctx.mvccEnabled(); // Should not happen when MVCC enabled.
-
             ClusterNode loc = cctx.localNode();
 
             int curTopVer = topCntr.get();
@@ -538,21 +534,22 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                         if (entry.initialValue(
                             info.value(),
                             info.version(),
-                            cctx.mvccEnabled() ? ((MvccVersionAware)info).mvccVersion() : null,
-                            cctx.mvccEnabled() ? ((MvccUpdateVersionAware)info).newMvccVersion() : null,
-                            cctx.mvccEnabled() ? ((MvccVersionAware)entry).mvccTxState() : TxState.NA,
-                            cctx.mvccEnabled() ? ((MvccUpdateVersionAware)entry).newMvccTxState() : TxState.NA,
+                            null,
+                            null,
+                            TxState.NA,
+                            TxState.NA,
                             info.ttl(),
                             info.expireTime(),
                             true,
                             topVer,
                             replicate ? DR_PRELOAD : DR_NONE,
+                            false,
                             false
                         )) {
                             if (rec && !entry.isInternal())
                                 cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
                                     null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
-                                    false, null, null, null, false);
+                                    false, null, null, false);
                         }
                     }
                     catch (IgniteCheckedException e) {

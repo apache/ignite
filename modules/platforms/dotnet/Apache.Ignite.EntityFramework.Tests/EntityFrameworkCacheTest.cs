@@ -836,7 +836,9 @@ namespace Apache.Ignite.EntityFramework.Tests
             conn.Open();
 
             var cmd = (EntityCommand) conn.CreateCommand();
+#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
             cmd.CommandText = esql;
+#pragma warning restore CA2100
 
             return cmd;
         }

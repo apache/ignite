@@ -1,0 +1,80 @@
+# name: test/sql/function/string/test_left.test
+# description: LEFT test
+# group: [string]
+
+# test LEFT on positive positions
+query TTTTT
+SELECT LEFT('abcd', 0), LEFT('abc', 1), LEFT('abc', 2), LEFT('abc', 3), LEFT('abc', 4)
+----
+(empty)	a	ab	abc	abc
+
+# test LEFT on negative positions
+query TTTTT
+SELECT LEFT('abcd', 0), LEFT('abc', -1), LEFT('abc', -2), LEFT('abc', -3), LEFT('abc', -4)
+----
+(empty)	(empty)	(empty)	(empty)	(empty)
+
+# test LEFT on NULL values
+query TTT
+SELECT LEFT(NULL, 0), LEFT('abc', NULL), LEFT(NULL, NULL)
+----
+NULL	NULL	NULL
+
+query TTT
+SELECT LEFT(NULL, 0), LEFT('🦆ab', NULL), LEFT(NULL, NULL)
+----
+NULL	NULL	NULL
+
+# test on tables
+statement ok
+DROP TABLE IF EXISTS strings
+
+statement ok
+CREATE TABLE strings(a VARCHAR, b INTEGER)
+
+statement ok
+INSERT INTO STRINGS VALUES ('abcd', 0), ('abc', 1), ('abc', 2), ('abc', 3), ('abc', 4)
+
+query T
+SELECT LEFT(a, b) FROM strings ORDER BY b
+----
+(empty)
+a
+ab
+abc
+abc
+
+statement ok
+DROP TABLE IF EXISTS strings
+
+statement ok
+CREATE TABLE strings(a VARCHAR, b INTEGER)
+
+statement ok
+INSERT INTO STRINGS VALUES ('abcd', 0), ('abc', -1), ('abc', -2), ('abc', -3), ('abc', -4)
+
+query T
+SELECT LEFT(a, b) FROM strings
+----
+(empty)
+(empty)
+(empty)
+(empty)
+(empty)
+
+statement ok
+DROP TABLE IF EXISTS strings
+
+statement ok
+CREATE TABLE strings(a VARCHAR, b INTEGER)
+
+statement ok
+INSERT INTO STRINGS VALUES (NULL, 0), ('abc', NULL), (NULL, NULL)
+
+query T
+SELECT LEFT(a, b) FROM strings
+----
+NULL
+NULL
+NULL
+

@@ -98,14 +98,14 @@ public class CacheContinuousQueryEventBufferTest extends GridCommonAbstractTest 
      * @param threads Threads number.
      * @throws Exception If failed.
      */
-    private void testBuffer(Random rnd,
+    private void testBuffer(
+        Random rnd,
         final CacheContinuousQueryEventBuffer b,
         int cnt,
         long cntr,
         float filterRatio,
-        int threads)
-        throws Exception
-    {
+        int threads
+    ) throws Exception {
         List<CacheContinuousQueryEntry> expEntries = new ArrayList<>();
 
         List<CacheContinuousQueryEntry> entries = new ArrayList<>();

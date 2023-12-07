@@ -158,7 +158,7 @@ public abstract class AbstractIndexPageMetricsTest extends GridCommonAbstractTes
         validateIdxPagesCnt();
 
         IntStream.range(0, 50)
-            .map(i -> (int) (Math.random() * 100))
+            .map(i -> (int)(Math.random() * 100))
             .forEach(caches.get(0)::remove);
 
         validateIdxPagesCnt();

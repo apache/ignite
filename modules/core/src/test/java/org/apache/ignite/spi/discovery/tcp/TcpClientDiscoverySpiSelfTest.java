@@ -59,6 +59,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
@@ -235,6 +236,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         if (nodeId != null)
             cfg.setNodeId(nodeId);
+
+        // Will be used to handle segmentation instead of NoOpFailureHandler.
+        cfg.setSegmentationPolicy(SegmentationPolicy.STOP);
 
         return cfg;
     }
@@ -561,12 +565,13 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 try {
-                    boolean ping1 = ((IgniteEx) srv1).context().discovery().pingNode(client.cluster().localNode().id());
+                    boolean ping1 = ((IgniteEx)srv1).context().discovery().pingNode(client.cluster().localNode().id());
 
-                    boolean ping2 = ((IgniteEx) srv0).context().discovery().pingNode(client.cluster().localNode().id());
+                    boolean ping2 = ((IgniteEx)srv0).context().discovery().pingNode(client.cluster().localNode().id());
 
                     return ping1 && ping2;
-                } catch (IgniteClientDisconnectedException | IgniteClientDisconnectedCheckedException e) {
+                }
+                catch (IgniteClientDisconnectedException | IgniteClientDisconnectedCheckedException e) {
                     return false;
                 }
             }
@@ -1278,7 +1283,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             startClientNodes(1);
 
             assertEquals(G.ignite("server-0").cluster().localNode().id(),
-                ((TcpDiscoveryNode) G.ignite("client-0").cluster().localNode()).clientRouterNodeId());
+                ((TcpDiscoveryNode)G.ignite("client-0").cluster().localNode()).clientRouterNodeId());
 
             checkNodes(2, 1);
 

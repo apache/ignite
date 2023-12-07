@@ -24,17 +24,22 @@ import java.util.EventListener;
  */
 interface GridJobEventListener extends EventListener {
     /**
+     * @param worker Job worker.
+     */
+    void onJobQueued(GridJobWorker worker);
+
+    /**
      * @param worker Started job worker.
      */
-    public void onJobStarted(GridJobWorker worker);
+    void onJobStarted(GridJobWorker worker);
 
     /**
      * @param worker Job worker.
      */
-    public void onBeforeJobResponseSent(GridJobWorker worker);
+    void onBeforeJobResponseSent(GridJobWorker worker);
 
     /**
      * @param worker Finished job worker.
      */
-    public void onJobFinished(GridJobWorker worker);
+    void onJobFinished(GridJobWorker worker);
 }

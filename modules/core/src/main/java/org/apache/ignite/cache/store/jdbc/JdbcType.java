@@ -92,6 +92,7 @@ public class JdbcType implements Serializable {
      * Sets associated cache name.
      *
      * @param cacheName Cache name.
+     * @return {@code this} for chaining.
      */
     public JdbcType setCacheName(String cacheName) {
         this.cacheName = cacheName;
@@ -112,6 +113,7 @@ public class JdbcType implements Serializable {
      * Sets database schema name.
      *
      * @param dbSchema Schema name.
+     * @return {@code this} for chaining.
      */
     public JdbcType setDatabaseSchema(String dbSchema) {
         this.dbSchema = dbSchema;

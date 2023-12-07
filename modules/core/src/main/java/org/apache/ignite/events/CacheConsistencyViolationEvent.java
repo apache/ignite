@@ -17,8 +17,10 @@
 
 package org.apache.ignite.events;
 
+import java.util.Collections;
 import java.util.Map;
-import java.util.UUID;
+import org.apache.ignite.cache.CacheEntryVersion;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteExperimental;
 
@@ -62,48 +64,119 @@ import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
  * @see EventType#EVT_CONSISTENCY_VIOLATION
  */
 @IgniteExperimental
-public class CacheConsistencyViolationEvent<K, V> extends EventAdapter {
+public class CacheConsistencyViolationEvent extends EventAdapter {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
-    /** Represents original values of entries that were affected by a cache operation.*/
-    final Map<UUID /*Node*/, Map<K, V>> originalEntries;
+    /** Represents original values of entries.*/
+    private final Map<Object, EntriesInfo> entries;
 
-    /** Collection of repaired entries. */
-    final Map<K, V> repairedEntries;
+    /** Repaired entries. */
+    private final Map<Object, Object> repaired;
+
+    /** Cache name. */
+    private final String cacheName;
+
+    /** Strategy. */
+    private final ReadRepairStrategy strategy;
 
     /**
      * Creates a new instance of CacheConsistencyViolationEvent.
-     *
+     * @param cacheName Cache name.
      * @param node Local node.
      * @param msg Event message.
-     * @param originalEntries Collection of original entries affected by a cache operation.
-     * @param repairedEntries Collection of repaired entries.
+     * @param entries Collection of original entries.
+     * @param repaired Collection of repaired entries.
+     * @param strategy Strategy.
      */
     public CacheConsistencyViolationEvent(
+        String cacheName,
         ClusterNode node,
         String msg,
-        Map<UUID, Map<K, V>> originalEntries,
-        Map<K, V> repairedEntries) {
+        Map<Object, EntriesInfo> entries,
+        Map<Object, Object> repaired,
+        ReadRepairStrategy strategy) {
         super(node, msg, EVT_CONSISTENCY_VIOLATION);
 
-        this.originalEntries = originalEntries;
-        this.repairedEntries = repairedEntries;
+        this.cacheName = cacheName;
+        this.entries = Collections.unmodifiableMap(entries);
+        this.repaired = Collections.unmodifiableMap(repaired);
+        this.strategy = strategy;
     }
 
     /**
-     * Returns a mapping node ids to a collection of original entries affected by a cache operation.
+     * Returns a mapping of keys to a collection of original entries.
+     *
      * @return Collection of original entries.
      */
-    public Map<UUID, Map<K, V>> getEntries() {
-        return originalEntries;
+    public Map<Object, EntriesInfo> getEntries() {
+        return entries;
     }
 
     /**
-     * Returns a collection of repaired entries.
+     * Returns a mapping of keys to a collection of repaired entries.
+     *
      * @return Collection of repaired entries.
      */
-    public Map<K, V> getRepairedEntries() {
-        return repairedEntries;
+    public Map<Object, Object> getRepairedEntries() {
+        return repaired;
+    }
+
+    /**
+     * Returns cache name.
+     *
+     * @return Cache name.
+     */
+    public String getCacheName() {
+        return cacheName;
+    }
+
+    /**
+     * Returns strategy.
+     *
+     * @return Strategy.
+     */
+    public ReadRepairStrategy getStrategy() {
+        return strategy;
+    }
+
+    /**
+     * Inconsistent entries mapping.
+     */
+    public interface EntriesInfo {
+        /**
+         * @return Entry's mapping.
+         */
+        public Map<ClusterNode, EntryInfo> getMapping();
+
+        /**
+         * @return Entry's partition.
+         */
+        public int partition();
+    }
+
+    /**
+     * Inconsistent entry info.
+     */
+    public interface EntryInfo {
+        /**
+         * @return Value.
+         */
+        public Object getValue();
+
+        /**
+         * @return Version.
+         */
+        public CacheEntryVersion getVersion();
+
+        /**
+         * @return Located at the primary node.
+         */
+        public boolean isPrimary();
+
+        /**
+         * @return Marked as correct during the repair.
+         */
+        public boolean isCorrect();
     }
 }

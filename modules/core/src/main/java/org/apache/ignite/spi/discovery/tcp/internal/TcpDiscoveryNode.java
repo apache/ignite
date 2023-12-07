@@ -48,7 +48,6 @@ import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 
 /**
@@ -63,7 +62,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     private static final long serialVersionUID = 0L;
 
     /** Node ID. */
-    private UUID id;
+    private volatile UUID id;
 
     /** Consistent ID. */
     @GridToStringInclude
@@ -82,7 +81,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** */
     @GridToStringInclude
-    private Collection<InetSocketAddress> sockAddrs;
+    private volatile Collection<InetSocketAddress> sockAddrs;
 
     /** */
     @GridToStringInclude
@@ -147,14 +146,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     @GridToStringExclude
     private transient boolean cacheCli;
 
-    /** Daemon node initialization flag. */
-    @GridToStringExclude
-    private transient volatile boolean daemonInit;
-
-    /** Daemon node flag. */
-    @GridToStringExclude
-    private transient boolean daemon;
-
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
@@ -179,8 +170,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         int discPort,
         DiscoveryMetricsProvider metricsProvider,
         IgniteProductVersion ver,
-        Serializable consistentId)
-    {
+        Serializable consistentId
+    ) {
         assert id != null;
         assert metricsProvider != null;
         assert ver != null;
@@ -382,17 +373,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDaemon() {
-        if (!daemonInit) {
-            daemon = "true".equalsIgnoreCase((String)attribute(ATTR_DAEMON));
-
-            daemonInit = true;
-        }
-
-        return daemon;
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<String> hostNames() {
         return hostNames;
     }
@@ -408,6 +388,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      * @return Addresses that could be used by discovery.
      */
     public Collection<InetSocketAddress> socketAddresses() {
+        if (this.sockAddrs == null)
+            sockAddrs = U.toSocketAddresses(this, discPort);
+
         return sockAddrs;
     }
 
@@ -484,7 +467,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /** {@inheritDoc} */
     @Override public boolean isClient() {
         if (!cacheCliInit) {
-            Boolean clientModeAttr = ((ClusterNode) this).attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
+            Boolean clientModeAttr = ((ClusterNode)this).attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
 
             cacheCli = clientModeAttr != null && clientModeAttr;
 
@@ -611,8 +594,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         hostNames = U.readCollection(in);
         discPort = in.readInt();
 
-        sockAddrs = U.toSocketAddresses(this, discPort);
-
         Object consistentIdAttr = attrs.get(ATTR_NODE_CONSISTENT_ID);
 
         // Cluster metrics
@@ -660,16 +641,13 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      * Only purpose of this constructor is creating node which contains necessary data to store on disc only
      * @param node to copy data from
      */
-    public TcpDiscoveryNode(
-        ClusterNode node
-    ) {
+    public TcpDiscoveryNode(ClusterNode node) {
         this.id = node.id();
         this.consistentId = node.consistentId();
         this.addrs = node.addresses();
         this.hostNames = node.hostNames();
         this.order = node.order();
         this.ver = node.version();
-        this.daemon = node.isDaemon();
         this.clientRouterNodeId = node.isClient() ? node.id() : null;
 
         attrs = Collections.singletonMap(ATTR_NODE_CONSISTENT_ID, consistentId);

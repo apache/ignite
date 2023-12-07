@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareReq
  * Sql query request.
  */
 @SuppressWarnings("unchecked")
-public class ClientCacheSqlQueryRequest extends ClientCacheDataRequest implements ClientTxAwareRequest {
+public class ClientCacheSqlQueryRequest extends ClientCacheQueryRequest implements ClientTxAwareRequest {
     /** Query. */
     private final SqlQuery qry;
 
@@ -49,7 +49,7 @@ public class ClientCacheSqlQueryRequest extends ClientCacheDataRequest implement
                 .setLocal(reader.readBoolean())
                 .setReplicatedOnly(reader.readBoolean())
                 .setPageSize(reader.readInt())
-                .setTimeout((int) reader.readLong(), TimeUnit.MILLISECONDS);
+                .setTimeout((int)reader.readLong(), TimeUnit.MILLISECONDS);
     }
 
     /** {@inheritDoc} */

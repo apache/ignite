@@ -207,6 +207,8 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
             ignite0.createCache(cacheConfiguration(CACHE1, cacheMode, 256));
             ignite0.createCache(cacheConfiguration(CACHE2, cacheMode, sameAff ? 256 : 128));
 
+            awaitCacheOnClient(grid(GRID_CNT - 1), CACHE2);
+
             final AtomicInteger threadIdx = new AtomicInteger();
 
             IgniteInternalFuture<?> fut = runMultiThreadedAsync(new Callable<Void>() {

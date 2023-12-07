@@ -51,6 +51,6 @@ public class GridLoadTestJob extends ComputeJobAdapter {
 
         ignite.compute().localDeployTask(GridLoadTestTask.class, GridLoadTestTask.class.getClassLoader());
 
-        return (Integer) ignite.compute().execute(GridLoadTestTask.class.getName(), i);
+        return (Integer)ignite.compute().execute(GridLoadTestTask.class.getName(), i);
     }
 }

@@ -149,14 +149,13 @@ public class GridCommandHandlerIndexingUtils {
     public static void createAndFillCache(
         Ignite ignite,
         String cacheName,
-        String grpName,
+        @Nullable String grpName,
         @Nullable String dataRegionName,
         Map<QueryEntity, Function<Random, Object>> qryEntities,
         int cnt
     ) {
         requireNonNull(ignite);
         requireNonNull(cacheName);
-        requireNonNull(grpName);
         requireNonNull(qryEntities);
 
         ignite.createCache(new CacheConfiguration<>()
@@ -202,9 +201,7 @@ public class GridCommandHandlerIndexingUtils {
 
         GridCacheContext<K, V> cacheCtx = internalCache.context();
 
-        GridDhtLocalPartition dhtLocPart = cacheCtx.dht().topology().localPartition(partId);
-
-        CacheDataStore cacheDataStore = cacheCtx.group().offheap().dataStore(dhtLocPart);
+        CacheDataStore cacheDataStore = cacheCtx.dht().topology().localPartition(partId).dataStore();
 
         String delegate = "delegate";
         if (hasField(cacheDataStore, delegate))
@@ -300,8 +297,8 @@ public class GridCommandHandlerIndexingUtils {
         final Ignite ignite,
         final String cacheName,
         final String grpName,
-        final Collection<QueryEntity> entities)
-    {
+        final Collection<QueryEntity> entities
+    ) {
         assert nonNull(ignite);
         assert nonNull(cacheName);
 

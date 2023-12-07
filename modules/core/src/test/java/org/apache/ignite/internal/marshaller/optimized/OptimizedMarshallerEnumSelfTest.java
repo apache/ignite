@@ -32,9 +32,10 @@ import static org.junit.Assert.assertEquals;
  *
  */
 public class OptimizedMarshallerEnumSelfTest {
-
+    /** */
     private String igniteHome = System.getProperty("user.dir");
 
+    /** */
     private final IgniteLogger rootLog = new GridTestLog4jLogger(false);
 
     /**
@@ -58,6 +59,7 @@ public class OptimizedMarshallerEnumSelfTest {
         assertEquals(TestEnum.Bond.desc, unmarshalled.desc);
     }
 
+    /** */
     private GridKernalContext newContext() throws IgniteCheckedException {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -67,25 +69,33 @@ public class OptimizedMarshallerEnumSelfTest {
         return new GridTestKernalContext(rootLog.getLogger(OptimizedMarshallerEnumSelfTest.class), cfg);
     }
 
+    /** */
     private enum TestEnum {
+        /** */
         Equity("Equity") {
+            /** {@inheritDoc} */
             @Override public String getTestString() {
                 return "eee";
             }
         },
 
+        /** */
         Bond("Bond") {
+            /** {@inheritDoc} */
             @Override public String getTestString() {
                 return "qqq";
             }
         };
 
+        /** */
         public final String desc;
 
+        /** */
         TestEnum(String desc) {
             this.desc = desc;
         }
 
+        /** */
         public abstract String getTestString();
     }
 }

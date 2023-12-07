@@ -1,0 +1,51 @@
+# name: test/sql/types/interval/test_interval_ops.test
+# description: Test various ops involving intervals
+# group: [interval]
+
+statement ok
+PRAGMA enable_verification
+
+statement ok
+CREATE TABLE interval_ym (t INTERVAL YEAR TO MONTH);
+
+statement ok
+INSERT INTO interval_ym VALUES (INTERVAL '20' MONTHS), (INTERVAL '1' YEAR), (INTERVAL '1' MONTH);
+
+query I
+SELECT COUNT(DISTINCT t) FROM interval_ym
+----
+3
+
+statement ok
+UPDATE interval_ym SET t=INTERVAL '1' MONTH WHERE t=INTERVAL '20' MONTHS;
+
+query T
+SELECT * FROM interval_ym i1 JOIN interval_ym i2 USING (t) ORDER BY 1
+----
+P1M
+P1M
+P1M
+P1M
+P1Y
+
+query TT
+SELECT * FROM interval_ym i1 JOIN interval_ym i2 ON (i1.t <> i2.t) ORDER BY 1
+----
+P1M	P1Y
+P1M	P1Y
+P1Y	P1M
+P1Y	P1M
+
+query TT
+SELECT * FROM interval_ym i1 JOIN interval_ym i2 ON (i1.t > i2.t) ORDER BY 1
+----
+P1Y	P1M
+P1Y	P1M
+
+query T
+SELECT t FROM interval_ym ORDER BY 1;
+----
+P1M
+P1M
+P1Y
+

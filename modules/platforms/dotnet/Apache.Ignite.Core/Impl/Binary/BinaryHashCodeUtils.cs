@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using Apache.Ignite.Core.Common;
+    using System.IO;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the Ignite-specific hash code for the provided value.
         /// </summary>
-        public static unsafe int GetHashCode<T>(T val, Marshaller marsh, IDictionary<int, int> affinityKeyFieldIds)
+        public static unsafe int? GetHashCode<T>(T val, Marshaller marsh, IDictionary<int, int> affinityKeyFieldIds)
         {
             Debug.Assert(marsh != null);
             Debug.Assert(val != null);
@@ -45,11 +45,29 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (type == typeof(long))
                 return GetLongHashCode(TypeCaster<long>.Cast(val));
 
+            if (type == typeof(string))
+                return BinaryUtils.GetStringHashCode((string) (object) val);
+
+            if (type == typeof(Guid))
+                return GetGuidHashCode(TypeCaster<Guid>.Cast(val));
+
+            if (type == typeof(uint))
+            {
+                var val0 = TypeCaster<uint>.Cast(val);
+                return *(int*) &val0;
+            }
+
+            if (type == typeof(ulong))
+            {
+                var val0 = TypeCaster<ulong>.Cast(val);
+                return GetLongHashCode(*(long*) &val0);
+            }
+
             if (type == typeof(bool))
                 return TypeCaster<bool>.Cast(val) ? 1231 : 1237;
 
             if (type == typeof(byte))
-                return TypeCaster<byte>.Cast(val);
+                return unchecked((sbyte) TypeCaster<byte>.Cast(val));
 
             if (type == typeof(short))
                 return TypeCaster<short>.Cast(val);
@@ -70,27 +88,12 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             if (type == typeof(sbyte))
-            {
-                var val0 = TypeCaster<sbyte>.Cast(val);
-                return *(byte*) &val0;
-            }
+                return TypeCaster<sbyte>.Cast(val);
 
             if (type == typeof(ushort))
             {
                 var val0 = TypeCaster<ushort>.Cast(val);
                 return *(short*) &val0;
-            }
-
-            if (type == typeof(uint))
-            {
-                var val0 = TypeCaster<uint>.Cast(val);
-                return *(int*) &val0;
-            }
-
-            if (type == typeof(ulong))
-            {
-                var val0 = TypeCaster<ulong>.Cast(val);
-                return GetLongHashCode(*(long*) &val0);
             }
 
             if (type == typeof(IntPtr))
@@ -105,32 +108,141 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return GetLongHashCode(*(long*) &val0);
             }
 
-            if (type == typeof(Guid))
+            if (type.IsArray)
             {
-                return GetGuidHashCode(TypeCaster<Guid>.Cast(val));
+                return GetArrayHashCode(val, marsh, affinityKeyFieldIds);
+            }
+
+            if (type == typeof(BinaryObject))
+            {
+                return val.GetHashCode();
             }
 
             // DateTime, when used as key, is always written as BinaryObject.
             return GetComplexTypeHashCode(val, marsh, affinityKeyFieldIds);
         }
 
-        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
-        private static int GetComplexTypeHashCode<T>(T val, Marshaller marsh, IDictionary<int, int> affinityKeyFieldIds)
+        /// <summary>
+        /// Gets the Ignite-specific hash code for an array.
+        /// </summary>
+        private static int? GetArrayHashCode<T>(T val, Marshaller marsh, IDictionary<int, int> affinityKeyFieldIds)
+        {
+            var res = 1;
+
+            var bytes = val as sbyte[];  // Matches byte[] too.
+
+            if (bytes != null)
+            {
+                foreach (var x in bytes)
+                    res = 31 * res + x;
+
+                return res;
+            }
+
+            var ints = val as int[]; // Matches uint[] too.
+
+            if (ints != null)
+            {
+                foreach (var x in ints)
+                    res = 31 * res + x;
+
+                return res;
+            }
+
+            var longs = val as long[]; // Matches ulong[] too.
+
+            if (longs != null)
+            {
+                foreach (var x in longs)
+                    res = 31 * res + GetLongHashCode(x);
+
+                return res;
+            }
+
+            var guids = val as Guid[];
+
+            if (guids != null)
+            {
+                foreach (var x in guids)
+                    res = 31 * res + GetGuidHashCode(x);
+
+                return res;
+            }
+
+            var shorts = val as short[]; // Matches ushort[] too.
+
+            if (shorts != null)
+            {
+                foreach (var x in shorts)
+                    res = 31 * res + x;
+
+                return res;
+            }
+
+            var chars = val as char[];
+
+            if (chars != null)
+            {
+                foreach (var x in chars)
+                    res = 31 * res + x;
+
+                return res;
+            }
+
+            // This covers all other arrays.
+            // We don't have special handling for unlikely use cases such as float[] and double[].
+            var arr = val as Array;
+
+            Debug.Assert(arr != null);
+
+            if (arr.Rank != 1)
+            {
+                return null;
+            }
+
+            foreach (var element in arr)
+            {
+                res = 31 * res;
+
+                if (element != null)
+                {
+                    var elementHash = GetHashCode(element, marsh, affinityKeyFieldIds);
+
+                    if (elementHash == null)
+                    {
+                        return null;
+                    }
+
+                    res += elementHash.Value;
+                }
+            }
+
+            return res;
+        }
+
+        private static int? GetComplexTypeHashCode<T>(T val, Marshaller marsh, IDictionary<int, int> affKeyFieldIds)
         {
             using (var stream = new BinaryHeapStream(128))
             {
                 var writer = marsh.StartMarshal(stream);
 
                 int? hashCode = null;
+                int? affKeyOffset = null;
+                var multipleAffKeys = false;
 
-                writer.OnObjectWritten += (header, obj) =>
+                writer.OnObjectWritten += (header, schema, schemaIdx) =>
                 {
-                    if (affinityKeyFieldIds != null && affinityKeyFieldIds.ContainsKey(header.TypeId))
+                    if (affKeyFieldIds != null &&
+                        affKeyFieldIds.TryGetValue(header.TypeId, out var affKeyFieldId))
                     {
-                        var err = string.Format(
-                            "Affinity keys are not supported. Object '{0}' has an affinity key.", obj);
+                        if (affKeyOffset != null)
+                        {
+                            multipleAffKeys = true;
+                            return;
+                        }
 
-                        throw new IgniteException(err);
+                        affKeyOffset = schema.GetFieldOffset(schemaIdx, affKeyFieldId);
+                        return;
                     }
 
                     // In case of composite objects we need the last hash code.
@@ -138,14 +250,31 @@ namespace Apache.Ignite.Core.Impl.Binary
                 };
 
                 writer.Write(val);
+                marsh.FinishMarshal(writer);
 
-                if (hashCode != null)
+                if (multipleAffKeys)
                 {
-                    // ReSharper disable once PossibleInvalidOperationException (false detection).
-                    return hashCode.Value;
+                    return null;
                 }
 
-                throw new IgniteException(string.Format("Failed to compute hash code for object '{0}'", val));
+                if (affKeyOffset != null)
+                {
+                    if (affKeyOffset < 0)
+                    {
+                        // Could not find the field in the written data.
+                        return null;
+                    }
+
+                    stream.Seek(affKeyOffset.Value, SeekOrigin.Begin);
+
+                    // Use ForceBinary to avoid deserializing the object. Only primitives will be deserialized.
+                    // For complex objects we can access BinaryObject hash code directly.
+                    var affKey = marsh.Unmarshal<object>(stream, BinaryMode.ForceBinary);
+
+                    return GetHashCode(affKey, marsh, affKeyFieldIds);
+                }
+
+                return hashCode;
             }
         }
 

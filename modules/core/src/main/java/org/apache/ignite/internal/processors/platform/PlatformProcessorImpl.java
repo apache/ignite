@@ -302,6 +302,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         // Add Interop node attributes.
         ctx.addNodeAttribute(PlatformUtils.ATTR_PLATFORM, interopCfg.platform());
+
+        // Register query entity meta.
+        ctx.query().registerMetadataForRegisteredCaches(true);
     }
 
     /** {@inheritDoc} */
@@ -470,7 +473,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_LOGGER_IS_LEVEL_ENABLED: {
-                return loggerIsLevelEnabled((int) val) ? TRUE : FALSE;
+                return loggerIsLevelEnabled((int)val) ? TRUE : FALSE;
             }
 
             case OP_RELEASE_START: {

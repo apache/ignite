@@ -41,15 +41,39 @@ Once the cluster is started, you can use the Ignite C++ thin client to perform c
 Ignite ships with a robust {cpp} client.
 To get started with Ignite and {cpp}, you will need to be familiar with building {cpp} applications.
 
-. Install `openssl` and add it to your path.
 . If you haven't already, download/install <<Installing Ignite,Apache Ignite>>.
-. Navigate to the `{IGNITE_HOME}/platforms/cpp/project/vs` folder.
-. Launch the appropriate Visual Studio solution file for your system (`ignite.sln` is for 64-bit).
-. Build the solution.
+. Install `CMake 3.6+` and add it to the `%Path%`.
+. Install `OpenSSL`.
+. Set `%JAVA_HOME%` environment variable.
+. Navigate to the `%IGNITE_HOME%\platforms\cpp\` folder.
+. Create build directory `%IGNITE_HOME%\platforms\cpp\cmake-build-release`.
+. Build and install `Ignite C++`.
 
-From here, you can create your own code, or run one of the existing examples located in the `{IGNITE_HOME}/platforms/cpp/examples/project/vs` directory.
+[tabs]
+--
+tab:Win32[]
+[source,bat,subs="attributes,specialchars"]
+----
+cd cmake-build-release
+cmake .. -DWITH_THIN_CLIENT=ON -DCMAKE_GENERATOR_PLATFORM=Win32 -DOPENSSL_ROOT_DIR=<openssl install dir> -DCMAKE_INSTALL_PREFIX=<ignite cpp install dir>
+cmake --build . --target install  --config Release
+----
 
-There is much more information about how to build, test, and use GGCE for {cpp} in the `readme.txt` and `DEVNOTES.txt` files located in the `{IGNITE_HOME}/platforms/cpp` folder.
+tab:Win64[]
+[source,bat,subs="attributes,specialchars"]
+----
+cd cmake-build-release
+cmake .. -DWITH_THIN_CLIENT=ON -DCMAKE_GENERATOR_PLATFORM=x64 -DOPENSSL_ROOT_DIR=<openssl install dir> -DCMAKE_INSTALL_PREFIX=<ignite cpp install dir>
+cmake --build . --target install  --config Release
+----
+--
+`CMake` by default generates on Windows Visual Studio projects. You can find generated projects in CMake
+build directory and open `Ignite.C++.sln` in Visual Studio.
+
+From here, you can create your own code, or run one of the existing examples located in the `{IGNITE_HOME}/platforms/cpp/examples/` directory.
+
+There is much more information about how to build, test, and use Apache Ignite for {cpp} in the `README.txt` and
+`DEVNOTES.txt` files located in the `{IGNITE_HOME}/platforms/cpp` folder.
 
 For information about the {cpp} thin client, see link:thin-clients/cpp-thin-client[C++ Thin Client].
 
@@ -72,7 +96,7 @@ tab:Ubuntu[]
 [source,bash,subs="attributes,specialchars"]
 ----
 cd ${CPP_BUILD_DIR}
-cmake -DCMAKE_BUILD_TYPE=Release -DWITH_ODBC=ON -DWITH_THIN_CLIENT=ON ${IGNITE_HOME}/platforms/cpp 
+cmake -DCMAKE_BUILD_TYPE=Release -DWITH_THIN_CLIENT=ON ${IGNITE_HOME}/platforms/cpp
 make
 sudo make install
 ----
@@ -81,8 +105,8 @@ tab:CentOS/RHEL[]
 [source,shell,subs="attributes,specialchars"]
 ----
 cd ${CPP_BUILD_DIR}
-cmake3 -DCMAKE_BUILD_TYPE=Release -DWITH_ODBC=ON -DWITH_THIN_CLIENT=ON ${IGNITE_HOME}/platforms/cpp 
-make 
+cmake3 -DCMAKE_BUILD_TYPE=Release -DWITH_THIN_CLIENT=ON ${IGNITE_HOME}/platforms/cpp
+make
 sudo make install
 ----
 

@@ -1,0 +1,24 @@
+# name: test/sql/types/collections/map.test
+# description: Test MAP query
+# group: [collect]
+
+query T
+SELECT MAP(SELECT * FROM (SELECT 1, 'test1' UNION SELECT 2, 'test2' UNION SELECT 3, 'test3'))
+----
+{1:test1, 2:test2, 3:test3}
+
+statement ok
+CREATE TABLE T1 (a INTEGER, b INTEGER);
+
+statement ok
+INSERT INTO T1 VALUES (11, 22), (11, 10), (12, 21);
+
+query T
+SELECT MAP(SELECT b, b+1 FROM t1 t1_1 WHERE t1_1.a = t1_2.a) FROM t1 t1_2 ORDER BY a
+----
+{10:11, 22:23}
+{10:11, 22:23}
+{21:22}
+
+statement error
+SELECT MAP(SELECT 1, 2, 3)

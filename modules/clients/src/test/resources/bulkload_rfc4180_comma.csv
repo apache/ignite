@@ -1,0 +1,7 @@
+123,12,"FirstName123 MiddleName123",LastName123
+234,23,FirstName|234,""
+456,45,"FirstName456","LastName456"
+567,56,,
+678,67,""
+789,78,"FirstName789 plus ""quoted""","LastName 789"
+101112,1011,"FirstName 101112","LastName"","" 1011, 12"

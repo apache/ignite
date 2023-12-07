@@ -25,7 +25,6 @@ import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * This class implements stream parser.
@@ -42,8 +41,8 @@ public class ClientListenerNioMessageParser implements GridNioParser {
     /** Message metadata key. */
     static final int MSG_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
-    /** Reader metadata key. */
-    static final int READER_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    /** First message key. */
+    static final int FIRST_MESSAGE_RECEIVED_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** */
     private final IgniteLogger log;
@@ -55,19 +54,22 @@ public class ClientListenerNioMessageParser implements GridNioParser {
 
     /** {@inheritDoc} */
     @Override public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
-        Message msg = ses.removeMeta(MSG_META_KEY);
+        ClientMessage msg = ses.removeMeta(MSG_META_KEY);
 
         try {
             if (msg == null)
-                msg = new ClientMessage();
+                msg = new ClientMessage(ses.meta(FIRST_MESSAGE_RECEIVED_KEY) == null);
 
             boolean finished = false;
 
             if (buf.hasRemaining())
-                finished = msg.readFrom(buf, null);
+                finished = msg.readFrom(buf);
 
-            if (finished)
+            if (finished) {
+                ses.addMeta(FIRST_MESSAGE_RECEIVED_KEY, true);
+
                 return msg;
+            }
             else {
                 ses.addMeta(MSG_META_KEY, msg);
 

@@ -78,6 +78,11 @@ namespace Apache.Ignite.Examples.Shared.Compute
                 count += t.Item2;
             }
 
+            if (count == 0)
+            {
+                return 0;
+            }
+
             return sum / count;
         }
     }

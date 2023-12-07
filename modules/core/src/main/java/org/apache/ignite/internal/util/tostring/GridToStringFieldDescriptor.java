@@ -105,12 +105,16 @@ class GridToStringFieldDescriptor {
     /**
      * @return Field order.
      */
-    int getOrder() { return order; }
+    int getOrder() {
+        return order;
+    }
 
     /**
      * @param order Field order.
      */
-    void setOrder(int order) { this.order = order; }
+    void setOrder(int order) {
+        this.order = order;
+    }
 
     /**
      * @return Field offset as returned by {@link GridUnsafe#objectFieldOffset(java.lang.reflect.Field)}.
@@ -135,5 +139,7 @@ class GridToStringFieldDescriptor {
     /**
      * @return Field name.
      */
-    String getName() { return name; }
+    String getName() {
+        return name;
+    }
 }

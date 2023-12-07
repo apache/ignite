@@ -121,14 +121,16 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             IgniteEx ignite1 = grid(1);
 
             ignite0.context().cache().context().io().addCacheHandler(
-                0, TestBadMessage.class, new CI2<UUID, GridCacheMessage>() {
-                @Override public void apply(UUID nodeId, GridCacheMessage msg) {
-                    throw new RuntimeException("Test bad message exception");
-                }
-            });
+                TestBadMessage.class,
+                new CI2<UUID, GridCacheMessage>() {
+                    @Override public void apply(UUID nodeId, GridCacheMessage msg) {
+                        throw new RuntimeException("Test bad message exception");
+                    }
+                });
 
             ignite1.context().cache().context().io().addCacheHandler(
-                0, TestBadMessage.class, new CI2<UUID, GridCacheMessage>() {
+                TestBadMessage.class,
+                new CI2<UUID, GridCacheMessage>() {
                     @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                         throw new RuntimeException("Test bad message exception");
                     }
@@ -162,7 +164,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                 try {
                     latch.countDown();
 
-                    Collection<TestMessage1> messages = ((TestMessage) msg).entries();
+                    Collection<TestMessage1> messages = ((TestMessage)msg).entries();
 
                     assertEquals(10, messages.size());
 
@@ -175,7 +177,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
                         assertEquals(cnt, i);
 
-                        TestMessage2 msg2 = (TestMessage2) msg1.message();
+                        TestMessage2 msg2 = (TestMessage2)msg1.message();
 
                         assertEquals(TEST_BODY + "_" + i + "_2", msg2.body());
 
@@ -183,7 +185,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
                         assertEquals(i, msg2.id());
 
-                        GridTestMessage msg3 = (GridTestMessage) msg2.message();
+                        GridTestMessage msg3 = (GridTestMessage)msg2.message();
 
                         assertEquals(cnt, msg3.getMsgId());
 

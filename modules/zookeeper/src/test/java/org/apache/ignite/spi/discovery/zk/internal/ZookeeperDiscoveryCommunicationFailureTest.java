@@ -709,7 +709,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
         TestRecordingCommunicationSpi.spi(srv0).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
                 return msg instanceof GridDhtPartitionSupplyMessage &&
-                    ((GridDhtPartitionSupplyMessage) msg).groupId() == CU.cacheId("c1");
+                    ((GridDhtPartitionSupplyMessage)msg).groupId() == CU.cacheId("c1");
             }
         });
 
@@ -756,8 +756,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
      * @throws Exception If failed.
      */
     private void checkResolverCachesInfo(Ignite crd, Map<String, T3<Integer, Integer, Integer>> expCaches)
-        throws Exception
-    {
+        throws Exception {
         CacheInfoCommunicationFailureResolver rslvr =
             (CacheInfoCommunicationFailureResolver)crd.configuration().getCommunicationFailureResolver();
 

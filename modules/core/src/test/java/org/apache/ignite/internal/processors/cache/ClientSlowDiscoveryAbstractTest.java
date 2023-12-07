@@ -78,7 +78,7 @@ public class ClientSlowDiscoveryAbstractTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
             if (msg instanceof TcpDiscoveryNodeAddFinishedMessage && interceptor != null)
-                interceptor.apply((TcpDiscoveryNodeAddFinishedMessage) msg);
+                interceptor.apply((TcpDiscoveryNodeAddFinishedMessage)msg);
         }
     }
 

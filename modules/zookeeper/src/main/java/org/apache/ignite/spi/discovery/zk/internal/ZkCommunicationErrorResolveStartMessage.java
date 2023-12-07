@@ -50,7 +50,6 @@ public class ZkCommunicationErrorResolveStartMessage implements DiscoverySpiCust
     }
 
     /** {@inheritDoc} */
-    @Deprecated
     @Override public boolean stopProcess() {
         return false;
     }

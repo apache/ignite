@@ -77,19 +77,19 @@ public class JettyRestProcessorAuthenticationWithTokenSelfTest extends JettyRest
     public void testInvalidSessionToken() throws Exception {
         tok = null;
 
-        String ret = content(null, GridRestCommand.VERSION);
+        String ret = content(null, GridRestCommand.NAME);
 
         assertResponseContainsError(ret, "Failed to handle request - session token not found or invalid");
 
         tok = "InvalidToken";
 
-        ret = content(null, GridRestCommand.VERSION);
+        ret = content(null, GridRestCommand.NAME);
 
         assertResponseContainsError(ret, "Failed to handle request - session token not found or invalid");
 
         tok = "26BE027D32CC42329DEC92D517B44E9E";
 
-        ret = content(null, GridRestCommand.VERSION);
+        ret = content(null, GridRestCommand.NAME);
 
         assertResponseContainsError(ret, "Failed to handle request - unknown session token (maybe expired session)");
 

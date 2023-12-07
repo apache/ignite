@@ -61,13 +61,6 @@ namespace ignite
                 virtual SqlResult::Type Execute();
 
                 /**
-                 * Get column metadata.
-                 *
-                 * @return Column metadata.
-                 */
-                virtual const meta::ColumnMetaVector* GetMeta();
-
-                /**
                  * Fetch next result row to application buffers.
                  *
                  * @param columnBindings Application buffers to put data to.

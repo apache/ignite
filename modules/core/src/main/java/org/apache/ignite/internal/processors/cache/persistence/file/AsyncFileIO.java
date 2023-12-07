@@ -74,8 +74,8 @@ public class AsyncFileIO extends AbstractFileIO {
      * @return Native file descriptor.
      */
     private static int getFileDescriptor(AsynchronousFileChannel ch) {
-         FileDescriptor fd = U.field(ch, "fdObj");
-         return U.field(fd, "fd");
+        FileDescriptor fd = U.field(ch, "fdObj");
+        return U.field(fd, "fd");
     }
 
     /** {@inheritDoc} */

@@ -1,0 +1,36 @@
+# name: test/sql/function/string/test_char_length.test
+# description: Just simple test to check support of CHAR_LENGTH and CHARACTER_LENGTH functions.
+# group: [string]
+
+
+query T
+SELECT CHARACTER_LENGTH('Gridgain.com + Гридгайн')
+----
+23
+
+query T
+SELECT CHARACTER_LENGTH('')
+----
+0
+
+query T
+SELECT CHARACTER_LENGTH(null)
+----
+NULL
+
+
+query T
+SELECT char_length('Gridgain.com + Гридгайн')
+----
+23
+
+query T
+SELECT char_length('')
+----
+0
+
+query T
+SELECT char_length(null)
+----
+NULL
+

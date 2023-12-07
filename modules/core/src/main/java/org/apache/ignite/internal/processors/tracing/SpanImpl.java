@@ -52,12 +52,14 @@ public class SpanImpl implements Span {
         this.includedScopes = includedScopes;
     }
 
+    /** {@inheritDoc} */
     @Override public Span addTag(String tagName, Supplier<String> tagValSupplier) {
         spiSpecificSpan.addTag(tagName, tagValSupplier.get());
 
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override public Span addLog(Supplier<String> logDescSupplier) {
         spiSpecificSpan.addLog(logDescSupplier.get());
 

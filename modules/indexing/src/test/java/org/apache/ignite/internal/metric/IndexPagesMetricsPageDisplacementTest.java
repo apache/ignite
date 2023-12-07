@@ -161,8 +161,8 @@ public class IndexPagesMetricsPageDisplacementTest extends GridCommonAbstractTes
      * Returns IDs of index pages currently residing in the storage.
      */
     private List<Long> getIdxPagesOnDisk(int grpId) throws IgniteCheckedException {
-        FilePageStoreManager pageStoreMgr = (FilePageStoreManager) grid.context().cache().context().pageStore();
-        FilePageStore pageStore = (FilePageStore) pageStoreMgr.getStore(grpId, PageIdAllocator.INDEX_PARTITION);
+        FilePageStoreManager pageStoreMgr = (FilePageStoreManager)grid.context().cache().context().pageStore();
+        FilePageStore pageStore = (FilePageStore)pageStoreMgr.getStore(grpId, PageIdAllocator.INDEX_PARTITION);
 
         List<Long> result = new ArrayList<>();
 
@@ -178,7 +178,8 @@ public class IndexPagesMetricsPageDisplacementTest extends GridCommonAbstractTes
 
             try {
                 pageStore.read(pageId, buf, false);
-            } catch (IgniteDataIntegrityViolationException ignored) {
+            }
+            catch (IgniteDataIntegrityViolationException ignored) {
                 // sometimes we try to access an invalid page, in which case this exception will be thrown.
                 // We simply ignore it and try to access other pages.
             }

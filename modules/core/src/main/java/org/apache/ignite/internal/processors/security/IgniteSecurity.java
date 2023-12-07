@@ -61,6 +61,9 @@ public interface IgniteSecurity {
      */
     public OperationSecurityContext withContext(UUID nodeId);
 
+    /** @return {@code True} if current thread executed in default security context. */
+    public boolean isDefaultContext();
+
     /**
      * @return SecurityContext of holder {@link OperationSecurityContext}.
      */
@@ -152,4 +155,22 @@ public interface IgniteSecurity {
      * @throws IgniteCheckedException If error occurred.
      */
     public void dropUser(String login) throws IgniteCheckedException;
+
+    /**
+     * Callback for local join events for which the regular events are not generated.
+     * <p/>
+     * Local join event is expected in cases of joining to topology or client reconnect.
+     */
+    public void onLocalJoin();
+
+    /**
+     * @param cls The class for which the check is to be performed.
+     * @return Whether the specified class can be considered system. System classes are classes whose source code
+     * can be considered controlled by the Ignite administrator and to which less stringent security checks can be
+     * applied. By default, Ignite considers only classes from its own codebase as system but their pool can be extended
+     * by custom Security Plugin.
+     *
+     * @see GridSecurityProcessor#isSystemType(Class)
+     */
+    public boolean isSystemType(Class<?> cls);
 }

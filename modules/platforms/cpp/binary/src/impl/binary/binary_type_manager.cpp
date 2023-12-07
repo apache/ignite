@@ -48,7 +48,8 @@ namespace ignite
                 delete pending;
             }
 
-            SharedPointer<BinaryTypeHandler> BinaryTypeManager::GetHandler(const std::string& typeName, int32_t typeId)
+            SharedPointer<BinaryTypeHandler> BinaryTypeManager::GetHandler(const std::string& typeName,
+                const std::string& affFieldName, int32_t typeId)
             {
                 { // Locking scope.
                     CsLockGuard guard(cs);
@@ -66,7 +67,7 @@ namespace ignite
                     }
                 }
 
-                SPSnap snapshot = SPSnap(new Snap(typeName ,typeId));
+                SPSnap snapshot = SPSnap(new Snap(typeName, affFieldName, typeId));
 
                 return SharedPointer<BinaryTypeHandler>(new BinaryTypeHandler(snapshot));
             }

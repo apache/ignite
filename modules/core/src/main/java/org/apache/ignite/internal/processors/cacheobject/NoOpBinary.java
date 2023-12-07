@@ -85,6 +85,11 @@ public class NoOpBinary implements IgniteBinary {
         throw unsupported();
     }
 
+    /** {@inheritDoc} */
+    @Override public BinaryType registerClass(Class<?> cls) throws BinaryObjectException {
+        throw unsupported();
+    }
+
     /** */
     private BinaryObjectException unsupported() {
         return new BinaryObjectException("Binary marshaller is not configured.");

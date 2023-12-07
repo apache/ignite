@@ -106,6 +106,7 @@ public class GridDhtPartitionDemandLegacyMessage extends GridCacheGroupIdMessage
             historicalParts = new HashSet<>(cp.historicalParts);
     }
 
+    /** */
     GridDhtPartitionDemandLegacyMessage(GridDhtPartitionDemandMessage cp) {
         grpId = cp.groupId();
         updateSeq = cp.rebalanceId() < 0 ? -1 : cp.rebalanceId();

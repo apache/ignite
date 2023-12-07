@@ -19,6 +19,7 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.EnumSet;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Protocol Context.
@@ -29,6 +30,13 @@ public class ProtocolContext {
 
     /** Features. */
     private final EnumSet<ProtocolBitmaskFeature> features;
+
+    /**
+     * @param ver Protocol version.
+     */
+    public ProtocolContext(ProtocolVersion ver) {
+        this(ver, null);
+    }
 
     /**
      * @param ver Protocol version.
@@ -86,5 +94,14 @@ public class ProtocolContext {
      */
     public static boolean isFeatureSupported(ProtocolVersion ver, ProtocolVersionFeature feature) {
         return ver.compareTo(feature.verIntroduced()) >= 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(
+            ProtocolContext.class.getSimpleName(),
+            "version", version(), false,
+            "features", features.toString(), false
+        );
     }
 }

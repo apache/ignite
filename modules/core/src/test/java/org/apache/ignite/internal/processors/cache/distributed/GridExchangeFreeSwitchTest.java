@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -367,21 +366,9 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             Random r = new Random();
 
-            Ignite candidate;
-            MvccProcessor proc;
+            int nodeToStop = r.nextInt(nodes);
 
-            int nodeToStop;
-
-            do {
-                nodeToStop = r.nextInt(nodes);
-                candidate = grid(nodeToStop);
-
-                proc = ((IgniteEx)candidate).context().coordinators();
-            }
-            // MVCC coordinator fail always breaks transactions, excluding.
-            while (proc.mvccEnabled() && proc.currentCoordinator().local());
-
-            Ignite failed = candidate;
+            Ignite failed = grid(nodeToStop);
 
             int multiplicator = 3;
 
@@ -401,17 +388,18 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 catch (Exception e) {
                     fail("Should not happen [exception=" + e + "]");
                 }
-                    for (int i = 0; i < nodes; i++) {
-                        if (i != nodeToStop0) {
-                            GridDhtPartitionsExchangeFuture lastFinishedFut =
-                                    grid(i).cachex(cacheName).context().shared().exchange().lastFinishedFuture();
 
-                            assertTrue(lastFinishedFut.rebalanced());
+                for (int i = 0; i < nodes; i++) {
+                    if (i != nodeToStop0) {
+                        GridDhtPartitionsExchangeFuture lastFinishedFut =
+                            grid(i).cachex(cacheName).context().shared().exchange().lastFinishedFuture();
 
-                            assertTrue(lastFinishedFut.topologyVersion()
-                                    .equals(new AffinityTopologyVersion(nodes + 1, 0)));
-                        }
+                        assertTrue(lastFinishedFut.rebalanced());
+
+                        assertTrue(lastFinishedFut.topologyVersion()
+                            .equals(new AffinityTopologyVersion(nodes + 1, 0)));
                     }
+                }
             });
 
             IgniteInternalFuture<?> nearThenNearFut = multithreadedAsync(() -> {
@@ -676,7 +664,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             startGrid(0); // Primary partition holder.
             startGrid(1); // Backup partition holder.
 
-            grid(0).cluster().active(true);
+            grid(0).cluster().state(ClusterState.ACTIVE);
 
             grid(1).close(); // Stopping backup partition holder.
 

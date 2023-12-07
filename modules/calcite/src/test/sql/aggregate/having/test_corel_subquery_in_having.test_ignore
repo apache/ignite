@@ -1,0 +1,38 @@
+# name: test/sql/aggregate/having/test_having.test
+# description: Test HAVING clause
+# group: [having]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14540
+
+statement ok
+CREATE TABLE test (a INTEGER, b INTEGER);
+
+statement ok
+INSERT INTO test VALUES (11, 22), (13, 22), (12, 21)
+
+# correlated subquery in having
+query IR
+SELECT test.b, SUM(a) FROM test GROUP BY test.b HAVING SUM(a)=(SELECT SUM(a) FROM test t WHERE test.b=t.b) ORDER BY test.b;
+----
+21	12.000000
+22	24.000000
+
+# use outer aggregation in inner subquery
+query IR
+SELECT test.b, SUM(a) FROM test GROUP BY test.b HAVING SUM(a)*2=(SELECT SUM(a)+SUM(t.a) FROM test t WHERE test.b=t.b) ORDER BY test.b
+----
+21	12.000000
+22	24.000000
+
+# use outer aggregation that hasn't been used yet in subquery
+query IR
+SELECT test.b, SUM(a) FROM test GROUP BY test.b HAVING SUM(a)*2+2=(SELECT SUM(a)+SUM(t.a)+COUNT(t.a) FROM test t WHERE test.b=t.b) ORDER BY test.b
+----
+22	24.000000
+
+# ORDER BY subquery
+query IR
+SELECT test.b, SUM(a) FROM test GROUP BY test.b ORDER BY (SELECT SUM(a) FROM test t WHERE test.b=t.b) DESC;
+----
+22	24.000000
+21	12.000000
+

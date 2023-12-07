@@ -33,7 +33,6 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.internal.cluster.ClusterGroupEx;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.lang.IgniteCallable;
@@ -60,11 +59,6 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     public IgniteClusterProcessProxy(IgniteProcessProxy proxy) {
         this.proxy = proxy;
         compute = proxy.remoteCompute();
-    }
-
-    /** {@inheritDoc} */
-    @Override public ClusterGroupEx forSubjectId(UUID subjId) {
-        throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 
     /** {@inheritDoc} */
@@ -299,11 +293,6 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forDaemons() {
-        throw new UnsupportedOperationException("Operation is not supported yet.");
-    }
-
-    /** {@inheritDoc} */
     @Override public ClusterGroup forRandom() {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
@@ -410,6 +399,11 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState) throws IgniteException {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void state(ClusterState newState, boolean force) throws IgniteException {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 

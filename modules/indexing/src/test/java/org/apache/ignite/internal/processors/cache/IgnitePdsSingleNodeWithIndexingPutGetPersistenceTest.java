@@ -17,27 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingPutGetTest;
 
 /**
  *
  */
 public class IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest extends IgniteDbSingleNodeWithIndexingPutGetTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setDataStorageConfiguration(
-            new DataStorageConfiguration()
-                .setWalMode(WALMode.LOG_ONLY)
-        );
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         cleanPersistenceDir();

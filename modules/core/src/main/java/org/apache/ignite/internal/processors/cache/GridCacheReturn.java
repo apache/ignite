@@ -264,9 +264,9 @@ public class GridCacheReturn implements Externalizable, Message {
             // These exceptions mean that we should register class and call EntryProcessor again.
             if (err != null) {
                 if (err instanceof UnregisteredClassException)
-                    throw (UnregisteredClassException) err;
+                    throw (UnregisteredClassException)err;
                 else if (err instanceof UnregisteredBinaryTypeException)
-                    throw (UnregisteredBinaryTypeException) err;
+                    throw (UnregisteredBinaryTypeException)err;
             }
 
             CacheInvokeResult res0 = err == null ? CacheInvokeResult.fromResult(res) : CacheInvokeResult.fromError(err);

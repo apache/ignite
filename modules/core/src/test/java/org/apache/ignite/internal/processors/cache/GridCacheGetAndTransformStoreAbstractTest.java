@@ -29,9 +29,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -52,12 +50,6 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
         super(true /*start grid. */);
     }
 
-    /** */
-    @Before
-    public void beforeGridCacheGetAndTransformStoreAbstractTest() {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         store.resetTimestamp();
@@ -76,8 +68,6 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();

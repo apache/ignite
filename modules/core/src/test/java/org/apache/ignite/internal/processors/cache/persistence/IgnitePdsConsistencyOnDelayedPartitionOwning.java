@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -112,8 +113,8 @@ public class IgnitePdsConsistencyOnDelayedPartitionOwning extends GridCommonAbst
     /** */
     @Test
     public void checkConsistencyNodeLeft() throws Exception {
-        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(4);
-        crd.cluster().active(true);
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(4);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < PARTS; i++)
             crd.cache(DEFAULT_CACHE_NAME).put(i, i);
@@ -160,7 +161,7 @@ public class IgnitePdsConsistencyOnDelayedPartitionOwning extends GridCommonAbst
         CountDownLatch delayedOnwningLatch = new CountDownLatch(1);
 
         GridCacheDatabaseSharedManager dbMgr =
-            (GridCacheDatabaseSharedManager) grid(1).context().cache().context().database();
+            (GridCacheDatabaseSharedManager)grid(1).context().cache().context().database();
 
         dbMgr.addCheckpointListener(new CheckpointListener() {
             @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
@@ -181,7 +182,8 @@ public class IgnitePdsConsistencyOnDelayedPartitionOwning extends GridCommonAbst
 
                     try {
                         assertTrue(U.await(delayedOnwningLatch, 10_000, TimeUnit.MILLISECONDS));
-                    } catch (IgniteInterruptedCheckedException e) {
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
                         fail(X.getFullStackTrace(e));
                     }
                 }
@@ -191,7 +193,7 @@ public class IgnitePdsConsistencyOnDelayedPartitionOwning extends GridCommonAbst
         TestRecordingCommunicationSpi.spi(grid(1)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode clusterNode, Message msg) {
                 if (msg instanceof GridDhtPartitionDemandMessage) {
-                    GridDhtPartitionDemandMessage msg0 = (GridDhtPartitionDemandMessage) msg;
+                    GridDhtPartitionDemandMessage msg0 = (GridDhtPartitionDemandMessage)msg;
 
                     return msg0.topologyVersion().equals(new AffinityTopologyVersion(7, 0));
                 }
@@ -207,7 +209,8 @@ public class IgnitePdsConsistencyOnDelayedPartitionOwning extends GridCommonAbst
 
                     try {
                         assertTrue(U.await(enableDurabilityCPStartLatch, 20_000, TimeUnit.MILLISECONDS));
-                    } catch (IgniteInterruptedCheckedException e) {
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
                         fail(X.getFullStackTrace(e));
                     }
 

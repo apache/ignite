@@ -220,8 +220,8 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      */
     private IgniteFuture<?> runAsync(int idx,
         Collection<ClosureTestRunnable> jobs,
-        @Nullable IgnitePredicate<ClusterNode> p)
-    {
+        @Nullable IgnitePredicate<ClusterNode> p
+    ) {
         assert idx >= 0 && idx < NODES_CNT;
         assert !F.isEmpty(jobs);
 
@@ -295,7 +295,9 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
         assert idx >= 0 && idx < NODES_CNT;
 
         return new IgnitePredicate<ClusterNode>() {
-            @Override public boolean apply(ClusterNode e) { return grid(idx).localNode().id().equals(e.id()); }
+            @Override public boolean apply(ClusterNode e) {
+                return grid(idx).localNode().id().equals(e.id());
+            }
         };
     }
 

@@ -184,95 +184,95 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
     @Override protected void initCacheAndDbData() throws SQLException {
         final AtomicInteger idGen = new AtomicInteger();
 
-        final Iterable<Integer> rootOrderIds = new ArrayList<Integer>() {{
-            for (int i = 0; i < ROOT_ORDER_CNT; i++)
-                add(idGen.incrementAndGet());
-        }};
+        final List<Integer> rootOrderIds = new ArrayList<>();
+
+        for (int i = 0; i < ROOT_ORDER_CNT; i++)
+            rootOrderIds.add(idGen.incrementAndGet());
 
         final Date curDate = new Date(new java.util.Date().getTime());
 
-        final List<Date> dates = new ArrayList<Date>() {{
-            for (int i = 0; i < DATES_CNT; i++)
-                add(new Date(curDate.getTime() - i * 24 * 60 * 60 * 1000)); // Minus i days.
-        }};
+        final List<Date> dates = new ArrayList<>();
 
-        final Iterable<CustOrder> orders = new ArrayList<CustOrder>() {{
-            for (int rootOrderId : rootOrderIds) {
-                // Generate 1 - 5 orders for 1 root order.
-                for (int i = 0; i < rootOrderId % 5; i++) {
-                    int orderId = idGen.incrementAndGet();
+        for (int i = 0; i < DATES_CNT; i++)
+            dates.add(new Date(curDate.getTime() - i * 24 * 60 * 60 * 1000)); // Minus i days.
 
-                    CustOrder order = new CustOrder(orderId, rootOrderId, dates.get(orderId % dates.size()),
-                        orderId % 2 == 0 ? "CUSTOM" : "OTHER", orderId);
+        final List<CustOrder> orders = new ArrayList<>();
 
-                    add(order);
+        for (int rootOrderId : rootOrderIds) {
+            // Generate 1 - 5 orders for 1 root order.
+            for (int i = 0; i < rootOrderId % 5; i++) {
+                int orderId = idGen.incrementAndGet();
 
-                    cacheCustOrd.put(order.orderId, order);
+                CustOrder order = new CustOrder(orderId, rootOrderId, dates.get(orderId % dates.size()),
+                    orderId % 2 == 0 ? "CUSTOM" : "OTHER", orderId);
 
-                    insertInDb(order);
-                }
+                orders.add(order);
+
+                cacheCustOrd.put(order.orderId, order);
+
+                insertInDb(order);
             }
-        }};
+        }
 
-        final Collection<OrderParams> params = new ArrayList<OrderParams>() {{
-            for (CustOrder o : orders) {
-                OrderParams op = new OrderParams(idGen.incrementAndGet(), o.orderId, o.date,
-                    o.orderId % 2 == 0 ? "Algo 1" : "Algo 2");
+        final Collection<OrderParams> params = new ArrayList<>();
 
-                add(op);
+        for (CustOrder o : orders) {
+            OrderParams op = new OrderParams(idGen.incrementAndGet(), o.orderId, o.date,
+                o.orderId % 2 == 0 ? "Algo 1" : "Algo 2");
 
-                cacheOrdParam.put(op.key(useColocatedData()), op);
+            params.add(op);
 
-                insertInDb(op);
+            cacheOrdParam.put(op.key(useColocatedData()), op);
+
+            insertInDb(op);
+        }
+
+        final Collection<ReplaceOrder> replaces = new ArrayList<>();
+
+        for (CustOrder o : orders) {
+            if (o.orderId % 7 == 0) {
+                ReplaceOrder replace = new ReplaceOrder(idGen.incrementAndGet(), o.orderId, o.rootOrderId, o.alias,
+                    new Date(o.date.getTime() + 12 * 60 * 60 * 1000), o.orderId); // Plus a half of day.
+
+                replaces.add(replace);
+
+                cacheReplOrd.put(replace.key(useColocatedData()), replace);
+
+                insertInDb(replace);
             }
-        }};
+        }
 
-        final Collection<ReplaceOrder> replaces = new ArrayList<ReplaceOrder>() {{
-            for (CustOrder o : orders) {
-                if (o.orderId % 7 == 0) {
-                    ReplaceOrder replace = new ReplaceOrder(idGen.incrementAndGet(), o.orderId, o.rootOrderId, o.alias,
-                        new Date(o.date.getTime() + 12 * 60 * 60 * 1000), o.orderId); // Plus a half of day.
+        final Collection<Cancel> cancels = new ArrayList<>();
 
-                    add(replace);
+        for (CustOrder o : orders) {
+            if (o.orderId % 9 == 0) {
+                Cancel c = new Cancel(idGen.incrementAndGet(), o.orderId,
+                    new Date(o.date.getTime() + 12 * 60 * 60 * 1000)); // Plus a half of day.
 
-                    cacheReplOrd.put(replace.key(useColocatedData()), replace);
+                cancels.add(c);
 
-                    insertInDb(replace);
-                }
+                cacheCancel.put(c.key(useColocatedData()), c);
+
+                insertInDb(c);
             }
-        }};
+        }
 
-        final Collection<Cancel> cancels = new ArrayList<Cancel>() {{
-            for (CustOrder o : orders) {
-                if (o.orderId % 9 == 0) {
-                    Cancel c = new Cancel(idGen.incrementAndGet(), o.orderId,
-                        new Date(o.date.getTime() + 12 * 60 * 60 * 1000)); // Plus a half of day.
+        final Collection<Exec> execs = new ArrayList<>();
 
-                    add(c);
+        for (int rootOrderId : rootOrderIds) {
+            int execShares = 10000 + rootOrderId;
+            int price = 1000 + rootOrderId;
+            int latsMkt = 3000 + rootOrderId;
 
-                    cacheCancel.put(c.key(useColocatedData()), c);
+            Exec exec = new Exec(idGen.incrementAndGet(), rootOrderId,
+                dates.get(rootOrderId % dates.size()), execShares, price, latsMkt);
 
-                    insertInDb(c);
-                }
-            }
-        }};
+            execs.add(exec);
 
-        final Collection<Exec> execs = new ArrayList<Exec>() {{
-            for (int rootOrderId : rootOrderIds) {
-                int execShares = 10000 + rootOrderId;
-                int price = 1000 + rootOrderId;
-                int latsMkt = 3000 + rootOrderId;
+            cacheExec.put(exec.key(useColocatedData()), exec);
 
-                Exec exec = new Exec(idGen.incrementAndGet(), rootOrderId,
-                    dates.get(rootOrderId % dates.size()), execShares, price, latsMkt);
-
-                add(exec);
-
-                cacheExec.put(exec.key(useColocatedData()), exec);
-
-                insertInDb(exec);
-            }
-        }};
+            insertInDb(exec);
+        }
     }
 
     /**
@@ -767,6 +767,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
             return id;
         }
 
+        /** */
         public Object key(boolean useColocatedData) {
             return useColocatedData ? new AffinityKey<>(id, rootOrderId) : id;
         }

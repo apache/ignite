@@ -42,6 +42,7 @@ namespace ignite
                 delete fieldsInfo;
             }
 
+            IGNORE_SIGNED_OVERFLOW
             void BinarySchema::AddField(int32_t fieldId, int32_t offset)
             {
                 if (!id)

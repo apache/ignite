@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Configuration
 {
+    using Apache.Ignite.Core.Impl.Common;
+
     /// <summary>
     /// <see cref="IIgniteLock"/> configuration.
     /// </summary>
@@ -36,6 +38,8 @@ namespace Apache.Ignite.Core.Configuration
         /// <param name="other">Other configuration to copy.</param>
         public LockConfiguration(LockConfiguration other)
         {
+            IgniteArgumentCheck.NotNull(other, "other");
+
             Name = other.Name;
             IsFair = other.IsFair;
             IsFailoverSafe = other.IsFailoverSafe;

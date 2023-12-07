@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
@@ -57,7 +58,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
             IgniteUtils.resolveIgnitePath(
                 "modules/spring/src/test/config/enc/enc-cache.xml").getAbsolutePath(), "grid-1");
 
-        g1.cluster().active(true);
+        g1.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -80,7 +81,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
 
             assertNotNull(enc);
 
-            int grpId = CU.cacheGroupId(enc.name(), enc.configuration().getGroupName());
+            int grpId = CU.cacheGroupId(enc.configuration());
 
             GroupKey grpKey0 = g.get1().context().encryption().getActiveKey(grpId);
             GroupKey grpKey1 = g.get2().context().encryption().getActiveKey(grpId);
@@ -118,7 +119,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
             IgniteUtils.resolveIgnitePath(
                 "modules/spring/src/test/config/enc/enc-group-2.xml").getAbsolutePath(), "grid-1");
 
-        g1.cluster().active(true);
+        g1.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -130,8 +131,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
 
         assertNotNull(encrypted2);
 
-        GroupKey grpKey = g0.context().encryption().getActiveKey(
-            CU.cacheGroupId(encrypted.name(), encrypted.configuration().getGroupName()));
+        GroupKey grpKey = g0.context().encryption().getActiveKey(CU.cacheGroupId(encrypted.configuration()));
 
         assertNotNull(grpKey);
 
@@ -140,8 +140,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
         assertNotNull(key);
         assertNotNull(key.key());
 
-        GroupKey grpKey2 = g0.context().encryption().getActiveKey(
-            CU.cacheGroupId(encrypted2.name(), encrypted2.configuration().getGroupName()));
+        GroupKey grpKey2 = g0.context().encryption().getActiveKey(CU.cacheGroupId(encrypted2.configuration()));
 
         assertNotNull(grpKey2);
 
@@ -193,7 +192,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
 
         IgniteEx g = (IgniteEx)IgnitionEx.start(IgniteUtils.resolveIgnitePath(cfg1).getAbsolutePath(), "grid-0");
 
-        g.cluster().active(true);
+        g.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache c = g.cache("encrypted");
 

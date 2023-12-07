@@ -107,7 +107,7 @@ public class GridCacheGateway<K, V> {
      * @return {@code True} if enter successful, {@code false} if the cache or the node was stopped.
      */
     public boolean enterIfNotStopped() {
-        onEnter(null);
+        onEnter(false);
 
         // Must unlock in case of unexpected errors to avoid deadlocks during kernal stop.
         rwLock.readLock().lock();
@@ -121,7 +121,7 @@ public class GridCacheGateway<K, V> {
      * @return {@code True} if enter successful, {@code false} if the cache or the node was stopped.
      */
     public boolean enterIfNotStoppedNoLock() {
-        onEnter(null);
+        onEnter(false);
 
         return checkState(false, false);
     }
@@ -174,7 +174,7 @@ public class GridCacheGateway<K, V> {
 
         ctx.tm().enterNearTxSystemSection();
 
-        onEnter(opCtx);
+        onEnter(true);
 
         Lock lock = rwLock.readLock();
 
@@ -199,7 +199,7 @@ public class GridCacheGateway<K, V> {
      * @return Previous operation context set on this thread.
      */
     @Nullable public CacheOperationContext enterNoLock(@Nullable CacheOperationContext opCtx) {
-        onEnter(opCtx);
+        onEnter(true);
 
         checkState(false, false);
 
@@ -250,16 +250,16 @@ public class GridCacheGateway<K, V> {
     }
 
     /**
-     * @param opCtx Cache operation context.
+     * @param checkAtomicOpsInTx Atomicity check is required.
      */
-    private void onEnter(CacheOperationContext opCtx) {
+    private void onEnter(boolean checkAtomicOpsInTx) {
         ctx.itHolder().checkWeakQueue();
 
         if (ctx.deploymentEnabled())
             ctx.deploy().onEnter();
 
-        if (opCtx != null)
-            checkAtomicOpsInTx(opCtx);
+        if (checkAtomicOpsInTx)
+            checkAtomicOpsInTx();
     }
 
     /**
@@ -358,12 +358,12 @@ public class GridCacheGateway<K, V> {
      *
      * @throws IgniteException - in case of atomic operation inside transaction without permission.
      */
-    private void checkAtomicOpsInTx(CacheOperationContext opCtx) throws IgniteException {
-        if (ctx.atomic() && !opCtx.allowedAtomicOpsInTx()) {
-            if (ctx.grid().transactions().tx() != null) {
-                throw new IgniteException("Transaction spans operations on atomic cache " +
-                    "(don't use atomic cache inside transaction or set up flag by cache.allowedAtomicOpsInTx()).");
-            }
+    private void checkAtomicOpsInTx() throws IgniteException {
+        if (ctx.atomic() && ctx.grid().transactions().tx() != null) {
+            throw new IgniteException("Transaction spans operations on atomic cache " +
+                "(don't use atomic cache inside a transaction). " +
+                "Since 2.15.0 atomic operations inside transactions are not allowed by default. " +
+                "Since 2.16.0 atomic operations inside transactions are finally forbidden.");
         }
     }
 }

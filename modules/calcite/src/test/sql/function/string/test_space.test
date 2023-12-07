@@ -1,0 +1,9 @@
+# name: test/sql/function/string/space.test
+# description: Test the SPACE function
+# group: [string]
+
+query I
+select '|' || space(10) || '|' || space(1) || '|' || space(0) || '|' || space(-100) || '|'
+----
+|          | |||
+

@@ -71,6 +71,8 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * There's only one instance of node local storage per local node. Node local storage is
      * based on {@link java.util.concurrent.ConcurrentMap} and is safe for multi-threaded access.
      *
+     * @param <K> Type of keys in the node local map.
+     * @param <V> Type of mapped values in the node local map.
      * @return Node local storage instance for the local node.
      */
     public <K, V> ConcurrentMap<K, V> nodeLocalMap();
@@ -506,7 +508,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
 
     /**
      * Sets baseline topology constructed from the cluster topology of the given version (the method succeeds
-     * only if the cluster topology has not changed). All client and daemon nodes will be filtered out of the
+     * only if the cluster topology has not changed). All client nodes will be filtered out of the
      * resulting baseline.
      *
      * @param topVer Topology version to set.
@@ -625,14 +627,14 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public void baselineAutoAdjustEnabled(boolean baselineAutoAdjustEnabled) throws IgniteException;
 
     /**
-     * @return Value of time which we would wait before the actual topology change since last server topology change
+     * @return Number of milliseconds to wait before the actual topology change since last server topology change
      * (node join/left/fail).
      * @throws IgniteException If operation failed.
      */
     public long baselineAutoAdjustTimeout();
 
     /**
-     * @param baselineAutoAdjustTimeout Value of time which we would wait before the actual topology change since last
+     * @param baselineAutoAdjustTimeout Number of milliseconds to wait before the actual topology change since last
      * server topology change (node join/left/fail).
      * @throws IgniteException If failed.
      */

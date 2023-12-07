@@ -199,7 +199,7 @@ namespace ignite
         {
             if (val < 0)
             {
-                AssignUint64(static_cast<uint64_t>(-val));
+                AssignUint64(val > INT64_MIN ? static_cast<uint64_t>(-val) : static_cast<uint64_t>(val));
 
                 sign = -1;
             }

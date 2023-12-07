@@ -53,7 +53,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.internal.processors.cache.CacheOperationContext.DFLT_ALLOW_ATOMIC_OPS_IN_TX;
 
 /**
  * Common code for {@link IgniteQueue} implementation.
@@ -436,14 +435,12 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         opCtx = opCtx == null ? new CacheOperationContext(
             false,
-            null,
             true,
             null,
             false,
             null,
             false,
-            false,
-            DFLT_ALLOW_ATOMIC_OPS_IN_TX)
+            null)
             : opCtx.keepBinary();
 
         cctx.operationContextPerCall(opCtx);

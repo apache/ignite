@@ -54,7 +54,7 @@ public class FullMessage<R extends Serializable> implements DiscoveryCustomMessa
     private Map<UUID, R> res;
 
     /** Errors. */
-    private Map<UUID, Exception> err;
+    private Map<UUID, Throwable> err;
 
     /**
      * @param processId Process id.
@@ -62,7 +62,7 @@ public class FullMessage<R extends Serializable> implements DiscoveryCustomMessa
      * @param res Results.
      * @param err Errors
      */
-    public FullMessage(UUID processId, DistributedProcessType type, Map<UUID, R> res, Map<UUID, Exception> err) {
+    public FullMessage(UUID processId, DistributedProcessType type, Map<UUID, R> res, Map<UUID, Throwable> err) {
         this.processId = processId;
         this.type = type.ordinal();
         this.res = res;
@@ -106,7 +106,7 @@ public class FullMessage<R extends Serializable> implements DiscoveryCustomMessa
     }
 
     /** @return Nodes errors. */
-    public Map<UUID, Exception> error() {
+    public Map<UUID, Throwable> error() {
         return err;
     }
 

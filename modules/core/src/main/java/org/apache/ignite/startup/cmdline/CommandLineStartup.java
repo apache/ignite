@@ -27,12 +27,9 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URL;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
@@ -42,6 +39,7 @@ import org.apache.ignite.IgniteState;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgnitionListener;
 import org.apache.ignite.SystemProperty;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
@@ -67,7 +65,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PROG_NAME;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
-import static org.apache.ignite.internal.IgniteVersionUtils.RELEASE_DATE_STR;
+import static org.apache.ignite.internal.IgniteVersionUtils.RELEASE_DATE;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 
 /**
@@ -102,13 +100,15 @@ public final class CommandLineStartup {
         CacheContinuousQueryEventBuffer.class,
         CacheContinuousQueryHandler.class,
         OffheapReadWriteLock.class,
-        TcpCommunicationConfiguration.class
+        TcpCommunicationConfiguration.class,
+        BinaryArray.class
     ));
 
     static {
         String h2TreeCls = "org.apache.ignite.internal.processors.query.h2.database.H2Tree";
         String zkDiscoImpl = "org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl";
         String zkTcpDiscoIpFinder = "org.apache.ignite.spi.discovery.tcp.ipfinder.zk.TcpDiscoveryZookeeperIpFinder";
+        String calciteQryProc = "org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor";
 
         try {
             if (U.inClassPath(h2TreeCls))
@@ -118,6 +118,9 @@ public final class CommandLineStartup {
                 PROPS_CLS.add(Class.forName(zkDiscoImpl));
                 PROPS_CLS.add(Class.forName(zkTcpDiscoIpFinder));
             }
+
+            if (U.inClassPath(calciteQryProc))
+                PROPS_CLS.add(Class.forName(calciteQryProc));
         }
         catch (ClassNotFoundException ignored) {
             // No-op.
@@ -126,9 +129,6 @@ public final class CommandLineStartup {
 
     /** @see IgniteSystemProperties#IGNITE_PROG_NAME */
     public static final String DFLT_PROG_NAME = "ignite.{sh|bat}";
-
-    /** Build date. */
-    private static Date releaseDate;
 
     /**
      * Static initializer.
@@ -157,8 +157,6 @@ public final class CommandLineStartup {
 
         // Mac OS specific customizations: app icon and about dialog.
         try {
-            releaseDate = new SimpleDateFormat("ddMMyyyy", Locale.US).parse(RELEASE_DATE_STR);
-
             Class<?> appCls = Class.forName("com.apple.eawt.Application");
 
             Object osxApp = appCls.getDeclaredMethod("getApplication").invoke(null);
@@ -184,7 +182,7 @@ public final class CommandLineStartup {
                 new InvocationHandler() {
                     @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
                         AboutDialog.centerShow("Ignite Node", bannerUrl.toExternalForm(), VER_STR,
-                            releaseDate, COPYRIGHT);
+                            RELEASE_DATE, COPYRIGHT);
 
                         return null;
                     }
@@ -255,7 +253,7 @@ public final class CommandLineStartup {
      * @param arg Command line argument.
      * @return {@code true} if given argument is a help argument, {@code false} otherwise.
      */
-    private static boolean isHelp(String arg) {
+    public static boolean isHelp(String arg) {
         String s;
 
         if (arg.startsWith("--"))

@@ -51,8 +51,8 @@ import org.apache.ignite.internal.processors.cache.distributed.OnePhaseCommitAnd
 import org.apache.ignite.internal.processors.cache.distributed.PartitionsExchangeAwareTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManagerTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingOrderingTest;
+import org.apache.ignite.internal.processors.cache.transactions.StartImplicitlyTxOnStopCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLabelTest;
-import org.apache.ignite.internal.processors.cache.transactions.TxLocalDhtMixedCacheModesTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxMultiCacheAsyncOpsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOnCachesStartTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOnCachesStopTest;
@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticPrep
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticReadThroughTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncNearCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxRollbackDuringPreparingTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnIncorrectParamsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnMapOnInvalidTopologyTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNearCacheTest;
@@ -152,8 +153,6 @@ public class IgniteCacheTestSuite6 {
 
         GridTestUtils.addTestIfNeeded(suite, CachePartitionLossWithRestartsTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite, TxLocalDhtMixedCacheModesTest.class, ignoredTests);
-
         GridTestUtils.addTestIfNeeded(suite, CacheClientsConcurrentStartTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingOrderingTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheClientMultiNodeUpdateTopologyLockTest.class, ignoredTests);
@@ -163,6 +162,10 @@ public class IgniteCacheTestSuite6 {
         GridTestUtils.addTestIfNeeded(suite, PartitionsExchangeAwareTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, SysCacheInconsistencyInternalKeyTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, TxRollbackDuringPreparingTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, StartImplicitlyTxOnStopCacheTest.class, ignoredTests);
 
         return suite;
     }

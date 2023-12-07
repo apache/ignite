@@ -22,23 +22,28 @@ import java.net.InetSocketAddress;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import javax.cache.configuration.Factory;
 import javax.management.JMException;
 import javax.management.ObjectName;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionAttributeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedThinClientConfiguration;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -51,15 +56,19 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgnitePortProtocol;
+import org.apache.ignite.spi.systemview.view.ClientConnectionAttributeView;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
-import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.clientTypeLabel;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CLI_TYPES;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CONN_CTX_META_KEY;
 
 /**
@@ -72,6 +81,15 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** */
     public static final String CLI_CONN_VIEW_DESC = "Client connections";
 
+    /** */
+    public static final String CLI_CONN_ATTR_VIEW = metricName("client", "connection", "attributes");
+
+    /** */
+    public static final String CLI_CONN_ATTR_VIEW_DESC = "Client connection attributes";
+
+    /** */
+    public static final String METRIC_ACTIVE = "ActiveSessions";
+
     /** Default client connector configuration. */
     public static final ClientConnectorConfiguration DFLT_CLI_CFG = new ClientConnectorConfigurationEx();
 
@@ -80,9 +98,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
     /** Cancel counter. For testing purposes only. */
     public static final AtomicLong CANCEL_COUNTER = new AtomicLong(0);
-
-    /** Default number of selectors. */
-    private static final int DFLT_SELECTOR_CNT = Math.min(4, Runtime.getRuntime().availableProcessors());
 
     /** Default TCP direct buffer flag. */
     private static final boolean DFLT_TCP_DIRECT_BUF = true;
@@ -93,8 +108,17 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** TCP Server. */
     private GridNioServer<ClientMessage> srv;
 
+    /** Metrics. */
+    private ClientListenerMetrics metrics;
+
     /** Executor service. */
     private ExecutorService execSvc;
+
+    /** Thin client distributed configuration. */
+    private DistributedThinClientConfiguration distrThinCfg;
+
+    /** Client connector configuration. */
+    private ClientConnectorConfiguration cliConnCfg;
 
     /**
      * @param ctx Kernal context.
@@ -107,15 +131,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     @Override public void start() throws IgniteCheckedException {
         IgniteConfiguration cfg = ctx.config();
 
-        // Daemon node should not open client port
-        if (cfg.isDaemon()) {
-            if (log.isDebugEnabled())
-                log.debug("Client connection configuration ignored for daemon node.");
-
-            return;
-        }
-
-        ClientConnectorConfiguration cliConnCfg = prepareConfiguration(cfg);
+        cliConnCfg = prepareConfiguration(cfg);
 
         if (cliConnCfg != null) {
             try {
@@ -136,15 +152,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     throw new IgniteCheckedException("Failed to resolve client connector host: " + host, e);
                 }
 
-                execSvc = new IgniteThreadPoolExecutor(
-                    "client-connector",
-                    cfg.getIgniteInstanceName(),
-                    cliConnCfg.getThreadPoolSize(),
-                    cliConnCfg.getThreadPoolSize(),
-                    0,
-                    new LinkedBlockingQueue<Runnable>(),
-                    GridIoPolicy.UNDEFINED,
-                    new OomExceptionHandler(ctx));
+                execSvc = ctx.pools().getThinClientExecutorService();
 
                 Exception lastErr = null;
 
@@ -159,12 +167,21 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 int selectorCnt = cliConnCfg.getSelectorCount();
 
+                MetricRegistry mreg = ctx.metric().registry(CLIENT_CONNECTOR_METRICS);
+
+                metrics = new ClientListenerMetrics(mreg);
+
+                IgniteBiInClosure<GridNioSession, Integer> msgQueueSizeLsnr =
+                    cliConnCfg.getSessionOutboundMessageQueueLimit() > 0
+                        ? this::onOutboundMessageOffered
+                        : null;
+
                 for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {
                         srv = GridNioServer.<ClientMessage>builder()
                             .address(hostAddr)
                             .port(port)
-                            .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg))
+                            .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg, metrics))
                             .logger(log)
                             .selectorCount(selectorCnt)
                             .igniteInstanceName(ctx.igniteInstanceName())
@@ -177,6 +194,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                             .filters(filters)
                             .directMode(true)
                             .idleTimeout(idleTimeout > 0 ? idleTimeout : Long.MAX_VALUE)
+                            .metricRegistry(mreg)
+                            .messageQueueSizeListener(msgQueueSizeLsnr)
                             .build();
 
                         ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
@@ -205,14 +224,82 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 if (!U.IGNITE_MBEANS_DISABLED)
                     registerMBean();
 
+                registerClientMetrics(mreg);
+
                 ctx.systemView().registerView(CLI_CONN_VIEW, CLI_CONN_VIEW_DESC,
                     new ClientConnectionViewWalker(),
                     srv.sessions(),
                     ClientConnectionView::new);
+
+                ctx.systemView().registerFiltrableView(CLI_CONN_ATTR_VIEW, CLI_CONN_ATTR_VIEW_DESC,
+                    new ClientConnectionAttributeViewWalker(),
+                    this::connectionAttributeViewSupplier,
+                    Function.identity()
+                );
+
+                distrThinCfg = new DistributedThinClientConfiguration(ctx);
             }
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to start client connector processor.", e);
             }
+        }
+    }
+
+    /** */
+    private Iterable<ClientConnectionAttributeView> connectionAttributeViewSupplier(Map<String, Object> filter) {
+        Long connId = (Long)filter.get(ClientConnectionAttributeViewWalker.CONNECTION_ID_FILTER);
+        String attrName = (String)filter.get(ClientConnectionAttributeViewWalker.NAME_FILTER);
+
+        Collection<? extends GridNioSession> sessions = srv.sessions();
+
+        return F.flat(F.iterator(sessions, ses -> {
+            ClientListenerConnectionContext ctx = ses.meta(CONN_CTX_META_KEY);
+
+            if (connId != null && connId != ctx.connectionId())
+                return Collections.emptyList();
+
+            Map<String, String> attrs = ctx.attributes();
+
+            if (attrName != null) {
+                String attrVal = attrs.get(attrName);
+
+                if (attrVal == null)
+                    return Collections.emptyList();
+
+                attrs = F.asMap(attrName, attrVal);
+            }
+
+            return F.iterator(
+                attrs.entrySet(),
+                attr -> new ClientConnectionAttributeView(ctx.connectionId(), attr.getKey(), attr.getValue()),
+                true
+            );
+        }, true));
+    }
+
+    /** @param mreg Metric registry. */
+    private void registerClientMetrics(MetricRegistry mreg) {
+        for (int i = 0; i < CLI_TYPES.length; i++) {
+            byte cliType = CLI_TYPES[i];
+
+            String cliTypeName = clientTypeLabel(cliType);
+
+            mreg.register(
+                metricName(cliTypeName, METRIC_ACTIVE),
+                () -> {
+                    int res = 0;
+
+                    for (GridNioSession ses : srv.sessions()) {
+                        ClientListenerConnectionContext ctx = ses.meta(CONN_CTX_META_KEY);
+
+                        if (ctx != null && ctx.clientType() == cliType)
+                            ++res;
+                    }
+
+                    return res;
+                },
+                "Number of active sessions for the " + cliTypeName + " client."
+            );
         }
     }
 
@@ -283,7 +370,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             }
 
             @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
-                ClientListenerConnectionContext connCtx = ses.meta(ClientListenerNioListener.CONN_CTX_META_KEY);
+                ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
 
                 if (connCtx != null && connCtx.parser() != null && connCtx.handler().isCancellationSupported()) {
                     ClientMessage inMsg;
@@ -334,7 +421,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     "(SSL is enabled but factory is null). Check the ClientConnectorConfiguration");
 
             GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtxFactory.create(),
-                true, ByteOrder.nativeOrder(), log);
+                true, ByteOrder.nativeOrder(), log, ctx.metric().registry(CLIENT_CONNECTOR_METRICS));
 
             sslFilter.directMode(true);
 
@@ -348,7 +435,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 codecFilter,
                 sslFilter
             };
-        } else {
+        }
+        else {
             return new GridNioFilter[] {
                 openSesFilter,
                 codecFilter
@@ -365,11 +453,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
             ctx.ports().deregisterPorts(getClass());
 
-            if (execSvc != null) {
-                U.shutdownNow(getClass(), execSvc, log);
-
-                execSvc = null;
-            }
+            execSvc = null;
 
             if (!U.IGNITE_MBEANS_DISABLED)
                 unregisterMBean();
@@ -444,6 +528,13 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
      */
     public int port() {
         return srv.port();
+    }
+
+    /**
+     * @return Client listener metrics.
+     */
+    public ClientListenerMetrics metrics() {
+        return metrics;
     }
 
     /**
@@ -574,9 +665,42 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return If {@code true} sends a server exception stack to the client side.
+     */
+    public boolean sendServerExceptionStackTraceToClient() {
+        Boolean send = distrThinCfg.sendServerExceptionStackTraceToClient();
+
+        return send == null ?
+            ctx.config().getClientConnectorConfiguration().getThinClientConfiguration().sendServerExceptionStackTraceToClient() : send;
+    }
+
+    /**
+     * @return MX bean instance.
+     */
+    public ClientProcessorMXBean mxBean() {
+        return new ClientProcessorMXBeanImpl();
+    }
+
+    /** */
+    private void onOutboundMessageOffered(GridNioSession ses, int queueSize) {
+        if (queueSize < cliConnCfg.getSessionOutboundMessageQueueLimit())
+            return;
+
+        srv.close(ses).listen(fut -> {
+            if (fut.error() == null && fut.result()) {
+                U.quietAndWarn(log, "Ignite Thin Client outbound message queue size is exceeded" +
+                    " 'SessionOutboundMessageQueueLimit', it will be disconnected" +
+                    " [locNodeId=" + ctx.localNodeId() +
+                    ", clientAddress=" + ses.remoteAddress() +
+                    ", sessionOutboundMessageQueueLimit=" + cliConnCfg.getSessionOutboundMessageQueueLimit() + ']');
+            }
+        });
+    }
+
+    /**
      * ClientProcessorMXBean interface.
      */
-    private class ClientProcessorMXBeanImpl implements ClientProcessorMXBean {
+    public class ClientProcessorMXBeanImpl implements ClientProcessorMXBean {
         /** {@inheritDoc} */
         @Override public List<String> getConnections() {
             Collection<? extends GridNioSession> sessions = srv.sessions();
@@ -599,12 +723,17 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void dropAllConnections() {
+            ctx.security().authorize(null, SecurityPermission.ADMIN_OPS);
+
             closeAllSessions();
         }
 
         /** {@inheritDoc} */
         @Override public boolean dropConnection(long id) {
-            assert (id >> 32) == ctx.discovery().localNode().order() : "Invalid connection id.";
+            ctx.security().authorize(null, SecurityPermission.ADMIN_OPS);
+
+            if ((id >> 32) != ctx.discovery().localNode().order())
+                return false;
 
             Collection<? extends GridNioSession> sessions = srv.sessions();
 
@@ -634,6 +763,16 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             }
 
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void showFullStackOnClientSide(boolean show) {
+            try {
+                distrThinCfg.updateThinClientSendServerStackTraceAsync(show).get();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
     }
 }

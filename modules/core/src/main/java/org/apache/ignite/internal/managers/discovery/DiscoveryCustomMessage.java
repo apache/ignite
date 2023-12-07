@@ -20,6 +20,7 @@ package org.apache.ignite.internal.managers.discovery;
 import java.io.Serializable;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.jetbrains.annotations.Nullable;
@@ -90,6 +91,15 @@ public interface DiscoveryCustomMessage extends Serializable {
      * @return {@code True} if message can be modified during listener notification. Changes will be sent to next nodes.
      */
     public boolean isMutable();
+
+    /**
+     * See {@link DiscoverySpiCustomMessage#stopProcess()}.
+     *
+     * @return {@code True} if message should not be sent to others nodes after it was processed on coordinator.
+     */
+    public default boolean stopProcess() {
+        return false;
+    }
 
     /**
      * Creates new discovery cache if message caused topology version change.

@@ -76,7 +76,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -113,9 +112,11 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         List<BinaryTypeConfiguration> binTypes = new ArrayList<>();
 
-        binTypes.add(new BinaryTypeConfiguration() {{
-            setTypeName("ArrayHashedKey");
-        }});
+        BinaryTypeConfiguration type = new BinaryTypeConfiguration();
+
+        type.setTypeName("ArrayHashedKey");
+
+        binTypes.add(type);
 
         BinaryConfiguration binCfg = new BinaryConfiguration();
         binCfg.setTypeConfigurations(binTypes);
@@ -517,7 +518,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         assertTrue(bObj instanceof BinaryObject);
         assertEquals(Collections.singletonList(null).getClass(), cBinary.getClass());
 
-        assertEquals(Integer.valueOf(123), ((BinaryObject) bObj).field("val"));
+        assertEquals(Integer.valueOf(123), ((BinaryObject)bObj).field("val"));
     }
 
     /**
@@ -1208,12 +1209,10 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         checkTransform(primaryKey(c));
 
-        if (cacheMode() != CacheMode.LOCAL) {
-            checkTransform(backupKey(c));
+        checkTransform(backupKey(c));
 
-            if (nearConfiguration() != null)
-                checkTransform(nearKey(c));
-        }
+        if (nearConfiguration() != null)
+            checkTransform(nearKey(c));
     }
 
     /**
@@ -1352,6 +1351,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      * No-op entry processor.
      */
     private static class ObjectEntryProcessor implements EntryProcessor<Integer, TestObject, Boolean> {
+        /** {@inheritDoc} */
         @Override public Boolean process(MutableEntry<Integer, TestObject> entry, Object... args) throws EntryProcessorException {
             TestObject obj = entry.getValue();
 
@@ -1437,7 +1437,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            ComplexBinaryFieldsListHashedKey that = (ComplexBinaryFieldsListHashedKey) o;
+            ComplexBinaryFieldsListHashedKey that = (ComplexBinaryFieldsListHashedKey)o;
 
             return secondField.equals(that.secondField) &&
                 thirdField.equals(that.thirdField);

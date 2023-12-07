@@ -63,6 +63,9 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     /** Flag indicating transformation operation was performed. */
     protected static final int DHT_ATOMIC_TRANSFORM_OP_FLAG_MASK = 0x40;
 
+    /** Flag indicating recovery on read repair. */
+    protected static final int DHT_ATOMIC_READ_REPAIR_RECOVERY_FLAG_MASK = 0x80;
+
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
@@ -77,9 +80,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
     /** Topology version. */
     protected AffinityTopologyVersion topVer;
-
-    /** Subject ID. */
-    protected UUID subjId;
 
     /** Task name hash. */
     protected int taskNameHash;
@@ -120,11 +120,11 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         GridCacheVersion writeVer,
         CacheWriteSynchronizationMode syncMode,
         @NotNull AffinityTopologyVersion topVer,
-        UUID subjId,
         int taskNameHash,
         boolean addDepInfo,
         boolean keepBinary,
-        boolean skipStore
+        boolean skipStore,
+        boolean readRepairRecovery
     ) {
         assert topVer.topologyVersion() > 0 : topVer;
 
@@ -134,7 +134,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         this.writeVer = writeVer;
         this.syncMode = syncMode;
         this.topVer = topVer;
-        this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.addDepInfo = addDepInfo;
 
@@ -142,6 +141,8 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
             setFlag(true, DHT_ATOMIC_SKIP_STORE_FLAG_MASK);
         if (keepBinary)
             setFlag(true, DHT_ATOMIC_KEEP_BINARY_FLAG_MASK);
+        if (readRepairRecovery)
+            setFlag(true, DHT_ATOMIC_READ_REPAIR_RECOVERY_FLAG_MASK);
     }
 
     /** {@inheritDoc} */
@@ -219,6 +220,13 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      */
     public final boolean keepBinary() {
         return isFlag(DHT_ATOMIC_KEEP_BINARY_FLAG_MASK);
+    }
+
+    /**
+     * @return Recovery on Read Repair flag.
+     */
+    public final boolean readRepairRecovery() {
+        return isFlag(DHT_ATOMIC_READ_REPAIR_RECOVERY_FLAG_MASK);
     }
 
     /**
@@ -309,13 +317,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      * Cleanup values not needed after message was sent.
      */
     protected abstract void cleanup();
-
-    /**
-     * @return Subject ID.
-     */
-    public final UUID subjectId() {
-        return subjId;
-    }
 
     /**
      * @return Task name.
@@ -484,7 +485,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 13;
+        return 12;
     }
 
     /** {@inheritDoc} */
@@ -527,30 +528,24 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeUuid("subjId", subjId))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
                 if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 9:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
+            case 10:
                 if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 11:
                 if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
@@ -605,14 +600,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
                 reader.incrementState();
 
             case 8:
-                subjId = reader.readUuid("subjId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
                 byte syncModeOrd;
 
                 syncModeOrd = reader.readByte("syncMode");
@@ -624,7 +611,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
                 reader.incrementState();
 
-            case 10:
+            case 9:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -632,7 +619,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
                 reader.incrementState();
 
-            case 11:
+            case 10:
                 topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
@@ -640,7 +627,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
                 reader.incrementState();
 
-            case 12:
+            case 11:
                 writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())

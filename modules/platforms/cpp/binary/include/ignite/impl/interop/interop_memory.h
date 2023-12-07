@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include <ignite/common/common.h>
+#include <ignite/common/concurrent.h>
 
 namespace ignite 
 {
@@ -48,7 +49,25 @@ namespace ignite
 
             /** Flag: acquired. */
             const int IGNITE_MEM_FLAG_ACQUIRED = 0x4;
-                
+
+            /**
+             * A helper union to bitwise conversion from int32_t to float and back.
+             */
+            union BinaryFloatInt32
+            {
+                float f;
+                int32_t i;
+            };
+
+            /**
+             * A helper union to bitwise conversion from int64_t to double and back.
+             */
+            union BinaryDoubleInt64
+            {
+                double d;
+                int64_t i;
+            };
+
             /**
              * Interop memory.
              */
@@ -187,7 +206,7 @@ namespace ignite
                 /**
                  * Get cross-platform pointer in long form.
                  */
-                int64_t PointerLong();
+                int64_t PointerLong() const;
 
                 /**
                  * Get raw data pointer.
@@ -241,6 +260,9 @@ namespace ignite
                 /** Memory pointer. */
                 int8_t* memPtr; 
             };
+
+            typedef common::concurrent::SharedPointer<interop::InteropMemory> SP_InteropMemory;
+            typedef common::concurrent::SharedPointer<const interop::InteropMemory> SP_ConstInteropMemory;
 
             /**
              * Interop unpooled memory.

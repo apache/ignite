@@ -1,0 +1,67 @@
+# name: test/sql/function/date/test_extract_edge_cases.test
+# description: Extract function edge cases
+# group: [date]
+
+# century changes in the year 1
+query I
+SELECT EXTRACT(century FROM cast('2000-10-10' AS DATE));
+----
+20
+
+query I
+SELECT EXTRACT(century FROM cast('2001-10-10' AS DATE));
+----
+21
+
+# millennium changes in the year 1
+query I
+SELECT EXTRACT(millennium FROM cast('2000-10-10' AS DATE));
+----
+2
+
+query I
+SELECT EXTRACT(millennium FROM cast('2001-10-10' AS DATE));
+----
+3
+
+query I
+SELECT EXTRACT(dow FROM cast('1793-05-26' AS DATE));
+----
+1
+
+query I
+SELECT EXTRACT(isodow FROM cast('1793-05-26' AS DATE));
+----
+7
+
+# week numbers are weird
+query I
+SELECT EXTRACT(week FROM cast('2005-01-01' AS DATE));
+----
+53
+
+query I
+SELECT EXTRACT(week FROM cast('2006-01-01' AS DATE));
+----
+52
+
+query I
+SELECT EXTRACT(week FROM cast('2007-01-01' AS DATE));
+----
+1
+
+query I
+SELECT EXTRACT(week FROM cast('2008-01-01' AS DATE));
+----
+1
+
+query I
+SELECT EXTRACT(week FROM cast('2009-01-01' AS DATE));
+----
+1
+
+query I
+SELECT EXTRACT(week FROM cast('2010-01-01' AS DATE));
+----
+53
+

@@ -257,6 +257,7 @@ public class GridJettyRestHandler extends AbstractHandler {
         }
     }
 
+    /** */
     private static <T extends Enum<T>> @Nullable T enumValue(
         String key,
         Map<String, String> params,
@@ -722,7 +723,6 @@ public class GridJettyRestHandler extends AbstractHandler {
             }
 
             case DATA_REGION_METRICS:
-            case DATA_STORAGE_METRICS:
             case NAME:
             case VERSION:
             case PROBE: {

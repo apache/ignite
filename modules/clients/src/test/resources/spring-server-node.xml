@@ -87,17 +87,6 @@
             -->
             <list>
                 <!--
-                    Local cache example configuration.
-                -->
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <!-- Cache name is null. -->
-                    <!--<property name="name"><null/></property>-->
-
-                    <!-- LOCAL cache mode. -->
-                    <property name="cacheMode" value="LOCAL"/>
-                </bean>
-
-                <!--
                     Partitioned cache example configuration.
                 -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -201,21 +190,6 @@
                 </bean>
 
                 <!--
-                    Local cache with store.
-                -->
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="local.store"/>
-
-                    <property name="cacheMode" value="LOCAL"/>
-
-                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-
-                    <property name="store">
-                        <bean class="org.apache.ignite.internal.client.HashMapStore"/>
-                    </property>
-                </bean>
-
-                <!--
                     Replicated cache example configuration.
                 -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -284,8 +258,8 @@
             Logger to use.
         -->
         <property name="gridLogger">
-            <bean class="org.apache.ignite.logger.log4j.Log4JLogger">
-                <constructor-arg type="java.lang.String" value="modules/clients/src/test/resources/log4j.xml"/>
+            <bean class="org.apache.ignite.logger.log4j2.Log4J2Logger">
+                <constructor-arg type="java.lang.String" value="modules/clients/src/test/resources/log4j2.xml"/>
             </bean>
         </property>
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -51,7 +52,7 @@ public class UsedPagesMetricAbstractTest extends GridCommonAbstractTest {
     ) throws Exception {
         Ignite node = startGrids(nodeCnt);
 
-        node.cluster().active(true);
+        node.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Long, Object> cache = node.getOrCreateCache(MY_CACHE);
 

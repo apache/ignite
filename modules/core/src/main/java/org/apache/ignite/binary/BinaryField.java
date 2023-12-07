@@ -40,6 +40,7 @@ public interface BinaryField {
      * Get field's value from the given object.
      *
      * @param obj Object.
+     * @param <T> Type of the field value.
      * @return Value.
      */
     public <T> T value(BinaryObject obj);

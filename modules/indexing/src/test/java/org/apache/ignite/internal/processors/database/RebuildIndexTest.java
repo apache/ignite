@@ -29,14 +29,15 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.cache.ValidateIndexesClosure;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -159,14 +160,14 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     private void check(boolean msgFound) throws Exception {
-        srvLog = new ListeningTestLogger(false, log);
+        srvLog = new ListeningTestLogger(log);
 
         LogListener idxRebuildLsnr = LogListener.matches(idxRebuildPattert).build();
         srvLog.registerListener(idxRebuildLsnr);
 
         IgniteEx node = startGrids(2);
 
-        node.cluster().active(true);
+        node.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<UserKey, UserValue> cache = node.getOrCreateCache(CACHE_NAME);
 

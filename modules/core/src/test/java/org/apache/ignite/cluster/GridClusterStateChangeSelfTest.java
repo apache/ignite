@@ -31,13 +31,12 @@ import org.junit.Test;
  */
 public class GridClusterStateChangeSelfTest extends GridCommonAbstractTest {
     /** Names of nodes. */
-    private static final Collection<String> NODES_NAMES = U.sealList("server1", "server2", "client1", "client2", "daemon1", "daemon2");
+    private static final Collection<String> NODES_NAMES = U.sealList("server1", "server2", "client1", "client2");
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setClientMode(igniteInstanceName.startsWith("client"))
-            .setDaemon(igniteInstanceName.startsWith("daemon"))
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
             );

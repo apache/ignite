@@ -22,6 +22,7 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -100,7 +101,7 @@ public class IgniteSqlQueryWithBaselineTest extends GridCommonAbstractTest {
     public void testQueryWithNodeNotInBLT() throws Exception {
         startGrids(2);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         startGrid(2); //Start extra node.
 
@@ -114,7 +115,7 @@ public class IgniteSqlQueryWithBaselineTest extends GridCommonAbstractTest {
     public void testQueryWithoutBLTNode() throws Exception {
         startGrids(2);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         startGrid(2); //Start extra node.
         stopGrid(1);
@@ -129,7 +130,7 @@ public class IgniteSqlQueryWithBaselineTest extends GridCommonAbstractTest {
     public void testQueryFromNotBLTNode() throws Exception {
         startGrid(1);
 
-        grid(1).cluster().active(true);
+        grid(1).cluster().state(ClusterState.ACTIVE);
 
         startGrid(0); //Start extra node.
 

@@ -199,9 +199,6 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.isDaemon())
-            return;
-
         GridInternalSubscriptionProcessor isp = ctx.internalSubscriptionProcessor();
 
         isp.registerDistributedMetastorageListener(this);
@@ -228,9 +225,9 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                 if (log.isInfoEnabled())
                     log.info(
                         "Cluster tag will be set to new value: " +
-                            newVal != null ? newVal.tag() : "null" +
+                            (newVal != null ? newVal.tag() : "null") +
                             ", previous value was: " +
-                            oldVal != null ? oldVal.tag() : "null");
+                            (oldVal != null ? oldVal.tag() : "null"));
 
                 if (oldVal != null && newVal != null) {
                     if (ctx.event().isRecordable(EVT_CLUSTER_TAG_UPDATED)) {
@@ -1111,7 +1108,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            ctx.getSystemExecutorService().execute(this);
+            ctx.pools().getSystemExecutorService().execute(this);
         }
     }
 }

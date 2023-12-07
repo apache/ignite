@@ -26,8 +26,8 @@ import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.cache.Cache;
@@ -60,6 +60,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -70,6 +71,12 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
     /** Timeout. */
     private static final long TIMEOUT = 1_000L;
 
+    /** */
+    private boolean enpointsDiscoveryEnabled = true;
+
+    /** */
+    private boolean partitionAwarenessEnabled = true;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -78,10 +85,26 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        enpointsDiscoveryEnabled = true;
+        partitionAwarenessEnabled = true;
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName).setClientConnectorConfiguration(
             new ClientConnectorConfiguration().setThinClientConfiguration(
                 new ThinClientConfiguration().setMaxActiveComputeTasksPerConnection(100)));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean isClientEndpointsDiscoveryEnabled() {
+        return enpointsDiscoveryEnabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean isClientPartitionAwarenessEnabled() {
+        return partitionAwarenessEnabled;
     }
 
     /** Test continuous queries. */
@@ -113,6 +136,32 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
                 .collect(Collectors.toMap(i -> i, i -> -i))), aggregateListenerEvents(lsnr, 10));
 
             assertTrue(lsnr.isQueueEmpty());
+        }
+    }
+
+    /** */
+    @Test
+    public void testEventReceivedData() throws Exception {
+        try (IgniteClient client = startClient(0, 1, 2)) {
+            ClientCache<Integer, Integer> cache = client.getOrCreateCache("testEventReceivedData");
+
+            ContinuousQueryListener<Integer, Integer> lsnr = new ContinuousQueryListener<>();
+
+            cache.query(new ContinuousQuery<Integer, Integer>().setLocalListener(lsnr).setIncludeExpired(true));
+
+            cache.put(0, 0);
+
+            lsnr.assertNextCacheEvent(EventType.CREATED, evt -> assertNull(evt.getOldValue()));
+
+            cache.remove(0);
+
+            lsnr.assertNextCacheEvent(EventType.REMOVED, evt -> assertSame(evt.getValue(), evt.getOldValue()));
+
+            cache.withExpirePolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, 100))).put(1, 1);
+
+            lsnr.assertNextCacheEvent(EventType.CREATED, evt -> assertNull(evt.getOldValue()));
+
+            lsnr.assertNextCacheEvent(EventType.EXPIRED, evt -> assertSame(evt.getValue(), evt.getOldValue()));
         }
     }
 
@@ -166,7 +215,7 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
             cache.query(qry1);
             cache.query(qry2);
 
-            cache = cache.withExpirePolicy(new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 1)));
+            cache = cache.withExpirePolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, 1)));
 
             for (int i = 0; i < 100; i++)
                 cache.put(i, i);
@@ -199,6 +248,9 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
     /** Test continuous queries with page size parameter. */
     @Test
     public void testContinuousQueriesWithPageSize() throws Exception {
+        // It's required to connect exactly to nodes 1 and 2, without node 0.
+        enpointsDiscoveryEnabled = false;
+
         try (IgniteClient client = startClient(1, 2)) {
             ClientCache<Integer, Integer> cache = client.getOrCreateCache("testCQWithPageSize");
             IgniteCache<Integer, Integer> nodeCache = grid(0).getOrCreateCache(cache.getName());
@@ -230,6 +282,9 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
     /** Test continuous queries with time interval parameter. */
     @Test
     public void testContinuousQueriesWithTimeInterval() throws Exception {
+        // It's required to connect exactly to nodes 1 and 2, without node 0.
+        enpointsDiscoveryEnabled = false;
+
         try (IgniteClient client = startClient(1, 2)) {
             ClientCache<Integer, Integer> cache = client.getOrCreateCache("testCQWithTimeInterval");
             IgniteCache<Integer, Integer> nodeCache = grid(0).getOrCreateCache(cache.getName());
@@ -302,7 +357,7 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
             cache.registerCacheEntryListener(new MutableCacheEntryListenerConfiguration<>(
                 () -> lsnr, null, true, false));
 
-            cache = cache.withExpirePolicy(new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 1)));
+            cache = cache.withExpirePolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, 1)));
 
             for (int i = 0; i < 100; i++)
                 cache.put(i, i);
@@ -602,6 +657,8 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
     /** */
     @Test
     public void testContinuousQueriesWithConcurrentCompute() throws Exception {
+        partitionAwarenessEnabled = false;
+
         try (IgniteClient client = startClient(0, 1, 2)) {
             int threadsCnt = 20;
             int iterations = 50;
@@ -622,6 +679,10 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
 
                             QueryCursor<?> cur = cache.query(new ContinuousQuery<Integer, Integer>()
                                 .setLocalListener(lsnr));
+
+                            // This call and disable of PA are required to provide happens-before guaranties between
+                            // listener start and entry put. Without this call, event, triggered by put, can be skipped.
+                            cache.containsKey(0);
 
                             cache.put(i, i);
 
@@ -704,7 +765,7 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
             if (failure != null)
                 throw failure;
 
-            CacheEntryEvent<? extends K, ? extends V> evt = evtsQ.poll(timeout, TimeUnit.MILLISECONDS);
+            CacheEntryEvent<? extends K, ? extends V> evt = evtsQ.poll(timeout, MILLISECONDS);
 
             assertNotNull(evt);
 
@@ -735,6 +796,18 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
             assertEquals(expType, evt.getEventType());
             assertEquals(expKey, evt.getKey());
             assertEquals(expVal, evt.getValue());
+        }
+
+        /** */
+        public void assertNextCacheEvent(
+            EventType expType,
+            Consumer<CacheEntryEvent<? extends K, ? extends V>> checker
+        ) throws Exception {
+            CacheEntryEvent<? extends K, ? extends V> evt = poll();
+
+            assertEquals(expType, evt.getEventType());
+
+            checker.accept(evt);
         }
 
         /** */

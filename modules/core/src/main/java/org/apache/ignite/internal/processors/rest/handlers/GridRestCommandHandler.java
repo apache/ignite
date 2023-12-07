@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.rest.handlers;
 
 import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
@@ -36,5 +37,5 @@ public interface GridRestCommandHandler {
      * @param req Request.
      * @return Future.
      */
-    public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req);
+    public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) throws IgniteCheckedException;
 }

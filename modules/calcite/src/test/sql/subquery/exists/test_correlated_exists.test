@@ -1,0 +1,67 @@
+# name: test/sql/subquery/exists/test_correlated_exists.test
+# description: Test correlated exists
+# group: [exists]
+
+statement ok
+PRAGMA enable_verification
+
+statement ok
+CREATE TABLE integers(i INTEGER)
+
+statement ok
+INSERT INTO integers VALUES (1), (2), (3), (NULL)
+
+# correlated EXISTS
+query IT
+SELECT i, EXISTS(SELECT i FROM integers WHERE i1.i>2) FROM integers i1 ORDER BY i NULLS FIRST;
+----
+NULL	false
+1	false
+2	false
+3	true
+
+query IT
+SELECT i, EXISTS(SELECT i FROM integers WHERE i IS NULL OR i>i1.i*10) FROM integers i1 ORDER BY i NULLS FIRST;
+----
+NULL	true
+1	true
+2	true
+3	true
+
+# correlated EXISTS
+query IT
+SELECT i, EXISTS(SELECT i FROM integers WHERE i1.i>2) FROM integers i1 ORDER BY i NULLS FIRST;
+----
+NULL	false
+1	false
+2	false
+3	true
+
+query IT
+SELECT i, EXISTS(SELECT i FROM integers WHERE i=i1.i) FROM integers i1 ORDER BY i NULLS FIRST;
+----
+NULL	false
+1	true
+2	true
+3	true
+
+query I
+SELECT i FROM integers i1 WHERE EXISTS(SELECT i FROM integers WHERE i=i1.i) ORDER BY i;
+----
+1
+2
+3
+
+# SUM on exists
+query R
+SELECT SUM(CASE WHEN EXISTS(SELECT i FROM integers WHERE i=i1.i) THEN 1 ELSE 0 END) FROM integers i1;
+----
+3.000000
+
+query IT
+SELECT i, EXISTS(SELECT i FROM integers WHERE i IS NULL OR i>i1.i*10) FROM integers i1 ORDER BY i NULLS FIRST;
+----
+NULL	true
+1	true
+2	true
+3	true

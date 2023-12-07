@@ -1,0 +1,31 @@
+# name: test/sql/function/numeric/test_random.test
+# description: Test random & setseed functions
+# group: [numeric]
+
+statement ok
+CREATE TABLE t1 (a DOUBLE);
+
+statement ok
+CREATE TABLE t2 (b DOUBLE);
+
+statement ok
+CREATE TABLE t3 (c DOUBLE);
+
+statement ok
+INSERT INTO t1 SELECT RAND();
+
+statement ok
+INSERT INTO t2 SELECT RAND();
+
+statement ok
+INSERT INTO t3 SELECT RAND();
+
+statement ok
+INSERT INTO t3 SELECT RAND_INTEGER(100);
+
+
+# empty result on this join
+query I
+SELECT COUNT(*) FROM (SELECT a FROM t1 JOIN t2 ON (a=b) JOIN t3 ON (b=c)) s1
+----
+0

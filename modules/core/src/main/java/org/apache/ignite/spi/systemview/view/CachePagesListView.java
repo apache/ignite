@@ -31,6 +31,7 @@ public class CachePagesListView extends PagesListView {
     /**
      * @param pagesList Pages list.
      * @param bucket Bucket number.
+     * @param partId Partition ID.
      */
     public CachePagesListView(PagesList pagesList, int bucket, int partId) {
         super(pagesList, bucket);

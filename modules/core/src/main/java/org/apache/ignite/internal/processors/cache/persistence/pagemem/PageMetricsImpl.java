@@ -120,7 +120,6 @@ public class PageMetricsImpl implements PageMetrics {
         return totalPages;
     }
 
-
     /** {@inheritDoc} */
     @Override public LongAdderMetric indexPages() {
         return idxPages;

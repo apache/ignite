@@ -34,6 +34,9 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /** */
         [InstanceResource]
         private readonly IIgnite _ignite = null;
+        
+        /** Service context. */
+        private IServiceContext _ctx;
 
         /** */
         public const string ExceptionText = "Some error";
@@ -70,7 +73,8 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         {
             var tcs = new TaskCompletionSource<int>();
             new Timer(_ => tcs.SetResult(1)).Change(500, -1);
-            return tcs.Task;        }
+            return tcs.Task;
+        }
 
         /** <inheritdoc /> */
         public Person PersonMethod(Person person)
@@ -112,11 +116,27 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         {
             return _ignite.GetCluster().GetLocalNode().Id;
         }
+        
+        /** <inheritdoc /> */
+        public string ContextAttribute(string name)
+        {
+            IServiceCallContext callCtx = _ctx.CurrentCallContext;
+
+            return callCtx == null ? null : callCtx.GetAttribute(name);
+        }
+        
+        /** <inheritdoc /> */
+        public byte[] ContextBinaryAttribute(string name)
+        {
+            IServiceCallContext callCtx = _ctx.CurrentCallContext;
+
+            return callCtx == null ? null : callCtx.GetBinaryAttribute(name);
+        }
 
         /** <inheritdoc /> */
         public void Init(IServiceContext context)
         {
-            // No-op.
+            _ctx = context;
         }
 
         /** <inheritdoc /> */

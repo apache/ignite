@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
@@ -223,24 +222,6 @@ public interface ClusterNode extends BaselineNode {
      * @return {@code True} if this node is a local node, {@code false} otherwise.
      */
     public boolean isLocal();
-
-    /**
-     * Tests whether or not this node is a daemon.
-     * <p>
-     * Daemon nodes are the usual cluster nodes that participate in topology but are not
-     * visible on the main APIs, i.e. they are not part of any cluster group. The only
-     * way to see daemon nodes is to use {@link IgniteCluster#forDaemons()} method.
-     * <p>
-     * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on Ignite and needs to participate in the topology, but should be
-     * excluded from the "normal" topology, so that they won't participate in the task execution
-     * or data grid operations.
-     * <p>
-     * Application code should never use daemon nodes.
-     *
-     * @return {@code True} if this node is a daemon, {@code false} otherwise.
-     */
-    public boolean isDaemon();
 
     /**
      * Whether this node is cache client (see {@link IgniteConfiguration#isClientMode()}).

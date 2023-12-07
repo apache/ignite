@@ -478,7 +478,7 @@ public interface IgniteInternalTx {
      * @return Current value for the key within transaction.
      * @throws GridCacheFilterFailedException If filter failed and failFast is {@code true}.
      */
-     @Nullable public GridTuple<CacheObject> peek(
+    @Nullable public GridTuple<CacheObject> peek(
          GridCacheContext ctx,
          boolean failFast,
          KeyCacheObject key) throws GridCacheFilterFailedException;
@@ -664,6 +664,16 @@ public interface IgniteInternalTx {
      * @return Mvcc snapshot.
      */
     public MvccSnapshot mvccSnapshot();
+
+    /**
+     * @return ID of incremental snapshot after which this transaction commits, {@code null} if snapshot isn't running.
+     */
+    public @Nullable UUID incrementalSnapshotId();
+
+    /**
+     * @param id ID of incremental snapshot after which this transaction commits, {@code null} if snapshot isn't running.
+     */
+    public void incrementalSnapshotId(@Nullable UUID id);
 
     /**
      * @return Transaction counters.

@@ -669,8 +669,8 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         Integer key,
         @Nullable Integer val,
         boolean expectNear,
-        final UUID... expReaders) throws Exception
-    {
+        final UUID... expReaders
+    ) throws Exception {
         GridCacheAdapter<Integer, Integer> near = ((IgniteKernal)ignite).internalCache(DEFAULT_CACHE_NAME);
 
         assertTrue(near.isNear());

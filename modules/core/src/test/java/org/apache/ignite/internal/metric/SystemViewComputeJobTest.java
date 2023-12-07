@@ -97,6 +97,9 @@ public class SystemViewComputeJobTest extends GridCommonAbstractTest {
         cache = server.createCache("test-cache");
 
         cache.put(1, 1);
+
+        // We are changing it because compute jobs fall asleep.
+        assertTrue(computeJobWorkerInterruptTimeout(server).propagate(10L));
     }
 
     /** Tests work of {@link SystemView} for compute grid {@link IgniteCompute#broadcastAsync(IgniteRunnable)} call. */
@@ -508,14 +511,17 @@ public class SystemViewComputeJobTest extends GridCommonAbstractTest {
             }
         }
 
+        /** {@inheritDoc} */
         @Override public void setExternalCollisionListener(@Nullable CollisionExternalListener lsnr) {
             // No-op.
         }
 
+        /** {@inheritDoc} */
         @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
             // No-op.
         }
 
+        /** {@inheritDoc} */
         @Override public void spiStop() throws IgniteSpiException {
             // No-op.
         }

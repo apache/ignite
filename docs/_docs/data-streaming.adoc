@@ -18,23 +18,19 @@
 
 == Overview
 
-Ignite provides a Data Streaming API that can be used to inject large amounts of continuous streams of data into an Ignite cluster.
-The Data Streaming API is designed to be scalable and fault-tolerant, and provides _at-least-once_ delivery semantics for the data streamed into Ignite, meaning each entry is processed at least once.
-
-Data is streamed into a cache via a <<Data Streamers, data streamer>> associated with the cache. Data streamers automatically buffer the data and group it into batches for better performance and send it in parallel to multiple nodes.
-
-The Data Streaming API provides the following features:
-
-* The data that is added to a data streamer is automatically partitioned and distributed between the nodes.
-* You can process the data concurrently in a colocated fashion.
-* Clients can perform concurrent SQL queries on the data as it is being streamed in.
+Ignite provides a Data Streaming API that can be used to inject large amounts of data into an Ignite cluster.
+The main goal of streaming is efficient, quick data loading. The data that is added to the streamer is
+automatically organized and distributed between the nodes in partition-aware and parallel manner.
 
 image:images/data_streaming.png[Data Streaming]
 
-== Data Streamers
+The Data Streaming API is designed to be scalable and provides _at-least-once_ delivery semantics
+for the data streamed into Ignite, meaning each entry is processed at least once.
+
+== Usage
 A data streamer is associated with a specific cache and provides an interface for streaming data into the cache.
 
-In a typical scenario, you obtain a data streamer and use one of its methods to stream data into the cache, and Ignite takes care of data partitioning and colocation by batching data entries according to partitioning rules to avoid unnecessary data movement.
+In a typical scenario, you obtain a data streamer and use one of its methods to stream data into the cache, and Ignite takes care of the rest.
 
 You can obtain the data streamer for a specific cache as follows:
 [tabs]
@@ -57,33 +53,32 @@ include::code-snippets/dotnet/DataStreaming.cs[tag=dataStreamer1,indent=0]
 tab:C++[unsupported]
 --
 
-== Overwriting Existing Keys
+The streamer can accept data to load by multiple threads.
 
-By default, data streamers do not overwrite existing data and skip entries that are already in the cache. You can change that behavior by setting the `allowOverwrite` property of the data streamer to `true`.
+A good use of streaming is data preloading.
 
-[tabs]
---
-tab:Java[]
-[source,java]
-----
-include::{javaFile}[tag=dataStreamer2,indent=0]
-----
+== Limitations
+DataStreamer doesn't guarantee:
+[]
+- By default, data consistency until successfully finished;
+- Immediate data loading. Data can be kept for a while before loading;
+- Data order. Data records may be loaded into a cache in a different order compared to load into the streamer;
+- By default, working with external storages.
 
-tab:C#/.NET[]
-[source,csharp]
-----
-include::code-snippets/dotnet/DataStreaming.cs[tag=dataStreamer2,indent=0]
-----
+If <<overwritting, 'allowOverwrite'>> property is 'false' (default), consider:
+[]
+- You should not have the same keys repeating in the data being streamed;
+- Streamer cancelation or streamer node failure can cause data inconsistency;
+- If loading into a persistent cache, concurrently created snapshot may contain inconsistent data and might not be restored entirely.
 
-tab:C++[unsupported]
---
+Most important behavior of Ignite Data Streamer is defined by <<receivers, stream receiver>> and
+<<overwritting, 'allowOverwite' setting.>>
 
-NOTE: When `allowOverwrite` is set to `false` (default), the updates are not propagated to the link:persistence/external-storage[external storage] (if it is used).
+== Streamer receivers. [[receivers]]
 
-== Processing Data
-In cases when you need to execute custom logic before adding new data, you can use a stream receiver.
-A stream receiver is used to process the data in a colocated manner before it is stored into the cache.
-The logic implemented in a stream receiver is executed on the node where data is to be stored.
+Ignite DataStreamer is an orchestrator and doesn't write data itself. link:{javadoc_base_url}/org/apache/ignite/stream/StreameReceiver.html[StreamerReceiver] does. The default receiver is designed for fastest load and fewer network requests. With this receiver, streamer focuses on parallel transfer of backup and primary records.
+
+You can set your own receiver. See <<transfomer>> and <<visitor>>. The logic implemented in a stream receiver is executed on the node where data is to be stored.
 
 [tabs]
 --
@@ -102,8 +97,6 @@ include::code-snippets/dotnet/DataStreaming.cs[tag=streamReceiver,indent=0]
 tab:C++[unsupported]
 --
 
-NOTE: Note that a stream receiver does not put data into the cache automatically. You need to call one of the `put(...)` methods explicitly.
-
 [IMPORTANT]
 ====
 The class definitions of the stream receivers to be executed on remote nodes must be available on the nodes. This can be achieved in two ways:
@@ -112,7 +105,35 @@ The class definitions of the stream receivers to be executed on remote nodes mus
 * Enable link:code-deployment/peer-class-loading[peer class loading].
 ====
 
-=== Stream Transformer
+Changing receiver to non-default changes data distribution algorithm. With non-default receiver streamer sends data batches only to primary node receiver. And primary node needs another requests to send backup writes.
+
+NOTE: A stream receiver does not put data into cache automatically. You need to call one of the `put` methods explicitly.
+
+
+== Overwritting data. [[overwritting]]
+
+By default, existing keys aren't overwritten. You can change that behavior by setting the `allowOverwrite` property of the data streamer to `true`. Since the default receiver does not overwrite data, other provided one is automatically chosen. Any non-default receiver is considered as not-overwriting. And `allowOverwrite` property says `true`. However, your own receiver may use `putIfAbsent` for instance.
+
+NOTE: When `allowOverwrite` is set to `false` (default), the updates are not propagated to the link:persistence/external-storage[external storage] (if it is used).
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=dataStreamer2,indent=0]
+----
+
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/DataStreaming.cs[tag=dataStreamer2,indent=0]
+----
+
+tab:C++[unsupported]
+--
+
+=== Stream Transformer [[transfomer]]
 A stream transformer is a convenient implementation of a stream receiver, that updates the data in the stream.
 Stream transformers take advantage of the colocation feature and update the data on the node where it is going to be stored.
 
@@ -135,9 +156,9 @@ include::code-snippets/dotnet/DataStreaming.cs[tag=streamTransformer,indent=0]
 tab:C++[unsupported]
 --
 
-=== Stream Visitor
+=== Stream Visitor [[visitor]]
 
-A stream visitor is another implementation of a stream receiver, which visits every key-value pair in the stream. The visitor does not update the cache. If a pair needs to be stored in the cache, one of the `put(...)` methods must be called explicitly.
+A stream visitor is another implementation of a stream receiver, which visits every key-value pair in the stream.
 
 In the example below, we have 2 caches: "marketData", and "instruments". We receive market data ticks and put them into the streamer for the "marketData" cache. The stream visitor for the "marketData" streamer is invoked on the cluster member mapped to the particular market symbol. Upon receiving individual market ticks it updates the "instrument" cache with the latest market price.
 
@@ -160,7 +181,7 @@ tab:C++[unsupported]
 --
 
 == Configuring Data Streamer Thread Pool Size
-The data streamer thread pool is dedicated to process messages coming from the data streamers.
+The data streamer thread pool is dedicated to process batches coming from the data streamers.
 
 The default pool size is `max(8, total number of cores)`.
 Use `IgniteConfiguration.setDataStreamerThreadPoolSize(...)` to change the pool size.

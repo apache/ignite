@@ -217,8 +217,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         cc.setQueryEntities(entityList);
 
-        if (cacheMode() != CacheMode.LOCAL)
-            cc.setAffinity(new RendezvousAffinityFunction());
+        cc.setAffinity(new RendezvousAffinityFunction());
 
         // Explicitly set number of backups equal to number of grids.
         if (cacheMode() == CacheMode.PARTITIONED)
@@ -1101,10 +1100,10 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     public void testScanQuery() throws Exception {
         IgniteCache<Integer, String> c1 = jcache(Integer.class, String.class);
 
-        Map<Integer, String> map = new HashMap<Integer, String>() {{
-            for (int i = 0; i < 5000; i++)
-                put(i, "str" + i);
-        }};
+        Map<Integer, String> map = new HashMap<>();
+
+        for (int i = 0; i < 5000; i++)
+            map.put(i, "str" + i);
 
         for (Map.Entry<Integer, String> e : map.entrySet())
             c1.put(e.getKey(), e.getValue());
@@ -1184,8 +1183,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         CacheConfiguration<Object, Object> conf = new CacheConfiguration<>(cacheConfiguration());
 
         conf.setQueryEntities(Arrays.asList(
-           new QueryEntity(Integer.class, ObjectValue.class),
-           new QueryEntity(String.class, ObjectValueOther.class)
+            new QueryEntity(Integer.class, ObjectValue.class),
+            new QueryEntity(String.class, ObjectValueOther.class)
         ));
 
         IgniteCache<Object, Object> c = jcache(ignite(), conf, Object.class, Object.class);
@@ -1583,7 +1582,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         ignite().events().localListen(lsnr, EVT_SQL_QUERY_EXECUTION);
 
-        ClientConfiguration cc = new ClientConfiguration().setAddresses(Config.SERVER);
+        ClientConfiguration cc = new ClientConfiguration().setAddressesFinder(() -> new String[] {Config.SERVER});
 
         try (IgniteClient client = Ignition.startClient(cc)) {
             client.query(new SqlFieldsQuery("create table TEST_TABLE(key int primary key, val int)"))
@@ -2341,7 +2340,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            BadHashKeyObject keyObj = (BadHashKeyObject) o;
+            BadHashKeyObject keyObj = (BadHashKeyObject)o;
 
             return str.equals(keyObj.str);
         }
@@ -2426,6 +2425,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      *
      */
     private static class StoreFactory implements Factory<CacheStore> {
+        /** {@inheritDoc} */
         @Override public CacheStore create() {
             return store;
         }

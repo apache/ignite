@@ -70,7 +70,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * from slower node and moved to the fast under-utilized node.
  * <p>
  * The design and ideas for this SPI are significantly influenced by
- * <a href="http://gee.cs.oswego.edu/dl/papers/fj.pdf">Java Fork/Join Framework</a>
+ * <a href="https://dl.acm.org/doi/pdf/10.1145/337449.337465">Java Fork/Join Framework</a>
  * authored by Doug Lea and planned for Java 7. {@code GridJobStealingCollisionSpi} took
  * similar concepts and applied them to the grid (as opposed to within VM support planned
  * in Java 7).
@@ -308,6 +308,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
      * Sets number of jobs that can be executed in parallel.
      *
      * @param activeJobsThreshold Number of jobs that can be executed in parallel.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
     public JobStealingCollisionSpi setActiveJobsThreshold(int activeJobsThreshold) {
@@ -454,7 +455,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
      *
      * @return Node attributes to enable job stealing for.
      */
-     public Map<String, ? extends Serializable> getStealingAttributes() {
+    public Map<String, ? extends Serializable> getStealingAttributes() {
         return stealAttrs;
     }
 

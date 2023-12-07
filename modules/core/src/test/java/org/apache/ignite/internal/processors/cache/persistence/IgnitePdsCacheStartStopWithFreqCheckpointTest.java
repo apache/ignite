@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -38,7 +39,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -87,10 +87,7 @@ public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbs
             .setCacheMode(CacheMode.REPLICATED)
             .setBackups(0);
 
-        if (MvccFeatureChecker.forcedMvcc())
-            ccfg.setRebalanceDelay(Long.MAX_VALUE);
-        else
-            ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
+        ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
 
         return ccfg;
     }
@@ -118,7 +115,7 @@ public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbs
     public void testCheckpointDeadlock() throws Exception {
         IgniteEx crd = startGrid(0);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         for (int cacheId = 0; cacheId < CACHES; cacheId++) {
             IgniteCache<Object, Object> cache = crd.getOrCreateCache(CACHE_NAME + cacheId);
@@ -182,7 +179,7 @@ public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbs
      * @param node Node.
      */
     private void interruptCheckpointer(IgniteEx node) {
-        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager) node.context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)node.context().cache().context().database();
 
         dbMgr.getCheckpointer().runner().interrupt();
     }

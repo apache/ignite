@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Tests.Services
         int testParams(params object[] args);
 
         /** */
-        ServicesTest.PlatformComputeBinarizable testBinarizable(ServicesTest.PlatformComputeBinarizable x);
+        PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable x);
 
         /** */
         object[] testBinarizableArrayOfObjects(object[] x);
@@ -157,7 +157,7 @@ namespace Apache.Ignite.Core.Tests.Services
         IBinaryObject[] testBinaryObjectArray(IBinaryObject[] x);
 
         /** */
-        ServicesTest.PlatformComputeBinarizable[] testBinarizableArray(ServicesTest.PlatformComputeBinarizable[] x);
+        PlatformComputeBinarizable[] testBinarizableArray(PlatformComputeBinarizable[] x);
 
         /** */
         ICollection testBinarizableCollection(ICollection x);
@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         Employee[] testEmployees(Employee[] emps);
-        
+
         /** */
         Account[] testAccounts();
 
@@ -208,6 +208,27 @@ namespace Apache.Ignite.Core.Tests.Services
         void testException(string exceptionClass);
 
         /** */
+        object testRoundtrip(object x);
+        
+        /** */
+        int testInterception(int val);
+
+        /** */
         void sleep(long delayMs);
+
+        /** */
+        object contextAttribute(string name);
+    }
+
+    /// <summary>
+    /// Interface for the methods that are available only on Java side.
+    /// </summary>
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
+    public interface IJavaOnlyService : IJavaService
+    {
+        /// <summary>
+        /// Returns number of measured by service metrics invocations of all service's methods or of its certain method.
+        /// </summary>
+        int testNumberOfInvocations(string svcName, string histName = null);
     }
 }

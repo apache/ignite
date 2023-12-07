@@ -30,13 +30,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapterEx;
 import org.apache.ignite.internal.util.typedef.F;
@@ -86,7 +86,10 @@ public final class UpdatePlan {
 
     /** Number of rows in rows based MERGE or INSERT. */
     private final int rowsNum;
-
+    
+    /** Whether absent PK parts should be filled with defaults or not. */
+    private boolean fillAbsentPKsWithDefaults;
+    
     /** Arguments for fast UPDATE or DELETE. */
     private final FastUpdate fastUpdate;
 
@@ -113,6 +116,7 @@ public final class UpdatePlan {
      * @param rowsNum Rows number.
      * @param fastUpdate Fast update (if any).
      * @param distributed Distributed plan (if any)
+     * @param fillAbsentPKsWithDefaults Fills absent PKs with nulls or defaults setting.
      */
     public UpdatePlan(
         UpdateMode mode,
@@ -129,13 +133,15 @@ public final class UpdatePlan {
         int rowsNum,
         @Nullable FastUpdate fastUpdate,
         @Nullable DmlDistributedPlanInfo distributed,
-        boolean canSelectBeLazy
+        boolean canSelectBeLazy,
+        boolean fillAbsentPKsWithDefaults
     ) {
         this.colNames = colNames;
         this.colTypes = colTypes;
         this.rows = rows;
         this.rowsNum = rowsNum;
-
+        this.fillAbsentPKsWithDefaults = fillAbsentPKsWithDefaults;
+    
         assert mode != null;
         assert tbl != null;
 
@@ -183,7 +189,8 @@ public final class UpdatePlan {
             0,
             fastUpdate,
             distributed,
-            true
+            true,
+            false
         );
     }
 
@@ -198,7 +205,7 @@ public final class UpdatePlan {
             throw new IgniteSQLException("Not enough values in a row: " + row.size() + " instead of " + colNames.length,
                 IgniteQueryErrorCode.ENTRY_PROCESSING);
 
-        GridH2RowDescriptor rowDesc = tbl.rowDescriptor();
+        GridQueryRowDescriptor rowDesc = tbl.rowDescriptor();
         GridQueryTypeDescriptor desc = rowDesc.type();
 
         GridCacheContext cctx = rowDesc.context();
@@ -264,7 +271,7 @@ public final class UpdatePlan {
 
         // First 2 columns are _key and _val Skip 'em.
         for (int i = QueryUtils.DEFAULT_COLUMNS_COUNT; i < tblCols.length; i++) {
-            if (tbl.rowDescriptor().isKeyValueOrVersionColumn(i))
+            if (tbl.rowDescriptor().isKeyColumn(i) || tbl.rowDescriptor().isValueColumn(i))
                 continue;
 
             String colName = tblCols[i].getName();
@@ -279,10 +286,10 @@ public final class UpdatePlan {
 
         if (cctx.binaryMarshaller()) {
             if (key instanceof BinaryObjectBuilder)
-                key = ((BinaryObjectBuilder) key).build();
+                key = ((BinaryObjectBuilder)key).build();
 
             if (val instanceof BinaryObjectBuilder)
-                val = ((BinaryObjectBuilder) val).build();
+                val = ((BinaryObjectBuilder)val).build();
         }
 
         desc.validateKeyAndValue(key, val);
@@ -298,7 +305,7 @@ public final class UpdatePlan {
      * @return Tuple contains: [key, old value, new value]
      */
     public T3<Object, Object, Object> processRowForUpdate(List<?> row) throws IgniteCheckedException {
-        GridH2RowDescriptor rowDesc = tbl.rowDescriptor();
+        GridQueryRowDescriptor rowDesc = tbl.rowDescriptor();
         GridQueryTypeDescriptor desc = rowDesc.type();
 
         GridCacheContext cctx = rowDesc.context();
@@ -338,7 +345,7 @@ public final class UpdatePlan {
         for (int i = 0; i < tbl.getColumns().length - QueryUtils.DEFAULT_COLUMNS_COUNT; i++) {
             Column c = tbl.getColumn(i + QueryUtils.DEFAULT_COLUMNS_COUNT);
 
-            if (rowDesc.isKeyValueOrVersionColumn(c.getColumnId()))
+            if (rowDesc.isKeyColumn(c.getColumnId()) || rowDesc.isValueColumn(c.getColumnId()))
                 continue;
 
             GridQueryProperty prop = desc.property(c.getName());
@@ -354,13 +361,13 @@ public final class UpdatePlan {
             Object colVal = newColVals.get(c.getName());
 
             // UPDATE currently does not allow to modify key or its fields, so we must be safe to pass null as key.
-            rowDesc.setColumnValue(null, newVal, colVal, i);
+            rowDesc.setFieldValue(null, newVal, colVal, i);
         }
 
         if (cctx.binaryMarshaller() && hasProps) {
             assert newVal instanceof BinaryObjectBuilder;
 
-            newVal = ((BinaryObjectBuilder) newVal).build();
+            newVal = ((BinaryObjectBuilder)newVal).build();
         }
 
         desc.validateKeyAndValue(key, newVal);
@@ -411,7 +418,7 @@ public final class UpdatePlan {
 
         List<List<?>> res = new ArrayList<>(rowsNum);
 
-        GridH2RowDescriptor desc = tbl.rowDescriptor();
+        GridQueryRowDescriptor desc = tbl.rowDescriptor();
 
         extractArgsValues(args, res, desc);
 
@@ -441,7 +448,7 @@ public final class UpdatePlan {
 
         List<List<List<?>>> resPerQry = new ArrayList<>(argss.size());
 
-        GridH2RowDescriptor desc = tbl.rowDescriptor();
+        GridQueryRowDescriptor desc = tbl.rowDescriptor();
 
         for (Object[] args : argss) {
             List<List<?>> res = new ArrayList<>();
@@ -462,7 +469,7 @@ public final class UpdatePlan {
      * @param desc Row descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private void extractArgsValues(Object[] args, List<List<?>> res, GridH2RowDescriptor desc)
+    private void extractArgsValues(Object[] args, List<List<?>> res, GridQueryRowDescriptor desc)
         throws IgniteCheckedException {
         assert res != null;
 
@@ -470,8 +477,12 @@ public final class UpdatePlan {
             List<Object> resRow = new ArrayList<>();
 
             for (int j = 0; j < colNames.length; j++) {
-                Object colVal = row.get(j).get(args);
-
+                Object colVal;
+                if (fillAbsentPKsWithDefaults)
+                     colVal = row.size() > j ? row.get(j).get(args) : null;
+                else
+                     colVal = row.get(j).get(args);
+    
                 if (j == keyColIdx || j == valColIdx) {
                     Class<?> colCls = j == keyColIdx ? desc.type().keyClass() : desc.type().valueClass();
 

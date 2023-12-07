@@ -67,7 +67,7 @@ public class PlatformBroadcastingSingleClosureTask extends PlatformAbstractTask 
                     first = false;
                 }
                 else
-                    map.put(ctx.createClosureJob(this, job.pointer(), job.job()), node);
+                    map.put(ctx.createClosureJob(this, job.pointer(), job.job(), job.name()), node);
             }
 
             return map;

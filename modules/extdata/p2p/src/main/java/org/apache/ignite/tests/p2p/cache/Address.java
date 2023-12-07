@@ -25,31 +25,39 @@ import java.io.ObjectOutput;
 /**
  */
 public class Address implements Externalizable {
+    /** */
     private String street;
 
+    /** */
     private int house;
 
+    /** */
     public Address() {
     }
 
+    /** */
     public Address(String street, int house) {
         this.street = street;
         this.house = house;
     }
 
+    /** */
     public String getStreet() {
         return street;
     }
 
+    /** */
     public int getHouse() {
         return house;
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(street);
         out.writeInt(house);
     }
 
+    /** */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         street = (String)in.readObject();
         house = in.readInt();

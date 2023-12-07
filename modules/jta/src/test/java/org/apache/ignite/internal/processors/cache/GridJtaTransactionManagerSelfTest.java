@@ -33,6 +33,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.objectweb.jotm.Current;
 import org.objectweb.jotm.Jotm;
+import org.objectweb.jotm.rmi.RmiLocalConfiguration;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -76,7 +77,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        jotm = new Jotm(true, false);
+        jotm = new Jotm(true, false, new RmiLocalConfiguration());
 
         Current.setAppServer(false);
 

@@ -46,7 +46,7 @@ public class PlatformDotNetConsoleStream extends OutputStream {
 
     /** {@inheritDoc} */
     @Override public void write(int b) throws IOException {
-        String s = String.valueOf((char) b);
+        String s = String.valueOf((char)b);
 
         PlatformCallbackGateway.consoleWrite(s, isErr);
     }

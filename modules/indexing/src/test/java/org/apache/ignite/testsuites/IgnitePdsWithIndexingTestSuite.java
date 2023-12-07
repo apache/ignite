@@ -21,16 +21,17 @@ import org.apache.ignite.internal.encryption.CacheGroupReencryptionTest;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest;
 import org.apache.ignite.internal.processors.cache.index.ClientReconnectWithSqlTableConfiguredTest;
+import org.apache.ignite.internal.processors.cache.index.DropIndexTest;
 import org.apache.ignite.internal.processors.cache.index.ForceRebuildIndexTest;
+import org.apache.ignite.internal.processors.cache.index.RenameIndexTreeTest;
+import org.apache.ignite.internal.processors.cache.index.ResumeCreateIndexTest;
+import org.apache.ignite.internal.processors.cache.index.ResumeRebuildIndexTest;
 import org.apache.ignite.internal.processors.cache.index.StopRebuildIndexTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsIndexingDefragmentationTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteTcBotInitNewPageTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IndexingMultithreadedLoadContinuousRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.LongDestroyDurableBackgroundTaskTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.MultipleParallelCacheDeleteDeadlockTest;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotCheckWithIndexesTest;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotRestoreWithIndexingTest;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotWithIndexesTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodeWithIndexingPutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingPutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingWalRestoreTest;
@@ -39,7 +40,9 @@ import org.apache.ignite.internal.processors.database.IgnitePersistentStoreSchem
 import org.apache.ignite.internal.processors.database.IgniteTwoRegionsRebuildIndexTest;
 import org.apache.ignite.internal.processors.database.RebuildIndexTest;
 import org.apache.ignite.internal.processors.database.RebuildIndexWithHistoricalRebalanceTest;
-import org.apache.ignite.internal.processors.database.RebuildIndexWithMVCCTest;
+import org.apache.ignite.internal.processors.database.WalDisabledDuringIndexRecreateTest;
+import org.apache.ignite.internal.processors.query.IndexWithSameNameH2Test;
+import org.apache.ignite.internal.processors.query.h2.maintenance.MaintenanceRebuildIndexUtilsSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -59,16 +62,19 @@ import org.junit.runners.Suite;
     IndexingMultithreadedLoadContinuousRestartTest.class,
     LongDestroyDurableBackgroundTaskTest.class,
     RebuildIndexTest.class,
-    RebuildIndexWithMVCCTest.class,
-    IgniteClusterSnapshotWithIndexesTest.class,
-    IgniteClusterSnapshotCheckWithIndexesTest.class,
+    WalDisabledDuringIndexRecreateTest.class,
     ClientReconnectWithSqlTableConfiguredTest.class,
     MultipleParallelCacheDeleteDeadlockTest.class,
     CacheGroupReencryptionTest.class,
     IgnitePdsIndexingDefragmentationTest.class,
     StopRebuildIndexTest.class,
     ForceRebuildIndexTest.class,
-    IgniteClusterSnapshotRestoreWithIndexingTest.class
+    ResumeRebuildIndexTest.class,
+    ResumeCreateIndexTest.class,
+    RenameIndexTreeTest.class,
+    DropIndexTest.class,
+    MaintenanceRebuildIndexUtilsSelfTest.class,
+    IndexWithSameNameH2Test.class,
 })
 public class IgnitePdsWithIndexingTestSuite {
 }

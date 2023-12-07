@@ -23,8 +23,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.security.AbstractRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.testframework.GridTestUtils.IgniteRunnableX;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -62,7 +62,7 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
     /** */
     @Test
     public void test() {
-        runAndCheck((IgniteRunnableX)() -> {
+        runAndCheck((RunnableX)() -> {
                 Ignite loc = Ignition.localIgnite();
 
                 for (UUID nodeId : nodesToCheckIds()) {

@@ -22,26 +22,26 @@ package org.apache.ignite.mxbean;
  */
 @MXBeanDescription("MBean that controls critical failure handling.")
 public interface FailureHandlingMxBean {
-    /** */
+    /** @return Whether critical workers liveness checking is enabled. */
     @MXBeanDescription("Enable/disable critical workers liveness checking.")
     public boolean getLivenessCheckEnabled();
 
-    /** */
+    /** @param val Whether critical workers liveness checking is enabled. */
     public void setLivenessCheckEnabled(boolean val);
 
-    /** */
+    /** @return Maximum inactivity period for system worker. Negative value denotes infinite timeout. */
     @MXBeanDescription("Maximum inactivity period for system worker. Critical failure handler fires if exceeded. " +
         "Nonpositive value denotes infinite timeout.")
     public long getSystemWorkerBlockedTimeout();
 
-    /** */
+    /** @param val Maximum inactivity period for system worker. Negative value denotes infinite timeout. */
     public void setSystemWorkerBlockedTimeout(long val);
 
-    /** */
+    /** @return Timeout for checkpoint read lock acquisition. Negative value denotes infinite timeout. */
     @MXBeanDescription("Timeout for checkpoint read lock acquisition. Critical failure handler fires if exceeded. " +
         "Nonpositive value denotes infinite timeout.")
     public long getCheckpointReadLockTimeout();
 
-    /** */
+    /** @param val Timeout for checkpoint read lock acquisition. Negative value denotes infinite timeout. */
     public void setCheckpointReadLockTimeout(long val);
 }

@@ -94,9 +94,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /** Retry because ownership changed. */
     private Integer retry;
 
-    /** Subject ID. */
-    private UUID subjId;
-
     /** Task name. */
     private int taskNameHash;
 
@@ -123,7 +120,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      * @param addRdr Add reader flag.
      * @param readThrough Read through flag.
      * @param topVer Topology version.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
@@ -138,7 +134,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         boolean addRdr,
         boolean readThrough,
         @NotNull AffinityTopologyVersion topVer,
-        @Nullable UUID subjId,
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
@@ -156,7 +151,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         this.addRdr = addRdr;
         this.readThrough = readThrough;
         this.topVer = topVer;
-        this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
@@ -212,8 +206,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     private void map() {
         // TODO Get rid of force keys request https://issues.apache.org/jira/browse/IGNITE-10251.
         if (cctx.group().preloader().needForceKeys()) {
-            assert !cctx.mvccEnabled();
-
             GridDhtFuture<Object> fut = cctx.group().preloader().request(
                 cctx,
                 Collections.singleton(key),
@@ -288,18 +280,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     private boolean map(KeyCacheObject key, boolean forceKeys) {
         try {
             int keyPart = cctx.affinity().partition(key);
-
-            if (cctx.mvccEnabled()) {
-                boolean noOwners = cctx.topology().owners(keyPart, topVer).isEmpty();
-
-                // Force key request is disabled for MVCC. So if there are no partition owners for the given key
-                // (we have a not strict partition loss policy if we've got here) we need to set flag forceKeys to true
-                // to avoid useless remapping to other non-owning partitions. For non-mvcc caches the force key request
-                // is also useless in the such situations, so the same flow is here: allegedly we've made a force key
-                // request with no results and therefore forceKeys flag may be set to true here.
-                if (noOwners)
-                    forceKeys = true;
-            }
 
             GridDhtLocalPartition part = topVer.topologyVersion() > 0 ?
                 cache().topology().localPartition(keyPart, topVer, true) :
@@ -401,7 +381,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                 Collections.singleton(key),
                 readerArgs,
                 readThrough,
-                subjId,
                 taskName,
                 expiryPlc,
                 skipVals,
@@ -428,7 +407,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                                 Collections.singleton(key),
                                 args,
                                 readThrough,
-                                subjId,
                                 taskName,
                                 expiryPlc,
                                 skipVals,

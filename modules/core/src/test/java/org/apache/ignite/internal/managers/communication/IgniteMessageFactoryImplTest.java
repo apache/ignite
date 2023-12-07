@@ -104,9 +104,9 @@ public class IgniteMessageFactoryImplTest {
     @SuppressWarnings("ResultOfObjectAllocationIgnored")
     public void testRegisterTheSameType() {
         MessageFactory[] factories = {
-                new TestMessageFactoryPovider(),
-                new TestMessageFactory(),
-                new TestMessageFactoryPoviderWithTheSameDirectType()
+            new TestMessageFactoryPovider(),
+            new TestMessageFactory(),
+            new TestMessageFactoryPoviderWithTheSameDirectType()
         };
 
         new IgniteMessageFactoryImpl(factories);

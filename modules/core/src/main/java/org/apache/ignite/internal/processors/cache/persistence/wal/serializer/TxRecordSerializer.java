@@ -257,6 +257,6 @@ public class TxRecordSerializer {
      * @throws IgniteCheckedException In case of fail.
      */
     public int size(MvccTxRecord rec) throws IgniteCheckedException {
-       return size((TxRecord)rec) + MVCC_VERSION_SIZE;
+        return size((TxRecord)rec) + MVCC_VERSION_SIZE;
     }
 }

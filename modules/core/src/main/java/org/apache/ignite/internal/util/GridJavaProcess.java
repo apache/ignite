@@ -52,6 +52,9 @@ public final class GridJavaProcess {
     /** Internal protocol message prefix saying that the next text in the outputted line is pid. */
     public static final String PID_MSG_PREFIX = "my_pid_is:";
 
+    /** Default pid. */
+    private static final String DFLT_PID = "-1";
+
     /** Logger */
     private IgniteLogger log;
 
@@ -59,7 +62,7 @@ public final class GridJavaProcess {
     private Process proc;
 
     /** Pid of wrapped process. Made as array to be changeable in nested static class. */
-    private volatile String pid = "-1";
+    private volatile String pid = DFLT_PID;
 
     /** system.out stream grabber for process in which user class is running. */
     private ProcessStreamGrabber osGrabber;
@@ -139,8 +142,7 @@ public final class GridJavaProcess {
 
         List<String> procCommands = new ArrayList<>();
 
-        String javaBin = (javaHome == null ? System.getProperty("java.home") : javaHome) +
-            File.separator + "bin" + File.separator + "java";
+        String javaBin = resolveJavaBin(javaHome);
 
         procCommands.add(javaBin);
         procCommands.addAll(jvmArgs == null ? U.jvmArgs() : jvmArgs);
@@ -181,22 +183,43 @@ public final class GridJavaProcess {
     }
 
     /**
+     * Resolves path to java binary (that can be executed using exec). Either the provided java home directory
+     * is used, or, if it's {@code null}, the java.home system property is consulted with.
+     *
+     * @param javaHome Java home directory where to look for bin/java; if {@code null}, then java.home property value is used.
+     * @return Path to Java executable.
+     */
+    public static String resolveJavaBin(@Nullable String javaHome) {
+        return resolveJavaHome(javaHome) + File.separator + "bin" + File.separator + "java";
+    }
+
+    /**
+     * Returns the provided java home path or, if it's {@code null}, falls back to the path obtained via 'java.home'
+     * system property.
+     */
+    private static String resolveJavaHome(@Nullable String javaHome) {
+        return javaHome == null ? System.getProperty("java.home") : javaHome;
+    }
+
+    /**
      * Kills the java process.
      *
      * @throws Exception If any problem occurred.
      */
     public void kill() throws Exception {
-        Process killProc = U.isWindows() ?
-            Runtime.getRuntime().exec(new String[] {"taskkill", "/pid", pid, "/f", "/t"}) :
-            Runtime.getRuntime().exec(new String[] {"kill", "-9", pid});
+        if (!pid.equals(DFLT_PID)) {
+            Process killProc = U.isWindows() ?
+                    Runtime.getRuntime().exec(new String[]{"taskkill", "/pid", pid, "/f", "/t"}) :
+                    Runtime.getRuntime().exec(new String[]{"kill", "-9", pid});
 
-        if (!killProc.waitFor(5000, TimeUnit.MILLISECONDS))
-            throw new IllegalStateException("The kill process is hanging.");
+            if (!killProc.waitFor(5000, TimeUnit.MILLISECONDS))
+                throw new IllegalStateException("The kill process is hanging.");
 
-        int exitVal = killProc.exitValue();
+            int exitVal = killProc.exitValue();
 
-        if (exitVal != 0 && log.isInfoEnabled())
-            log.info(String.format("Abnormal exit value of %s for trying to kill the pid %s", exitVal, pid));
+            if (exitVal != 0 && log.isInfoEnabled())
+                log.info(String.format("Abnormal exit value of %s for trying to kill the pid %s", exitVal, pid));
+        }
 
         if (!proc.waitFor(5000, TimeUnit.MILLISECONDS))
             throw new IllegalStateException("Failed to kill grid java process.");
@@ -244,6 +267,20 @@ public final class GridJavaProcess {
      */
     public Process getProcess() {
         return proc;
+    }
+
+    /** Suspends the process. */
+    public void suspend() throws Exception {
+        if (!U.isUnix() && !U.isMacOs())
+            throw new UnsupportedOperationException();
+
+        if (pid.equals(DFLT_PID))
+            return;
+
+        Process stopProc = Runtime.getRuntime().exec(new String[]{"kill", "-STOP", pid});
+
+        if (!stopProc.waitFor(5000, TimeUnit.MILLISECONDS))
+            throw new IllegalStateException("The stop process is hanging.");
     }
 
     /**

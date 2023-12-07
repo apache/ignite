@@ -42,6 +42,23 @@ public class SqlKillContinuousQueryCommand implements SqlCommand {
     /** Routine id. */
     private UUID routineId;
 
+    /**
+     * Default constructor.
+     */
+    public SqlKillContinuousQueryCommand() {
+        // No-op.
+    }
+
+    /**
+     *
+     * @param originNodeId Origin node id.
+     * @param routineId Routine id.
+     */
+    public SqlKillContinuousQueryCommand(UUID originNodeId, UUID routineId) {
+        this.originNodeId = originNodeId;
+        this.routineId = routineId;
+    }
+
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
         if (lex.shift() && lex.tokenType() == SqlLexerTokenType.STRING) {

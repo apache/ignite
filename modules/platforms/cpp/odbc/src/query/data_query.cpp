@@ -233,17 +233,7 @@ namespace ignite
 
                 try
                 {
-                    // Setting connection timeout to 1 second more than query timeout itself.
-                    int32_t connectionTimeout = timeout ? timeout + 1 : 0;
-
-                    bool success = connection.SyncMessage(req, rsp, connectionTimeout);
-
-                    if (!success)
-                    {
-                        diag.AddStatusRecord(SqlState::SHYT00_TIMEOUT_EXPIRED, "Query timeout expired");
-
-                        return SqlResult::AI_ERROR;
-                    }
+                    connection.SyncMessage(req, rsp);
                 }
                 catch (const OdbcError& err)
                 {
@@ -408,16 +398,7 @@ namespace ignite
 
                 try
                 {
-                    // Setting connection timeout to 1 second more than query timeout itself.
-                    int32_t connectionTimeout = timeout ? timeout + 1 : 0;
-                    bool success = connection.SyncMessage(req, rsp, connectionTimeout);
-
-                    if (!success)
-                    {
-                        diag.AddStatusRecord(SqlState::SHYT00_TIMEOUT_EXPIRED, "Query timeout expired");
-
-                        return SqlResult::AI_ERROR;
-                    }
+                    connection.SyncMessage(req, rsp);
                 }
                 catch (const OdbcError& err)
                 {

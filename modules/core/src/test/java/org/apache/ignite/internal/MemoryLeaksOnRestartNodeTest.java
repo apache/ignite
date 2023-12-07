@@ -109,5 +109,5 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
 
         // Remove dump if successful.
         dumpFile.delete();
-   }
+    }
 }

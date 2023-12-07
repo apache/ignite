@@ -96,9 +96,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     /** Replay from bound include. */
     private final WALPointer lowBound;
 
-    /** Replay to bound include */
-    private final WALPointer highBound;
-
     /**
      * Creates iterator in file-by-file iteration mode. Directory
      *
@@ -128,6 +125,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             new RecordSerializerFactoryImpl(sharedCtx, readTypeFilter),
             ioFactory,
             initialReadBufferSize,
+            highBound,
             FILE_INPUT_FACTORY
         );
 
@@ -135,7 +133,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             strictCheck(walFiles, lowBound, highBound);
 
         this.lowBound = lowBound;
-        this.highBound = highBound;
 
         this.keepBinary = keepBinary;
 
@@ -288,17 +285,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         if (tup == null)
             return tup;
 
-        if (!checkBounds(tup.get1())) {
-            if (curRec != null) {
-                WALPointer prevRecPtr = curRec.get1();
-
-                // Fast stop condition, after high bound reached.
-                if (prevRecPtr != null && prevRecPtr.compareTo(highBound) > 0)
-                    return null;
-            }
-
+        if (!checkBounds(tup.get1()))
             return new T2<>(tup.get1(), FilteredRecord.INSTANCE); // FilteredRecord for mark as filtered.
-        }
 
         return tup;
     }
@@ -327,12 +315,12 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         AbstractFileDescriptor fd = desc;
         SegmentIO fileIO = null;
-        SegmentHeader segmentHdr;
+        SegmentHeader segmentHeader;
         while (true) {
             try {
                 fileIO = fd.toReadOnlyIO(ioFactory);
 
-                segmentHdr = readSegmentHeader(fileIO, FILE_INPUT_FACTORY);
+                segmentHeader = readSegmentHeader(fileIO, FILE_INPUT_FACTORY);
 
                 break;
             }
@@ -350,17 +338,20 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             }
         }
 
-        return initReadHandle(fd, start, fileIO, segmentHdr);
+        return initReadHandle(fd, start, fileIO, segmentHeader);
     }
 
     /** {@inheritDoc} */
     @Override protected @NotNull WALRecord postProcessRecord(@NotNull final WALRecord rec) {
         GridKernalContext kernalCtx = sharedCtx.kernalContext();
-        IgniteCacheObjectProcessor proc = kernalCtx.cacheObjects();
+        IgniteCacheObjectProcessor processor = kernalCtx.cacheObjects();
 
-        if (proc != null && (rec.type() == RecordType.DATA_RECORD || rec.type() == RecordType.MVCC_DATA_RECORD)) {
+        if (processor != null && (rec.type() == RecordType.DATA_RECORD
+            || rec.type() == RecordType.DATA_RECORD_V2
+            || rec.type() == RecordType.CDC_DATA_RECORD
+            || rec.type() == RecordType.MVCC_DATA_RECORD)) {
             try {
-                return postProcessDataRecord((DataRecord)rec, kernalCtx, proc);
+                return postProcessDataRecord((DataRecord)rec, kernalCtx, processor);
             }
             catch (Exception e) {
                 log.error("Failed to perform post processing for data record ", e);
@@ -404,11 +395,11 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         final CacheObjectContext fakeCacheObjCtx = new CacheObjectContext(
             kernalCtx, null, null, false, false, false, false, false);
 
-        final List<DataEntry> entries = dataRec.writeEntries();
-        final List<DataEntry> postProcessedEntries = new ArrayList<>(entries.size());
+        final int entryCnt = dataRec.entryCount();
+        final List<DataEntry> postProcessedEntries = new ArrayList<>(entryCnt);
 
-        for (DataEntry dataEntry : entries) {
-            final DataEntry postProcessedEntry = postProcessDataEntry(processor, fakeCacheObjCtx, dataEntry);
+        for (int i = 0; i < entryCnt; i++) {
+            final DataEntry postProcessedEntry = postProcessDataEntry(processor, fakeCacheObjCtx, dataRec.get(i));
 
             postProcessedEntries.add(postProcessedEntry);
         }
@@ -502,7 +493,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
                 dataEntry.partitionId(),
                 dataEntry.partitionCounter(),
                 coCtx,
-                keepBinary);
+                keepBinary,
+                dataEntry.flags());
     }
 
     /** {@inheritDoc} */
@@ -514,8 +506,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         closeCurrentWalSegment();
 
         curWalSegmIdx = Integer.MAX_VALUE;
-
-        sharedCtx.kernalContext().cacheObjects().stop(true);
     }
 
     /** {@inheritDoc} */

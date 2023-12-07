@@ -31,7 +31,7 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.Level;
 import org.junit.Test;
 
 /**
@@ -117,7 +117,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
 
         Pattern ptrn = Pattern.compile(String.format(ALIVE_NODES_MSG, 1, 2));
 
-        LogListener aliveNodesLsnr = LogListener.matches(ptrn).times(log.isDebugEnabled() ? 0 : 4).build();
+        LogListener aliveNodesLsnr = LogListener.matches(ptrn).times(4).build();
 
         testLog.registerListener(aliveNodesLsnr);
 
@@ -181,7 +181,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
 
         Pattern ptrn = Pattern.compile(String.format(ALIVE_NODES_MSG, 1, 4));
 
-        LogListener aliveNodesLsnr = LogListener.matches(ptrn).times(log.isDebugEnabled() ? 0 : 16).build();
+        LogListener aliveNodesLsnr = LogListener.matches(ptrn).times(16).build();
 
         testLog.registerListener(aliveNodesLsnr);
 
@@ -237,6 +237,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
         doForceServerAndClientTest();
     }
 
+    /** */
     @Test
     public void checkMessageOnCoordinatorChangeTest() throws Exception {
         startGrid(1);
@@ -268,7 +269,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
 
         Pattern ptrn = Pattern.compile(String.format(ALIVE_NODES_MSG, 1, 4));
 
-        LogListener aliveNodesLsnr = LogListener.matches(ptrn).times(log.isDebugEnabled() ? 0 : 25).build();
+        LogListener aliveNodesLsnr = LogListener.matches(ptrn).times(25).build();
 
         testLog.registerListener(aliveNodesLsnr);
 
@@ -321,15 +322,9 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
      * @param aliveNodesLsnr log listener.
      */
     private void checkLogMessages(LogListener aliveNodesLsnr, LogListener lsnr, LogListener lsnr2) {
-        if (testLog.isDebugEnabled()) {
-            assertTrue(aliveNodesLsnr.check());
-            assertFalse(lsnr.check());
-            assertTrue(lsnr2.check());
-        } else {
-            assertTrue(aliveNodesLsnr.check());
-            assertTrue(lsnr.check());
-            assertFalse(lsnr2.check());
-        }
+        assertTrue(aliveNodesLsnr.check());
+        assertTrue(lsnr.check());
+        assertFalse(lsnr2.check());
     }
 
     /**

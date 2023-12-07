@@ -64,7 +64,7 @@ public class JdbcSpringSelfTest extends JdbcConnectionSelfTest {
     /** {@inheritDoc} */
     @Test
     @Override public void testClientNodeId() throws Exception {
-        IgniteEx client = (IgniteEx) startGridWithSpringCtx(getTestIgniteInstanceName(), true, configURL());
+        IgniteEx client = (IgniteEx)startGridWithSpringCtx(getTestIgniteInstanceName(), true, configURL());
 
         UUID clientId = client.localNode().id();
 

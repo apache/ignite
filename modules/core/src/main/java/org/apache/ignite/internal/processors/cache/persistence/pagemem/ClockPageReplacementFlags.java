@@ -44,7 +44,7 @@ public class ClockPageReplacementFlags {
         pagesCnt = totalPagesCnt;
         flagsPtr = memPtr;
 
-        GridUnsafe.setMemory(flagsPtr, (totalPagesCnt + 7) >> 3, (byte)0);
+        GridUnsafe.zeroMemory(flagsPtr, (totalPagesCnt + 7) >> 3);
     }
 
     /**

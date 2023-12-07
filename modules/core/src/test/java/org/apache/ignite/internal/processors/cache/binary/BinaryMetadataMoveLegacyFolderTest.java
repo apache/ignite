@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -81,7 +82,7 @@ public class BinaryMetadataMoveLegacyFolderTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteEx startGrid(IgniteConfiguration cfg) throws Exception {
         IgniteEx grid = super.startGrid(cfg);
-        grid.active(true);
+        grid.cluster().state(ClusterState.ACTIVE);
         return grid;
     }
 

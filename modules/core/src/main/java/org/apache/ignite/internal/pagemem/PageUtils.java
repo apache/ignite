@@ -185,7 +185,7 @@ public class PageUtils {
         assert off >= 0;
         assert v >= 0 && v <= 255;
 
-        GridUnsafe.putByte(addr + off, (byte) v);
+        GridUnsafe.putByte(addr + off, (byte)v);
     }
 
     /**

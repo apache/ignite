@@ -198,12 +198,12 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(String fieldName) throws BinaryObjectException {
-        return (F) reader(null, false).unmarshalField(fieldName);
+        return (F)reader(null, false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
-        return (F) reader(null, false).unmarshalField(fieldId);
+        return (F)reader(null, false).unmarshalField(fieldId);
     }
 
     /** {@inheritDoc} */
@@ -229,7 +229,8 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
             int len = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.DFLT_HDR_LEN + 1);
 
             return start + GridBinaryMarshaller.DFLT_HDR_LEN + len + 5;
-        } else
+        }
+        else
             return start + GridBinaryMarshaller.DFLT_HDR_LEN;
     }
 

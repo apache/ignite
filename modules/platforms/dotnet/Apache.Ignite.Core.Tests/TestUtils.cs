@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Text;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
@@ -40,9 +41,15 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Unmanaged.Jni;
+    using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
+    using NUnit.Framework.Interfaces;
+    using NUnit.Framework.Internal;
+    using ILogger = Apache.Ignite.Core.Log.ILogger;
 
     /// <summary>
     /// Test utility methods.
@@ -66,27 +73,20 @@ namespace Apache.Ignite.Core.Tests
             // ReSharper disable once AssignNullToNotNullAttribute
             Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "ignite_work");
 
+        private static readonly IList<string> TestJvmOptsCommon = new List<string>
+        {
+            "-XX:+HeapDumpOnOutOfMemoryError",
+            "-ea",
+            "-DIGNITE_QUIET=true",
+            "-Duser.timezone=UTC",
+            "-DIGNITE_UPDATE_NOTIFIER=false"
+        };
+
         /** */
-        private static readonly IList<string> TestJvmOpts = Environment.Is64BitProcess
-            ? new List<string>
-            {
-                "-XX:+HeapDumpOnOutOfMemoryError",
-                "-Xms1g",
-                "-Xmx4g",
-                "-ea",
-                "-DIGNITE_QUIET=true",
-                "-Duser.timezone=UTC"
-            }
-            : new List<string>
-            {
-                "-XX:+HeapDumpOnOutOfMemoryError",
-                "-Xms64m",
-                "-Xmx99m",
-                "-ea",
-                "-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000",
-                "-DIGNITE_QUIET=true",
-                "-Duser.timezone=UTC"
-            };
+        private static readonly IList<string> TestJvmOpts = (Environment.Is64BitProcess
+                ? new[] { "-Xms2g", "-Xmx2g" }
+                : new[] { "-Xms64m", "-Xmx99m", "-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000" })
+            .Concat(TestJvmOptsCommon).ToList();
 
         /** */
         private static readonly IList<string> JvmDebugOpts =
@@ -131,6 +131,8 @@ namespace Apache.Ignite.Core.Tests
                 foreach (string opt in JvmDebugOpts)
                     ops.Add(opt);
             }
+            
+            ops.Add("-Dlog4j.configurationFile=" + IgniteHome.Resolve() + "/modules/core/src/test/config/log4j2-test.xml");
 
             return ops;
         }
@@ -341,26 +343,30 @@ namespace Apache.Ignite.Core.Tests
         public static void WaitForTrueCondition(Func<bool> cond, Func<string> messageFunc, int timeout = 1000)
         {
             var res = WaitForCondition(cond, timeout);
-            var message = string.Format("Condition not reached within {0} ms", timeout);
 
-            if (messageFunc != null)
+            if (!res)
             {
-                message += string.Format(" ({0})", messageFunc());
-            }
+                var message = string.Format("Condition not reached within {0} ms", timeout);
 
-            Assert.IsTrue(res, message);
+                if (messageFunc != null)
+                {
+                    message += string.Format(" ({0})", messageFunc());
+                }
+
+                Assert.IsTrue(res, message);
+            }
         }
 
         /// <summary>
         /// Gets the static discovery.
         /// </summary>
-        public static TcpDiscoverySpi GetStaticDiscovery()
+        public static TcpDiscoverySpi GetStaticDiscovery(int? maxPort = null)
         {
             return new TcpDiscoverySpi
             {
                 IpFinder = new TcpDiscoveryStaticIpFinder
                 {
-                    Endpoints = new[] { "127.0.0.1:47500" }
+                    Endpoints = new[] { "127.0.0.1:47500" + (maxPort == null ? null : (".." + maxPort)) }
                 },
                 SocketTimeout = TimeSpan.FromSeconds(0.3)
             };
@@ -434,19 +440,18 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="timeout">Timeout, in milliseconds.</param>
         public static void AssertHandleRegistryHasItems(IIgnite grid, int expectedCount, int timeout)
         {
-            var handleRegistry = ((Ignite)grid).HandleRegistry;
+            Func<IEnumerable<KeyValuePair<long, object>>> getItems = () =>
+                ((Ignite)grid).HandleRegistry.GetItems().Where(x => !(x.Value is LifecycleHandlerHolder));
 
-            expectedCount++;  // Skip default lifecycle bean
-
-            if (WaitForCondition(() => handleRegistry.Count == expectedCount, timeout))
+            if (WaitForCondition(() => getItems().Count() == expectedCount, timeout))
                 return;
 
-            var items = handleRegistry.GetItems().Where(x => !(x.Value is LifecycleHandlerHolder)).ToList();
+            var items = getItems().ToList();
 
             if (items.Any())
             {
                 Assert.Fail("HandleRegistry is not empty in grid '{0}' (expected {1}, actual {2}):\n '{3}'",
-                    grid.Name, expectedCount, handleRegistry.Count,
+                    grid.Name, expectedCount, items.Count,
                     items.Select(x => x.ToString()).Aggregate((x, y) => x + "\n" + y));
             }
         }
@@ -589,7 +594,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the default code-based test configuration.
         /// </summary>
-        public static IgniteConfiguration GetTestConfiguration(bool? jvmDebug = null, string name = null)
+        public static IgniteConfiguration GetTestConfiguration(bool? jvmDebug = null, string name = null, bool noLogger = false)
         {
             return new IgniteConfiguration
             {
@@ -611,8 +616,21 @@ namespace Apache.Ignite.Core.Tests
                 },
                 FailureHandler = new NoOpFailureHandler(),
                 WorkDirectory = WorkDir,
-                Logger = new TestContextLogger()
+                Logger = noLogger ? null : new TestContextLogger()
             };
+        }
+
+        /// <summary>
+        /// Creates the JVM if necessary.
+        /// </summary>
+        public static void EnsureJvmCreated()
+        {
+            if (Jvm.Get(true) == null)
+            {
+                var logger = new TestContextLogger();
+                JvmDll.Load(null, logger);
+                IgniteManager.CreateJvm(GetTestConfiguration(), logger);
+            }
         }
 
         /// <summary>
@@ -636,10 +654,11 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                proc.AttachProcessConsoleReader();
+                var reader = new ListDataReader();
+                proc.AttachProcessConsoleReader(reader, new IgniteProcessConsoleOutputReader());
 
-                Assert.IsTrue(proc.WaitForExit(50000));
-                Assert.AreEqual(0, proc.ExitCode);
+                Assert.IsTrue(proc.WaitForExit(50000), string.Join("\n", reader.GetOutput()));
+                Assert.AreEqual(0, proc.ExitCode, string.Join("\n", reader.GetOutput()));
             }
             finally
             {
@@ -649,17 +668,17 @@ namespace Apache.Ignite.Core.Tests
                 }
             }
         }
-        
+
         /// <summary>
         /// Deploys the Java service.
         /// </summary>
         public static string DeployJavaService(IIgnite ignite)
         {
             const string serviceName = "javaService";
-            
+
             ignite.GetCompute()
                 .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", serviceName);
-            
+
             var services = ignite.GetServices();
 
             WaitForCondition(() => services.GetServiceDescriptors().Any(x => x.Name == serviceName), 1000);
@@ -672,6 +691,19 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public class TestContextLogger : ILogger
         {
+            private readonly TestExecutionContext _ctx = TestExecutionContext.CurrentContext;
+
+            private readonly ITestListener _listener;
+
+            public TestContextLogger()
+            {
+                var prop = _ctx.GetType().GetProperty("Listener", BindingFlags.Instance | BindingFlags.NonPublic);
+
+                Debug.Assert(prop != null);
+
+                _listener = (ITestListener)prop.GetValue(_ctx);
+            }
+
             /** <inheritdoc /> */
             public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider,
                 string category, string nativeErrorInfo, Exception ex)
@@ -681,15 +713,36 @@ namespace Apache.Ignite.Core.Tests
                     return;
                 }
 
-                var text = args != null
-                    ? string.Format(formatProvider ?? CultureInfo.InvariantCulture, message, args)
-                    : message;
+                var sb = new StringBuilder();
 
-#if NETCOREAPP
-                TestContext.Progress.WriteLine(text);
-#else
-                Console.WriteLine(text);
-#endif
+                if (args != null)
+                {
+                    sb.AppendFormat(formatProvider ?? CultureInfo.InvariantCulture, message, args);
+                }
+                else
+                {
+                    sb.Append(message);
+                }
+
+                if (nativeErrorInfo != null)
+                {
+                    sb.Append(Environment.NewLine).Append(nativeErrorInfo);
+                }
+
+                if (ex != null)
+                {
+                    sb.Append(Environment.NewLine).Append(ex);
+                }
+
+                sb.Append(Environment.NewLine);
+
+                var output = new TestOutput(
+                    text: sb.ToString(),
+                    stream: "Progress",
+                    testId: _ctx.CurrentTest?.Id,
+                    testName: _ctx.CurrentTest?.FullName);
+
+                _listener.TestOutput(output);
             }
 
             /** <inheritdoc /> */
@@ -697,6 +750,27 @@ namespace Apache.Ignite.Core.Tests
             {
                 return level >= LogLevel.Info;
             }
+        }
+    }
+
+    /** */
+    public  class SetUseBinaryArray : ILifecycleHandler
+    {
+        /** Task name. */
+        private const string SetUseTypedArrayTask = "org.apache.ignite.platform.PlatformSetUseBinaryArrayTask";
+
+        /** */
+        [InstanceResource]
+        private readonly IIgnite _ignite = null;
+
+        /** <inheritdoc /> */
+        public void OnLifecycleEvent(LifecycleEventType evt)
+        {
+            if (evt != LifecycleEventType.AfterNodeStart && evt != LifecycleEventType.BeforeNodeStop)
+                return;
+
+            _ignite.GetCompute()
+                .ExecuteJavaTask<object>(SetUseTypedArrayTask, evt == LifecycleEventType.AfterNodeStart);
         }
     }
 }

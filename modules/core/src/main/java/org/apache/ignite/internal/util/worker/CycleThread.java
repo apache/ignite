@@ -48,7 +48,8 @@ public abstract class CycleThread extends Thread {
 
                 iteration();
             }
-        } catch (InterruptedException e) {
+        }
+        catch (InterruptedException e) {
             // No-op
         }
     }

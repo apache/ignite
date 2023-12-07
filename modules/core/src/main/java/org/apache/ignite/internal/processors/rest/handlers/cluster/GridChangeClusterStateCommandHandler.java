@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.rest.handlers.cluster;
 
 import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
@@ -25,7 +26,7 @@ import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
 import org.apache.ignite.internal.processors.rest.request.GridRestClusterStateRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_SET_STATE;
@@ -51,43 +52,26 @@ public class GridChangeClusterStateCommandHandler extends GridRestCommandHandler
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest restReq) {
+    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest restReq)
+        throws IgniteCheckedException {
         GridRestClusterStateRequest req = (GridRestClusterStateRequest)restReq;
 
-        final GridFutureAdapter<GridRestResponse> fut = new GridFutureAdapter<>();
+        switch (req.command()) {
+            case CLUSTER_STATE:
+                assert req.isReqCurrentMode() : req;
 
-        final GridRestResponse res = new GridRestResponse();
+                return new GridFinishedFuture<>(new GridRestResponse(ctx.grid().cluster().state()));
 
-        try {
-            switch (req.command()) {
-                case CLUSTER_STATE:
-                    assert req.isReqCurrentMode() : req;
+            default:
+                assert req.state() != null : req;
 
-                    res.setResponse(ctx.grid().cluster().state());
+                U.log(log, "Received cluster state change request to " + req.state() +
+                    " state from client node with ID: " + req.clientId());
 
-                    break;
+                ctx.state().changeGlobalState(req.state(), req.forceDeactivation(),
+                    ctx.cluster().get().forServers().nodes(), false).get();
 
-                default:
-                    assert req.state() != null : req;
-
-                    U.log(log, "Received cluster state change request to " + req.state() +
-                        " state from client node with ID: " + req.clientId());
-
-                    ctx.state().changeGlobalState(req.state(), req.forceDeactivation(),
-                        ctx.cluster().get().forServers().nodes(), false).get();
-
-                    res.setResponse(req.command().key() + " done");
-
-                    break;
-            }
-
-            fut.onDone(res);
+                return new GridFinishedFuture<>(new GridRestResponse(req.command().key() + " done"));
         }
-        catch (Exception e) {
-            res.setError(errorMessage(e));
-
-            fut.onDone(res);
-        }
-        return fut;
     }
 }

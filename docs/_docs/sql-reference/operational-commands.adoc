@@ -64,7 +64,12 @@ SET STREAMING [OFF|ON];
 Using the `SET` command, you can stream data in bulk into a SQL table in your cluster. When streaming is enabled, the JDBC/ODBC driver will pack your commands in batches and send them to the server (Ignite cluster). On the server side, the batch is converted into a stream of cache update commands which are distributed asynchronously between server nodes. Performing this asynchronously increases peak throughput because at any given time all cluster nodes are busy with data loading.
 
 === Usage
-To stream data into your cluster, prepare a file with the `SET STREAMING ON` command followed by `INSERT` commands for data that needs to be loaded. For example:
+To stream data into your cluster, prepare a file with the `SET STREAMING ON` command followed by `INSERT` commands for data that needs to be loaded.
+
+[NOTE]
+====
+Setting 'STREAMING ON' uses link:../data-streaming.adoc#_limitations[DataStreamer] which doesn't guarantee by default data consistency until successfully finished.
+====
 
 [source,sql]
 ----
@@ -334,7 +339,7 @@ KILL CONTINUOUS '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321' '6fa749ee-7cf8-4635
 
 == KILL SERVICE
 
-The `KILL SERVICE` command allows you to cance a running service.
+The `KILL SERVICE` command allows you to cancel a running service.
 
 [tabs]
 --
@@ -370,3 +375,52 @@ control.bat --kill SERVICE name
 
 * `name` - corresponds to the name you selected for the service upon the deployment time.
 You can always find it with the link:monitoring-metrics/system-views#services[SERVICES] view.
+
+
+== KILL CONSISTENCY repair/check operations
+
+The `KILL CONSISTENCY` command allows you to cancel all running consistency repair/check operations.
+
+[tabs]
+--
+
+tab:Unix[]
+[source,bash]
+----
+./control.sh --kill CONSISTENCY
+----
+
+tab:Windows[]
+[source,bash]
+----
+control.bat --kill CONSISTENCY
+----
+
+--
+== KILL CLIENT operations
+
+The `KILL CLIENT` command allows you to cancel local client (thin/jdbc/odbc) connection.
+
+[tabs]
+--
+
+tab:Unix[]
+[source,bash]
+----
+./control.sh --kill CLIENT connection_id [--node-id node_id]
+----
+
+tab:Windows[]
+[source,bash]
+----
+control.bat --kill CLIENT connection_id [--node-id node_id]
+----
+
+--
+
+=== Parameters
+
+* `connection_id` - corresponds to the connection id of the client. Specify ALL to drop all connections. Note, connection_id are local value.
+Value differs on nodes for the same client. You can always find parameter values with the link:monitoring-metrics/system-views#client_connections[CLIENT_CONNECTIONS] view.
+
+* `node_id` - corresponds to the node_id to drop connection from.

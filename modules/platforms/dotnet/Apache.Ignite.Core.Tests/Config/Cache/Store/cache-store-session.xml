@@ -33,7 +33,7 @@
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="cache1"/>
-                    <property name="cacheMode" value="LOCAL"/>
+                    <property name="cacheMode" value="REPLICATED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="writeThrough" value="true"/>
                     <property name="readThrough" value="true"/>
@@ -47,7 +47,7 @@
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="cache2"/>
-                    <property name="cacheMode" value="LOCAL"/>
+                    <property name="cacheMode" value="REPLICATED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="writeThrough" value="true"/>
                     <property name="readThrough" value="true"/>

@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// A page memory configuration for an Apache Ignite node. The page memory is a manageable off-heap based
@@ -85,9 +86,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Initializes a new instance of the <see cref="MemoryConfiguration"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public MemoryConfiguration(IBinaryRawReader reader)
+        public MemoryConfiguration(IBinaryRawReader reader) // Should be internal.
         {
-            Debug.Assert(reader != null);
+            IgniteArgumentCheck.NotNull(reader, "reader");
 
             SystemCacheInitialSize = reader.ReadLong();
             SystemCacheMaxSize = reader.ReadLong();

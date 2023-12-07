@@ -30,8 +30,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_ATOMICITY_MODE;
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_MODE;
 
@@ -94,7 +92,9 @@ public class GridCacheAttributes implements Serializable {
     /**
      * @return Query parallelism.
      */
-    public int qryParallelism() { return ccfg.getQueryParallelism(); }
+    public int qryParallelism() {
+        return ccfg.getQueryParallelism();
+    }
 
     /**
      * @return Cache mode.
@@ -118,7 +118,7 @@ public class GridCacheAttributes implements Serializable {
      * @return {@code True} if near cache is enabled.
      */
     public boolean nearCacheEnabled() {
-        return cacheMode() != LOCAL && ccfg.getNearConfiguration() != null;
+        return ccfg.getNearConfiguration() != null;
     }
 
     /**

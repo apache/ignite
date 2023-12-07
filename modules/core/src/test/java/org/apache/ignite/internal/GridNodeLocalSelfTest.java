@@ -85,7 +85,8 @@ public class GridNodeLocalSelfTest extends GridCommonAbstractTest {
         assert !nodeLocMap.isEmpty() : "Empty node local map";
         assert nodeLocMap.containsKey(key);
 
-        IgniteMXBean igniteMXBean = (IgniteMXBean)grid;
+        IgniteMXBean igniteMXBean = getMxBean(getTestIgniteInstanceName(), "Kernal", "IgniteKernal",
+            IgniteMXBean.class);
         igniteMXBean.clearNodeLocalMap();
         assert nodeLocMap.isEmpty() : "Not empty node local map";
     }

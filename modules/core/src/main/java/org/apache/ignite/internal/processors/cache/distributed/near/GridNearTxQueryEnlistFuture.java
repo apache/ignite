@@ -32,10 +32,10 @@ import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryEnlistFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -135,7 +135,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
 
             if (map.isEmpty())
                 throw new ClusterTopologyServerNotFoundException("Failed to find data nodes for cache (all partition " +
-                    "nodes left the grid). [fut=" + toString() + ']');
+                    "nodes left the grid). [fut=" + this + ']');
 
             int idx = 0; boolean first = true, clientFirst = false;
 
@@ -151,7 +151,6 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                         cctx.localNode().id(),
                         lockVer,
                         mvccSnapshot,
-                        threadId,
                         futId,
                         -(++idx), // The common tx logic expects non-zero mini-future ids (negative local and positive non-local).
                         tx,
@@ -167,23 +166,21 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
 
                     updateLocalFuture(locFut);
 
-                    locFut.listen(new CI1<IgniteInternalFuture<Long>>() {
-                        @Override public void apply(IgniteInternalFuture<Long> fut) {
-                            assert fut.error() != null || fut.result() != null : fut;
+                    locFut.listen(fut -> {
+                        assert fut.error() != null || fut.result() != null : fut;
 
-                            try {
-                                clearLocalFuture((GridDhtTxQueryEnlistFuture)fut);
+                        try {
+                            clearLocalFuture((GridDhtTxAbstractEnlistFuture)fut);
 
-                                GridNearTxQueryEnlistResponse res = fut.error() == null ? createResponse(fut) : null;
+                            GridNearTxQueryEnlistResponse res = fut.error() == null ? createResponse(fut) : null;
 
-                                mini.onResult(res, fut.error());
-                            }
-                            catch (IgniteCheckedException e) {
-                                mini.onResult(null, e);
-                            }
-                            finally {
-                                CU.unwindEvicts(cctx);
-                            }
+                            mini.onResult(res, fut.error());
+                        }
+                        catch (IgniteCheckedException e) {
+                            mini.onResult(null, e);
+                        }
+                        finally {
+                            CU.unwindEvicts(cctx);
                         }
                     });
                 }
@@ -199,7 +196,6 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                         threadId,
                         futId,
                         ++idx, // The common tx logic expects non-zero mini-future ids (negative local and positive non-local).
-                        tx.subjectId(),
                         topVer,
                         lockVer,
                         mvccSnapshot,
@@ -273,10 +269,17 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    private synchronized MiniFuture miniFuture(int miniId) {
-        IgniteInternalFuture<Long> fut = future(Math.abs(miniId) - 1);
+    private MiniFuture miniFuture(int miniId) {
+        compoundsReadLock();
 
-        return !fut.isDone() ? (MiniFuture)fut : null;
+        try {
+            IgniteInternalFuture<Long> fut = future(Math.abs(miniId) - 1);
+
+            return !fut.isDone() ? (MiniFuture)fut : null;
+        }
+        finally {
+            compoundsReadUnlock();
+        }
     }
 
     /**
@@ -295,10 +298,9 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
     }
 
     /**
-     * @param nodeId Sender node id.
      * @param res Response.
      */
-    public void onResult(UUID nodeId, GridNearTxQueryEnlistResponse res) {
+    public void onResult(GridNearTxQueryEnlistResponse res) {
         MiniFuture mini = miniFuture(res.miniId());
 
         if (mini != null)
@@ -381,30 +383,30 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
     /** */
     private static class IntArrayHolder {
         /** */
-        private int[] array;
+        private int[] arr;
 
         /** */
         private int size;
 
         /** */
         void add(int i) {
-            if (array == null)
-                array = new int[4];
+            if (arr == null)
+                arr = new int[4];
 
-            if (array.length == size)
-                array = Arrays.copyOf(array, size << 1);
+            if (arr.length == size)
+                arr = Arrays.copyOf(arr, size << 1);
 
-            array[size++] = i;
+            arr[size++] = i;
         }
 
         /** */
         public int[] array() {
-            if (array == null)
+            if (arr == null)
                 return null;
-            else if (size == array.length)
-                return array;
+            else if (size == arr.length)
+                return arr;
             else
-                return Arrays.copyOf(array, size);
+                return Arrays.copyOf(arr, size);
         }
     }
 }

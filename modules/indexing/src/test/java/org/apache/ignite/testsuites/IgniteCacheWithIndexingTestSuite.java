@@ -33,6 +33,8 @@ import org.apache.ignite.internal.processors.cache.CacheRegisterMetadataLocallyT
 import org.apache.ignite.internal.processors.cache.ClientReconnectAfterClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeDoesNotBreakSqlSelectTest;
 import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeSqlTest;
+import org.apache.ignite.internal.processors.cache.EnumClassImplementingIndexedInterfaceTest;
+import org.apache.ignite.internal.processors.cache.FieldsPrecisionTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexEntryEvictTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexGetSelfTest;
@@ -44,14 +46,14 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheStarvationOnRebala
 import org.apache.ignite.internal.processors.cache.IgniteClientReconnectQueriesTest;
 import org.apache.ignite.internal.processors.cache.WrongIndexedTypesTest;
 import org.apache.ignite.internal.processors.cache.index.H2TreeCorruptedTreeExceptionTest;
+import org.apache.ignite.internal.processors.cache.index.IndexCorruptionRebuildTest;
 import org.apache.ignite.internal.processors.cache.persistence.RebuildIndexLogMessageTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheSizeTtlTest;
-import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicPartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlReadOnlyModeSelfTest;
-import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalPartitionedSelfTest;
 import org.apache.ignite.internal.processors.client.IgniteDataStreamerTest;
+import org.apache.ignite.internal.processors.query.h2.database.inlinecolumn.ComputeInlineSizeTest;
 import org.apache.ignite.internal.processors.query.h2.database.inlinecolumn.InlineIndexColumnTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -62,13 +64,12 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     InlineIndexColumnTest.class,
+    ComputeInlineSizeTest.class,
 
     GridIndexingWithNoopSwapSelfTest.class,
     GridCacheOffHeapSelfTest.class,
 
-    CacheTtlTransactionalLocalSelfTest.class,
     CacheTtlTransactionalPartitionedSelfTest.class,
-    CacheTtlAtomicLocalSelfTest.class,
     CacheTtlAtomicPartitionedSelfTest.class,
     CacheTtlReadOnlyModeSelfTest.class,
     CacheSizeTtlTest.class,
@@ -115,7 +116,13 @@ import org.junit.runners.Suite;
 
     WrongIndexedTypesTest.class,
 
-    IndexPagesMetricsInMemoryTest.class
+    IndexPagesMetricsInMemoryTest.class,
+
+    FieldsPrecisionTest.class,
+
+    EnumClassImplementingIndexedInterfaceTest.class,
+
+    IndexCorruptionRebuildTest.class
 })
 public class IgniteCacheWithIndexingTestSuite {
 }

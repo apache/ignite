@@ -98,7 +98,7 @@ class JdbcRequestHandlerWorker extends GridWorker {
         finally {
             // Notify indexing that this worker is being stopped.
             try {
-                ctx.query().getIndexing().onClientDisconnect();
+                ctx.query().onClientDisconnect();
             }
             catch (Exception ignored) {
                 // No-op.

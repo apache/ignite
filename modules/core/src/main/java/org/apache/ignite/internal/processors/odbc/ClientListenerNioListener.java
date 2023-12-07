@@ -49,6 +49,8 @@ import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.clientTypeLabel;
+
 /**
  * Client message listener.
  */
@@ -61,6 +63,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
     /** Thin client handshake code. */
     public static final byte THIN_CLIENT = 2;
+
+    /** Client types. */
+    public static final byte[] CLI_TYPES = {ODBC_CLIENT, JDBC_CLIENT, THIN_CLIENT};
 
     /** Connection handshake timeout task. */
     public static final int CONN_CTX_HANDSHAKE_TIMEOUT_TASK = GridNioSessionMetaKey.nextUniqueKey();
@@ -84,10 +89,13 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     private final IgniteLogger log;
 
     /** Client connection config. */
-    private ClientConnectorConfiguration cliConnCfg;
+    private final ClientConnectorConfiguration cliConnCfg;
 
     /** Thin client configuration. */
     private final ThinClientConfiguration thinCfg;
+
+    /** Metrics. */
+    private final ClientListenerMetrics metrics;
 
     /**
      * Constructor.
@@ -95,9 +103,14 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
      * @param ctx Context.
      * @param busyLock Shutdown busy lock.
      * @param cliConnCfg Client connector configuration.
+     * @param metrics Client listener metrics.
      */
-    public ClientListenerNioListener(GridKernalContext ctx, GridSpinBusyLock busyLock,
-        ClientConnectorConfiguration cliConnCfg) {
+    public ClientListenerNioListener(
+        GridKernalContext ctx,
+        GridSpinBusyLock busyLock,
+        ClientConnectorConfiguration cliConnCfg,
+        ClientListenerMetrics metrics
+    ) {
         assert cliConnCfg != null;
 
         this.ctx = ctx;
@@ -109,6 +122,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
         thinCfg = cliConnCfg.getThinClientConfiguration() == null ? new ThinClientConfiguration()
             : new ThinClientConfiguration(cliConnCfg.getThinClientConfiguration());
+
+        this.metrics = metrics;
     }
 
     /** {@inheritDoc} */
@@ -183,10 +198,10 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         try {
             long startTime = 0;
 
-            if (log.isDebugEnabled()) {
+            if (log.isTraceEnabled()) {
                 startTime = System.nanoTime();
 
-                log.debug("Client request received [reqId=" + req.requestId() + ", addr=" +
+                log.trace("Client request received [reqId=" + req.requestId() + ", addr=" +
                     ses.remoteAddress() + ", req=" + req + ']');
             }
 
@@ -197,17 +212,17 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             }
 
             if (resp != null) {
-                if (log.isDebugEnabled()) {
+                if (log.isTraceEnabled()) {
                     long dur = (System.nanoTime() - startTime) / 1000;
 
-                    log.debug("Client request processed [reqId=" + req.requestId() + ", dur(mcs)=" + dur +
+                    log.trace("Client request processed [reqId=" + req.requestId() + ", dur(mcs)=" + dur +
                         ", resp=" + resp.status() + ']');
                 }
 
-                    GridNioFuture<?> fut = ses.send(parser.encode(resp));
+                GridNioFuture<?> fut = ses.send(parser.encode(resp));
 
-                fut.listen(f -> {
-                    if (f.error() == null)
+                fut.listen(() -> {
+                    if (fut.error() == null)
                         resp.onSent();
                 });
             }
@@ -215,7 +230,10 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         catch (Throwable e) {
             hnd.unregisterRequest(req.requestId());
 
-            U.error(log, "Failed to process client request [req=" + req + ']', e);
+            if (e instanceof Error)
+                U.error(log, "Failed to process client request [req=" + req + ", msg=" + e.getMessage() + "]", e);
+            else
+                U.warn(log, "Failed to process client request [req=" + req + ", msg=" + e.getMessage() + "]", e);
 
             ses.send(parser.encode(hnd.handleException(e, req)));
 
@@ -247,6 +265,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             @Override public void run() {
                 ses.close();
 
+                metrics.onHandshakeTimeout();
+
                 U.warn(log, "Unable to perform handshake within timeout " +
                     "[timeout=" + handshakeTimeout + ", remoteAddr=" + ses.remoteAddress() + ']');
             }
@@ -265,7 +285,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         try {
             if (timeoutTask != null)
                 timeoutTask.close();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             U.warn(log, "Failed to cancel handshake timeout task " +
                 "[remoteAddr=" + ses.remoteAddress() + ", err=" + e + ']');
         }
@@ -326,8 +347,27 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             cancelHandshakeTimeout(ses);
 
             connCtx.handler().writeHandshake(writer);
+
+            metrics.onHandshakeAccept(clientType);
+
+            if (log.isDebugEnabled()) {
+                String login = connCtx.securityContext() == null ? null :
+                    connCtx.securityContext().subject().login().toString();
+
+                log.debug("Client handshake accepted [rmtAddr=" + ses.remoteAddress() +
+                    ", type=" + clientTypeLabel(clientType) + ", ver=" + ver.asString() +
+                    ", login=" + login + ", connId=" + connCtx.connectionId() + ']');
+            }
         }
         catch (IgniteAccessControlException authEx) {
+            metrics.onFailedAuth();
+
+            if (log.isDebugEnabled()) {
+                log.debug("Client authentication failed [rmtAddr=" + ses.remoteAddress() +
+                    ", type=" + clientTypeLabel(clientType) + ", ver=" + ver.asString() +
+                    ", err=" + authEx.getMessage() + ']');
+            }
+
             writer.writeBoolean(false);
 
             writer.writeShort((short)0);
@@ -340,7 +380,10 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
                 writer.writeInt(ClientStatus.AUTH_FAILED);
         }
         catch (IgniteCheckedException e) {
-            U.warn(log, "Error during handshake [rmtAddr=" + ses.remoteAddress() + ", msg=" + e.getMessage() + ']');
+            U.warn(log, "Error during handshake [rmtAddr=" + ses.remoteAddress() +
+                ", type=" + clientTypeLabel(clientType) + ", ver=" + ver.asString() + ", msg=" + e.getMessage() + ']');
+
+            metrics.onGeneralReject();
 
             ClientListenerProtocolVersion currVer;
 

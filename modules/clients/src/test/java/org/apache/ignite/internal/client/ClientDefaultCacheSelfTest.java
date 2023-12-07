@@ -29,9 +29,6 @@ import java.util.Map;
 import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
@@ -39,7 +36,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 
 /**
@@ -63,9 +59,6 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
 
     /** Used to sent request charset. */
     private static final String CHARSET = StandardCharsets.UTF_8.name();
-
-    /** Name of node local cache. */
-    private static final String LOCAL_CACHE = "local";
 
     /** JSON to java mapper. */
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
@@ -99,15 +92,7 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(clientCfg);
 
-        CacheConfiguration cLoc = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        cLoc.setName(LOCAL_CACHE);
-
-        cLoc.setCacheMode(CacheMode.LOCAL);
-
-        cLoc.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-
-        cfg.setCacheConfiguration(defaultCacheConfiguration(), cLoc);
+        cfg.setCacheConfiguration(defaultCacheConfiguration());
 
         return cfg;
     }
@@ -177,7 +162,7 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
         String val = "{\"v\":\"my Value\",\"t\":1422559650154}";
 
         // Put to cache JSON format string value.
-        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_PUT.key(), "cacheName", LOCAL_CACHE,
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_PUT.key(), "cacheName", DEFAULT_CACHE_NAME,
             "key", "a", "val", URLEncoder.encode(val, CHARSET)));
 
         JsonNode res = jsonResponse(ret);
@@ -185,7 +170,7 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
         assertEquals("Incorrect put response", true, res.asBoolean());
 
         // Escape '\' symbols disappear from response string on transformation to JSON object.
-        ret = content(F.asMap("cmd", GridRestCommand.CACHE_GET.key(), "cacheName", LOCAL_CACHE, "key", "a"));
+        ret = content(F.asMap("cmd", GridRestCommand.CACHE_GET.key(), "cacheName", DEFAULT_CACHE_NAME, "key", "a"));
 
         res = jsonResponse(ret);
 

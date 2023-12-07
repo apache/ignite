@@ -82,7 +82,7 @@ public class ClusterStateOnStartPropertyTest extends GridCommonAbstractTest {
 
         // Warn messages must be printed only if both options (old and new) are presented.
         if (autoActivation != null || activeOnStart != null) {
-            ListeningTestLogger testLog = new ListeningTestLogger(false, log);
+            ListeningTestLogger testLog = new ListeningTestLogger(log);
 
             LogListener lsnr = LogListener.matches(
                 persistence ?

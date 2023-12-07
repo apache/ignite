@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
 import org.apache.ignite.plugin.security.AuthenticationContext;
@@ -41,12 +40,16 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_S
 /**
  * No operation IgniteSecurity.
  */
-public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements IgniteSecurity {
+public class NoOpIgniteSecurityProcessor extends IgniteSecurityAdapter {
     /** Error message that occurs when trying to perform security operations if security disabled. */
     public static final String SECURITY_DISABLED_ERROR_MSG = "Operation cannot be performed: Ignite security disabled.";
 
     /** No operation security context. */
-    private final OperationSecurityContext opSecCtx = new OperationSecurityContext(this, null);
+    private final OperationSecurityContext opSecCtx = new OperationSecurityContext(this, null) {
+        @Override public void close() {
+            // No-op.
+        }
+    };
 
     /** Instance of IgniteSandbox. */
     private final IgniteSandbox sandbox = new NoOpSandbox();
@@ -66,6 +69,11 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
     /** {@inheritDoc} */
     @Override public OperationSecurityContext withContext(UUID nodeId) {
         return opSecCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isDefaultContext() {
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -164,5 +172,10 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
     /** {@inheritDoc} */
     @Override public void dropUser(String login) throws IgniteCheckedException {
         throw new IgniteException(SECURITY_DISABLED_ERROR_MSG);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onLocalJoin() {
+        // No-op.
     }
 }

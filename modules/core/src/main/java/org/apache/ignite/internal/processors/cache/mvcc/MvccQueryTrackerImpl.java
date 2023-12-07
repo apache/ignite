@@ -268,7 +268,7 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
         if (readyFut.isDone())
             onAffinityReady(readyFut, lsnr);
         else
-            readyFut.listen(fut -> onAffinityReady(fut, lsnr));
+            readyFut.listen(() -> onAffinityReady(readyFut, lsnr));
     }
 
     /** */

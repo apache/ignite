@@ -74,7 +74,7 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
             cfg.setCacheConfiguration(ccfg);
         }
 
-        ListeningTestLogger testLog = new ListeningTestLogger(false, log);
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
 
         testLog.registerListener(dumpLsnr);
 
@@ -171,7 +171,7 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
 
         client.context().io().addMessageListener(
             GridTopic.TOPIC_JOB,
-            (nodeId, msg, plc) -> taskNameContainer.append(((GridJobExecuteRequest) msg).getTaskName())
+            (nodeId, msg, plc) -> taskNameContainer.append(((GridJobExecuteRequest)msg).getTaskName())
         );
 
         try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TX_TIMEOUT, 1)) {

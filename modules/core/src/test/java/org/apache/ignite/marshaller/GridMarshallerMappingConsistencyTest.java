@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -96,7 +97,7 @@ public class GridMarshallerMappingConsistencyTest extends GridCommonAbstractTest
         Ignite g1 = startGrid(1);
         Ignite g2 = startGrid(2);
 
-        g1.cluster().active(true);
+        g1.cluster().state(ClusterState.ACTIVE);
 
         CacheConfiguration<Integer, DummyObject> cacheCfg = new CacheConfiguration<>(CACHE_NAME);
         cacheCfg.setBackups(1);
@@ -118,7 +119,7 @@ public class GridMarshallerMappingConsistencyTest extends GridCommonAbstractTest
 
         g2 = startGrid(2);
 
-        g2.cluster().active(true);
+        g2.cluster().state(ClusterState.ACTIVE);
 
         c2 = g2.cache(CACHE_NAME);
 
@@ -136,7 +137,7 @@ public class GridMarshallerMappingConsistencyTest extends GridCommonAbstractTest
         Ignite g1 = startGrid(1);
         startGrid(2);
 
-        g1.cluster().active(true); // Include second node into baseline topology.
+        g1.cluster().state(ClusterState.ACTIVE); // Include second node into baseline topology.
 
         stopGrid(2);
 
@@ -152,7 +153,7 @@ public class GridMarshallerMappingConsistencyTest extends GridCommonAbstractTest
         Ignite g2 = startGrid(2);
 
         assertTrue("Failed to wait for automatic grid activation",
-            GridTestUtils.waitForCondition(() -> g2.cluster().active(), getTestTimeout()));
+            GridTestUtils.waitForCondition(() -> g2.cluster().state().active(), getTestTimeout()));
 
         IgniteCache<Integer, DummyObject> c2 = g2.cache(CACHE_NAME);
 

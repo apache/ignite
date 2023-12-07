@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -81,7 +82,7 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
         );
 
-        ListeningTestLogger listeningTestLog = new ListeningTestLogger(false, log);
+        ListeningTestLogger listeningTestLog = new ListeningTestLogger(log);
 
         listeningTestLog.registerListener(logListener);
 
@@ -119,7 +120,7 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
                         BPlusTree.Result res =
                             delegate.run(cacheId, pageId, page, pageAddr, io, walPlc, arg, intArg, statHolder);
 
-                        if (failWithCorruptTree.get() && tree.getName().contains(IDX_NAME))
+                        if (failWithCorruptTree.get() && tree.name().contains(IDX_NAME))
                             throw new RuntimeException("test exception");
 
                         return res;
@@ -150,7 +151,7 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
     public void testCorruptedTree() throws Exception {
         IgniteEx srv = startGrid(0);
 
-        srv.cluster().active(true);
+        srv.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cache = srv.getOrCreateCache(DEFAULT_CACHE_NAME);
 

@@ -32,7 +32,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.LongMetric;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -99,14 +98,6 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
             .setBackups(1)
             .setOnheapCacheEnabled(true)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
-
-        if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.LOCAL_CACHE)) {
-            ccfgs.add(new CacheConfiguration<>()
-                .setName(CACHE_PREFIX + 4)
-                .setStatisticsEnabled(true)
-                .setCacheMode(CacheMode.LOCAL)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
-        }
 
         cacheCnt = ccfgs.size();
 
@@ -285,10 +276,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
                 metrics.getOffHeapBackupEntriesCount());
             assertEquals(cacheInfo + " offHeapPrimaryEntriesCnt", offHeapPrimaryEntriesCnt,
                 metrics.getOffHeapPrimaryEntriesCount());
-
-            if (!MvccFeatureChecker.forcedMvcc()) // Onheap cache is not supported in Mvcc mode.
-                assertEquals(cacheInfo + " heapEntriesCnt", heapEntriesCnt, metrics.getHeapEntriesCount());
-
+            assertEquals(cacheInfo + " heapEntriesCnt", heapEntriesCnt, metrics.getHeapEntriesCount());
             assertEquals(cacheInfo + " size", cacheSize, metrics.getSize());
             assertEquals(cacheInfo + " keySize", cacheSize, metrics.getKeySize());
             assertEquals(cacheInfo + " isEmpty", cacheSize == 0, metrics.isEmpty());
@@ -309,10 +297,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
         assertEquals(cacheInfo + " offHeapEntriesCnt", offHeapEntriesCnt, offHeapEntriesCntSum);
         assertEquals(cacheInfo + " offHeapBackupEntriesCnt", offHeapBackupEntriesCnt, offHeapBackupEntriesCntSum);
         assertEquals(cacheInfo + " offHeapPrimaryEntriesCnt", offHeapPrimaryEntriesCnt, offHeapPrimaryEntriesCntSum);
-
-        if (!MvccFeatureChecker.forcedMvcc()) // Onheap cache is not supported in Mvcc mode.
-            assertEquals(cacheInfo + " heapEntriesCnt", heapEntriesCnt, heapEntriesCntSum);
-
+        assertEquals(cacheInfo + " heapEntriesCnt", heapEntriesCnt, heapEntriesCntSum);
         assertEquals(cacheInfo + " isEmpty", cacheSize == 0, isEmptySum);
     }
 }

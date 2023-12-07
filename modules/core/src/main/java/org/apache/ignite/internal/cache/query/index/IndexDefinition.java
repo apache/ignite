@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.cache.query.index;
 
+import java.util.LinkedHashMap;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+
 /**
  * Basic interface for index description required to create or destroy index.
  */
@@ -25,4 +28,9 @@ public interface IndexDefinition {
      * @return Index name.
      */
     public IndexName idxName();
+
+    /**
+     * @return Ordered map of index field names to index key definitions.
+     */
+    public LinkedHashMap<String, IndexKeyDefinition> indexKeyDefinitions();
 }

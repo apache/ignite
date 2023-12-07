@@ -43,12 +43,6 @@ public class IgniteCacheInterceptorSelfTestSuite {
     public static List<Class<?>> suite(Collection<Class> ignoredTests) {
         List<Class<?>> suite = new ArrayList<>();
 
-        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorLocalSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorLocalWithStoreSelfTest.class, ignoredTests);
-
-        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorLocalAtomicSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorLocalAtomicWithStoreSelfTest.class, ignoredTests);
-
         GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorAtomicSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorAtomicNearEnabledSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorAtomicWithStoreSelfTest.class, ignoredTests);
@@ -64,11 +58,9 @@ public class IgniteCacheInterceptorSelfTestSuite {
 
         GridTestUtils.addTestIfNeeded(suite, GridCacheOnCopyFlagTxPartitionedSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheOnCopyFlagReplicatedSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCacheOnCopyFlagLocalSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheOnCopyFlagAtomicSelfTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, CacheInterceptorPartitionCounterRandomOperationsTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, CacheInterceptorPartitionCounterLocalSanityTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorAtomicRebalanceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheInterceptorTransactionalRebalanceTest.class, ignoredTests);

@@ -44,9 +44,9 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcThinFeature;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.junit.Assert;
 import org.junit.Test;
 

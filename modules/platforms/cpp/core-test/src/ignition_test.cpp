@@ -42,23 +42,29 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
     // Start two Ignite instances.
     Ignite grid1 = Ignition::Start(cfg, "ignitionTest-1", err);
     
-    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS) {
         BOOST_ERROR(err.GetText());
+        return;
+    }
     
     BOOST_REQUIRE(strcmp(grid1.GetName(), "ignitionTest-1") == 0);
 
     Ignite grid2 = Ignition::Start(cfg, "ignitionTest-2", err);
 
-    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS) {
         BOOST_ERROR(err.GetText());
+        return;
+    }
 
     BOOST_REQUIRE(strcmp(grid2.GetName(), "ignitionTest-2") == 0);
 
     // Test get
     Ignite grid0 = Ignition::Get("ignitionTest-1", err);
     
-    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS) {
         BOOST_ERROR(err.GetText());
+        return;
+    }
 
     BOOST_REQUIRE(strcmp(grid0.GetName(), grid1.GetName()) == 0);
 

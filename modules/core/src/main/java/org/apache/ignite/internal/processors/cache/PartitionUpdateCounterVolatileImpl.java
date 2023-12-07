@@ -149,6 +149,11 @@ public class PartitionUpdateCounterVolatileImpl implements PartitionUpdateCounte
     }
 
     /** {@inheritDoc} */
+    @Override public long highestAppliedCounter() {
+        return get();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean empty() {
         return get() == 0;
     }
@@ -176,5 +181,10 @@ public class PartitionUpdateCounterVolatileImpl implements PartitionUpdateCounte
         copy.initCntr = this.initCntr;
 
         return copy;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object comparableState() {
+        return get();
     }
 }

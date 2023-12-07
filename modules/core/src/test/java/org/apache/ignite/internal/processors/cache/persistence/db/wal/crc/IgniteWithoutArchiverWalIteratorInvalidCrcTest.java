@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -43,6 +44,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurpose.LOGICAL;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurpose.PHYSICAL;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
+import static org.apache.ignite.testframework.GridTestUtils.deleteLastCheckpointEndMarker;
 
 /** */
 public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAbstractTest {
@@ -121,7 +123,7 @@ public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAb
 
         IgniteEx ex = startGrid(0);
 
-        ex.cluster().active(true);
+        ex.cluster().state(ClusterState.ACTIVE);
     }
 
     /**
@@ -133,7 +135,9 @@ public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAb
     public void nodeShouldStartIfBinaryRecordCorruptedBeforeEndCheckpoint() throws Exception {
         startNodeAndPopulate();
 
-        stopGrid(0, true);
+        stopGrid(0, false);
+
+        deleteLastCheckpointEndMarker(ignite);
 
         IgniteWriteAheadLogManager walMgr = ignite.context().cache().context().wal();
 
@@ -167,7 +171,7 @@ public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAb
     public void nodeShouldNotStartIfLastCheckpointRecordCorrupted() throws Exception {
         startNodeAndPopulate();
 
-        stopGrid(0, true);
+        stopGrid(0, false);
 
         IgniteWriteAheadLogManager walMgr = ignite.context().cache().context().wal();
 
@@ -190,7 +194,7 @@ public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAb
     private void startNodeAndPopulate() throws Exception {
         ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, byte[]> cache = ignite.cache(DEFAULT_CACHE_NAME);
 

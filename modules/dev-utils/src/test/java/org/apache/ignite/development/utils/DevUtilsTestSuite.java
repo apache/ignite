@@ -26,6 +26,7 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     IgniteWalConverterTest.class,
+    IgniteEncryptedWalConverterTest.class,
     IgniteWalConverterArgumentsTest.class,
     IgniteWalConverterSensitiveDataTest.class
 })

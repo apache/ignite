@@ -153,7 +153,8 @@ public class CacheManualRebalancingTest extends GridCommonAbstractTest {
                     if (finished) {
                         log.info("Finished rebalancing cache: " + cacheName + ", size: " +
                             cache.localSize(CachePeekMode.PRIMARY) + cache.localSize(CachePeekMode.BACKUP));
-                    } else
+                    }
+                    else
                         log.info("Rescheduled rebalancing cache: " + cacheName + ", size: " + cache.localSize());
                 }
                 while (!finished);

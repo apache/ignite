@@ -61,6 +61,7 @@ public interface CacheStoreSession {
      * The current attachment may be discarded by attaching {@code null}.
      *
      * @param attachment The object to be attached (or {@code null} to discard current attachment).
+     * @param <T> Type of the previously attached object.
      * @return Previously attached object, if any.
      */
     @Nullable public <T> T attach(@Nullable Object attachment);
@@ -68,6 +69,7 @@ public interface CacheStoreSession {
     /**
      * Retrieves the current attachment or {@code null} if there is no attachment.
      *
+     * @param <T> Type of the attached object.
      * @return Currently attached object, if any.
      */
     @Nullable public <T> T attachment();
@@ -76,6 +78,8 @@ public interface CacheStoreSession {
      * Gets current session properties. You can add properties directly to the
      * returned map.
      *
+     * @param <K> Type of keys in the properties map.
+     * @param <V> Type of mapped values in the properties map.
      * @return Current session properties.
      */
     public <K, V> Map<K, V> properties();

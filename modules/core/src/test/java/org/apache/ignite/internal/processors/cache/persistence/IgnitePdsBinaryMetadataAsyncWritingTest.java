@@ -58,6 +58,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.testframework.GridTestUtils.suppressException;
 
 /**
@@ -135,7 +136,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
         final CountDownLatch fileWriteLatch = initSlowFileIOFactory();
 
         Ignite ig = startGrid(0);
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = ig.cache(DEFAULT_CACHE_NAME);
         GridTestUtils.runAsync(() -> cache.put(0, new TestAddress(0, "USA", "NYC", "Park Ave")));
@@ -158,7 +159,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
         IgniteEx ig0 = startGrid(0);
         IgniteEx ig1 = startGrid(1);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = ig0.cache(DEFAULT_CACHE_NAME);
         int key = findAffinityKeyForNode(ig0.affinity(DEFAULT_CACHE_NAME), ig1.localNode());
@@ -189,7 +190,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
 
         Ignite ig = startGrid();
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = ig.cache(DEFAULT_CACHE_NAME);
 
@@ -211,7 +212,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
 
         IgniteKernal ig = (IgniteKernal)startGrid();
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = ig.cache(DEFAULT_CACHE_NAME);
 
@@ -244,17 +245,26 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
 
         specialFileIOFactory = new FailingFileIOFactory(new RandomAccessFileIOFactory());
 
-        setRootLoggerDebugLevel();
+        setLoggerDebugLevel();
 
         IgniteEx ig1 = startGrid(1);
 
-        ig0.cluster().active(true);
-
-        int ig1Key = findAffinityKeyForNode(ig0.affinity(DEFAULT_CACHE_NAME), ig1.localNode());
+        ig0.cluster().state(ACTIVE);
 
         IgniteCache<Object, Object> cache = ig0.cache(DEFAULT_CACHE_NAME);
 
-        cache.put(ig1Key, new TestAddress(0, "USA", "NYC", "6th Ave"));
+        try {
+            ig1.binary().builder(TestAddress.class.getName())
+                .setField("id", 0)
+                .setField("country", "USA")
+                .setField("city", "NYC")
+                .setField("street", "6th Ave")
+                .build();
+        }
+        catch (Exception ignored) {
+            // Creating binary object will fail as underlying storage for binary meta files is broken.
+            // We expect the node that has caught that error to be stopped by failure handler.
+        }
 
         waitForTopology(1);
     }
@@ -275,7 +285,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
         specialFileIOFactory = null;
         IgniteEx ig2 = startGrid(2);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         int key0 = findAffinityKeyForNode(ig0.affinity(DEFAULT_CACHE_NAME), ig1.localNode());
         int key1 = findAffinityKeyForNode(ig0.affinity(DEFAULT_CACHE_NAME), ig1.localNode(), key0);
@@ -332,14 +342,14 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
 
         ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
-        setRootLoggerDebugLevel();
+        setLoggerDebugLevel();
 
         LogListener waitingForWriteLsnr = LogListener.matches("Waiting for write completion of").build();
         listeningLog.registerListener(waitingForWriteLsnr);
 
         startGrid(2);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
         IgniteCache cache0 = cl0.createCache(testCacheCfg);
 
         int key0 = findAffinityKeyForNode(ig0.affinity(cacheName), ig0.localNode());
@@ -394,7 +404,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
         specialFileIOFactory = null;
         IgniteEx ig2 = startGrid(2);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx cl0 = startGrid("client0");
 
@@ -467,7 +477,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
 
         //internal map in BinaryMetadataFileStore with futures awaiting write operations
         Map map = GridTestUtils.getFieldValue(
-           ig1.context().cacheObjects(), "metadataFileStore", "writer", "preparedTasks");
+            ig1.context().cacheObjects(), "metadataFileStore", "writer", "preparedTasks");
 
         assertTrue(!map.isEmpty());
 
@@ -500,7 +510,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
         specialFileIOFactory = null;
         startGrid(3);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
         IgniteCache cache = ig0.createCache(testCacheCfg);
 
         int key = 0;

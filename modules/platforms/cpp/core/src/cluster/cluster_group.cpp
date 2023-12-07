@@ -52,11 +52,6 @@ namespace ignite
             return ClusterGroup(impl.Get()->ForClients());
         }
 
-        ClusterGroup ClusterGroup::ForDaemons()
-        {
-            return ClusterGroup(impl.Get()->ForDaemons());
-        }
-
         ClusterGroup ClusterGroup::ForDataNodes(std::string cacheName)
         {
             return ClusterGroup(impl.Get()->ForDataNodes(cacheName));

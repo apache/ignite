@@ -72,7 +72,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        testLog = new ListeningTestLogger(false, log);
+        testLog = new ListeningTestLogger(log);
     }
 
     /** {@inheritDoc} */
@@ -251,11 +251,10 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
                 barrier.await();
 
                 cache.query(new ScanQuery<>((o, o2) -> {
-                        doSleep(500);
+                    doSleep(500);
 
-                        return true;
-                    })
-                ).getAll();
+                    return true;
+                })).getAll();
 
                 return null;
             });
@@ -274,7 +273,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
     @SuppressWarnings("unused")
     @QuerySqlFunction(alias = "currentPolicy")
     public static Byte currentPolicy() {
-         return GridIoManager.currentPolicy();
+        return GridIoManager.currentPolicy();
     }
 
     /**

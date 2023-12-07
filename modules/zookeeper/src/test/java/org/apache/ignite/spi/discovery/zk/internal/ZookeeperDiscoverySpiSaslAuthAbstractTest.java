@@ -185,8 +185,7 @@ public abstract class ZookeeperDiscoverySpiSaslAuthAbstractTest extends GridComm
     }
 
     /** */
-    private void shutdownServerInstance(ServerCnxnFactory factory)
-    {
+    private void shutdownServerInstance(ServerCnxnFactory factory) {
         if (factory != null) {
             ZKDatabase zkDb = null;
             {
@@ -198,7 +197,8 @@ public abstract class ZookeeperDiscoverySpiSaslAuthAbstractTest extends GridComm
             try {
                 if (zkDb != null)
                     zkDb.close();
-            } catch (IOException ie) {
+            }
+            catch (IOException ie) {
                 // ignore
             }
         }

@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
@@ -31,6 +31,9 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLoc
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Test with reuse list.
@@ -43,14 +46,18 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
         long rootId,
         boolean initNew
     ) throws IgniteCheckedException {
+        PageLockTrackerManager pageLockTrackerManager = mock(PageLockTrackerManager.class);
+
+        when(pageLockTrackerManager.createPageLockTracker(anyString())).thenReturn(new TestPageLockListener());
+
         return new TestReuseList(
             cacheId,
             "test",
             pageMem,
-            null,
             rootId,
-            initNew,
-            new GridTestKernalContext(log)
+            pageLockTrackerManager,
+            new GridTestKernalContext(log),
+            initNew
         );
     }
 
@@ -65,12 +72,10 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
      *
      */
     private static class TestReuseList extends ReuseListImpl {
-
         /**
          * @param cacheId    Cache ID.
          * @param name       Name (for debug purpose).
          * @param pageMem    Page memory.
-         * @param wal        Write ahead log manager.
          * @param metaPageId Metadata page ID.
          * @param initNew    {@code True} if new metadata should be initialized.
          * @throws IgniteCheckedException If failed.
@@ -79,12 +84,12 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
             int cacheId,
             String name,
             PageMemory pageMem,
-            IgniteWriteAheadLogManager wal,
             long metaPageId,
-            boolean initNew,
-            GridKernalContext ctx
+            PageLockTrackerManager pageLockTrackerManager,
+            GridKernalContext ctx,
+            boolean initNew
         ) throws IgniteCheckedException {
-            super(cacheId, name, pageMem, wal, metaPageId, initNew, new TestPageLockListener(), ctx, null, PageIdAllocator.FLAG_IDX);
+            super(cacheId, name, pageMem, null, metaPageId, initNew, pageLockTrackerManager, ctx, null, PageIdAllocator.FLAG_IDX);
         }
 
         /**
@@ -99,18 +104,10 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
     private static class TestPageLockListener implements PageLockListener {
 
         /** */
-        private static ThreadLocal<Set<Long>> readLocks = new ThreadLocal<Set<Long>>() {
-            @Override protected Set<Long> initialValue() {
-                return new HashSet<>();
-            }
-        };
+        private static final ThreadLocal<Set<Long>> readLocks = ThreadLocal.withInitial(HashSet::new);
 
         /** */
-        private static ThreadLocal<Set<Long>> writeLocks = new ThreadLocal<Set<Long>>() {
-            @Override protected Set<Long> initialValue() {
-                return new HashSet<>();
-            }
-        };
+        private static final ThreadLocal<Set<Long>> writeLocks = ThreadLocal.withInitial(HashSet::new);
 
         /** {@inheritDoc} */
         @Override public void onBeforeReadLock(int cacheId, long pageId, long page) {
@@ -151,6 +148,11 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
             assertEquals(effectivePageId(pageId), effectivePageId(PageIO.getPageId(pageAddr)));
 
             assertTrue(writeLocks.get().remove(pageId));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            // No-op.
         }
     }
 }

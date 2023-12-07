@@ -61,7 +61,6 @@ public final class GridDhtTxQueryEnlistFuture extends GridDhtTxQueryAbstractEnli
      * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
      * @param mvccSnapshot Mvcc snapshot.
-     * @param threadId Thread ID.
      * @param nearFutId Near future id.
      * @param nearMiniId Near mini future id.
      * @param tx Transaction.
@@ -79,7 +78,6 @@ public final class GridDhtTxQueryEnlistFuture extends GridDhtTxQueryAbstractEnli
         UUID nearNodeId,
         GridCacheVersion nearLockVer,
         MvccSnapshot mvccSnapshot,
-        long threadId,
         IgniteUuid nearFutId,
         int nearMiniId,
         GridDhtTxLocalAdapter tx,
@@ -95,7 +93,6 @@ public final class GridDhtTxQueryEnlistFuture extends GridDhtTxQueryAbstractEnli
         super(nearNodeId,
             nearLockVer,
             mvccSnapshot,
-            threadId,
             nearFutId,
             nearMiniId,
             tx,
@@ -105,7 +102,6 @@ public final class GridDhtTxQueryEnlistFuture extends GridDhtTxQueryAbstractEnli
         assert timeout >= 0;
         assert nearNodeId != null;
         assert nearLockVer != null;
-        assert threadId == tx.threadId();
 
         this.cacheIds = cacheIds;
         this.schema = schema;
@@ -145,7 +141,7 @@ public final class GridDhtTxQueryEnlistFuture extends GridDhtTxQueryAbstractEnli
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private void checkPartitions(int[] parts) throws ClusterTopologyCheckedException {
-        if (cctx.isLocal() || !cctx.rebalanceEnabled())
+        if (!cctx.rebalanceEnabled())
             return;
 
         GridDhtPartitionTopology top = cctx.topology();

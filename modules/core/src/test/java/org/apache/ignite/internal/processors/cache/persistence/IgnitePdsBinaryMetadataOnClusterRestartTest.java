@@ -33,12 +33,14 @@ import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -119,7 +121,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
         Ignite ignite0 = startGridInASeparateWorkDir("A");
         Ignite ignite1 = startGridInASeparateWorkDir("B");
 
-        ignite0.active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache0 = ignite0.cache(CACHE_NAME);
 
@@ -153,15 +155,15 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         cache0 = ignite0.cache(CACHE_NAME).withKeepBinary();
 
-        BinaryObject bObj0 = (BinaryObject) cache0.get(0);
+        BinaryObject bObj0 = (BinaryObject)cache0.get(0);
 
-        assertEquals(10, (int) bObj0.field("intField"));
+        assertEquals(10, (int)bObj0.field("intField"));
 
         cache1 = ignite1.cache(CACHE_NAME).withKeepBinary();
 
-        BinaryObject bObj1 = (BinaryObject) cache1.get(1);
+        BinaryObject bObj1 = (BinaryObject)cache1.get(1);
 
-        assertEquals(20, (int) bObj1.field("intField"));
+        assertEquals(20, (int)bObj1.field("intField"));
         assertEquals("str", bObj1.field("strField"));
     }
 
@@ -174,7 +176,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
         Ignite ignite0 = startGridInASeparateWorkDir("A");
         Ignite ignite1 = startGridInASeparateWorkDir("B");
 
-        ignite0.active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache0 = ignite0.cache(CACHE_NAME);
 
@@ -204,13 +206,13 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         cache0 = ignite0.cache(CACHE_NAME).withKeepBinary();
 
-        bObj0 = (BinaryObject) cache0.get(0);
-        bObj1 = (BinaryObject) cache0.get(1);
+        bObj0 = (BinaryObject)cache0.get(0);
+        bObj1 = (BinaryObject)cache0.get(1);
 
         assertEquals("DynamicType0", binaryTypeName(bObj0));
         assertEquals("DynamicType1", binaryTypeName(bObj1));
 
-        assertEquals(10, (int) bObj0.field(DYNAMIC_INT_FIELD_NAME));
+        assertEquals(10, (int)bObj0.field(DYNAMIC_INT_FIELD_NAME));
         assertEquals("str", bObj1.field(DYNAMIC_STR_FIELD_NAME));
     }
 
@@ -232,7 +234,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
         Ignite igniteC = startGridInASeparateWorkDir("C");
         startGridInASeparateWorkDir("D");
 
-        igniteA.active(true);
+        igniteA.cluster().state(ClusterState.ACTIVE);
 
         BinaryObject bObj0 = igniteA.binary()
             .builder(DYNAMIC_TYPE_NAME).setField(DYNAMIC_INT_FIELD_NAME, 10).build();
@@ -268,11 +270,11 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         Ignite igniteB = startGridInASeparateWorkDir("B");
 
-        igniteB.active(true);
+        igniteB.cluster().state(ClusterState.ACTIVE);
 
-        bObj1 = (BinaryObject) igniteB.cache(CACHE_NAME).withKeepBinary().get(1);
+        bObj1 = (BinaryObject)igniteB.cache(CACHE_NAME).withKeepBinary().get(1);
 
-        assertEquals(20, (int) bObj1.field(DYNAMIC_INT_FIELD_NAME));
+        assertEquals(20, (int)bObj1.field(DYNAMIC_INT_FIELD_NAME));
         assertEquals("str", bObj1.field(DYNAMIC_STR_FIELD_NAME));
     }
 
@@ -303,7 +305,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         String bConsId = igniteB.cluster().localNode().consistentId().toString();
 
-        igniteA.active(true);
+        igniteA.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = igniteA.cache(CACHE_NAME);
 
@@ -318,7 +320,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         Ignite igniteC = startGridInASeparateWorkDir("C");
         String cConsId = igniteC.cluster().localNode().consistentId().toString();
-        igniteC.active(true);
+        igniteC.cluster().state(ClusterState.ACTIVE);
 
         cache = igniteC.cache(CACHE_NAME);
         bObj = igniteC.binary().builder(DYNAMIC_TYPE_NAME).setField(decimalFieldName, 10L).build();
@@ -332,7 +334,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
             cConsId,
             String.format(CUSTOM_WORK_DIR_NAME_PATTERN, "B"),
             bConsId,
-            DYNAMIC_TYPE_NAME.toLowerCase().hashCode() + ".bin");
+            BinaryUtils.binaryMetaFileName(DYNAMIC_TYPE_NAME.toLowerCase().hashCode()));
 
         startGridInASeparateWorkDir("A");
 
@@ -389,7 +391,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         Ignite ignite0 = grid(0);
 
-        ignite0.active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache0 = ignite0.cache(CACHE_NAME);
 
@@ -402,7 +404,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         ignite0 = grid(0);
 
-        ignite0.active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         examineStaticMetadata(2);
 
@@ -422,13 +424,13 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
         for (int i = 0; i < nodesCnt; i++) {
             IgniteCache cache = grid(i).cache(CACHE_NAME).withKeepBinary();
 
-            BinaryObject o1 = (BinaryObject) cache.get(0);
+            BinaryObject o1 = (BinaryObject)cache.get(0);
 
             TestValue1 t1 = o1.deserialize();
 
             assertEquals(0, t1.getValue());
 
-            BinaryObject o2 = (BinaryObject) cache.get(1);
+            BinaryObject o2 = (BinaryObject)cache.get(1);
 
             TestValue2 t2 = o2.deserialize();
 
@@ -464,7 +466,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         Ignite ignite0 = grid(0);
 
-        ignite0.active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache0 = ignite0.cache(CACHE_NAME);
 
@@ -484,7 +486,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         ignite0 = grid(0);
 
-        ignite0.active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         examineDynamicMetadata(2, contentExaminer0, structureExaminer0);
 
@@ -507,7 +509,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         ignite0 = grid(0);
 
-        ignite0.active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         examineDynamicMetadata(2, contentExaminer0, contentExaminer1, structureExaminer1);
 
@@ -527,7 +529,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     public void testBinaryEnumMetadataIsRestoredOnRestart() throws Exception {
         Ignite ignite0 = startGrids(2);
 
-        ignite0.active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         BinaryObject enumBo0 = ignite0.binary().buildEnum(EnumType.class.getName(), 0);
 
@@ -537,7 +539,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         ignite0 = startGrids(2);
 
-        ignite0.active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         startGrid(2);
 
@@ -549,7 +551,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         ignite0 = startGrids(3);
 
-        ignite0.active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         startClientGrid(3);
 
@@ -568,7 +570,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
         // Examines all objects in cache (field values and metadata).
         Ignite ignite0 = startGrid(0);
 
-        ignite0.active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache cache0 = ignite0.cache(CACHE_NAME);
 
@@ -605,7 +607,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         startGrids(4);
 
-        grid(0).active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         examineStaticMetadata(4);
 
@@ -687,8 +689,11 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
     /** */
     private enum EnumType {
-        /** */ ENUM_VAL_0,
-        /** */ ENUM_VAL_1
+        /** */
+        ENUM_VAL_0,
+
+        /** */
+        ENUM_VAL_1
     }
 
     /**
@@ -704,7 +709,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     /** */
     private BinaryObjectExaminer contentExaminer0 = new BinaryObjectExaminer() {
         @Override public void examine(IgniteCache cache) {
-            BinaryObject bo = (BinaryObject) cache.get(2);
+            BinaryObject bo = (BinaryObject)cache.get(2);
 
             int fieldVal = bo.field(DYNAMIC_INT_FIELD_NAME);
 
@@ -715,7 +720,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     /** */
     private BinaryObjectExaminer contentExaminer1 = new BinaryObjectExaminer() {
         @Override public void examine(IgniteCache cache) {
-            BinaryObject bo = (BinaryObject) cache.get(3);
+            BinaryObject bo = (BinaryObject)cache.get(3);
 
             int fieldVal = bo.field(DYNAMIC_INT_FIELD_NAME);
 
@@ -727,7 +732,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     /** */
     private BinaryObjectExaminer structureExaminer0 = new BinaryObjectExaminer() {
         @Override public void examine(IgniteCache cache) {
-            BinaryObject bo = (BinaryObject) cache.get(2);
+            BinaryObject bo = (BinaryObject)cache.get(2);
 
             BinaryType type = bo.type();
 
@@ -748,7 +753,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     /** */
     private BinaryObjectExaminer structureExaminer1 = new BinaryObjectExaminer() {
         @Override public void examine(IgniteCache cache) {
-            BinaryObject bo = (BinaryObject) cache.get(2);
+            BinaryObject bo = (BinaryObject)cache.get(2);
 
             BinaryType type = bo.type();
 
@@ -768,7 +773,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     /** */
     private BinaryObjectExaminer enumExaminer0 = new BinaryObjectExaminer() {
         @Override public void examine(IgniteCache cache) {
-            BinaryObject enumBo = (BinaryObject) cache.get(4);
+            BinaryObject enumBo = (BinaryObject)cache.get(4);
 
             assertEquals(EnumType.ENUM_VAL_0.ordinal(), enumBo.enumOrdinal());
 

@@ -157,8 +157,8 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
      * @param part Partition.
      * @return Partition state.
      */
-    public GridDhtPartitionState get(Integer part) {
-        return map.get(part);
+    public GridDhtPartitionState get(int part) {
+        return map.state(part);
     }
 
     /**

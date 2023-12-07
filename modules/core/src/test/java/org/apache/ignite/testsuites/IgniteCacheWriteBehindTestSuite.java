@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionedWritesTest;
-import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStoreLocalTest;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStoreMultithreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStorePartitionedMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStorePartitionedTest;
@@ -56,7 +55,6 @@ public class IgniteCacheWriteBehindTestSuite {
         // Write-behind tests.
         GridTestUtils.addTestIfNeeded(suite, GridCacheWriteBehindStoreSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheWriteBehindStoreMultithreadedSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCacheWriteBehindStoreLocalTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheWriteBehindStoreReplicatedTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheWriteBehindStorePartitionedTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheWriteBehindStorePartitionedMultiNodeSelfTest.class, ignoredTests);

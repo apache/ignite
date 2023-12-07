@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import redis.clients.jedis.Jedis;
+
+import static org.apache.ignite.internal.util.IgniteUtils.KB;
 
 /**
  * Tests for Connection commands of Redis protocol.
@@ -72,6 +75,25 @@ public class RedisProtocolConnectSelfTest extends RedisCommonAbstractTest {
 
             jedis.select(0);
             Assert.assertEquals("v0", jedis.get("k0"));
+        }
+    }
+
+    /** */
+    @Test
+    public void testSetGetLongString() {
+        try (Jedis jedis = pool.getResource()) {
+            for (int len : new int[] {8, 16, 32}) {
+                String key = "b" + len;
+                String val = RandomStringUtils.randomAscii((int)(len * KB));
+
+                jedis.set(key.getBytes(), val.getBytes());
+                Assert.assertArrayEquals(val.getBytes(), jedis.get(key.getBytes()));
+
+                key += "-str";
+
+                jedis.set(key, val);
+                Assert.assertEquals(val, jedis.get(key));
+            }
         }
     }
 }

@@ -317,6 +317,7 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
      *
      */
     private static class NoReadThroughStoreFactory implements Factory<CacheStore> {
+        /** {@inheritDoc} */
         @Override public CacheStore create() {
             return new TestStore() {
                 @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {

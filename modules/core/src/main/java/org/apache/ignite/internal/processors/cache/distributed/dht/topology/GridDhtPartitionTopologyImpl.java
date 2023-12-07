@@ -350,9 +350,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public boolean initPartitionsWhenAffinityReady(AffinityTopologyVersion affVer,
-        GridDhtPartitionsExchangeFuture exchFut)
-        throws IgniteInterruptedCheckedException
-    {
+        GridDhtPartitionsExchangeFuture exchFut
+    ) throws IgniteInterruptedCheckedException {
         boolean needRefresh;
 
         ctx.database().checkpointReadLock();
@@ -596,7 +595,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 long updateSeq = this.updateSeq.incrementAndGet();
 
-                cntrMap.clear();
+                if (exchFut.exchangeType() == ALL && !exchFut.rebalanced())
+                    cntrMap.clear();
 
                 initializeFullMap(updateSeq);
 
@@ -702,7 +702,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         if (!(topReadyFut instanceof GridDhtPartitionsExchangeFuture))
             return;
 
-        GridDhtPartitionsExchangeFuture exchFut = (GridDhtPartitionsExchangeFuture) topReadyFut;
+        GridDhtPartitionsExchangeFuture exchFut = (GridDhtPartitionsExchangeFuture)topReadyFut;
 
         boolean grpStarted = exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom());
 
@@ -781,7 +781,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         ctx.database().checkpointReadLock();
 
         try {
-
             lock.writeLock().lock();
 
             try {
@@ -925,16 +924,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             // Create a partition in lost state.
             if (lostParts != null && lostParts.contains(p))
                 loc.markLost();
-
-            if (ctx.pageStore() != null) {
-                try {
-                    ctx.pageStore().onPartitionCreated(grp.groupId(), p);
-                }
-                catch (IgniteCheckedException e) {
-                    // TODO ignite-db
-                    throw new IgniteException(e);
-                }
-            }
         }
 
         return loc;
@@ -1053,16 +1042,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
         finally {
             ctx.database().checkpointReadUnlock();
-        }
-
-        if (created && ctx.pageStore() != null) {
-            try {
-                ctx.pageStore().onPartitionCreated(grp.groupId(), p);
-            }
-            catch (IgniteCheckedException e) {
-                // TODO ignite-db
-                throw new IgniteException(e);
-            }
         }
 
         return loc;
@@ -1741,7 +1720,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
 
                 return changed;
-            } finally {
+            }
+            finally {
                 lock.writeLock().unlock();
             }
         }
@@ -2298,7 +2278,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (recentlyLost != null) {
                     U.warn(log, "Detected lost partitions" + (!safe ? " (will ignore)" : "")
                         + " [grp=" + grp.cacheOrGroupName()
-                        + ", parts=" + S.compact(recentlyLost)
+                        + ", parts=" + S.toStringSortedDistinct(recentlyLost)
                         + ", topVer=" + resTopVer + "]");
                 }
 
@@ -2462,8 +2442,17 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             + ", readyTopVer=" + readyTopVer
                             + ", topVer=" + exchFut.initialVersion()
                             + ", nodeId=" + nodeId
-                            + ", partsFull=" + S.compact(rebalancedParts)
-                            + ", partsHistorical=" + S.compact(historical) + "]");
+                            + ", partsFull=" + S.toStringSortedDistinct(rebalancedParts)
+                            + ", partsHistorical=" + S.toStringSortedDistinct(historical) + "]");
+                    }
+                }
+
+                if (lostParts != null) {
+                    for (Integer lostPart : lostParts) {
+                        for (GridDhtPartitionMap partMap : node2part.values()) {
+                            if (partMap.containsKey(lostPart))
+                                partMap.put(lostPart, LOST);
+                        }
                     }
                 }
 
@@ -2524,6 +2513,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         if (part.state() != MOVING)
             part.moving();
+        else
+            part.updateClearVersion();
 
         if (clear)
             exchFut.addClearingPartition(grp, part.id());
@@ -2782,16 +2773,19 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         try {
                             if (reserved && locPart.state() == MOVING)
                                 own(locPart);
-                        } finally {
+                        }
+                        finally {
                             if (reserved)
                                 locPart.release();
                         }
                     }
                 }
-            } finally {
+            }
+            finally {
                 lock.writeLock().unlock();
             }
-        } finally {
+        }
+        finally {
             ctx.database().checkpointReadUnlock();
         }
     }
@@ -2900,9 +2894,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 long gapStart = gaps.get(j * 2);
                                 long gapStop = gaps.get(j * 2 + 1);
 
-                                if (part.group().persistenceEnabled() &&
-                                    part.group().walEnabled() &&
-                                    !part.group().mvccEnabled()) {
+                                if (part.group().persistenceEnabled() && part.group().walEnabled()) {
                                     // Rollback record tracks applied out-of-order updates while finalizeUpdateCounters
                                     // return gaps (missing updates). The code below transforms gaps to updates.
                                     RollbackRecord rec = new RollbackRecord(part.group().groupId(), part.id(),

@@ -62,6 +62,8 @@ public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
     @Override public boolean setEncryptedPageIndex(long pageAddr, int pageIdx) {
+        assertPageType(pageAddr);
+
         if (getEncryptedPageIndex(pageAddr) == pageIdx)
             return false;
 
@@ -85,6 +87,8 @@ public class PagePartitionMetaIOV3 extends PagePartitionMetaIOV2 {
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
     @Override public boolean setEncryptedPageCount(long pageAddr, int pagesCnt) {
+        assertPageType(pageAddr);
+
         if (getEncryptedPageCount(pageAddr) == pagesCnt)
             return false;
 

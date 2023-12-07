@@ -39,10 +39,10 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.SchemaManager;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
+import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
+import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -271,21 +271,18 @@ public class DynamicEnableIndexingAbstractTest extends GridCommonAbstractTest {
         int expectedParallelism = cacheMode != CacheMode.REPLICATED ? QUERY_PARALLELISM :
                 CacheConfiguration.DFLT_QUERY_PARALLELISM;
 
-        IgniteH2Indexing indexing = (IgniteH2Indexing)ig.context().query().getIndexing();
+        SchemaManager schemaMgr = ig.context().query().schemaManager();
 
-        SchemaManager schemaMgr = indexing.schemaManager();
+        IndexDescriptor idxDesc = schemaMgr.index(POI_SCHEMA_NAME, KEY_PK_IDX_NAME);
 
-        H2TableDescriptor descr = schemaMgr.tableForType(POI_SCHEMA_NAME, POI_CACHE_NAME, POI_CLASS_NAME);
+        assertNotNull(idxDesc);
 
-        assertNotNull(descr);
+        InlineIndex idx = idxDesc.index().unwrap(InlineIndex.class);
 
-        if (descr.table().getIndex(KEY_PK_IDX_NAME) instanceof H2TreeIndex) {
-            H2TreeIndex pkIdx = (H2TreeIndex)descr.table().getIndex(KEY_PK_IDX_NAME);
+        assertNotNull(idx);
 
-            assertNotNull(pkIdx);
-
-            assertEquals(expectedParallelism, pkIdx.segmentsCount());
-        }
+        if (idx instanceof InlineIndexImpl) // Check segments count only on affinity nodes (skip client indexes).
+            assertEquals(expectedParallelism, idx.segmentsCount());
 
         CacheConfiguration<?, ?> cfg = ig.context().cache().cacheConfiguration(POI_CACHE_NAME);
 

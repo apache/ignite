@@ -29,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
  * Test cache plugin configuration for cache deployment tests.
  */
 public class CacheDeploymentCachePluginConfiguration<K, V> implements CachePluginConfiguration<K, V> {
+    /** */
     private static class CacheDeploymentCachePluginProvider implements CachePluginProvider {
         /** {@inheritDoc} */
         @Nullable @Override public Object createComponent(Class cls) {

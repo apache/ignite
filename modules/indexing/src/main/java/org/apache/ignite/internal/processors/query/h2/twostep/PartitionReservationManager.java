@@ -143,7 +143,7 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
                             ctx.localNodeId(), nodeId, reqId, topVer, cacheIds.get(i)));
                 }
 
-                if (cctx.isLocal() || !cctx.rebalanceEnabled())
+                if (!cctx.rebalanceEnabled())
                     continue;
 
                 // For replicated cache topology version does not make sense.

@@ -33,6 +33,8 @@ namespace Apache.Ignite.Linq.Impl.Dml
     /// <see cref="CacheLinqExtensions.UpdateAll{TKey,TValue}" />.
     /// When user calls UpdateAll, this node is generated.
     /// </summary>
+    [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes",
+        Justification = "Instantiated by framework")]
     internal sealed class UpdateAllExpressionNode : ResultOperatorExpressionNodeBase
     {
         /// <summary>

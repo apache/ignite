@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -156,7 +157,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
             startPrimary(i);
 
         if (cnt > 0)
-            grid("node0" + primarySuffix).active(true);
+            grid("node0" + primarySuffix).cluster().state(ClusterState.ACTIVE);
     }
 
     /**

@@ -334,7 +334,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 try {
                     List<MetastorageView> data = new ArrayList<>();
 
-                    iterate("", (key, val) -> data.add(new MetastorageView(key, IgniteUtils.toStringSafe(val))));
+                    iterate("", (key, val) -> data.add(new MetastorageView(key, val == null || !val.getClass().isArray()
+                        ? IgniteUtils.toStringSafe(val)
+                        : S.arrayToString(val))));
 
                     return data;
                 }
@@ -640,7 +642,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             if (!discoData.hasJoiningNodeData()) {
                 // Joining node doesn't support distributed metastorage feature.
 
-                if (isSupported(ctx) && locVer.id() > 0 && !(node.isClient() || node.isDaemon())) {
+                if (isSupported(ctx) && locVer.id() > 0 && !node.isClient()) {
                     String errorMsg = "Node not supporting distributed metastorage feature" +
                         " is not allowed to join the cluster";
 

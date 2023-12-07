@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.authentication;
 
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -88,7 +89,7 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
     public void test1kUsersNodeRestartServer() throws Exception {
         startGrid(0);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         IgniteSecurity sec = grid(0).context().security();
 

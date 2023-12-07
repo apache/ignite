@@ -24,6 +24,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -78,7 +79,7 @@ public class WalEnableDisableWithNodeShutdownTest extends GridCommonAbstractTest
         for (int i = 0; i < NODES; i++)
             nodes.add(Ignition.start(igniteCfg(false, "server_" + i)));
 
-        nodes.getFirst().active(true);
+        nodes.getFirst().cluster().state(ClusterState.ACTIVE);
 
         Ignite client = Ignition.start(igniteCfg(true, "client"));
 
@@ -138,7 +139,7 @@ public class WalEnableDisableWithNodeShutdownTest extends GridCommonAbstractTest
         for (int i = 0; i < NODES; i++)
             nodes.add(Ignition.start(igniteCfg(false, "server_" + i)));
 
-        nodes.getFirst().active(true);
+        nodes.getFirst().cluster().state(ClusterState.ACTIVE);
 
         Ignite client = Ignition.start(igniteCfg(true, "client"));
 
@@ -197,7 +198,7 @@ public class WalEnableDisableWithNodeShutdownTest extends GridCommonAbstractTest
         for (int i = 0; i < NODES; i++)
             nodes.add(Ignition.start(igniteCfg(false, "server_" + i)));
 
-        nodes.getFirst().active(true);
+        nodes.getFirst().cluster().state(ClusterState.ACTIVE);
 
         Ignite client = Ignition.start(igniteCfg(true, "client"));
 
@@ -245,7 +246,7 @@ public class WalEnableDisableWithNodeShutdownTest extends GridCommonAbstractTest
             node = Ignition.start(igniteCfg(false, consistentId));
         }
         catch (Exception ex) {
-            assertTrue(X.hasCause(ex, "Cache groups with potentially corrupted partition files", IgniteException.class));
+            assertTrue(X.hasCause(ex, "Ignite node with disabled WAL was stopped in the middle of a checkpoint", IgniteException.class));
 
             node = Ignition.start(igniteCfg(false, consistentId));
 
@@ -256,7 +257,7 @@ public class WalEnableDisableWithNodeShutdownTest extends GridCommonAbstractTest
 
                 /** */
                 @Override public void run() {
-                    MaintenanceRegistry mntcRegistry = ((IgniteEx) ignite).context().maintenanceRegistry();
+                    MaintenanceRegistry mntcRegistry = ((IgniteEx)ignite).context().maintenanceRegistry();
 
                     List<MaintenanceAction<?>> actions = mntcRegistry
                         .actionsForMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);

@@ -78,10 +78,14 @@ namespace Apache.Ignite.Core.Tests.Log
                 logger.Warn("warn!");
                 logger.Error(new IgniteException("ex!"), "err!");
                 logger.Trace("trace (ignored)");
+                logger.Log(LogLevel.Debug, "dbg1", null, null, "c1", "java-err-details", new Exception("ex1"));
 
-                var expectedLog = string.Format("[04:05:06] [Warn] [my-cat] warn!{0}[04:05:06] [Error] [my-cat] err! " +
-                                                "(exception: Apache.Ignite.Core.Common.IgniteException: ex!){0}",
+                var expectedLog = string.Format("[04:05:06] [Warn] [my-cat] warn!{0}" +
+                                                "[04:05:06] [Error] [my-cat] err! " +
+                                                "(exception: Apache.Ignite.Core.Common.IgniteException: ex!){0}" +
+                                                "[04:05:06] [Debug] [c1] dbg1 (exception: System.Exception: ex1) (native error: java-err-details){0}",
                     Environment.NewLine);
+
                 Assert.AreEqual(expectedLog, writer.ToString());
             }
             finally

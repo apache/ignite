@@ -119,7 +119,7 @@ public class TcpDiscoveryIpFinderFailureTest extends GridCommonAbstractTest {
         TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
         discoverySpi.setJoinTimeout(10000);
         discoverySpi.setNetworkTimeout(4000);
-        discoverySpi.setReconnectDelay((int) reconnectDelay);
+        discoverySpi.setReconnectDelay((int)reconnectDelay);
         discoverySpi.setIpFinder(dynamicIpFinder);
 
         IgniteConfiguration cfgClient = getConfigurationDynamicIpFinder("Client", true, discoverySpi);
@@ -232,7 +232,8 @@ public class TcpDiscoveryIpFinderFailureTest extends GridCommonAbstractTest {
             fut.cancel();
 
             Assert.assertEquals("Node was not failed", fut.get(), true);
-        } else {
+        }
+        else {
             String nodeState = fut.get() ? "Connected" : "Failed";
 
             fail("Node should be still trying to join topology. State=" + nodeState);
@@ -331,7 +332,7 @@ public class TcpDiscoveryIpFinderFailureTest extends GridCommonAbstractTest {
         dynamicIpFinder.setShared(false);
         dynamicIpFinder.setAddresses(null);
 
-        setRootLoggerDebugLevel();
+        setLoggerDebugLevel();
 
         IgniteConfiguration cfgSrv = getConfigurationDynamicIpFinder("Server1", false);
 

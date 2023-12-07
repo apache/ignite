@@ -102,8 +102,10 @@ The following benchmarks are provided:
 22. `SqlQueryPutOffHeapBenchmark` - benchmarks distributed SQL query with simultaneous cache updates off heap
 23. `PutAllBenchmark` - benchmarks atomic distributed cache batch put operation
 24. `PutAllTxBenchmark` - benchmarks transactional distributed cache batch put operation
-25. `IgnitePutGetWithPageReplacements` - benchmarks atomic cache put with active page replacement.
-
+25. `IgnitePutGetWithPageReplacements` - benchmarks atomic cache put with active page replacement
+26. `IgniteScanQueryGetAllBenchmark` - benchmarks distributed ScanQuery
+27. `IgniteTextQueryGetAllBenchmark` - benchmarks distributed TextQuery
+28. `IgniteIndexQueryGetAllBenchmark` - benchmarks distributed IndexQuery.
 
 Properties And Command Line Arguments
 =====================================

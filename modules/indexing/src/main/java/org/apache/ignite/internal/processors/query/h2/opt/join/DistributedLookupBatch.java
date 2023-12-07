@@ -43,7 +43,7 @@ import org.h2.util.DoneFuture;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor.COL_NOT_EXISTS;
+import static org.apache.ignite.internal.processors.query.GridQueryRowDescriptorImpl.COL_NOT_EXISTS;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds.rangeBounds;
 
 /**

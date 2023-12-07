@@ -186,7 +186,7 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
             keys.add(i);
         }
 
-        TcpDiscoveryImpl discovery = ((TestTcpDiscoverySpi) ignite.configuration().getDiscoverySpi()).discovery();
+        TcpDiscoveryImpl discovery = ((TestTcpDiscoverySpi)ignite.configuration().getDiscoverySpi()).discovery();
 
         assertTrue(discovery instanceof ServerImpl);
 
@@ -223,7 +223,8 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
                         latch.await();
 
                         Thread.sleep(nodeAddFinishedDelay);
-                    } catch (InterruptedException e) {
+                    }
+                    catch (InterruptedException e) {
                         fail("Unexpected interrupt on nodeAddFinishedDelay");
                     }
 

@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Wraps an action to be executed on Dispose call.
     /// </summary>
-    public class DisposeAction : IDisposable
+    public sealed class DisposeAction : IDisposable
     {
         /** */
         private readonly Action _action;

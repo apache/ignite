@@ -111,6 +111,7 @@ public interface BinaryObject extends Serializable, Cloneable {
      * Gets field value.
      *
      * @param fieldName Field name.
+     * @param <F> Type of the field value.
      * @return Field value.
      * @throws BinaryObjectException In case of any other error.
      */
@@ -127,6 +128,7 @@ public interface BinaryObject extends Serializable, Cloneable {
     /**
      * Gets fully deserialized instance of binary object.
      *
+     * @param <T> Type of the deserialized object.
      * @return Fully deserialized instance of binary object.
      * @throws BinaryInvalidTypeException If class doesn't exist.
      * @throws BinaryObjectException In case of any other error.
@@ -138,6 +140,7 @@ public interface BinaryObject extends Serializable, Cloneable {
      * will be used {@link org.apache.ignite.configuration.IgniteConfiguration#getClassLoader}.
      *
      * @param ldr Class loader.
+     * @param <T> Type of the deserialized object.
      * @return Fully deserialized instance of binary object.
      * @throws BinaryInvalidTypeException If class doesn't exist.
      * @throws BinaryObjectException In case of any other error.

@@ -26,12 +26,10 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
@@ -43,16 +41,7 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
     protected CacheMode cacheMode;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
-
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
@@ -63,14 +52,6 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testLocalTtl() throws Exception {
-        checkTtl(LOCAL);
     }
 
     /**

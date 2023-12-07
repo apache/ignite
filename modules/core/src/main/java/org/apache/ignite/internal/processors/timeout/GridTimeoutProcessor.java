@@ -296,7 +296,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                 throw t;
             }
             finally {
-                if (err == null && !isCancelled)
+                if (err == null && !isCancelled.get())
                     err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly.");
 
                 if (err instanceof OutOfMemoryError)

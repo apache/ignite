@@ -106,6 +106,7 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
         return cache;
     }
 
+    /** */
     private void destroyCache() {
         grid(0).destroyCache("person");
     }

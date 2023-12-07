@@ -35,7 +35,7 @@ import java.lang.annotation.Target;
 public @interface MXBeanParametersDescriptions {
     /**
      *
-     * Array of descriptions for parameters.
+     * @return Array of descriptions for parameters.
      */
     public String[] value();
 }

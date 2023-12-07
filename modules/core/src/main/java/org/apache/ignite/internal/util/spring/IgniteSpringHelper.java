@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
@@ -91,15 +92,44 @@ public interface IgniteSpringHelper {
         InputStream cfgStream, Class<T> cls, String... excludedProps) throws IgniteCheckedException;
 
     /**
+     * Loads all configurations with given type specified within given configuration input stream.
+     *
+     * @param cfgStream Configuration input stream. This cannot be {@code null}.
+     * @param cls Required type of configuration.
+     * @param expEnabled Whether Spring bean expressions enabled.
+     * @param excludedProps Properties to exclude.
+     * @return Tuple containing all loaded configurations and Spring context used to load them.
+     * @throws IgniteCheckedException If configuration could not be read.
+     */
+    public <T> IgniteBiTuple<Collection<T>, ? extends GridSpringResourceContext> loadConfigurations(
+        InputStream cfgStream, Class<T> cls, boolean expEnabled, String... excludedProps) throws IgniteCheckedException;
+
+    /**
      * Loads bean instances that match the given types from given configuration file.
      *
      * @param cfgUrl Configuration file path or URL. This cannot be {@code null}.
      * @param beanClasses Beans classes.
-     * @return Bean class -> loaded bean instance map, if configuration does not contain bean with required type the
-     *       map value is {@code null}.
+     * @return Tuple containing all loaded beans and Spring context used to load them.
      * @throws IgniteCheckedException If failed to load configuration.
      */
-    public Map<Class<?>, Object> loadBeans(URL cfgUrl, Class<?>... beanClasses) throws IgniteCheckedException;
+    public IgniteBiTuple<Map<Class<?>, Collection>, ? extends GridSpringResourceContext> loadBeans(
+        URL cfgUrl,
+        Class<?>... beanClasses
+    ) throws IgniteCheckedException;
+
+    /**
+     * Loads bean instances that match the given types or names from given configuration file.
+     *
+     * @param cfgUrl Configuration file path or URL. This cannot be {@code null}.
+     * @param beanClasses Beans classes.
+     * @return Tuple containing all loaded beans and Spring context used to load them.
+     * @throws IgniteCheckedException If failed to load configuration.
+     */
+    public GridTuple3<Map<String, ?>, Map<Class<?>, Collection>, ? extends GridSpringResourceContext> loadBeans(
+        URL cfgUrl,
+        Collection<String> beanNames,
+        Class<?>... beanClasses
+    ) throws IgniteCheckedException;
 
     /**
      * Loads bean instance by name.
@@ -110,18 +140,6 @@ public interface IgniteSpringHelper {
      * @throws IgniteCheckedException In case of error.
      */
     public <T> T loadBean(URL url, String beanName) throws IgniteCheckedException;
-
-    /**
-     * Loads bean instances that match the given types from given configuration input stream.
-     *
-     * @param cfgStream Input stream containing Spring XML configuration. This cannot be {@code null}.
-     * @param beanClasses Beans classes.
-     * @return Bean class -> loaded bean instance map, if configuration does not contain bean with required type the
-     *       map value is {@code null}.
-     * @throws IgniteCheckedException If failed to load configuration.
-     */
-    public Map<Class<?>, Object> loadBeans(InputStream cfgStream, Class<?>... beanClasses)
-        throws IgniteCheckedException;
 
     /**
      * Loads bean instance by name.

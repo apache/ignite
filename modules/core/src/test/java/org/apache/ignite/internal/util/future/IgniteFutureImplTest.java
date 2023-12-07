@@ -604,13 +604,16 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
 
+        /** */
         class TestClosure implements CI1<IgniteFuture<Integer>> {
             private final CountDownLatch latch;
 
+            /** */
             private TestClosure(CountDownLatch latch) {
                 this.latch = latch;
             }
 
+            /** {@inheritDoc} */
             @Override public void apply(IgniteFuture<Integer> fut) {
                 assertEquals(CUSTOM_THREAD_NAME, Thread.currentThread().getName());
                 assertEquals(10, (int)fut.get());
