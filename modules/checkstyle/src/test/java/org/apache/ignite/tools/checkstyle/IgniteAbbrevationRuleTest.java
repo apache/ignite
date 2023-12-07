@@ -19,9 +19,8 @@ package org.apache.ignite.tools.checkstyle;
 
 import java.util.Arrays;
 import java.util.List;
+import org.junit.Assert;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 /** */
 public class IgniteAbbrevationRuleTest {
@@ -91,6 +90,6 @@ public class IgniteAbbrevationRuleTest {
         }
 
         for (int i = 0; i < expected.size(); i++)
-            assertEquals("Expected same element at " + i + " index", expected.get(i), actual.get(i));
+            Assert.assertEquals("Expected same element at " + i + " index", expected.get(i), actual.get(i));
     }
 }
