@@ -109,16 +109,16 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends AbstractI
         jcache(grid(0), cacheConfiguration(new QueryEntity(String.class.getName(), String.class.getName())
             .setFieldsPrecision(strStrPrecision)), STR_CACHE_NAME);
 
-        Map<String, Integer> orgAddressPrecision = new HashMap<>();
+        Map<String, Integer> orgAddrPrecision = new HashMap<>();
 
-        orgAddressPrecision.put("name", 5);
-        orgAddressPrecision.put("address", 5);
+        orgAddrPrecision.put("name", 5);
+        orgAddrPrecision.put("address", 5);
 
         jcache(grid(0), cacheConfiguration(new QueryEntity(Organization.class.getName(), Address.class.getName())
             .setKeyFields(Collections.singleton("name"))
             .addQueryField("name", "java.lang.String", "name")
             .addQueryField("address", "java.lang.String", "address")
-            .setFieldsPrecision(orgAddressPrecision)), OBJ_CACHE_NAME);
+            .setFieldsPrecision(orgAddrPrecision)), OBJ_CACHE_NAME);
 
         Map<String, Integer> strOrgPrecision = new HashMap<>();
 
