@@ -82,7 +82,7 @@ public class FileDownloaderTest extends GridCommonAbstractTest {
 
         FileDownloader downloader = new FileDownloader(log, DOWNLOADER_PATH);
 
-        InetSocketAddress addr = downloader.start();
+        InetSocketAddress address = downloader.start();
 
         GridFutureAdapter<Long> finishFut = new GridFutureAdapter<>();
 
@@ -91,10 +91,10 @@ public class FileDownloaderTest extends GridCommonAbstractTest {
         SocketChannel sc = null;
 
         try {
-            sc = SocketChannel.open(addr);
+            sc = SocketChannel.open(address);
         }
         catch (IOException e) {
-            U.warn(log, "Fail connect to " + addr, e);
+            U.warn(log, "Fail connect to " + address, e);
         }
 
         runAsync(downloader::download);

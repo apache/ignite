@@ -344,9 +344,9 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         }
 
                         CacheObject val = req.nearValue(i);
-                        EntryProcessor<Object, Object, Object> entryProc = req.nearEntryProcessor(i);
+                        EntryProcessor<Object, Object, Object> entryProcessor = req.nearEntryProcessor(i);
 
-                        GridCacheOperation op = entryProc != null ? TRANSFORM :
+                        GridCacheOperation op = entryProcessor != null ? TRANSFORM :
                             (val != null) ? UPDATE : DELETE;
 
                         long ttl = req.nearTtl(i);
@@ -357,7 +357,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             nodeId,
                             nodeId,
                             op,
-                            op == TRANSFORM ? entryProc : val,
+                            op == TRANSFORM ? entryProcessor : val,
                             op == TRANSFORM ? req.invokeArguments() : null,
                             /*write-through*/false,
                             /*read-through*/false,

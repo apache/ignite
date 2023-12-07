@@ -1380,17 +1380,17 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         if (!onEnterIfNoStop(gate))
             return;
 
-        IgniteFuture<?> destroyFut;
+        IgniteFuture<?> destroyFuture;
 
         try {
-            destroyFut = delegate.destroyAsync();
+            destroyFuture = delegate.destroyAsync();
         }
         finally {
             onLeave(gate);
         }
 
-        if (destroyFut != null)
-            destroyFut.get();
+        if (destroyFuture != null)
+            destroyFuture.get();
     }
 
     /** {@inheritDoc} */
@@ -1405,17 +1405,17 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         if (!onEnterIfNoStop(gate))
             return;
 
-        IgniteFuture<?> closeFut;
+        IgniteFuture<?> closeFuture;
 
         try {
-            closeFut = closeAsync();
+            closeFuture = closeAsync();
         }
         finally {
             onLeave(gate);
         }
 
-        if (closeFut != null)
-            closeFut.get();
+        if (closeFuture != null)
+            closeFuture.get();
     }
 
     /** {@inheritDoc} */
@@ -1552,8 +1552,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
      * @return Cache Gateway.
      */
     @Nullable private GridCacheGateway<K, V> gate() {
-        GridCacheContext<K, V> cacheCtx = delegate.context();
-        return cacheCtx != null ? cacheCtx.gate() : null;
+        GridCacheContext<K, V> cacheContext = delegate.context();
+        return cacheContext != null ? cacheContext.gate() : null;
     }
 
     /**

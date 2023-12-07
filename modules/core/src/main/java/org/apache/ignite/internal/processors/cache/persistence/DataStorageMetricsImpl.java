@@ -555,12 +555,12 @@ public class DataStorageMetricsImpl {
         if (F.isEmpty(regionMetrics0))
             return 0;
 
-        long usedCheckpointBufPages = 0L;
+        long usedCheckpointBufferPages = 0L;
 
         for (DataRegionMetrics rm : regionMetrics0)
-            usedCheckpointBufPages += rm.getUsedCheckpointBufferPages();
+            usedCheckpointBufferPages += rm.getUsedCheckpointBufferPages();
 
-        return usedCheckpointBufPages;
+        return usedCheckpointBufferPages;
     }
 
     /**
@@ -577,12 +577,12 @@ public class DataStorageMetricsImpl {
         if (F.isEmpty(regionMetrics0))
             return 0;
 
-        long usedCheckpointBufSize = 0L;
+        long usedCheckpointBufferSize = 0L;
 
         for (DataRegionMetrics rm : regionMetrics0)
-            usedCheckpointBufSize += rm.getUsedCheckpointBufferSize();
+            usedCheckpointBufferSize += rm.getUsedCheckpointBufferSize();
 
-        return usedCheckpointBufSize;
+        return usedCheckpointBufferSize;
     }
 
     /**
@@ -599,12 +599,12 @@ public class DataStorageMetricsImpl {
         if (F.isEmpty(regionMetrics0))
             return 0;
 
-        long checkpointBufSize = 0L;
+        long checkpointBufferSize = 0L;
 
         for (DataRegionMetrics rm : regionMetrics0)
-            checkpointBufSize += rm.getCheckpointBufferSize();
+            checkpointBufferSize += rm.getCheckpointBufferSize();
 
-        return checkpointBufSize;
+        return checkpointBufferSize;
     }
 
     /**

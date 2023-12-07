@@ -177,23 +177,23 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         long conflictTtl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer) {
-        EntryProcessor<Object, Object, Object> entryProc = null;
+        EntryProcessor<Object, Object, Object> entryProcessor = null;
 
         if (op == TRANSFORM) {
             assert val instanceof EntryProcessor : val;
 
-            entryProc = (EntryProcessor<Object, Object, Object>)val;
+            entryProcessor = (EntryProcessor<Object, Object, Object>)val;
         }
 
         assert val != null || op == DELETE;
 
         keys.add(key);
 
-        if (entryProc != null) {
+        if (entryProcessor != null) {
             if (entryProcessors == null)
                 entryProcessors = new ArrayList<>(initSize);
 
-            entryProcessors.add(entryProc);
+            entryProcessors.add(entryProcessor);
         }
         else if (val != null) {
             assert val instanceof CacheObject : val;

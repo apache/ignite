@@ -164,9 +164,9 @@ public class IgniteCacheObjectPutSelfTest extends GridCommonAbstractTest {
             if (!(o instanceof TestValue))
                 return false;
 
-            TestValue val = (TestValue)o;
+            TestValue value = (TestValue)o;
 
-            return this.val == val.val;
+            return val == value.val;
         }
 
         /** {@inheritDoc} */

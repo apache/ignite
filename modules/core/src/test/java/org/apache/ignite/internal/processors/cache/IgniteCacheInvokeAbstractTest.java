@@ -88,13 +88,13 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     public void testInternalInvokeNullable() throws Exception {
         IgniteInternalCache<Integer, Integer> cache = grid(0).cachex(DEFAULT_CACHE_NAME);
 
-        EntryProcessor<Integer, Integer, Void> proc = new NullableProcessor();
+        EntryProcessor<Integer, Integer, Void> processor = new NullableProcessor();
 
         for (final Integer key : keys()) {
             log.info("Test invoke with a nullable result [key=" + key + ']');
 
-            EntryProcessorResult<Void> result = cache.invoke(key, proc);
-            EntryProcessorResult<Void> resultAsync = cache.invokeAsync(key, proc).get();
+            EntryProcessorResult<Void> result = cache.invoke(key, processor);
+            EntryProcessorResult<Void> resultAsync = cache.invokeAsync(key, processor).get();
 
             assertNotNull(result);
             assertNotNull(resultAsync);
@@ -111,7 +111,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
      */
     private void invoke(final IgniteCache<Integer, Integer> cache, @Nullable TransactionConcurrency txMode)
         throws Exception {
-        IncrementProcessor incProc = new IncrementProcessor();
+        IncrementProcessor incProcessor = new IncrementProcessor();
 
         for (final Integer key : keys()) {
             log.info("Test invoke [key=" + key + ", txMode=" + txMode + ']');
@@ -120,7 +120,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
             Transaction tx = startTx(txMode);
 
-            Integer res = cache.invoke(key, incProc);
+            Integer res = cache.invoke(key, incProcessor);
 
             if (tx != null)
                 tx.commit();
@@ -131,7 +131,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
             tx = startTx(txMode);
 
-            res = cache.invoke(key, incProc);
+            res = cache.invoke(key, incProcessor);
 
             if (tx != null)
                 tx.commit();
@@ -142,7 +142,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
             tx = startTx(txMode);
 
-            res = cache.invoke(key, incProc);
+            res = cache.invoke(key, incProcessor);
 
             if (tx != null)
                 tx.commit();
@@ -213,7 +213,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
             checkValue(key, 63);
 
-            IgniteFuture<Integer> fut = cache.invokeAsync(key, incProc);
+            IgniteFuture<Integer> fut = cache.invokeAsync(key, incProcessor);
 
             assertNotNull(fut);
 
@@ -316,10 +316,10 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     public void testInvokeAllAppliedOnceOnBinaryTypeRegistration() {
         IgniteCache<MyKey, Integer> cache = jcache();
 
-        Affinity<Object> aff = grid(0).affinity(cache.getName());
+        Affinity<Object> affinity = grid(0).affinity(cache.getName());
 
         for (int i = 0; i < gridCount(); i++) {
-            if (!aff.isPrimary(grid(i).localNode(), new MyKey(""))) {
+            if (!affinity.isPrimary(grid(i).localNode(), new MyKey(""))) {
                 cache = jcache(i);
                 break;
             }
@@ -356,9 +356,9 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
                         entry.remove();
                     }
                     else {
-                        Integer val = entry.getValue() == null ? 0 : entry.getValue();
+                        Integer value = entry.getValue() == null ? 0 : entry.getValue();
 
-                        entry.setValue(++val);
+                        entry.setValue(++value);
                     }
 
                     if (key.startsWith("register_type"))
@@ -381,12 +381,12 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
                     assertNull(storeMap.get(keys));
             }
             else {
-                int val = entry.getValue();
+                int value = entry.getValue();
 
-                assertEquals("\"" + key + "' entry has wrong value, exp=1 actl=" + val, 1, val);
+                assertEquals("\"" + key + "' entry has wrong value, exp=1 actl=" + value, 1, value);
 
                 if (cacheStoreFactory() != null)
-                    assertEquals("\"" + key + "' entry has wrong value in cache store, exp=1 actl=" + val,
+                    assertEquals("\"" + key + "' entry has wrong value in cache store, exp=1 actl=" + value,
                         1, (int)storeMap.get(key));
             }
         }
@@ -435,12 +435,12 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
         log.info("Test invokeAll [keys=" + keys + ", txMode=" + txMode + ']');
 
-        IncrementProcessor incProc = new IncrementProcessor();
+        IncrementProcessor incProcessor = new IncrementProcessor();
 
         {
             Transaction tx = startTx(txMode);
 
-            Map<Integer, EntryProcessorResult<Integer>> resMap = cache.invokeAll(keys, incProc);
+            Map<Integer, EntryProcessorResult<Integer>> resMap = cache.invokeAll(keys, incProcessor);
 
             if (tx != null)
                 tx.commit();
@@ -504,7 +504,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         {
             Transaction tx = startTx(txMode);
 
-            Map<Integer, EntryProcessorResult<Integer>> resMap = cache.invokeAll(keys, incProc);
+            Map<Integer, EntryProcessorResult<Integer>> resMap = cache.invokeAll(keys, incProcessor);
 
             if (tx != null)
                 tx.commit();
@@ -675,7 +675,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         Map<Integer, EntryProcessor<Integer, Integer, Integer>> invokeMap = new HashMap<>();
 
         for (Integer key : keys)
-            invokeMap.put(key, incProc);
+            invokeMap.put(key, incProcessor);
 
         fut = cache.invokeAllAsync(invokeMap);
 

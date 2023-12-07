@@ -132,9 +132,9 @@ public class IgnitePdsPageReplacementDuringPartitionClearTest extends GridCommon
 
             awaitPartitionMapExchange();
 
-            Map<ClusterNode, GridLongList> affAfter = allPartitions(igNew);
+            Map<ClusterNode, GridLongList> affinityAfter = allPartitions(igNew);
 
-            evictLsnr.waitPartitionsEvicted(igNew.cluster().localNode(), affAfter);
+            evictLsnr.waitPartitionsEvicted(igNew.cluster().localNode(), affinityAfter);
 
             stop.set(true);
 

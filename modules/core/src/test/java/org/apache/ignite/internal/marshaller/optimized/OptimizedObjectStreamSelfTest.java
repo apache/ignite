@@ -1124,9 +1124,9 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testInet6Address() throws Exception {
-        final InetAddress addr = Inet6Address.getByAddress(new byte[16]);
+        final InetAddress address = Inet6Address.getByAddress(new byte[16]);
 
-        assertEquals(addr, marshalUnmarshal(addr));
+        assertEquals(address, marshalUnmarshal(address));
     }
 
     /**

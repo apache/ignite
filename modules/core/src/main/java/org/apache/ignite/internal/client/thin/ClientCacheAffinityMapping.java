@@ -84,17 +84,17 @@ public class ClientCacheAffinityMapping {
      * @return Affinity node id or {@code null} if affinity node can't be determined for given cache and key.
      */
     public UUID affinityNode(IgniteBinary binary, int cacheId, Object key) {
-        CacheAffinityInfo affInfo = cacheAffinity.get(cacheId);
+        CacheAffinityInfo affinityInfo = cacheAffinity.get(cacheId);
 
-        if (affInfo == null || affInfo == NOT_APPLICABLE_CACHE_AFFINITY_INFO)
+        if (affinityInfo == null || affinityInfo == NOT_APPLICABLE_CACHE_AFFINITY_INFO)
             return null;
 
         Object binaryKey = binary.toBinary(key);
 
-        if (!affInfo.keyCfg.isEmpty()) {
+        if (!affinityInfo.keyCfg.isEmpty()) {
             int typeId = binary.typeId(key.getClass().getName());
 
-            Integer fieldId = affInfo.keyCfg.get(typeId);
+            Integer fieldId = affinityInfo.keyCfg.get(typeId);
 
             if (fieldId != null) {
                 if (binaryKey instanceof BinaryObjectExImpl)
@@ -104,7 +104,7 @@ public class ClientCacheAffinityMapping {
             }
         }
 
-        return affInfo.nodeForKey(binaryKey);
+        return affinityInfo.nodeForKey(binaryKey);
     }
 
     /**

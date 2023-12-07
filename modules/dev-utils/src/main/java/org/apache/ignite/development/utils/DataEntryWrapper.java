@@ -77,28 +77,28 @@ class DataEntryWrapper extends DataEntry {
     /** {@inheritDoc} */
     @Override public String toString() {
         final String keyStr;
-        final String valStr;
+        final String valueStr;
         if (source instanceof UnwrapDataEntry) {
             final UnwrapDataEntry unwrappedDataEntry = (UnwrapDataEntry)this.source;
 
             keyStr = toString(unwrappedDataEntry.unwrappedKey(), this.source.key());
 
-            valStr = toString(unwrappedDataEntry.unwrappedValue(), this.source.value());
+            valueStr = toString(unwrappedDataEntry.unwrappedValue(), this.source.value());
         }
         else if (source instanceof RecordDataV1Serializer.EncryptedDataEntry) {
             keyStr = "<encrypted>";
 
-            valStr = "<encrypted>";
+            valueStr = "<encrypted>";
         }
         else {
             keyStr = toString(null, this.source.key());
 
-            valStr = toString(null, this.source.value());
+            valueStr = toString(null, this.source.value());
         }
 
         return new SB(this.source.getClass().getSimpleName())
             .a("[k = ").a(keyStr)
-            .a(", v = [").a(valStr).a("]")
+            .a(", v = [").a(valueStr).a("]")
             .a(", super = [").a(S.toString(DataEntry.class, source)).a("]]")
             .toString();
     }

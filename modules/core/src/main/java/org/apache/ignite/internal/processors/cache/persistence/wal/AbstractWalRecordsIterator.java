@@ -420,10 +420,10 @@ public abstract class AbstractWalRecordsIterator
         try {
             fileIO = desc.toReadOnlyIO(ioFactory);
 
-            SegmentHeader segmentHdr;
+            SegmentHeader segmentHeader;
 
             try {
-                segmentHdr = readSegmentHeader(fileIO, segmentFileInputFactory);
+                segmentHeader = readSegmentHeader(fileIO, segmentFileInputFactory);
             }
             catch (SegmentEofException | EOFException ignore) {
                 try {
@@ -441,7 +441,7 @@ public abstract class AbstractWalRecordsIterator
                 throw e;
             }
 
-            return initReadHandle(desc, start, fileIO, segmentHdr);
+            return initReadHandle(desc, start, fileIO, segmentHeader);
         }
         catch (FileNotFoundException e) {
             U.closeQuiet(fileIO);

@@ -9880,8 +9880,8 @@ public abstract class IgniteUtils {
 
         Collection<InetSocketAddress> resolved = new HashSet<>();
 
-        for (InetSocketAddress addr : sockAddr)
-            resolved.addAll(resolveAddress(addrRslvr, addr));
+        for (InetSocketAddress address : sockAddr)
+            resolved.addAll(resolveAddress(addrRslvr, address));
 
         return resolved;
     }
@@ -11664,7 +11664,7 @@ public abstract class IgniteUtils {
         // If executor cannot perform immediately, we will execute task in the current thread.
         Set<Batch<T, R>> sharedBatchesSet = new GridConcurrentHashSet<>(batchSizes.length);
 
-        Iterator<T> iter = srcDatas.iterator();
+        Iterator<T> iterator = srcDatas.iterator();
 
         for (int idx = 0; idx < batchSizes.length; idx++) {
             int batchSize = batchSizes[idx];
@@ -11672,7 +11672,7 @@ public abstract class IgniteUtils {
             Batch<T, R> batch = new Batch<>(batchSize, uninterruptible);
 
             for (int i = 0; i < batchSize; i++)
-                batch.addTask(iter.next());
+                batch.addTask(iterator.next());
 
             batches.add(batch);
         }

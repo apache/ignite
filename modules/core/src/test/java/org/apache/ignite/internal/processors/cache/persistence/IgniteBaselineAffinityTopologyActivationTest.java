@@ -184,7 +184,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
 
         ignite.cluster().setBaselineTopology(baselineNodes(ignite.cluster().forServers().nodes()));
 
-        boolean expectedEThrown = false;
+        boolean expectedExceptionThrown = false;
 
         try {
             ignite.cluster().setBaselineTopology(singleNodeTopVer);
@@ -194,10 +194,10 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
             assertTrue(errMsg.startsWith("Removing online nodes"));
             assertTrue(errMsg.contains("[OnlineConsID]"));
 
-            expectedEThrown = true;
+            expectedExceptionThrown = true;
         }
 
-        assertTrue(expectedEThrown);
+        assertTrue(expectedExceptionThrown);
     }
 
     /**
@@ -212,7 +212,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         nodeC.cluster().baselineAutoAdjustEnabled(false);
         nodeC.cluster().state(ClusterState.ACTIVE);
 
-        boolean expectedEIsThrown = false;
+        boolean expectedExceptionIsThrown = false;
 
         try {
             nodeC.cluster().setBaselineTopology(Arrays.asList((BaselineNode)nodeA.cluster().localNode(),
@@ -223,10 +223,10 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
             assertTrue(errMsg.startsWith("Removing online nodes"));
             assertTrue(errMsg.contains("[OnlineConsID]"));
 
-            expectedEIsThrown = true;
+            expectedExceptionIsThrown = true;
         }
 
-        assertTrue(expectedEIsThrown);
+        assertTrue(expectedExceptionIsThrown);
     }
 
     /**
@@ -257,13 +257,13 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         startGridWithConsistentId("A");
         startGridWithConsistentId("B");
 
-        boolean expectedEThrown = false;
+        boolean expectedExceptionThrown = false;
 
         try {
             startGridWithConsistentId("C");
         }
         catch (IgniteCheckedException e) {
-            expectedEThrown = true;
+            expectedExceptionThrown = true;
 
             if (e.getCause() != null && e.getCause().getCause() != null) {
                 Throwable rootCause = e.getCause().getCause();
@@ -275,7 +275,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
                 throw e;
         }
 
-        assertTrue("Expected exception wasn't thrown.", expectedEThrown);
+        assertTrue("Expected exception wasn't thrown.", expectedExceptionThrown);
     }
 
     /**
@@ -302,13 +302,13 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         startGridWithConsistentId("A");
         startGridWithConsistentId("B");
 
-        boolean expectedEThrown = false;
+        boolean expectedExceptionThrown = false;
 
         try {
             startGridWithConsistentId("C");
         }
         catch (IgniteCheckedException e) {
-            expectedEThrown = true;
+            expectedExceptionThrown = true;
 
             if (e.getCause() != null && e.getCause().getCause() != null) {
                 Throwable rootCause = e.getCause().getCause();
@@ -320,7 +320,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
                 throw e;
         }
 
-        assertTrue("Expected exception wasn't thrown.", expectedEThrown);
+        assertTrue("Expected exception wasn't thrown.", expectedExceptionThrown);
     }
 
     /**
@@ -1010,13 +1010,13 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
 
         verifyBaselineTopologyOnNodes(nullVerifier, new Ignite[] {nodeA, nodeB});
 
-        boolean expectedEThrown = false;
+        boolean expectedExceptionThrown = false;
 
         try {
             startGridWithConsistentId("C");
         }
         catch (IgniteCheckedException e) {
-            expectedEThrown = true;
+            expectedExceptionThrown = true;
 
             if (e.getCause() != null && e.getCause().getCause() != null) {
                 Throwable rootCause = e.getCause().getCause();
@@ -1028,7 +1028,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
                 throw e;
         }
 
-        assertTrue("Expected exception wasn't thrown.", expectedEThrown);
+        assertTrue("Expected exception wasn't thrown.", expectedExceptionThrown);
     }
 
     /**

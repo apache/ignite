@@ -378,12 +378,12 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
      * Count total number of locked keys on local node.
      */
     private long txLockedKeysNum() {
-        GridCacheMvccManager mvccMgr = gridKernalCtx.cache().context().mvcc();
+        GridCacheMvccManager mvccManager = gridKernalCtx.cache().context().mvcc();
 
-        if (mvccMgr == null)
+        if (mvccManager == null)
             return 0;
 
-        return mvccMgr.lockedKeys().size() + mvccMgr.nearLockedKeys().size();
+        return mvccManager.lockedKeys().size() + mvccManager.nearLockedKeys().size();
     }
 
     /** {@inheritDoc} */

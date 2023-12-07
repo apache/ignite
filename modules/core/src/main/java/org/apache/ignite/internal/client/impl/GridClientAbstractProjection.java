@@ -178,10 +178,10 @@ abstract class GridClientAbstractProjection<T extends GridClientAbstractProjecti
      */
     protected <R> GridClientFuture<R> withReconnectHandling(ClientProjectionClosure<R> c, String cacheName,
         @Nullable Object affKey) {
-        GridClientDataAffinity aff = client.affinity(cacheName);
+        GridClientDataAffinity affinity = client.affinity(cacheName);
 
         // If pinned (fixed-nodes) or no affinity provided use balancer.
-        if (nodes != null || aff == null || affKey == null)
+        if (nodes != null || affinity == null || affKey == null)
             return withReconnectHandling(c);
 
         try {
@@ -191,7 +191,7 @@ abstract class GridClientAbstractProjection<T extends GridClientAbstractProjecti
                 throw new GridServerUnreachableException("Failed to get affinity node (no nodes in topology were " +
                     "accepted by the filter): " + filter);
 
-            GridClientNode node = aff.node(affKey, prjNodes);
+            GridClientNode node = affinity.node(affKey, prjNodes);
 
             for (int i = 0; i < RETRY_CNT; i++) {
                 GridClientConnection conn = null;

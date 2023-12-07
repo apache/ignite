@@ -28,7 +28,7 @@ class GridJavadocCharArrayLexReader {
     private char[] chars;
 
     /** Index in {@link #chars}. */
-    private int idx;
+    private int index;
 
     /**
      * Creates reader with given buffer.
@@ -54,7 +54,7 @@ class GridJavadocCharArrayLexReader {
      * @return Next character from the buffer.
      */
     int read() {
-        return idx == chars.length ? EOF : chars[idx++];
+        return index == chars.length ? EOF : chars[index++];
     }
 
     /**
@@ -63,23 +63,23 @@ class GridJavadocCharArrayLexReader {
      * @return Next character that will be returned by next {@link #read()} apply.
      */
     int peek() {
-        return idx == chars.length ? EOF : chars[idx];
+        return index == chars.length ? EOF : chars[index];
     }
 
     /**
      * Skips next character in the buffer.
      */
     void skip() {
-        if (idx < chars.length)
-            idx++;
+        if (index < chars.length)
+            index++;
     }
 
     /**
      * Puts back last read character.
      */
     void back() {
-        if (idx > 0)
-            idx--;
+        if (index > 0)
+            index--;
     }
 
     /**
@@ -88,6 +88,6 @@ class GridJavadocCharArrayLexReader {
      * @return {@code true} if buffer has at least one more character - {@code false} otherwise.
      */
     boolean hasMore() {
-        return idx < chars.length;
+        return index < chars.length;
     }
 }

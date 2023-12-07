@@ -69,12 +69,12 @@ public class FifoEvictionPolicyFactory<K, V> extends AbstractEvictionPolicyFacto
 
     /** {@inheritDoc} */
     @Override public FifoEvictionPolicy<K, V> create() {
-        FifoEvictionPolicy<K, V> plc = new FifoEvictionPolicy<>();
+        FifoEvictionPolicy<K, V> policy = new FifoEvictionPolicy<>();
 
-        plc.setBatchSize(getBatchSize());
-        plc.setMaxMemorySize(getMaxMemorySize());
-        plc.setMaxSize(getMaxSize());
+        policy.setBatchSize(getBatchSize());
+        policy.setMaxMemorySize(getMaxMemorySize());
+        policy.setMaxSize(getMaxSize());
 
-        return plc;
+        return policy;
     }
 }

@@ -121,11 +121,11 @@ public class ClusterStateChangeEventTest extends GridCommonAbstractTest {
         Map<Ignite, IgniteFuture<Event>> evtFuts = new HashMap<>();
 
         for (Ignite node : G.allGrids()) {
-            Event evt = max(node.events().localQuery(F.alwaysTrue(), EVT_CLUSTER_STATE_CHANGED), comparingLong(Event::localOrder));
+            Event event = max(node.events().localQuery(F.alwaysTrue(), EVT_CLUSTER_STATE_CHANGED), comparingLong(Event::localOrder));
 
-            log.info("Event with highest local id for node: " + node.name() + " is: " + evt);
+            log.info("Event with highest local id for node: " + node.name() + " is: " + event);
 
-            evtFuts.put(node, waitForLocalEvent(node.events(), e -> e.localOrder() > evt.localOrder(), EVT_CLUSTER_STATE_CHANGED));
+            evtFuts.put(node, waitForLocalEvent(node.events(), e -> e.localOrder() > event.localOrder(), EVT_CLUSTER_STATE_CHANGED));
         }
 
         crd.cluster().state(state);
@@ -139,18 +139,18 @@ public class ClusterStateChangeEventTest extends GridCommonAbstractTest {
 
             assertTrue(node.name() + " " + e, e instanceof ClusterStateChangeEvent);
 
-            ClusterStateChangeEvent changeEvt = (ClusterStateChangeEvent)e;
+            ClusterStateChangeEvent changeEvent = (ClusterStateChangeEvent)e;
 
-            assertEquals(prevState, changeEvt.previousState());
-            assertEquals(state, changeEvt.state());
+            assertEquals(prevState, changeEvent.previousState());
+            assertEquals(state, changeEvent.state());
 
             if (blt == null)
-                assertNull(node.name(), changeEvt.baselineNodes());
+                assertNull(node.name(), changeEvent.baselineNodes());
             else {
-                assertNotNull(changeEvt.baselineNodes());
+                assertNotNull(changeEvent.baselineNodes());
 
                 Set<Object> bltIds = blt.stream().map(BaselineNode::consistentId).collect(toSet());
-                Set<Object> evtBltIds = changeEvt.baselineNodes().stream().map(BaselineNode::consistentId).collect(toSet());
+                Set<Object> evtBltIds = changeEvent.baselineNodes().stream().map(BaselineNode::consistentId).collect(toSet());
 
                 assertEqualsCollections(bltIds, evtBltIds);
             }

@@ -352,7 +352,7 @@ public class IgniteWalConverterArguments {
         Long fromTime = null;
         Long toTime = null;
         String recordContainsText = null;
-        ProcessSensitiveData procSensitiveData = ProcessSensitiveData.SHOW;
+        ProcessSensitiveData processSensitiveData = ProcessSensitiveData.SHOW;
         boolean printStat = false;
         boolean skipCrc = false;
         Collection<T2<Integer, Long>> pages = emptyList();
@@ -406,11 +406,11 @@ public class IgniteWalConverterArguments {
             else if (arg.startsWith(RECORD_TYPES + "=")) {
                 final String recordTypesStr = arg.substring(RECORD_TYPES.length() + 1);
 
-                final String[] recordTypesStrArr = recordTypesStr.split(",");
+                final String[] recordTypesStrArray = recordTypesStr.split(",");
 
                 final SortedSet<String> unknownRecordTypes = new TreeSet<>();
 
-                for (String recordTypeStr : recordTypesStrArr) {
+                for (String recordTypeStr : recordTypesStrArray) {
                     try {
                         recordTypes.add(WALRecord.RecordType.valueOf(recordTypeStr));
                     }
@@ -447,12 +447,12 @@ public class IgniteWalConverterArguments {
                 recordContainsText = arg.substring(RECORD_CONTAINS_TEXT.length() + 1);
             }
             else if (arg.startsWith(PROCESS_SENSITIVE_DATA + "=")) {
-                final String procSensitiveDataStr = arg.substring(PROCESS_SENSITIVE_DATA.length() + 1);
+                final String processSensitiveDataStr = arg.substring(PROCESS_SENSITIVE_DATA.length() + 1);
                 try {
-                    procSensitiveData = ProcessSensitiveData.valueOf(procSensitiveDataStr);
+                    processSensitiveData = ProcessSensitiveData.valueOf(processSensitiveDataStr);
                 }
                 catch (Exception e) {
-                    throw new IllegalArgumentException("Unknown processSensitiveData: " + procSensitiveDataStr +
+                    throw new IllegalArgumentException("Unknown processSensitiveData: " + processSensitiveDataStr +
                         ". Supported: " + Arrays.toString(ProcessSensitiveData.values()));
                 }
             }
@@ -513,7 +513,7 @@ public class IgniteWalConverterArguments {
 
         return new IgniteWalConverterArguments(walDir, walArchiveDir, pageSize,
             binaryMetadataFileStoreDir, marshallerMappingFileStoreDir,
-            keepBinary, recordTypes, fromTime, toTime, recordContainsText, procSensitiveData, printStat, skipCrc,
+            keepBinary, recordTypes, fromTime, toTime, recordContainsText, processSensitiveData, printStat, skipCrc,
             pages);
     }
 

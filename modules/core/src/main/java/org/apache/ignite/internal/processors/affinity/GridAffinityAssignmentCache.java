@@ -366,10 +366,10 @@ public class GridAffinityAssignmentCache {
                don't belong to affinity for current group (client node or filtered by nodeFilter). */
             boolean skipCalculation = true;
 
-            for (DiscoveryEvent evt : events.events()) {
-                boolean affNode = CU.affinityNode(evt.eventNode(), nodeFilter);
+            for (DiscoveryEvent event : events.events()) {
+                boolean affinityNode = CU.affinityNode(event.eventNode(), nodeFilter);
 
-                if (affNode || evt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+                if (affinityNode || event.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                     skipCalculation = false;
 
                     break;
@@ -465,17 +465,17 @@ public class GridAffinityAssignmentCache {
         List<ClusterNode> sorted,
         BaselineTopology blt
     ) {
-        List<ClusterNode> baselineAffNodes = blt.createBaselineView(sorted, nodeFilter);
+        List<ClusterNode> baselineAffinityNodes = blt.createBaselineView(sorted, nodeFilter);
 
         List<List<ClusterNode>> calculated = aff.assignPartitions(new GridAffinityFunctionContextImpl(
-            baselineAffNodes,
+            baselineAffinityNodes,
             prevAssignment != null ? prevAssignment.assignment() : null,
             events != null ? events.lastEvent() : null,
             topVer,
             backups
         ));
 
-        baselineAssignment = IdealAffinityAssignment.create(topVer, baselineAffNodes, calculated);
+        baselineAssignment = IdealAffinityAssignment.create(topVer, baselineAffinityNodes, calculated);
     }
 
     /**
@@ -494,20 +494,20 @@ public class GridAffinityAssignmentCache {
 
         for (int p = 0; p < assignment.size(); p++) {
             List<ClusterNode> baselineMapping = assignment.get(p);
-            List<ClusterNode> curMapping = null;
+            List<ClusterNode> currentMapping = null;
 
             for (ClusterNode node : baselineMapping) {
                 ClusterNode aliveNode = alives.get(node.consistentId());
 
                 if (aliveNode != null) {
-                    if (curMapping == null)
-                        curMapping = new ArrayList<>();
+                    if (currentMapping == null)
+                        currentMapping = new ArrayList<>();
 
-                    curMapping.add(aliveNode);
+                    currentMapping.add(aliveNode);
                 }
             }
 
-            result.add(p, curMapping != null ? curMapping : Collections.<ClusterNode>emptyList());
+            result.add(p, currentMapping != null ? currentMapping : Collections.<ClusterNode>emptyList());
         }
 
         return result;

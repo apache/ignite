@@ -440,22 +440,22 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             return new JdbcResponse(IgniteQueryErrorCode.UNEXPECTED_OPERATION, "Unknown query ID: "
                 + req.cursorId() + ". Bulk load session may have been reclaimed due to timeout.");
 
-        JdbcBulkLoadProcessor proc = (JdbcBulkLoadProcessor)jdbcCursors.get(req.cursorId());
+        JdbcBulkLoadProcessor processor = (JdbcBulkLoadProcessor)jdbcCursors.get(req.cursorId());
 
-        if (!prepareQueryCancellationMeta(proc))
+        if (!prepareQueryCancellationMeta(processor))
             return JDBC_QUERY_CANCELLED_RESPONSE;
 
         boolean unregisterReq = false;
 
         try {
-            proc.processBatch(req);
+            processor.processBatch(req);
 
             switch (req.cmd()) {
                 case CMD_FINISHED_ERROR:
                 case CMD_FINISHED_EOF:
                     jdbcCursors.remove(req.cursorId());
 
-                    proc.close();
+                    processor.close();
 
                     unregisterReq = true;
 
@@ -468,12 +468,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     throw new IllegalArgumentException();
             }
 
-            return resultToResonse(new JdbcQueryExecuteResult(req.cursorId(), proc.updateCnt(), null));
+            return resultToResonse(new JdbcQueryExecuteResult(req.cursorId(), processor.updateCnt(), null));
         }
         catch (Exception e) {
             U.error(null, "Error processing file batch", e);
 
-            proc.onFail(e);
+            processor.onFail(e);
 
             if (X.cause(e, QueryCancelledException.class) != null)
                 return exceptionToResult(new QueryCancelledException());
@@ -481,7 +481,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e);
         }
         finally {
-            cleanupQueryCancellationMeta(unregisterReq, proc.requestId());
+            cleanupQueryCancellationMeta(unregisterReq, processor.requestId());
         }
     }
 
@@ -629,15 +629,15 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             if (fieldsCur instanceof BulkLoadContextCursor) {
                 BulkLoadContextCursor blCur = (BulkLoadContextCursor)fieldsCur;
 
-                BulkLoadProcessor blProc = blCur.bulkLoadProcessor();
+                BulkLoadProcessor blProcessor = blCur.bulkLoadProcessor();
                 BulkLoadAckClientParameters clientParams = blCur.clientParams();
 
-                JdbcBulkLoadProcessor proc = new JdbcBulkLoadProcessor(blProc, req.requestId());
+                JdbcBulkLoadProcessor processor = new JdbcBulkLoadProcessor(blProcessor, req.requestId());
 
-                jdbcCursors.put(proc.cursorId(), proc);
+                jdbcCursors.put(processor.cursorId(), processor);
 
                 // responses for the same query on the client side
-                return resultToResonse(new JdbcBulkLoadAckResult(proc.cursorId(), clientParams));
+                return resultToResonse(new JdbcBulkLoadAckResult(processor.cursorId(), clientParams));
             }
 
             if (results.size() == 1) {

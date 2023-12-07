@@ -666,13 +666,13 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         IgniteCache cache = srv.createCache(ccfg);
 
         // High number of keys triggers long partition eviction.
-        final int keysCnt = 100_000;
+        final int keysCount = 100_000;
 
         try (IgniteDataStreamer ds = srv.dataStreamer(DEFAULT_CACHE_NAME)) {
             log.info("Writing initial data...");
 
             ds.allowOverwrite(true);
-            for (int k = 1; k <= keysCnt; k++) {
+            for (int k = 1; k <= keysCount; k++) {
                 ds.addData(k, k);
 
                 if (k % 50_000 == 0)
@@ -682,12 +682,12 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
             log.info("Writing initial data finished.");
         }
 
-        AtomicInteger keyCounter = new AtomicInteger(keysCnt);
+        AtomicInteger keyCounter = new AtomicInteger(keysCount);
         AtomicBoolean stop = new AtomicBoolean(false);
 
         Set<Integer> addedKeys = new GridConcurrentHashSet<>();
 
-        IgniteInternalFuture cacheLoadFut = GridTestUtils.runMultiThreadedAsync(
+        IgniteInternalFuture cacheLoadFuture = GridTestUtils.runMultiThreadedAsync(
             () -> {
                 while (!stop.get()) {
                     int key = keyCounter.incrementAndGet();
@@ -718,7 +718,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         stop.set(true);
 
-        cacheLoadFut.get();
+        cacheLoadFuture.get();
 
         // Deactivate and activate again.
         srv.cluster().state(INACTIVE);
@@ -732,7 +732,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         for (Ignite ignite : G.allGrids()) {
             IgniteCache cache1 = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-            for (int k = 1; k <= keysCnt; k++) {
+            for (int k = 1; k <= keysCount; k++) {
                 Object val = cache1.get(k);
 
                 Assert.assertNotNull("node=" + ignite.name() + ", key=" + k, val);

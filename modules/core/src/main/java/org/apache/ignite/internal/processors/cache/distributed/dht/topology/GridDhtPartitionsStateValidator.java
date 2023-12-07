@@ -203,11 +203,11 @@ public class GridDhtPartitionsStateValidator {
             if (ignoringNodes.contains(nodeId))
                 continue;
 
-            final GridDhtPartitionsSingleMessage msg = e.getValue();
+            final GridDhtPartitionsSingleMessage message = e.getValue();
 
-            CachePartitionPartialCountersMap countersMap = msg.partitionUpdateCounters(top.groupId(), partitions);
+            CachePartitionPartialCountersMap countersMap = message.partitionUpdateCounters(top.groupId(), partitions);
 
-            Map<Integer, Long> sizesMap = msg.partitionSizes(top.groupId());
+            Map<Integer, Long> sizesMap = message.partitionSizes(top.groupId());
 
             Set<Integer> ignorePartitions = shouldIgnore(top, nodeId, countersMap, sizesMap);
 
@@ -217,9 +217,9 @@ public class GridDhtPartitionsStateValidator {
                 if (ignorePartitions != null && ignorePartitions.contains(p))
                     continue;
 
-                long curCounter = countersMap.updateCounterAt(i);
+                long currentCounter = countersMap.updateCounterAt(i);
 
-                process(invalidPartitions, updateCountersAndNodesByPartitions, p, nodeId, curCounter);
+                process(invalidPartitions, updateCountersAndNodesByPartitions, p, nodeId, currentCounter);
             }
         }
 
@@ -264,11 +264,11 @@ public class GridDhtPartitionsStateValidator {
             if (ignoringNodes.contains(nodeId))
                 continue;
 
-            final GridDhtPartitionsSingleMessage msg = e.getValue();
+            final GridDhtPartitionsSingleMessage message = e.getValue();
 
-            CachePartitionPartialCountersMap countersMap = msg.partitionUpdateCounters(top.groupId(), partitions);
+            CachePartitionPartialCountersMap countersMap = message.partitionUpdateCounters(top.groupId(), partitions);
 
-            Map<Integer, Long> sizesMap = msg.partitionSizes(top.groupId());
+            Map<Integer, Long> sizesMap = message.partitionSizes(top.groupId());
 
             Set<Integer> ignorePartitions = shouldIgnore(top, nodeId, countersMap, sizesMap);
 
@@ -278,9 +278,9 @@ public class GridDhtPartitionsStateValidator {
                 if (ignorePartitions != null && ignorePartitions.contains(p))
                     continue;
 
-                long curSize = sizesMap.getOrDefault(p, 0L);
+                long currentSize = sizesMap.getOrDefault(p, 0L);
 
-                process(invalidPartitions, sizesAndNodesByPartitions, p, nodeId, curSize);
+                process(invalidPartitions, sizesAndNodesByPartitions, p, nodeId, currentSize);
             }
         }
 

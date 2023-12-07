@@ -167,10 +167,10 @@ public class PlatformDotNetSessionData implements Binarylizable {
 
         for (Map.Entry<String, byte[]> e : items.entrySet()) {
             String key = e.getKey();
-            byte[] val = e.getValue();
+            byte[] value = e.getValue();
 
-            if (val != null)
-                this.items.put(key, val);
+            if (value != null)
+                this.items.put(key, value);
             else
                 this.items.remove(key);   // Null value indicates removed key.
         }
@@ -238,9 +238,9 @@ public class PlatformDotNetSessionData implements Binarylizable {
      */
     public void readBinary(BinaryRawReader reader) {
         items = new TreeMap<>();
-        int cnt = reader.readInt();
+        int count = reader.readInt();
 
-        for (int i = 0; i < cnt; i++)
+        for (int i = 0; i < count; i++)
             items.put(reader.readString(), reader.readByteArray());
 
         staticObjects = reader.readByteArray();

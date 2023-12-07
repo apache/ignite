@@ -1859,11 +1859,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++)
             assertNull(jcache(i).localPeek("k1", ONHEAP));
 
-        final EntryProcessor<String, Integer, Integer> errProc = new FailedEntryProcessor();
+        final EntryProcessor<String, Integer, Integer> errProcessor = new FailedEntryProcessor();
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                cache.invoke("k1", errProc);
+                cache.invoke("k1", errProcessor);
 
                 return null;
             }
@@ -6584,12 +6584,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         @Override public List<String> call(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
             List<String> found = new ArrayList<>();
 
-            Affinity<Object> aff = ignite.affinity(cache.getName());
+            Affinity<Object> affinity = ignite.affinity(cache.getName());
 
             for (int i = startFrom; i < startFrom + 100_000; i++) {
                 String key = "key" + i;
 
-                if (aff.isPrimary(ignite.cluster().localNode(), key)) {
+                if (affinity.isPrimary(ignite.cluster().localNode(), key)) {
                     found.add(key);
 
                     if (found.size() == cnt)
@@ -6806,9 +6806,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             if (!(o instanceof TestValue))
                 return false;
 
-            TestValue val = (TestValue)o;
+            TestValue value = (TestValue)o;
 
-            if (this.val != val.val)
+            if (val != value.val)
                 return false;
 
             return true;

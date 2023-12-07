@@ -87,10 +87,10 @@ public class GridCacheSqlDdlClusterReadOnlyModeTest extends CacheCreateDestroyCl
 
         for (String cacheName : cacheNames()) {
             for (Ignite node : G.allGrids()) {
-                String idxName = "age_idx_" + tableName(cacheName);
-                assertNotNull(execute(node, "create index " + idxName + " on " + tableName(cacheName) + " (age)"));
+                String indexName = "age_idx_" + tableName(cacheName);
+                assertNotNull(execute(node, "create index " + indexName + " on " + tableName(cacheName) + " (age)"));
 
-                assertNotNull(execute(node, "drop index " + idxName));
+                assertNotNull(execute(node, "drop index " + indexName));
             }
         }
     }

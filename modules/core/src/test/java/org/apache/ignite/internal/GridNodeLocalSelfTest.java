@@ -75,19 +75,19 @@ public class GridNodeLocalSelfTest extends GridCommonAbstractTest {
     @Test
     public void testClearNodeLocalMap() throws Exception {
         final String key = "key";
-        final String val = "value";
+        final String value = "value";
 
         Ignite grid = G.ignite(getTestIgniteInstanceName());
 
-        ConcurrentMap<Object, Object> nodeLocMap = grid.cluster().nodeLocalMap();
-        nodeLocMap.put(key, val);
+        ConcurrentMap<Object, Object> nodeLocalMap = grid.cluster().nodeLocalMap();
+        nodeLocalMap.put(key, value);
 
-        assert !nodeLocMap.isEmpty() : "Empty node local map";
-        assert nodeLocMap.containsKey(key);
+        assert !nodeLocalMap.isEmpty() : "Empty node local map";
+        assert nodeLocalMap.containsKey(key);
 
         IgniteMXBean igniteMXBean = getMxBean(getTestIgniteInstanceName(), "Kernal", "IgniteKernal",
             IgniteMXBean.class);
         igniteMXBean.clearNodeLocalMap();
-        assert nodeLocMap.isEmpty() : "Not empty node local map";
+        assert nodeLocalMap.isEmpty() : "Not empty node local map";
     }
 }

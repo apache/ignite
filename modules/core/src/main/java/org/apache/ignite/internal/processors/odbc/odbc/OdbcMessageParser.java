@@ -163,18 +163,18 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
             }
 
             case OdbcRequest.QRY_FETCH: {
-                long qryId = reader.readLong();
+                long queryId = reader.readLong();
                 int pageSize = reader.readInt();
 
-                res = new OdbcQueryFetchRequest(qryId, pageSize);
+                res = new OdbcQueryFetchRequest(queryId, pageSize);
 
                 break;
             }
 
             case OdbcRequest.QRY_CLOSE: {
-                long qryId = reader.readLong();
+                long queryId = reader.readLong();
 
-                res = new OdbcQueryCloseRequest(qryId);
+                res = new OdbcQueryCloseRequest(queryId);
 
                 break;
             }
@@ -202,27 +202,27 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
 
             case OdbcRequest.META_PARAMS: {
                 String schema = reader.readString();
-                String sqlQry = reader.readString();
+                String sqlQuery = reader.readString();
 
-                res = new OdbcQueryGetParamsMetaRequest(schema, sqlQry);
+                res = new OdbcQueryGetParamsMetaRequest(schema, sqlQuery);
 
                 break;
             }
 
             case OdbcRequest.META_RESULTSET: {
                 String schema = reader.readString();
-                String sqlQry = reader.readString();
+                String sqlQuery = reader.readString();
 
-                res = new OdbcQueryGetResultsetMetaRequest(schema, sqlQry);
+                res = new OdbcQueryGetResultsetMetaRequest(schema, sqlQuery);
 
                 break;
             }
 
             case OdbcRequest.MORE_RESULTS: {
-                long qryId = reader.readLong();
+                long queryId = reader.readLong();
                 int pageSize = reader.readInt();
 
-                res = new OdbcQueryMoreResultsRequest(qryId, pageSize);
+                res = new OdbcQueryMoreResultsRequest(queryId, pageSize);
 
                 break;
             }
@@ -448,16 +448,16 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         if (ver.compareTo(OdbcConnectionContext.VER_2_3_2) < 0) {
             long summ = 0;
 
-            for (Long val : affectedRows)
-                summ += val == null ? 0 : val;
+            for (Long value : affectedRows)
+                summ += value == null ? 0 : value;
 
             writer.writeLong(summ);
         }
         else {
             writer.writeInt(affectedRows.length);
 
-            for (long val : affectedRows)
-                writer.writeLong(val);
+            for (long value : affectedRows)
+                writer.writeLong(value);
         }
     }
 }

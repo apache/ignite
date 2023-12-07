@@ -552,16 +552,16 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
 
         communicationSpi.blockMessages((node, msg) -> {
             if (msg instanceof GridDhtPartitionDemandMessage) {
-                GridDhtPartitionDemandMessage demandMsg = (GridDhtPartitionDemandMessage)msg;
+                GridDhtPartitionDemandMessage demandMessage = (GridDhtPartitionDemandMessage)msg;
 
-                if (CU.cacheId(DEFAULT_CACHE_NAME) != demandMsg.groupId()
-                    && CU.cacheId(MEM_REGION_CACHE) != demandMsg.groupId())
+                if (CU.cacheId(DEFAULT_CACHE_NAME) != demandMessage.groupId()
+                    && CU.cacheId(MEM_REGION_CACHE) != demandMessage.groupId())
                     return false;
 
                 info("Message was caught: " + msg.getClass().getSimpleName()
-                    + " rebalanceId = " + U.field(demandMsg, "rebalanceId")
+                    + " rebalanceId = " + U.field(demandMessage, "rebalanceId")
                     + " to: " + node.consistentId()
-                    + " by cache id: " + demandMsg.groupId());
+                    + " by cache id: " + demandMessage.groupId());
 
                 return true;
             }

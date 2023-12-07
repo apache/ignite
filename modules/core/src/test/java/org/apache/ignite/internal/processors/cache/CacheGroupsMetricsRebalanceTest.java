@@ -214,7 +214,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         List<String> cacheNames = Arrays.asList(CACHE4, CACHE5);
 
-        int allKeysCnt = 0;
+        int allKeysCount = 0;
 
         for (String cacheName : cacheNames) {
             Map<Integer, Long> data = new Random().ints(KEYS_COUNT).distinct().boxed()
@@ -222,7 +222,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
             ignite0.getOrCreateCache(cacheName).putAll(data);
 
-            allKeysCnt += data.size();
+            allKeysCount += data.size();
         }
 
         TestRecordingCommunicationSpi.spi(ignite0)
@@ -310,11 +310,11 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         String wrongReceivedKeyCntMsg = "The number of currently rebalanced keys for the whole cache group should " +
             "be equal to the number of entries in the caches.";
-        assertEquals(wrongReceivedKeyCntMsg, allKeysCnt, receivedKeys.value());
-        assertEquals(wrongReceivedKeyCntMsg, allKeysCnt, sumFunc.applyAsLong(fullReceivedKeys.value()));
+        assertEquals(wrongReceivedKeyCntMsg, allKeysCount, receivedKeys.value());
+        assertEquals(wrongReceivedKeyCntMsg, allKeysCount, sumFunc.applyAsLong(fullReceivedKeys.value()));
         assertEquals(0, sumFunc.applyAsLong(histReceivedKeys.value()));
 
-        int estimateByteCnt = allKeysCnt * (Integer.BYTES + Long.BYTES);
+        int estimateByteCnt = allKeysCount * (Integer.BYTES + Long.BYTES);
 
         String wrongReceivedByteCntMsg = "The number of currently rebalanced bytes of this cache group was expected " +
             "more " + estimateByteCnt + " bytes.";

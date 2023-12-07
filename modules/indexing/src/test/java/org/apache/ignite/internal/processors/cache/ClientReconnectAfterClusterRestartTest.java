@@ -86,7 +86,7 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
 
-        List<QueryEntity> qryEntities = new ArrayList<>();
+        List<QueryEntity> queryEntities = new ArrayList<>();
 
         QueryEntity entity = new QueryEntity();
 
@@ -112,9 +112,9 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
 
         entity.setIndexes(indexes);
 
-        qryEntities.add(entity);
+        queryEntities.add(entity);
 
-        ccfg.setQueryEntities(qryEntities);
+        ccfg.setQueryEntities(queryEntities);
         return ccfg;
     }
 

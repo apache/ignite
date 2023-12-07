@@ -116,9 +116,9 @@ public class TcpDiscoveryClientSuspensionSelfTest extends GridCommonAbstractTest
 
         ClientImpl impl = U.field(client.configuration().getDiscoverySpi(), "impl");
 
-        ScheduledExecutorService executorSrvc = U.field(impl, "executorService");
+        ScheduledExecutorService executorService = U.field(impl, "executorService");
 
-        executorSrvc.shutdownNow();
+        executorService.shutdownNow();
 
         System.out.println("Metrics update message suspended");
     }

@@ -539,12 +539,12 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
                 if (accIdFrom == accIdTo)
                     continue;
 
-                Affinity<Object> aff = ignite.affinity(cacheName);
+                Affinity<Object> affinity = ignite.affinity(cacheName);
 
-                ClusterNode primaryForAccFrom = aff.mapKeyToNode(accIdFrom);
+                ClusterNode primaryForAccFrom = affinity.mapKeyToNode(accIdFrom);
                 assertNotNull(primaryForAccFrom);
 
-                ClusterNode primaryForAccTo = aff.mapKeyToNode(accIdTo);
+                ClusterNode primaryForAccTo = affinity.mapKeyToNode(accIdTo);
                 assertNotNull(primaryForAccTo);
 
                 // Allows only transaction between accounts that primary on the same node if corresponding flag is enabled.

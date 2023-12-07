@@ -84,7 +84,7 @@ public class GridCacheQueueClientDisconnectTest extends GridCommonAbstractTest {
             GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {
                     try {
-                        Object val = queue.take();
+                        Object value = queue.take();
                     }
                     catch (IgniteClientDisconnectedException icd) {
                         latch.countDown();
@@ -98,9 +98,9 @@ public class GridCacheQueueClientDisconnectTest extends GridCommonAbstractTest {
 
             server.close();
 
-            boolean cntReachedZero = latch.await(FAILURE_DETECTION_TIMEOUT * 2, TimeUnit.MILLISECONDS);
+            boolean countReachedZero = latch.await(FAILURE_DETECTION_TIMEOUT * 2, TimeUnit.MILLISECONDS);
 
-            assertTrue("IgniteClientDisconnectedException was not thrown", cntReachedZero);
+            assertTrue("IgniteClientDisconnectedException was not thrown", countReachedZero);
         }
         finally {
             stopAllGrids();

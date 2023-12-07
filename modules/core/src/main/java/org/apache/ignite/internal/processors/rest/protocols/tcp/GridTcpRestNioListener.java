@@ -337,13 +337,13 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         if (!(msg instanceof GridClientTaskRequest))
             return false;
 
-        GridClientTaskRequest taskReq = (GridClientTaskRequest)msg;
+        GridClientTaskRequest taskRequest = (GridClientTaskRequest)msg;
 
         try {
-            return U.hasAnnotation(U.forName(taskReq.taskName(), null), InterruptibleVisorTask.class);
+            return U.hasAnnotation(U.forName(taskRequest.taskName(), null), InterruptibleVisorTask.class);
         }
         catch (ClassNotFoundException e) {
-            log.warning("Task closure can't be found: [task=" + taskReq.taskName() + ']', e);
+            log.warning("Task closure can't be found: [task=" + taskRequest.taskName() + ']', e);
 
             return false;
         }

@@ -128,12 +128,12 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
 
         IgniteEx ig0 = startGrid(0);
 
-        GridCacheSharedContext<Object, Object> sharedCtx = ig0.context().cache().context();
+        GridCacheSharedContext<Object, Object> sharedContext = ig0.context().cache().context();
 
-        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)sharedCtx.database();
-        IgniteWriteAheadLogManager WALmgr = sharedCtx.wal();
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)sharedContext.database();
+        IgniteWriteAheadLogManager WALmgr = sharedContext.wal();
 
-        WALDisableContext walDisableCtx = new WALDisableContext(dbMgr, sharedCtx.pageStore(), log) {
+        WALDisableContext walDisableContext = new WALDisableContext(dbMgr, sharedContext.pageStore(), log) {
             @Override protected void writeMetaStoreDisableWALFlag() throws IgniteCheckedException {
                 if (nodeStopPoint == NodeStopPoint.BEFORE_WRITE_KEY_TO_META_STORE)
                     failNode(nodeStopPoint);
@@ -174,11 +174,11 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
             }
         };
 
-        setFieldValue(sharedCtx.walState(), "walDisableContext", walDisableCtx);
+        setFieldValue(sharedContext.walState(), "walDisableContext", walDisableContext);
 
-        setFieldValue(WALmgr, "walDisableContext", walDisableCtx);
+        setFieldValue(WALmgr, "walDisableContext", walDisableContext);
 
-        ig0.context().internalSubscriptionProcessor().registerMetastorageListener(walDisableCtx);
+        ig0.context().internalSubscriptionProcessor().registerMetastorageListener(walDisableContext);
 
         ig0.cluster().state(ClusterState.ACTIVE);
 
@@ -191,7 +191,7 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
 
         boolean fail = false;
 
-        try (WALIterator it = sharedCtx.wal().replay(null)) {
+        try (WALIterator it = sharedContext.wal().replay(null)) {
             dbMgr.applyUpdatesOnRecovery(it, (ptr, rec) -> true, (entry) -> true);
         }
         catch (IgniteCheckedException e) {

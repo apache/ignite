@@ -118,24 +118,24 @@ public class CacheGroupLocalConfigurationSelfTest extends GridCommonAbstractTest
 
         Map<Integer, CacheGroupContext> cacheGrps = U.field(cacheProc, "cacheGrps");
 
-        CacheConfiguration cacheGrpCfg = findGroupConfig(cacheGrps,
+        CacheConfiguration cacheGroupCfg = findGroupConfig(cacheGrps,
             useNonDfltCacheGrp ? NON_DEFAULT_GROUP_NAME : DEFAULT_CACHE_NAME);
 
-        assertNotNull("Default cache group must be presented", cacheGrpCfg);
+        assertNotNull("Default cache group must be presented", cacheGroupCfg);
 
-        assertEquals("Rebalance delay", cacheGrpCfg.getRebalanceDelay(), NON_STANDARD_REBALANCE_VALUE);
+        assertEquals("Rebalance delay", cacheGroupCfg.getRebalanceDelay(), NON_STANDARD_REBALANCE_VALUE);
 
         assertEquals("Rebalance batches prefetch count",
-            cacheGrpCfg.getRebalanceBatchesPrefetchCount(),
+            cacheGroupCfg.getRebalanceBatchesPrefetchCount(),
             NON_STANDARD_REBALANCE_VALUE);
 
-        assertEquals("Rebalance batch size", cacheGrpCfg.getRebalanceBatchSize(), NON_STANDARD_REBALANCE_VALUE);
+        assertEquals("Rebalance batch size", cacheGroupCfg.getRebalanceBatchSize(), NON_STANDARD_REBALANCE_VALUE);
 
-        assertEquals("Rebalance order", cacheGrpCfg.getRebalanceOrder(), NON_STANDARD_REBALANCE_VALUE);
+        assertEquals("Rebalance order", cacheGroupCfg.getRebalanceOrder(), NON_STANDARD_REBALANCE_VALUE);
 
-        assertEquals("Rebalance throttle", cacheGrpCfg.getRebalanceThrottle(), NON_STANDARD_REBALANCE_VALUE);
+        assertEquals("Rebalance throttle", cacheGroupCfg.getRebalanceThrottle(), NON_STANDARD_REBALANCE_VALUE);
 
-        assertEquals("Rebalance timeout", cacheGrpCfg.getRebalanceTimeout(), NON_STANDARD_REBALANCE_VALUE);
+        assertEquals("Rebalance timeout", cacheGroupCfg.getRebalanceTimeout(), NON_STANDARD_REBALANCE_VALUE);
     }
 
     /**

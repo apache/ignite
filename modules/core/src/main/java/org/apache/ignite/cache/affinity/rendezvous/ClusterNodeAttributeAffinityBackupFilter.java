@@ -113,8 +113,8 @@ public class ClusterNodeAttributeAffinityBackupFilter implements IgniteBiPredica
         for (ClusterNode node : previouslySelected) {
             boolean match = true;
 
-            for (String attr : attributeNames) {
-                if (!Objects.equals(candidate.attribute(attr), node.attribute(attr))) {
+            for (String attribute : attributeNames) {
+                if (!Objects.equals(candidate.attribute(attribute), node.attribute(attribute))) {
                     match = false;
 
                     break;

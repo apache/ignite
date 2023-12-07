@@ -452,12 +452,12 @@ public class GridJettyRestHandler extends AbstractHandler {
                 throw new IllegalStateException("Received null result from handler: " + hnd);
 
             if (getAllAsArray && cmd == GridRestCommand.CACHE_GET_ALL) {
-                List<Object> resKeyVal = new ArrayList<>();
+                List<Object> resKeyValue = new ArrayList<>();
 
                 for (Map.Entry<Object, Object> me : ((Map<Object, Object>)cmdRes.getResponse()).entrySet())
-                    resKeyVal.add(new IgniteBiTuple<>(me.getKey(), me.getValue()));
+                    resKeyValue.add(new IgniteBiTuple<>(me.getKey(), me.getValue()));
 
-                cmdRes.setResponse(resKeyVal);
+                cmdRes.setResponse(resKeyValue);
             }
 
             byte[] sesTok = cmdRes.sessionTokenBytes();

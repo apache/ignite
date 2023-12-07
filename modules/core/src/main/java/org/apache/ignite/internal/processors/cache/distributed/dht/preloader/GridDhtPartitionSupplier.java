@@ -185,14 +185,14 @@ public class GridDhtPartitionSupplier {
         assert demandMsg != null;
         assert nodeId != null;
 
-        T3<UUID, Integer, AffinityTopologyVersion> ctxId = new T3<>(nodeId, topicId, demandMsg.topologyVersion());
+        T3<UUID, Integer, AffinityTopologyVersion> contextId = new T3<>(nodeId, topicId, demandMsg.topologyVersion());
 
         if (demandMsg.rebalanceId() < 0) { // Demand node requested context cleanup.
             synchronized (scMap) {
-                SupplyContext sctx = scMap.get(ctxId);
+                SupplyContext sctx = scMap.get(contextId);
 
                 if (sctx != null && sctx.rebalanceId == -demandMsg.rebalanceId()) {
-                    clearContext(scMap.remove(ctxId), log);
+                    clearContext(scMap.remove(contextId), log);
 
                     if (log.isDebugEnabled())
                         log.debug("Supply context cleaned [" + supplyRoutineInfo(topicId, nodeId, demandMsg)
@@ -233,11 +233,11 @@ public class GridDhtPartitionSupplier {
 
         try {
             synchronized (scMap) {
-                sctx = scMap.remove(ctxId);
+                sctx = scMap.remove(contextId);
 
                 if (sctx != null && demandMsg.rebalanceId() < sctx.rebalanceId) {
                     // Stale message, return context back and return.
-                    scMap.put(ctxId, sctx);
+                    scMap.put(contextId, sctx);
 
                     if (log.isDebugEnabled())
                         log.debug("Stale demand message [" + supplyRoutineInfo(topicId, nodeId, demandMsg) +
@@ -322,18 +322,18 @@ public class GridDhtPartitionSupplier {
             while (iter.hasNext()) {
                 if (supplyMsg.messageSize() >= msgMaxSize) {
                     if (++batchesCnt >= maxBatchesCnt) {
-                        saveSupplyContext(ctxId,
+                        saveSupplyContext(contextId,
                             iter,
                             remainingParts,
                             demandMsg.rebalanceId()
                         );
 
-                        reply(topicId, demanderNode, demandMsg, supplyMsg, ctxId);
+                        reply(topicId, demanderNode, demandMsg, supplyMsg, contextId);
 
                         return;
                     }
                     else {
-                        if (!reply(topicId, demanderNode, demandMsg, supplyMsg, ctxId))
+                        if (!reply(topicId, demanderNode, demandMsg, supplyMsg, contextId))
                             return;
 
                         supplyMsg = new GridDhtPartitionSupplyMessage(demandMsg.rebalanceId(),
@@ -423,7 +423,7 @@ public class GridDhtPartitionSupplier {
             else
                 iter.close();
 
-            reply(topicId, demanderNode, demandMsg, supplyMsg, ctxId);
+            reply(topicId, demanderNode, demandMsg, supplyMsg, contextId);
 
             if (log.isInfoEnabled())
                 log.info("Finished supplying rebalancing [" + supplyRoutineInfo(topicId, nodeId, demandMsg) + "]");
@@ -497,7 +497,7 @@ public class GridDhtPartitionSupplier {
                     );
                 }
 
-                reply(topicId, demanderNode, demandMsg, errMsg, ctxId);
+                reply(topicId, demanderNode, demandMsg, errMsg, contextId);
             }
             catch (Throwable t1) {
                 U.error(log, "Failed to send supply error message ["

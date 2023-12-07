@@ -258,7 +258,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
      */
     @Test(expected = IgniteCheckedException.class)
     public void testFileHandlerFilePathThrowsEx() throws Exception {
-        final String exTestMsg = "Test exception. Handler initialization failed at onBegin.";
+        final String exTestMessage = "Test exception. Handler initialization failed at onBegin.";
 
         snd = startGrid(0);
         rcv = startGrid(1);
@@ -267,7 +267,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         rcv.context().io().addTransmissionHandler(topic, new DefaultTransmissionHandler(rcv, fileToSend, tempStore) {
             @Override public String filePath(UUID nodeId, TransmissionMeta fileMeta) {
-                throw new IgniteException(exTestMsg);
+                throw new IgniteException(exTestMessage);
             }
 
             @Override public Consumer<File> fileHandler(UUID nodeId, TransmissionMeta initMeta) {
@@ -283,7 +283,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             }
 
             @Override public void onException(UUID nodeId, Throwable err) {
-                assertEquals(exTestMsg, err.getMessage());
+                assertEquals(exTestMessage, err.getMessage());
             }
         });
 
@@ -535,7 +535,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     @Test
     public void testFileHandlerNextWriterOpened() throws Exception {
         final int fileSizeBytes = 5 * 1024 * 1024;
-        final AtomicBoolean netExThrown = new AtomicBoolean();
+        final AtomicBoolean networkExThrown = new AtomicBoolean();
 
         snd = startGrid(0);
         rcv = startGrid(1);
@@ -549,7 +549,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             }
 
             @Override public String filePath(UUID nodeId, TransmissionMeta fileMeta) {
-                if (netExThrown.compareAndSet(false, true))
+                if (networkExThrown.compareAndSet(false, true))
                     return null;
 
                 return rcvFile.getAbsolutePath();

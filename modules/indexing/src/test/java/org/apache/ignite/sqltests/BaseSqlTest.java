@@ -150,9 +150,9 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
             if (addrId < FREE_ADDR_CNT)
                 depId = null;
 
-            String addr = UUID.randomUUID().toString();
+            String address = UUID.randomUUID().toString();
 
-            execute(insConf.setArgs(addrId, depId, depId, addr));
+            execute(insConf.setArgs(addrId, depId, depId, address));
         }
     }
 
@@ -1275,16 +1275,16 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
                 "Schema name could not be an empty string"
         );
 
-        String sqlQry = "SELECT * FROM Employee limit 1";
+        String sqlQuery = "SELECT * FROM Employee limit 1";
 
         testAllNodes(node -> {
-            executeFrom(sqlQry, node, "");
-            executeFrom(sqlQry, node, " ");
+            executeFrom(sqlQuery, node, "");
+            executeFrom(sqlQuery, node, " ");
             assertTrue("Check valid schema",
-                    executeFrom(sqlQry, node, "PUBLIC").values().stream().count() > 0
+                    executeFrom(sqlQuery, node, "PUBLIC").values().stream().count() > 0
             );
             assertTrue("Check null schema",
-                    executeFrom(sqlQry, node, null).values().stream().count() > 0
+                    executeFrom(sqlQuery, node, null).values().stream().count() > 0
             );
         });
     }

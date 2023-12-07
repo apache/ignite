@@ -228,8 +228,8 @@ public class UserQueriesTestBase extends SqlStatisticsAbstractTest {
 
         Collection<GridRunningQueryInfo> queries = node.context().query().runningQueries(-1);
 
-        for (GridRunningQueryInfo qryInfo : queries) {
-            String killId = qryInfo.globalQueryId();
+        for (GridRunningQueryInfo queryInfo : queries) {
+            String killId = queryInfo.globalQueryId();
 
             node.context().query().querySqlFields(
                 new SqlFieldsQuery("KILL QUERY ASYNC '" + killId + "'").setSchema("PUBLIC"), false);

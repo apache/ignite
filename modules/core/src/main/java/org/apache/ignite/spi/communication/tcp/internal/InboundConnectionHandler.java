@@ -395,10 +395,10 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
 
     /** {@inheritDoc} */
     @Override public void onFailure(FailureType failureType, Throwable failure) {
-        FailureProcessor failureProc = failureProcessorSupplier.get();
+        FailureProcessor failureProcessor = failureProcessorSupplier.get();
 
-        if (failureProc != null)
-            failureProc.process(new FailureContext(failureType, failure));
+        if (failureProcessor != null)
+            failureProcessor.process(new FailureContext(failureType, failure));
     }
 
     /** {@inheritDoc} */

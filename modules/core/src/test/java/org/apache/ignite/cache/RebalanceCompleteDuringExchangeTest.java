@@ -136,12 +136,12 @@ public class RebalanceCompleteDuringExchangeTest extends GridCommonAbstractTest 
 
         commSpi.record((ClusterNode node, Message msg) -> {
             if (msg instanceof GridDhtPartitionsSingleMessage) {
-                GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage)msg;
+                GridDhtPartitionsSingleMessage singleMessage = (GridDhtPartitionsSingleMessage)msg;
 
-                if (singleMsg.exchangeId() == null)
+                if (singleMessage.exchangeId() == null)
                     return false;
 
-                return singleMsg.exchangeId().topologyVersion().equals(new AffinityTopologyVersion(3, 0));
+                return singleMessage.exchangeId().topologyVersion().equals(new AffinityTopologyVersion(3, 0));
             }
 
             return false;
@@ -149,9 +149,9 @@ public class RebalanceCompleteDuringExchangeTest extends GridCommonAbstractTest 
 
         commSpi.blockMessages((ClusterNode node, Message msg) -> {
             if (msg instanceof GridDhtPartitionDemandMessage) {
-                GridDhtPartitionDemandMessage demandMsg = (GridDhtPartitionDemandMessage)msg;
+                GridDhtPartitionDemandMessage demandMessage = (GridDhtPartitionDemandMessage)msg;
 
-                return CU.cacheId(DEFAULT_CACHE_NAME) == demandMsg.groupId();
+                return CU.cacheId(DEFAULT_CACHE_NAME) == demandMessage.groupId();
             }
 
             return false;

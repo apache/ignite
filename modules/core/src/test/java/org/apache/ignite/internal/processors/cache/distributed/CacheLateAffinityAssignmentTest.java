@@ -1332,9 +1332,9 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             }
         });
 
-        AffinityTopologyVersion curTop = ignite(0).context().cache().context().exchange().readyAffinityVersion();
+        AffinityTopologyVersion currentTop = ignite(0).context().cache().context().exchange().readyAffinityVersion();
 
-        checkAffinity(cnt, curTop, true);
+        checkAffinity(cnt, currentTop, true);
 
         stopNode(stopId, ord);
 
@@ -1748,7 +1748,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             blockSupplySend(commSpi0, CACHE_NAME1);
 
-            final IgniteInternalFuture<?> startedFut = multithreadedAsync(new Callable<Void>() {
+            final IgniteInternalFuture<?> startedFuture = multithreadedAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
                     startServer(3, 5);
 
@@ -1762,12 +1762,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             boolean started = waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return startedFut.isDone();
+                    return startedFuture.isDone();
                 }
             }, 10_000);
 
             if (!started)
-                startedFut.cancel();
+                startedFuture.cancel();
 
             assertTrue(started);
 

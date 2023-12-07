@@ -107,17 +107,17 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
         //when: transaction is opening
         final Transaction tx1 = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
-        int locKeysNum = 0;
+        int localKeysNum = 0;
 
         for (int i = 0; i < keysNumber; i++) {
             cache.put(i, "");
 
             if (affinity(cache).isPrimary(ignite.localNode(), i))
-                locKeysNum++;
+                localKeysNum++;
         }
 
         //then:
-        assertEquals(locKeysNum, mreg.<LongMetric>findMetric("LockedKeysNumber").value());
+        assertEquals(localKeysNum, mreg.<LongMetric>findMetric("LockedKeysNumber").value());
         assertEquals(1, mreg.<LongMetric>findMetric("TransactionsHoldingLockNumber").value());
         assertEquals(1, mreg.<LongMetric>findMetric("OwnerTransactionsNumber").value());
 

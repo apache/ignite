@@ -161,9 +161,9 @@ public class GridDhtPartitionDemander {
             syncFut.onDone();
         }
 
-        String metricGrpName = metricName(CACHE_GROUP_METRICS_PREFIX, grp.cacheOrGroupName());
+        String metricGroupName = metricName(CACHE_GROUP_METRICS_PREFIX, grp.cacheOrGroupName());
 
-        MetricRegistry mreg = grp.shared().kernalContext().metric().registry(metricGrpName);
+        MetricRegistry mreg = grp.shared().kernalContext().metric().registry(metricGroupName);
 
         mreg.register("RebalancingPartitionsLeft", () -> rebalanceFut.partitionsLeft.get(),
             "The number of cache group partitions left to be rebalanced.");
@@ -1855,9 +1855,9 @@ public class GridDhtPartitionDemander {
             for (Set<Integer> partitions : rebalancingParts.values())
                 p0.addAll(partitions);
 
-            for (GridDhtPartitionDemandMessage msg : newAssignments.values()) {
-                p1.addAll(msg.partitions().fullSet());
-                p1.addAll(msg.partitions().historicalSet());
+            for (GridDhtPartitionDemandMessage message : newAssignments.values()) {
+                p1.addAll(message.partitions().fullSet());
+                p1.addAll(message.partitions().historicalSet());
             }
 
             // Not compatible if not a subset.

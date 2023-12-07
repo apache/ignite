@@ -73,9 +73,9 @@ public class JdbcThinSSLUtil {
      */
     public static SSLSocket createSSLSocket(InetSocketAddress addr, ConnectionProperties connProps) throws SQLException {
         try {
-            SSLSocketFactory sslSockFactory = getSSLSocketFactory(connProps);
+            SSLSocketFactory sslSocketFactory = getSSLSocketFactory(connProps);
 
-            SSLSocket sock = (SSLSocket)sslSockFactory.createSocket(addr.getAddress(), addr.getPort());
+            SSLSocket sock = (SSLSocket)sslSocketFactory.createSocket(addr.getAddress(), addr.getPort());
 
             sock.setUseClientMode(true);
 
@@ -181,9 +181,9 @@ public class JdbcThinSSLUtil {
             f.setCipherSuites(cipherSuites.split(","));
 
         try {
-            final SSLContext sslCtx = f.create();
+            final SSLContext sslContext = f.create();
 
-            return sslCtx.getSocketFactory();
+            return sslContext.getSocketFactory();
         }
         catch (IgniteException e) {
             final Throwable cause = e.getCause();

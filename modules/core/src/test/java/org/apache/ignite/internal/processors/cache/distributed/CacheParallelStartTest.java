@@ -197,8 +197,8 @@ public class CacheParallelStartTest extends GridCommonAbstractTest {
                     .cache()
                     .cacheGroup(CU.cacheId(STATIC_CACHE_CACHE_GROUP_NAME + i));
 
-            for (GridCacheContext cacheCtx : caches)
-                assertEquals(cacheCtx.group(), cacheGrp);
+            for (GridCacheContext cacheContext : caches)
+                assertEquals(cacheContext.group(), cacheGrp);
         }
     }
 }

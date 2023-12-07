@@ -255,8 +255,8 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
 
         ByteBuffer buf = ByteBuffer.allocate(64);
 
-        for (BigDecimal val : values) {
-            decVal = new DecimalValue(val);
+        for (BigDecimal value : values) {
+            decVal = new DecimalValue(value);
 
             binObj = toBinary(decVal, marsh);
 

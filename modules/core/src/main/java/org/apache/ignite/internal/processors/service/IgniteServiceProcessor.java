@@ -1713,11 +1713,11 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             }
 
             for (ServiceConfiguration srvcCfg : prepCfgs.cfgs) {
-                ServiceInfo srvcInfo = new ServiceInfo(ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true);
+                ServiceInfo serviceInfo = new ServiceInfo(ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true);
 
-                srvcInfo.context(ctx);
+                serviceInfo.context(ctx);
 
-                staticServicesInfo.add(srvcInfo);
+                staticServicesInfo.add(serviceInfo);
             }
         }
 

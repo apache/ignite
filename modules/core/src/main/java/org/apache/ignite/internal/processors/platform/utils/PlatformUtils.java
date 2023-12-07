@@ -861,9 +861,9 @@ public class PlatformUtils {
             return deserialize ? reader.readObject() : reader.readObjectDetached();
         else {
             // 3. Read whether exception is in form of object or string.
-            boolean hasE = reader.readBoolean();
+            boolean hasException = reader.readBoolean();
 
-            if (hasE) {
+            if (hasException) {
                 // 4. Full exception.
                 Object nativeErr = reader.readObjectDetached();
 

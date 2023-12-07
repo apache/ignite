@@ -87,10 +87,10 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
 
         AtomicBoolean txLoadStop = new AtomicBoolean();
 
-        AtomicInteger txLdrNo = new AtomicInteger(0);
+        AtomicInteger txLoaderNo = new AtomicInteger(0);
 
-        IgniteInternalFuture txLoadFut = GridTestUtils.runMultiThreadedAsync(() -> {
-            Ignite node = grid(txLdrNo.getAndIncrement());
+        IgniteInternalFuture txLoadFuture = GridTestUtils.runMultiThreadedAsync(() -> {
+            Ignite node = grid(txLoaderNo.getAndIncrement());
             IgniteCache<Object, Object> cache = node.cache(CACHE_NAME);
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -101,9 +101,9 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
                 try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     for (int it = 0; it < keys; it++) {
                         int key = rnd.nextInt(keysSpace);
-                        byte[] val = new byte[2048];
+                        byte[] value = new byte[2048];
 
-                        cache.put(key, val);
+                        cache.put(key, value);
                     }
                     tx.commit();
 
@@ -119,7 +119,7 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
 
         AtomicBoolean cacheRestartStop = new AtomicBoolean();
 
-        IgniteInternalFuture cacheRestartFut = GridTestUtils.runAsync(() -> {
+        IgniteInternalFuture cacheRestartFuture = GridTestUtils.runAsync(() -> {
             Ignite node = grid(0);
 
             final String tmpCacheName = "tmp";
@@ -156,8 +156,8 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
         cacheRestartStop.set(true);
         txLoadStop.set(true);
 
-        cacheRestartFut.get();
-        txLoadFut.get();
+        cacheRestartFuture.get();
+        txLoadFuture.get();
 
         Assert.assertFalse(hasRebalance.get());
     }

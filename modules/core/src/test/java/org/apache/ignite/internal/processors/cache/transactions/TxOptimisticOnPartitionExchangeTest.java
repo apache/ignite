@@ -130,10 +130,10 @@ public class TxOptimisticOnPartitionExchangeTest extends GridCommonAbstractTest 
 
         ClusterNode node = ignite(0).cluster().node();
 
-        GridCacheAffinityManager aff = ((IgniteCacheProxy)cache).context().affinity();
+        GridCacheAffinityManager affinity = ((IgniteCacheProxy)cache).context().affinity();
 
         for (int i = 0; txValues.size() < TX_SIZE; i++) {
-            if (!txInitiatorPrimary && node.equals(aff.primaryByKey(i, NONE)))
+            if (!txInitiatorPrimary && node.equals(affinity.primaryByKey(i, NONE)))
                 continue;
 
             txValues.put(i, i);

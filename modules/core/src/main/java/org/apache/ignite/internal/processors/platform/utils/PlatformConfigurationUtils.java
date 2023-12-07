@@ -1285,8 +1285,8 @@ public class PlatformConfigurationUtils {
         if (indexes != null) {
             writer.writeInt(indexes.size());
 
-            for (QueryIndex idx : indexes)
-                writeQueryIndex(writer, idx);
+            for (QueryIndex index : indexes)
+                writeQueryIndex(writer, index);
         }
         else
             writer.writeInt(0);

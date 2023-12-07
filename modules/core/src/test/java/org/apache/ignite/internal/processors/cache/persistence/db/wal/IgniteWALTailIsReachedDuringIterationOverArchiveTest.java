@@ -119,9 +119,9 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
 
         File walArchiveDir = U.field(wal, "walArchiveDir");
 
-        IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory();
+        IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory();
 
-        doTest(wal, iterFactory.iterator(walArchiveDir));
+        doTest(wal, iteratorFactory.iterator(walArchiveDir));
     }
 
     /**
@@ -146,31 +146,31 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
     private void doTest(IgniteWriteAheadLogManager walMgr, WALIterator it) throws IOException, IgniteCheckedException {
         File walArchiveDir = U.field(walMgr, "walArchiveDir");
 
-        IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory();
+        IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory();
 
-        List<FileDescriptor> descs = iterFactory.resolveWalFiles(
+        List<FileDescriptor> descs = iteratorFactory.resolveWalFiles(
             new IteratorParametersBuilder()
                 .filesOrDirs(walArchiveDir)
         );
 
-        int maxIdx = descs.size() - 1;
-        int minIdx = 1;
+        int maxIndex = descs.size() - 1;
+        int minIndex = 1;
 
-        int corruptedIdx = current().nextInt(minIdx, maxIdx);
+        int corruptedIdx = current().nextInt(minIndex, maxIndex);
 
         log.info("Corrupted segment with idx:" + corruptedIdx);
 
         WALPointer corruptedPtr = corruptedWAlSegmentFile(
             descs.get(corruptedIdx),
             new RandomAccessFileIOFactory(),
-            iterFactory
+            iteratorFactory
         );
 
         log.info("Should fail on ptr " + corruptedPtr);
 
         WALPointer lastReadPtr = null;
 
-        boolean ex = false;
+        boolean exception = false;
 
         try (WALIterator it0 = it) {
             while (it0.hasNextX()) {
@@ -182,12 +182,12 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
         catch (IgniteCheckedException e) {
             if (e.getMessage().contains("WAL tail reached in archive directory, WAL segment file is corrupted")
                 || e.getMessage().contains("WAL tail reached not in the last available segment"))
-                ex = true;
+                exception = true;
         }
 
         Assert.assertNotNull(lastReadPtr);
 
-        if (!ex) {
+        if (!exception) {
             fail("Last read ptr=" + lastReadPtr + ", corruptedPtr=" + corruptedPtr);
         }
     }

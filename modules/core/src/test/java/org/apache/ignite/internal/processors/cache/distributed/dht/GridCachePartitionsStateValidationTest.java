@@ -167,7 +167,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
             final AtomicBoolean stop = new AtomicBoolean();
 
             // Run atomic load.
-            IgniteInternalFuture atomicLoadFut = GridTestUtils.runMultiThreadedAsync(() -> {
+            IgniteInternalFuture atomicLoadFuture = GridTestUtils.runMultiThreadedAsync(() -> {
                 int k = 0;
 
                 while (!stop.get()) {
@@ -182,7 +182,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
             }, 1, "atomic-load");
 
             // Run tx load.
-            IgniteInternalFuture txLoadFut = GridTestUtils.runMultiThreadedAsync(() -> {
+            IgniteInternalFuture txLoadFuture = GridTestUtils.runMultiThreadedAsync(() -> {
                 final int txOps = 5;
 
                 while (!stop.get()) {
@@ -210,7 +210,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
             spi.blockFullMessage();
 
             // Trigger exchange.
-            IgniteInternalFuture nodeStopFut = GridTestUtils.runAsync(() -> stopGrid(3));
+            IgniteInternalFuture nodeStopFuture = GridTestUtils.runAsync(() -> stopGrid(3));
 
             try {
                 spi.waitUntilAllSingleMessagesAreSent();
@@ -243,9 +243,9 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
 
                 stop.set(true);
 
-                atomicLoadFut.get();
-                txLoadFut.get();
-                nodeStopFut.get();
+                atomicLoadFuture.get();
+                txLoadFuture.get();
+                nodeStopFuture.get();
             }
 
             // Return grid to initial state.

@@ -87,16 +87,16 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         memMgr = new PlatformMemoryManagerImpl(gate, 1024);
 
-        PlatformLogger log = null;
+        PlatformLogger logger = null;
 
         if (useLogger) {
-            log = new PlatformLogger();
-            log.setGateway(gate);
-            igniteCfg.setGridLogger(log);
+            logger = new PlatformLogger();
+            logger.setGateway(gate);
+            igniteCfg.setGridLogger(logger);
         }
 
         PlatformDotNetConfigurationEx dotNetCfg0 = new PlatformDotNetConfigurationEx(dotNetCfg, gate, memMgr,
-            log);
+            logger);
 
         igniteCfg.setPlatformConfiguration(dotNetCfg0);
 

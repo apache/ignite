@@ -802,8 +802,8 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             }
 
             case OP_NODE_VERSION: {
-                IgniteProductVersion productVer = ignite().cluster().node().version();
-                PlatformUtils.writeNodeVersion(writer, productVer);
+                IgniteProductVersion productVersion = ignite().cluster().node().version();
+                PlatformUtils.writeNodeVersion(writer, productVersion);
 
                 return;
             }

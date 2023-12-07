@@ -555,11 +555,11 @@ public class PlatformServices extends PlatformAbstractTarget {
             Object arg = args[i];
 
             if (arg instanceof Object[]) {
-                Class<?> paramType = mtd.getParameterTypes()[i];
+                Class<?> parameterType = mtd.getParameterTypes()[i];
 
-                if (paramType.isArray() && paramType != Object[].class) {
+                if (parameterType.isArray() && parameterType != Object[].class) {
                     Object[] arr = (Object[])arg;
-                    Object newArg = Array.newInstance(paramType.getComponentType(), arr.length);
+                    Object newArg = Array.newInstance(parameterType.getComponentType(), arr.length);
 
                     for (int j = 0; j < arr.length; j++)
                         Array.set(newArg, j, arr[j]);

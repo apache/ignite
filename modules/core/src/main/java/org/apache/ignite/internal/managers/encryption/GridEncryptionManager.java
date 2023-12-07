@@ -697,7 +697,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 "Unable to get the master key digest.", e));
         }
 
-        MasterKeyChangeRequest req = new MasterKeyChangeRequest(UUID.randomUUID(), encryptKeyName(masterKeyName),
+        MasterKeyChangeRequest request = new MasterKeyChangeRequest(UUID.randomUUID(), encryptKeyName(masterKeyName),
             digest);
 
         synchronized (opsMux) {
@@ -717,9 +717,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                     "The previous change was not completed."));
             }
 
-            masterKeyChangeFut = new KeyChangeFuture(req.requestId());
+            masterKeyChangeFut = new KeyChangeFuture(request.requestId());
 
-            prepareMKChangeProc.start(req.requestId(), req);
+            prepareMKChangeProc.start(request.requestId(), request);
 
             return new IgniteFutureImpl<>(masterKeyChangeFut);
         }

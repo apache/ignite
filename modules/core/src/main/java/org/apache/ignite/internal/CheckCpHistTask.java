@@ -132,8 +132,8 @@ public class CheckCpHistTask extends ComputeTaskAdapter<Map<UUID, Map<Integer, S
 
             if (igniteEx.context().cache().context().database() instanceof GridCacheDatabaseSharedManager) {
                 GridCacheSharedContext cctx = igniteEx.context().cache().context();
-                GridCacheDatabaseSharedManager dbMng = (GridCacheDatabaseSharedManager)cctx.database();
-                CheckpointHistory cpHist = dbMng.checkpointHistory();
+                GridCacheDatabaseSharedManager databaseMng = (GridCacheDatabaseSharedManager)cctx.database();
+                CheckpointHistory cpHist = databaseMng.checkpointHistory();
 
                 CheckpointEntry lastCp = cpHist.lastCheckpoint();
 
@@ -145,16 +145,16 @@ public class CheckCpHistTask extends ComputeTaskAdapter<Map<UUID, Map<Integer, S
                             return false;
 
                         if (!cpHist.isCheckpointApplicableForGroup(grpId, lastCp)) {
-                            dbMng.forceCheckpoint(CP_REASON);
+                            databaseMng.forceCheckpoint(CP_REASON);
 
                             break;
                         }
 
-                        CheckpointEntry.GroupState grpState = states.get(grpId);
+                        CheckpointEntry.GroupState groupState = states.get(grpId);
 
                         for (int p : grpIds.get(grpId)) {
-                            if (grpState.indexByPartition(p) < 0) {
-                                dbMng.forceCheckpoint(CP_REASON);
+                            if (groupState.indexByPartition(p) < 0) {
+                                databaseMng.forceCheckpoint(CP_REASON);
 
                                 break;
                             }

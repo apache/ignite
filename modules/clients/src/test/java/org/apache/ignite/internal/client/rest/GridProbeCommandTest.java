@@ -58,22 +58,22 @@ public class GridProbeCommandTest extends GridCommonAbstractTest {
 
         boolean isHTTP_OK = conn.getResponseCode() == HttpURLConnection.HTTP_OK;
 
-        Map<String, Object> restRes = null;
+        Map<String, Object> restResponse = null;
 
         try (InputStreamReader streamReader = new InputStreamReader(isHTTP_OK ? conn.getInputStream() : conn.getErrorStream())) {
 
             ObjectMapper objMapper = new ObjectMapper();
-            restRes = objMapper.readValue(streamReader,
+            restResponse = objMapper.readValue(streamReader,
                 new TypeReference<Map<String, Object>>() {
                 });
 
-            log.info("probe command response is: " + restRes);
+            log.info("probe command response is: " + restResponse);
 
         }
         catch (Exception e) {
             log.error("error executing probe rest command", e);
         }
-        return restRes;
+        return restResponse;
 
     }
 
@@ -146,21 +146,21 @@ public class GridProbeCommandTest extends GridCommonAbstractTest {
             }
         }).start();
 
-        Map<String, Object> probeRestCmdRes;
+        Map<String, Object> probeRestCommandResponse;
 
         log.info("awaiting plugin handler latch");
         triggerPluginStartLatch.await();
         log.info("starting rest command url call");
         try {
-            probeRestCmdRes = executeProbeRestRequest();
+            probeRestCommandResponse = executeProbeRestRequest();
             log.info("finished rest command url call");
         }
         finally {
             triggerRestCmdLatch.countDown(); //make sure the grid shuts down
         }
 
-        assertTrue(probeRestCmdRes.get("error").equals("grid has not started"));
-        assertEquals(GridRestResponse.SERVICE_UNAVAILABLE, probeRestCmdRes.get("successStatus"));
+        assertTrue(probeRestCommandResponse.get("error").equals("grid has not started"));
+        assertEquals(GridRestResponse.SERVICE_UNAVAILABLE, probeRestCommandResponse.get("successStatus"));
     }
 
     /**
@@ -172,12 +172,12 @@ public class GridProbeCommandTest extends GridCommonAbstractTest {
     public void testRestProbeCommandGridStarted() throws Exception {
         startGrid("regular");
 
-        Map<String, Object> probeRestCmdRes;
+        Map<String, Object> probeRestCommandResponse;
 
-        probeRestCmdRes = executeProbeRestRequest();
+        probeRestCommandResponse = executeProbeRestRequest();
 
-        assertTrue(probeRestCmdRes.get("response").equals("grid has started"));
-        assertEquals(0, probeRestCmdRes.get("successStatus"));
+        assertTrue(probeRestCommandResponse.get("response").equals("grid has started"));
+        assertEquals(0, probeRestCommandResponse.get("successStatus"));
     }
 
     /**

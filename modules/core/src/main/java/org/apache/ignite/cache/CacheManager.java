@@ -395,12 +395,12 @@ public class CacheManager implements javax.cache.CacheManager {
         Set<ObjectName> registeredObjNames = mBeanSrv.queryNames(getObjectName(name, beanType), null);
 
         //should just be one
-        for (ObjectName registeredObjName : registeredObjNames) {
+        for (ObjectName registeredObjectName : registeredObjNames) {
             try {
-                mBeanSrv.unregisterMBean(registeredObjName);
+                mBeanSrv.unregisterMBean(registeredObjectName);
             }
             catch (Exception e) {
-                throw new CacheException("Error unregistering object instance " + registeredObjName
+                throw new CacheException("Error unregistering object instance " + registeredObjectName
                     + " . Error was " + e.getMessage(), e);
             }
         }

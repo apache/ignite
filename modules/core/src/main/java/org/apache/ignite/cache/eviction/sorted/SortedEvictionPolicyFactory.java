@@ -90,13 +90,13 @@ public class SortedEvictionPolicyFactory<K, V> extends AbstractEvictionPolicyFac
 
     /** {@inheritDoc} */
     @Override public SortedEvictionPolicy<K, V> create() {
-        SortedEvictionPolicy<K, V> plc = new SortedEvictionPolicy<>(comp);
+        SortedEvictionPolicy<K, V> policy = new SortedEvictionPolicy<>(comp);
 
-        plc.setBatchSize(getBatchSize());
-        plc.setMaxMemorySize(getMaxMemorySize());
-        plc.setMaxSize(getMaxSize());
+        policy.setBatchSize(getBatchSize());
+        policy.setMaxMemorySize(getMaxMemorySize());
+        policy.setMaxSize(getMaxSize());
 
-        return plc;
+        return policy;
     }
 
 }

@@ -120,10 +120,10 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        MemoryEventStorageSpi evtSpi = new MemoryEventStorageSpi();
-        evtSpi.setExpireCount(50);
+        MemoryEventStorageSpi eventSpi = new MemoryEventStorageSpi();
+        eventSpi.setExpireCount(50);
 
-        cfg.setEventStorageSpi(evtSpi);
+        cfg.setEventStorageSpi(eventSpi);
 
         return cfg;
     }

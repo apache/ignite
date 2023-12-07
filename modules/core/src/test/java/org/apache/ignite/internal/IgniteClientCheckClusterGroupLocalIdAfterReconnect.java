@@ -117,11 +117,11 @@ public class IgniteClientCheckClusterGroupLocalIdAfterReconnect extends GridComm
         startGrid(0);
 
         // wait for client reconnect
-        IgniteFuture fut = client.cluster().clientReconnectFuture();
+        IgniteFuture future = client.cluster().clientReconnectFuture();
 
-        assertNotNull(fut);
+        assertNotNull(future);
 
-        fut.get(20_000);   // throws if times out
+        future.get(20_000);   // throws if times out
 
         ClusterGroup cg2 = client.cluster().forLocal();
 

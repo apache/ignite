@@ -444,18 +444,18 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(key, val,
                                     txEntry.cached().version(), keepBinary, txEntry.cached());
 
-                                EntryProcessor<Object, Object, Object> proc = t.get1();
+                                EntryProcessor<Object, Object, Object> processor = t.get1();
 
                                 IgniteThread.onEntryProcessorEntered(false);
 
                                 if (cctx.kernalContext().deploy().enabled() &&
-                                    cctx.kernalContext().deploy().isGlobalLoader(proc.getClass().getClassLoader())) {
+                                    cctx.kernalContext().deploy().isGlobalLoader(processor.getClass().getClassLoader())) {
                                     U.restoreDeploymentContext(cctx.kernalContext(), cctx.kernalContext()
-                                        .deploy().getClassLoaderId(proc.getClass().getClassLoader()));
+                                        .deploy().getClassLoaderId(processor.getClass().getClassLoader()));
                                 }
 
                                 try {
-                                    procRes = proc.process(invokeEntry, t.get2());
+                                    procRes = processor.process(invokeEntry, t.get2());
 
                                     val = cacheCtx.toCacheObject(invokeEntry.getValue(true));
 

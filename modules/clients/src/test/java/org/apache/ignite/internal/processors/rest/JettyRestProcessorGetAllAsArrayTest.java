@@ -71,12 +71,12 @@ public class JettyRestProcessorGetAllAsArrayTest extends JettyRestProcessorCommo
 
         assertTrue(res.isArray());
 
-        Set<Map<String, String>> returnVal = new HashSet<>();
+        Set<Map<String, String>> returnValue = new HashSet<>();
 
-        returnVal.add(F.asMap("key", "getKey1", "value", "getVal1"));
-        returnVal.add(F.asMap("key", "getKey2", "value", "getVal2"));
+        returnValue.add(F.asMap("key", "getKey1", "value", "getVal1"));
+        returnValue.add(F.asMap("key", "getKey2", "value", "getVal2"));
 
-        assertEquals(returnVal, JSON_MAPPER.treeToValue(res, Set.class));
+        assertEquals(returnValue, JSON_MAPPER.treeToValue(res, Set.class));
     }
 
     /** {@inheritDoc} */

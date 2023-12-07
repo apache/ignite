@@ -213,11 +213,11 @@ public class CachesRegistry {
      * Awaits last registered caches configurations persist future.
      */
     private void waitLastRegistration() {
-        IgniteInternalFuture<?> curFut = cachesConfPersistFuture;
+        IgniteInternalFuture<?> currentFut = cachesConfPersistFuture;
 
-        if (curFut != null && !curFut.isDone()) {
+        if (currentFut != null && !currentFut.isDone()) {
             try {
-                curFut.get();
+                currentFut.get();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to wait for last registered caches registration future", e);

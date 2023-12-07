@@ -935,8 +935,8 @@ public class H2Utils {
                 return true;
             if (o == null || getClass() != o.getClass())
                 return false;
-            ValueRuntimeSimpleObject<?> obj = (ValueRuntimeSimpleObject<?>)o;
-            return Objects.equals(val, obj.val);
+            ValueRuntimeSimpleObject<?> object = (ValueRuntimeSimpleObject<?>)o;
+            return Objects.equals(val, object.val);
         }
 
         /** {@inheritDoc} */

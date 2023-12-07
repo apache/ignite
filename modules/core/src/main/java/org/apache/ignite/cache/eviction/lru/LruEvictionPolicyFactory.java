@@ -64,12 +64,12 @@ public class LruEvictionPolicyFactory<K, V> extends AbstractEvictionPolicyFactor
 
     /** {@inheritDoc} */
     @Override public LruEvictionPolicy<K, V> create() {
-        LruEvictionPolicy<K, V> plc = new LruEvictionPolicy<>();
+        LruEvictionPolicy<K, V> policy = new LruEvictionPolicy<>();
 
-        plc.setBatchSize(getBatchSize());
-        plc.setMaxMemorySize(getMaxMemorySize());
-        plc.setMaxSize(getMaxSize());
+        policy.setBatchSize(getBatchSize());
+        policy.setMaxMemorySize(getMaxMemorySize());
+        policy.setMaxSize(getMaxSize());
 
-        return plc;
+        return policy;
     }
 }

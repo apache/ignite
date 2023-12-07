@@ -521,10 +521,10 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                         break;
 
                     case OTHER:
-                        Object resObj = readObject();
+                        Object resObject = readObject();
 
                         if (t.field() != null)
-                            setObject(obj, t.offset(), resObj);
+                            setObject(obj, t.offset(), resObject);
                 }
             }
             catch (IOException e) {

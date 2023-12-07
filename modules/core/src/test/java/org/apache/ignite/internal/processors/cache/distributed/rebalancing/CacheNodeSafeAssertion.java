@@ -57,9 +57,9 @@ public class CacheNodeSafeAssertion implements Assertion {
 
     /** {@inheritDoc} */
     @Override public void test() throws AssertionError {
-        Affinity<?> aff = ignite.affinity(cacheName);
+        Affinity<?> affinity = ignite.affinity(cacheName);
 
-        int partCnt = aff.partitions();
+        int partCnt = affinity.partitions();
 
         boolean hostSafe = true;
 
@@ -68,7 +68,7 @@ public class CacheNodeSafeAssertion implements Assertion {
         for (int x = 0; x < partCnt; ++x) {
             // Results are returned with the primary node first and backups after. We want to ensure that there is at
             // least one backup on a different host.
-            Collection<ClusterNode> results = aff.mapPartitionToPrimaryAndBackups(x);
+            Collection<ClusterNode> results = affinity.mapPartitionToPrimaryAndBackups(x);
 
             Iterator<ClusterNode> nodes = results.iterator();
 

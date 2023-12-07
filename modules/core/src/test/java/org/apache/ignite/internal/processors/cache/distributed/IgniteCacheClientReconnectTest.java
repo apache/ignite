@@ -207,10 +207,10 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
         for (int i = 0; i < CACHES; i++) {
             cacheName = "cache-" + i;
 
-            Affinity<Object> refAff = refSrv.affinity(cacheName);
+            Affinity<Object> refAffinity = refSrv.affinity(cacheName);
 
             for (int j = 0; j < PARTITIONS_CNT; j++) {
-                ClusterNode refAffNode = refAff.mapPartitionToNode(j);
+                ClusterNode refAffNode = refAffinity.mapPartitionToNode(j);
 
                 assertNotNull("Affinity node for " + j + " partition is null", refAffNode);
 

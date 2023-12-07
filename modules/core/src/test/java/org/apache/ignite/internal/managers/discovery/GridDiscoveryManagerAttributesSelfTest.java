@@ -395,9 +395,9 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      */
     protected void checkIsClientFlag(IgniteEx g) {
         boolean isClientDiscovery = g.context().discovery().localNode().isClient();
-        boolean isClientCfg = g.configuration().isClientMode() == null ? false : g.configuration().isClientMode();
+        boolean isClientConfig = g.configuration().isClientMode() == null ? false : g.configuration().isClientMode();
 
-        assertEquals(isClientCfg, isClientDiscovery);
+        assertEquals(isClientConfig, isClientDiscovery);
     }
 
     /**

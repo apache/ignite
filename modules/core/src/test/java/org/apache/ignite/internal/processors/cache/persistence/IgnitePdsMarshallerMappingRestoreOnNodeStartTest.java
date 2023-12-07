@@ -36,13 +36,13 @@ import org.junit.Test;
 public class IgnitePdsMarshallerMappingRestoreOnNodeStartTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        int gridIdx = getTestIgniteInstanceIndex(gridName);
+        int gridIndex = getTestIgniteInstanceIndex(gridName);
 
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         String tmpDir = System.getProperty("java.io.tmpdir");
 
-        cfg.setWorkDirectory(Paths.get(tmpDir, "srv" + gridIdx).toString());
+        cfg.setWorkDirectory(Paths.get(tmpDir, "srv" + gridIndex).toString());
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()

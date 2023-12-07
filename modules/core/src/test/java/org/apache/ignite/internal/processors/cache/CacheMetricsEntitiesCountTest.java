@@ -198,19 +198,19 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
 
         CacheMetricsImpl metrics = cache.metrics0();
 
-        long offHeapEntriesCnt = cache.offHeapEntriesCount();
+        long offHeapEntriesCount = cache.offHeapEntriesCount();
 
-        long offHeapPrimaryEntriesCnt = cctx.offheap().cacheEntriesCount(cctx.cacheId(),
+        long offHeapPrimaryEntriesCount = cctx.offheap().cacheEntriesCount(cctx.cacheId(),
             true,
             false,
             cctx.affinity().affinityTopologyVersion());
 
-        long offHeapBackupEntriesCnt = cctx.offheap().cacheEntriesCount(cctx.cacheId(),
+        long offHeapBackupEntriesCount = cctx.offheap().cacheEntriesCount(cctx.cacheId(),
             false,
             true,
             cctx.affinity().affinityTopologyVersion());
 
-        long heapEntriesCnt = cache.localSizeLong(ONHEAP_PEEK_MODES);
+        long heapEntriesCount = cache.localSizeLong(ONHEAP_PEEK_MODES);
 
         long cacheSize = cache.localSizeLong(new CachePeekMode[]{CachePeekMode.PRIMARY});
         int size = cache.localSize(new CachePeekMode[]{CachePeekMode.PRIMARY});
@@ -222,12 +222,12 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
         log.info("Checking cache,  " + cacheInfo);
 
         assertEquals(cacheInfo + " offHeapEntriesCount",
-            offHeapEntriesCnt, metrics.getOffHeapEntriesCount());
+            offHeapEntriesCount, metrics.getOffHeapEntriesCount());
         assertEquals(cacheInfo + " offHeapBackupEntriesCount",
-            offHeapBackupEntriesCnt, metrics.getOffHeapBackupEntriesCount());
+            offHeapBackupEntriesCount, metrics.getOffHeapBackupEntriesCount());
         assertEquals(cacheInfo + " offHeapPrimaryEntriesCount",
-            offHeapPrimaryEntriesCnt, metrics.getOffHeapPrimaryEntriesCount());
-        assertEquals(cacheInfo + " heapEntriesCount", heapEntriesCnt, metrics.getHeapEntriesCount());
+            offHeapPrimaryEntriesCount, metrics.getOffHeapPrimaryEntriesCount());
+        assertEquals(cacheInfo + " heapEntriesCount", heapEntriesCount, metrics.getHeapEntriesCount());
         assertEquals(cacheInfo + " size", size, metrics.getSize());
         assertEquals(cacheInfo + " keySize", size, metrics.getKeySize());
         assertEquals(cacheInfo + " cacheSize", cacheSize, metrics.getCacheSize());
@@ -238,10 +238,10 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
 
         assertNotNull(mreg);
 
-        assertEquals(offHeapEntriesCnt, ((LongMetric)mreg.findMetric("OffHeapEntriesCount")).value());
-        assertEquals(offHeapBackupEntriesCnt, ((LongMetric)mreg.findMetric("OffHeapBackupEntriesCount")).value());
-        assertEquals(offHeapPrimaryEntriesCnt, ((LongMetric)mreg.findMetric("OffHeapPrimaryEntriesCount")).value());
-        assertEquals(heapEntriesCnt, ((LongMetric)mreg.findMetric("HeapEntriesCount")).value());
+        assertEquals(offHeapEntriesCount, ((LongMetric)mreg.findMetric("OffHeapEntriesCount")).value());
+        assertEquals(offHeapBackupEntriesCount, ((LongMetric)mreg.findMetric("OffHeapBackupEntriesCount")).value());
+        assertEquals(offHeapPrimaryEntriesCount, ((LongMetric)mreg.findMetric("OffHeapPrimaryEntriesCount")).value());
+        assertEquals(heapEntriesCount, ((LongMetric)mreg.findMetric("HeapEntriesCount")).value());
         assertEquals(cacheSize, ((LongMetric)mreg.findMetric("CacheSize")).value());
     }
 

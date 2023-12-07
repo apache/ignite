@@ -698,7 +698,7 @@ public class GridMapQueryExecutor {
             if (req.timeout() > 0 || req.explicitTimeout())
                 fldsQry.setTimeout(req.timeout(), TimeUnit.MILLISECONDS);
 
-            boolean loc = true;
+            boolean local = true;
 
             final boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
 
@@ -706,15 +706,15 @@ public class GridMapQueryExecutor {
                 CU.firstPartitioned(ctx.cache().context(), cacheIds).config().getQueryParallelism() > 1) {
                 fldsQry.setDistributedJoins(true);
 
-                loc = false;
+                local = false;
             }
 
-            UpdateResult updRes = h2.executeUpdateOnDataNode(req.schemaName(), fldsQry, filter, cancel, loc);
+            UpdateResult updRes = h2.executeUpdateOnDataNode(req.schemaName(), fldsQry, filter, cancel, local);
 
             GridCacheContext<?, ?> mainCctx =
                 !F.isEmpty(cacheIds) ? ctx.cache().context().cacheContext(cacheIds.get(0)) : null;
 
-            boolean evt = loc && mainCctx != null && mainCctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED);
+            boolean evt = local && mainCctx != null && mainCctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED);
 
             if (evt) {
                 ctx.event().record(new CacheQueryExecutedEvent<>(

@@ -1754,11 +1754,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             for (int i = 0; i < cntrMap.size(); i++) {
                 int pId = cntrMap.partitionAt(i);
 
-                long initUpdateCntr = cntrMap.initialUpdateCounterAt(i);
+                long initialUpdateCntr = cntrMap.initialUpdateCounterAt(i);
                 long updateCntr = cntrMap.updateCounterAt(i);
 
                 if (this.cntrMap.updateCounter(pId) < updateCntr) {
-                    this.cntrMap.initialUpdateCounter(pId, initUpdateCntr);
+                    this.cntrMap.initialUpdateCounter(pId, initialUpdateCntr);
                     this.cntrMap.updateCounter(pId, updateCntr);
                 }
             }

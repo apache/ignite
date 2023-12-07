@@ -65,14 +65,14 @@ public class QueryEntityCaseMismatchTest extends GridCommonAbstractTest {
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        QueryEntity qryEntity = new QueryEntity("KeyType", Integer.class.getName());
+        QueryEntity queryEntity = new QueryEntity("KeyType", Integer.class.getName());
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
         fields.put("a", "TypeA");
         fields.put("b", "TypeB");
 
-        qryEntity.setFields(fields);
+        queryEntity.setFields(fields);
 
         //Specify key fields in upper register
         HashSet<String> keyFields = new HashSet<>();
@@ -80,9 +80,9 @@ public class QueryEntityCaseMismatchTest extends GridCommonAbstractTest {
         keyFields.add("a");
         keyFields.add("B");
 
-        qryEntity.setKeyFields(keyFields);
+        queryEntity.setKeyFields(keyFields);
 
-        ccfg.setQueryEntities(F.asList(qryEntity));
+        ccfg.setQueryEntities(F.asList(queryEntity));
 
         cfg.setCacheConfiguration(ccfg);
 

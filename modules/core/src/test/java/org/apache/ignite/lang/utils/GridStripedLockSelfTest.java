@@ -140,8 +140,8 @@ public class GridStripedLockSelfTest extends GridCommonAbstractTest {
                     try {
                         int holdCnt = 0;
 
-                        for (Object lockObj : testObjects(STRIPE_COUNT))
-                            if (((ReentrantLock)lock.getLock(lockObj)).isHeldByCurrentThread())
+                        for (Object lockObject : testObjects(STRIPE_COUNT))
+                            if (((ReentrantLock)lock.getLock(lockObject)).isHeldByCurrentThread())
                                 holdCnt++;
 
                         // null object considered 0-hash code, so they should appear twicely.

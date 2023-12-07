@@ -84,7 +84,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
     public void testMultithreadedUpdate() throws Exception {
         multithreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridTestClassLoader clsLdr = new GridTestClassLoader(
+                GridTestClassLoader classLoader = new GridTestClassLoader(
                     InternalExecutor.class.getName(),
                     MarshallerContextImpl.class.getName(),
                     MarshallerContextImpl.CombinedMap.class.getName(),
@@ -93,9 +93,9 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
                     MarshallerMappingTransport.class.getName()
                 );
 
-                Thread.currentThread().setContextClassLoader(clsLdr);
+                Thread.currentThread().setContextClassLoader(classLoader);
 
-                Class clazz = clsLdr.loadClass(InternalExecutor.class.getName());
+                Class clazz = classLoader.loadClass(InternalExecutor.class.getName());
 
                 Object internelExecutor = clazz.newInstance();
 
@@ -146,13 +146,13 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
         public void executeTest(GridTestLog4jLogger log, GridKernalContext ctx) throws Exception {
             counter.incrementAndGet();
 
-            MarshallerContextImpl marshallerCtx = new MarshallerContextImpl(null, null);
-            marshallerCtx.onMarshallerProcessorStarted(ctx, null);
+            MarshallerContextImpl marshallerContext = new MarshallerContextImpl(null, null);
+            marshallerContext.onMarshallerProcessorStarted(ctx, null);
 
             MarshallerMappingItem item = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
 
             for (int i = 0; i < 400; i++)
-                marshallerCtx.onMappingAccepted(item);
+                marshallerContext.onMappingAccepted(item);
         }
     }
 

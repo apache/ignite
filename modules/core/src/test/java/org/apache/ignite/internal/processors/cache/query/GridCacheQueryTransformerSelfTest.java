@@ -171,13 +171,13 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     public void testGetObjectFieldPartitioned() throws Exception {
         IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
 
-        Affinity<Integer> aff = affinity(cache);
+        Affinity<Integer> affinity = affinity(cache);
 
         try {
             int[] keys = new int[50];
 
             for (int i = 0, j = 0; i < keys.length; j++) {
-                if (aff.partition(j) == 0)
+                if (affinity.partition(j) == 0)
                     keys[i++] = j;
             }
 
@@ -607,10 +607,10 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
                     }
                 };
 
-            ScanQuery<Integer, Value> qry = new ScanQuery<>();
-            qry.setPageSize(pageSize);
+            ScanQuery<Integer, Value> query = new ScanQuery<>();
+            query.setPageSize(pageSize);
 
-            List<Integer> res = cache.query(qry, transformer).getAll();
+            List<Integer> res = cache.query(query, transformer).getAll();
 
             assertEquals(numEntries, res.size());
 

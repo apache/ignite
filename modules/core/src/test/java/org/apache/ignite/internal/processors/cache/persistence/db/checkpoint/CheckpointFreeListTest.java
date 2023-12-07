@@ -274,10 +274,10 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         CyclicBarrier nodeStartBarrier = new CyclicBarrier(2);
 
-        int approximateIterationCnt = SF.applyLB(10, 6);
+        int approximateIterationCount = SF.applyLB(10, 6);
 
         //Approximate count of entries to put per one iteration.
-        int iterationDataCnt = entriesToRemove.size() / approximateIterationCnt;
+        int iterationDataCount = entriesToRemove.size() / approximateIterationCount;
 
         startAsyncPutThread(entriesToRemove, nodeStartBarrier);
 
@@ -296,7 +296,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
             nodeStartBarrier.await();
             nodeStartBarrier.reset();
 
-            int awaitSize = entriesToRemove.size() - iterationDataCnt;
+            int awaitSize = entriesToRemove.size() - iterationDataCount;
 
             waitForCondition(() -> entriesToRemove.size() < awaitSize || entriesToRemove.size() == 0, 20000);
         }

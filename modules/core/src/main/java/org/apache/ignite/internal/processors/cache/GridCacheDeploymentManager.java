@@ -636,9 +636,9 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         if (cctx.gridConfig().getDeploymentMode() == CONTINUOUS)
             return null;
 
-        IgniteUuid locLdrId0 = localLdrId.get();
+        IgniteUuid localLdrId0 = localLdrId.get();
 
-        if (locLdrId0 != null) {
+        if (localLdrId0 != null) {
             GridDeploymentInfoBean deploymentInfoBean = getDepBean(deps.get(localLdrId.get()));
 
             if (deploymentInfoBean != null)

@@ -38,21 +38,21 @@ public class IncorrectQueryEntityTest extends GridCommonAbstractTest {
 
         CacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
 
-        QueryEntity qryEntity = new QueryEntity(Object.class.getName(), Object.class.getName());
+        QueryEntity queryEntity = new QueryEntity(Object.class.getName(), Object.class.getName());
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
         fields.put("exceptionOid", Object.class.getName());
 
-        qryEntity.setFields(fields);
+        queryEntity.setFields(fields);
 
         Set<String> keyFields = new HashSet<>();
 
         keyFields.add("exceptionOid");
 
-        qryEntity.setKeyFields(keyFields);
+        queryEntity.setKeyFields(keyFields);
 
-        dfltCacheCfg.setQueryEntities(F.asList(qryEntity));
+        dfltCacheCfg.setQueryEntities(F.asList(queryEntity));
 
         cfg.setCacheConfiguration(dfltCacheCfg);
 

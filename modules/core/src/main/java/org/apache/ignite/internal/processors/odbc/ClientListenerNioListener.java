@@ -171,7 +171,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         }
 
         ClientListenerMessageParser parser = connCtx.parser();
-        ClientListenerRequestHandler hnd = connCtx.handler();
+        ClientListenerRequestHandler handler = connCtx.handler();
 
         ClientListenerRequest req;
 
@@ -180,7 +180,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         }
         catch (Exception e) {
             try {
-                hnd.unregisterRequest(parser.decodeRequestId(msg));
+                handler.unregisterRequest(parser.decodeRequestId(msg));
             }
             catch (Exception e1) {
                 U.error(log, "Failed to unregister request.", e1);
@@ -208,7 +208,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             ClientListenerResponse resp;
 
             try (OperationSecurityContext s = ctx.security().withContext(connCtx.securityContext())) {
-                resp = hnd.handle(req);
+                resp = handler.handle(req);
             }
 
             if (resp != null) {
@@ -228,14 +228,14 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             }
         }
         catch (Throwable e) {
-            hnd.unregisterRequest(req.requestId());
+            handler.unregisterRequest(req.requestId());
 
             if (e instanceof Error)
                 U.error(log, "Failed to process client request [req=" + req + ", msg=" + e.getMessage() + "]", e);
             else
                 U.warn(log, "Failed to process client request [req=" + req + ", msg=" + e.getMessage() + "]", e);
 
-            ses.send(parser.encode(hnd.handleException(e, req)));
+            ses.send(parser.encode(handler.handleException(e, req)));
 
             if (e instanceof Error)
                 throw (Error)e;

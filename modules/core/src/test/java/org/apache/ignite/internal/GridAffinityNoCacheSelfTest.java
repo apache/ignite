@@ -72,13 +72,13 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
     private void checkAffinityProxyNoCache(Object key) {
         IgniteEx ignite = grid(0);
 
-        final Affinity<Object> aff = ignite.affinity("noCache");
+        final Affinity<Object> affinity = ignite.affinity("noCache");
 
-        assertFalse("Affinity proxy instance expected", aff instanceof GridCacheAffinityImpl);
+        assertFalse("Affinity proxy instance expected", affinity instanceof GridCacheAffinityImpl);
 
         final ClusterNode n = ignite.cluster().localNode();
 
-        assertAffinityMethodsException(aff, key, n);
+        assertAffinityMethodsException(affinity, key, n);
     }
 
     /**
@@ -109,9 +109,9 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        Affinity<Object> aff = grid.affinity(cacheName);
+        Affinity<Object> affinity = grid.affinity(cacheName);
 
-        assertTrue(aff instanceof GridCacheAffinityImpl);
+        assertTrue(affinity instanceof GridCacheAffinityImpl);
 
         final ClusterNode n = grid.cluster().localNode();
 

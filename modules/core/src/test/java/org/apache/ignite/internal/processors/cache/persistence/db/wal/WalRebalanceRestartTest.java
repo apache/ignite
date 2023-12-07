@@ -171,10 +171,10 @@ public class WalRebalanceRestartTest extends GridCommonAbstractTest {
      * @throws IgniteInterruptedCheckedException if failed.
      */
     private void waitForRebalanceOnLastDiscoTopology(IgniteEx ignite) throws IgniteInterruptedCheckedException {
-        AffinityTopologyVersion readyAff = ignite.context().cache().context().exchange().readyAffinityVersion();
+        AffinityTopologyVersion readyAffinity = ignite.context().cache().context().exchange().readyAffinityVersion();
 
-        assertTrue("Can not wait for rebalance topology [cur=" + rebTopVer + ", expect: " + readyAff + ']',
-            GridTestUtils.waitForCondition(() -> rebTopVer.equals(readyAff),
+        assertTrue("Can not wait for rebalance topology [cur=" + rebTopVer + ", expect: " + readyAffinity + ']',
+            GridTestUtils.waitForCondition(() -> rebTopVer.equals(readyAffinity),
                 10_000));
     }
 

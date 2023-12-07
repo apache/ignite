@@ -276,7 +276,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
         AtomicLong expLastCpBeforeLockDuration = new AtomicLong();
         AtomicLong expLastCpLockWaitDuration = new AtomicLong();
-        AtomicLong expLastCpListenersExecDuration = new AtomicLong();
+        AtomicLong expLastCpListenersExecuteDuration = new AtomicLong();
         AtomicLong expLastCpLockHoldDuration = new AtomicLong();
         AtomicLong expLastCpWalRecordFsyncDuration = new AtomicLong();
         AtomicLong expLastCpWriteEntryDuration = new AtomicLong();
@@ -291,7 +291,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
             expLastCpBeforeLockDuration.set(Long.parseLong(matcher.group(1)));
             expLastCpLockWaitDuration.set(Long.parseLong(matcher.group(2)));
-            expLastCpListenersExecDuration.set(Long.parseLong(matcher.group(3)));
+            expLastCpListenersExecuteDuration.set(Long.parseLong(matcher.group(3)));
             expLastCpLockHoldDuration.set(Long.parseLong(matcher.group(4)));
             expLastCpWalRecordFsyncDuration.set(Long.parseLong(matcher.group(5)));
             expLastCpWriteEntryDuration.set(Long.parseLong(matcher.group(6)));
@@ -314,7 +314,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
             AtomicLongMetric lastCpBeforeLockDuration = mreg.findMetric("LastCheckpointBeforeLockDuration");
             AtomicLongMetric lastCpLockWaitDuration = mreg.findMetric("LastCheckpointLockWaitDuration");
-            AtomicLongMetric lastCpListenersExecDuration = mreg.findMetric("LastCheckpointListenersExecuteDuration");
+            AtomicLongMetric lastCpListenersExecuteDuration = mreg.findMetric("LastCheckpointListenersExecuteDuration");
             AtomicLongMetric lastCpLockHoldDuration = mreg.findMetric("LastCheckpointLockHoldDuration");
             AtomicLongMetric lastCpWalRecordFsyncDuration = mreg.findMetric("LastCheckpointWalRecordFsyncDuration");
             AtomicLongMetric lastCpWriteEntryDuration = mreg.findMetric("LastCheckpointWriteEntryDuration");
@@ -323,7 +323,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
             HistogramMetric cpBeforeLockHistogram = mreg.findMetric("CheckpointBeforeLockHistogram");
             HistogramMetric cpLockWaitHistogram = mreg.findMetric("CheckpointLockWaitHistogram");
-            HistogramMetric cpListenersExecHistogram = mreg.findMetric("CheckpointListenersExecuteHistogram");
+            HistogramMetric cpListenersExecuteHistogram = mreg.findMetric("CheckpointListenersExecuteHistogram");
             HistogramMetric cpMarkHistogram = mreg.findMetric("CheckpointMarkHistogram");
             HistogramMetric cpLockHoldHistogram = mreg.findMetric("CheckpointLockHoldHistogram");
             HistogramMetric cpPagesWriteHistogram = mreg.findMetric("CheckpointPagesWriteHistogram");
@@ -337,7 +337,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
             assertEquals(cpCnt.get(), Arrays.stream(cpBeforeLockHistogram.value()).sum());
             assertEquals(cpCnt.get(), Arrays.stream(cpLockWaitHistogram.value()).sum());
-            assertEquals(cpCnt.get(), Arrays.stream(cpListenersExecHistogram.value()).sum());
+            assertEquals(cpCnt.get(), Arrays.stream(cpListenersExecuteHistogram.value()).sum());
             assertEquals(cpCnt.get(), Arrays.stream(cpMarkHistogram.value()).sum());
             assertEquals(cpCnt.get(), Arrays.stream(cpLockHoldHistogram.value()).sum());
             assertEquals(cpCnt.get(), Arrays.stream(cpPagesWriteHistogram.value()).sum());
@@ -348,7 +348,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
             assertEquals(expLastCpBeforeLockDuration.get(), lastCpBeforeLockDuration.value());
             assertEquals(expLastCpLockWaitDuration.get(), lastCpLockWaitDuration.value());
-            assertEquals(expLastCpListenersExecDuration.get(), lastCpListenersExecDuration.value());
+            assertEquals(expLastCpListenersExecuteDuration.get(), lastCpListenersExecuteDuration.value());
             assertEquals(expLastCpLockHoldDuration.get(), lastCpLockHoldDuration.value());
             assertEquals(expLastCpWalRecordFsyncDuration.get(), lastCpWalRecordFsyncDuration.value());
             assertEquals(expLastCpWriteEntryDuration.get(), lastCpWriteEntryDuration.value());

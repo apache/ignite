@@ -259,9 +259,9 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
     @Override public <K> UUID affinity(K key) throws GridClientException {
         A.notNull(key, "key");
 
-        GridClientDataAffinity aff = client.affinity(cacheName);
+        GridClientDataAffinity affinity = client.affinity(cacheName);
 
-        if (aff == null)
+        if (affinity == null)
             return null;
 
         Collection<? extends GridClientNode> prj = projectionNodes();
@@ -270,7 +270,7 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
             throw new GridClientException("Failed to get affinity node (projection node set for cache is empty): " +
                 cacheName());
 
-        GridClientNode node = aff.node(key, prj);
+        GridClientNode node = affinity.node(key, prj);
 
         assert node != null;
 

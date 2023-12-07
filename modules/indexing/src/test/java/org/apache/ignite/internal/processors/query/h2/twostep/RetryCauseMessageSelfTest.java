@@ -48,7 +48,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -319,11 +318,11 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
         final GridReduceQueryExecutor rdcQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "rdcQryExec");
         final ReducePartitionMapper mapper = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "mapper");
 
-        final IgniteLogger log = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "log");
+        final IgniteLogger logger = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "log");
         final GridKernalContext ctx = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "ctx");
 
         GridTestUtils.setFieldValue(rdcQryExec, "mapper",
-            new ReducePartitionMapper(ctx, log) {
+            new ReducePartitionMapper(ctx, logger) {
                 @Override public ReducePartitionMapResult nodesForPartitions(List<Integer> cacheIds,
                     AffinityTopologyVersion topVer, int[] parts, boolean isReplicatedOnly) {
                     final ReducePartitionMapResult res = super.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly);
@@ -335,7 +334,7 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
         try {
             SqlFieldsQuery qry = new SqlFieldsQuery(JOIN_SQL).setArgs("Organization #0");
 
-            final Throwable throwable = GridTestUtils.assertThrows(GridAbstractTest.log, () -> {
+            final Throwable throwable = GridTestUtils.assertThrows(log, () -> {
                 return personCache.query(qry).getAll();
             }, CacheException.class, "Failed to map SQL query to topology during timeout:");
 
@@ -354,11 +353,11 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
         final GridReduceQueryExecutor rdcQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "rdcQryExec");
         final ReducePartitionMapper mapper = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "mapper");
 
-        final IgniteLogger log = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "log");
+        final IgniteLogger logger = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "log");
         final GridKernalContext ctx = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "ctx");
 
         GridTestUtils.setFieldValue(rdcQryExec, "mapper",
-            new ReducePartitionMapper(ctx, log) {
+            new ReducePartitionMapper(ctx, logger) {
                 @Override public ReducePartitionMapResult nodesForPartitions(List<Integer> cacheIds,
                     AffinityTopologyVersion topVer, int[] parts, boolean isReplicatedOnly) {
                     final ReducePartitionMapResult res = super.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly);
@@ -371,14 +370,14 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
             final SqlFieldsQueryEx qry = new SqlFieldsQueryEx(UPDATE_SQL, false)
                 .setArgs("New Name");
 
-            GridTestUtils.assertThrows(GridAbstractTest.log, () -> {
+            GridTestUtils.assertThrows(log, () -> {
                 return personCache.query(qry).getAll();
             }, CacheException.class, "Failed to map SQL query to topology during timeout");
 
             qry.setArgs("Another Name");
             qry.setSkipReducerOnUpdate(true);
 
-            GridTestUtils.assertThrows(GridAbstractTest.log, () -> {
+            GridTestUtils.assertThrows(log, () -> {
                 return personCache.query(qry).getAll();
             }, CacheException.class, "Failed to determine nodes participating in the update. ");
         }

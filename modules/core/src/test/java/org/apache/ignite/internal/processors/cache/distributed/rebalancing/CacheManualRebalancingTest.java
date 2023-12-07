@@ -100,11 +100,11 @@ public class CacheManualRebalancingTest extends GridCommonAbstractTest {
         // Start manual rebalancing.
         IgniteCompute compute = newNode.compute();
 
-        final IgniteFuture<?> rebalanceTaskFut = compute.broadcastAsync(new MyCallable());
+        final IgniteFuture<?> rebalanceTaskFuture = compute.broadcastAsync(new MyCallable());
 
         boolean rebalanceFinished = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return rebalanceTaskFut.isDone();
+                return rebalanceTaskFuture.isDone();
             }
         }, 10_000);
 

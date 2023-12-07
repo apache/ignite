@@ -510,9 +510,9 @@ public class GridClientImpl implements GridClient, GridClientBeforeNodeStart {
             overallCaches.putAll(node.caches());
 
         for (Map.Entry<String, GridClientCacheMode> entry : overallCaches.entrySet()) {
-            GridClientDataAffinity aff = affinity(entry.getKey());
+            GridClientDataAffinity affinity = affinity(entry.getKey());
 
-            if (aff instanceof GridClientPartitionAffinity && entry.getValue() !=
+            if (affinity instanceof GridClientPartitionAffinity && entry.getValue() !=
                 GridClientCacheMode.PARTITIONED)
                 log.warning(GridClientPartitionAffinity.class.getSimpleName() + " is used for a cache configured " +
                     "for non-partitioned mode [cacheName=" + entry.getKey() + ", cacheMode=" + entry.getValue() + ']');

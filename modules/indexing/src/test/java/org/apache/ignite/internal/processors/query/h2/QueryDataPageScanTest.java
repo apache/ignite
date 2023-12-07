@@ -194,12 +194,12 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         IgniteCache<Long, Long> cache = server.createCache(ccfg);
 
         long accounts = 100;
-        long initBalance = 100;
+        long initialBalance = 100;
 
         for (long i = 0; i < accounts; i++)
-            cache.put(i, initBalance);
+            cache.put(i, initialBalance);
 
-        assertEquals(accounts * initBalance, ((Number)
+        assertEquals(accounts * initialBalance, ((Number)
             cache.query(new SqlFieldsQuery("select sum(_val) from Long use index()")
                 ).getAll().get(0).get(0)).longValue());
         assertTrue(CacheDataTree.isLastFindWithDataPageScan());
@@ -270,7 +270,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> qryFut = multithreadedAsync(() -> {
             while (!cancel.get() && !Thread.interrupted()) {
-                assertEquals("wrong sum!", accounts * initBalance, ((Number)
+                assertEquals("wrong sum!", accounts * initialBalance, ((Number)
                     cache.query(new SqlFieldsQuery("select sum(_val) from Long use index()")
                         ).getAll().get(0).get(0)).longValue());
 //                info("query ok!");

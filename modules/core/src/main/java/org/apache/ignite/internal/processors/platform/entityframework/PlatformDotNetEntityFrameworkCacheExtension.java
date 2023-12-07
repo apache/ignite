@@ -107,7 +107,7 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
             }
 
             case OP_PUT_ITEM: {
-                String qry = reader.readString();
+                String query = reader.readString();
 
                 long[] versions = null;
                 String[] entitySets = null;
@@ -132,7 +132,7 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
                 IgniteCache<PlatformDotNetEntityFrameworkCacheKey, PlatformDotNetEntityFrameworkCacheEntry> dataCache
                     = target.rawCache();
 
-                PlatformDotNetEntityFrameworkCacheKey key = new PlatformDotNetEntityFrameworkCacheKey(qry, versions);
+                PlatformDotNetEntityFrameworkCacheKey key = new PlatformDotNetEntityFrameworkCacheKey(query, versions);
 
                 dataCache.put(key, efEntry);
 
@@ -140,7 +140,7 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
             }
 
             case OP_GET_ITEM: {
-                String qry = reader.readString();
+                String query = reader.readString();
 
                 long[] versions = null;
 
@@ -156,7 +156,7 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
                 IgniteCache<PlatformDotNetEntityFrameworkCacheKey, PlatformDotNetEntityFrameworkCacheEntry> dataCache
                     = target.rawCache();
 
-                PlatformDotNetEntityFrameworkCacheKey key = new PlatformDotNetEntityFrameworkCacheKey(qry, versions);
+                PlatformDotNetEntityFrameworkCacheKey key = new PlatformDotNetEntityFrameworkCacheKey(query, versions);
 
                 PlatformDotNetEntityFrameworkCacheEntry entry = dataCache.get(key);
 
@@ -207,28 +207,28 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
      * @return True if successfully set the flag indicating that current node performs the cleanup; otherwise false.
      */
     private boolean trySetGlobalCleanupFlag(Ignite grid, final Cache<CleanupNodeId, UUID> metaCache) {
-        final UUID locNodeId = grid.cluster().localNode().id();
+        final UUID localNodeId = grid.cluster().localNode().id();
 
         while (true) {
             // Get the node performing cleanup.
             UUID nodeId = metaCache.get(CLEANUP_NODE_ID);
 
             if (nodeId == null) {
-                if (metaCache.putIfAbsent(CLEANUP_NODE_ID, locNodeId))
+                if (metaCache.putIfAbsent(CLEANUP_NODE_ID, localNodeId))
                     return true;  // Successfully reserved cleanup to local node.
 
                 // Failed putIfAbsent: someone else may have started cleanup. Retry the check.
                 continue;
             }
 
-            if (nodeId.equals(locNodeId))
+            if (nodeId.equals(localNodeId))
                 return false;  // Current node already performs cleanup.
 
             if (grid.cluster().node(nodeId) != null)
                 return false;  // Another node already performs cleanup and is alive.
 
             // Node that performs cleanup has disconnected.
-            if (metaCache.replace(CLEANUP_NODE_ID, nodeId, locNodeId))
+            if (metaCache.replace(CLEANUP_NODE_ID, nodeId, localNodeId))
                 return true;  // Successfully replaced disconnected node id with our id.
 
             // Replace failed: someone else started cleanup.
@@ -251,13 +251,13 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
 
         Set<PlatformDotNetEntityFrameworkCacheKey> keysToRemove = new TreeSet<>();
 
-        ClusterNode locNode = ignite.cluster().localNode();
+        ClusterNode localNode = ignite.cluster().localNode();
 
         for (Cache.Entry<PlatformDotNetEntityFrameworkCacheKey, PlatformDotNetEntityFrameworkCacheEntry> cacheEntry :
             cache.localEntries(CachePeekMode.ALL)) {
             // Check if we are on a primary node for the key, since we use CachePeekMode.ALL
             // and we don't want to process backup entries.
-            if (!ignite.affinity(dataCacheName).isPrimary(locNode, cacheEntry.getKey()))
+            if (!ignite.affinity(dataCacheName).isPrimary(localNode, cacheEntry.getKey()))
                 continue;
 
             long[] versions = cacheEntry.getKey().versions();

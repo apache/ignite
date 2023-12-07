@@ -137,7 +137,7 @@ public class IndexingDefragmentation {
         cpLock.checkpointReadLock();
 
         try {
-            TreeIterator treeIter = new TreeIterator(pageSize);
+            TreeIterator treeIterator = new TreeIterator(pageSize);
 
             GridCacheContext<?, ?> cctx = indexes.cctx;
 
@@ -155,7 +155,7 @@ public class IndexingDefragmentation {
                 int segments = oldIdx.segmentsCount();
 
                 for (int i = 0; i < segments; ++i) {
-                    treeIter.iterate(oldIdx.segment(i), oldCachePageMem, (theTree, io, pageAddr, idx) -> {
+                    treeIterator.iterate(oldIdx.segment(i), oldCachePageMem, (theTree, io, pageAddr, idx) -> {
                         cancellationChecker.run();
 
                         if (System.currentTimeMillis() - lastCpLockTs.get() >= cpLockThreshold) {

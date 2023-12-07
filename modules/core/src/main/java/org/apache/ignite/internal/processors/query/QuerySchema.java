@@ -124,10 +124,10 @@ public class QuerySchema implements Serializable {
                 return new QuerySchemaPatch(Collections.singletonList(op), Collections.emptyList(), "");
             }
 
-            Map<String, QueryEntity> locEntities = new HashMap<>();
+            Map<String, QueryEntity> localEntities = new HashMap<>();
 
             for (QueryEntity entity : entities) {
-                if (locEntities.put(entity.getTableName(), entity) != null)
+                if (localEntities.put(entity.getTableName(), entity) != null)
                     throw new IllegalStateException("Duplicate key");
             }
 
@@ -136,11 +136,11 @@ public class QuerySchema implements Serializable {
 
             StringBuilder conflicts = new StringBuilder();
 
-            for (QueryEntity qryEntity : target) {
-                if (locEntities.containsKey(qryEntity.getTableName())) {
-                    QueryEntity locEntity = locEntities.get(qryEntity.getTableName());
+            for (QueryEntity queryEntity : target) {
+                if (localEntities.containsKey(queryEntity.getTableName())) {
+                    QueryEntity localEntity = localEntities.get(queryEntity.getTableName());
 
-                    QueryEntityPatch entityPatch = locEntity.makePatch(qryEntity);
+                    QueryEntityPatch entityPatch = localEntity.makePatch(queryEntity);
 
                     if (entityPatch.hasConflict()) {
                         if (conflicts.length() > 0)
@@ -153,7 +153,7 @@ public class QuerySchema implements Serializable {
                         patchOperations.addAll(entityPatch.getPatchOperations());
                 }
                 else
-                    entityToAdd.add(QueryUtils.copy(qryEntity));
+                    entityToAdd.add(QueryUtils.copy(queryEntity));
             }
 
             return new QuerySchemaPatch(patchOperations, entityToAdd, conflicts.toString());

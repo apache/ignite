@@ -122,22 +122,22 @@ public class GracefulShutdownTest extends GridCacheDhtPreloadWaitForBackupsWithP
 
         assertSame(ignite0.cluster().shutdownPolicy(), ignite0.configuration().getShutdownPolicy());
 
-        ShutdownPolicy configuredPlc = ignite0.cluster().shutdownPolicy();
+        ShutdownPolicy configuredPolicy = ignite0.cluster().shutdownPolicy();
 
-        ShutdownPolicy plcToChange = null;
+        ShutdownPolicy policyToChange = null;
 
-        for (ShutdownPolicy plc : ShutdownPolicy.values()) {
-            if (plc != ignite0.cluster().shutdownPolicy())
-                plcToChange = plc;
+        for (ShutdownPolicy policy : ShutdownPolicy.values()) {
+            if (policy != ignite0.cluster().shutdownPolicy())
+                policyToChange = policy;
         }
 
-        assertNotNull(plcToChange);
+        assertNotNull(policyToChange);
 
-        ignite0.cluster().shutdownPolicy(plcToChange);
+        ignite0.cluster().shutdownPolicy(policyToChange);
 
         forceCheckpoint();
 
-        info("Policy to change: " + plcToChange);
+        info("Policy to change: " + policyToChange);
 
         ignite0.close();
 
@@ -147,7 +147,7 @@ public class GracefulShutdownTest extends GridCacheDhtPreloadWaitForBackupsWithP
 
         assertNotSame(ignite0.cluster().shutdownPolicy(), ignite0.configuration().getShutdownPolicy());
 
-        assertSame(ignite0.cluster().shutdownPolicy(), plcToChange);
+        assertSame(ignite0.cluster().shutdownPolicy(), policyToChange);
     }
 
     /**

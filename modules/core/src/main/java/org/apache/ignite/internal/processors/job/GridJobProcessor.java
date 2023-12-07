@@ -1284,10 +1284,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                     U.resolveClassLoader(dep.classLoader(), ctx.config()));
                         }
 
-                        IgnitePredicate<ClusterNode> topPred = req.getTopologyPredicate();
+                        IgnitePredicate<ClusterNode> topologyPred = req.getTopologyPredicate();
 
-                        if (topPred == null && req.getTopologyPredicateBytes() != null) {
-                            topPred = U.unmarshal(marsh, req.getTopologyPredicateBytes(),
+                        if (topologyPred == null && req.getTopologyPredicateBytes() != null) {
+                            topologyPred = U.unmarshal(marsh, req.getTopologyPredicateBytes(),
                                 U.resolveClassLoader(dep.classLoader(), ctx.config()));
                         }
 
@@ -1299,7 +1299,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             dep,
                             req.getTaskClassName(),
                             req.topology(),
-                            topPred,
+                            topologyPred,
                             req.getStartTaskTime(),
                             endTime,
                             siblings,
@@ -1484,12 +1484,12 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @return Deployment.
      */
     public GridDeployment currentDeployment() {
-        GridJobSessionImpl ses = currSess.get();
+        GridJobSessionImpl session = currSess.get();
 
-        if (ses == null || ses.deployment() == null)
+        if (session == null || session.deployment() == null)
             return null;
 
-        return ses.deployment();
+        return session.deployment();
     }
 
     /**

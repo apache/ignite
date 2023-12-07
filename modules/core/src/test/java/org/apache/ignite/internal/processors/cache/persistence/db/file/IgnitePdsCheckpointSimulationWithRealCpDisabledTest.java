@@ -271,7 +271,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         try (PartitionMetaStateRecordExcludeIterator it = new PartitionMetaStateRecordExcludeIterator(wal.replay(start))) {
             it.next();
 
-            for (FullPageId initWrite : initWrites) {
+            for (FullPageId initialWrite : initWrites) {
                 IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
                 assertTrue(String.valueOf(tup.get2()), tup.get2() instanceof PageSnapshot);
@@ -289,7 +289,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                     actual = ((PageSnapshot)tup.get2()).fullPageId();
                 }
 
-                assertEquals(initWrite, actual);
+                assertEquals(initialWrite, actual);
             }
         }
     }

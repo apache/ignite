@@ -1815,10 +1815,10 @@ public class GridNioServer<T> {
      * @param requests SessionWriteRequests.
      */
     private void onRequestsWritten(GridSelectorNioSessionImpl ses, List<SessionWriteRequest> requests) {
-        for (SessionWriteRequest req : requests) {
-            req.onMessageWritten();
+        for (SessionWriteRequest request : requests) {
+            request.onMessageWritten();
 
-            onMessageWritten(ses, (Message)req.message());
+            onMessageWritten(ses, (Message)request.message());
         }
     }
 

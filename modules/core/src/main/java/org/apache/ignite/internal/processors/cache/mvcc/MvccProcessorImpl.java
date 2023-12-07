@@ -1475,11 +1475,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      * @param msg Message.
      */
     private void processActiveQueriesMessage(UUID nodeId, MvccActiveQueriesMessage msg) {
-        GridLongList qryIds = msg.activeQueries();
+        GridLongList queryIds = msg.activeQueries();
 
-        assert qryIds != null;
+        assert queryIds != null;
 
-        prevQueries.addActiveQueries(nodeId, qryIds);
+        prevQueries.addActiveQueries(nodeId, queryIds);
     }
 
     /**

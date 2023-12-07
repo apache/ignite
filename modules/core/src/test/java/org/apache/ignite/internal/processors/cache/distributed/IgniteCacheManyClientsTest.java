@@ -64,10 +64,10 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
         cfg.setPeerClassLoadingEnabled(false);
         cfg.setTimeServerPortRange(200);
 
-        MemoryEventStorageSpi evtSpi = new MemoryEventStorageSpi();
-        evtSpi.setExpireCount(100);
+        MemoryEventStorageSpi eventSpi = new MemoryEventStorageSpi();
+        eventSpi.setExpireCount(100);
 
-        cfg.setEventStorageSpi(evtSpi);
+        cfg.setEventStorageSpi(eventSpi);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setLocalPortRange(200);
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);

@@ -371,7 +371,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
             if (interruptAll)
                 return true;
 
-            final Thread cur = Thread.currentThread();
+            final Thread current = Thread.currentThread();
 
             boolean failed = false;
 
@@ -379,10 +379,10 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
 
             // Wait for lock to reach stable state.
             while (c != 0) {
-                UUID curOwner = currentOwnerNode;
+                UUID currentOwner = currentOwnerNode;
 
-                if (curOwner != null) {
-                    failed = ctx.discovery().node(curOwner) == null;
+                if (currentOwner != null) {
+                    failed = ctx.discovery().node(currentOwner) == null;
 
                     break;
                 }
@@ -392,10 +392,10 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
 
             // Check if lock is released or current owner failed.
             if (c == 0 || failed) {
-                if (compareAndSetGlobalState(0, acquires, cur, fair)) {
+                if (compareAndSetGlobalState(0, acquires, current, fair)) {
 
                     // Not used for synchronization (we use ThreadID), but updated anyway.
-                    setExclusiveOwnerThread(cur);
+                    setExclusiveOwnerThread(current);
 
                     while (!isHeldExclusively() && !interruptAll)
                         Thread.yield();
@@ -414,8 +414,8 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
                 return true;
             }
 
-            if (fair && !isQueued(cur))
-                synchronizeQueue(false, cur);
+            if (fair && !isQueued(current))
+                synchronizeQueue(false, current);
 
             return false;
         }

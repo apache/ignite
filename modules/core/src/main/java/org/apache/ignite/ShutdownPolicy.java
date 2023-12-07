@@ -53,16 +53,16 @@ public enum ShutdownPolicy {
     private static final ShutdownPolicy[] VALS;
 
     static {
-        ShutdownPolicy[] plcTypes = ShutdownPolicy.values();
+        ShutdownPolicy[] policyTypes = ShutdownPolicy.values();
 
         int maxIdx = 0;
-        for (ShutdownPolicy recordType : plcTypes)
+        for (ShutdownPolicy recordType : policyTypes)
             maxIdx = Math.max(maxIdx, recordType.idx);
 
         VALS = new ShutdownPolicy[maxIdx + 1];
 
-        for (ShutdownPolicy plcType : plcTypes)
-            VALS[plcType.idx] = plcType;
+        for (ShutdownPolicy policyType : policyTypes)
+            VALS[policyType.idx] = policyType;
     }
 
     /**

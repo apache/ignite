@@ -87,9 +87,9 @@ class CacheGroupEncryptionKeys {
         if (keys == null)
             return null;
 
-        for (GroupKey grpKey : keys) {
-            if (grpKey.unsignedId() == keyId)
-                return grpKey;
+        for (GroupKey groupKey : keys) {
+            if (groupKey.unsignedId() == keyId)
+                return groupKey;
         }
 
         return null;
@@ -109,8 +109,8 @@ class CacheGroupEncryptionKeys {
 
         List<Integer> keyIds = new ArrayList<>(keys.size());
 
-        for (GroupKey grpKey : keys)
-            keyIds.add(grpKey.unsignedId());
+        for (GroupKey groupKey : keys)
+            keyIds.add(groupKey.unsignedId());
 
         return keyIds;
     }

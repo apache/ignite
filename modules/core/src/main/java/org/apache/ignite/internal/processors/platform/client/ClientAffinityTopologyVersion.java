@@ -61,10 +61,10 @@ public class ClientAffinityTopologyVersion {
      * @param writer Writer.
      */
     public void write(BinaryRawWriter writer) {
-        AffinityTopologyVersion affVer0 = version;
+        AffinityTopologyVersion affinityVer0 = version;
 
-        writer.writeLong(affVer0.topologyVersion());
-        writer.writeInt(affVer0.minorTopologyVersion());
+        writer.writeLong(affinityVer0.topologyVersion());
+        writer.writeInt(affinityVer0.minorTopologyVersion());
     }
 
     /** {@inheritDoc} */

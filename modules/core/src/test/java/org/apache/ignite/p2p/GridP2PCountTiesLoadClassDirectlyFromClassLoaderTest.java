@@ -62,23 +62,23 @@ public class GridP2PCountTiesLoadClassDirectlyFromClassLoaderTest extends GridCo
      */
     public void executeP2PTask(DeploymentMode depMode) throws Exception {
         try {
-            CountTriesClassLoader testCntLdr = new CountTriesClassLoader(Thread.currentThread()
+            CountTriesClassLoader testCountLdr = new CountTriesClassLoader(Thread.currentThread()
                 .getContextClassLoader());
 
             this.depMode = depMode;
 
-            Thread.currentThread().setContextClassLoader(testCntLdr);
+            Thread.currentThread().setContextClassLoader(testCountLdr);
 
             String path = GridTestProperties.getProperty(CLS_PATH_PROPERTY);
 
-            ClassLoader urlClsLdr = new URLClassLoader(new URL[] {new URL(path)}, testCntLdr);
+            ClassLoader urlClsLdr = new URLClassLoader(new URL[] {new URL(path)}, testCountLdr);
 
             Ignite ignite = startGrids(2);
 
             ignite.compute(ignite.cluster().forRemotes()).call((IgniteCallable)urlClsLdr.loadClass(COMPUTE_TASK_NAME)
                 .newInstance());
 
-            int cnt = testCntLdr.count;
+            int count = testCountLdr.count;
 
             ignite.compute(ignite.cluster().forRemotes()).call((IgniteCallable)urlClsLdr.loadClass(COMPUTE_TASK_NAME)
                 .newInstance());
@@ -87,7 +87,7 @@ public class GridP2PCountTiesLoadClassDirectlyFromClassLoaderTest extends GridCo
             ignite.compute(ignite.cluster().forRemotes()).call((IgniteCallable)urlClsLdr.loadClass(COMPUTE_TASK_NAME)
                 .newInstance());
 
-            assertEquals(cnt, testCntLdr.count);
+            assertEquals(count, testCountLdr.count);
         }
         finally {
             stopAllGrids();

@@ -94,31 +94,31 @@ public class GridCacheNearClientHitTest extends GridCommonAbstractTest {
 
             cache.put(remoteKey, remoteKey);
 
-            Object val = nearCache.localPeek(remoteKey, NEAR);
+            Object value = nearCache.localPeek(remoteKey, NEAR);
 
-            assertNull("The value should not be loaded from a remote node.", val);
+            assertNull("The value should not be loaded from a remote node.", value);
 
             nearCache.get(remoteKey);
 
-            val = nearCache.localPeek(remoteKey, NEAR);
+            value = nearCache.localPeek(remoteKey, NEAR);
 
-            assertNotNull("The returned value should not be null.", val);
+            assertNotNull("The returned value should not be null.", value);
 
             srvNode.close();
 
             awaitPartitionMapExchange();
 
-            val = nearCache.localPeek(remoteKey, NEAR);
+            value = nearCache.localPeek(remoteKey, NEAR);
 
-            assertNull("The value should not be loaded from a remote node.", val);
+            assertNull("The value should not be loaded from a remote node.", value);
 
-            val = nearCache.get(remoteKey);
+            value = nearCache.get(remoteKey);
 
-            assertNotNull("The value should be loaded from a remote node.", val);
+            assertNotNull("The value should be loaded from a remote node.", value);
 
-            val = nearCache.localPeek(remoteKey, NEAR);
+            value = nearCache.localPeek(remoteKey, NEAR);
 
-            assertNotNull("The returned value should not be null.", val);
+            assertNotNull("The returned value should not be null.", value);
         }
         finally {
             stopAllGrids();

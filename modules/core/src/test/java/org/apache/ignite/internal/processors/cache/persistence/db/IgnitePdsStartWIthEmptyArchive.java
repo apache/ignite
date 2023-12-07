@@ -166,14 +166,14 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
 
         SegmentAware afterSaw = U.field(walMgr, "segmentAware");
 
-        long afterLastArchivedAbsoluteIdx = afterSaw.lastArchivedAbsoluteIndex();
+        long afterLastArchivedAbsoluteIndex = afterSaw.lastArchivedAbsoluteIndex();
 
         int segments = ig.configuration().getDataStorageConfiguration().getWalSegments();
 
         Assert.assertTrue(
             "lastArchivedBeforeIdx=" + beforeLastArchivedAbsoluteIdx +
-                ", lastArchivedAfterIdx=" + afterLastArchivedAbsoluteIdx + ",  segments=" + segments,
-            afterLastArchivedAbsoluteIdx >=
+                ", lastArchivedAfterIdx=" + afterLastArchivedAbsoluteIndex + ",  segments=" + segments,
+            afterLastArchivedAbsoluteIndex >=
             (beforeLastArchivedAbsoluteIdx - segments));
 
         ig.cluster().state(ClusterState.ACTIVE);
@@ -188,16 +188,16 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
         Assert.assertTrue(idxAfter >= beforeLastArchivedAbsoluteIdx);
 
         log.info("currentIdx=" + idxAfter + ", lastArchivedBeforeIdx=" + beforeLastArchivedAbsoluteIdx +
-            ", lastArchivedAfteridx=" + afterLastArchivedAbsoluteIdx + ",  segments=" + segments);
+            ", lastArchivedAfteridx=" + afterLastArchivedAbsoluteIndex + ",  segments=" + segments);
 
         // One is a last archived, secod is a current write segment.
-        final long awaitAchviedSegments = idxAfter - afterLastArchivedAbsoluteIdx - 2;
+        final long awaitAchviedSegments = idxAfter - afterLastArchivedAbsoluteIndex - 2;
 
         // Await all current available semgment will be archived.
         assertTrue(GridTestUtils.waitForCondition(
             new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    long cut = evts.keySet().stream().filter(e -> e > afterLastArchivedAbsoluteIdx).count();
+                    long cut = evts.keySet().stream().filter(e -> e > afterLastArchivedAbsoluteIndex).count();
 
                     return cut >= awaitAchviedSegments;
                 }

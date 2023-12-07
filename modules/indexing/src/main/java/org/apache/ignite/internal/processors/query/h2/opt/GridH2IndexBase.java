@@ -182,11 +182,11 @@ public abstract class GridH2IndexBase extends H2IndexCostedBase {
 
         CacheObject key;
 
-        final Value keyColVal = row.getValue(QueryUtils.KEY_COL);
+        final Value keyColValue = row.getValue(QueryUtils.KEY_COL);
 
-        assert keyColVal != null;
+        assert keyColValue != null;
 
-        final Object o = keyColVal.getObject();
+        final Object o = keyColValue.getObject();
 
         if (o instanceof CacheObject)
             key = (CacheObject)o;

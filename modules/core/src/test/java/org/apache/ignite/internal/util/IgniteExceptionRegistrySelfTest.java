@@ -43,14 +43,14 @@ public class IgniteExceptionRegistrySelfTest extends GridCommonAbstractTest {
 
         int expCnt = 150;
 
-        long errorCnt = registry.errorCount();
+        long errorCount = registry.errorCount();
 
-        info(">>> Registry error count before test: " + errorCnt);
+        info(">>> Registry error count before test: " + errorCount);
 
         for (int i = 0; i < expCnt; i++)
             registry.onException("Test " + i, new Exception("Test " + i));
 
-        Collection<IgniteExceptionRegistry.ExceptionInfo> errors = registry.getErrors(errorCnt);
+        Collection<IgniteExceptionRegistry.ExceptionInfo> errors = registry.getErrors(errorCount);
 
         int sz = errors.size();
 
