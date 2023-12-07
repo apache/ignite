@@ -88,7 +88,7 @@ class DataEntryWrapper extends DataEntry {
         else if (source instanceof RecordDataV1Serializer.EncryptedDataEntry) {
             keyStr = "<encrypted>";
 
-            valueStr = "<encrypted>";
+            valStr = "<encrypted>";
         }
         else {
             keyStr = toString(null, this.source.key());

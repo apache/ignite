@@ -131,7 +131,10 @@ public class IgniteAbbrevationsRule extends AbstractCheck {
         }
     }
 
-    /** */
+    /**
+     * @param varName Variable name.
+     * @return Words list.
+     */
     public static List<String> words(String varName) {
         if (varName.indexOf('_') != -1)
             return Arrays.asList(varName.split("_"));

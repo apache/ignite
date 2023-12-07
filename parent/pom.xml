@@ -652,7 +652,7 @@
                         <goals>
                             <goal>timestamp-property</goal>
                         </goals>
-                        <phase>validate</phase>
+                        <phase>compile</phase>
                         <configuration>
                             <name>ignite.buildNumber</name>
                             <!-- See: https://docs.oracle.com/javase/8/docs/api/java/text/SimpleDateFormat.html -->
