@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.cdc.CdcCacheConfigOnRestartTest;
 import org.apache.ignite.cdc.CdcCacheVersionTest;
+import org.apache.ignite.cdc.CdcIgniteNodeActiveModeTest;
+import org.apache.ignite.cdc.CdcManagerTest;
 import org.apache.ignite.cdc.CdcNonDefaultWorkDirTest;
 import org.apache.ignite.cdc.CdcSelfTest;
 import org.apache.ignite.cdc.RestartWithWalForceArchiveTimeoutTest;
@@ -162,6 +164,8 @@ public class IgnitePdsTestSuite2 {
         GridTestUtils.addTestIfNeeded(suite, WalForCdcTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CdcCacheConfigOnRestartTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CdcNonDefaultWorkDirTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CdcManagerTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CdcIgniteNodeActiveModeTest.class, ignoredTests);
 
         // new style folders with generated consistent ID test
         GridTestUtils.addTestIfNeeded(suite, IgniteUidAsConsistentIdMigrationTest.class, ignoredTests);
