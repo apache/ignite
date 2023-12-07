@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.cdc.CdcManager;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -406,14 +407,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
                     if (segs != null) {
                         assert segs.size() == 1;
 
-                        SegmentedRingByteBuffer.ReadSegment seg = segs.get(0);
-
-                        int off = seg.buffer().position();
-                        int len = seg.buffer().limit() - off;
-
-                        fsync((MappedByteBuffer)buf.buf, off, len);
-
-                        seg.release();
+                        fsyncReadSegment(segs.get(0), false);
                     }
                 }
                 else
@@ -499,7 +493,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
                     if (segs != null) {
                         assert segs.size() == 1;
 
-                        segs.get(0).release();
+                        fsyncReadSegment(segs.get(0), true);
                     }
                 }
 
@@ -535,6 +529,36 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
         }
         else
             return false;
+    }
+
+    /**
+     * Make fsync for part of the WAL segment file. And collect it to {@link CdcManager} if enabled.
+     *
+     * @param seg Part of the WAL segment file.
+     * @param onlyCdc If {@code true} then skip actual fsync. TODO: IGNITE-20732
+     */
+    private void fsyncReadSegment(SegmentedRingByteBuffer.ReadSegment seg, boolean onlyCdc) throws IgniteCheckedException {
+        int off = seg.buffer().position();
+        int len = seg.buffer().limit() - off;
+
+        if (!onlyCdc)
+            fsync((MappedByteBuffer)buf.buf, off, len);
+
+        if (cctx.cdc() != null && cctx.cdc().enabled()) {
+            try {
+                ByteBuffer cdcBuf = buf.buf.asReadOnlyBuffer();
+                cdcBuf.position(off);
+                cdcBuf.limit(off + len);
+                cdcBuf.order(buf.buf.order());
+
+                cctx.cdc().collect(cdcBuf);
+            }
+            catch (Throwable cdcErr) {
+                U.error(log, "Error happened during CDC data collection.", cdcErr);
+            }
+        }
+
+        seg.release();
     }
 
     /**
