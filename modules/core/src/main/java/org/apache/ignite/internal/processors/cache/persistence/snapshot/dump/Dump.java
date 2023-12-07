@@ -401,6 +401,9 @@ public class Dump implements AutoCloseable {
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
         closeAllComponents(cctx);
+
+        if (encSpi != null)
+            encSpi.spiStop();
     }
 
     /**

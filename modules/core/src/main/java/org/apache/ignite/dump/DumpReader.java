@@ -41,6 +41,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
@@ -75,7 +77,7 @@ public class DumpReader implements Runnable {
     @Override public void run() {
         ackAsciiLogo();
 
-        try (Dump dump = new Dump(cfg.dumpRoot(), null, cfg.keepBinary(), false, cfg.encryptionSpi(), log)) {
+        try (Dump dump = new Dump(cfg.dumpRoot(), null, cfg.keepBinary(), false, encryptionSpi(), log)) {
             DumpConsumer cnsmr = cfg.consumer();
 
             cnsmr.start();
@@ -230,5 +232,20 @@ public class DumpReader implements Runnable {
                 "  ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or \"-v\" to ignite-cdc.{sh|bat}",
                 "");
         }
+    }
+
+    /** */
+    private EncryptionSpi encryptionSpi() {
+        EncryptionSpi encSpi = cfg.encryptionSpi();
+
+        if (encSpi == null)
+            return null;
+
+        if (encSpi instanceof IgniteSpiAdapter)
+            ((IgniteSpiAdapter)encSpi).onBeforeStart();
+
+        encSpi.spiStart("dump-reader");
+
+        return encSpi;
     }
 }

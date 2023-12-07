@@ -157,6 +157,7 @@ public class SnapshotMetadata implements Serializable {
         this.masterKeyDigest = masterKeyDigest;
         this.onlyPrimary = onlyPrimary;
         this.dump = dump;
+        this.encKey = encKey;
 
         if (!F.isEmpty(compGrpIds)) {
             hasComprGrps = true;
