@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -60,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.TestDumpConsumer;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -68,13 +71,16 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManag
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
 import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.platform.model.User;
 import org.apache.ignite.plugin.AbstractCachePluginProvider;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -93,6 +99,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TMP_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.CACHE_0;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.DMP_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.KEYS_CNT;
@@ -696,6 +703,49 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         cnsmr.check();
 
         IntStream.range(0, KEYS_CNT).forEach(i -> assertEquals((Integer)i, dumpEntries.get(i)));
+    }
+
+    /** */
+    @Test
+    public void testDumpRateLimiter() throws Exception {
+        try (IgniteEx ign = startGrid(0)) {
+            ign.cluster().state(ClusterState.ACTIVE);
+
+            byte[] val = new byte[(int)U.KB];
+            ThreadLocalRandom.current().nextBytes(val);
+
+            int keysCnt = 10;
+
+            for (int i = 0; i < keysCnt; i++)
+                ign.getOrCreateCache(DEFAULT_CACHE_NAME).put(i, val);
+
+            ign.context().distributedConfiguration()
+                .property(SNAPSHOT_TRANSFER_RATE_DMS_KEY)
+                .propagate(U.KB);
+
+            IgniteFuture<Void> fut = ign.snapshot().createDump(DMP_NAME, null);
+
+            IgniteSnapshotManager snpMgr = ign.context().cache().context().snapshotMgr();
+
+            assertTrue(GridTestUtils.waitForCondition(() ->
+                snpMgr.currentSnapshotTask(CreateDumpFutureTask.class) != null, 10_000, 10));
+
+            CreateDumpFutureTask task = snpMgr.currentSnapshotTask(CreateDumpFutureTask.class);
+
+            List<Long> processedVals = new ArrayList<>();
+
+            assertTrue(GridTestUtils.waitForCondition(() -> {
+                processedVals.add(task.processedSize());
+
+                return fut.isDone();
+            }, getTestTimeout(), 100));
+
+            assertTrue("Expected distinct values: " + processedVals,
+                processedVals.stream().mapToLong(v -> v).distinct().count() >= keysCnt);
+
+            assertTrue("Expected sorted values: " + processedVals,
+                F.isSorted(processedVals.stream().mapToLong(v -> v).toArray()));
+        }
     }
 
     /** */

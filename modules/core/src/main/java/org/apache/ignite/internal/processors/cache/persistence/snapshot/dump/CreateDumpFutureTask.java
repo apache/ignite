@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotSender;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
+import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -96,6 +97,12 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
     /** If {@code true} then compress partition files. */
     private final boolean compress;
+
+    /** Dump transfer rate limiter. */
+    private final BasicRateLimiter rateLimiter;
+
+    /** Processed dump size in bytes. */
+    private final AtomicLong processedSize = new AtomicLong();
 
     /** If {@code null} then encryption disabled. */
     private final @Nullable Serializable encKey;
@@ -132,6 +139,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      * @param dumpName Dump name.
      * @param ioFactory IO factory.
      * @param snpSndr Snapshot sender.
+     * @param rateLimiter Dump transfer rate limiter.
      * @param parts Parts to dump.
      * @param compress If {@code true} then compress partition files.
      * @param encrypt If {@code true} then content of dump encrypted.
@@ -143,6 +151,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         String dumpName,
         File dumpDir,
         FileIOFactory ioFactory,
+        BasicRateLimiter rateLimiter,
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts,
         boolean compress,
@@ -160,6 +169,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         this.dumpDir = dumpDir;
         this.ioFactory = compress ? new WriteOnlyZipFileIOFactory() : ioFactory;
         this.compress = compress;
+        this.rateLimiter = rateLimiter;
         this.encKey = encrypt ? cctx.gridConfig().getEncryptionSpi().create() : null;
         this.encThLocBufs = encrypt ? new ConcurrentHashMap<>() : null;
     }
@@ -357,6 +367,11 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         }
 
         return closeFut;
+    }
+
+    /** @return Processed dump size in bytes. */
+    public long processedSize() {
+        return processedSize.get();
     }
 
     /** */
@@ -573,8 +588,12 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 try {
                     ByteBuffer buf = serializer.writeToBuffer(cache, expireTime, key, val, ver, cctx.cacheObjectContext(cache));
 
+                    rateLimiter.acquire(buf.limit());
+
                     if (file.writeFully(buf) != buf.limit())
                         throw new IgniteException("Can't write row");
+
+                    processedSize.addAndGet(buf.limit());
                 }
                 catch (IOException | IgniteCheckedException e) {
                     throw new IgniteException(e);
