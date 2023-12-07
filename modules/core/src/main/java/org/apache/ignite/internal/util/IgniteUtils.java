@@ -9880,8 +9880,8 @@ public abstract class IgniteUtils {
 
         Collection<InetSocketAddress> resolved = new HashSet<>();
 
-        for (InetSocketAddress address : sockAddr)
-            resolved.addAll(resolveAddress(addrRslvr, address));
+        for (InetSocketAddress addr : sockAddr)
+            resolved.addAll(resolveAddress(addrRslvr, addr));
 
         return resolved;
     }
