@@ -89,7 +89,11 @@ if %java_version% GEQ 15 (
     --add-opens=java.base/java.lang.invoke=ALL-UNNAMED ^
     --add-opens=java.base/java.math=ALL-UNNAMED ^
     --add-opens=java.sql/java.sql=ALL-UNNAMED ^
-    --add-opens=java.sql/java.time=ALL-UNNAMED ^
+    --add-opens=java.base/java.lang.reflect=ALL-UNNAMED ^
+    --add-opens=java.base/java.time=ALL-UNNAMED ^
+    --add-opens=java.base/java.text=ALL-UNNAMED ^
+    --add-opens=java.management/sun.management=ALL-UNNAMED ^
+    --add-opens java.desktop/java.awt.font=ALL-UNNAMED ^
     %current_value%
 )
 
