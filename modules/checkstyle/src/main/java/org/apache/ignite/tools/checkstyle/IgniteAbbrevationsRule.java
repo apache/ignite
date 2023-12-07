@@ -57,13 +57,12 @@ public class IgniteAbbrevationsRule extends AbstractCheck {
      * Key is wrong term that should be replaced with abbrevations.
      * Value possible substitions to generate self-explained error message.
      */
-    private final Map<String, String> abbrevs = new HashMap<>();
+    private static final Map<String, String> ABBREVS = new HashMap<>();
 
     /** Exclusions. */
-    private final Set<String> excl = new HashSet<>();
+    private static final Set<String> EXCL = new HashSet<>();
 
-    /** */
-    public IgniteAbbrevationsRule() {
+    static {
         forEachLine(ABBREVS_FILE, line -> {
             line = line.toLowerCase();
 
@@ -76,30 +75,10 @@ public class IgniteAbbrevationsRule extends AbstractCheck {
 
             assert substitutions.length > 0;
 
-            abbrevs.put(term, String.join(", ", substitutions));
+            ABBREVS.put(term, String.join(", ", substitutions));
         });
 
-        forEachLine(ABBREVS_EXCL_FILE, excl::add);
-    }
-
-    /** */
-    private void forEachLine(String file, Consumer<String> lineProc) {
-        InputStream stream = getClass().getResourceAsStream(file);
-
-        try (BufferedReader br =
-                 new BufferedReader(new InputStreamReader(stream))) {
-            String line;
-
-            while ((line = br.readLine()) != null) {
-                if (line.startsWith("#"))
-                    continue;
-
-                lineProc.accept(line);
-            }
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        forEachLine(ABBREVS_EXCL_FILE, EXCL::add);
     }
 
     /** {@inheritDoc} */
@@ -113,18 +92,18 @@ public class IgniteAbbrevationsRule extends AbstractCheck {
 
         String varName = token.getText();
 
-        if (excl.contains(varName))
+        if (EXCL.contains(varName))
             return;
 
         List<String> words = words(varName);
 
         for (String word : words) {
-            if (abbrevs.containsKey(word.toLowerCase())) {
+            if (ABBREVS.containsKey(word.toLowerCase())) {
                 log(
                     token.getLineNo(),
                     "Abbrevation should be used for {0}! Please, use {1}, instead of {2}",
                     varName,
-                    abbrevs.get(word.toLowerCase()),
+                    ABBREVS.get(word.toLowerCase()),
                     word
                 );
             }
@@ -175,5 +154,25 @@ public class IgniteAbbrevationsRule extends AbstractCheck {
     /** {@inheritDoc} */
     @Override public int[] getRequiredTokens() {
         return TOKENS.clone();
+    }
+
+    /** */
+    private static void forEachLine(String file, Consumer<String> lineProc) {
+        InputStream stream = IgniteAbbrevationsRule.class.getResourceAsStream(file);
+
+        try (BufferedReader br =
+                 new BufferedReader(new InputStreamReader(stream))) {
+            String line;
+
+            while ((line = br.readLine()) != null) {
+                if (line.startsWith("#"))
+                    continue;
+
+                lineProc.accept(line);
+            }
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

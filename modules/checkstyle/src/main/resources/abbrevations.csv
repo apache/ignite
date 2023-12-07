@@ -1,8 +1,9 @@
-# First word is wrong full ter, other is correct abbrevations to build helpfull error message.
+# First word is wrong full term, other is correct abbrevations to build helpfull error message.
 address,addr
+addresses,addrs
 #affinity,aff
 #argument,arg
-#array,arr
+array,arr
 #attribute,attr
 #attributes,attrs
 #buffer,buf

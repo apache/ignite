@@ -1591,16 +1591,16 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
             InetSocketAddress inetSocketAddr = new InetSocketAddress(userDefinedHost, 0);
             InetAddress addr = inetSocketAddr.getAddress();
-            IgniteBiTuple<Collection<String>, Collection<String>> localAddresses = IgniteUtils.resolveLocalAddresses(addr);
+            IgniteBiTuple<Collection<String>, Collection<String>> localAddrs = IgniteUtils.resolveLocalAddresses(addr);
 
             if (ignoreLocalHostname) {
                 // If local hostname is ignored, then no hostname should be resolved.
-                assertTrue(localAddresses.get2().isEmpty());
+                assertTrue(localAddrs.get2().isEmpty());
             }
             else {
                 // If local hostname is not ignored, then we should receive example.com.
-                assertFalse(localAddresses.get2().isEmpty());
-                assertEquals("example.com", F.first(localAddresses.get2()));
+                assertFalse(localAddrs.get2().isEmpty());
+                assertEquals("example.com", F.first(localAddrs.get2()));
             }
         }
         finally {
