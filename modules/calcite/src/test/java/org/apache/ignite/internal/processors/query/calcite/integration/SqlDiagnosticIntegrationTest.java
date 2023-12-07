@@ -492,6 +492,72 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
+    public void testPerformanceStatisticsNestedScan() throws Exception {
+        sql(grid(0), "CREATE TABLE test_perf_stat_nested (a INT) WITH template=REPLICATED");
+        sql(grid(0), "INSERT INTO test_perf_stat_nested VALUES (0), (1), (2), (3), (4)");
+
+        cleanPerformanceStatisticsDir();
+        startCollectStatistics();
+
+        AtomicInteger finishQryCnt = new AtomicInteger();
+        grid(0).context().query().runningQueryManager().registerQueryFinishedListener(q -> finishQryCnt.incrementAndGet());
+
+        sql(grid(0), "SELECT * FROM test_perf_stat_nested UNION ALL SELECT * FROM test_perf_stat_nested");
+
+        assertTrue(GridTestUtils.waitForCondition(() -> finishQryCnt.get() == 1, 1_000L));
+
+        AtomicInteger qryCnt = new AtomicInteger();
+        AtomicInteger readsCnt = new AtomicInteger();
+        AtomicLong rowsCnt = new AtomicLong();
+
+        stopCollectStatisticsAndRead(new AbstractPerformanceStatisticsTest.TestHandler() {
+            @Override public void query(
+                UUID nodeId,
+                GridCacheQueryType type,
+                String text,
+                long id,
+                long qryStartTime,
+                long duration,
+                boolean success
+            ) {
+                qryCnt.incrementAndGet();
+                assertTrue(success);
+            }
+
+            @Override public void queryReads(
+                UUID nodeId,
+                GridCacheQueryType type,
+                UUID qryNodeId,
+                long id,
+                long logicalReads,
+                long physicalReads
+            ) {
+                readsCnt.incrementAndGet();
+                assertTrue(logicalReads > 0);
+            }
+
+            @Override public void queryRows(
+                UUID nodeId,
+                GridCacheQueryType type,
+                UUID qryNodeId,
+                long id,
+                String action,
+                long rows
+            ) {
+                if ("Fetched".equals(action))
+                    rowsCnt.addAndGet(rows);
+            }
+        });
+
+        assertEquals(1, qryCnt.get());
+        // The second scan is executed inside the first scan processNextBatch() method,
+        // after the first scan invoke downstream().end(), so here we have only one read record.
+        assertEquals(1, readsCnt.get());
+        assertEquals(10, rowsCnt.get());
+    }
+
+    /** */
+    @Test
     public void testSqlEvents() {
         sql("CREATE TABLE test_event (a INT) WITH cache_name=\"test_event\"");
 
