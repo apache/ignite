@@ -80,6 +80,7 @@ import org.apache.ignite.plugin.AbstractCachePluginProvider;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -92,6 +93,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_THREAD_CNT;
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_TIMEOUT;
+import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
@@ -647,8 +649,14 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         File dumpDir;
 
         try (IgniteEx srv = startGrid(new IgniteConfiguration().setEncryptionSpi(encryptionSpi()))) {
-            IgniteCache<Integer, Integer> cache = srv.createCache(DEFAULT_CACHE_NAME);
-            IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
+            IgniteCache<Integer, byte[]> cache = srv.createCache(DEFAULT_CACHE_NAME);
+            IntStream.range(0, KEYS_CNT).forEach(i -> {
+                byte[] data = new byte[Math.max(Integer.BYTES, ThreadLocalRandom.current().nextInt((int)U.KB))];
+
+                U.intToBytes(i, data, 0);
+
+                cache.put(i, data);
+            });
 
             srv.context().cache().context().snapshotMgr()
                 .createSnapshot(DMP_NAME, null, null, false, false, true, false, true).get(getTestTimeout());
@@ -677,11 +685,47 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             log
         ).run(), IgniteException.class, "Encryption SPI required to read encrypted dump");
 
+        assertThrows(
+            null,
+            () -> {
+                EncryptionSpi encSpi = encryptionSpi();
+
+                encSpi.setMasterKeyName(MASTER_KEY_NAME_2);
+
+                new DumpReader(
+                    new DumpReaderConfiguration(
+                        dumpDir,
+                        new TestDumpConsumer() {
+                            @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
+                                data.forEachRemaining(e -> {
+                                    assert e != null;
+                                });
+                            }
+                        },
+                        DFLT_THREAD_CNT,
+                        DFLT_TIMEOUT,
+                        true,
+                        false,
+                        null,
+                        false,
+                        encSpi
+                    ),
+                    log
+                ).run();
+            },
+            IgniteException.class,
+            "Dump '" + DMP_NAME + "' has different master key digest. To restore this snapshot, provide the same master key"
+        );
+
         Map<Integer, Integer> dumpEntries = new HashMap<>();
 
         TestDumpConsumer cnsmr = new TestDumpConsumer() {
             @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
-                data.forEachRemaining(e -> dumpEntries.put((Integer)e.key(), (Integer)e.value()));
+                data.forEachRemaining(e -> {
+                    int v = U.bytesToInt((byte[])e.value(), 0);
+
+                    dumpEntries.put((Integer)e.key(), v);
+                });
             }
         };
 
