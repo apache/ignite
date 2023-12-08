@@ -372,10 +372,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         }
     }
 
-    /**
-     * @param lsnr Listener.
-     */
-    public void addBinaryMetadataUpdateListener(BinaryMetadataUpdatedListener lsnr) {
+    /** {@inheritDoc} */
+    @Override public void addBinaryMetadataUpdateListener(BinaryMetadataUpdatedListener lsnr) {
         if (transport != null)
             transport.addBinaryMetadataUpdateListener(lsnr);
     }
