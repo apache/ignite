@@ -65,6 +65,7 @@ import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.platform.model.Role;
 import org.apache.ignite.platform.model.User;
 import org.apache.ignite.platform.model.Value;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -74,6 +75,8 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_THREAD_CNT;
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_TIMEOUT;
+import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
+import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_RUNNING_DIR_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.toLong;
@@ -128,7 +131,11 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     public boolean onlyPrimary;
 
     /** */
-    @Parameterized.Parameters(name = "nodes={0},backups={1},persistence={2},mode={3},useDataStreamer={4},onlyPrimary={5}")
+    @Parameterized.Parameter(6)
+    public boolean encrypted;
+
+    /** */
+    @Parameterized.Parameters(name = "nodes={0},backups={1},persistence={2},mode={3},useDataStreamer={4},onlyPrimary={5},encrypted={6}")
     public static List<Object[]> params() {
         List<Object[]> params = new ArrayList<>();
 
@@ -141,11 +148,11 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                                 continue;
 
                             if (backups > 0) {
-                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, false});
-                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, true});
+                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, false, false});
+                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, true, false});
                             }
                             else
-                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, false});
+                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, false, false});
                         }
                     }
 
@@ -174,7 +181,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setSnapshotThreadPoolSize(snpPoolSz)
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence)))
@@ -200,6 +207,11 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                     .setWriteSynchronizationMode(FULL_SYNC)
                     .setAffinity(new RendezvousAffinityFunction().setPartitions(20))
             );
+
+        if (encrypted)
+            cfg.setEncryptionSpi(encryptionSpi());
+
+        return cfg;
     }
 
     /** */
@@ -417,7 +429,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 true,
                 false,
                 cacheGroupNames,
-                skipCopies
+                skipCopies,
+                null
             ),
             log
         ).run();
@@ -550,7 +563,17 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     /** */
     void createDump(IgniteEx ign, String name, @Nullable Collection<String> cacheGroupNames, boolean comprParts) {
         ign.context().cache().context().snapshotMgr()
-            .createSnapshot(name, null, cacheGroupNames, false, onlyPrimary, true, comprParts).get();
+            .createSnapshot(name, null, cacheGroupNames, false, onlyPrimary, true, comprParts, encrypted).get();
+    }
+
+    /** */
+    public static KeystoreEncryptionSpi encryptionSpi() {
+        KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
+
+        encSpi.setKeyStorePath(KEYSTORE_PATH);
+        encSpi.setKeyStorePassword(KEYSTORE_PASSWORD.toCharArray());
+
+        return encSpi;
     }
 
     /** */
