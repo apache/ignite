@@ -160,8 +160,7 @@ public class IgniteAbbrevationsRule extends AbstractCheck {
     private static void forEachLine(String file, Consumer<String> lineProc) {
         InputStream stream = IgniteAbbrevationsRule.class.getResourceAsStream(file);
 
-        try (BufferedReader br =
-                 new BufferedReader(new InputStreamReader(stream))) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(stream))) {
             String line;
 
             while ((line = br.readLine()) != null) {
