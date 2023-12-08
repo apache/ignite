@@ -2207,6 +2207,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * Create a consistent copy of all persistence cache groups from the whole cluster.
+     * Note, {@code encrypt} flag can be used only for cache dump.
+     * Full snapshots store partition files itself.
+     * So if cache is encrypted ({@link CacheConfiguration#isEncryptionEnabled()}{@code = true}) then snapshot files will be encrypted.
+     * On the other hand, dumps stores only entry data and can be used fo in-memory caches.
+     * So we provide an ability to encrypt dump content to protect data on the disk.
      *
      * @param name Snapshot unique name which satisfies the following name pattern [a-zA-Z0-9_].
      * @param snpPath Snapshot directory path.
