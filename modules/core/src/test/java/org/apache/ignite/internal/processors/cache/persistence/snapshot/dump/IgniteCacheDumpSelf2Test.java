@@ -714,7 +714,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 ).run();
             },
             IgniteException.class,
-            "Dump '" + DMP_NAME + "' has different master key digest. To restore this snapshot, provide the same master key"
+            "Dump '" + DMP_NAME + "' has different master key digest"
         );
 
         Map<Integer, Integer> dumpEntries = new HashMap<>();
