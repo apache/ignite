@@ -831,6 +831,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             withMetaStorage,
             false,
             false,
+            false,
             snpSndr
         );
 
