@@ -298,6 +298,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
                 false,
                 false,
                 false,
+                false,
                 snp(ig).localSnapshotSenderFactory().apply(SNAPSHOT_NAME, null)
             ).get(TIMEOUT),
             IgniteCheckedException.class,
