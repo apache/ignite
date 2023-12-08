@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -79,6 +80,7 @@ import org.apache.ignite.plugin.AbstractCachePluginProvider;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -91,6 +93,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_THREAD_CNT;
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_TIMEOUT;
+import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
@@ -105,6 +108,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.d
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.USER_FACTORY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.dump;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.dumpDirectory;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.encryptionSpi;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.invokeCheckCommand;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntrySerializer.HEADER_SZ;
@@ -400,6 +404,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 false,
                 false,
                 true,
+                false,
                 false
             ).get();
 
@@ -492,10 +497,10 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         String zipDump = "zipDump";
 
         ign.context().cache().context().snapshotMgr()
-            .createSnapshot(rawDump, null, null, false, true, true, false).get();
+            .createSnapshot(rawDump, null, null, false, true, true, false, false).get();
 
         ign.context().cache().context().snapshotMgr()
-            .createSnapshot(zipDump, null, null, false, true, true, true).get();
+            .createSnapshot(zipDump, null, null, false, true, true, true, false).get();
 
         stopAllGrids();
 
@@ -610,12 +615,138 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 true,
                 false,
                 null,
-                false
+                false,
+                null
             ),
             log
         ).run();
 
         cnsmr.check();
+    }
+
+    /** */
+    @Test
+    public void testCreateEncryptedFail() throws Exception {
+        BiConsumer<IgniteEx, String> check = (ign, msg) -> assertThrows(null, () -> {
+            ign.context().cache().context().snapshotMgr()
+                .createSnapshot(DMP_NAME, null, null, false, false, true, false, true).get(getTestTimeout());
+        }, IgniteException.class, msg);
+
+        try (IgniteEx srv = startGrid()) {
+            IgniteCache<Integer, Integer> cache = srv.createCache(DEFAULT_CACHE_NAME);
+            IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
+
+            IgniteEx cli = startClientGrid(1);
+
+            check.accept(srv, "You have to configure custom EncryptionSpi implementation");
+            check.accept(cli, "Snapshot has not been created");
+        }
+    }
+
+    /** */
+    @Test
+    public void testReadEncrypted() throws Exception {
+        File dumpDir;
+
+        try (IgniteEx srv = startGrid(new IgniteConfiguration().setEncryptionSpi(encryptionSpi()))) {
+            IgniteCache<Integer, byte[]> cache = srv.createCache(DEFAULT_CACHE_NAME);
+            IntStream.range(0, KEYS_CNT).forEach(i -> {
+                byte[] data = new byte[Math.max(Integer.BYTES, ThreadLocalRandom.current().nextInt((int)U.KB))];
+
+                U.intToBytes(i, data, 0);
+
+                cache.put(i, data);
+            });
+
+            srv.context().cache().context().snapshotMgr()
+                .createSnapshot(DMP_NAME, null, null, false, false, true, false, true).get(getTestTimeout());
+
+            dumpDir = dumpDirectory(srv, DMP_NAME);
+        }
+
+        assertThrows(null, () -> new DumpReader(
+            new DumpReaderConfiguration(
+                dumpDir,
+                new TestDumpConsumer() {
+                    @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
+                        data.forEachRemaining(e -> {
+                            assert e != null;
+                        });
+                    }
+                },
+                DFLT_THREAD_CNT,
+                DFLT_TIMEOUT,
+                true,
+                false,
+                null,
+                false,
+                null
+            ),
+            log
+        ).run(), IgniteException.class, "Encryption SPI required to read encrypted dump");
+
+        assertThrows(
+            null,
+            () -> {
+                EncryptionSpi encSpi = encryptionSpi();
+
+                encSpi.setMasterKeyName(MASTER_KEY_NAME_2);
+
+                new DumpReader(
+                    new DumpReaderConfiguration(
+                        dumpDir,
+                        new TestDumpConsumer() {
+                            @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
+                                data.forEachRemaining(e -> {
+                                    assert e != null;
+                                });
+                            }
+                        },
+                        DFLT_THREAD_CNT,
+                        DFLT_TIMEOUT,
+                        true,
+                        false,
+                        null,
+                        false,
+                        encSpi
+                    ),
+                    log
+                ).run();
+            },
+            IgniteException.class,
+            "Dump '" + DMP_NAME + "' has different master key digest"
+        );
+
+        Map<Integer, Integer> dumpEntries = new HashMap<>();
+
+        TestDumpConsumer cnsmr = new TestDumpConsumer() {
+            @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
+                data.forEachRemaining(e -> {
+                    int v = U.bytesToInt((byte[])e.value(), 0);
+
+                    dumpEntries.put((Integer)e.key(), v);
+                });
+            }
+        };
+
+        new DumpReader(
+            new DumpReaderConfiguration(
+                dumpDir,
+                cnsmr,
+                DFLT_THREAD_CNT,
+                DFLT_TIMEOUT,
+                true,
+                false,
+                null,
+                false,
+                encryptionSpi()
+            ),
+            log
+        ).run();
+
+        cnsmr.check();
+
+        IntStream.range(0, KEYS_CNT).forEach(i -> assertEquals((Integer)i, dumpEntries.get(i)));
     }
 
     /** */

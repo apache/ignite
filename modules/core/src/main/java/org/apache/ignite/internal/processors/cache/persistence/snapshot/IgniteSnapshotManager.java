@@ -1194,6 +1194,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 withMetaStorage,
                 req.dump(),
                 req.compress(),
+                req.encrypt(),
                 locSndrFactory.apply(req.snapshotName(), req.snapshotPath())
             );
 
@@ -1218,6 +1219,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 SnapshotFutureTaskResult res = (SnapshotFutureTaskResult)task0.result();
 
+                Serializable encKey = req.encrypt() ? ((CreateDumpFutureTask)task0).encryptionKey() : null;
+
+                EncryptionSpi encSpi = cctx.gridConfig().getEncryptionSpi();
+
                 SnapshotMetadata meta = new SnapshotMetadata(req.requestId(),
                     req.snapshotName(),
                     cctx.localNode().consistentId().toString(),
@@ -1229,9 +1234,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     blts,
                     res.parts(),
                     res.snapshotPointer(),
-                    cctx.gridConfig().getEncryptionSpi().masterKeyDigest(),
+                    encSpi.masterKeyDigest(),
                     req.onlyPrimary(),
-                    req.dump()
+                    req.dump(),
+                    encKey == null ? null : encSpi.encryptKey(encKey)
                 );
 
                 SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir,
@@ -1808,7 +1814,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createDump(String name, @Nullable Collection<String> cacheGroupNames) {
-        return createSnapshot(name, null, cacheGroupNames, false, false, true, false);
+        return createSnapshot(name, null, cacheGroupNames, false, false, true, false, false);
     }
 
     /**
@@ -2196,11 +2202,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean incremental,
         boolean onlyPrimary
     ) {
-        return createSnapshot(name, snpPath, null, incremental, onlyPrimary, false, false);
+        return createSnapshot(name, snpPath, null, incremental, onlyPrimary, false, false, false);
     }
 
     /**
      * Create a consistent copy of all persistence cache groups from the whole cluster.
+     * Note, {@code encrypt} flag can be used only for cache dump.
+     * Full snapshots store partition files itself.
+     * So if cache is encrypted ({@link CacheConfiguration#isEncryptionEnabled()}{@code = true}) then snapshot files will be encrypted.
+     * On the other hand, dumps stores only entry data and can be used fo in-memory caches.
+     * So we provide an ability to encrypt dump content to protect data on the disk.
      *
      * @param name Snapshot unique name which satisfies the following name pattern [a-zA-Z0-9_].
      * @param snpPath Snapshot directory path.
@@ -2209,6 +2220,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
      * @param dump If {@code true} cache dump must be created.
      * @param compress If {@code true} then compress partition files.
+     * @param encrypt If {@code true} then content of dump encrypted.
      * @return Future which will be completed when a process ends.
      */
     public IgniteFutureImpl<Void> createSnapshot(
@@ -2218,7 +2230,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean incremental,
         boolean onlyPrimary,
         boolean dump,
-        boolean compress
+        boolean compress,
+        boolean encrypt
     ) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
@@ -2250,10 +2263,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return new IgniteSnapshotFutureImpl(cctx.kernalContext().closure()
                     .callAsync(
                         BALANCE,
-                        new CreateSnapshotCallable(name, cacheGroupNames, incremental, onlyPrimary, dump, compress),
+                        new CreateSnapshotCallable(name, cacheGroupNames, incremental, onlyPrimary, dump, compress, encrypt),
                         options(Collections.singletonList(crd)).withFailoverDisabled()
                     ));
             }
+
+            A.ensure(!encrypt || dump, "Encryption key is supported only for dumps");
+            A.ensure(
+                !encrypt || cctx.gridConfig().getEncryptionSpi() != null,
+                "Encryption SPI must be set to encrypt dump"
+            );
 
             if (!CU.isPersistenceEnabled(cctx.gridConfig()) && !dump) {
                 throw new IgniteException("Create snapshot request has been rejected. " +
@@ -2353,7 +2372,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 incIdx,
                 onlyPrimary,
                 dump,
-                compress
+                compress,
+                encrypt
             ));
 
             String msg =
@@ -2733,6 +2753,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param withMetaStorage {@code true} if all metastorage data must be also included into snapshot.
      * @param dump {@code true} if cache group dump must be created.
      * @param compress If {@code true} then compress partition files.
+     * @param encrypt If {@code true} then content of dump encrypted.
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @return Snapshot operation task which should be registered on checkpoint to run.
      */
@@ -2745,6 +2766,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean withMetaStorage,
         boolean dump,
         boolean compress,
+        boolean encrypt,
         SnapshotSender snpSndr
     ) {
         AbstractSnapshotFutureTask<?> task = registerTask(snpName, dump
@@ -2757,7 +2779,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 transferRateLimiter,
                 snpSndr,
                 parts,
-                compress
+                compress,
+                encrypt
             )
             : new SnapshotFutureTask(cctx, srcNodeId, requestId, snpName, tmpWorkDir, ioFactory, snpSndr, parts, withMetaStorage, locBuff));
 
@@ -4681,6 +4704,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** If {@code true} then compress partition files. */
         private final boolean comprParts;
 
+        /** If {@code true} then content of dump encrypted. */
+        private final boolean encrypt;
+
         /** Auto-injected grid instance. */
         @IgniteInstanceResource
         private transient IgniteEx ignite;
@@ -4692,6 +4718,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param onlyPrimary If {@code true} then only copy of primary partitions will be created.
          * @param dump If {@code true} then cache dump must be created.
          * @param comprParts If {@code true} then compress partition files.
+         * @param encrypt If {@code true} then content of dump encrypted.
          */
         public CreateSnapshotCallable(
             String snpName,
@@ -4699,7 +4726,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             boolean incremental,
             boolean onlyPrimary,
             boolean dump,
-            boolean comprParts
+            boolean comprParts,
+            boolean encrypt
         ) {
             this.snpName = snpName;
             this.cacheGroupNames = cacheGroupNames;
@@ -4707,6 +4735,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             this.onlyPrimary = onlyPrimary;
             this.dump = dump;
             this.comprParts = comprParts;
+            this.encrypt = encrypt;
         }
 
         /** {@inheritDoc} */
@@ -4721,7 +4750,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     false,
                     onlyPrimary,
                     dump,
-                    comprParts
+                    comprParts,
+                    encrypt
                 ).get();
             }
 
