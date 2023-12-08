@@ -43,6 +43,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
@@ -79,9 +80,6 @@ public class WalRecordsConsumer<K, V> {
 
     /** Operations filter. */
     private static final IgnitePredicate<? super DataEntry> OPERATIONS_FILTER = e -> {
-        if (!(e instanceof UnwrappedDataEntry))
-            throw new IllegalStateException("Unexpected data entry [type=" + e.getClass().getName() + ']');
-
         if ((e.flags() & DataEntry.PRELOAD_FLAG) != 0 ||
             (e.flags() & DataEntry.FROM_STORE_FLAG) != 0)
             return false;
@@ -90,7 +88,7 @@ public class WalRecordsConsumer<K, V> {
     };
 
     /** Event transformer. */
-    private static final IgniteClosure<DataEntry, CdcEvent> CDC_EVENT_TRANSFORMER = e -> {
+    static final IgniteClosure<DataEntry, CdcEvent> CDC_EVENT_TRANSFORMER = e -> {
         UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
 
         return new CdcEventImpl(
@@ -119,9 +117,15 @@ public class WalRecordsConsumer<K, V> {
      * {@link DataRecord} will be stored and WAL iteration will be started from it on CDC application fail/restart.
      *
      * @param entries Data entries iterator.
+     * @param transform Event transformer.
+     * @param filter Optional event filter.
      * @return {@code True} if current offset in WAL should be commited.
      */
-    public boolean onRecords(Iterator<DataEntry> entries) {
+    public boolean onRecords(
+        Iterator<DataEntry> entries,
+        IgniteClosure<DataEntry, CdcEvent> transform,
+        @Nullable IgnitePredicate<? super DataEntry> filter
+    ) {
         Iterator<CdcEvent> evts = F.iterator(new Iterator<DataEntry>() {
             @Override public boolean hasNext() {
                 return entries.hasNext();
@@ -136,7 +140,7 @@ public class WalRecordsConsumer<K, V> {
 
                 return next;
             }
-        }, CDC_EVENT_TRANSFORMER, true, OPERATIONS_FILTER);
+        }, transform, true, OPERATIONS_FILTER, filter);
 
         return consumer.onEvents(evts);
     }
@@ -238,14 +242,14 @@ public class WalRecordsConsumer<K, V> {
         private int entryIdx;
 
         /** @param walIter WAL iterator. */
-        DataEntryIterator(WALIterator walIter) {
+        public DataEntryIterator(WALIterator walIter) {
             this.walIter = walIter;
 
             advance();
         }
 
         /** @return Current state. */
-        T2<WALPointer, Integer> state() {
+        public T2<WALPointer, Integer> state() {
             return hasNext() ?
                 new T2<>(curRec.get1(), entryIdx) :
                 curRec != null
