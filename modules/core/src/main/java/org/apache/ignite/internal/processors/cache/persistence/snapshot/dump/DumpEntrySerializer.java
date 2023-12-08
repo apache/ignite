@@ -267,9 +267,8 @@ public class DumpEntrySerializer {
 
             plainBuf.limit(plainBuf.capacity());
 
-            if (plainBuf.capacity() < buf.limit()) {
+            if (plainBuf.capacity() < buf.limit())
                 plainBuf = enlargeThreadLocalBuffer(encThLocBufs, buf.limit());
-            }
             else
                 plainBuf.rewind();
 

@@ -287,7 +287,7 @@ public class Dump implements AutoCloseable {
         if (encrypted && !Arrays.equals(meta.masterKeyDigest(), encSpi.masterKeyDigest())) {
             throw new IllegalArgumentException("Dump '" +
                 meta.snapshotName() + "' has different master key digest. To restore this " +
-                "snapshot, provide the same master key.");
+                "dump, provide the same master key.");
         }
 
         DumpEntrySerializer serializer = new DumpEntrySerializer(

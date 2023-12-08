@@ -127,6 +127,7 @@ public class SnapshotMetadata implements Serializable {
      * @param masterKeyDigest Master key digest for encrypted caches.
      * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
      * @param dump If {@code true} cache group dump stored.
+     * @param encKey Encryption key. For dumps, only.
      */
     public SnapshotMetadata(
         UUID rqId,
@@ -143,7 +144,7 @@ public class SnapshotMetadata implements Serializable {
         @Nullable byte[] masterKeyDigest,
         boolean onlyPrimary,
         boolean dump,
-        byte[] encKey
+        @Nullable byte[] encKey
     ) {
         this.rqId = rqId;
         this.snpName = snpName;

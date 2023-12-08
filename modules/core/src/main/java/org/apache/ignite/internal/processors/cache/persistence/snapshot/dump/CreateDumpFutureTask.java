@@ -130,7 +130,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      * Map shared across all instances of {@link PartitionDumpContext} and {@link DumpEntrySerializer}.
      * Used to store encrypted data in case dump encrypted.
      */
-    private final ConcurrentMap<Long, ByteBuffer> encThLocBufs;
+    private final @Nullable ConcurrentMap<Long, ByteBuffer> encThLocBufs;
 
     /**
      * @param cctx Cache context.
