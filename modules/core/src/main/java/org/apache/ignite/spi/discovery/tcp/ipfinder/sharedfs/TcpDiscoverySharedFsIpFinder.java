@@ -254,8 +254,8 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
     private Iterable<String> distinctNames(Iterable<InetSocketAddress> addresses) {
         Set<String> result = new HashSet<>();
 
-        for (InetSocketAddress address : addresses) {
-            result.add(name(address));
+        for (InetSocketAddress addr : addresses) {
+            result.add(name(addr));
         }
 
         return result;
