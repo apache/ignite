@@ -271,7 +271,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "Use specified SQL query engine for a connection.", null, null, false, null);
 
     /** Properties array. */
-    private final ConnectionProperty[] propsArray = {
+    private final ConnectionProperty[] propsArr = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
         tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate, nestedTxMode,
         sslMode, sslCipherSuites, sslProtocol, sslKeyAlgorithm,
@@ -719,8 +719,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         if (!F.isEmpty(url))
             parseUrl(url, props0);
 
-        for (ConnectionProperty aPropsArray : propsArray)
-            aPropsArray.init(props0);
+        for (ConnectionProperty aPropsArr : propsArr)
+            aPropsArr.init(props0);
 
         if (!F.isEmpty(props.getProperty("user"))) {
             setUsername(props.getProperty("user"));
@@ -939,10 +939,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
      * @return Driver's properties info array.
      */
     public DriverPropertyInfo[] getDriverPropertyInfo() {
-        DriverPropertyInfo[] infos = new DriverPropertyInfo[propsArray.length];
+        DriverPropertyInfo[] infos = new DriverPropertyInfo[propsArr.length];
 
-        for (int i = 0; i < propsArray.length; ++i)
-            infos[i] = propsArray[i].getDriverPropertyInfo();
+        for (int i = 0; i < propsArr.length; ++i)
+            infos[i] = propsArr[i].getDriverPropertyInfo();
 
         return infos;
     }
@@ -953,7 +953,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     public Properties storeToProperties() {
         Properties props = new Properties();
 
-        for (ConnectionProperty prop : propsArray) {
+        for (ConnectionProperty prop : propsArr) {
             if (prop.valueObject() != null)
                 props.setProperty(PROP_PREFIX + prop.getName(), prop.valueObject());
         }
