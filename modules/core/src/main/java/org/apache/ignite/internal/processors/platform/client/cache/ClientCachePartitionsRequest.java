@@ -85,7 +85,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
             return new ClientResponse(requestId(), "Cannot perform cache operation because the cluster is inactive.");
 
         Map<ClientCachePartitionAwarenessGroup, ClientCachePartitionAwarenessGroup> grps = new HashMap<>(cacheIds.length);
-        ClientAffinityTopologyVersion affinityVer = ctx.checkAffinityTopologyVersion();
+        ClientAffinityTopologyVersion affVer = ctx.checkAffinityTopologyVersion();
 
         Set<Integer> affectedGroupIds = Arrays.stream(cacheIds)
             .mapToObj(id -> ctx.kernalContext().cache().cacheDescriptor(id))
@@ -102,7 +102,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
         // As a first step, get a set of mappings that we need to return.
         // To do that, check if any of the caches listed in request can be grouped.
         for (List<DynamicCacheDescriptor> affected : F.view(allCaches, affectedGroupIds::contains).values()) {
-            ClientCachePartitionAwarenessGroup grp = processCache(ctx, affinityVer, F.first(affected), withCustomMappings);
+            ClientCachePartitionAwarenessGroup grp = processCache(ctx, affVer, F.first(affected), withCustomMappings);
 
             if (grp == null)
                 continue;
@@ -114,7 +114,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
 
         // As a second step, check all other caches and add them to groups they are compatible with.
         for (List<DynamicCacheDescriptor> descs : F.view(allCaches, new NotContainsPredicate<>(affectedGroupIds)).values()) {
-            ClientCachePartitionAwarenessGroup grp = processCache(ctx, affinityVer, F.first(descs), withCustomMappings);
+            ClientCachePartitionAwarenessGroup grp = processCache(ctx, affVer, F.first(descs), withCustomMappings);
 
             if (grp == null)
                 continue;
@@ -125,7 +125,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
                 grp0.addAll(descs);
         }
 
-        return new ClientCachePartitionsResponse(requestId(), new ArrayList<>(grps.keySet()), affinityVer);
+        return new ClientCachePartitionsResponse(requestId(), new ArrayList<>(grps.keySet()), affVer);
     }
 
     /**
