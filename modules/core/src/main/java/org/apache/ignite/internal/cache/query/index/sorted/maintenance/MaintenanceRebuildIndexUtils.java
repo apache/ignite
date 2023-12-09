@@ -60,24 +60,24 @@ public class MaintenanceRebuildIndexUtils {
         if (parameters == null)
             return Collections.emptyList();
 
-        String[] parametersArray = parameters.split(INDEX_REBUILD_PARAMETER_SEPARATOR_REGEX);
+        String[] parametersArr = parameters.split(INDEX_REBUILD_PARAMETER_SEPARATOR_REGEX);
 
-        if (parametersArray.length == 0)
+        if (parametersArr.length == 0)
             return Collections.emptyList();
 
-        assert (parametersArray.length % 2) == 0;
+        assert (parametersArr.length % 2) == 0;
 
-        List<MaintenanceRebuildIndexTarget> params = new ArrayList<>(parametersArray.length / 2);
+        List<MaintenanceRebuildIndexTarget> params = new ArrayList<>(parametersArr.length / 2);
 
-        for (int i = 0; i < parametersArray.length; i += 2) {
-            String idxNameEncoded = parametersArray[i + 1];
+        for (int i = 0; i < parametersArr.length; i += 2) {
+            String idxNameEncoded = parametersArr[i + 1];
 
             String idxName = new String(
                 DECODER.decode(idxNameEncoded.getBytes(StandardCharsets.UTF_8)),
                 StandardCharsets.UTF_8
             );
 
-            params.add(new MaintenanceRebuildIndexTarget(Integer.parseInt(parametersArray[i]), idxName));
+            params.add(new MaintenanceRebuildIndexTarget(Integer.parseInt(parametersArr[i]), idxName));
         }
 
         return params;

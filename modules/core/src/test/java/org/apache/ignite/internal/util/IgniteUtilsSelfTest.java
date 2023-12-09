@@ -768,9 +768,9 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testResolveLocalAddresses() throws Exception {
-        InetAddress inetAddress = InetAddress.getByName("0.0.0.0");
+        InetAddress inetAddr = InetAddress.getByName("0.0.0.0");
 
-        IgniteBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(inetAddress);
+        IgniteBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(inetAddr);
 
         Collection<String> hostNames = addrs.get2();
 
@@ -1589,18 +1589,18 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             boolean ignoreLocalHostname = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME);
             String userDefinedHost = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_LOCAL_HOST);
 
-            InetSocketAddress inetSocketAddress = new InetSocketAddress(userDefinedHost, 0);
-            InetAddress addr = inetSocketAddress.getAddress();
-            IgniteBiTuple<Collection<String>, Collection<String>> localAddresses = IgniteUtils.resolveLocalAddresses(addr);
+            InetSocketAddress inetSocketAddr = new InetSocketAddress(userDefinedHost, 0);
+            InetAddress addr = inetSocketAddr.getAddress();
+            IgniteBiTuple<Collection<String>, Collection<String>> localAddrs = IgniteUtils.resolveLocalAddresses(addr);
 
             if (ignoreLocalHostname) {
                 // If local hostname is ignored, then no hostname should be resolved.
-                assertTrue(localAddresses.get2().isEmpty());
+                assertTrue(localAddrs.get2().isEmpty());
             }
             else {
                 // If local hostname is not ignored, then we should receive example.com.
-                assertFalse(localAddresses.get2().isEmpty());
-                assertEquals("example.com", F.first(localAddresses.get2()));
+                assertFalse(localAddrs.get2().isEmpty());
+                assertEquals("example.com", F.first(localAddrs.get2()));
             }
         }
         finally {
