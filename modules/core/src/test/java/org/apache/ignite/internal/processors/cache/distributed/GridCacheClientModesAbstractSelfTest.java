@@ -217,7 +217,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
             }
             else {
                 boolean foundEntry = false;
-                boolean foundAffinityNode = false;
+                boolean foundAffNode = false;
 
                 for (int k = 0; k < 10000; k++) {
                     String key = "key" + k;
@@ -226,11 +226,11 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
                         foundEntry = true;
 
                     if (g.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key).contains(g.cluster().localNode()))
-                        foundAffinityNode = true;
+                        foundAffNode = true;
                 }
 
                 assertTrue("Did not found primary or backup entry for grid: " + i, foundEntry);
-                assertTrue("Did not found affinity node for grid: " + i, foundAffinityNode);
+                assertTrue("Did not found affinity node for grid: " + i, foundAffNode);
             }
         }
     }

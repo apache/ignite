@@ -367,9 +367,9 @@ public class GridAffinityAssignmentCache {
             boolean skipCalculation = true;
 
             for (DiscoveryEvent event : events.events()) {
-                boolean affinityNode = CU.affinityNode(event.eventNode(), nodeFilter);
+                boolean affNode = CU.affinityNode(event.eventNode(), nodeFilter);
 
-                if (affinityNode || event.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+                if (affNode || event.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                     skipCalculation = false;
 
                     break;
@@ -465,17 +465,17 @@ public class GridAffinityAssignmentCache {
         List<ClusterNode> sorted,
         BaselineTopology blt
     ) {
-        List<ClusterNode> baselineAffinityNodes = blt.createBaselineView(sorted, nodeFilter);
+        List<ClusterNode> baselineAffNodes = blt.createBaselineView(sorted, nodeFilter);
 
         List<List<ClusterNode>> calculated = aff.assignPartitions(new GridAffinityFunctionContextImpl(
-            baselineAffinityNodes,
+            baselineAffNodes,
             prevAssignment != null ? prevAssignment.assignment() : null,
             events != null ? events.lastEvent() : null,
             topVer,
             backups
         ));
 
-        baselineAssignment = IdealAffinityAssignment.create(topVer, baselineAffinityNodes, calculated);
+        baselineAssignment = IdealAffinityAssignment.create(topVer, baselineAffNodes, calculated);
     }
 
     /**

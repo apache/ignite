@@ -424,12 +424,12 @@ public class JdbcThinPartitionAwarenessReconnectionAndFailoverSelfTest extends J
             stmt.execute(sql);
             stmt.execute(sql);
 
-            AffinityCache affinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
+            AffinityCache affCache = GridTestUtils.getFieldValue(conn, "affinityCache");
 
-            Integer part = ((PartitionSingleNode)affinityCache.partitionResult(
+            Integer part = ((PartitionSingleNode)affCache.partitionResult(
                 new QualifiedSQLQuery("PUBLIC", sql)).partitionResult().tree()).value();
 
-            UUID nodeId = affinityCache.cacheDistribution(GridCacheUtils.cacheId(cacheName))[part];
+            UUID nodeId = affCache.cacheDistribution(GridCacheUtils.cacheId(cacheName))[part];
 
             int gridIdx = new Integer(Ignition.ignite(nodeId).name().substring(getTestIgniteInstanceName().length()));
             stopGrid(gridIdx);

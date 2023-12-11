@@ -542,21 +542,21 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         int key = 0;
 
-        int[] notAffinityKey = new int[2];
+        int[] notAffKey = new int[2];
 
-        for (int i = 0; i < notAffinityKey.length; i++) {
+        for (int i = 0; i < notAffKey.length; i++) {
             while (ignite.affinity(DEFAULT_CACHE_NAME).isPrimary(ignite.localNode(), key))
                 key++;
 
-            notAffinityKey[i] = key;
+            notAffKey[i] = key;
 
             key++;
         }
 
         String[] queries = {
             "create table test(ID int primary key, NAME varchar(20))",
-            "insert into test (ID, NAME) values (" + notAffinityKey[0] + ", 'name')",
-            "insert into test (ID, NAME) values (" + notAffinityKey[1] + ", 'name')",
+            "insert into test (ID, NAME) values (" + notAffKey[0] + ", 'name')",
+            "insert into test (ID, NAME) values (" + notAffKey[1] + ", 'name')",
             "SELECT * FROM test"
         };
 
