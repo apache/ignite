@@ -99,10 +99,10 @@ public class IdealAffinityAssignment {
         Map<Object, Set<Integer>> primaryPartitions = U.newHashMap(nodesSize);
 
         for (int size = assignment.size(), p = 0; p < size; p++) {
-            List<ClusterNode> affinityNodes = assignment.get(p);
+            List<ClusterNode> affNodes = assignment.get(p);
 
-            if (!affinityNodes.isEmpty()) {
-                ClusterNode primary = affinityNodes.get(0);
+            if (!affNodes.isEmpty()) {
+                ClusterNode primary = affNodes.get(0);
 
                 primaryPartitions.computeIfAbsent(primary.consistentId(),
                     id -> new HashSet<>(U.capacity(size / nodesSize * 2))).add(p);

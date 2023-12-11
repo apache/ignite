@@ -44,9 +44,9 @@ public class IgniteSqlCreateTableTemplateTest extends AbstractIndexingCommonTest
 
         customCacheConfiguration.setName("CUSTOM_TEMPLATE*");
 
-        MockAffinityKeyMapper customAffinityMapper = new MockAffinityKeyMapper();
+        MockAffinityKeyMapper customAffMapper = new MockAffinityKeyMapper();
 
-        customCacheConfiguration.setAffinityMapper(customAffinityMapper);
+        customCacheConfiguration.setAffinityMapper(customAffMapper);
 
         configuration.setCacheConfiguration(defaultCacheConfiguration, customCacheConfiguration);
 

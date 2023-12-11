@@ -491,20 +491,20 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private Map<UUID, List<Integer>> personCachePartitions(String cacheName) {
         // Getting affinity for person cache.
-        Affinity<Object> affinity = ignite().affinity(cacheName);
+        Affinity<Object> aff = ignite().affinity(cacheName);
 
         // Building a list of all partitions numbers.
         List<Integer> rndParts = new ArrayList<>(10);
 
-        if (affinity.partitions() <= SCAN_QUERY_PARTITION_AMOUNT)
-            for (int i = 0; i < affinity.partitions(); i++)
+        if (aff.partitions() <= SCAN_QUERY_PARTITION_AMOUNT)
+            for (int i = 0; i < aff.partitions(); i++)
                 rndParts.add(i);
         else {
             for (int i = 0; i < SCAN_QUERY_PARTITION_AMOUNT; i++) {
                 int partNum;
 
                 do
-                    partNum = nextRandom(affinity.partitions());
+                    partNum = nextRandom(aff.partitions());
                 while (rndParts.contains(partNum));
 
                 rndParts.add(partNum);
@@ -514,7 +514,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         Collections.sort(rndParts);
 
         // Getting partition to node mapping.
-        Map<Integer, ClusterNode> partPerNodes = affinity.mapPartitionsToNodes(rndParts);
+        Map<Integer, ClusterNode> partPerNodes = aff.mapPartitionsToNodes(rndParts);
 
         // Building node to partitions mapping.
         Map<UUID, List<Integer>> nodesToPart = new HashMap<>();

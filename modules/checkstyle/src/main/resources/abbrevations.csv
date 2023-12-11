@@ -1,7 +1,7 @@
 # First word is wrong full term, other is correct abbrevations to build helpfull error message.
 address,addr
 addresses,addrs
-#affinity,aff
+affinity,aff
 argument,arg
 arguments,args
 array,arr
