@@ -5492,9 +5492,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DetachedClusterNode clusterNode = new DetachedClusterNode(consistentId, ctx.nodeAttributes());
 
             for (DynamicCacheDescriptor cacheDescriptor : persistentCaches()) {
-                boolean affinityNode = CU.affinityNode(clusterNode, cacheDescriptor.cacheConfiguration().getNodeFilter());
+                boolean affNode = CU.affinityNode(clusterNode, cacheDescriptor.cacheConfiguration().getNodeFilter());
 
-                if (!affinityNode)
+                if (!affNode)
                     continue;
 
                 startCacheInRecoveryMode(cacheDescriptor);

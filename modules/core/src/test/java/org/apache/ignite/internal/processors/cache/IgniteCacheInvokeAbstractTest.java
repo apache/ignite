@@ -316,10 +316,10 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     public void testInvokeAllAppliedOnceOnBinaryTypeRegistration() {
         IgniteCache<MyKey, Integer> cache = jcache();
 
-        Affinity<Object> affinity = grid(0).affinity(cache.getName());
+        Affinity<Object> aff = grid(0).affinity(cache.getName());
 
         for (int i = 0; i < gridCount(); i++) {
-            if (!affinity.isPrimary(grid(i).localNode(), new MyKey(""))) {
+            if (!aff.isPrimary(grid(i).localNode(), new MyKey(""))) {
                 cache = jcache(i);
                 break;
             }
