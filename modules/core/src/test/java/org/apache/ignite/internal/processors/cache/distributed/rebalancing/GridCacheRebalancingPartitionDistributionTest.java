@@ -119,14 +119,14 @@ public class GridCacheRebalancingPartitionDistributionTest extends GridRollingRe
         @Override public void test() throws AssertionError {
             super.test();
 
-            Affinity<?> affinity = ignite().affinity(CACHE_NAME);
+            Affinity<?> aff = ignite().affinity(CACHE_NAME);
 
-            int partCnt = affinity.partitions();
+            int partCnt = aff.partitions();
 
             Map<ClusterNode, Integer> partMap = new HashMap<>(serverCount());
 
             for (int i = 0; i < partCnt; i++) {
-                ClusterNode node = affinity.mapPartitionToNode(i);
+                ClusterNode node = aff.mapPartitionToNode(i);
 
                 int cnt = partMap.containsKey(node) ? partMap.get(node) : 0;
 

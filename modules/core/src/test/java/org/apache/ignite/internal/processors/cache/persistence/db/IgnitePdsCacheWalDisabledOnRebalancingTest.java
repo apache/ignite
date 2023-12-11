@@ -235,18 +235,18 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         fillCache(ig0.dataStreamer(CACHE3_NAME), CACHE_SIZE, GENERATING_FUNC);
 
-        List<Integer> nonAffinityKeys1 = nearKeys(grid(1).cache(CACHE3_NAME), 100, CACHE_SIZE / 2);
-        List<Integer> nonAffinityKeys2 = nearKeys(grid(2).cache(CACHE3_NAME), 100, CACHE_SIZE / 2);
+        List<Integer> nonAffKeys1 = nearKeys(grid(1).cache(CACHE3_NAME), 100, CACHE_SIZE / 2);
+        List<Integer> nonAffKeys2 = nearKeys(grid(2).cache(CACHE3_NAME), 100, CACHE_SIZE / 2);
 
         stopGrid(1);
         stopGrid(2);
 
-        Set<Integer> nonAffinityKeysSet = new HashSet<>();
+        Set<Integer> nonAffKeysSet = new HashSet<>();
 
-        nonAffinityKeysSet.addAll(nonAffinityKeys1);
-        nonAffinityKeysSet.addAll(nonAffinityKeys2);
+        nonAffKeysSet.addAll(nonAffKeys1);
+        nonAffKeysSet.addAll(nonAffKeys2);
 
-        fillCache(ig0.dataStreamer(CACHE3_NAME), nonAffinityKeysSet, GENERATING_FUNC);
+        fillCache(ig0.dataStreamer(CACHE3_NAME), nonAffKeysSet, GENERATING_FUNC);
 
         int groupId = ((IgniteEx)ig0).cachex(CACHE3_NAME).context().groupId();
 

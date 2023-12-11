@@ -140,9 +140,9 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         };
 
         if (colocated) {
-            Object affinityKey = name.hashCode();
+            Object affKey = name.hashCode();
 
-            return ch.affinityService(cacheId, affinityKey, ClientOperation.OP_SET_ITERATOR_START, payloadWriter, payloadReader);
+            return ch.affinityService(cacheId, affKey, ClientOperation.OP_SET_ITERATOR_START, payloadWriter, payloadReader);
         }
 
         return ch.service(ClientOperation.OP_SET_ITERATOR_START, payloadWriter, payloadReader);
