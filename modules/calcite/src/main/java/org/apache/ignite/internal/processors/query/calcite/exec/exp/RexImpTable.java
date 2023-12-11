@@ -2481,9 +2481,9 @@ public class RexImpTable {
         return (translator, call, nullAs) -> {
             final RexImpTable.RexCallImplementor rexCallImplementor
                 = createRexCallImplementor(implementor, nullPolicy, harmonize);
-            final List<RexToLixTranslator.Result> arguments = translator.getCallOperandResult(call);
-            assert arguments != null;
-            final RexToLixTranslator.Result result = rexCallImplementor.implement(translator, call, arguments);
+            final List<RexToLixTranslator.Result> args = translator.getCallOperandResult(call);
+            assert args != null;
+            final RexToLixTranslator.Result result = rexCallImplementor.implement(translator, call, args);
             return nullAs.handle(result.valueVariable);
         };
     }
