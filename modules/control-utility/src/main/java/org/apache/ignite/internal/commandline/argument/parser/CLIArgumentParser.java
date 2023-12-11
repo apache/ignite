@@ -61,8 +61,8 @@ public class CLIArgumentParser {
     ) {
         this.positionalArgCfg = positionalArgConfig;
 
-        for (CLIArgument<?> cliArgument : argConfiguration)
-            this.argConfiguration.put(cliArgument.name(), cliArgument);
+        for (CLIArgument<?> cliArg : argConfiguration)
+            this.argConfiguration.put(cliArg.name(), cliArg);
     }
 
     /**

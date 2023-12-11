@@ -2,7 +2,8 @@
 address,addr
 addresses,addrs
 #affinity,aff
-#argument,arg
+argument,arg
+arguments,args
 array,arr
 #attribute,attr
 #attributes,attrs
