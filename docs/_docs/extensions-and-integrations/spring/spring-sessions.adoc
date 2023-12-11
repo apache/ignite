@@ -1,0 +1,110 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Apache Ignite With Spring Session
+
+== Overview
+
+
+Apache Ignite Spring Session integration provides SessionRepository and IndexedSessionRepository implementation and configuration support. Spring Session simplifies support for clustered sessions without being tied to an application container specific solution.
+
+
+== Maven Configuration
+
+Add the `ignite-spring-session-ext` extension to your Maven to use your Ignite cluster for Spring Session storage and replication. Here is how you can add this extension to your project:
+
+[tabs]
+--
+tab:pom.xml[]
+[source,xml]
+----
+<dependencies>
+  <dependency>
+    <groupId>org.springframework.session</groupId>
+    <artifactId>spring-session-core</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-spring-session-ext</artifactId>
+    <version>1.0.0</version>
+  </dependency>
+</dependencies>
+----
+--
+
+=== Set Ignite Up Programmatically
+
+To expose Spring Sessions to Ignite:
+
+- Add the `@EnableIgniteHttpSession` annotation to the class that configures Ignite session.
+- Add the `@SpringSessionIgnite` annotation to your Ignite instance.
+
+Here is how you can add these annotations:
+
+[source,java]
+----
+@Configuration
+@EnableIgniteHttpSession
+public class SessionConfiguration {
+    @Bean
+    @SpringSessionIgnite
+    public Ignite ignite() {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        TcpDiscoverySpi tcpDiscoverySpi = new TcpDiscoverySpi();
+
+        tcpDiscoverySpi.setLocalAddress("127.0.0.1")
+                       .setLocalPort(47500)
+                       .setLocalPortRange(10);
+
+        cfg.setDiscoverySpi();
+
+        return Ignition.start(cfg);
+    }
+}
+----
+
+After you add these annotations, Spring Session will use Ignite as a data storage for sessions. For example, here is how you can create a simple controller:
+
+[source,java]
+----
+@Controller
+public class SampleController {
+    @GetMapping("/")
+    public String SessionId(HttpSession session) {
+        return session.getId();
+    }
+}
+----
+
+
+== Configuration
+
+
+`@EnableIgniteHttpSession` annotation provides arguments to configure the session storage:
+
+- `maxInactiveIntervalInSeconds` – session timeout in seconds. By default, it is set to 1800 seconds (30 minutes).
+- `sessionMapName` – the name of the distributed map that will be used in Ignite to store the session data.
+By default, it is set to `"spring:session:sessions"`.
+- `flushMode` – flush mode for the Ignite sessions.
+The default is `FlushMode#ON_SAVE` which only updates the backing distributed storage when `SessionRepository#save(Session)` is invoked.
+In a web environment this happens just before the HTTP response is committed.
+- `saveMode` – save mode for the session. The default is `SaveMode#ON_SET_ATTRIBUTE`, which
+only saves changes made to session.
+
+
+== Example
+
+
+You can find an example in the https://github.com/antkr/ignite-spring-session-demo[example repository, windows="_blank"]. In it, an Ignite node is started with a Spring Session controller.
