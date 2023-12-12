@@ -98,14 +98,14 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
             boolean skipStore = (flags & SKIP_STORE) != 0;
 
             // Don't use thread buffer for a one-off streamer operation.
-            boolean useThreadBuffer = !close;
+            boolean useThreadBuf = !close;
 
             if (perNodeBufferSize >= 0)
                 dataStreamer.perNodeBufferSize(perNodeBufferSize);
             else if (entries != null && !entries.isEmpty() && close)
                 dataStreamer.perNodeBufferSize(entries.size());
 
-            if (perThreadBufferSize >= 0 && useThreadBuffer)
+            if (perThreadBufferSize >= 0 && useThreadBuf)
                 dataStreamer.perThreadBufferSize(perThreadBufferSize);
 
             dataStreamer.allowOverwrite(allowOverwrite);
@@ -116,7 +116,7 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
                 dataStreamer.receiver(createReceiver(ctx.kernalContext(), receiverObj, receiverPlatform, keepBinary));
 
             if (entries != null)
-                dataStreamer.addDataInternal(entries, useThreadBuffer);
+                dataStreamer.addDataInternal(entries, useThreadBuf);
 
             if (flush)
                 dataStreamer.flush();
