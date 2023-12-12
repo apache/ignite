@@ -24,14 +24,6 @@ Continuous query implementation guarantees exactly once delivery of an event to 
 
 You can also specify a remote filter to narrow down the range of entries that are monitored for updates.
 
-[CAUTION]
-====
-[discrete]
-=== Continuous Queries and MVCC
-Continuous queries have a number of link:transactions/mvcc[functional limitations] when used with MVCC-enabled caches.
-====
-
-
 == Local Listener
 
 When a cache gets modified (an entry is inserted, updated, or deleted), an event is sent to the continuous query's local listener so that your application can react accordingly.
