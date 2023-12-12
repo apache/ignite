@@ -40,6 +40,7 @@ public class WalPageCompressionIntegrationTest extends AbstractPageCompressionIn
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteName) throws Exception {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
+            .setWriteRecoveryDataOnCheckpoint(false)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
             .setWalPageCompression(compression)
             .setWalPageCompressionLevel(compressionLevel);

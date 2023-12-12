@@ -79,6 +79,11 @@ public interface CheckpointProgress {
     public AtomicInteger evictedPagesCounter();
 
     /**
+     * @return Counter for written recovery pages during current checkpoint. Not <code>null</code> only if checkpoint is running.
+     */
+    public AtomicInteger writtenRecoveryPagesCounter();
+
+    /**
      * @return Number of pages in current checkpoint. If checkpoint is not running, returns 0.
      */
     public int currentCheckpointPagesCount();
@@ -113,6 +118,13 @@ public interface CheckpointProgress {
      * @param delta Pages num to update.
      */
     public void updateEvictedPages(int delta);
+
+    /**
+     * Update written recovery pages counter.
+     *
+     * @param delta Pages num to update.
+     */
+    public void updateWrittenRecoveryPages(int delta);
 
     /** Clear cp progress counters. */
     public void clearCounters();

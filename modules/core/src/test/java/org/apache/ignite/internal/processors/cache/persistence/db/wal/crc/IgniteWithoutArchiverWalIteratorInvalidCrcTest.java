@@ -69,6 +69,7 @@ public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAb
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
+                .setWriteRecoveryDataOnCheckpoint(false)
                 .setWalSegmentSize(WAL_SEGMENT_SIZE)
                 .setWalMode(WALMode.LOG_ONLY)
                 .setWalArchivePath(DFLT_WAL_PATH) // disable archiving
