@@ -129,11 +129,11 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
 
         StringBuilder userAttrsName = new StringBuilder();
         if (!rows.isEmpty() && rows.get(0).userAttrs != null) {
-            for (String userAttribute : rows.get(0).userAttrs.keySet()) {
+            for (String userAttr : rows.get(0).userAttrs.keySet()) {
                 userAttrsName.append(',');
 
-                if (userAttribute != null)
-                    userAttrsName.append(userAttribute);
+                if (userAttr != null)
+                    userAttrsName.append(userAttr);
             }
         }
         printer.accept("[groupId,partition,nodeId,primary,state,updateCounter,partitionSize,nodeAddresses" + userAttrsName + "]");
@@ -333,10 +333,10 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
             out.a(addrs);
 
             if (userAttrs != null) {
-                for (String userAttribute : userAttrs.values()) {
+                for (String userAttr : userAttrs.values()) {
                     out.a(',');
-                    if (userAttribute != null)
-                        out.a(userAttribute);
+                    if (userAttr != null)
+                        out.a(userAttr);
                 }
             }
 
