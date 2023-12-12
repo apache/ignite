@@ -5,8 +5,8 @@ affinity,aff
 argument,arg
 arguments,args
 array,arr
-#attribute,attr
-#attributes,attrs
+attribute,attr
+attributes,attrs
 buffer,buf
 #class,cls
 #command,cmd
