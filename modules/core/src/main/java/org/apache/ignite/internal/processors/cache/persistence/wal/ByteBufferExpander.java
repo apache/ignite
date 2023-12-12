@@ -33,10 +33,10 @@ public class ByteBufferExpander implements AutoCloseable {
      * @param order Byte order.
      */
     public ByteBufferExpander(int initSize, ByteOrder order) {
-        ByteBuffer buffer = GridUnsafe.allocateBuffer(initSize);
-        buffer.order(order);
+        ByteBuffer buf0 = GridUnsafe.allocateBuffer(initSize);
+        buf0.order(order);
 
-        buf = buffer;
+        buf = buf0;
     }
 
     /**
