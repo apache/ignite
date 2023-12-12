@@ -53,14 +53,14 @@ public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
     }
 
     /** {@inheritDoc} */
-    @Override public Object getAttribute(String attribute) {
-        if (attribute.equals("MBeanInfo"))
+    @Override public Object getAttribute(String attr) {
+        if (attr.equals("MBeanInfo"))
             return getMBeanInfo();
 
-        Metric metric = mreg.findMetric(attribute);
+        Metric metric = mreg.findMetric(attr);
 
         if (metric == null)
-            return searchHistogram(attribute, mreg);
+            return searchHistogram(attr, mreg);
 
         if (metric instanceof BooleanMetric)
             return ((BooleanMetric)metric).value();
@@ -80,7 +80,7 @@ public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
     @Override public MBeanInfo getMBeanInfo() {
         Iterator<Metric> iter = mreg.iterator();
 
-        List<MBeanAttributeInfo> attributes = new ArrayList<>();
+        List<MBeanAttributeInfo> attrs = new ArrayList<>();
 
         iter.forEachRemaining(metric -> {
             if (metric instanceof HistogramMetric) {
@@ -91,7 +91,7 @@ public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
                 for (String name : names) {
                     String n = name.substring(mreg.name().length() + 1);
 
-                    attributes.add(new MBeanAttributeInfo(
+                    attrs.add(new MBeanAttributeInfo(
                         n,
                         Long.class.getName(),
                         metric.description() != null ? metric.description() : n,
@@ -101,7 +101,7 @@ public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
                 }
             }
             else {
-                attributes.add(new MBeanAttributeInfo(
+                attrs.add(new MBeanAttributeInfo(
                     metric.name().substring(mreg.name().length() + 1),
                     metricClass(metric),
                     metric.description() != null ? metric.description() : metric.name(),
@@ -115,7 +115,7 @@ public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
         return new MBeanInfo(
             ReadOnlyMetricManager.class.getName(),
             mreg.name(),
-            attributes.toArray(new MBeanAttributeInfo[attributes.size()]),
+            attrs.toArray(new MBeanAttributeInfo[attrs.size()]),
             null,
             null,
             null);
