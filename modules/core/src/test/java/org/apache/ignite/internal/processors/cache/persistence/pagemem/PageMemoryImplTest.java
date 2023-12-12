@@ -279,7 +279,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         int pagesForStartThrottling = 10;
 
         //Number of pages which were poll from checkpoint buffer for throttling.
-        AtomicInteger cpBufferPollPages = new AtomicInteger();
+        AtomicInteger cpBufPollPages = new AtomicInteger();
 
         // Create a 1 mb page memory.
         PageMemoryImpl memory = createPageMemory(
@@ -290,7 +290,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             (IgniteInClosure<FullPageId>)fullPageId -> {
                 //First increment then get because pageStoreMgr.storedPages always contains at least one page
                 // which was written before throttling.
-                assertEquals(cpBufferPollPages.incrementAndGet(), pageStoreMgr.storedPages.size());
+                assertEquals(cpBufPollPages.incrementAndGet(), pageStoreMgr.storedPages.size());
             }
         );
 
@@ -317,7 +317,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         // from checkpoint buffer before throttling will be disabled but at least one page always would be written
         // outside of throttling and in our case we certainly know that this page is also contained in checkpoint buffer
         // (because all of our pages are in checkpoint buffer).
-        assertEquals(pagesForStartThrottling - 1, cpBufferPollPages.get());
+        assertEquals(pagesForStartThrottling - 1, cpBufPollPages.get());
     }
 
     /**

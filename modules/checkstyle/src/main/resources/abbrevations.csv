@@ -7,7 +7,7 @@ arguments,args
 array,arr
 attribute,attr
 attributes,attrs
-#buffer,buf
+buffer,buf
 #class,cls
 #command,cmd
 #config,cfg

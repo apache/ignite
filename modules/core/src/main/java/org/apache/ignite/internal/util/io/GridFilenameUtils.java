@@ -1318,12 +1318,12 @@ public class GridFilenameUtils {
 
         char[] arr = text.toCharArray();
         ArrayList<String> list = new ArrayList<String>();
-        StringBuilder buffer = new StringBuilder();
+        StringBuilder buf = new StringBuilder();
         for (int i = 0; i < arr.length; i++) {
             if (arr[i] == '?' || arr[i] == '*') {
-                if (buffer.length() != 0) {
-                    list.add(buffer.toString());
-                    buffer.setLength(0);
+                if (buf.length() != 0) {
+                    list.add(buf.toString());
+                    buf.setLength(0);
                 }
                 if (arr[i] == '?')
                     list.add("?");
@@ -1332,10 +1332,10 @@ public class GridFilenameUtils {
                     list.add("*");
             }
             else
-                buffer.append(arr[i]);
+                buf.append(arr[i]);
         }
-        if (buffer.length() != 0)
-            list.add(buffer.toString());
+        if (buf.length() != 0)
+            list.add(buf.toString());
 
         return list.toArray( new String[ list.size() ] );
     }
