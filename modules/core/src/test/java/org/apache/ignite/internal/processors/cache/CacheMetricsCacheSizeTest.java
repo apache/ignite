@@ -96,9 +96,9 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         Marshaller marshaller = grid(0).context().config().getMarshaller();
 
-        byte[] buffer = marshaller.marshal(msg);
+        byte[] buf = marshaller.marshal(msg);
 
-        Object readObject = marshaller.unmarshal(buffer, getClass().getClassLoader());
+        Object readObject = marshaller.unmarshal(buf, getClass().getClassLoader());
 
         assertTrue(readObject instanceof TcpDiscoveryMetricsUpdateMessage);
 
