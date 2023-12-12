@@ -30,12 +30,12 @@ import org.apache.ignite.IgniteException;
  */
 public abstract class ReadOnlyDynamicMBean implements DynamicMBean {
     /** {@inheritDoc} */
-    @Override public void setAttribute(Attribute attribute) {
+    @Override public void setAttribute(Attribute attr) {
         throw new UnsupportedOperationException("setAttribute is not supported.");
     }
 
     /** {@inheritDoc} */
-    @Override public AttributeList setAttributes(AttributeList attributes) {
+    @Override public AttributeList setAttributes(AttributeList attrs) {
         throw new UnsupportedOperationException("setAttributes is not supported.");
     }
 
@@ -60,8 +60,8 @@ public abstract class ReadOnlyDynamicMBean implements DynamicMBean {
         AttributeList list = new AttributeList();
 
         try {
-            for (String attribute : attributes) {
-                Object val = getAttribute(attribute);
+            for (String attr : attributes) {
+                Object val = getAttribute(attr);
 
                 list.add(val);
             }
