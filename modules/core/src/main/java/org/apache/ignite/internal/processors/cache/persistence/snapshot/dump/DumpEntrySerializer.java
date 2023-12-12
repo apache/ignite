@@ -137,7 +137,7 @@ public class DumpEntrySerializer {
         ByteBuffer encBuf = threadLocalBuffer(encThLocBufs);
 
         if (encBuf.capacity() < encDataSz)
-            encBuf = enlargeThreadLocalBuffer(thLocBufs, encDataSz);
+            encBuf = enlargeThreadLocalBuffer(encThLocBufs, encDataSz);
         else
             encBuf.rewind().limit(encDataSz);
 
