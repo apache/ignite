@@ -64,6 +64,7 @@ public abstract class ReadOnlyDynamicMBean implements DynamicMBean {
         try {
             for (String attr : attributes) {
                 Object val = getAttribute(attr);
+
                 if (val instanceof Attribute)
                     attrList.add((Attribute)val);
                 else
