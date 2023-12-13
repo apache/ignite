@@ -58,18 +58,18 @@ public abstract class ReadOnlyDynamicMBean implements DynamicMBean {
 
     /** {@inheritDoc} */
     @Override public AttributeList getAttributes(String[] attributes) {
-        AttributeList attrList = new AttributeList();
-        List<Attribute> list = attrList.asList();
+        AttributeList list = new AttributeList();
+        List<Attribute> attrList = list.asList();
         try {
-            for (String attribute : attributes) {
-                Object val = getAttribute(attribute);
+            for (String attr : attributes) {
+                Object val = getAttribute(attr);
                 if (val instanceof Attribute)
-                    list.add((Attribute) val);
+                    attrList.add((Attribute)val);
                 else
-                    list.add(new Attribute(attribute, val));
+                    attrList.add(new Attribute(attr, val));
             }
 
-            return attrList;
+            return list;
         }
         catch (MBeanException | ReflectionException | AttributeNotFoundException e) {
             throw new IgniteException(e);
