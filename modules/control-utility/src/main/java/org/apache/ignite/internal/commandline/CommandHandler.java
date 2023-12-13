@@ -237,7 +237,7 @@ public class CommandHandler {
         logger.info("User: " + System.getProperty("user.name"));
         logger.info("Time: " + startTime.format(formatter));
 
-        String commandName = "";
+        String cmdName = "";
 
         Throwable err = null;
         boolean verbose = false;
@@ -253,7 +253,7 @@ public class CommandHandler {
 
             ConnectionAndSslParameters<A> args = new ArgumentParser(logger, registry).parseAndValidate(rawArgs);
 
-            commandName = toFormattedCommandName(args.cmdPath().peekLast().getClass()).toUpperCase();
+            cmdName = toFormattedCommandName(args.cmdPath().peekLast().getClass()).toUpperCase();
 
             try (CliCommandInvoker<A> invoker = new CliCommandInvoker<>(args.command(), args.commandArg(), getClientConfiguration(args))) {
                 int tryConnectMaxCount = 3;
@@ -275,7 +275,7 @@ public class CommandHandler {
                             }
                         }
 
-                        logger.info("Command [" + commandName + "] started");
+                        logger.info("Command [" + cmdName + "] started");
                         logger.info("Arguments: " + argumentsToString(rawArgs));
                         logger.info(U.DELIM);
 
@@ -333,13 +333,13 @@ public class CommandHandler {
                 }
             }
 
-            logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_OK);
+            logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_OK);
 
             return EXIT_CODE_OK;
         }
         catch (IllegalArgumentException e) {
             logger.error("Check arguments. " + errorMessage(e));
-            logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
+            logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
 
             if (verbose)
                 err = e;
@@ -349,7 +349,7 @@ public class CommandHandler {
         catch (Throwable e) {
             if (isAuthError(e)) {
                 logger.error("Authentication error. " + errorMessage(e));
-                logger.info("Command [" + commandName + "] finished with code: " + ERR_AUTHENTICATION_FAILED);
+                logger.info("Command [" + cmdName + "] finished with code: " + ERR_AUTHENTICATION_FAILED);
 
                 if (verbose)
                     err = e;
@@ -371,7 +371,7 @@ public class CommandHandler {
 
                 }
 
-                logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_CONNECTION_FAILED);
+                logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_CONNECTION_FAILED);
 
                 if (verbose)
                     err = e;
@@ -383,7 +383,7 @@ public class CommandHandler {
                 IllegalArgumentException iae = X.cause(e, IllegalArgumentException.class);
 
                 logger.error("Check arguments. " + errorMessage(iae));
-                logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
+                logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
 
                 if (verbose)
                     err = e;
@@ -392,7 +392,7 @@ public class CommandHandler {
             }
 
             logger.error(errorMessage(e));
-            logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_UNEXPECTED_ERROR);
+            logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_UNEXPECTED_ERROR);
 
             err = e;
 

@@ -9,7 +9,8 @@ attribute,attr
 attributes,attrs
 buffer,buf
 class,cls
-#command,cmd
+command,cmd
+commands,cmds
 #config,cfg
 #context,ctx
 #count,cnt
