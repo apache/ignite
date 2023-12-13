@@ -566,7 +566,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        ClassLoader classLoader = U.resolveClassLoader(ldr, ctx.gridConfig());
+        ClassLoader clsLoader = U.resolveClassLoader(ldr, ctx.gridConfig());
 
         Collection<byte[]> objectsToUnmarshall = new ArrayList<>();
 
@@ -598,8 +598,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             new IgniteThrowableFunction<byte[], Object>() {
                 @Override public Object apply(byte[] binary) throws IgniteCheckedException {
                     return compressed()
-                        ? U.unmarshalZip(ctx.marshaller(), binary, classLoader)
-                        : U.unmarshal(ctx, binary, classLoader);
+                        ? U.unmarshalZip(ctx.marshaller(), binary, clsLoader)
+                        : U.unmarshal(ctx, binary, clsLoader);
                 }
             }
         );

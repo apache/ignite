@@ -8,7 +8,7 @@ array,arr
 attribute,attr
 attributes,attrs
 buffer,buf
-#class,cls
+class,cls
 #command,cmd
 #config,cfg
 #context,ctx

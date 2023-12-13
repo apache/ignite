@@ -576,9 +576,9 @@ class RelJson {
         for (SqlOperator operator : operators)
             if (operator.kind == sqlKind)
                 return operator;
-        String class_ = (String)map.get("class");
-        if (class_ != null)
-            return AvaticaUtils.instantiatePlugin(SqlOperator.class, class_);
+        String cls_ = (String)map.get("class");
+        if (cls_ != null)
+            return AvaticaUtils.instantiatePlugin(SqlOperator.class, cls_);
         return null;
     }
 
@@ -601,9 +601,9 @@ class RelJson {
     <T extends Enum<T>> T toEnum(Object o) {
         if (o instanceof Map) {
             Map<String, Object> map = (Map<String, Object>)o;
-            String class_ = (String)map.get("class");
+            String cls_ = (String)map.get("class");
             String name = map.get("name").toString();
-            return Util.enumVal((Class<T>)classForName(class_, false), name);
+            return Util.enumVal((Class<T>)classForName(cls_, false), name);
         }
 
         assert o instanceof String && ENUM_BY_NAME.containsKey(o);
