@@ -33,9 +33,11 @@ import org.jetbrains.annotations.Nullable;
  * {@code QueryCursor} delivers sorted cache entries by the order defined for queried index.
  *
  * {@code IndexQuery} has to be initialized with cache value class or type. The algorithm of discovering index is as follows:
- * 1. If {@link #idxName} is set, then use it.
- * 2. If {@link #idxName} is not set, then find an index that matches criteria fields.
- * 3. If neither {@link #idxName}, nor {@link #setCriteria(List)} is used, then perform index scan over PK index for specified Value type.
+ * <ul>
+ *      <li>If {@link #idxName} is set, then use it.</li>
+ *      <li>If {@link #idxName} is not set, then find an index that matches criteria fields.</li>
+ *      <li>If neither {@link #idxName}, nor {@link #setCriteria(List)} is used, then perform index scan over PK index for specified Value type.</li>
+ * </ul>
  *
  * Conjuction of items in {@link #criteria} has to represent a valid range to traverse the index tree.
  */
