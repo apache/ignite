@@ -683,16 +683,16 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                     return RexImpTable.FALSE_EXPR;
             }
         }
-        Type javaClass = typeFactory.getJavaClass(type);
+        Type javaCls = typeFactory.getJavaClass(type);
         final Object value2;
         switch (literal.getType().getSqlTypeName()) {
             case DECIMAL:
                 final BigDecimal bd = literal.getValueAs(BigDecimal.class);
-                if (javaClass == float.class)
-                    return Expressions.constant(bd, javaClass);
-                else if (javaClass == double.class)
-                    return Expressions.constant(bd, javaClass);
-                assert javaClass == BigDecimal.class;
+                if (javaCls == float.class)
+                    return Expressions.constant(bd, javaCls);
+                else if (javaCls == double.class)
+                    return Expressions.constant(bd, javaCls);
+                assert javaCls == BigDecimal.class;
                 return Expressions.call(
                     IgniteSqlFunctions.class,
                     "toBigDecimal",
@@ -711,7 +711,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
             case INTERVAL_YEAR_MONTH:
             case INTERVAL_MONTH:
                 value2 = literal.getValueAs(Integer.class);
-                javaClass = int.class;
+                javaCls = int.class;
                 break;
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
@@ -726,7 +726,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
             case INTERVAL_MINUTE_SECOND:
             case INTERVAL_SECOND:
                 value2 = literal.getValueAs(Long.class);
-                javaClass = long.class;
+                javaCls = long.class;
                 break;
             case CHAR:
             case VARCHAR:
@@ -743,15 +743,15 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                 throw new IllegalStateException("Unsupported data type: " + literal.getType());
             case SYMBOL:
                 value2 = literal.getValueAs(Enum.class);
-                javaClass = value2.getClass();
+                javaCls = value2.getClass();
                 break;
             default:
-                final Primitive primitive = Primitive.ofBoxOr(javaClass);
+                final Primitive primitive = Primitive.ofBoxOr(javaCls);
                 final Comparable value = literal.getValueAs(Comparable.class);
 
                 value2 = primitive != null && value instanceof Number ? primitive.number((Number)value) : value;
         }
-        return Expressions.constant(value2, javaClass);
+        return Expressions.constant(value2, javaCls);
     }
 
     /** */
@@ -975,7 +975,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
      */
     private ConstantExpression getTypedNullLiteral(RexLiteral literal) {
         assert literal.isNull();
-        Type javaClass = typeFactory.getJavaClass(literal.getType());
+        Type javaCls = typeFactory.getJavaClass(literal.getType());
         switch (literal.getType().getSqlTypeName()) {
             case DATE:
             case TIME:
@@ -983,7 +983,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
             case INTERVAL_YEAR:
             case INTERVAL_YEAR_MONTH:
             case INTERVAL_MONTH:
-                javaClass = Integer.class;
+                javaCls = Integer.class;
                 break;
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
@@ -997,12 +997,12 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
             case INTERVAL_MINUTE:
             case INTERVAL_MINUTE_SECOND:
             case INTERVAL_SECOND:
-                javaClass = Long.class;
+                javaCls = Long.class;
                 break;
         }
-        return javaClass == null || javaClass == Void.class
+        return javaCls == null || javaCls == Void.class
             ? RexImpTable.NULL_EXPR
-            : Expressions.constant(null, javaClass);
+            : Expressions.constant(null, javaCls);
     }
 
     /**

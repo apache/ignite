@@ -2025,12 +2025,12 @@ public class RexImpTable {
                 return argValueList;
             }
             assert (nullCount > 0) == type.isNullable();
-            final Type javaClass =
+            final Type javaCls =
                 translator.typeFactory.getJavaClass(type);
             final List<Expression> harmonizedArgValues = new ArrayList<>();
             for (Expression argValue : argValueList) {
                 harmonizedArgValues.add(
-                    EnumUtils.convert(argValue, javaClass));
+                    EnumUtils.convert(argValue, javaCls));
             }
             return harmonizedArgValues;
         }

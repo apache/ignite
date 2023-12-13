@@ -39,14 +39,14 @@ class P2PClassLoadingProblems {
 
     /***/
     private static void unregisterAllRemoteNodesFromP2PClassLoader(Class<?> classLoadedViaP2P, Ignite ignite) {
-        ClassLoader classLoader = classLoadedViaP2P.getClassLoader();
+        ClassLoader clsLoader = classLoadedViaP2P.getClassLoader();
 
         List<UUID> remoteNodeIds = ignite.cluster().forRemotes().nodes()
             .stream()
             .map(ClusterNode::id)
             .collect(toList());
 
-        remoteNodeIds.forEach(remoteNodeId -> unregisterNodeOnClassLoader(classLoader, remoteNodeId));
+        remoteNodeIds.forEach(remoteNodeId -> unregisterNodeOnClassLoader(clsLoader, remoteNodeId));
     }
 
     /***/

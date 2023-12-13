@@ -1525,7 +1525,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             System.out.println(localVar);
         };
 
-        Runnable capturingOuterClassLambda = () -> {
+        Runnable capturingOuterClsLambda = () -> {
             System.out.println(repeatRule);
         };
 
@@ -1533,7 +1533,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
         assertTrue(IgniteUtils.isLambda(someLambda.getClass()));
         assertTrue(IgniteUtils.isLambda(capturingLocalLambda.getClass()));
-        assertTrue(IgniteUtils.isLambda(capturingOuterClassLambda.getClass()));
+        assertTrue(IgniteUtils.isLambda(capturingOuterClsLambda.getClass()));
         assertTrue(IgniteUtils.isLambda(methodReference.getClass()));
     }
 

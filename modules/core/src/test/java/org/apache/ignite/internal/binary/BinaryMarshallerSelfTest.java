@@ -1541,8 +1541,8 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
      */
     @Test
     public void testSimpleNameLowerCaseMappers() throws Exception {
-        BinaryTypeConfiguration innerClassType = new BinaryTypeConfiguration(InnerMappedObject.class.getName());
-        BinaryTypeConfiguration publicClassType = new BinaryTypeConfiguration(TestMappedObject.class.getName());
+        BinaryTypeConfiguration innerClsType = new BinaryTypeConfiguration(InnerMappedObject.class.getName());
+        BinaryTypeConfiguration publicClsType = new BinaryTypeConfiguration(TestMappedObject.class.getName());
         BinaryTypeConfiguration typeWithCustomMapper = new BinaryTypeConfiguration(CustomMappedObject2.class.getName());
 
         typeWithCustomMapper.setIdMapper(new BinaryIdMapper() {
@@ -1565,7 +1565,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         });
 
         BinaryMarshaller marsh = binaryMarshaller(new BinaryBasicNameMapper(true), new BinaryBasicIdMapper(true),
-            Arrays.asList(innerClassType, publicClassType, typeWithCustomMapper));
+            Arrays.asList(innerClsType, publicClsType, typeWithCustomMapper));
 
         InnerMappedObject innerObj = new InnerMappedObject(10, "str1");
 

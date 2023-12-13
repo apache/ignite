@@ -84,7 +84,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
     public void testMultithreadedUpdate() throws Exception {
         multithreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridTestClassLoader classLoader = new GridTestClassLoader(
+                GridTestClassLoader clsLoader = new GridTestClassLoader(
                     InternalExecutor.class.getName(),
                     MarshallerContextImpl.class.getName(),
                     MarshallerContextImpl.CombinedMap.class.getName(),
@@ -93,9 +93,9 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
                     MarshallerMappingTransport.class.getName()
                 );
 
-                Thread.currentThread().setContextClassLoader(classLoader);
+                Thread.currentThread().setContextClassLoader(clsLoader);
 
-                Class clazz = classLoader.loadClass(InternalExecutor.class.getName());
+                Class clazz = clsLoader.loadClass(InternalExecutor.class.getName());
 
                 Object internelExecutor = clazz.newInstance();
 
