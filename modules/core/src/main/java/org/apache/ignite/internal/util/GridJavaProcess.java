@@ -140,12 +140,12 @@ public final class GridJavaProcess {
         List<String> procParams = params == null || params.isEmpty() ?
             Collections.<String>emptyList() : Arrays.asList(params.split(" "));
 
-        List<String> procCommands = new ArrayList<>();
+        List<String> procCmds = new ArrayList<>();
 
         String javaBin = resolveJavaBin(javaHome);
 
-        procCommands.add(javaBin);
-        procCommands.addAll(jvmArgs == null ? U.jvmArgs() : jvmArgs);
+        procCmds.add(javaBin);
+        procCmds.addAll(jvmArgs == null ? U.jvmArgs() : jvmArgs);
 
         if (jvmArgs == null || (!jvmArgs.contains("-cp") && !jvmArgs.contains("-classpath"))) {
             String classpath = System.getProperty("java.class.path");
@@ -158,14 +158,14 @@ public final class GridJavaProcess {
             if (cp != null)
                 classpath += System.getProperty("path.separator") + cp;
 
-            procCommands.add("-cp");
-            procCommands.add(classpath);
+            procCmds.add("-cp");
+            procCmds.add(classpath);
         }
 
-        procCommands.add(clsName);
-        procCommands.addAll(procParams);
+        procCmds.add(clsName);
+        procCmds.addAll(procParams);
 
-        ProcessBuilder builder = new ProcessBuilder(procCommands);
+        ProcessBuilder builder = new ProcessBuilder(procCmds);
 
         builder.redirectErrorStream(true);
 
