@@ -192,13 +192,13 @@ public class MavenUtils {
 
         String localProxyMavenSettingsFromEnv = System.getenv("LOCAL_PROXY_MAVEN_SETTINGS");
 
-        GridStringBuilder mavenCommandArgs = new SB(" ").a(MAVEN_DEPENDENCY_PLUGIN).a(":get -Dartifact=" + artifact);
+        GridStringBuilder mavenCmdArgs = new SB(" ").a(MAVEN_DEPENDENCY_PLUGIN).a(":get -Dartifact=" + artifact);
 
         if (!isEmpty(localProxyMavenSettingsFromEnv))
             localProxyMavenSettings = Paths.get(localProxyMavenSettingsFromEnv);
 
         if (Files.exists(localProxyMavenSettings))
-            mavenCommandArgs.a(" -s " + localProxyMavenSettings.toString());
+            mavenCmdArgs.a(" -s " + localProxyMavenSettings.toString());
         else {
             Collection<String> repos = new ArrayList<>();
 
@@ -208,10 +208,10 @@ public class MavenUtils {
             repos.addAll(mavenProjectRepositories());
 
             if (!repos.isEmpty())
-                mavenCommandArgs.a(" -DremoteRepositories=").a(String.join(",", repos));
+                mavenCmdArgs.a(" -DremoteRepositories=").a(String.join(",", repos));
         }
 
-        exec(buildMvnCommand() + mavenCommandArgs.toString());
+        exec(buildMvnCommand() + mavenCmdArgs.toString());
 
         X.println("Download is finished");
     }

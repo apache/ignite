@@ -74,10 +74,10 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
     public void testSupportedCommands() throws Exception {
         GridLogCommandHandler cmdHandler = new GridLogCommandHandler(newContext());
 
-        Collection<GridRestCommand> commands = cmdHandler.supportedCommands();
+        Collection<GridRestCommand> cmds = cmdHandler.supportedCommands();
 
-        assertEquals(1, commands.size());
-        assertTrue(commands.contains(GridRestCommand.LOG));
+        assertEquals(1, cmds.size());
+        assertTrue(cmds.contains(GridRestCommand.LOG));
     }
 
     /**
@@ -87,10 +87,10 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
     public void testUnSupportedCommands() throws Exception {
         GridLogCommandHandler cmdHandler = new GridLogCommandHandler(newContext());
 
-        Collection<GridRestCommand> commands = cmdHandler.supportedCommands();
+        Collection<GridRestCommand> cmds = cmdHandler.supportedCommands();
 
-        assertEquals(1, commands.size());
-        assertFalse(commands.contains(GridRestCommand.VERSION));
+        assertEquals(1, cmds.size());
+        assertFalse(cmds.contains(GridRestCommand.VERSION));
     }
 
     /**
