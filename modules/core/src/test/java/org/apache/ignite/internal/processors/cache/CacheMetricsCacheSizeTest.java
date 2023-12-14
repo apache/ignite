@@ -80,9 +80,9 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
         for (int i = 0; i < ENTITIES_CNT; i++)
             cacheNode0.put("key-" + i, i);
 
-        GridCacheContext cacheContext = ((GatewayProtectedCacheProxy)cacheNode0).context();
+        GridCacheContext cacheCtx = ((GatewayProtectedCacheProxy)cacheNode0).context();
 
-        CacheMetrics cacheMetric = new CacheMetricsSnapshotV2(new CacheMetricsImpl(cacheContext));
+        CacheMetrics cacheMetric = new CacheMetricsSnapshotV2(new CacheMetricsImpl(cacheCtx));
 
         long size = cacheMetric.getCacheSize();
 

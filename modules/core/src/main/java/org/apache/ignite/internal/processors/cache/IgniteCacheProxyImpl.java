@@ -266,11 +266,11 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 ctx = this.ctx;
 
                 if (ctx == null) {
-                    GridCacheContext<K, V> context = oldContext;
+                    GridCacheContext<K, V> ctx0 = oldContext;
 
-                    assert context != null;
+                    assert ctx0 != null;
 
-                    return context;
+                    return ctx0;
                 }
             }
         }
