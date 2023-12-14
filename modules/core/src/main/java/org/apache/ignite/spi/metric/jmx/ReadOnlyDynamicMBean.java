@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.metric.jmx;
 
+import java.util.List;
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
@@ -58,12 +59,16 @@ public abstract class ReadOnlyDynamicMBean implements DynamicMBean {
     /** {@inheritDoc} */
     @Override public AttributeList getAttributes(String[] attributes) {
         AttributeList list = new AttributeList();
+        List<Attribute> attrList = list.asList();
 
         try {
             for (String attr : attributes) {
                 Object val = getAttribute(attr);
 
-                list.add(val);
+                if (val instanceof Attribute)
+                    attrList.add((Attribute)val);
+                else
+                    attrList.add(new Attribute(attr, val));
             }
 
             return list;
