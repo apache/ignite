@@ -431,9 +431,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             || !IgniteSystemProperties.getBoolean(IGNITE_DISABLE_WAL_DURING_REBALANCING, DFLT_DISABLE_WAL_DURING_REBALANCING))
             return;
 
-        Collection<CacheGroupContext> grpContexts = cctx.cache().cacheGroups();
+        Collection<CacheGroupContext> grpCtxs = cctx.cache().cacheGroups();
 
-        for (CacheGroupContext grp : grpContexts) {
+        for (CacheGroupContext grp : grpCtxs) {
             if (!grp.affinityNode() || !(grp.persistenceEnabled() || grp.cdcEnabled())
                 || !grp.localWalEnabled() || !grp.rebalanceEnabled() || !grp.shared().isRebalanceEnabled())
                 continue;

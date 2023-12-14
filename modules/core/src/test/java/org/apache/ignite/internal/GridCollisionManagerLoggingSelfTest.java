@@ -67,8 +67,8 @@ public class GridCollisionManagerLoggingSelfTest {
      * @return context without collision resolution
      */
     private GridTestKernalContext collisionResolutionDisabledContext() {
-        GridTestKernalContext context = new GridTestKernalContext(logger);
-        context.config().setCollisionSpi(new NoopCollisionSpi());
-        return context;
+        GridTestKernalContext ctx = new GridTestKernalContext(logger);
+        ctx.config().setCollisionSpi(new NoopCollisionSpi());
+        return ctx;
     }
 }

@@ -12,7 +12,8 @@ class,cls
 command,cmd
 commands,cmds
 config,cfg
-#context,ctx
+context,ctx
+contexts,ctxs
 #count,cnt
 #current,cur
 #database,db

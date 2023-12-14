@@ -169,21 +169,21 @@ public class FindAndDeleteGarbageInPersistenceClosure implements IgniteCallable<
         for (Map.Entry<Integer, Map<Integer, Long>> e : grpIdToPartIdToGarbageCount.entrySet()) {
             int grpId = e.getKey();
 
-            CacheGroupContext groupContext = ignite.context().cache().cacheGroup(grpId);
+            CacheGroupContext groupCtx = ignite.context().cache().cacheGroup(grpId);
 
-            assert groupContext != null;
+            assert groupCtx != null;
 
             for (Integer cacheId : e.getValue().keySet()) {
-                groupContext.shared().database().checkpointReadLock();
+                groupCtx.shared().database().checkpointReadLock();
                 try {
-                    groupContext.offheap().stopCache(cacheId, true);
+                    groupCtx.offheap().stopCache(cacheId, true);
                 }
                 finally {
-                    groupContext.shared().database().checkpointReadUnlock();
+                    groupCtx.shared().database().checkpointReadUnlock();
                 }
 
                 ((GridCacheOffheapManager)
-                    groupContext.offheap()).findAndCleanupLostIndexesForStoppedCache(cacheId);
+                    groupCtx.offheap()).findAndCleanupLostIndexesForStoppedCache(cacheId);
             }
         }
     }
@@ -218,16 +218,16 @@ public class FindAndDeleteGarbageInPersistenceClosure implements IgniteCallable<
 
         if (!F.isEmpty(grpNames)) {
             for (String grpName : grpNames) {
-                CacheGroupContext groupContext = ignite.context().cache().cacheGroup(CU.cacheId(grpName));
+                CacheGroupContext groupCtx = ignite.context().cache().cacheGroup(CU.cacheId(grpName));
 
-                if (groupContext == null) {
+                if (groupCtx == null) {
                     missingCacheGroups.add(grpName);
 
                     continue;
                 }
 
-                if (groupContext.sharedGroup())
-                    grpIds.add(groupContext.groupId());
+                if (groupCtx.sharedGroup())
+                    grpIds.add(groupCtx.groupId());
                 else
                     log.warning("Group[name=" + grpName + "] is not shared one, it couldn't contain garbage from destroyed caches.");
             }

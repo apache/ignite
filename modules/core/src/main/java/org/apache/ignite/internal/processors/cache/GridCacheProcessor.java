@@ -1817,7 +1817,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
         else {
-            Map<StartCacheInfo, GridCacheContext> cacheContexts = new ConcurrentHashMap<>();
+            Map<StartCacheInfo, GridCacheContext> cacheCtxs = new ConcurrentHashMap<>();
 
             // Reserve at least 2 threads for system operations.
             int parallelismLvl = U.availableThreadCount(ctx, GridIoPolicy.SYSTEM_POOL, 2);
@@ -1836,7 +1836,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 cacheInfo.getExchangeTopVer(),
                                 cacheInfo.isDisabledAfterStart()
                             );
-                            cacheContexts.put(cacheInfo, cacheCtx);
+                            cacheCtxs.put(cacheInfo, cacheCtx);
 
                             context().exchange().exchangerUpdateHeartbeat();
 
@@ -1855,7 +1855,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
              *
              * TODO IGNITE-9729
              */
-            Set<StartCacheInfo> successfullyPreparedCaches = cacheContexts.keySet();
+            Set<StartCacheInfo> successfullyPreparedCaches = cacheCtxs.keySet();
 
             List<StartCacheInfo> cacheInfosInOriginalOrder = startCacheInfos.stream()
                 .filter(successfullyPreparedCaches::contains)
@@ -1865,7 +1865,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cacheStartFailHandler.handle(
                     startCacheInfo,
                     cacheInfo -> {
-                        GridCacheContext cctx = cacheContexts.get(cacheInfo);
+                        GridCacheContext cctx = cacheCtxs.get(cacheInfo);
 
                         if (!cctx.isRecoveryMode()) {
                             ctx.query().onCacheStart(
@@ -1887,15 +1887,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             doInParallel(
                 parallelismLvl,
                 sharedCtx.kernalContext().pools().getSystemExecutorService(),
-                cacheContexts.entrySet(),
+                cacheCtxs.entrySet(),
                 cacheCtxEntry -> {
                     cacheStartFailHandler.handle(
                         cacheCtxEntry.getKey(),
                         cacheInfo -> {
-                            GridCacheContext<?, ?> cacheContext = cacheCtxEntry.getValue();
+                            GridCacheContext<?, ?> cacheCtx = cacheCtxEntry.getValue();
 
-                            if (cacheContext.isRecoveryMode())
-                                finishRecovery(cacheInfo.getExchangeTopVer(), cacheContext);
+                            if (cacheCtx.isRecoveryMode())
+                                finishRecovery(cacheInfo.getExchangeTopVer(), cacheCtx);
                             else
                                 onCacheStarted(cacheCtxEntry.getValue());
 
@@ -2064,12 +2064,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion cacheStartVer,
         GridCacheContext<?, ?> cacheContext
     ) throws IgniteCheckedException {
-        CacheGroupContext groupContext = cacheContext.group();
+        CacheGroupContext groupCtx = cacheContext.group();
 
         // Take cluster-wide cache descriptor and try to update local cache and cache group parameters.
         DynamicCacheDescriptor updatedDescriptor = cacheDescriptor(cacheContext.cacheId());
 
-        groupContext.finishRecovery(
+        groupCtx.finishRecovery(
             cacheStartVer,
             updatedDescriptor.receivedFrom(),
             isLocalAffinity(updatedDescriptor.cacheConfiguration())
@@ -2087,7 +2087,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (log.isInfoEnabled())
             log.info("Finished recovery for cache [cache=" + cacheContext.name()
-                + ", grp=" + groupContext.cacheOrGroupName() + ", startVer=" + cacheStartVer + "]");
+                + ", grp=" + groupCtx.cacheOrGroupName() + ", startVer=" + cacheStartVer + "]");
     }
 
     /**
@@ -2097,13 +2097,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public void shutdownNotFinishedRecoveryCaches() {
         for (GridCacheAdapter cacheAdapter : caches.values()) {
-            GridCacheContext cacheContext = cacheAdapter.context();
+            GridCacheContext cacheCtx = cacheAdapter.context();
 
-            if (cacheContext.isRecoveryMode()) {
-                assert !isLocalAffinity(cacheContext.config())
+            if (cacheCtx.isRecoveryMode()) {
+                assert !isLocalAffinity(cacheCtx.config())
                     : "Cache " + cacheAdapter.context() + " is still in recovery mode after start, but not activated.";
 
-                stopCacheSafely(cacheContext);
+                stopCacheSafely(cacheCtx);
             }
         }
     }

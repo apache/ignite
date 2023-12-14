@@ -168,8 +168,8 @@ public class ClientCachePartitionsRequest extends ClientRequest {
     @Nullable private static AffinityAssignment getCacheAssignment(ClientConnectionContext ctx,
         ClientAffinityTopologyVersion affinityVer, int cacheId) {
         try {
-            GridCacheContext cacheContext = ctx.kernalContext().cache().context().cacheContext(cacheId);
-            return cacheContext.affinity().assignment(affinityVer.getVersion());
+            GridCacheContext cacheCtx = ctx.kernalContext().cache().context().cacheContext(cacheId);
+            return cacheCtx.affinity().assignment(affinityVer.getVersion());
         }
         catch (Exception e) {
             return null;

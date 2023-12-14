@@ -131,8 +131,8 @@ public class LightweightCheckpointTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Object> checkpointedCache = ignite0.cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, Object> notCheckpointedCache = ignite0.cache(NOT_CHECKPOINTED_CACHE);
 
-        GridKernalContext context = ignite0.context();
-        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)(context.cache().context().database());
+        GridKernalContext ctx = ignite0.context();
+        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)(ctx.cache().context().database());
 
         waitForCondition(() -> !db.getCheckpointer().currentProgress().inProgress(), 10_000);
 
@@ -143,23 +143,23 @@ public class LightweightCheckpointTest extends GridCommonAbstractTest {
 
         //and: Create light checkpoint with only one region.
         LightweightCheckpointManager lightweightCheckpointManager = new LightweightCheckpointManager(
-            context::log,
-            context.igniteInstanceName(),
+            ctx::log,
+            ctx.igniteInstanceName(),
             "light-test-checkpoint",
-            context.workersRegistry(),
-            context.config().getDataStorageConfiguration(),
+            ctx.workersRegistry(),
+            ctx.config().getDataStorageConfiguration(),
             () -> Arrays.asList(regionForCheckpoint),
-            grpId -> getPageMemoryForCacheGroup(grpId, db, context),
+            grpId -> getPageMemoryForCacheGroup(grpId, db, ctx),
             PageMemoryImpl.ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY,
             db.dataStorageMetricsImpl(),
-            context.longJvmPauseDetector(),
-            context.failure(),
-            context.cache()
+            ctx.longJvmPauseDetector(),
+            ctx.failure(),
+            ctx.cache()
         );
 
         //and: Add checkpoint listener for DEFAULT_CACHE in order of storing the meta pages.
         lightweightCheckpointManager.addCheckpointListener(
-            (CheckpointListener)context.cache().cacheGroup(groupIdForCache(ignite0, DEFAULT_CACHE_NAME)).offheap(),
+            (CheckpointListener)ctx.cache().cacheGroup(groupIdForCache(ignite0, DEFAULT_CACHE_NAME)).offheap(),
             regionForCheckpoint
         );
 
