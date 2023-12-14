@@ -248,7 +248,7 @@
                 <executions>
                     <execution>
                         <id>copy-fmpp-resources</id>
-                        <phase>generate-sources</phase>
+                        <phase>initialize</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
@@ -270,7 +270,7 @@
                 <executions>
                     <execution>
                         <id>unpack-parser-template</id>
-                        <phase>generate-sources</phase>
+                        <phase>initialize</phase>
                         <goals>
                             <goal>unpack</goal>
                         </goals>
@@ -310,7 +310,7 @@
                 <executions>
                     <execution>
                         <id>generate-fmpp-sources</id>
-                        <phase>generate-sources</phase>
+                        <phase>initialize</phase>
                         <goals>
                             <goal>run</goal>
                         </goals>
