@@ -11,7 +11,7 @@ buffer,buf
 class,cls
 command,cmd
 commands,cmds
-#config,cfg
+config,cfg
 #context,ctx
 #count,cnt
 #current,cur
