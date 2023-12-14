@@ -421,12 +421,12 @@ public class GridH2Table extends TableBase {
      * @return Table statistics or {@code null} if there is no statistics available.
      */
     public ObjectStatistics tableStatistics() {
-        GridCacheContext cacheContext = cacheInfo.cacheContext();
+        GridCacheContext cacheCtx = cacheInfo.cacheContext();
 
-        if (cacheContext == null)
+        if (cacheCtx == null)
             return null;
 
-        return cacheContext.kernalContext().query().statsManager()
+        return cacheCtx.kernalContext().query().statsManager()
             .getLocalStatistics(new StatisticsKey(identifier.schema(), identifier.table()));
     }
 
