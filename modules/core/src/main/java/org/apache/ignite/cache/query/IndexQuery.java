@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Index queries work over distributed indexes and retrieve cache entries that match the specified criteria.
- * {@code QueryCursor} delivers sorted cache entries by the order defined for queried index.
+ * <p>{@code QueryCursor} delivers sorted cache entries by the order defined for queried index.
  *
  * {@code IndexQuery} has to be initialized with cache value class or type. The algorithm of discovering index is as follows:
  * <ul>
