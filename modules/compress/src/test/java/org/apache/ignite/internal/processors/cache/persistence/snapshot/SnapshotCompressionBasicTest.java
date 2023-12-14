@@ -121,12 +121,12 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration config = super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        config.getDataStorageConfiguration().setPageSize(PAGE_SIZE);
-        config.setWorkDirectory(workingDirectory(config).toString());
+        cfg.getDataStorageConfiguration().setPageSize(PAGE_SIZE);
+        cfg.setWorkDirectory(workingDirectory(cfg).toString());
 
-        return config;
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -300,9 +300,9 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     protected void createTestSnapshot() throws Exception {
         CacheConfiguration[] caches = CACHES.entrySet().stream()
             .map(cache -> {
-                CacheConfiguration config = new CacheConfiguration(cache.getKey());
+                CacheConfiguration cfg = new CacheConfiguration(cache.getKey());
 
-                config.setQueryEntities(Collections.singletonList(
+                cfg.setQueryEntities(Collections.singletonList(
                     new QueryEntity()
                         .setKeyType(Integer.class.getName())
                         .setValueType(Value.class.getName())
@@ -312,14 +312,14 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
                 ));
 
                 if (cache.getValue() != null)
-                    config.setGroupName(cache.getValue());
+                    cfg.setGroupName(cache.getValue());
 
                 if (COMPRESSED_CACHES.contains(cache.getKey()))
-                    config.setDiskPageCompression(DISK_PAGE_COMPRESSION);
+                    cfg.setDiskPageCompression(DISK_PAGE_COMPRESSION);
                 else
-                    config.setDiskPageCompression(DiskPageCompression.DISABLED);
+                    cfg.setDiskPageCompression(DiskPageCompression.DISABLED);
 
-                return config;
+                return cfg;
             }).toArray(CacheConfiguration[]::new);
 
         IgniteEx ignite = startGridsWithCache(DFLT_GRIDS_CNT, 1000, valueBuilder(), caches);
