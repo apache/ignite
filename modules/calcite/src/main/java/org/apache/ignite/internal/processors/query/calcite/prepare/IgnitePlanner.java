@@ -455,10 +455,10 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         // For now, don't trim if there are more than 3 joins. The projects
         // near the leaves created by trim migrate past joins and seem to
         // prevent join-reordering.
-        final SqlToRelConverter.Config config = sqlToRelConverterCfg
+        final SqlToRelConverter.Config cfg = sqlToRelConverterCfg
             .withExpand(false)
             .withTrimUnusedFields(RelOptUtil.countJoins(root.rel) < 2);
-        SqlToRelConverter converter = sqlToRelConverter(validator(), catalogReader, config);
+        SqlToRelConverter converter = sqlToRelConverter(validator(), catalogReader, cfg);
         boolean ordered = !root.collation.getFieldCollations().isEmpty();
         boolean dml = SqlKind.DML.contains(root.kind);
         return root.withRel(converter.trimUnusedFields(dml || ordered, root.rel));
