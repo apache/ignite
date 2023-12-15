@@ -2025,12 +2025,12 @@ public class RexImpTable {
                 return argValueList;
             }
             assert (nullCount > 0) == type.isNullable();
-            final Type javaClass =
+            final Type javaCls =
                 translator.typeFactory.getJavaClass(type);
             final List<Expression> harmonizedArgValues = new ArrayList<>();
             for (Expression argValue : argValueList) {
                 harmonizedArgValues.add(
-                    EnumUtils.convert(argValue, javaClass));
+                    EnumUtils.convert(argValue, javaCls));
             }
             return harmonizedArgValues;
         }
@@ -2481,9 +2481,9 @@ public class RexImpTable {
         return (translator, call, nullAs) -> {
             final RexImpTable.RexCallImplementor rexCallImplementor
                 = createRexCallImplementor(implementor, nullPolicy, harmonize);
-            final List<RexToLixTranslator.Result> arguments = translator.getCallOperandResult(call);
-            assert arguments != null;
-            final RexToLixTranslator.Result result = rexCallImplementor.implement(translator, call, arguments);
+            final List<RexToLixTranslator.Result> args = translator.getCallOperandResult(call);
+            assert args != null;
+            final RexToLixTranslator.Result result = rexCallImplementor.implement(translator, call, args);
             return nullAs.handle(result.valueVariable);
         };
     }

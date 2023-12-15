@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
+import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
@@ -92,6 +94,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.tree.DataInnerIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.TransactionState;
 
@@ -113,6 +116,8 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_PAGE_REMOVE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_PAGE_REPLACE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DATA_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_MANAGER_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_MANAGER_STOP_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CLUSTER_SNAPSHOT;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CONSISTENT_CUT;
@@ -267,6 +272,9 @@ public class RecordUtils {
         put(CLUSTER_SNAPSHOT, RecordUtils::buildClusterSnapshotRecord);
         put(INCREMENTAL_SNAPSHOT_START_RECORD, RecordUtils::buildIncrementalSnapshotStartRecord);
         put(INCREMENTAL_SNAPSHOT_FINISH_RECORD, RecordUtils::buildIncrementalSnapshotFinishRecord);
+        put(CDC_MANAGER_RECORD, RecordUtils::buildCdcManagerStopRecord);
+        put(CDC_MANAGER_STOP_RECORD, RecordUtils::buildCdcManagerStopRecord);
+
     }
 
     /** */
@@ -648,5 +656,15 @@ public class RecordUtils {
     public static IncrementalSnapshotFinishRecord buildIncrementalSnapshotFinishRecord() {
         return new IncrementalSnapshotFinishRecord(
             UUID.randomUUID(), F.asSet(new GridCacheVersion()), F.asSet(new GridCacheVersion()));
+    }
+
+    /** **/
+    public static CdcManagerRecord buildCdcManagerRecord() {
+        return new CdcManagerRecord(new T2<>(new WALPointer(0, 0, 0), 0));
+    }
+
+    /** **/
+    public static CdcManagerStopRecord buildCdcManagerStopRecord() {
+        return new CdcManagerStopRecord();
     }
 }

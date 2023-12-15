@@ -80,9 +80,9 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
         for (int i = 0; i < ENTITIES_CNT; i++)
             cacheNode0.put("key-" + i, i);
 
-        GridCacheContext cacheContext = ((GatewayProtectedCacheProxy)cacheNode0).context();
+        GridCacheContext cacheCtx = ((GatewayProtectedCacheProxy)cacheNode0).context();
 
-        CacheMetrics cacheMetric = new CacheMetricsSnapshotV2(new CacheMetricsImpl(cacheContext));
+        CacheMetrics cacheMetric = new CacheMetricsSnapshotV2(new CacheMetricsImpl(cacheCtx));
 
         long size = cacheMetric.getCacheSize();
 
@@ -96,9 +96,9 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         Marshaller marshaller = grid(0).context().config().getMarshaller();
 
-        byte[] buffer = marshaller.marshal(msg);
+        byte[] buf = marshaller.marshal(msg);
 
-        Object readObject = marshaller.unmarshal(buffer, getClass().getClassLoader());
+        Object readObject = marshaller.unmarshal(buf, getClass().getClassLoader());
 
         assertTrue(readObject instanceof TcpDiscoveryMetricsUpdateMessage);
 

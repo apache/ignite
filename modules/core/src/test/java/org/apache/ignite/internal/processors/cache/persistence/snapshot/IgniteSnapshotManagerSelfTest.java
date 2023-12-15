@@ -150,6 +150,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             encryption,
             false,
+            false,
+            false,
             new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME, null)) {
                 @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     try {

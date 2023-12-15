@@ -67,6 +67,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
@@ -76,6 +77,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitionFiles;
@@ -143,7 +145,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             Set<Integer> parts = meta.partitions().get(grpId) == null ? Collections.emptySet() :
                 new HashSet<>(meta.partitions().get(grpId));
 
-            for (File part : cachePartitionFiles(dir, meta.dump() ? DUMP_FILE_EXT : FILE_SUFFIX)) {
+            for (File part : cachePartitionFiles(dir,
+                (meta.dump() ? DUMP_FILE_EXT : FILE_SUFFIX) + (meta.compressPartitions() ? ZIP_SUFFIX : "")
+            )) {
                 int partId = partId(part.getName());
 
                 if (!parts.remove(partId))
@@ -361,7 +365,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         try {
             String consistentId = cctx.kernalContext().pdsFolderResolver().resolveFolders().consistentId().toString();
 
-            try (Dump dump = new Dump(opCtx.snapshotDirectory(), consistentId, true, true, log)) {
+            EncryptionSpi encSpi = opCtx.metadata().encryptionKey() != null ? cctx.gridConfig().getEncryptionSpi() : null;
+
+            try (Dump dump = new Dump(opCtx.snapshotDirectory(), consistentId, true, true, encSpi, log)) {
                 Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
                     cctx.snapshotMgr().snapshotExecutorService(),
                     partFiles,
@@ -406,7 +412,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 while (iter.hasNext()) {
                     DumpEntry e = iter.next();
 
-                    ctx.update((KeyCacheObject)e.key(), (CacheObject)e.value(), null);
+                    ctx.update((KeyCacheObject)e.key(), (CacheObject)e.value(), e.version());
 
                     size++;
                 }

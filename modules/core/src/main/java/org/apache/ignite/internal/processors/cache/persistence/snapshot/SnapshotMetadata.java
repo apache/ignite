@@ -63,6 +63,13 @@ public class SnapshotMetadata implements Serializable {
      */
     private final String folderName;
 
+    /**
+     * If {@code true} then compress partition files.
+     * This shouldn't be confused with {@link SnapshotMetadata#comprGrpIds} which represents how Ignite keeps data in memory pages
+     * while {@link SnapshotMetadata#comprParts} represents how dump files are stored on disk.
+     */
+    private final boolean comprParts;
+
     /** Page size of stored snapshot data. */
     private final int pageSize;
 
@@ -104,11 +111,15 @@ public class SnapshotMetadata implements Serializable {
     /** If {@code true} cache group dump stored. */
     private boolean dump;
 
+    /** Encryption key. */
+    private @Nullable byte[] encKey;
+
     /**
      * @param rqId Unique request id.
      * @param snpName Snapshot name.
      * @param consId Consistent id of a node to which this metadata relates.
      * @param folderName Directory name which stores the data files.
+     * @param comprParts If {@code true} then compress partition files.
      * @param pageSize Page size of stored snapshot data.
      * @param grpIds The list of cache groups ids which were included into snapshot.
      * @param bltNodes The set of affected by snapshot baseline nodes.
@@ -116,12 +127,14 @@ public class SnapshotMetadata implements Serializable {
      * @param masterKeyDigest Master key digest for encrypted caches.
      * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
      * @param dump If {@code true} cache group dump stored.
+     * @param encKey Encryption key. For dumps, only.
      */
     public SnapshotMetadata(
         UUID rqId,
         String snpName,
         String consId,
         String folderName,
+        boolean comprParts,
         int pageSize,
         List<Integer> grpIds,
         Collection<Integer> compGrpIds,
@@ -130,12 +143,14 @@ public class SnapshotMetadata implements Serializable {
         @Nullable WALPointer snpRecPtr,
         @Nullable byte[] masterKeyDigest,
         boolean onlyPrimary,
-        boolean dump
+        boolean dump,
+        @Nullable byte[] encKey
     ) {
         this.rqId = rqId;
         this.snpName = snpName;
         this.consId = consId;
         this.folderName = folderName;
+        this.comprParts = comprParts;
         this.pageSize = pageSize;
         this.grpIds = grpIds;
         this.bltNodes = bltNodes;
@@ -143,6 +158,7 @@ public class SnapshotMetadata implements Serializable {
         this.masterKeyDigest = masterKeyDigest;
         this.onlyPrimary = onlyPrimary;
         this.dump = dump;
+        this.encKey = encKey;
 
         if (!F.isEmpty(compGrpIds)) {
             hasComprGrps = true;
@@ -181,6 +197,13 @@ public class SnapshotMetadata implements Serializable {
      */
     public String folderName() {
         return folderName;
+    }
+
+    /**
+     * @return {@code true} if compress partition files.
+     */
+    public boolean compressPartitions() {
+        return comprParts;
     }
 
     /**
@@ -315,6 +338,11 @@ public class SnapshotMetadata implements Serializable {
         return masterKeyDigest;
     }
 
+    /** @return Encryption key. */
+    public byte[] encryptionKey() {
+        return encKey;
+    }
+
     /**
      * @param warnings Snapshot creation warnings.
      */
@@ -347,6 +375,7 @@ public class SnapshotMetadata implements Serializable {
             Objects.equals(grpIds, meta.grpIds) &&
             Objects.equals(bltNodes, meta.bltNodes) &&
             Arrays.equals(masterKeyDigest, meta.masterKeyDigest) &&
+            Arrays.equals(encKey, meta.encKey) &&
             Objects.equals(warnings, meta.warnings) &&
             Objects.equals(hasComprGrps, meta.hasComprGrps) &&
             Objects.equals(comprGrpIds, meta.comprGrpIds) &&

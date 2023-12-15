@@ -146,7 +146,7 @@ public class ReliableChannelTest {
         ClientConfiguration ccfg = new ClientConfiguration().setAddressesFinder(finder);
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
 
-        Supplier<List<String>> holderAddresses = () -> rc.getChannelHolders().stream()
+        Supplier<List<String>> holderAddrs = () -> rc.getChannelHolders().stream()
             .map(h -> F.first(h.getAddresses()).toString().replace("/<unresolved>", "")) // Replace unnecessary part on JDK 17.
             .sorted()
             .collect(Collectors.toList());
@@ -154,7 +154,7 @@ public class ReliableChannelTest {
         Consumer<List<String>> assertAddrReInitAndEqualsTo = (addrs) -> {
             rc.channelsInit();
 
-            assertEquals(addrs, holderAddresses.get());
+            assertEquals(addrs, holderAddrs.get());
         };
 
         assertAddrReInitAndEqualsTo.accept(Arrays.asList("127.0.0.1:10800", "127.0.0.1:10801", "127.0.0.1:10802"));

@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -95,6 +97,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT;
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.validateIncomingConfiguration;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 
 /**
@@ -1131,6 +1134,12 @@ public class ClusterCachesInfo {
             }
         }
 
+        if (containsInvalidFileNameChars(ccfg)) {
+            err = new IgniteCheckedException("Cache start failed. Cache or group name contains the characters " +
+                "that are not allowed in file names [cache=" + cacheName +
+                (ccfg.getGroupName() == null ? "" : ", group=" + ccfg.getGroupName()) + ']');
+        }
+
         if (err != null) {
             if (persistedCfgs)
                 res.errs.add(err);
@@ -1194,6 +1203,21 @@ public class ClusterCachesInfo {
         exchangeActions.addCacheToStart(req, startDesc);
 
         return true;
+    }
+
+    /** @return {@code True} if cache directory contains the characters that are not allowed in file names. */
+    private boolean containsInvalidFileNameChars(CacheConfiguration<?, ?> ccfg) {
+        if (!CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration()))
+            return false;
+
+        String expDir = cacheDirName(ccfg);
+
+        try {
+            return !expDir.equals(Paths.get(expDir).toFile().getName());
+        }
+        catch (InvalidPathException ignored) {
+            return true;
+        }
     }
 
     /**
@@ -2196,7 +2220,7 @@ public class ClusterCachesInfo {
         boolean hasSchemaPatchConflict = false;
         boolean active = ctx.state().clusterState().active();
 
-        boolean isMergeConfigSupport = isMergeConfigSupports(null);
+        boolean isMergeCfgSupport = isMergeConfigSupports(null);
 
         for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : joinData.caches().values()) {
             CacheConfiguration<?, ?> cfg = cacheInfo.cacheData().config();
@@ -2215,7 +2239,7 @@ public class ClusterCachesInfo {
 
                 registerNewCache(joinData, nodeId, cacheInfo);
             }
-            else if (!active && isMergeConfigSupport) {
+            else if (!active && isMergeCfgSupport) {
                 DynamicCacheDescriptor desc = registeredCaches.get(cfg.getName());
 
                 QuerySchemaPatch schemaPatch = desc.makeSchemaPatch(cacheInfo.cacheData());

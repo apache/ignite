@@ -370,9 +370,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         if (o == null || getClass() != o.getClass())
             return false;
 
-        ExecutionContext<?> context = (ExecutionContext<?>)o;
+        ExecutionContext<?> ctx = (ExecutionContext<?>)o;
 
-        return qryId.equals(context.qryId) && fragmentDesc.fragmentId() == context.fragmentDesc.fragmentId();
+        return qryId.equals(ctx.qryId) && fragmentDesc.fragmentId() == ctx.fragmentDesc.fragmentId();
     }
 
     /** {@inheritDoc} */

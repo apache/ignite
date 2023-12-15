@@ -181,9 +181,9 @@ public class JdbcThinSSLUtil {
             f.setCipherSuites(cipherSuites.split(","));
 
         try {
-            final SSLContext sslContext = f.create();
+            final SSLContext sslCtx = f.create();
 
-            return sslContext.getSocketFactory();
+            return sslCtx.getSocketFactory();
         }
         catch (IgniteException e) {
             final Throwable cause = e.getCause();

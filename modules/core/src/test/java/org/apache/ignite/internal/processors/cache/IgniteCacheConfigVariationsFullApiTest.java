@@ -6450,12 +6450,12 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         @Override public List<String> call(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
             List<String> found = new ArrayList<>();
 
-            Affinity<Object> affinity = ignite.affinity(cache.getName());
+            Affinity<Object> aff = ignite.affinity(cache.getName());
 
             for (int i = startFrom; i < startFrom + 100_000; i++) {
                 String key = "key" + i;
 
-                if (affinity.isPrimary(ignite.cluster().localNode(), key)) {
+                if (aff.isPrimary(ignite.cluster().localNode(), key)) {
                     found.add(key);
 
                     if (found.size() == cnt)
@@ -6533,12 +6533,12 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         @Override public List<Object> call(Ignite ignite, IgniteCache<Object, Object> cache) throws Exception {
             List<Object> found = new ArrayList<>();
 
-            Affinity<Object> affinity = ignite.affinity(cache.getName());
+            Affinity<Object> aff = ignite.affinity(cache.getName());
 
             for (int i = startFrom; i < startFrom + 100_000; i++) {
                 Object key = key(i, mode);
 
-                if (affinity.isPrimary(ignite.cluster().localNode(), key)) {
+                if (aff.isPrimary(ignite.cluster().localNode(), key)) {
                     found.add(key);
 
                     if (found.size() == cnt)

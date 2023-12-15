@@ -17,12 +17,15 @@
 
 package org.apache.ignite.events;
 
+import java.util.UUID;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_STATE_CHANGE_STARTED;
 
@@ -69,17 +72,22 @@ public class ClusterStateChangeStartedEvent extends EventAdapter {
     /** New cluster state. */
     private final ClusterState state;
 
+    /** Security subject ID. */
+    private final UUID subjId;
+
     /**
      * @param prevState Previous cluster state.
      * @param state New cluster state.
      * @param node Node.
      * @param msg Optional event message.
+     * @param subjId Subject ID.
      */
     public ClusterStateChangeStartedEvent(
         ClusterState prevState,
         ClusterState state,
         ClusterNode node,
-        String msg
+        String msg,
+        UUID subjId
     ) {
         super(node, msg, EVT_CLUSTER_STATE_CHANGE_STARTED);
 
@@ -88,6 +96,7 @@ public class ClusterStateChangeStartedEvent extends EventAdapter {
 
         this.state = state;
         this.prevState = prevState;
+        this.subjId = subjId;
     }
 
     /**
@@ -102,5 +111,15 @@ public class ClusterStateChangeStartedEvent extends EventAdapter {
      */
     public ClusterState state() {
         return state;
+    }
+
+    /**
+     * Gets security subject ID initiated state change.
+     *
+     * @return Subject ID if security is enabled, otherwise null.
+     * @see IgniteSecurity#enabled()
+     */
+    @Nullable public UUID subjectId() {
+        return subjId;
     }
 }

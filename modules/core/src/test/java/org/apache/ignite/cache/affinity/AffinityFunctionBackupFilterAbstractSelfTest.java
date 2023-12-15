@@ -72,15 +72,15 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
                 assert node != null : "primary is null";
                 assert assigned != null : "backup is null";
 
-                Map<String, Integer> backupAssignedAttribute = getAttributeStatistic(assigned);
+                Map<String, Integer> backupAssignedAttr = getAttributeStatistic(assigned);
 
-                String nodeAttributeVal = node.attribute(SPLIT_ATTRIBUTE_NAME);
+                String nodeAttrVal = node.attribute(SPLIT_ATTRIBUTE_NAME);
 
-                if (FIRST_NODE_GROUP.equals(nodeAttributeVal)
-                    && backupAssignedAttribute.get(FIRST_NODE_GROUP) < 2)
+                if (FIRST_NODE_GROUP.equals(nodeAttrVal)
+                    && backupAssignedAttr.get(FIRST_NODE_GROUP) < 2)
                     return true;
 
-                return backupAssignedAttribute.get(nodeAttributeVal).equals(0);
+                return backupAssignedAttr.get(nodeAttrVal).equals(0);
             }
         };
 
@@ -89,13 +89,13 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
      * @return Statistic.
      */
     @NotNull protected static Map<String, Integer> getAttributeStatistic(Collection<ClusterNode> nodes) {
-        Map<String, Integer> backupAssignedAttribute = new HashMap<>();
+        Map<String, Integer> backupAssignedAttr = new HashMap<>();
 
-        backupAssignedAttribute.put(FIRST_NODE_GROUP, 0);
+        backupAssignedAttr.put(FIRST_NODE_GROUP, 0);
 
-        backupAssignedAttribute.put("B", 0);
+        backupAssignedAttr.put("B", 0);
 
-        backupAssignedAttribute.put("C", 0);
+        backupAssignedAttr.put("C", 0);
 
         for (ClusterNode assignedNode: nodes) {
             if (assignedNode == null)
@@ -103,12 +103,12 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
 
             String val = assignedNode.attribute(SPLIT_ATTRIBUTE_NAME);
 
-            Integer cnt = backupAssignedAttribute.get(val);
+            Integer cnt = backupAssignedAttr.get(val);
 
-            backupAssignedAttribute.put(val, cnt + 1);
+            backupAssignedAttr.put(val, cnt + 1);
         }
 
-        return backupAssignedAttribute;
+        return backupAssignedAttr;
     }
 
     /** {@inheritDoc} */

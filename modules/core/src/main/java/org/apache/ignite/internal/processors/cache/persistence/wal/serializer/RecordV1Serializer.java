@@ -98,6 +98,9 @@ public class RecordV1Serializer implements RecordSerializer {
      */
     private final boolean marshalledMode;
 
+    /** Singleton instance of {@link FilteredRecord}  */
+    private final FilteredRecord filteredRecord = new FilteredRecord();
+
     /** Thread-local heap byte buffer. */
     private final ThreadLocal<ByteBuffer> heapTlb = new ThreadLocal<ByteBuffer>() {
         @Override protected ByteBuffer initialValue() {
@@ -148,7 +151,7 @@ public class RecordV1Serializer implements RecordSerializer {
 
             if (recType.purpose() != WALRecord.RecordPurpose.INTERNAL
                 && recordFilter != null && !recordFilter.apply(rec.type(), ptr))
-                return FilteredRecord.INSTANCE;
+                return filteredRecord;
             else if (marshalledMode) {
                 ByteBuffer buf = heapTlb.get();
 
