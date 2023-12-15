@@ -68,7 +68,7 @@ public abstract class ReadOnlyDynamicMBean implements DynamicMBean {
                 if (val instanceof Attribute)
                     attrList.add((Attribute)val);
                 else
-                    attrList.add(new Attribute(attr, val));
+                    attrList.add(new Attribute(attribute, val));
             }
 
             return list;
