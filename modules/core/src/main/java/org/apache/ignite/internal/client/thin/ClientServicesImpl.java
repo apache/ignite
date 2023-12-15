@@ -323,14 +323,8 @@ class ClientServicesImpl implements ClientServices {
                     if (requestedNodeIds.isEmpty())
                         throw new ClientException("Cluster group is empty.");
 
-                    if (!F.isEmpty(filteredSvcTop)) {
+                    if (!F.isEmpty(filteredSvcTop))
                         filteredSvcTop = filteredSvcTop.stream().filter(requestedNodeIds::contains).collect(Collectors.toList());
-
-                        if (F.isEmpty(filteredSvcTop)) {
-                            LT.warn(log, "Provided nodes group doesn't intersect with the topology of service '"
-                                + name + "'. This forces service call redirection on server side.");
-                        }
-                    }
                 }
 
                 return ch.service(ClientOperation.SERVICE_INVOKE,
