@@ -438,7 +438,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     }
 
     /**
-     * Tests the client invokes only the proper nodes when partitionAwareness is enabled and no
+     * Tests that the client invokes only the proper nodes when partitionAwareness is enabled and no
      * {@link ClientClusterGroup} is set.
      */
     @Test
@@ -447,8 +447,8 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     }
 
     /**
-     * Tests the client invokes only the proper node when partitionAwareness is enabled and just one correct server is
-     * passed as {@link ClientClusterGroup}.
+     * Tests that the client invokes only the proper node if partitionAwareness is enabled and just one correct server
+     * is passed as {@link ClientClusterGroup}.
      */
     @Test
     public void testWithOneCorrectServer() {
@@ -456,7 +456,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     }
 
     /**
-     * Tests the client invokes only the proper nodes when partitionAwareness is enabled and just a couple of correct
+     * Tests that the client invokes only the proper nodes if partitionAwareness is enabled and just a couple of correct
      * servers are passed as {@link ClientClusterGroup} to invoke the service on.
      */
     @Test
@@ -465,7 +465,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     }
 
     /**
-     * Tests the client invokes only the proper node when partitionAwareness is enabled and one correct
+     * Tests that the client invokes only the proper node if partitionAwareness is enabled and one correct
      * server and one incorrect server (having no service instance) are passed as {@link ClientClusterGroup} to invoke
      * the service on.
      */
@@ -475,7 +475,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     }
 
     /**
-     * Tests the client invokes only the proper node when partitionAwareness is enabled and only incorrect
+     * Tests that the client invokes only the proper node if partitionAwareness is enabled and only incorrect
      * server (having no service instance) are passed as {@link ClientClusterGroup} to invoke the service on.
      */
     @Test
