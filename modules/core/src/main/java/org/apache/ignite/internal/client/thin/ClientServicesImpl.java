@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.service.ServiceCallContextImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.PlatformServiceMethod;
 import org.apache.ignite.platform.PlatformType;
@@ -313,7 +314,7 @@ class ClientServicesImpl implements ClientServices {
         /** {@inheritDoc} */
         @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             try {
-                List<UUID> nodesToCall = serviceTopology();
+                List<UUID> filteredSvcTop = serviceTopology();
 
                 Collection<UUID> requestedNodeIds = grp.nodeIds();
 
@@ -321,14 +322,20 @@ class ClientServicesImpl implements ClientServices {
                     if (requestedNodeIds.isEmpty())
                         throw new ClientException("Cluster group is empty.");
 
-                    if (!F.isEmpty(nodesToCall))
-                        nodesToCall = nodesToCall.stream().filter(requestedNodeIds::contains).collect(Collectors.toList());
+                    if (!F.isEmpty(filteredSvcTop)) {
+                        filteredSvcTop = filteredSvcTop.stream().filter(requestedNodeIds::contains).collect(Collectors.toList());
+
+                        if(F.isEmpty(filteredSvcTop)) {
+                            LT.warn(log, "Provided cluster group doesn't intersect with the topology of service '"
+                                + name + "'. This lead to service call redirection on server side.");
+                        }
+                    }
                 }
 
                 return ch.service(ClientOperation.SERVICE_INVOKE,
                     req -> writeServiceInvokeRequest(req, requestedNodeIds, method, args),
                     res -> utils.readObject(res.in(), false, method.getReturnType()),
-                    nodesToCall
+                    filteredSvcTop
                 );
             }
             catch (ClientError e) {
