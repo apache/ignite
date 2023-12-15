@@ -520,7 +520,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
         ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
-        callSvc(requestedServers, grp, filteredGrp, null);
+        callService(requestedServers, grp, filteredGrp, null);
 
         // Check no service awareness: continous redirections.
         assertEquals(F.isEmpty(filteredGrp) && !F.isEmpty(grp) ? 0 : 100, redirectCnt.get());
@@ -532,7 +532,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
         partitionAwareness = true;
 
-        callSvc(requestedServers, grp, filteredGrp, svc -> {
+        callService(requestedServers, grp, filteredGrp, svc -> {
             // We assume that the topology will be received and used for the further requests.
             redirectCnt.set(0);
             requestedServers.clear();
@@ -561,7 +561,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      * @param filteredSvcGrp If not {@code null}, actual nodes group with the service instances.
      * @param afterCallAction If not {@code null}, is invoked after the service calls.
      */
-    private void callSvc(
+    private void callService(
         @Nullable Collection<UUID> requestedEndpoints,
         @Nullable Collection<UUID> svcGrp,
         @Nullable Collection<UUID> filteredSvcGrp,

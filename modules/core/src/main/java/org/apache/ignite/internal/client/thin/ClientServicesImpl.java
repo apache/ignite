@@ -244,19 +244,15 @@ class ClientServicesImpl implements ClientServices {
                     return res;
                 }).whenComplete((nodes, err) -> {
                     if (err == null) {
-                        List<UUID> filteredTop = grp == null
-                            ? nodes
-                            : nodes.stream().filter(n -> grp.node(n) != null).collect(Collectors.toList());
-
-                        this.nodes = Collections.unmodifiableList(filteredTop);
+                        this.nodes = filterTopology(nodes);
                         lastAffTop = curAffTop;
                         lastUpdateRequestTime = System.nanoTime();
 
                         if (log.isDebugEnabled()) {
                             String msg = "Topology of service '" + srvcName + "' has been updated. The service instance nodes: " + nodes;
 
-                            if (filteredTop.size() != nodes.size())
-                                msg += ". Effective topology with the cluster group is: " + filteredTop;
+                            if (this.nodes.size() != nodes.size())
+                                msg += ". Effective topology with the cluster group is: " + this.nodes;
 
                             log.debug(msg + '.');
                         }
@@ -266,6 +262,11 @@ class ClientServicesImpl implements ClientServices {
 
                     updateInProgress.set(false);
                 });
+        }
+
+        /** */
+        private List<UUID> filterTopology(List<UUID> nodes) {
+            return grp == null ? nodes : nodes.stream().filter(n -> grp.node(n) != null).collect(Collectors.toList());
         }
 
         /**
