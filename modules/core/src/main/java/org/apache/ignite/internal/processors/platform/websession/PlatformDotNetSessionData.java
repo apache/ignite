@@ -238,9 +238,9 @@ public class PlatformDotNetSessionData implements Binarylizable {
      */
     public void readBinary(BinaryRawReader reader) {
         items = new TreeMap<>();
-        int count = reader.readInt();
+        int cnt = reader.readInt();
 
-        for (int i = 0; i < count; i++)
+        for (int i = 0; i < cnt; i++)
             items.put(reader.readString(), reader.readByteArray());
 
         staticObjects = reader.readByteArray();

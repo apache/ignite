@@ -516,7 +516,7 @@ public abstract class H2IndexCostedBase extends BaseIndex {
 
         if (!isScanIndex) {
             boolean sortOrderMatches = true;
-            int coveringCount = 0;
+            int coveringCnt = 0;
             int[] sortTypes = sortOrder.getSortTypes();
 
             TableFilter tableFilter = filters == null ? null : filters[filter];
@@ -554,14 +554,14 @@ public abstract class H2IndexCostedBase extends BaseIndex {
                     break;
                 }
 
-                coveringCount++;
+                coveringCnt++;
             }
 
             if (sortOrderMatches)
                 // "coveringCount" makes sure that when we have two
                 // or more covering indexes, we choose the one
                 // that covers more.
-                sortingCost = 100 - coveringCount;
+                sortingCost = 100 - coveringCnt;
         }
         return sortingCost;
     }

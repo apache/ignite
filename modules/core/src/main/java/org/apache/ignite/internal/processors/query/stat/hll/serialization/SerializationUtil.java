@@ -206,8 +206,8 @@ public class SerializationUtil {
      */
     public static byte packParametersByte(final int registerWidth, final int registerCountLog2) {
         final int widthBits = ((registerWidth - 1) & REGISTER_WIDTH_MASK);
-        final int countBits = (registerCountLog2 & LOG2_REGISTER_COUNT_MASK);
-        return (byte)((widthBits << LOG2_REGISTER_COUNT_BITS) | countBits);
+        final int cntBits = (registerCountLog2 & LOG2_REGISTER_COUNT_MASK);
+        return (byte)((widthBits << LOG2_REGISTER_COUNT_BITS) | cntBits);
     }
 
     /**

@@ -256,7 +256,7 @@ public class CommandHandler {
             cmdName = toFormattedCommandName(args.cmdPath().peekLast().getClass()).toUpperCase();
 
             try (CliCommandInvoker<A> invoker = new CliCommandInvoker<>(args.command(), args.commandArg(), getClientConfiguration(args))) {
-                int tryConnectMaxCount = 3;
+                int tryConnectMaxCnt = 3;
 
                 boolean suppliedAuth = !F.isEmpty(args.userName()) && !F.isEmpty(args.password());
 
@@ -310,7 +310,7 @@ public class CommandHandler {
                         if (suppliedAuth)
                             throw new GridClientAuthenticationException("Wrong credentials.");
 
-                        if (tryConnectMaxCount == 0) {
+                        if (tryConnectMaxCnt == 0) {
                             throw new GridClientAuthenticationException("Maximum number of " +
                                 "retries exceeded");
                         }
@@ -320,7 +320,7 @@ public class CommandHandler {
                             "This cluster requires authentication.");
 
                         if (credentialsRequested)
-                            tryConnectMaxCount--;
+                            tryConnectMaxCnt--;
 
                         invoker.clientConfiguration(getClientConfiguration(
                             retrieveUserName(args, invoker.clientConfiguration()),

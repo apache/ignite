@@ -135,12 +135,12 @@ public class GridCacheRebalancingPartitionDistributionTest extends GridRollingRe
 
             int fairCnt = partCnt / serverCount();
 
-            for (int count : partMap.values()) {
-                double deviation = Math.abs(fairCnt - count) / (double)fairCnt;
+            for (int cnt : partMap.values()) {
+                double deviation = Math.abs(fairCnt - cnt) / (double)fairCnt;
 
                 if (deviation > MAX_DEVIATION) {
                     throw new AssertionError("partition distribution deviation exceeded max: fair count=" + fairCnt
-                            + ", actual count=" + count + ", deviation=" + deviation);
+                            + ", actual count=" + cnt + ", deviation=" + deviation);
                 }
             }
         }
