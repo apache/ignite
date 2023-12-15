@@ -37,7 +37,7 @@ import org.apache.ignite.lang.IgniteRunnable;
  */
 public class IgniteLockExample {
     /** Number of items for each producer/consumer to produce/consume. */
-    private static final int OPS_COUNT = 100;
+    private static final int OPS_CNT = 100;
 
     /** Number of producers. */
     private static final int NUM_PRODUCERS = 5;
@@ -101,12 +101,12 @@ public class IgniteLockExample {
 
                 IgniteCondition notDone = lock.getOrCreateCondition(SYNC_NAME);
 
-                int count = cache.get(SYNC_NAME);
+                int cnt = cache.get(SYNC_NAME);
 
-                while (count > 0) {
+                while (cnt > 0) {
                     notDone.await();
 
-                    count = cache.get(SYNC_NAME);
+                    cnt = cache.get(SYNC_NAME);
                 }
             }
             finally {
@@ -163,7 +163,7 @@ public class IgniteLockExample {
 
             IgniteCache<String, Integer> cache = Ignition.ignite().cache(CACHE_NAME);
 
-            for (int i = 0; i < OPS_COUNT; i++) {
+            for (int i = 0; i < OPS_CNT; i++) {
                 try {
                     lock.lock();
 
@@ -197,11 +197,11 @@ public class IgniteLockExample {
             try {
                 lock.lock();
 
-                int count = cache.get(SYNC_NAME);
+                int cnt = cache.get(SYNC_NAME);
 
-                count--;
+                cnt--;
 
-                cache.put(SYNC_NAME, count);
+                cache.put(SYNC_NAME, cnt);
 
                 // Signals the master thread.
                 done.signal();
@@ -242,7 +242,7 @@ public class IgniteLockExample {
 
             IgniteCache<String, Integer> cache = g.cache(CACHE_NAME);
 
-            for (int i = 0; i < OPS_COUNT; i++) {
+            for (int i = 0; i < OPS_CNT; i++) {
                 try {
                     lock.lock();
 
@@ -276,11 +276,11 @@ public class IgniteLockExample {
             try {
                 lock.lock();
 
-                int count = cache.get(SYNC_NAME);
+                int cnt = cache.get(SYNC_NAME);
 
-                count--;
+                cnt--;
 
-                cache.put(SYNC_NAME, count);
+                cache.put(SYNC_NAME, cnt);
 
                 // Signals the master thread.
                 done.signal();
