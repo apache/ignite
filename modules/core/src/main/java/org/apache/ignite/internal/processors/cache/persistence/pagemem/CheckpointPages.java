@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.util.function.ThrowableSupplier;
 
 /**
  * View of pages which should be stored during current checkpoint.
@@ -30,15 +30,15 @@ class CheckpointPages {
     private final Collection<FullPageId> segCheckpointPages;
 
     /** The sign which allows to replace pages from a checkpoint by page replacer. */
-    private final IgniteInternalFuture allowToReplace;
+    private final ThrowableSupplier<Boolean, IgniteCheckedException> allowToReplace;
 
     /**
      * @param pages Pages which would be stored to disk in current checkpoint.
-     * @param replaceFuture The sign which allows to replace pages from a checkpoint by page replacer.
+     * @param allowToReplace The sign which allows to replace pages from a checkpoint by page replacer.
      */
-    CheckpointPages(Collection<FullPageId> pages, IgniteInternalFuture replaceFuture) {
+    CheckpointPages(Collection<FullPageId> pages, ThrowableSupplier<Boolean, IgniteCheckedException> allowToReplace) {
         segCheckpointPages = pages;
-        allowToReplace = replaceFuture;
+        this.allowToReplace = allowToReplace;
     }
 
     /**
@@ -51,8 +51,9 @@ class CheckpointPages {
         if (checkpointPages == null || allowToReplace == null)
             return false;
 
-        //Uninterruptibly is important because otherwise in case of interrupt of client thread node would be stopped.
-        allowToReplace.getUninterruptibly();
+        // Here, in allowToReplace we can wait on future for some time (until checkpoint marker is stored to disk).
+        if (!allowToReplace.get())
+            return false;
 
         return checkpointPages.contains(fullPageId);
     }
