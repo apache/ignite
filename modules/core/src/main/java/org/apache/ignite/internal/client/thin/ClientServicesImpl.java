@@ -244,7 +244,7 @@ class ClientServicesImpl implements ClientServices {
                     return res;
                 }).whenComplete((nodes, err) -> {
                     if (err == null) {
-                        this.nodes = filterTopology(nodes);
+                        this.nodes = Collections.unmodifiableList(filterTopology(nodes));
                         lastAffTop = curAffTop;
                         lastUpdateRequestTime = System.nanoTime();
 
