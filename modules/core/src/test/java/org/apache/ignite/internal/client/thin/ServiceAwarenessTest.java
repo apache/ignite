@@ -484,7 +484,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     }
 
     /** */
-    private void doTestServiceAwarenessForClusterGroup(@Nullable Collection<UUID> serverIds) {
+    private void doTestServiceAwarenessForClusterGroup(@Nullable Collection<UUID> grp) {
         // Counters of the invocation redirects.
         AtomicInteger redirectCnt = new AtomicInteger();
 
@@ -495,9 +495,9 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         Collection<UUID> requestedServers = new GridConcurrentHashSet<>();
 
         // All or properly filtered nodes with the service instances.
-        Set<UUID> targetNodes = F.isEmpty(serverIds)
+        Set<UUID> filteredGrp = F.isEmpty(grp)
             ? top
-            : serverIds.stream().filter(nid -> new TestNodeFilter().apply(grid(0).cluster().node(nid))).collect(Collectors.toSet());
+            : grp.stream().filter(nid -> new TestNodeFilter().apply(grid(0).cluster().node(nid))).collect(Collectors.toSet());
 
         addSrvcTopUpdateClientLogLsnr(uuids -> {
             // Reset counters on the first topology update.
@@ -520,23 +520,10 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
         ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
-        try (IgniteClient client = startClient(requestedServers)) {
-            ClientServices clientServices = F.isEmpty(serverIds)
-                ? client.services()
-                : client.services(client.cluster().forNodeIds(serverIds));
-
-            ServicesTest.TestServiceInterface svc = clientServices.serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
-
-            if (F.isEmpty(targetNodes) && !F.isEmpty(serverIds))
-                assertThrows(null, () -> svc.testMethod(), ClientException.class, "Failed to find deployed service:");
-            else {
-                for (int i = 0; i < 100; ++i)
-                    svc.testMethod();
-            }
-        }
+        callSvc(requestedServers, grp, filteredGrp, null);
 
         // Check no service awareness: continous redirections.
-        assertEquals(F.isEmpty(targetNodes) && !F.isEmpty(serverIds) ? 0 : 100, redirectCnt.get());
+        assertEquals(F.isEmpty(filteredGrp) && !F.isEmpty(grp) ? 0 : 100, redirectCnt.get());
 
         // Ensure that client received no service topology update.
         assertTrue(top.isEmpty());
@@ -545,30 +532,18 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
         partitionAwareness = true;
 
-        try (IgniteClient client = startClient(requestedServers)) {
-            ClientServices clientServices = F.isEmpty(serverIds)
-                ? client.services()
-                : client.services(client.cluster().forNodeIds(serverIds));
+        callSvc(requestedServers, grp, filteredGrp, svc -> {
+            // We assume that the topology will be received and used for the further requests.
+            redirectCnt.set(0);
+            requestedServers.clear();
 
-            ServicesTest.TestServiceInterface svc = clientServices.serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
+            for (int i = 0; i < 1000; ++i)
+                svc.testMethod();
+        });
 
-            if (F.isEmpty(targetNodes) && !F.isEmpty(serverIds))
-                assertThrows(null, () -> svc.testMethod(), ClientException.class, "Failed to find deployed service:");
-            else {
-                for (int i = 0; i < 100; ++i)
-                    svc.testMethod();
-
-                // We assume that the topology will be received and used for the further requests.
-                redirectCnt.set(0);
-                requestedServers.clear();
-
-                for (int i = 0; i < 1000; ++i)
-                    svc.testMethod();
-
-                // Ensure that only the target nodes were requested after the topology getting.
-                assertEquals(targetNodes, requestedServers);
-            }
-        }
+        // Ensure that only the target nodes were requested after the topology getting.
+        if (!F.isEmpty(filteredGrp))
+            assertEquals(filteredGrp, requestedServers);
 
         // Check the received topology.
         assertTrue(top.size() == INIT_SRVC_NODES_CNT && top.contains(grid(1).localNode().id())
@@ -576,6 +551,40 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
         // Ensure there were no redirected sertvic calls any more.
         assertEquals(0, redirectCnt.get());
+    }
+
+    /**
+     * Invokes the test service 100 times. If required, stores requestes server nodes. Excepts an exception if the
+     * target nodes have no service instance.
+     *
+     * @param requestedEndpoints If not {@code null}, is filled with actually requested nodes.
+     * @param svcGrp If not {@code null}, is used to pass as a nodes group to call the service on it.
+     * @param filteredSvcGrp If not {@code null}, actual nodes group with the service instances.
+     * @param afterCallAction If not {@code null}, is invoked after the service calls.
+     */
+    private void callSvc(
+        @Nullable Collection<UUID> requestedEndpoints,
+        @Nullable Collection<UUID> svcGrp,
+        @Nullable Collection<UUID> filteredSvcGrp,
+        @Nullable Consumer<ServicesTest.TestServiceInterface> afterCallAction
+    ) {
+        try (IgniteClient client = startClient(requestedEndpoints)) {
+            ClientServices clientServices = F.isEmpty(svcGrp)
+                ? client.services()
+                : client.services(client.cluster().forNodeIds(svcGrp));
+
+            ServicesTest.TestServiceInterface svc = clientServices.serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
+
+            if (F.isEmpty(filteredSvcGrp) && !F.isEmpty(svcGrp))
+                assertThrows(null, () -> svc.testMethod(), ClientException.class, "Failed to find deployed service:");
+            else {
+                for (int i = 0; i < 100; ++i)
+                    svc.testMethod();
+
+                if (afterCallAction != null)
+                    afterCallAction.accept(svc);
+            }
+        }
     }
 
     /** */

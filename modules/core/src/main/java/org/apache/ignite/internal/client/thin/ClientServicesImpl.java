@@ -314,6 +314,7 @@ class ClientServicesImpl implements ClientServices {
         /** {@inheritDoc} */
         @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             try {
+                // Service topology intersecting with the nodes group.
                 List<UUID> filteredSvcTop = serviceTopology();
 
                 Collection<UUID> requestedNodeIds = grp.nodeIds();
@@ -325,9 +326,9 @@ class ClientServicesImpl implements ClientServices {
                     if (!F.isEmpty(filteredSvcTop)) {
                         filteredSvcTop = filteredSvcTop.stream().filter(requestedNodeIds::contains).collect(Collectors.toList());
 
-                        if(F.isEmpty(filteredSvcTop)) {
-                            LT.warn(log, "Provided cluster group doesn't intersect with the topology of service '"
-                                + name + "'. This lead to service call redirection on server side.");
+                        if (F.isEmpty(filteredSvcTop)) {
+                            LT.warn(log, "Provided nodes group doesn't intersect with the topology of service '"
+                                + name + "'. This forces service call redirection on server side.");
                         }
                     }
                 }
