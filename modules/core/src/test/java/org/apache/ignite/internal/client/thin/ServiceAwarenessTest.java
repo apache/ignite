@@ -546,8 +546,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
             assertEquals(filteredGrp, requestedServers);
 
         // Check the received topology.
-        assertTrue(top.size() == INIT_SRVC_NODES_CNT && top.contains(grid(1).localNode().id())
-            && top.contains(grid(2).localNode().id()));
+        assertFalse(top.retainAll(filteredGrp));
 
         // Ensure there were no redirected sertvic calls any more.
         assertEquals(0, redirectCnt.get());
@@ -587,13 +586,11 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         }
     }
 
-    /** */
+    /** Extracts ids of received service instance nodes from the client log. */
     private static void addSrvcTopUpdateClientLogLsnr(Consumer<Set<UUID>> srvTopConsumer) {
         clientLogLsnr.registerListener(s -> {
             if (s.contains("Topology of service '" + SRV_NAME + "' has been updated. The service instance nodes: ")) {
-                String nodes = s.substring(s.indexOf(": [") + 3);
-
-                nodes = nodes.substring(0, nodes.length() - 1);
+                String nodes = s.substring(s.lastIndexOf(": [") + 3, s.length() - 2);
 
                 srvTopConsumer.accept(Arrays.stream(nodes.split(", ")).map(UUID::fromString).collect(Collectors.toSet()));
             }

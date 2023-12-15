@@ -244,13 +244,21 @@ class ClientServicesImpl implements ClientServices {
                     return res;
                 }).whenComplete((nodes, err) -> {
                     if (err == null) {
-                        this.nodes = Collections.unmodifiableList(nodes);
+                        List<UUID> filteredTop = grp == null
+                            ? nodes
+                            : nodes.stream().filter(n -> grp.node(n) != null).collect(Collectors.toList());
+
+                        this.nodes = Collections.unmodifiableList(filteredTop);
                         lastAffTop = curAffTop;
                         lastUpdateRequestTime = System.nanoTime();
 
                         if (log.isDebugEnabled()) {
-                            log.debug("Topology of service '" + srvcName + "' has been updated. The " +
-                                "service instance nodes: " + nodes);
+                            String msg = "Topology of service '" + srvcName + "' has been updated. The service instance nodes: " + nodes;
+
+                            if (filteredTop.size() != nodes.size())
+                                msg += ". Effective topology with the cluster group is: " + filteredTop;
+
+                            log.debug(msg + '.');
                         }
                     }
                     else
@@ -313,23 +321,15 @@ class ClientServicesImpl implements ClientServices {
         /** {@inheritDoc} */
         @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             try {
-                // Service topology intersecting with the nodes group.
-                List<UUID> filteredSvcTop = serviceTopology();
+                Collection<UUID> nodeIds = grp.nodeIds();
 
-                Collection<UUID> requestedNodeIds = grp.nodeIds();
-
-                if (requestedNodeIds != null) {
-                    if (requestedNodeIds.isEmpty())
-                        throw new ClientException("Cluster group is empty.");
-
-                    if (!F.isEmpty(filteredSvcTop))
-                        filteredSvcTop = filteredSvcTop.stream().filter(requestedNodeIds::contains).collect(Collectors.toList());
-                }
+                if (nodeIds != null && nodeIds.isEmpty())
+                    throw new ClientException("Cluster group is empty.");
 
                 return ch.service(ClientOperation.SERVICE_INVOKE,
-                    req -> writeServiceInvokeRequest(req, requestedNodeIds, method, args),
+                    req -> writeServiceInvokeRequest(req, nodeIds, method, args),
                     res -> utils.readObject(res.in(), false, method.getReturnType()),
-                    filteredSvcTop
+                    serviceTopology()
                 );
             }
             catch (ClientError e) {
