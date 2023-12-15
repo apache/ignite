@@ -249,9 +249,9 @@ class ClientServicesImpl implements ClientServices {
                         lastUpdateRequestTime = System.nanoTime();
 
                         if (log.isDebugEnabled()) {
-                            log.debug("Topology of service '" + srvcName + "' has been updated. The service instance nodes: "
-                                + nodes + (this.nodes.size() != nodes.size() ? ". Effective topology with the cluster group is: "
-                                + this.nodes : "") + '.');
+                            log.debug("Topology of service '" + srvcName + "' has been updated. " +
+                                "The service instance nodes: " + nodes + ". " +
+                                "Effective topology with the cluster group is: " + this.nodes + '.');
                         }
                     }
                     else
