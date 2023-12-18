@@ -291,9 +291,9 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
 
     /** */
     protected boolean projectsLeft(RelCollation collation) {
-        int leftFieldCount = getLeft().getRowType().getFieldCount();
+        int leftFieldCnt = getLeft().getRowType().getFieldCount();
         for (int field : RelCollations.ordinals(collation)) {
-            if (field >= leftFieldCount)
+            if (field >= leftFieldCnt)
                 return false;
         }
         return true;

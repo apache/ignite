@@ -64,7 +64,7 @@ public class CorrelatedNestedLoopJoinRule extends AbstractIgniteConverterRule<Lo
 
     /** {@inheritDoc} */
     @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalJoin rel) {
-        final int leftFieldCount = rel.getLeft().getRowType().getFieldCount();
+        final int leftFieldCnt = rel.getLeft().getRowType().getFieldCount();
         final RelOptCluster cluster = rel.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final RelBuilder relBuilder = relBuilderFactory.create(rel.getCluster(), null);
@@ -84,8 +84,8 @@ public class CorrelatedNestedLoopJoinRule extends AbstractIgniteConverterRule<Lo
         final RexNode condition = rel.getCondition().accept(new RexShuttle() {
             @Override public RexNode visitInputRef(RexInputRef input) {
                 int field = input.getIndex();
-                if (field >= leftFieldCount)
-                    return rexBuilder.makeInputRef(input.getType(), input.getIndex() - leftFieldCount);
+                if (field >= leftFieldCnt)
+                    return rexBuilder.makeInputRef(input.getType(), input.getIndex() - leftFieldCnt);
 
                 return rexBuilder.makeFieldAccess(corrVar.get(0), field);
             }

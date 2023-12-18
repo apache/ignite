@@ -915,7 +915,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
         lock0.lock();
 
         // Number of threads, one per node.
-        final int threadCount = gridCount();
+        final int threadCnt = gridCount();
 
         final AtomicLong threadCounter = new AtomicLong(0);
 
@@ -936,7 +936,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                             final AtomicBoolean exceptionThrown = new AtomicBoolean(false);
 
-                            final IgniteCountDownLatch latch = ignite.countDownLatch("latch", threadCount, false, true);
+                            final IgniteCountDownLatch latch = ignite.countDownLatch("latch", threadCnt, false, true);
 
                             IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
                                 @Override public Void call() throws Exception {
@@ -990,7 +990,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                     return null;
                 }
-            }, threadCount);
+            }, threadCnt);
 
         fut.get();
 
@@ -1646,7 +1646,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
             return;
 
         // Total number of ops.
-        final long opsCount = 10000;
+        final long opsCnt = 10000;
 
         // Allowed deviation from uniform distribution.
         final double tolerance = 0.05;
@@ -1655,7 +1655,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
         final String OPS_COUNTER = "ops_counter";
 
         // Number of threads, one per node.
-        final int threadCount = gridCount();
+        final int threadCnt = gridCount();
 
         final AtomicLong threadCounter = new AtomicLong(0);
 
@@ -1680,9 +1680,9 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                         @Override public Long apply(Ignite ignite) {
                             IgniteLock l = ignite.reentrantLock("lock", true, true, true);
 
-                            long localCount = 0;
+                            long localCnt = 0;
 
-                            IgniteCountDownLatch latch = ignite.countDownLatch("latch", threadCount, false, true);
+                            IgniteCountDownLatch latch = ignite.countDownLatch("latch", threadCnt, false, true);
 
                             latch.countDown();
 
@@ -1694,23 +1694,23 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                                 try {
                                     long opsCounter = (long)ignite.getOrCreateCache(OPS_COUNTER).get(OPS_COUNTER);
 
-                                    if (opsCounter == opsCount)
+                                    if (opsCounter == opsCnt)
                                         break;
 
                                     ignite.getOrCreateCache(OPS_COUNTER).put(OPS_COUNTER, ++opsCounter);
 
-                                    localCount++;
+                                    localCnt++;
 
-                                    if (localCount > 1000) {
-                                        assertTrue(localCount < (1 + tolerance) * opsCounter / threadCount);
+                                    if (localCnt > 1000) {
+                                        assertTrue(localCnt < (1 + tolerance) * opsCounter / threadCnt);
 
-                                        assertTrue(localCount > (1 - tolerance) * opsCounter / threadCount);
+                                        assertTrue(localCnt > (1 - tolerance) * opsCounter / threadCnt);
                                     }
 
-                                    if (localCount % 100 == 0) {
+                                    if (localCnt % 100 == 0) {
                                         info("Node [id=" + ignite.cluster().localNode().id() + "] acquired " +
-                                            localCount + " times. " + "Total ops count: " +
-                                            opsCounter + "/" + opsCount + "]");
+                                            localCnt + " times. " + "Total ops count: " +
+                                            opsCounter + "/" + opsCnt + "]");
                                     }
                                 }
                                 finally {
@@ -1718,17 +1718,17 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                                 }
                             }
 
-                            return localCount;
+                            return localCnt;
                         }
                     };
 
-                    long localCount = closure.apply(grid);
+                    long localCnt = closure.apply(grid);
 
-                    counts.put(localNodeId, localCount);
+                    counts.put(localNodeId, localCnt);
 
                     return null;
                 }
-            }, threadCount);
+            }, threadCnt);
 
         fut.get();
 
@@ -1740,7 +1740,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
             info("Node " + grid(i).localNode().id() + " acquired the lock " + counts.get(i) + " times. ");
         }
 
-        assertEquals(totalSum, opsCount);
+        assertEquals(totalSum, opsCnt);
 
         l.close();
 

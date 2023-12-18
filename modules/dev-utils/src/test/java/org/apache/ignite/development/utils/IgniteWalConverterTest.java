@@ -368,7 +368,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         int index = 0;
 
-        int countErrorRead = 0;
+        int cntErrorRead = 0;
 
         for (Person person : list) {
             boolean find = false;
@@ -390,9 +390,9 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             }
 
             if (!find)
-                countErrorRead++;
+                cntErrorRead++;
         }
-        assertEquals(1, countErrorRead);
+        assertEquals(1, cntErrorRead);
     }
 
     /**
@@ -473,7 +473,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         int index = 0;
 
-        int countErrorRead = 0;
+        int cntErrorRead = 0;
 
         for (Person person : list) {
             boolean find = false;
@@ -503,10 +503,10 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             }
 
             if (!find)
-                countErrorRead++;
+                cntErrorRead++;
         }
 
-        assertEquals(9, countErrorRead);
+        assertEquals(9, cntErrorRead);
     }
 
     /**

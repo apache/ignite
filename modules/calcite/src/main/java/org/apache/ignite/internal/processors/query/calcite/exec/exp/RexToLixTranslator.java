@@ -1110,13 +1110,13 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
      */
     private void implementRecursively(final RexToLixTranslator currentTranslator,
         final List<RexNode> operandList, final ParameterExpression valueVariable, int pos) {
-        final BlockBuilder currentBlockBuilder = currentTranslator.getBlockBuilder();
+        final BlockBuilder curBlockBuilder = currentTranslator.getBlockBuilder();
         final List<Type> storageTypes = ConverterUtils.internalTypes(operandList);
         // [ELSE] clause
         if (pos == operandList.size() - 1) {
             Expression res = implementCallOperand2(operandList.get(pos),
                 storageTypes.get(pos), currentTranslator);
-            currentBlockBuilder.add(
+            curBlockBuilder.add(
                 Expressions.statement(
                     Expressions.assign(valueVariable,
                         ConverterUtils.convert(res, valueVariable.getType()))));
@@ -1132,7 +1132,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         // Code for {if} branch
         final RexNode ifTrueNode = operandList.get(pos + 1);
         final BlockBuilder ifTrueBlockBuilder =
-            new BlockBuilder(true, currentBlockBuilder);
+            new BlockBuilder(true, curBlockBuilder);
         final RexToLixTranslator ifTrueTranslator =
             currentTranslator.setBlock(ifTrueBlockBuilder);
         final Expression ifTrueRes = implementCallOperand2(ifTrueNode,
@@ -1145,18 +1145,18 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         final BlockStatement ifTrue = ifTrueBlockBuilder.toBlock();
         // There is no [ELSE] clause
         if (pos + 1 == operandList.size() - 1) {
-            currentBlockBuilder.add(
+            curBlockBuilder.add(
                 Expressions.ifThen(tester, ifTrue));
             return;
         }
         // Generate code for {else} branch recursively
         final BlockBuilder ifFalseBlockBuilder =
-            new BlockBuilder(true, currentBlockBuilder);
+            new BlockBuilder(true, curBlockBuilder);
         final RexToLixTranslator ifFalseTranslator =
             currentTranslator.setBlock(ifFalseBlockBuilder);
         implementRecursively(ifFalseTranslator, operandList, valueVariable, pos + 2);
         final BlockStatement ifFalse = ifFalseBlockBuilder.toBlock();
-        currentBlockBuilder.add(
+        curBlockBuilder.add(
             Expressions.ifThenElse(tester, ifTrue, ifFalse));
     }
 

@@ -654,7 +654,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testInvalidSubIntervalCount() {
-        final int NEG_SUB_INTERVAL_COUNT = -1000;
+        final int NEG_SUB_INTERVAL_CNT = -1000;
         DataRegionConfiguration invCfg = new DataRegionConfiguration();
 
         invCfg.setName("invCfg");
@@ -662,7 +662,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         invCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
         invCfg.setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU);
         // Setting the metrics sub interval count as negative
-        invCfg.setMetricsSubIntervalCount(NEG_SUB_INTERVAL_COUNT);
+        invCfg.setMetricsSubIntervalCount(NEG_SUB_INTERVAL_CNT);
 
         memCfg = new DataStorageConfiguration();
         memCfg.setDataRegionConfigurations(invCfg);
