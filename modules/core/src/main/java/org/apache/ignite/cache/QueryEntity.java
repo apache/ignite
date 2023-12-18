@@ -227,19 +227,19 @@ public class QueryEntity implements Serializable {
     @NotNull private Collection<QueryIndex> checkIndexes(QueryEntity target, StringBuilder conflicts) {
         HashSet<QueryIndex> indexesToAdd = new HashSet<>();
 
-        Map<String, QueryIndex> currentIndexes = new HashMap<>();
+        Map<String, QueryIndex> curIndexes = new HashMap<>();
 
         for (QueryIndex index : getIndexes()) {
-            if (currentIndexes.put(index.getName(), index) != null)
+            if (curIndexes.put(index.getName(), index) != null)
                 throw new IllegalStateException("Duplicate key");
         }
 
         for (QueryIndex queryIndex : target.getIndexes()) {
-            if (currentIndexes.containsKey(queryIndex.getName())) {
+            if (curIndexes.containsKey(queryIndex.getName())) {
                 checkEquals(
                     conflicts,
                     "index " + queryIndex.getName(),
-                    currentIndexes.get(queryIndex.getName()),
+                    curIndexes.get(queryIndex.getName()),
                     queryIndex
                 );
             }

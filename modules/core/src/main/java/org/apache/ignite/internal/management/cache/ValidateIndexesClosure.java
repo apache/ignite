@@ -583,7 +583,7 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
         final boolean skipConditions = checkFirst > 0 || checkThrough > 0;
         final boolean bothSkipConditions = checkFirst > 0 && checkThrough > 0;
 
-        long current = 0;
+        long cur = 0;
         long processedNumber = 0;
 
         while (it.hasNextX() && !validateCtx.isCancelled()) {
@@ -596,18 +596,18 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
                 if (bothSkipConditions) {
                     if (processedNumber > checkFirst)
                         break;
-                    else if (current++ % checkThrough > 0)
+                    else if (cur++ % checkThrough > 0)
                         continue;
                     else
                         processedNumber++;
                 }
                 else {
                     if (checkFirst > 0) {
-                        if (current++ > checkFirst)
+                        if (cur++ > checkFirst)
                             break;
                     }
                     else {
-                        if (current++ % checkThrough > 0)
+                        if (cur++ % checkThrough > 0)
                             continue;
                     }
                 }
@@ -768,7 +768,7 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
         final boolean skipConditions = checkFirst > 0 || checkThrough > 0;
         final boolean bothSkipConditions = checkFirst > 0 && checkThrough > 0;
 
-        long current = 0;
+        long cur = 0;
         long processedNumber = 0;
 
         KeyCacheObject previousKey = null;
@@ -798,18 +798,18 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
                     if (bothSkipConditions) {
                         if (processedNumber > checkFirst)
                             break;
-                        else if (current++ % checkThrough > 0)
+                        else if (cur++ % checkThrough > 0)
                             continue;
                         else
                             processedNumber++;
                     }
                     else {
                         if (checkFirst > 0) {
-                            if (current++ > checkFirst)
+                            if (cur++ > checkFirst)
                                 break;
                         }
                         else {
-                            if (current++ % checkThrough > 0)
+                            if (cur++ % checkThrough > 0)
                                 continue;
                         }
                     }

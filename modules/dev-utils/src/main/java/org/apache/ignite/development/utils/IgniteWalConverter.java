@@ -98,15 +98,15 @@ public class IgniteWalConverter {
         boolean printAlways = F.isEmpty(params.getRecordTypes());
 
         try (WALIterator stIt = walIterator(factory.iterator(iteratorParametersBuilder), params.getPages())) {
-            String currentWalPath = null;
+            String curWalPath = null;
 
             while (stIt.hasNextX()) {
-                final String currentRecordWalPath = getCurrentWalFilePath(stIt);
+                final String curRecordWalPath = getCurrentWalFilePath(stIt);
 
-                if (currentWalPath == null || !currentWalPath.equals(currentRecordWalPath)) {
-                    out.println("File: " + currentRecordWalPath);
+                if (curWalPath == null || !curWalPath.equals(curRecordWalPath)) {
+                    out.println("File: " + curRecordWalPath);
 
-                    currentWalPath = currentRecordWalPath;
+                    curWalPath = curRecordWalPath;
                 }
 
                 IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
