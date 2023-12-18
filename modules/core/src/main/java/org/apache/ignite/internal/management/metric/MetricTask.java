@@ -20,18 +20,16 @@ package org.apache.ignite.internal.management.metric;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
+import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -98,7 +96,7 @@ public class MetricTask extends VisorOneNodeTask<MetricCommandArg, Map<String, ?
                 if (mregName.equals(name)) {
                     Map<String, Object> res = new LinkedHashMap<>();
 
-                    mreg.forEach(metric -> res.putAll(valueOf(metric)));
+                    mreg.forEach(metric -> res.putAll(exportMetric(metric)));
 
                     return res;
                 }
@@ -116,7 +114,7 @@ public class MetricTask extends VisorOneNodeTask<MetricCommandArg, Map<String, ?
                 Metric metric = mreg.findMetric(metricName);
 
                 if (metric != null)
-                    return valueOf(metric);
+                    return exportMetric(metric);
 
                 Object val = searchHistogram(metricName, mreg);
 
@@ -133,45 +131,43 @@ public class MetricTask extends VisorOneNodeTask<MetricCommandArg, Map<String, ?
          * @param metric Metric which value should be obtained.
          * @return Value of the metric.
          */
-        private Map<String, ?> valueOf(Metric metric) {
-            String name = metric.name();
-
+        private Object valueOf(Metric metric) {
             if (metric instanceof BooleanMetric)
-                return Collections.singletonMap(name, ((BooleanMetric)metric).value());
+                return ((BooleanMetric)metric).value();
             else if (metric instanceof DoubleMetric)
-                return Collections.singletonMap(name, ((DoubleMetric)metric).value());
+                return ((DoubleMetric)metric).value();
             else if (metric instanceof IntMetric)
-                return Collections.singletonMap(name, ((IntMetric)metric).value());
+                return ((IntMetric)metric).value();
             else if (metric instanceof LongMetric)
-                return Collections.singletonMap(name, ((LongMetric)metric).value());
-            else if (metric instanceof HistogramMetricImpl)
-                return getHistogramForPrint(metric);
+                return ((LongMetric)metric).value();
             else if (metric instanceof ObjectMetric)
-                return Collections.singletonMap(name, metric.getAsString());
+                return metric.getAsString();
 
             throw new IllegalArgumentException("Unknown metric class [class=" + metric.getClass() + ']');
         }
 
         /**
-         * Get map with data of histogram for print.
+         * Get map with data of metric for print.
          *
-         * @return Map with data of histogram.
+         * @return Map with data of metric.
          */
-        private Map<String, ?> getHistogramForPrint(Metric metric) {
-            HistogramMetricImpl hist = (HistogramMetricImpl)metric;
+        private Map<String, Object> exportMetric(Metric metric) {
+            if (metric instanceof HistogramMetric) {
+                HistogramMetric hist = (HistogramMetric)metric;
+                String[] names = histogramBucketNames(hist);
 
-            String[] names = histogramBucketNames(hist);
-            long[] value = ((HistogramMetricImpl)metric).value();
+                Map<String, Object> res = new LinkedHashMap<>();
 
-            assert names.length == value.length;
+                for (int i = 0; i < names.length; i++)
+                    res.put(names[i], hist.value()[i]);
 
-            Map<String, String> res = IntStream.range(0, names.length)
-                .boxed()
-                .collect(Collectors.toMap(i -> names[i], i -> String.valueOf(value[i]), (a, b) -> a, LinkedHashMap::new));
+                // For compatibility with old output.
+                res.put(metric.name(), valueOf(metric));
 
-            res.put(hist.name(), hist.getAsString());
+                return res;
+            }
 
-            return res;
+            return Collections.singletonMap(metric.name(), valueOf(metric));
         }
     }
 }
