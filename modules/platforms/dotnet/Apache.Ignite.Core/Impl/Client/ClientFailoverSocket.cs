@@ -216,27 +216,7 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 try
                 {
-                    ClientSocket socket = null;
-
-                    if (nodeIds != null && nodeIds.Count > 0)
-                    {
-                        Dictionary<Guid, ClientSocket> nodesMap = _nodeSocketMap;
-
-                        nodesMap.TryGetValue(nodeIds[IgniteUtils.ThreadLocalRandom.Next(nodeIds.Count)], out socket);
-
-                        if (socket == null)
-                        {
-                            nodeIds = nodesMap.Keys.Intersect(nodeIds).ToArray();
-
-                            if (nodeIds.Count > 0)
-                                nodesMap.TryGetValue(nodeIds[IgniteUtils.ThreadLocalRandom.Next(nodeIds.Count)], out socket);
-                        }
-                    }
-
-                    if (socket == null || socket.IsDisposed)
-                        socket = GetSocket();
-
-                    return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
+                    return GetRandomNodeSocket(nodeIds).DoOutInOp(opId, writeAction, readFunc, errorFunc);
                 }
                 catch (Exception e)
                 {
@@ -441,6 +421,21 @@ namespace Apache.Ignite.Core.Impl.Client
             }
 
             return null;
+        }
+        
+        /// <summary>
+        /// Provides random socket for one of the nodes. If nodes are empty or if chosen socket is disposed, provides the default socket. 
+        /// </summary>
+        private ClientSocket GetRandomNodeSocket(IList<Guid> nodeIds)
+        {
+            var socketMap = _nodeSocketMap;
+
+            if (nodeIds == null || nodeIds.Count == 0 || socketMap == null
+                || !socketMap.TryGetValue(nodeIds[IgniteUtils.ThreadLocalRandom.Next(nodeIds.Count)], out var socket)
+                || socket.IsDisposed)
+                socket = GetSocket(false);
+
+            return socket;
         }
 
         /// <summary>
