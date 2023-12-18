@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private volatile bool _disposed;
 
         /** Current affinity topology version. Store as object to make volatile. */
-        volatile object _affinityTopologyVersion;
+        private volatile object _affinityTopologyVersion;
 
         /** Topology version that <see cref="_discoveryNodes"/> corresponds to. */
         private long _discoveryTopologyVersion = UnknownTopologyVersion;
