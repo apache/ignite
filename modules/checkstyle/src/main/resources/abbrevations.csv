@@ -15,7 +15,7 @@ config,cfg
 context,ctx
 contexts,ctxs
 count,cnt
-#current,cur
+current,cur
 #database,db
 #default,dflt
 #destination,dest

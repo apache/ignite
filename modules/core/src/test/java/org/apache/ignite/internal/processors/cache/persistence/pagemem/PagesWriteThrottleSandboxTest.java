@@ -168,8 +168,8 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                             cpBufPages = pageMemory.checkpointBufferPagesCount();
 
                             if (System.nanoTime() - startNanos > TimeUnit.SECONDS.toNanos(10)) {
-                                double currentDirtyRatio = (double)dirtyPages / pageMemory.totalPages();
-                                double newMaxDirtyRatio = Math.max(maxDirtyRatio.get(), currentDirtyRatio);
+                                double curDirtyRatio = (double)dirtyPages / pageMemory.totalPages();
+                                double newMaxDirtyRatio = Math.max(maxDirtyRatio.get(), curDirtyRatio);
                                 maxDirtyRatio.set(newMaxDirtyRatio);
                             }
                         }
