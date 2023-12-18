@@ -1998,7 +1998,7 @@ public class RexImpTable {
         /** Ensures that operands have identical type. */
         private List<Expression> harmonize(final List<Expression> argValueList,
             final RexToLixTranslator translator, final RexCall call) {
-            int nullCount = 0;
+            int nullCnt = 0;
             final List<RelDataType> types = new ArrayList<>();
             final RelDataTypeFactory typeFactory =
                 translator.builder.getTypeFactory();
@@ -2006,7 +2006,7 @@ public class RexImpTable {
                 RelDataType type = operand.getType();
                 type = toSql(typeFactory, type);
                 if (translator.isNullable(operand))
-                    ++nullCount;
+                    ++nullCnt;
                 else
                     type = typeFactory.createTypeWithNullability(type, false);
 
@@ -2024,7 +2024,7 @@ public class RexImpTable {
                 // to be harmonized.
                 return argValueList;
             }
-            assert (nullCount > 0) == type.isNullable();
+            assert (nullCnt > 0) == type.isNullable();
             final Type javaCls =
                 translator.typeFactory.getJavaClass(type);
             final List<Expression> harmonizedArgValues = new ArrayList<>();

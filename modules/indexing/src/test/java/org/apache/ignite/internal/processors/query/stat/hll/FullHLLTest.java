@@ -283,8 +283,8 @@ public class FullHLLTest {
         final ISchemaVersion schemaVersion = SerializationUtil.DEFAULT_SCHEMA_VERSION;
         final HLLType type = HLLType.FULL;
         final int padding = schemaVersion.paddingBytes(type);
-        final int dataByteCount = ProbabilisticTestUtil.getRequiredBytes(regwidth, (1 << log2m)/*aka 2^log2m = m*/);
-        final int expectedByteCount = padding + dataByteCount;
+        final int dataByteCnt = ProbabilisticTestUtil.getRequiredBytes(regwidth, (1 << log2m)/*aka 2^log2m = m*/);
+        final int expectedByteCnt = padding + dataByteCnt;
 
         {
             // Should work on an empty element
@@ -293,7 +293,7 @@ public class FullHLLTest {
             final byte[] bytes = hll.toBytes(schemaVersion);
 
             // assert output length is correct
-            assertEquals(bytes.length, expectedByteCount);
+            assertEquals(bytes.length, expectedByteCnt);
 
             final HLL inHLL = HLL.fromBytes(bytes);
 
@@ -313,7 +313,7 @@ public class FullHLLTest {
             final byte[] bytes = hll.toBytes(schemaVersion);
 
             // assert output length is correct
-            assertEquals(bytes.length, expectedByteCount);
+            assertEquals(bytes.length, expectedByteCnt);
 
             final HLL inHLL = HLL.fromBytes(bytes);
 
@@ -333,7 +333,7 @@ public class FullHLLTest {
             final byte[] bytes = hll.toBytes(schemaVersion);
 
             // assert output length is correct
-            assertEquals(bytes.length, expectedByteCount);
+            assertEquals(bytes.length, expectedByteCnt);
 
             final HLL inHLL = HLL.fromBytes(bytes);
 

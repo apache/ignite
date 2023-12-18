@@ -103,18 +103,18 @@ public class IgniteMdRowCount extends RelMdRowCount {
         double leftCardinality = leftDistinct / left;
         double rightCardinality = rightDistinct / right;
 
-        double rowsCount = (Math.min(left, right) / (leftCardinality * rightCardinality)) * selectivity;
+        double rowsCnt = (Math.min(left, right) / (leftCardinality * rightCardinality)) * selectivity;
 
         JoinRelType type = rel.getJoinType();
 
         if (type == JoinRelType.LEFT)
-            rowsCount += left;
+            rowsCnt += left;
         else if (type == JoinRelType.RIGHT)
-            rowsCount += right;
+            rowsCnt += right;
         else if (type == JoinRelType.FULL)
-            rowsCount += left + right;
+            rowsCnt += left + right;
 
-        return rowsCount;
+        return rowsCnt;
     }
 
     /**

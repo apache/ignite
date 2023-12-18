@@ -114,7 +114,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
 
         ignite.cluster().state(ACTIVE);
 
-        int keyCount = 10_000;
+        int keyCnt = 10_000;
 
         byte[] value = new byte[8_192];
 
@@ -122,7 +122,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
         try (IgniteDataStreamer<Integer, byte[]> st = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
             st.allowOverwrite(true);
 
-            for (int i = 0; i < keyCount; i++)
+            for (int i = 0; i < keyCnt; i++)
                 st.addData(i, value);
         }
 
@@ -140,7 +140,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
                     try {
                         startThreadsLatch.countDown();
 
-                        cache.get(ThreadLocalRandom.current().nextInt(keyCount / 5));
+                        cache.get(ThreadLocalRandom.current().nextInt(keyCnt / 5));
                     }
                     catch (Throwable throwable) {
                         if (!X.hasCause(
@@ -169,7 +169,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
 
         assertThat(readThreadsError, empty());
 
-        for (int i = 0; i < keyCount; i++)
+        for (int i = 0; i < keyCnt; i++)
             assertArrayEquals(String.valueOf(i), cache.get(i), value);
     }
 

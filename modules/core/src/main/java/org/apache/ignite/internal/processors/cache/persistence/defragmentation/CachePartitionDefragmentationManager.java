@@ -281,9 +281,9 @@ public class CachePartitionDefragmentationManager {
             oldStores.put(grpId, oldCacheDataStores);
         }
 
-        int partitionCount = oldStores.values().stream().mapToInt(List::size).sum();
+        int partitionCnt = oldStores.values().stream().mapToInt(List::size).sum();
 
-        status.onStart(cacheGrpCtxsForDefragmentation, partitionCount);
+        status.onStart(cacheGrpCtxsForDefragmentation, partitionCnt);
 
         try {
             // Now the actual process starts.
