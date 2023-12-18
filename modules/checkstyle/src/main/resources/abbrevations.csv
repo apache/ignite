@@ -16,7 +16,7 @@ context,ctx
 contexts,ctxs
 count,cnt
 current,cur
-#database,db
+database,db
 #default,dflt
 #destination,dest
 #directory,dir
