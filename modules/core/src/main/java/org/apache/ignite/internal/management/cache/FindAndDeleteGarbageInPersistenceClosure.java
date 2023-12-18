@@ -126,7 +126,7 @@ public class FindAndDeleteGarbageInPersistenceClosure implements IgniteCallable<
                 }
             }));
 
-        Map<Integer, Map<Integer, Long>> grpIdToPartIdToGarbageCount = new HashMap<>();
+        Map<Integer, Map<Integer, Long>> grpIdToPartIdToGarbageCnt = new HashMap<>();
 
         int curPart = 0;
 
@@ -137,7 +137,7 @@ public class FindAndDeleteGarbageInPersistenceClosure implements IgniteCallable<
                 Map<Integer, Map<Integer, Long>> partRes = fut.get();
 
                 for (Map.Entry<Integer, Map<Integer, Long>> e : partRes.entrySet()) {
-                    Map<Integer, Long> map = grpIdToPartIdToGarbageCount.computeIfAbsent(e.getKey(), (x) -> new HashMap<>());
+                    Map<Integer, Long> map = grpIdToPartIdToGarbageCnt.computeIfAbsent(e.getKey(), (x) -> new HashMap<>());
 
                     for (Map.Entry<Integer, Long> entry : e.getValue().entrySet())
                         map.compute(entry.getKey(), (k, v) -> (v == null ? 0 : v) + entry.getValue());
@@ -145,7 +145,7 @@ public class FindAndDeleteGarbageInPersistenceClosure implements IgniteCallable<
             }
 
             if (deleteGarbage)
-                cleanup(grpIdToPartIdToGarbageCount);
+                cleanup(grpIdToPartIdToGarbageCnt);
 
             log.warning("FindAndDeleteGarbageInPersistenceClosure finished: processed " + totalPartitions + " partitions.");
         }
@@ -156,7 +156,7 @@ public class FindAndDeleteGarbageInPersistenceClosure implements IgniteCallable<
             throw unwrapFutureException(e);
         }
 
-        return new FindAndDeleteGarbageInPersistenceJobResult(grpIdToPartIdToGarbageCount);
+        return new FindAndDeleteGarbageInPersistenceJobResult(grpIdToPartIdToGarbageCnt);
     }
 
     /**

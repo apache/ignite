@@ -102,9 +102,9 @@ public abstract class QueryChecker {
      * @return Mather.
      */
     public static Matcher<String> containsResultRowCount(double rowCount) {
-        String rowCountStr = String.format(".*rowcount = %s,.*", rowCount);
+        String rowCntStr = String.format(".*rowcount = %s,.*", rowCount);
 
-        return new RegexpMather(rowCountStr);
+        return new RegexpMather(rowCntStr);
     }
 
     /**

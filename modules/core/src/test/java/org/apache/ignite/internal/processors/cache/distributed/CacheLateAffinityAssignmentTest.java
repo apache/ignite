@@ -1332,9 +1332,9 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             }
         });
 
-        AffinityTopologyVersion currentTop = ignite(0).context().cache().context().exchange().readyAffinityVersion();
+        AffinityTopologyVersion curTop = ignite(0).context().cache().context().exchange().readyAffinityVersion();
 
-        checkAffinity(cnt, currentTop, true);
+        checkAffinity(cnt, curTop, true);
 
         stopNode(stopId, ord);
 

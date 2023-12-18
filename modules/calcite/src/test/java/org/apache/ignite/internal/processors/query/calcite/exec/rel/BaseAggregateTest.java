@@ -448,10 +448,10 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
     public void sumOnDifferentRowsCount() throws IgniteCheckedException {
         int bufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
 
-        int[] grpsCount = {1, bufSize / 2, bufSize, bufSize + 1, bufSize * 4};
+        int[] grpsCnt = {1, bufSize / 2, bufSize, bufSize + 1, bufSize * 4};
         int[] rowsInGroups = {1, 5, bufSize};
 
-        for (int grps : grpsCount) {
+        for (int grps : grpsCnt) {
             for (int rowsInGroup : rowsInGroups) {
                 log.info("Check: [grps=" + grps + ", rowsInGroup=" + rowsInGroup + ']');
 

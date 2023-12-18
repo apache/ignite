@@ -14,9 +14,9 @@ commands,cmds
 config,cfg
 context,ctx
 contexts,ctxs
-#count,cnt
-#current,cur
-#database,db
+count,cnt
+current,cur
+database,db
 #default,dflt
 #destination,dest
 #directory,dir

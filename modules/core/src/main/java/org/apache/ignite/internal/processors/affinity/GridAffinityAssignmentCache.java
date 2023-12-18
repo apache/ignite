@@ -494,20 +494,20 @@ public class GridAffinityAssignmentCache {
 
         for (int p = 0; p < assignment.size(); p++) {
             List<ClusterNode> baselineMapping = assignment.get(p);
-            List<ClusterNode> currentMapping = null;
+            List<ClusterNode> curMapping = null;
 
             for (ClusterNode node : baselineMapping) {
                 ClusterNode aliveNode = alives.get(node.consistentId());
 
                 if (aliveNode != null) {
-                    if (currentMapping == null)
-                        currentMapping = new ArrayList<>();
+                    if (curMapping == null)
+                        curMapping = new ArrayList<>();
 
-                    currentMapping.add(aliveNode);
+                    curMapping.add(aliveNode);
                 }
             }
 
-            result.add(p, currentMapping != null ? currentMapping : Collections.<ClusterNode>emptyList());
+            result.add(p, curMapping != null ? curMapping : Collections.<ClusterNode>emptyList());
         }
 
         return result;

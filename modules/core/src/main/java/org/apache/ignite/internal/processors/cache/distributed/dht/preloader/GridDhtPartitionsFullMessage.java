@@ -938,13 +938,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             if (currMap == null)
                 partitions().put(grpId, updMap);
             else {
-                ClusterNode currentMapSentBy = discovery.node(currMap.nodeId());
+                ClusterNode curMapSentBy = discovery.node(currMap.nodeId());
                 ClusterNode newMapSentBy = discovery.node(updMap.nodeId());
 
                 if (newMapSentBy == null)
                     continue;
 
-                if (currentMapSentBy == null || newMapSentBy.order() > currentMapSentBy.order() || updMap.compareTo(currMap) >= 0)
+                if (curMapSentBy == null || newMapSentBy.order() > curMapSentBy.order() || updMap.compareTo(currMap) >= 0)
                     partitions().put(grpId, updMap);
             }
         }

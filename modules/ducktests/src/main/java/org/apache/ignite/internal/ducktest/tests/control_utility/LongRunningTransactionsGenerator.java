@@ -53,7 +53,7 @@ public class LongRunningTransactionsGenerator extends IgniteAwareApplication {
     @Override protected void run(JsonNode jsonNode) throws Exception {
         IgniteCache<String, String> cache = ignite.cache(jsonNode.get("cache_name").asText());
 
-        int txCount = jsonNode.get("tx_count") != null ? jsonNode.get("tx_count").asInt() : 1;
+        int txCnt = jsonNode.get("tx_count") != null ? jsonNode.get("tx_count").asInt() : 1;
 
         int txSize = jsonNode.get("tx_size") != null ? jsonNode.get("tx_size").asInt() : 1;
 
@@ -64,9 +64,9 @@ public class LongRunningTransactionsGenerator extends IgniteAwareApplication {
         long expectedTopologyVersion = jsonNode.get("wait_for_topology_version") != null ?
             jsonNode.get("wait_for_topology_version").asLong() : -1L;
 
-        CountDownLatch lockLatch = new CountDownLatch(txCount);
+        CountDownLatch lockLatch = new CountDownLatch(txCnt);
 
-        pool = Executors.newFixedThreadPool(2 * txCount);
+        pool = Executors.newFixedThreadPool(2 * txCnt);
 
         markInitialized();
 
@@ -84,7 +84,7 @@ public class LongRunningTransactionsGenerator extends IgniteAwareApplication {
                 "current version is: " + ignite.cluster().topologyVersion());
         }
 
-        for (int i = 0; i < txCount; i++) {
+        for (int i = 0; i < txCnt; i++) {
             String key = keyPrefix + i;
 
             pool.execute(() -> {
@@ -113,9 +113,9 @@ public class LongRunningTransactionsGenerator extends IgniteAwareApplication {
 
         log.info(KEYS_LOCKED_MESSAGE);
 
-        CountDownLatch txLatch = new CountDownLatch(txCount);
+        CountDownLatch txLatch = new CountDownLatch(txCnt);
 
-        for (int i = 0; i < txCount; i++) {
+        for (int i = 0; i < txCnt; i++) {
             Map<String, String> data = new TreeMap<>();
 
             for (int j = 0; j < txSize; j++) {
