@@ -82,11 +82,11 @@ import static org.junit.Assert.assertTrue;
 /**
  * Task that deploys a Java service.
  */
-public class PlatformDeployServiceTask extends ComputeTaskAdapter<UUID[], Object> {
+public class PlatformDeployServiceTask extends ComputeTaskAdapter<Object[], Object> {
     /** {@inheritDoc} */
     @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable UUID[] nodes) throws IgniteException {
-        return Collections.singletonMap(new PlatformDeployServiceJob(nodes), F.first(subgrid));
+        @Nullable Object[] nodes) throws IgniteException {
+        return Collections.singletonMap(new PlatformDeployServiceJob(F.isEmpty(nodes) ? null : Arrays.asList(nodes)), F.first(subgrid));
     }
 
     /** {@inheritDoc} */
@@ -99,7 +99,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<UUID[], Object
      */
     private static class PlatformDeployServiceJob extends ComputeJobAdapter {
         /** */
-        private final UUID[] nodes;
+        @Nullable private final Collection<Object> consistentIds;
 
         /** Ignite. */
         @IgniteInstanceResource
@@ -108,10 +108,10 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<UUID[], Object
         /**
          * Ctor.
          *
-         * @param nodes Service nodes.
+         * @param consistentIds Service nodes.
          */
-        private PlatformDeployServiceJob(UUID[] nodes) {
-            this.nodes = nodes;
+        private PlatformDeployServiceJob(@Nullable Collection<Object> consistentIds) {
+            this.consistentIds = consistentIds;
         }
 
         /** {@inheritDoc} */
@@ -123,8 +123,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<UUID[], Object
 
             svcCfg.setMaxPerNodeCount(1);
 
-            if (!F.isEmpty(nodes))
-                svcCfg.setNodeFilter(new UUIDNodeFilter(Arrays.asList(nodes)));
+            if (!F.isEmpty(consistentIds))
+                svcCfg.setNodeFilter(new ConsistentIdNodeFilter(consistentIds));
 
             svcCfg.setService(new PlatformTestService());
             svcCfg.setInterceptors(new PlatformTestServiceInterceptor());
@@ -851,18 +851,18 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<UUID[], Object
     }
 
     /** */
-    private static final class UUIDNodeFilter implements IgnitePredicate<ClusterNode> {
+    private static final class ConsistentIdNodeFilter implements IgnitePredicate<ClusterNode> {
         /** */
-        private final Collection<UUID> nodes;
+        private final Collection<Object> consistentIds;
 
         /** */
-        private UUIDNodeFilter(Collection<UUID> nodes) {
-            this.nodes = nodes;
+        private ConsistentIdNodeFilter(Collection<Object> consistentIds) {
+            this.consistentIds = consistentIds;
         }
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
-            return nodes.contains(node.id());
+            return consistentIds.contains(node.consistentId());
         }
     }
 }

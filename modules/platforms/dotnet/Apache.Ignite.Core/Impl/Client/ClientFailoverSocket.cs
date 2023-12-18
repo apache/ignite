@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private volatile bool _disposed;
 
         /** Current affinity topology version. Store as object to make volatile. */
-        private volatile object _affinityTopologyVersion;
+        volatile object _affinityTopologyVersion;
 
         /** Topology version that <see cref="_discoveryNodes"/> corresponds to. */
         private long _discoveryTopologyVersion = UnknownTopologyVersion;
@@ -186,6 +186,55 @@ namespace Apache.Ignite.Core.Impl.Client
                 try
                 {
                     var socket = GetAffinitySocket(cacheId, key) ?? GetSocket();
+
+                    return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
+                }
+                catch (Exception e)
+                {
+                    if (!HandleOpError(e, opId, ref attempt, ref errors))
+                    {
+                        throw;
+                    }
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Performs a send-receive operation with partition awareness on certain node.
+        /// </summary>
+        public T DoOutInOpOnNode<T>(
+            ClientOp opId,
+            Action<ClientRequestContext> writeAction,
+            Func<ClientResponseContext, T> readFunc,
+            IList<Guid> nodeIds,
+            Func<ClientStatusCode, string, T> errorFunc = null)
+        {
+            var attempt = 0;
+            List<Exception> errors = null;
+
+            while (true)
+            {
+                try
+                {
+                    ClientSocket socket = null;
+
+                    if (nodeIds != null && nodeIds.Count > 0)
+                    {
+                        Dictionary<Guid, ClientSocket> nodesMap = _nodeSocketMap;
+
+                        nodesMap.TryGetValue(nodeIds[IgniteUtils.ThreadLocalRandom.Next(nodeIds.Count)], out socket);
+
+                        if (socket == null)
+                        {
+                            nodeIds = nodesMap.Keys.Intersect(nodeIds).ToArray();
+
+                            if (nodeIds.Count > 0)
+                                nodesMap.TryGetValue(nodeIds[IgniteUtils.ThreadLocalRandom.Next(nodeIds.Count)], out socket);
+                        }
+                    }
+
+                    if (socket == null || socket.IsDisposed)
+                        socket = GetSocket();
 
                     return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
                 }
@@ -328,9 +377,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Checks the disposed state.
         /// </summary>
-        internal ClientSocket GetSocket()
+        internal ClientSocket GetSocket(bool transactional = true)
         {
-            var tx = _transactions.Tx;
+            var tx = transactional ? _transactions.Tx : null;
             if (tx != null)
             {
                 return tx.Socket;
@@ -1002,7 +1051,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets current topology version.
         /// </summary>
-        private long GetTopologyVersion()
+        public long GetTopologyVersion()
         {
             var ver = _affinityTopologyVersion;
 

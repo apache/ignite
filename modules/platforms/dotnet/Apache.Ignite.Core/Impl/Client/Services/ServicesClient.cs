@@ -20,13 +20,17 @@ namespace Apache.Ignite.Core.Impl.Client.Services
     using System;
     using System.Collections.Generic;
     using System.Collections;
+    using System.Collections.Concurrent;
     using System.Diagnostics;
+    using System.Linq;
     using System.Reflection;
+    using System.Threading;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Services;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Services;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Platform;
     using Apache.Ignite.Core.Services;
 
@@ -35,6 +39,9 @@ namespace Apache.Ignite.Core.Impl.Client.Services
     /// </summary>
     internal class ServicesClient : IServicesClient
     {
+        /** Max service topology update period in mills. */
+        private const long SrvTopUpdatePeriod = 10 * TimeSpan.TicksPerSecond;
+        
         /** */
         [Flags]
         private enum ServiceFlags : byte
@@ -59,6 +66,9 @@ namespace Apache.Ignite.Core.Impl.Client.Services
 
         /** */
         private readonly TimeSpan _timeout;
+        
+        /** */
+        private readonly ConcurrentDictionary<string, ServiceTopology> _servicesTopologies;
 
         /// <summary>
         /// Initializes a new instance of <see cref="ServicesClient"/> class.
@@ -77,6 +87,9 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             _keepBinary = keepBinary;
             _serverKeepBinary = serverKeepBinary;
             _timeout = timeout;
+            _servicesTopologies = ignite.GetConfiguration().EnablePartitionAwareness
+                ? new ConcurrentDictionary<string, ServiceTopology>()
+                : null;
         }
 
         /** <inheritdoc /> */
@@ -152,7 +165,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         private object InvokeProxyMethod(string serviceName, MethodBase method, object[] args,
             PlatformType platformType, IDictionary callAttrs)
         {
-            return _ignite.Socket.DoOutInOp(ClientOp.ServiceInvoke,
+            return _ignite.Socket.DoOutInOpOnNode(ClientOp.ServiceInvoke,
                 ctx =>
                 {
                     var w = ctx.Writer;
@@ -168,7 +181,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
                         {
                             throw new IgniteClientException("Cluster group is empty");
                         }
-
+                        
                         w.WriteInt(nodes.Count);
 
                         foreach (var node in nodes)
@@ -202,7 +215,123 @@ namespace Apache.Ignite.Core.Impl.Client.Services
                         : ctx.Reader;
 
                     return reader.ReadObject<object>();
-                });
+                }, 
+                GetServiceTopology(serviceName));
+        }
+
+        /// <summary>
+        /// Provides actual known service topology or empty list if: service topology is not enabled, not supported or
+        /// not received yet.
+        /// </summary>
+        private IList<Guid> GetServiceTopology(string serviceName)
+        {
+            if (_servicesTopologies == null || !_ignite.Socket.GetSocket().Features.HasFeature(ClientBitmaskFeature.ServiceTopology))
+                return null;
+            
+            return _servicesTopologies.GetOrAdd(serviceName, s => new ServiceTopology(serviceName, this)).GetAndUpdate();
+        }
+        
+        /// <summary>
+        /// Keeps topology of certain service and its update progress meta
+        /// </summary>
+        private class ServiceTopology
+        {
+            /** Service name. */
+            private readonly string _srvcName;
+            
+            /** Ignite services. */
+            private readonly ServicesClient _srvc;
+
+            /** Flag of topology update progress. */
+            private int _updateInProgress;
+
+            /** Time of the last received topology. */
+            private long _lastUpdateRequestTime;
+            
+            /** UUIDs of the nodes with at least one service instance. */
+            private volatile IList<Guid> _nodes;
+
+            /** Last cluster topology version when current service topology was actual. */
+            private long _lastAffTop;
+
+            /** */
+            internal ServiceTopology(string name, ServicesClient srvc)
+            {
+                _srvcName = name;
+                _srvc = srvc;
+            }
+
+            /// <summary>
+            /// Asynchronously updates the service topology.
+            /// </summary>
+            private void UpdateTopologyAsync()
+            {
+                if (Interlocked.Exchange(ref _updateInProgress, 1) == 1)
+                    return;
+
+                var socket = _srvc._ignite.Socket;
+
+                var topVer = socket.GetTopologyVersion();
+
+                var log = _srvc._ignite.GetConfiguration().Logger;
+
+                var groupNodes = _srvc._clusterGroup?.GetNodes();
+                
+                _nodes = socket.DoOutInOpAsync(ClientOp.ServiceGetTopology,
+                    ctx => ctx.Writer.WriteString(_srvcName),
+                    ctx =>
+                    {
+                        var cnt = ctx.Reader.ReadInt();
+
+                        IList<Guid> res = new List<Guid>(cnt);
+
+                        for (var i = 0; i < cnt; ++i)
+                            res.Add(BinaryUtils.ReadGuid(ctx.Reader.Stream));
+
+                        Interlocked.Exchange(ref _lastUpdateRequestTime, DateTime.Now.Ticks);
+                        Interlocked.Exchange(ref _lastAffTop, topVer);
+                        Interlocked.Exchange(ref _updateInProgress, 0);
+
+                        var filteredTopology = FilterTopology(res, groupNodes?.Select(n => n.Id).ToList());
+
+                        log.Debug("Topology of service '" + _srvcName + "' has been updated. The " +
+                                  "service instance nodes: " + string.Join(", ", res.Select(gid=>gid.ToString())) +
+                                  ". Effective topology with the cluster group is: " + 
+                                  string.Join(", ", filteredTopology.Select(gid=>gid.ToString())) + '.');
+
+                        return filteredTopology;
+                    }, (status, err) =>
+                    {
+                        Interlocked.Exchange(ref _updateInProgress, 0);
+
+                        log.Error("Failed to update topology of the service '" + _srvcName + "'.", err);
+
+                        return _nodes;
+                    }).Result;
+            }
+
+            /// <summary>
+            /// Filters service topology regarding to the cluster group.
+            /// </summary>
+            private static IList<Guid> FilterTopology(IList<Guid> serviceTopology, IList<Guid> clusterGroup)
+            {
+                return clusterGroup == null ? serviceTopology : serviceTopology.Intersect(clusterGroup).ToList();
+            }
+
+            /// <summary>
+            /// Provides last known service topology and asynchronously updates it if required.
+            /// </summary>
+            internal IList<Guid> GetAndUpdate()
+            {
+                long lastKnownAff = Interlocked.Read(ref _lastAffTop);
+                long curAff = _srvc._ignite.Socket.GetTopologyVersion();
+                long lastUpdateTime = Interlocked.Read(ref _lastUpdateRequestTime);
+                
+                if(lastKnownAff == 0 || curAff > lastKnownAff || DateTime.Now.Ticks - lastUpdateTime >= SrvTopUpdatePeriod)
+                    UpdateTopologyAsync();
+
+                return _nodes;
+            }
         }
     }
 }

@@ -15,145 +15,92 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Services
+namespace Apache.Ignite.Core.Tests.Client.Services
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Client.Services;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Tests.Client.Cache;
+    using Apache.Ignite.Core.Tests.Services;
     using NUnit.Framework;
 
     /// <summary>
-    /// Services tests.
+    /// Service awareness tests.
     /// </summary>
-#pragma warning disable CS0618 // Method is obsolete.
     public class ServicesAwarenessTest
     {
-        /** */
-        private const string SvcName = "Service1";
-
-        /** */
+        /** Name of the test platform service. */
         private const string PlatformSvcName = "PlatformTestService";
 
-        // /** Service method call counter. */
-        // private static int _serviceCallCounter;
+        /** All the server nodes. */
+        private IIgnite[] _grids;
 
-        /** */
-        protected IIgnite Grid1;
-
-        /** */
-        protected IIgnite Grid2;
-
-        /** */
-        protected IIgnite Grid3;
+        /** The thin client. */
+        private IIgniteClient _thinClient;
         
         /** */
-        private IIgniteClient _thinClient;
+        private bool _partitionAwareness;
 
         /** */
-        protected IIgnite[] Grids;
+        private IList<IIgnite> _serviceNodes;
 
-        [TestFixtureTearDown]
-        public void FixtureTearDown()
+        /// <summary>
+        /// Tests preparations.
+        /// </summary>
+        [TestFixtureSetUp]
+        public void BeforeTests()
         {
-            StopGrids();
+            _grids = new IIgnite[3];
+
+            for (var i = 0; i < _grids.Length; ++i)
+                StartGrid(i);
         }
 
         /// <summary>
-        /// Executes before each test.
+        /// Clears test.
         /// </summary>
         [SetUp]
-        public void SetUp()
+        public void BeforeTest()
         {
-            StartGrids();
+            _partitionAwareness = true;
+            
+            _serviceNodes = new List<IIgnite> { _grids[1], _grids[2] };
 
+            DeployJavaService();
+            
+            DeployPlatformService();
+            
             _thinClient = Ignition.StartClient(GetClientConfiguration());
-
-            var cfg = new ServiceConfiguration
-            {
-                Name = PlatformSvcName,
-                MaxPerNodeCount = 1,
-                TotalCount = 1,
-                NodeFilter = new NodeIdFilter {NodeId = Grid1.GetCluster().GetLocalNode().Id},
-                Service = new PlatformTestService(),
-                Interceptors = new List<IServiceCallInterceptor>
-                    {new PlatformTestServiceInterceptor("testInterception")}
-            };
-
-            Services.Deploy(cfg);
-
-            TestUtils.DeployJavaService(Grid1, Grids.Select(n=>n.GetCluster().GetLocalNode().Id).ToArray());
         }
-
+        
         /// <summary>
-        /// Executes after each test.
+        /// Clears test.
         /// </summary>
         [TearDown]
-        public void TearDown()
+        public void AfterTest()
         {
-            try
-            {
-                Services.CancelAll();
-            }
-            catch (Exception)
-            {
-                // Restart grids to cleanup
-                StopGrids();
-
-                throw;
-            }
-            finally
-            {
-                if (TestContext.CurrentContext.Test.Name.StartsWith("TestEventTypes"))
-                    StopGrids(); // clean events for other tests
-            }
-        }
-
-        /// <summary>
-        /// Starts the grids.
-        /// </summary>
-        private void StartGrids()
-        {
-            if (Grid1 != null)
-                return;
-
-            var home = "/home/fmj/src/ignite/modules/platforms/dotnet/Apache.Ignite.Core.Tests";
+            _thinClient.Dispose();
             
-            var path = Path.Combine(home, "Config", "Compute", "compute-grid");
-            Grid1 = Ignition.Start(GetConfiguration(path + "1.xml"));
-            Grid2 = Ignition.Start(GetConfiguration(path + "2.xml"));
-            Grid3 = Ignition.Start(GetConfiguration(path + "3.xml"));
+            _grids[0].GetServices().CancelAll();
 
-            Grids = new[] {Grid1, Grid2, Grid3};
+            TestUtils.WaitForTrueCondition(() => _grids[0].GetServices().GetServiceDescriptors().Count == 0, 20_000);
         }
-
+        
         /// <summary>
-        /// Stops the grids.
+        /// Tears down the test fixture.
         /// </summary>
-        private void StopGrids()
+        [TestFixtureTearDown]
+        public void AfterTests()
         {
-            Grid1 = Grid2 = Grid3 = null;
-            Grids = null;
-
             Ignition.StopAll(true);
-        }
-
-        /// <summary>
-        /// Gets the Ignite configuration.
-        /// </summary>
-        private IgniteConfiguration GetConfiguration(string springConfigUrl)
-        {
-            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
-            {
-                SpringConfigUrl = springConfigUrl,
-                LifecycleHandlers = null
-            };
         }
 
         /// <summary>
@@ -161,50 +108,312 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         private IgniteClientConfiguration GetClientConfiguration()
         {
-            var port = IgniteClientConfiguration.DefaultPort;
-
             return new IgniteClientConfiguration
             {
-                Endpoints = new List<string> {IPAddress.Loopback + ":" + port},
+                Endpoints = new List<string> {IPAddress.Loopback + ":" + IgniteClientConfiguration.DefaultPort},
                 SocketTimeout = TimeSpan.FromSeconds(15),
-                Logger = new ListLogger(new ConsoleLogger {MinLevel = LogLevel.Trace})
+                Logger = new ListLogger(new ConsoleLogger {MinLevel = LogLevel.Trace}),
+                EnablePartitionAwareness = _partitionAwareness
             };
         }
 
         /// <summary>
-        /// Gets the services.
+        /// Tests service awareness is disabled using several threads.
         /// </summary>
-        protected virtual IServices Services
+        [Test]
+        [TestCase(TestUtils.JavaServiceName)]
+        [TestCase(PlatformSvcName)]
+        public void TestServiceAwarenessIsDisabled(string serviceName)
         {
-            get { return Grid1.GetServices(); }
+            _thinClient.Dispose();
+
+            _partitionAwareness = false;
+
+            _thinClient = Ignition.StartClient(GetClientConfiguration());
+
+            DoTestServiceAwareness(serviceName, null);
         }
 
         /// <summary>
-        /// Tests Java service invocation via thin client.
+        /// Tests service awareness is enabled using several threads.
         /// </summary>
         [Test]
-        public void TestCallJavaServiceThinClient()
+        [TestCase(TestUtils.JavaServiceName)]
+        [TestCase(PlatformSvcName)]
+        public void TestServiceAwarenessIsEnabled(string serviceName)
         {
-            var svc = _thinClient.GetServices().GetServiceProxy<IJavaService>(TestUtils.JavaServiceName);
-
-            Assert.AreEqual(4, svc.test((byte) 3));
+            DoTestServiceAwareness(serviceName, _serviceNodes);
         }
         
+        /// <summary>
+        /// Tests service topology change is received.
+        /// </summary>
+        [Test]
+        [TestCase(TestUtils.JavaServiceName)]
+        [TestCase(PlatformSvcName)]
+        public void TestTopologyChange(string serviceName)
+        {
+            DoTestServiceAwareness(serviceName, _serviceNodes);
+
+            Ignition.Stop(_grids[2].Name, false);
+
+            TestUtils.WaitForTrueCondition(() => _thinClient.GetCluster().GetNodes().Count == 2, 20_000);
+
+            DoTestServiceAwareness(serviceName, new List<IIgnite> { _grids[1] });
+
+            StartGrid(2);
+            
+            // Wait for the service redeployment.
+            Thread.Sleep(5_000);
+            
+            DoTestServiceAwareness(serviceName, new List<IIgnite> { _grids[1], _grids[2] });
+        }
+
+        /// <summary>
+        /// Tests service topology is updated when service is forcibly redeployed.
+        /// </summary>
+        [Test]
+        [TestCase(TestUtils.JavaServiceName)]
+        [TestCase(PlatformSvcName)]
+        public void TestServiceRedeploy(string serviceName)
+        {
+            DoTestServiceAwareness(serviceName, _serviceNodes);
+
+            _grids[0].GetServices().Cancel(serviceName);
+
+            TestUtils.WaitForTrueCondition(() => _grids[0].GetServices().GetServiceDescriptors().Count == 1, 10_000);
+
+            switch (serviceName)
+            {
+                case TestUtils.JavaServiceName:
+                    DeployJavaService(true);
+                    break;
+                
+                case PlatformSvcName:
+                    DeployPlatformService(true);
+                    break;
+                
+                default:
+                    throw new InvalidOperationException("Unknown service name: " + serviceName);
+            }
+
+            // Wait for the update interval.
+            Thread.Sleep(10_000);
+
+            DoTestServiceAwareness(serviceName, _grids);
+        }
+
+        /// <summary>
+        /// Tests service awareness with the cluster group using single node.
+        /// </summary>
+        [Test]
+        [TestCase(TestUtils.JavaServiceName, true)]
+        [TestCase(TestUtils.JavaServiceName, false)]
+        [TestCase(PlatformSvcName, true)]
+        [TestCase(PlatformSvcName, false)]
+        public void TestClusterGroupSingleNode(string serviceName, bool correctNode)
+        {
+            var expectedTopology = correctNode ? new List<IIgnite> { _grids[1] } : new List<IIgnite>();
+
+            // Node 0 has no service instance.
+            var clusterGroup = new List<IIgnite> { _grids[correctNode ? 1 : 0] };
+
+            DoTestServiceAwareness(serviceName, expectedTopology, clusterGroup);
+        }
+        
+        /// <summary>
+        /// Tests service awareness with the cluster group which intersects the service topology.
+        /// </summary>
+        [Test]
+        [TestCase(TestUtils.JavaServiceName, false)]
+        [TestCase(TestUtils.JavaServiceName, true)]        
+        [TestCase(PlatformSvcName, false)]
+        [TestCase(PlatformSvcName, true)]
+        public void TestClusterGroupIntersectsServiceTopology(string serviceName, bool wholeClusterAsGroup)
+        {
+            var expectedTopology = wholeClusterAsGroup ? _serviceNodes : new List<IIgnite> { _grids[1] };
+
+            // Node 0 has no service instance.
+            var clusterGroup = wholeClusterAsGroup ? _grids.ToList() : new List<IIgnite> { _grids[0] , _grids[1] };
+
+            DoTestServiceAwareness(serviceName, expectedTopology, clusterGroup);
+        }
+        
+        /// <summary>
+        /// Tests service awareness with the cluster group which is equal the service topology.
+        /// </summary>
+        [Test]
+        [TestCase(TestUtils.JavaServiceName)]
+        [TestCase(PlatformSvcName)]
+        public void TestClusterGroupEqualToServiceTopology(string serviceName)
+        {
+            DoTestServiceAwareness(serviceName, _serviceNodes, _serviceNodes);
+        }
+
+        /// <summary>
+        /// Checks if service awareness is enabled or disabled.
+        /// </summary>
+        /// <param name="srcName">Name of the test service.</param>
+        /// <param name="expectedTop">Expected nodes to call the service on. If empty, service topology is not expected at all.</param>
+        /// <param name="clusterGroup">If not null, filters nodes to call service on.</param>
+        private void DoTestServiceAwareness(string srcName, ICollection<IIgnite> expectedTop, ICollection<IIgnite> clusterGroup = null)
+        {
+            var log = (ListLogger)_thinClient.GetConfiguration().Logger;
+            
+            log.Clear();
+
+            CallService(ServicesClient(expectedTop, clusterGroup).GetServiceProxy<IJavaService>(srcName), expectedTop?.Count == 0);
+            
+            var logStr = "Topology of service '" + srcName + "' has been updated. The service instance nodes: ";
+
+            if (expectedTop != null)
+            {
+                var top = ExtractServiceTopology(log, logStr);
+
+                Assert.AreEqual(expectedTop.Count, top.Count());
+                
+                // Checks that expected service topology and the received topology are equal.
+                Assert.AreEqual(expectedTop.Count, 
+                    expectedTop.Select(n => n.GetCluster().GetLocalNode().Id.ToString()).Intersect(top).ToList().Count);
+            }
+            else
+            {
+                // Checks that there is no service topology received.
+                Assert.AreEqual(0, log.Entries.Count(e => e.Message.Contains(logStr)));
+            }
+        }
+
+        /// <summary>
+        /// Provides proper services client.
+        /// </summary>
+        private IServicesClient ServicesClient(ICollection<IIgnite> expectedTop, ICollection<IIgnite> clusterGroup)
+        {
+            if (clusterGroup == null)
+                return _thinClient.GetServices();
+
+            return _thinClient.GetCluster()
+                .ForPredicate(n => clusterGroup.Any(i => i.GetCluster().GetLocalNode().Id.Equals(n.Id)))
+                .GetServices();
+        }
+
+        /// <summary>
+        /// Calls the service for 5 seconds.
+        /// </summary>
+        private static void CallService(IJavaService service, bool failureExpected)
+        {
+            var callLatch = new CountdownEvent(4);
+
+            for (var i = 0; i < 4; ++i)
+            {
+                Task.Run(() =>
+                {
+                    for (var i = 0; i < 50; ++i)
+                    {
+                        if (failureExpected)
+                        {
+                            Assert.Throws<IgniteClientException>(() => service.test(i));
+
+                            break;
+                        }
+
+                        Assert.AreEqual(i + 1, service.test(i));
+
+                        Thread.Sleep(100);
+                    }
+
+                    callLatch.Signal();
+                });
+            }
+
+            callLatch.Wait(20_000);
+        }
+        
+        /// <summary>
+        /// Extracts received effective service topology from the client' log.
+        /// </summary>
+        private static IEnumerable<string> ExtractServiceTopology(ListLogger log, string stringToSearch)
+        {
+            var logEntries = log.Entries.Where(e => e.Message.Contains(stringToSearch))
+                .Select(e => e.Message).ToArray();
+
+            Assert.AreEqual(1, logEntries.Length);
+
+            var nodeIdsIdx = logEntries[0].LastIndexOf(": ") + 2;
+
+            var idsStr = logEntries[0].Substring(nodeIdsIdx, logEntries[0].Length - nodeIdsIdx - 1);
+
+            if (idsStr.Length == 0)
+                return new List<string>();
+
+            return logEntries[0].Substring(nodeIdsIdx, logEntries[0].Length - nodeIdsIdx - 1)
+                .Replace(stringToSearch, "").Split(", ").ToList();
+        }
+
+        /// <summary>
+        /// Starts server node.
+        /// </summary>
+        private void StartGrid(int nodeIdx)
+        {
+            var cfg = TestUtils.GetTestConfiguration(false, "Node" + nodeIdx);
+            
+            cfg.ConsistentId = cfg.IgniteInstanceName;
+            
+            _grids[nodeIdx] = Ignition.Start(cfg);
+        }
+
+        /// <summary>
+        /// Deploys test Java service.
+        /// </summary>
+        private void DeployJavaService(bool allNodes = false)
+        {
+            TestUtils.DeployJavaService(_grids[0], allNodes ? null : ServiceNodesConsistentIds());
+        }
+        
+        /// <summary>
+        /// Deploys test platform service.
+        /// </summary>
+        private void DeployPlatformService(bool allNodes = false)
+        {
+            var cfg = new ServiceConfiguration
+            {
+                Name = PlatformSvcName,
+                MaxPerNodeCount = 1,
+                Service = new PlatformTestService(),
+            };
+
+            if (!allNodes)
+                cfg.NodeFilter = new NodeConsistentIdFilter(ServiceNodesConsistentIds());
+
+            _grids[0].GetServices().Deploy(cfg);
+        }
+
+        /// <summary>
+        /// Provides consistent ids of the service nodes.
+        /// </summary>
+        private ICollection<object> ServiceNodesConsistentIds()
+        {
+            return _serviceNodes.Select(g => g.GetCluster().GetLocalNode().ConsistentId).ToList();
+        }
+
         /// <summary>
         /// Test node filter.
         /// </summary>
         [Serializable]
-        private class NodeIdFilter : IClusterNodeFilter
+        private class NodeConsistentIdFilter : IClusterNodeFilter
         {
-            /// <summary>
-            /// Gets or sets the node identifier.
-            /// </summary>
-            public Guid NodeId { get; set; }
+            /** */
+            private readonly IEnumerable<object> ids;
+
+            /** */
+            internal NodeConsistentIdFilter(IEnumerable<object> ids)
+            {
+                this.ids = ids;
+            }
 
             /** <inheritdoc /> */
             public bool Invoke(IClusterNode node)
             {
-                return node.Id == NodeId;
+                return ids.Contains(node.ConsistentId);
             }
         }
     }

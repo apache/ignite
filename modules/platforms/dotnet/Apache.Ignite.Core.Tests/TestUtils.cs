@@ -46,7 +46,6 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Tests.Process;
-    using Microsoft.VisualBasic;
     using NUnit.Framework;
     using NUnit.Framework.Interfaces;
     using NUnit.Framework.Internal;
@@ -674,24 +673,16 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Deploys the Java service.
+        /// Deploys the Java service on specified nodes.
         /// </summary>
-        public static void DeployJavaService(IIgnite ignite, Guid[] nodes)
+        public static void DeployJavaService(IIgnite ignite, ICollection<object> nodes = null)
         {
             ignite.GetCompute()
-                .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", nodes);
+                .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", nodes?.ToArray());
 
             var services = ignite.GetServices();
 
             WaitForCondition(() => services.GetServiceDescriptors().Any(x => x.Name == TestUtils.JavaServiceName), 1000);
-        }
-        
-        /// <summary>
-        /// Deploys the Java service.
-        /// </summary>
-        public static void DeployJavaService(IIgnite ignite)
-        {
-            DeployJavaService(ignite, null);
         }
 
         /// <summary>
