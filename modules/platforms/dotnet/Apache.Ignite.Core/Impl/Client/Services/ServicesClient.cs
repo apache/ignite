@@ -233,15 +233,15 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         }
         
         /// <summary>
-        /// Keeps topology of certain service and its update progress meta
+        /// Keeps topology of certain service and its update progress.
         /// </summary>
         private class ServiceTopology
         {
             /** Service name. */
-            private readonly string _srvcName;
+            private readonly string _svcName;
             
             /** Ignite services. */
-            private readonly ServicesClient _srvc;
+            private readonly ServicesClient _svcClient;
 
             /** Flag of topology update progress. */
             private int _updateInProgress;
@@ -256,10 +256,10 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             private long _lastAffTop;
 
             /** */
-            internal ServiceTopology(string name, ServicesClient srvc)
+            internal ServiceTopology(string name, ServicesClient svcClient)
             {
-                _srvcName = name;
-                _srvc = srvc;
+                _svcName = name;
+                _svcClient = svcClient;
             }
 
             /// <summary>
@@ -270,16 +270,16 @@ namespace Apache.Ignite.Core.Impl.Client.Services
                 if (Interlocked.Exchange(ref _updateInProgress, 1) == 1)
                     return;
 
-                var socket = _srvc._ignite.Socket;
+                var socket = _svcClient._ignite.Socket;
 
                 var topVer = socket.GetTopologyVersion();
 
-                var log = _srvc._ignite.GetConfiguration().Logger;
+                var log = _svcClient._ignite.GetConfiguration().Logger;
 
-                var groupNodes = _srvc._clusterGroup?.GetNodes();
+                var groupNodes = _svcClient._clusterGroup?.GetNodes();
 
                 _nodes = await socket.DoOutInOpAsync(ClientOp.ServiceGetTopology,
-                    ctx => ctx.Writer.WriteString(_srvcName),
+                    ctx => ctx.Writer.WriteString(_svcName),
                     ctx =>
                     {
                         var cnt = ctx.Reader.ReadInt();
@@ -295,7 +295,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
                         
                         var filteredTopology = FilterTopology(res, groupNodes?.Select(n => n.Id).ToList());
                         
-                        log.Debug("Topology of service '" + _srvcName + "' has been updated. The " +
+                        log.Debug("Topology of service '" + _svcName + "' has been updated. The " +
                                   "service instance nodes: " + string.Join(", ", res.Select(gid=>gid.ToString())) +
                                   ". Effective topology with the cluster group is: " + 
                                   string.Join(", ", filteredTopology.Select(gid=>gid.ToString())) + '.');
@@ -305,7 +305,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
                     {
                         Interlocked.Exchange(ref _updateInProgress, 0);
                         
-                        log.Error("Failed to update topology of the service '" + _srvcName + "'.", err);
+                        log.Error("Failed to update topology of the service '" + _svcName + "'.", err);
 
                         return _nodes;
                     }).ConfigureAwait(false);
@@ -325,7 +325,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             internal IList<Guid> GetAndUpdate()
             {
                 long lastKnownAff = Interlocked.Read(ref _lastAffTop);
-                long curAff = _srvc._ignite.Socket.GetTopologyVersion();
+                long curAff = _svcClient._ignite.Socket.GetTopologyVersion();
                 long lastUpdateTime = Interlocked.Read(ref _lastUpdateRequestTime);
                 
                 if(lastKnownAff == 0 || curAff > lastKnownAff || DateTime.Now.Ticks - lastUpdateTime >= SrvTopUpdatePeriod)
