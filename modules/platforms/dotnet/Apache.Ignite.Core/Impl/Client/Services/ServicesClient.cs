@@ -270,7 +270,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             /// </summary>
             private async Task UpdateTopologyAsync()
             {
-                if (Interlocked.Exchange(ref _updateInProgress, 1) == 1)
+                if (Interlocked.CompareExchange(ref _updateInProgress, 1, 0) == 1)
                     return;
 
                 var socket = _svcClient._ignite.Socket;

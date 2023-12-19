@@ -80,13 +80,17 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Task that deploys a Java service.
+ * Task that deploys a Java service on all or selected nodes.
  */
 public class PlatformDeployServiceTask extends ComputeTaskAdapter<Object[], Object> {
     /** {@inheritDoc} */
-    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable Object[] nodes) throws IgniteException {
-        return Collections.singletonMap(new PlatformDeployServiceJob(F.isEmpty(nodes) ? null : Arrays.asList(nodes)), F.first(subgrid));
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(
+        List<ClusterNode> subgrid,
+        @Nullable Object[] consistentIds
+    ) throws IgniteException {
+        Collection<Object> nodeIds = F.isEmpty(consistentIds) ? null : Arrays.asList(consistentIds);
+
+        return Collections.singletonMap(new PlatformDeployServiceJob(nodeIds), F.first(subgrid));
     }
 
     /** {@inheritDoc} */
@@ -108,7 +112,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<Object[], Obje
         /**
          * Ctor.
          *
-         * @param consistentIds Service nodes.
+         * @param consistentIds if not {@code null}, service is deployed only on these nodes.
          */
         private PlatformDeployServiceJob(@Nullable Collection<Object> consistentIds) {
             this.consistentIds = consistentIds;
@@ -850,7 +854,9 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<Object[], Obje
         int testNumberOfInvocations(String svcName, String histName);
     }
 
-    /** */
+    /**
+     * Filters nodes by their consistent id.
+     */
     private static final class ConsistentIdNodeFilter implements IgnitePredicate<ClusterNode> {
         /** */
         private final Collection<Object> consistentIds;
