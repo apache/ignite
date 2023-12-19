@@ -91,30 +91,30 @@ public class IgniteClientRequestEventListenerTest extends AbstractThinClientTest
 
             assertEquals(2, evSet.size());
 
-            RequestStartEvent startEvent = (RequestStartEvent)evSet.get(RequestStartEvent.class);
+            RequestStartEvent startEvt = (RequestStartEvent)evSet.get(RequestStartEvent.class);
 
-            assertTrue(startEvent.requestId() >= 0);
+            assertTrue(startEvt.requestId() >= 0);
 
-            ConnectionDescription connDesc = startEvent.connectionDescription();
+            ConnectionDescription connDesc = startEvt.connectionDescription();
             assertEquals(clientHost(grid(0).localNode()), connDesc.remoteAddress().getAddress().getHostAddress());
             assertEquals(clientPort(grid(0).localNode()), connDesc.remoteAddress().getPort());
             assertEquals(clientHost(grid(0).localNode()), connDesc.localAddress().getAddress().getHostAddress());
             assertEquals(grid(0).localNode().id(), connDesc.serverNodeId());
-            assertEquals(ClientOperation.CACHE_GET_NAMES.code(), startEvent.operationCode());
-            assertEquals(ClientOperation.CACHE_GET_NAMES.name(), startEvent.operationName());
+            assertEquals(ClientOperation.CACHE_GET_NAMES.code(), startEvt.operationCode());
+            assertEquals(ClientOperation.CACHE_GET_NAMES.name(), startEvt.operationName());
 
-            RequestSuccessEvent successEvent = (RequestSuccessEvent)evSet.get(RequestSuccessEvent.class);
-            assertEquals(successEvent.requestId(), successEvent.requestId());
+            RequestSuccessEvent successEvt = (RequestSuccessEvent)evSet.get(RequestSuccessEvent.class);
+            assertEquals(successEvt.requestId(), successEvt.requestId());
 
-            connDesc = startEvent.connectionDescription();
+            connDesc = startEvt.connectionDescription();
             assertEquals(clientHost(grid(0).localNode()), connDesc.remoteAddress().getAddress().getHostAddress());
             assertEquals(clientPort(grid(0).localNode()), connDesc.remoteAddress().getPort());
             assertEquals(clientHost(grid(0).localNode()), connDesc.localAddress().getAddress().getHostAddress());
             assertEquals(grid(0).localNode().id(), connDesc.serverNodeId());
-            assertEquals(ClientOperation.CACHE_GET_NAMES.code(), startEvent.operationCode());
-            assertEquals(ClientOperation.CACHE_GET_NAMES.name(), startEvent.operationName());
+            assertEquals(ClientOperation.CACHE_GET_NAMES.code(), startEvt.operationCode());
+            assertEquals(ClientOperation.CACHE_GET_NAMES.name(), startEvt.operationName());
 
-            assertTrue(System.nanoTime() - startTime >= successEvent.elapsedTime(TimeUnit.NANOSECONDS));
+            assertTrue(System.nanoTime() - startTime >= successEvt.elapsedTime(TimeUnit.NANOSECONDS));
 
         }
     }
@@ -131,32 +131,32 @@ public class IgniteClientRequestEventListenerTest extends AbstractThinClientTest
         catch (ClientException err) {
             assertEquals(2, evSet.size());
 
-            RequestStartEvent startEvent = (RequestStartEvent)evSet.get(RequestStartEvent.class);
+            RequestStartEvent startEvt = (RequestStartEvent)evSet.get(RequestStartEvent.class);
 
-            assertTrue(startEvent.requestId() >= 0);
+            assertTrue(startEvt.requestId() >= 0);
 
-            ConnectionDescription connDesc = startEvent.connectionDescription();
+            ConnectionDescription connDesc = startEvt.connectionDescription();
             assertEquals(clientHost(grid(0).localNode()), connDesc.remoteAddress().getAddress().getHostAddress());
             assertEquals(clientPort(grid(0).localNode()), connDesc.remoteAddress().getPort());
             assertEquals(clientHost(grid(0).localNode()), connDesc.localAddress().getAddress().getHostAddress());
             assertEquals(grid(0).localNode().id(), connDesc.serverNodeId());
-            assertEquals(ClientOperation.CACHE_PUT.code(), startEvent.operationCode());
-            assertEquals(ClientOperation.CACHE_PUT.name(), startEvent.operationName());
+            assertEquals(ClientOperation.CACHE_PUT.code(), startEvt.operationCode());
+            assertEquals(ClientOperation.CACHE_PUT.name(), startEvt.operationName());
 
-            RequestFailEvent failEvent = (RequestFailEvent)evSet.get(RequestFailEvent.class);
-            assertEquals(failEvent.requestId(), failEvent.requestId());
+            RequestFailEvent failEvt = (RequestFailEvent)evSet.get(RequestFailEvent.class);
+            assertEquals(failEvt.requestId(), failEvt.requestId());
 
-            connDesc = startEvent.connectionDescription();
+            connDesc = startEvt.connectionDescription();
             assertEquals(clientHost(grid(0).localNode()), connDesc.remoteAddress().getAddress().getHostAddress());
             assertEquals(clientPort(grid(0).localNode()), connDesc.remoteAddress().getPort());
             assertEquals(clientHost(grid(0).localNode()), connDesc.localAddress().getAddress().getHostAddress());
             assertEquals(grid(0).localNode().id(), connDesc.serverNodeId());
-            assertEquals(ClientOperation.CACHE_PUT.code(), startEvent.operationCode());
-            assertEquals(ClientOperation.CACHE_PUT.name(), startEvent.operationName());
+            assertEquals(ClientOperation.CACHE_PUT.code(), startEvt.operationCode());
+            assertEquals(ClientOperation.CACHE_PUT.name(), startEvt.operationName());
 
-            assertEquals(err, failEvent.throwable());
+            assertEquals(err, failEvt.throwable());
 
-            assertTrue(System.nanoTime() - startTime >= failEvent.elapsedTime(TimeUnit.NANOSECONDS));
+            assertTrue(System.nanoTime() - startTime >= failEvt.elapsedTime(TimeUnit.NANOSECONDS));
         }
     }
 }

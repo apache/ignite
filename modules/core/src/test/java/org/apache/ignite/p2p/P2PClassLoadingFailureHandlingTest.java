@@ -258,8 +258,8 @@ public class P2PClassLoadingFailureHandlingTest extends GridCommonAbstractTest {
     /***/
     @Test
     public void remoteEventListenerP2PClassLoadingProblemShouldNotCauseFailureHandling() throws Exception {
-        IgniteEvents events = client.events(client.cluster().forRemotes());
-        events.remoteListen(
+        IgniteEvents evts = client.events(client.cluster().forRemotes());
+        evts.remoteListen(
             (nodeId, event) -> true,
             instantiateClassLoadedWithExternalClassLoader(
                 "org.apache.ignite.tests.p2p.classloadproblem.RemoteEventFilterCausingP2PClassLoadProblem"
