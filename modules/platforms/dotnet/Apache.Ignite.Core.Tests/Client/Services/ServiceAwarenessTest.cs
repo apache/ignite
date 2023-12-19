@@ -296,10 +296,10 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             }
             else
             {
-                // Check server logs. Without the service awareness we must see service invocations only on the first node.
+                // Check the client logs. There must be no service topology. 
                 Assert.AreEqual(0, log.Entries.Count(e => e.Message.Contains(clientLogStr)));
                 
-                // Check server logs. Without the service awareness, we must see service invocation on each node.
+                // Check server logs. Without service awareness we must see service invocation on each node.
                 foreach (var g in _grids)
                 {
                     if (g == null)
