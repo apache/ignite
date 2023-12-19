@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
     using System.Linq;
     using System.Reflection;
     using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Services;
     using Apache.Ignite.Core.Impl.Binary;
@@ -39,7 +40,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
     /// </summary>
     internal class ServicesClient : IServicesClient
     {
-        /** Max service topology update period in mills. */
+        /** Max service topology update period in millis. */
         private const long SrvTopUpdatePeriod = 10 * TimeSpan.TicksPerSecond;
         
         /** */
@@ -264,7 +265,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             /// <summary>
             /// Asynchronously updates the service topology.
             /// </summary>
-            private void UpdateTopologyAsync()
+            private async void UpdateTopologyAsync()
             {
                 if (Interlocked.Exchange(ref _updateInProgress, 1) == 1)
                     return;
@@ -276,38 +277,38 @@ namespace Apache.Ignite.Core.Impl.Client.Services
                 var log = _srvc._ignite.GetConfiguration().Logger;
 
                 var groupNodes = _srvc._clusterGroup?.GetNodes();
-                
-                _nodes = socket.DoOutInOpAsync(ClientOp.ServiceGetTopology,
+
+                _nodes = await socket.DoOutInOpAsync(ClientOp.ServiceGetTopology,
                     ctx => ctx.Writer.WriteString(_srvcName),
                     ctx =>
                     {
                         var cnt = ctx.Reader.ReadInt();
 
                         IList<Guid> res = new List<Guid>(cnt);
-
+                        
                         for (var i = 0; i < cnt; ++i)
                             res.Add(BinaryUtils.ReadGuid(ctx.Reader.Stream));
-
+                        
                         Interlocked.Exchange(ref _lastUpdateRequestTime, DateTime.Now.Ticks);
                         Interlocked.Exchange(ref _lastAffTop, topVer);
                         Interlocked.Exchange(ref _updateInProgress, 0);
-
+                        
                         var filteredTopology = FilterTopology(res, groupNodes?.Select(n => n.Id).ToList());
-
+                        
                         log.Debug("Topology of service '" + _srvcName + "' has been updated. The " +
                                   "service instance nodes: " + string.Join(", ", res.Select(gid=>gid.ToString())) +
                                   ". Effective topology with the cluster group is: " + 
                                   string.Join(", ", filteredTopology.Select(gid=>gid.ToString())) + '.');
-
+                        
                         return filteredTopology;
                     }, (status, err) =>
                     {
                         Interlocked.Exchange(ref _updateInProgress, 0);
-
+                        
                         log.Error("Failed to update topology of the service '" + _srvcName + "'.", err);
 
                         return _nodes;
-                    }).Result;
+                    }).ConfigureAwait(false);
             }
 
             /// <summary>
