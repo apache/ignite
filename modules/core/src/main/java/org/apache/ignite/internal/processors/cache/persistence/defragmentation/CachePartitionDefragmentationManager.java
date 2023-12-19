@@ -232,13 +232,13 @@ public class CachePartitionDefragmentationManager {
         // CacheGroupContext for defragmentation and at least clears shared CheckpointProgress#clearCounters().
         // Should be properly reconfigured and restarted after the defragmentation task to have ability launch
         // other maintenance tasks after.
-        Checkpointer defaultCheckpointer = nodeCheckpoint.getCheckpointer();
+        Checkpointer dfltCheckpointer = nodeCheckpoint.getCheckpointer();
 
-        if (defaultCheckpointer != null && !defaultCheckpointer.isDone()) {
+        if (dfltCheckpointer != null && !dfltCheckpointer.isDone()) {
             if (log.isDebugEnabled())
                 log.debug("Stopping default checkpointer.");
 
-            defaultCheckpointer.shutdownNow();
+            dfltCheckpointer.shutdownNow();
         }
 
         dbMgr.preserveWalTailPointer();

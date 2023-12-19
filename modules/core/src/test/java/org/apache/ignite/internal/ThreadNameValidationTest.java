@@ -206,8 +206,8 @@ public class ThreadNameValidationTest extends GridCommonAbstractTest {
      * @return count
      */
     private static int getDefaultPoolCount() throws ReflectiveOperationException {
-        Class<?> defaultThreadFacktory = Class.forName("java.util.concurrent.Executors$DefaultThreadFactory");
-        Field poolNumber = defaultThreadFacktory.getDeclaredField("poolNumber");
+        Class<?> dfltThreadFacktory = Class.forName("java.util.concurrent.Executors$DefaultThreadFactory");
+        Field poolNumber = dfltThreadFacktory.getDeclaredField("poolNumber");
         poolNumber.setAccessible(true);
         AtomicInteger counter = (AtomicInteger)poolNumber.get(null);
         return counter.get();

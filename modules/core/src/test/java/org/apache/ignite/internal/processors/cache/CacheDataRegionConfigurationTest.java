@@ -353,14 +353,14 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         smallRegionCfg.setPersistenceEnabled(true);
 
         //explicit default data region configuration to test possible NPE case
-        DataRegionConfiguration defaultRegionCfg = new DataRegionConfiguration();
-        defaultRegionCfg.setName("defaultRegion");
-        defaultRegionCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
-        defaultRegionCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
-        defaultRegionCfg.setPersistenceEnabled(true);
+        DataRegionConfiguration dfltRegionCfg = new DataRegionConfiguration();
+        dfltRegionCfg.setName("defaultRegion");
+        dfltRegionCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
+        dfltRegionCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
+        dfltRegionCfg.setPersistenceEnabled(true);
 
         memCfg = new DataStorageConfiguration();
-        memCfg.setDefaultDataRegionConfiguration(defaultRegionCfg);
+        memCfg.setDefaultDataRegionConfiguration(dfltRegionCfg);
         memCfg.setDataRegionConfigurations(smallRegionCfg);
         //one hour to guarantee that checkpoint will be triggered by 'dirty pages amount' trigger
         memCfg.setCheckpointFrequency(60 * 60 * 1000);
@@ -427,13 +427,13 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testWarningOnBaselineTopologyChange() throws Exception {
-        DataRegionConfiguration defaultRegionCfg = new DataRegionConfiguration();
-        defaultRegionCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
-        defaultRegionCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
-        defaultRegionCfg.setPersistenceEnabled(true);
+        DataRegionConfiguration dfltRegionCfg = new DataRegionConfiguration();
+        dfltRegionCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
+        dfltRegionCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
+        dfltRegionCfg.setPersistenceEnabled(true);
 
         memCfg = new DataStorageConfiguration();
-        memCfg.setDefaultDataRegionConfiguration(defaultRegionCfg);
+        memCfg.setDefaultDataRegionConfiguration(dfltRegionCfg);
         //one hour to guarantee that checkpoint will be triggered by 'dirty pages amount' trigger
         memCfg.setCheckpointFrequency(60 * 60 * 1000);
 
@@ -455,7 +455,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         ignite0.createCache(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-                .setDataRegionName(defaultRegionCfg.getName())
+                .setDataRegionName(dfltRegionCfg.getName())
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setAffinity(new RendezvousAffinityFunction(false, 512))
         );
@@ -485,13 +485,13 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNoWarningIfCacheConfigurationDoesntBreakThreshold() throws Exception {
-        DataRegionConfiguration defaultRegionCfg = new DataRegionConfiguration();
-        defaultRegionCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
-        defaultRegionCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
-        defaultRegionCfg.setPersistenceEnabled(true);
+        DataRegionConfiguration dfltRegionCfg = new DataRegionConfiguration();
+        dfltRegionCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
+        dfltRegionCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
+        dfltRegionCfg.setPersistenceEnabled(true);
 
         memCfg = new DataStorageConfiguration();
-        memCfg.setDefaultDataRegionConfiguration(defaultRegionCfg);
+        memCfg.setDefaultDataRegionConfiguration(dfltRegionCfg);
         //one hour to guarantee that checkpoint will be triggered by 'dirty pages amount' trigger
         memCfg.setCheckpointFrequency(60 * 60 * 1000);
 

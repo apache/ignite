@@ -1056,32 +1056,32 @@ public class RexImpTable {
             List<Expression> leftExprs = Util.skip(argValueList, 2);
             // Default value for JSON_VALUE behaviors.
             Expression emptyBehavior = Expressions.constant(SqlJsonValueEmptyOrErrorBehavior.NULL);
-            Expression defaultValueOnEmpty = Expressions.constant(null);
+            Expression dfltValueOnEmpty = Expressions.constant(null);
             Expression errorBehavior = Expressions.constant(SqlJsonValueEmptyOrErrorBehavior.NULL);
-            Expression defaultValueOnError = Expressions.constant(null);
+            Expression dfltValueOnError = Expressions.constant(null);
             // Patched up with user defines.
             if (!leftExprs.isEmpty()) {
                 for (int i = 0; i < leftExprs.size(); i++) {
                     Expression expr = leftExprs.get(i);
                     final Object exprVal = translator.getLiteralValue(expr);
                     if (exprVal != null) {
-                        int defaultSymbolIdx = i - 2;
+                        int dfltSymbolIdx = i - 2;
                         if (exprVal == SqlJsonEmptyOrError.EMPTY) {
-                            if (defaultSymbolIdx >= 0
-                                && translator.getLiteralValue(leftExprs.get(defaultSymbolIdx))
+                            if (dfltSymbolIdx >= 0
+                                && translator.getLiteralValue(leftExprs.get(dfltSymbolIdx))
                                 == SqlJsonValueEmptyOrErrorBehavior.DEFAULT) {
-                                defaultValueOnEmpty = leftExprs.get(i - 1);
-                                emptyBehavior = leftExprs.get(defaultSymbolIdx);
+                                dfltValueOnEmpty = leftExprs.get(i - 1);
+                                emptyBehavior = leftExprs.get(dfltSymbolIdx);
                             }
                             else
                                 emptyBehavior = leftExprs.get(i - 1);
                         }
                         else if (exprVal == SqlJsonEmptyOrError.ERROR) {
-                            if (defaultSymbolIdx >= 0
-                                && translator.getLiteralValue(leftExprs.get(defaultSymbolIdx))
+                            if (dfltSymbolIdx >= 0
+                                && translator.getLiteralValue(leftExprs.get(dfltSymbolIdx))
                                 == SqlJsonValueEmptyOrErrorBehavior.DEFAULT) {
-                                defaultValueOnError = leftExprs.get(i - 1);
-                                errorBehavior = leftExprs.get(defaultSymbolIdx);
+                                dfltValueOnError = leftExprs.get(i - 1);
+                                errorBehavior = leftExprs.get(dfltSymbolIdx);
                             }
                             else
                                 errorBehavior = leftExprs.get(i - 1);
@@ -1090,9 +1090,9 @@ public class RexImpTable {
                 }
             }
             newOperands.add(emptyBehavior);
-            newOperands.add(defaultValueOnEmpty);
+            newOperands.add(dfltValueOnEmpty);
             newOperands.add(errorBehavior);
-            newOperands.add(defaultValueOnError);
+            newOperands.add(dfltValueOnError);
             Class clazz = method.getDeclaringClass();
             expression = EnumUtils.call(null, clazz, method.getName(), newOperands);
 
