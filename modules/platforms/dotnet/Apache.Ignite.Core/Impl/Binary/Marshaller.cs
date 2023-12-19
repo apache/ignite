@@ -265,7 +265,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         public T Unmarshal<T>(IBinaryStream stream, bool keepBinary)
         {
-            return Unmarshal<T>(stream, keepBinary ? BinaryMode.KeepBinary : BinaryMode.Deserialize, null);
+            return Unmarshal<T>(stream, keepBinary ? BinaryMode.ForceBinary : BinaryMode.Deserialize, null);
         }
 
         /// <summary>
@@ -305,7 +305,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         public BinaryReader StartUnmarshal(IBinaryStream stream, bool keepBinary)
         {
-            return new BinaryReader(this, stream, keepBinary ? BinaryMode.KeepBinary : BinaryMode.Deserialize, null);
+            return new BinaryReader(this, stream, keepBinary ? BinaryMode.ForceBinary : BinaryMode.Deserialize, null);
         }
 
         /// <summary>
