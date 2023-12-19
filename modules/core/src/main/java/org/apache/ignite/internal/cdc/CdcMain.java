@@ -205,7 +205,10 @@ public class CdcMain implements Runnable {
     /** Metadata update time. */
     private HistogramMetricImpl metaUpdate;
 
-    /** Metric represents time between creating {@link DataRecord} and capturing it by {@link CdcConsumer}. */
+    /**
+     * Metric represents time between creating {@link DataRecord}, containing the data change events, and capturing them
+     * by {@link CdcConsumer}.
+     */
     private HistogramMetricImpl evtCaptureTime;
 
     /** Change Data Capture configuration. */
