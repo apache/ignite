@@ -19,9 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -140,12 +138,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      */
     private final @Nullable ConcurrentMap<Long, ByteBuffer> encThLocBufs;
 
-    /** */
-    private final PrintWriter out;
-
-    /** */
-    private static AtomicInteger idx = new AtomicInteger();
-
     /**
      * @param cctx Cache context.
      * @param srcNodeId Node id which cause snapshot task creation.
@@ -186,17 +178,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         this.rateLimiter = rateLimiter;
         this.encKey = encrypt ? cctx.gridConfig().getEncryptionSpi().create() : null;
         this.encThLocBufs = encrypt ? new ConcurrentHashMap<>() : null;
-
-        try {
-            File outf = new File("/Users/user/tmp/res/out" + idx.incrementAndGet() + ".txt");
-
-            outf.delete();
-
-            out = new PrintWriter(outf);
-        }
-        catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     /** {@inheritDoc} */
@@ -204,8 +185,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         try {
             if (log.isInfoEnabled())
                 log.info("Start cache dump [name=" + snpName + ", grps=" + parts.keySet() + ']');
-
-            out.println("Start cache dump [name=" + snpName + ", grps=" + parts.keySet() + ']');
 
             createDumpLock();
 
@@ -288,8 +267,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         if (log.isInfoEnabled())
             log.info("Start group dump [name=" + name + ", id=" + grp + ']');
 
-        out.println("Start group dump [name=" + name + ", id=" + grp + ']');
-
         List<CompletableFuture<Void>> futs = grpParts.stream().map(part -> runAsync(() -> {
             long entriesCnt0 = 0;
             long writtenEntriesCnt0 = 0;
@@ -326,14 +303,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                         ", writtenIterEntriesCnt=" + entriesCnt +
                         ", changedEntriesCnt=" + changedEntriesCnt + ']');
                 }
-
-                out.println("Finish group partition dump [name=" + name +
-                    ", id=" + grp +
-                    ", part=" + part +
-                    ", time=" + (System.currentTimeMillis() - start) +
-                    ", iterEntriesCnt=" + entriesCnt +
-                    ", writtenIterEntriesCnt=" + entriesCnt +
-                    ", changedEntriesCnt=" + changedEntriesCnt + ']');
             }
         })).collect(Collectors.toList());
 
@@ -350,13 +319,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                     ", writtenIterEntriesCnt=" + writtenEntriesCnt.get() +
                     ", changedEntriesCnt=" + changedEntriesCnt.get() + ']');
             }
-
-            out.println("Finish group dump [name=" + name +
-                ", id=" + grp +
-                ", time=" + (System.currentTimeMillis() - start) +
-                ", iterEntriesCnt=" + entriesCnt.get() +
-                ", writtenIterEntriesCnt=" + writtenEntriesCnt.get() +
-                ", changedEntriesCnt=" + changedEntriesCnt.get() + ']');
         });
 
         return futs;
@@ -408,9 +370,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 cctx.kernalContext().pools().getSystemExecutorService()
             );
         }
-
-        idx.set(0);
-        out.close();
 
         return closeFut;
     }
@@ -607,14 +566,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                     ", written=" + (reasonToSkip == null ? "true" : reasonToSkip) +
                     ", startVer=" + (startVer != null) + ']');
             }
-
-            out.println("Listener [grp=" + grp +
-                ", cache=" + cache +
-                ", part=" + part +
-                ", key=" + key +
-                ", ver=" + ver +
-                ", written=" + (reasonToSkip == null ? "true" : reasonToSkip) +
-                ", startVer=" + (startVer != null) + ']');
         }
 
         /**
@@ -644,14 +595,13 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                     CacheObjectContext coCtx = cctx.cacheObjectContext(cache);
 
                     synchronized (serializer) { // Prevent concurrent access to the dump file.
-                        if (changed.get(cache).contains(key))
-                            reason = "already saved by listener";
-                        else {
-                            iterLastKeyCache = cache;
-                            iterLastKey = key;
+                        iterLastKeyCache = cache;
+                        iterLastKey = key;
 
+                        if (changed.get(cache).contains(key))
+                            reason = "written by listener";
+                        else
                             write(cache, expireTime, key, val, ver, coCtx);
-                        }
                     }
                 }
                 catch (IOException | IgniteCheckedException e) {
@@ -669,15 +619,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                     ", ver=" + ver +
                     ", startVer=" + (startVer != null) + ']');
             }
-
-            out.println("Iterator [" +
-                "grp=" + grp +
-                ", cache=" + cache +
-                ", part=" + part +
-                ", key=" + key +
-                ", written=" + (reason == null ? "true" : reason) +
-                ", ver=" + ver +
-                ", startVer=" + (startVer != null) + ']');
 
             return reason == null;
         }
