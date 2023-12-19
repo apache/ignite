@@ -116,7 +116,7 @@ namespace Apache.Ignite.Core.Impl.Services
                 mthdArgs = new object[reader.ReadInt()];
 
                 if (srvKeepBinary)
-                    reader = marsh.StartUnmarshal(stream, true);
+                    reader = marsh.StartUnmarshal(stream, BinaryMode.KeepBinary);
 
                 for (var i = 0; i < mthdArgs.Length; i++)
                     mthdArgs[i] = reader.ReadObject<object>();

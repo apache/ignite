@@ -1403,10 +1403,10 @@ public class PlatformUtils {
 
             int objEndPos = r.position();
 
-            if (objEndPos - objStartPos == 1)
-                return null;
-
             byte[] objBytes = in.readByteArray(objEndPos - objStartPos);
+
+            if (objBytes.length == 1)
+                return null;
 
             return (T)new PlatformCacheObjectImpl(null, objBytes);
         }
