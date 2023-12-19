@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
     using System.Collections;
     using System.Collections.Concurrent;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Reflection;
     using System.Threading;
@@ -182,7 +183,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
                         {
                             throw new IgniteClientException("Cluster group is empty");
                         }
-                        
+
                         w.WriteInt(nodes.Count);
 
                         foreach (var node in nodes)
@@ -250,7 +251,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             private long _lastUpdateRequestTime;
             
             /** UUIDs of the nodes with at least one service instance. */
-            private volatile IList<Guid> _nodes;
+            private volatile IList<Guid> _nodes = new List<Guid>();
 
             /** Last cluster topology version when current service topology was actual. */
             private long _lastAffTop;
@@ -265,7 +266,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             /// <summary>
             /// Asynchronously updates the service topology.
             /// </summary>
-            private async void UpdateTopologyAsync()
+            private async Task UpdateTopologyAsync()
             {
                 if (Interlocked.Exchange(ref _updateInProgress, 1) == 1)
                     return;
@@ -277,8 +278,8 @@ namespace Apache.Ignite.Core.Impl.Client.Services
                 var log = _svcClient._ignite.GetConfiguration().Logger;
 
                 var groupNodes = _svcClient._clusterGroup?.GetNodes();
-
-                _nodes = await socket.DoOutInOpAsync(ClientOp.ServiceGetTopology,
+                
+                var top = await socket.DoOutInOpAsync(ClientOp.ServiceGetTopology,
                     ctx => ctx.Writer.WriteString(_svcName),
                     ctx =>
                     {
@@ -288,27 +289,26 @@ namespace Apache.Ignite.Core.Impl.Client.Services
                         
                         for (var i = 0; i < cnt; ++i)
                             res.Add(BinaryUtils.ReadGuid(ctx.Reader.Stream));
-                        
-                        Interlocked.Exchange(ref _lastUpdateRequestTime, DateTime.Now.Ticks);
-                        Interlocked.Exchange(ref _lastAffTop, topVer);
-                        Interlocked.Exchange(ref _updateInProgress, 0);
-                        
-                        var filteredTopology = FilterTopology(res, groupNodes?.Select(n => n.Id).ToList());
-                        
-                        log.Debug("Topology of service '" + _svcName + "' has been updated. The " +
-                                  "service instance nodes: " + string.Join(", ", res.Select(gid=>gid.ToString())) +
-                                  ". Effective topology with the cluster group is: " + 
-                                  string.Join(", ", filteredTopology.Select(gid=>gid.ToString())) + '.');
-                        
-                        return filteredTopology;
+
+                        return res;
                     }, (status, err) =>
                     {
-                        Interlocked.Exchange(ref _updateInProgress, 0);
-                        
                         log.Error("Failed to update topology of the service '" + _svcName + "'.", err);
 
                         return _nodes;
                     }).ConfigureAwait(false);
+                
+                _nodes = FilterTopology(top, groupNodes?.Select(n => n.Id).ToList());
+                
+                Interlocked.Exchange(ref _lastUpdateRequestTime, DateTime.Now.Ticks);
+                Interlocked.Exchange(ref _lastAffTop, topVer);
+
+                log.Debug("Topology of service '" + _svcName + "' has been updated. The " +
+                          "service instance nodes: " + string.Join(", ", top.Select(gid=>gid.ToString())) +
+                          ". Effective topology with the cluster group is: " + 
+                          string.Join(", ", _nodes.Select(gid=>gid.ToString())) + '.');
+                
+                Interlocked.Exchange(ref _updateInProgress, 0);
             }
 
             /// <summary>
@@ -324,12 +324,12 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             /// </summary>
             internal IList<Guid> GetAndUpdate()
             {
-                long lastKnownAff = Interlocked.Read(ref _lastAffTop);
-                long curAff = _svcClient._ignite.Socket.GetTopologyVersion();
-                long lastUpdateTime = Interlocked.Read(ref _lastUpdateRequestTime);
+                var lastKnownAff = Interlocked.Read(ref _lastAffTop);
+                var curAff = _svcClient._ignite.Socket.GetTopologyVersion();
+                var lastUpdateTime = Interlocked.Read(ref _lastUpdateRequestTime);
                 
                 if(lastKnownAff == 0 || curAff > lastKnownAff || DateTime.Now.Ticks - lastUpdateTime >= SrvTopUpdatePeriod)
-                    UpdateTopologyAsync();
+                    UpdateTopologyAsync().ConfigureAwait(false);
 
                 return _nodes;
             }
