@@ -200,7 +200,8 @@ namespace Apache.Ignite.Core.Impl.Client
         }
         
         /// <summary>
-        /// Performs a send-receive operation with partition awareness on certain node.
+        /// Performs a send-receive operation on one of passed nodes. If connection to chosen node is not available, takes
+        /// the default connection.
         /// </summary>
         public T DoOutInOpOnNode<T>(
             ClientOp opId,

@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         private IList<IIgnite> _serviceNodes;
 
         /// <summary>
-        /// Tests preparations.
+        /// Prepares all the tests.
         /// </summary>
         [TestFixtureSetUp]
         public void BeforeTests()
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
 
         /// <summary>
-        /// Clears test.
+        /// Prepares each test.
         /// </summary>
         [SetUp]
         public void BeforeTest()
@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
         
         /// <summary>
-        /// Clears test.
+        /// Clears each test.
         /// </summary>
         [TearDown]
         public void AfterTest()
@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
         
         /// <summary>
-        /// Tears down the test fixture.
+        /// Clears all the tests.
         /// </summary>
         [TestFixtureTearDown]
         public void AfterTests()
@@ -118,7 +118,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
 
         /// <summary>
-        /// Tests service awareness is disabled using several threads.
+        /// Tests service awareness is disabled.
         /// </summary>
         [Test]
         [TestCase(TestUtils.JavaServiceName)]
@@ -135,7 +135,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
 
         /// <summary>
-        /// Tests service awareness is enabled using several threads.
+        /// Tests service awareness is enabled.
         /// </summary>
         [Test]
         [TestCase(TestUtils.JavaServiceName)]
@@ -146,7 +146,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
         
         /// <summary>
-        /// Tests service topology change is received.
+        /// Tests service topology is updated when the cluster change changes.
         /// </summary>
         [Test]
         [TestCase(TestUtils.JavaServiceName)]
@@ -155,18 +155,18 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         {
             DoTestServiceAwareness(serviceName, _serviceNodes);
 
-            // Ignition.Stop(_grids[2].Name, false);
-            //
-            // TestUtils.WaitForTrueCondition(() => _thinClient.GetCluster().GetNodes().Count == 2, 20_000);
-            //
-            // DoTestServiceAwareness(serviceName, new List<IIgnite> { _grids[1] });
-            //
-            // StartGrid(2);
-            //
-            // // Wait for the service redeployment.
-            // Thread.Sleep(5_000);
-            //
-            // DoTestServiceAwareness(serviceName, new List<IIgnite> { _grids[1], _grids[2] });
+            Ignition.Stop(_grids[2].Name, false);
+            
+            TestUtils.WaitForTrueCondition(() => _thinClient.GetCluster().GetNodes().Count == 2, 20_000);
+            
+            DoTestServiceAwareness(serviceName, new List<IIgnite> { _grids[1] });
+            
+            StartGrid(2);
+            
+            // Wait for the service redeployment.
+            Thread.Sleep(5_000);
+            
+            DoTestServiceAwareness(serviceName, new List<IIgnite> { _grids[1], _grids[2] });
         }
 
         /// <summary>
@@ -204,7 +204,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
 
         /// <summary>
-        /// Tests service awareness with the cluster group using single node.
+        /// Tests service awareness with a intersecting cluster group of a single node.
         /// </summary>
         [Test]
         [TestCase(TestUtils.JavaServiceName, true)]
@@ -222,7 +222,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
         
         /// <summary>
-        /// Tests service awareness with the cluster group which intersects the service topology.
+        /// Tests service awareness with a cluster group intersecting the service topology.
         /// </summary>
         [Test]
         [TestCase(TestUtils.JavaServiceName, false)]
@@ -240,7 +240,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
         
         /// <summary>
-        /// Tests service awareness with the cluster group which is equal the service topology.
+        /// Tests service awareness with a cluster group equal the service topology.
         /// </summary>
         [Test]
         [TestCase(TestUtils.JavaServiceName)]

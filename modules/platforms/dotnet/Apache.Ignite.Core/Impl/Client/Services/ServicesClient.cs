@@ -222,8 +222,8 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         }
 
         /// <summary>
-        /// Provides actual known service topology or empty list if: service topology is not enabled, not supported or
-        /// not received yet.
+        /// Provides actual known service topology or empty list if: partition awareness is not enabled,
+        /// service topology is not supported or not received yet.
         /// </summary>
         private IList<Guid> GetServiceTopology(string serviceName)
         {
@@ -234,7 +234,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
         }
         
         /// <summary>
-        /// Keeps topology of certain service and its update progress.
+        /// Keeps and process topology of certain service.
         /// </summary>
         private class ServiceTopology
         {
@@ -247,16 +247,18 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             /** Flag of topology update progress. */
             private volatile int _updateInProgress;
 
-            /** Time of the last received topology. */
+            /** Time of the last update. */
             private long _lastUpdateRequestTime;
+
+            /** Cluster topology version of the last update. */
+            private long _lastAffTop;
             
-            /** UUIDs of the nodes with at least one service instance. */
+            /** Ids of the nodes with at least one service instance. */
             private volatile IList<Guid> _nodes = new List<Guid>();
 
-            /** Last cluster topology version when current service topology was actual. */
-            private long _lastAffTop;
-
-            /** */
+            /// <summary>
+            /// Creates service topology holder.
+            /// </summary>
             internal ServiceTopology(string name, ServicesClient svcClient)
             {
                 _svcName = name;
@@ -264,7 +266,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             }
 
             /// <summary>
-            /// Asynchronously updates the service topology.
+            /// Asynchronously updates the topology.
             /// </summary>
             private async Task UpdateTopologyAsync()
             {
