@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.tree;
 
+import java.util.Comparator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -473,6 +474,16 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         byte[] bytes1 = other.key().valueBytes(grp.cacheObjectContext());
         byte[] bytes2 = key.valueBytes(grp.cacheObjectContext());
 
+        return compareBytes(bytes1, bytes2);
+    }
+
+    /**
+     * @param bytes1 First key bytes.
+     * @param bytes2 Second key bytes.
+     * @return Comparsion result of bytes arrays according to {@link Comparator#compare(Object, Object)} contract.
+     * @see CacheDataTree#compareKeys(KeyCacheObject, long)
+     */
+    public static int compareBytes(byte[] bytes1, byte[] bytes2) {
         int lenCmp = Integer.compare(bytes1.length, bytes2.length);
 
         if (lenCmp != 0)
@@ -503,4 +514,5 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         return 0;
     }
+
 }

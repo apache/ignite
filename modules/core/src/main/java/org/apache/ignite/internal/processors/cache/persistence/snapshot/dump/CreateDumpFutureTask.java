@@ -47,12 +47,15 @@ import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -60,6 +63,8 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Abstract
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFutureTaskResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotSender;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.util.BasicRateLimiter;
@@ -418,6 +423,12 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
          */
         final Map<Integer, Set<KeyCacheObject>> changed;
 
+        /** Cache id for {@link #iterLastKey} */
+        int iterLastKeyCache;
+
+        /** Last key dumped via {@link #writeForIterator(int, long, KeyCacheObject, CacheObject, GridCacheVersion)}. */
+        @Nullable KeyCacheObject iterLastKey;
+
         /** Count of entries changed during dump creation. */
         LongAdder changedCnt = new LongAdder();
 
@@ -524,7 +535,19 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                     else if (val == null)
                         reasonToSkip = "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
                     else {
-                        write(cache, expireTime, key, val, ver);
+                        try {
+                            CacheObjectContext coCtx = cctx.cacheObjectContext(cache);
+
+                            synchronized (serializer) { // Prevent concurrent access to the dump file.
+                                if (isWrittenByIterator(cache, key, coCtx))
+                                    reasonToSkip = "wriiten by iterator"; // Saved by iterator, already. Skip.
+                                else
+                                    write(cache, expireTime, key, val, ver, coCtx);
+                            }
+                        }
+                        catch (IOException | IgniteCheckedException e) {
+                            throw new IgniteException(e);
+                        }
 
                         changedCnt.increment();
                     }
@@ -567,8 +590,23 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 written = false;
             else if (changed.get(cache).contains(key))
                 written = false;
-            else
-                write(cache, expireTime, key, val, ver);
+            else {
+                try {
+                    CacheObjectContext coCtx = cctx.cacheObjectContext(cache);
+
+                    assert !isWrittenByIterator(cache, key, coCtx);
+
+                    synchronized (serializer) { // Prevent concurrent access to the dump file.
+                        iterLastKeyCache = cache;
+                        iterLastKey = key;
+
+                        write(cache, expireTime, key, val, ver, coCtx);
+                    }
+                }
+                catch (IOException | IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
 
             if (log.isTraceEnabled()) {
                 log.trace("Iterator [" +
@@ -584,22 +622,22 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         }
 
         /** */
-        private void write(int cache, long expireTime, KeyCacheObject key, CacheObject val, GridCacheVersion ver) {
-            synchronized (serializer) { // Prevent concurrent access to the dump file.
-                try {
-                    ByteBuffer buf = serializer.writeToBuffer(cache, expireTime, key, val, ver, cctx.cacheObjectContext(cache));
+        private void write(
+            int cache,
+            long expireTime,
+            KeyCacheObject key,
+            CacheObject val,
+            GridCacheVersion ver,
+            CacheObjectContext coCtx
+        ) throws IgniteCheckedException, IOException {
+            ByteBuffer buf = serializer.writeToBuffer(cache, expireTime, key, val, ver, coCtx);
 
-                    rateLimiter.acquire(buf.limit());
+            rateLimiter.acquire(buf.limit());
 
-                    if (file.writeFully(buf) != buf.limit())
-                        throw new IgniteException("Can't write row");
+            if (file.writeFully(buf) != buf.limit())
+                throw new IgniteException("Can't write row");
 
-                    processedSize.addAndGet(buf.limit());
-                }
-                catch (IOException | IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            }
+            processedSize.addAndGet(buf.limit());
         }
 
         /**
@@ -612,6 +650,38 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
          */
         private boolean isAfterStart(GridCacheVersion ver) {
             return (startVer != null && ver.isGreater(startVer)) && !isolatedStreamerVer.equals(ver);
+        }
+
+        /**
+         * Iterator returned by {@link IgniteCacheOffheapManager#reservedIterator(int, AffinityTopologyVersion)}
+         * iterates key in ascending order set by {@link CacheDataTree#compare(BPlusIO, long, int, CacheSearchRow)}.
+         * So if key changed by the user (see {@link #writeChanged(int, long, KeyCacheObject, CacheObject, GridCacheVersion)})
+         * is greater then last key written by partition iterator then it not saved in dump, already, and must be written.
+         * Otherwise, key already saved by the iterator and must be skiped.
+         *
+         * @param cache Cache id.
+         * @param key Key to write with {@link #writeChanged(int, long, KeyCacheObject, CacheObject, GridCacheVersion)}.
+         * @return {@code 0} if key written by the iterator, already. {@code False} otherwise.
+         * @see CacheDataTree#compareBytes(byte[], byte[])
+         */
+        private boolean isWrittenByIterator(int cache, KeyCacheObject key, CacheObjectContext coCtx) throws IgniteCheckedException {
+            if (iterLastKey == null)
+                return false;
+
+            int cmp = Integer.compare(iterLastKeyCache, cache);
+
+            if (cmp != 0)
+                return cmp > 0;
+
+            cmp = Integer.compare(iterLastKey.hashCode(), key.hashCode());
+
+            if (cmp != 0)
+                return cmp > 0;
+
+            byte[] bytes1 = iterLastKey.valueBytes(coCtx);
+            byte[] bytes2 = key.valueBytes(coCtx);
+
+            return CacheDataTree.compareBytes(bytes1, bytes2) >= 0;
         }
 
         /** {@inheritDoc} */

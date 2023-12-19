@@ -134,12 +134,7 @@ public class DumpEntrySerializer {
 
         int encDataSz = Integer.BYTES + encSpi.encryptedSize(plainBuf.limit());
 
-        ByteBuffer encBuf = threadLocalBuffer(encThLocBufs);
-
-        if (encBuf.capacity() < encDataSz)
-            encBuf = enlargeThreadLocalBuffer(encThLocBufs, encDataSz);
-        else
-            encBuf.rewind().limit(encDataSz);
+        ByteBuffer encBuf = threadLocalBuffer(encThLocBufs, encDataSz);
 
         encBuf.putInt(encDataSz - Integer.BYTES);
         encSpi.encrypt(plainBuf, encKey, encBuf);
@@ -178,12 +173,7 @@ public class DumpEntrySerializer {
         int dataSz = plainDataSize(key, val, ver, coCtx);
         int bufSz = dataSz + Integer.BYTES;
 
-        ByteBuffer buf = threadLocalBuffer(thLocBufs);
-
-        if (buf.capacity() < bufSz)
-            buf = enlargeThreadLocalBuffer(thLocBufs, bufSz);
-        else
-            buf.rewind().limit(bufSz);
+        ByteBuffer buf = threadLocalBuffer(thLocBufs, bufSz);
 
         buf.putInt(dataSz);
         buf.putInt(-1); // CRC value.
@@ -263,14 +253,7 @@ public class DumpEntrySerializer {
             return null;
 
         if (encSpi != null) {
-            ByteBuffer plainBuf = threadLocalBuffer(encThLocBufs);
-
-            plainBuf.limit(plainBuf.capacity());
-
-            if (plainBuf.capacity() < buf.limit())
-                plainBuf = enlargeThreadLocalBuffer(encThLocBufs, buf.limit());
-            else
-                plainBuf.rewind();
+            ByteBuffer plainBuf = threadLocalBuffer(encThLocBufs, buf.limit());
 
             buf.position(Integer.BYTES);
 
@@ -290,10 +273,7 @@ public class DumpEntrySerializer {
 
     /** */
     private ByteBuffer readRecord(FileIO file) throws IOException {
-        ByteBuffer buf = threadLocalBuffer(thLocBufs);
-
-        buf.position(0);
-        buf.limit(Integer.BYTES);
+        ByteBuffer buf = threadLocalBuffer(thLocBufs, Integer.BYTES);
 
         int read = file.readFully(buf);
 
@@ -305,12 +285,9 @@ public class DumpEntrySerializer {
         int dataSz = buf.getInt();
         int bufSz = dataSz + Integer.BYTES;
 
-        if (buf.capacity() < bufSz) {
-            buf = enlargeThreadLocalBuffer(thLocBufs, bufSz);
-            buf.position(Integer.BYTES);
-        }
-        else
-            buf.limit(bufSz);
+        buf = threadLocalBuffer(thLocBufs, bufSz);
+
+        buf.position(Integer.BYTES);
 
         read = file.readFully(buf);
 
@@ -398,22 +375,20 @@ public class DumpEntrySerializer {
     }
 
     /** @return Thread local buffer. */
-    private ByteBuffer threadLocalBuffer(ConcurrentMap<Long, ByteBuffer> map) {
+    public static ByteBuffer threadLocalBuffer(ConcurrentMap<Long, ByteBuffer> map, int bufSz) {
         ByteBuffer res = map.computeIfAbsent(Thread.currentThread().getId(), DFLT_BUF_ALLOC);
 
-        res.limit(res.capacity());
-        res.position(0);
+        if (res.capacity() < bufSz) {
+            res = ByteBuffer.allocate(bufSz);
+
+            map.put(Thread.currentThread().getId(), res);
+        }
+        else
+            res.limit(bufSz);
+
+        res.rewind();
 
         return res;
-    }
-
-    /** @return Thread local buffer. */
-    private ByteBuffer enlargeThreadLocalBuffer(ConcurrentMap<Long, ByteBuffer> map, int sz) {
-        ByteBuffer buf = ByteBuffer.allocate(sz);
-
-        map.put(Thread.currentThread().getId(), buf);
-
-        return buf;
     }
 
     /** */
