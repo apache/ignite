@@ -21,9 +21,12 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -537,7 +540,67 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         for (GridCacheContext<?, ?> cctx : gctx.caches())
             assertNull(cctx.dumpListener());
 
-        assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, name));
+        String actual = invokeCheckCommand(ign, name);
+
+        if (!Objects.equals("The check procedure has finished, no conflicts have been found.\n\n", actual)) {
+            DumpConsumer consumer = new DumpConsumer() {
+                Map<Long, List<Set<Object>>> grpPartCopies = new HashMap<>();
+
+                @Override public void start() {
+
+                }
+
+                @Override public void onMappings(Iterator<TypeMapping> mappings) {
+
+                }
+
+                @Override public void onTypes(Iterator<BinaryType> types) {
+
+                }
+
+                @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
+
+                }
+
+                @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
+                    Set<Object> keys = new HashSet<>();
+
+                    data.forEachRemaining(e -> {
+                        if (!keys.add(e.key()))
+                            fail("Double keys[grp=" + grp + ", part=" + part + ", key=" + e.key() + ']');
+                    });
+
+                    grpPartCopies.computeIfAbsent(toLong(grp, part), k -> new ArrayList<>()).add(keys);
+                }
+
+                @Override public void stop() {
+                    System.out.println("=======");
+
+                    grpPartCopies.forEach((k, partCopies) -> {
+                        if (partCopies.size() != 2)
+                            return;
+
+                        Set<Object> first = partCopies.get(0);
+                        Set<Object> second = partCopies.get(1);
+
+                        for (Object key : first) {
+                            if (!second.remove(key)) {
+                                System.out.println("key[first] = " + key);
+                            }
+                        }
+
+                        for (Object key : second)
+                            System.out.println("key[second] = " + key);
+                    });
+
+                    System.out.println("=======");
+                }
+            };
+
+            new DumpReader(new DumpReaderConfiguration(dumpDirectory(ign, name), consumer), log).run();
+        }
+
+        assertEquals("The check procedure has finished, no conflicts have been found.\n\n", actual);
     }
 
     /** */
