@@ -245,7 +245,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             private readonly ServicesClient _svcClient;
 
             /** Flag of topology update progress. */
-            private int _updateInProgress;
+            private volatile int _updateInProgress;
 
             /** Time of the last received topology. */
             private long _lastUpdateRequestTime;
@@ -285,7 +285,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
                     {
                         var cnt = ctx.Reader.ReadInt();
 
-                        IList<Guid> res = new List<Guid>(cnt);
+                        var res = new List<Guid>(cnt);
                         
                         for (var i = 0; i < cnt; ++i)
                             res.Add(BinaryUtils.ReadGuid(ctx.Reader.Stream));
@@ -307,8 +307,8 @@ namespace Apache.Ignite.Core.Impl.Client.Services
                           "service instance nodes: " + string.Join(", ", top.Select(gid=>gid.ToString())) +
                           ". Effective topology with the cluster group is: " + 
                           string.Join(", ", _nodes.Select(gid=>gid.ToString())) + '.');
-                
-                Interlocked.Exchange(ref _updateInProgress, 0);
+
+                _updateInProgress = 0;
             }
 
             /// <summary>
@@ -324,11 +324,14 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             /// </summary>
             internal IList<Guid> GetAndUpdate()
             {
-                var lastKnownAff = Interlocked.Read(ref _lastAffTop);
+                if (_updateInProgress != 0)
+                    return _nodes;
+
                 var curAff = _svcClient._ignite.Socket.GetTopologyVersion();
-                var lastUpdateTime = Interlocked.Read(ref _lastUpdateRequestTime);
-                
-                if(lastKnownAff == 0 || curAff > lastKnownAff || DateTime.Now.Ticks - lastUpdateTime >= SrvTopUpdatePeriod)
+                var lastKnownAff = Interlocked.Read(ref _lastAffTop);
+                var sinceLastUpdate = DateTime.Now.Ticks - Interlocked.Read(ref _lastUpdateRequestTime);
+
+                if (curAff > lastKnownAff || sinceLastUpdate > SrvTopUpdatePeriod)
                     UpdateTopologyAsync().ConfigureAwait(false);
 
                 return _nodes;
