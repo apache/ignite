@@ -9,7 +9,7 @@
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/apache/ignite)
 [![Twitter Follow](https://img.shields.io/twitter/follow/ApacheIgnite?style=social)](https://twitter.com/ApacheIgnite)
 
-## What is Apache Ignite ?
+## What is Apache Ignite?
 
 Apache Ignite is a distributed database for high-performance computing with in-memory speed.
 
