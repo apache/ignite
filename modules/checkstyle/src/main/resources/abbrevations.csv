@@ -18,7 +18,7 @@ count,cnt
 current,cur
 database,db
 default,dflt
-#destination,dest
+destination,dest
 #directory,dir
 #event,evt
 #exception,e,e2,ex
