@@ -146,11 +146,7 @@ public class MetricTask extends VisorOneNodeTask<MetricCommandArg, Map<String, ?
             throw new IllegalArgumentException("Unknown metric class [class=" + metric.getClass() + ']');
         }
 
-        /**
-         * Get map with data of metric for print.
-         *
-         * @return Map with data of metric.
-         */
+        /** @return The metric value prepared to output. */
         private Map<String, Object> exportMetric(Metric metric) {
             if (metric instanceof HistogramMetric) {
                 HistogramMetric hist = (HistogramMetric)metric;

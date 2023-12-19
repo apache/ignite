@@ -17,24 +17,17 @@
 
 package org.apache.ignite.util;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.metric.MetricCommand;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.metric.Metric;
-import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.junit.Test;
 
 import static java.util.regex.Pattern.quote;
@@ -260,29 +253,25 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         histogram.value(600);
         histogram.value(600);
 
-        List<String> values = F.asList("1", "2", "3", "[1, 2, 3]");
-        List<String> values2 = new ArrayList<>();
+        Map<String, String> underscore = metrics(ignite0, mregName);
 
-        values.forEach(value -> {
-            values2.add(value);
-            values2.add(value);
-        });
+        assertEquals("1", underscore.get("histogram-registry.histogram_0_50"));
+        assertEquals("2", underscore.get("histogram-registry.histogram_50_500"));
+        assertEquals("3", underscore.get("histogram-registry.histogram_500_inf"));
+        assertEquals("[1, 2, 3]", underscore.get("histogram-registry.histogram"));
 
-        assertEqualsCollectionsIgnoringOrder(values2, metricOfHistogram(ignite0, mregName));
+        assertEquals("1", underscore.get("histogram-registry.histogram_with_underscore_0_50"));
+        assertEquals("2", underscore.get("histogram-registry.histogram_with_underscore_50_500"));
+        assertEquals("3", underscore.get("histogram-registry.histogram_with_underscore_500_inf"));
+        assertEquals("[1, 2, 3]", underscore.get("histogram-registry.histogram_with_underscore"));
 
         assertEquals("1", metric(ignite0, metricName(mregName, "histogram_0_50")));
         assertEquals("2", metric(ignite0, metricName(mregName, "histogram_50_500")));
         assertEquals("3", metric(ignite0, metricName(mregName, "histogram_500_inf")));
 
-        assertEqualsCollectionsIgnoringOrder(values,
-            metricOfHistogram(ignite0, metricName(mregName, "histogram")));
-
         assertEquals("1", metric(ignite0, metricName(mregName, "histogram_with_underscore_0_50")));
         assertEquals("2", metric(ignite0, metricName(mregName, "histogram_with_underscore_50_500")));
         assertEquals("3", metric(ignite0, metricName(mregName, "histogram_with_underscore_500_inf")));
-
-        assertEqualsCollectionsIgnoringOrder(values,
-            metricOfHistogram(ignite0, metricName(mregName, "histogram_with_underscore")));
     }
 
     /** */
@@ -473,31 +462,6 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         assertEquals(1, metrics.size());
         
         return metrics.get(name);
-    }
-
-    /**
-     * Gets single metric value via command-line utility.
-     *
-     * @param node Node to obtain metric from.
-     * @param name Name of the metric.
-     * @return Collection of Strings representation of metric value in buckets.
-     */
-    private Collection<String> metricOfHistogram(IgniteEx node, String name) {
-        Map<String, String> metrics = metrics(node, name);
-
-        GridMetricManager mmgr = ignite0.context().metric();
-
-        for (ReadOnlyMetricRegistry mreg : mmgr) {
-            Metric metric = mreg.findMetric(name);
-
-            if (metric instanceof HistogramMetricImpl) {
-                long[] bounds = ((HistogramMetricImpl)metric).bounds();
-
-                assertEquals(bounds.length, metrics.size());
-            }
-        }
-
-        return metrics.values();
     }
 
     /**
