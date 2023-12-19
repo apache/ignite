@@ -226,15 +226,15 @@ public class AtomicLongTest extends AbstractThinClientTest {
 
         IgniteInternalCache<?, ?> partitionedCache = caches.get(1);
         IgniteInternalCache<?, ?> replicatedCache = caches.get(2);
-        IgniteInternalCache<?, ?> defaultCache = caches.get(3);
+        IgniteInternalCache<?, ?> dfltCache = caches.get(3);
 
         assertEquals("ignite-sys-atomic-cache@atomic-long-group-partitioned", partitionedCache.name());
         assertEquals("ignite-sys-atomic-cache@atomic-long-group-replicated", replicatedCache.name());
-        assertEquals("ignite-sys-atomic-cache@default-ds-group", defaultCache.name());
+        assertEquals("ignite-sys-atomic-cache@default-ds-group", dfltCache.name());
 
         assertEquals(2, partitionedCache.configuration().getBackups());
         assertEquals(Integer.MAX_VALUE, replicatedCache.configuration().getBackups());
-        assertEquals(1, defaultCache.configuration().getBackups());
+        assertEquals(1, dfltCache.configuration().getBackups());
     }
 
     /**
