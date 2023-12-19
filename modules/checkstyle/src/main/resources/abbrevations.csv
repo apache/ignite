@@ -19,7 +19,7 @@ current,cur
 database,db
 default,dflt
 destination,dest
-#directory,dir
+directory,dir
 #event,evt
 #exception,e,e2,ex
 #execute,exec
