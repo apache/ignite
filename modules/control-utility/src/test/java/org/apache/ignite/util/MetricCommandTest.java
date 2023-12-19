@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.metric.HistogramMetric;
 import org.junit.Test;
 
 import static java.util.regex.Pattern.quote;
@@ -37,6 +38,7 @@ import static org.apache.ignite.internal.management.SystemViewCommand.COLUMN_SEP
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.IGNITE_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.histogramBucketNames;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.util.SystemViewCommandTest.NODE_ID;
@@ -244,6 +246,8 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         histogram.value(600);
         histogram.value(600);
 
+        validateHistogramValuesInOutput(ignite0, histogram);
+
         histogram = mreg.histogram("histogram_with_underscore", bounds, null);
 
         histogram.value(10);
@@ -253,17 +257,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         histogram.value(600);
         histogram.value(600);
 
-        Map<String, String> underscore = metrics(ignite0, mregName);
-
-        assertEquals("1", underscore.get("histogram-registry.histogram_0_50"));
-        assertEquals("2", underscore.get("histogram-registry.histogram_50_500"));
-        assertEquals("3", underscore.get("histogram-registry.histogram_500_inf"));
-        assertEquals("[1, 2, 3]", underscore.get("histogram-registry.histogram"));
-
-        assertEquals("1", underscore.get("histogram-registry.histogram_with_underscore_0_50"));
-        assertEquals("2", underscore.get("histogram-registry.histogram_with_underscore_50_500"));
-        assertEquals("3", underscore.get("histogram-registry.histogram_with_underscore_500_inf"));
-        assertEquals("[1, 2, 3]", underscore.get("histogram-registry.histogram_with_underscore"));
+        validateHistogramValuesInOutput(ignite0, histogram);
 
         assertEquals("1", metric(ignite0, metricName(mregName, "histogram_0_50")));
         assertEquals("2", metric(ignite0, metricName(mregName, "histogram_50_500")));
@@ -462,6 +456,26 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         assertEquals(1, metrics.size());
         
         return metrics.get(name);
+    }
+
+    /**
+     * Gets single metric value via command-line utility.
+     *
+     * @param node Node to obtain metric from.
+     * @param hist Histogram metric.
+     */
+    private void validateHistogramValuesInOutput(IgniteEx node, HistogramMetric hist) {
+        Map<String, String> metrics = metrics(node, hist.name());
+
+        String[] names = histogramBucketNames(hist);
+        long[] value = hist.value();
+
+        for (int i = 0; i < names.length; i++) {
+            String nameWithBucket = names[i];
+
+            assertTrue(metrics.containsKey(nameWithBucket));
+            assertEquals(String.valueOf(value[i]), metrics.get(nameWithBucket));
+        }
     }
 
     /**
