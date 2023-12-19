@@ -459,23 +459,27 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     }
 
     /**
-     * Gets single metric value via command-line utility.
+     * Check hidtogram buckets and value via command-line utility.
      *
      * @param node Node to obtain metric from.
      * @param hist Histogram metric.
      */
     private void validateHistogramValuesInOutput(IgniteEx node, HistogramMetric hist) {
-        Map<String, String> metrics = metrics(node, hist.name());
+        String name = hist.name();
+
+        Map<String, String> metrics = metrics(node, name);
 
         String[] names = histogramBucketNames(hist);
-        long[] value = hist.value();
 
         for (int i = 0; i < names.length; i++) {
             String nameWithBucket = names[i];
 
             assertTrue(metrics.containsKey(nameWithBucket));
-            assertEquals(String.valueOf(value[i]), metrics.get(nameWithBucket));
+            assertEquals(String.valueOf(hist.value()[i]), metrics.get(nameWithBucket));
         }
+
+        assertTrue(metrics.containsKey(name));
+        assertEquals(hist.getAsString(), metrics.get(name));
     }
 
     /**
