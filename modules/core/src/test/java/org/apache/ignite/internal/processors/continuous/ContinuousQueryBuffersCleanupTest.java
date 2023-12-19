@@ -152,9 +152,9 @@ public class ContinuousQueryBuffersCleanupTest extends GridCommonAbstractTest {
         // We repeatedly perform 5 cache operations that raise CREATE, UPDATE, REMOVED, EXPIRIED events.
         // The total number of events is selected in a such way as to check for a backup notification due to a
         // buffer overflow, and then by timeout.
-        int expEventsCnt = cacheOpRounds * 5;
+        int expEvtsCnt = cacheOpRounds * 5;
 
-        CountDownLatch cqListenerNotifiedLatch = new CountDownLatch(expEventsCnt);
+        CountDownLatch cqListenerNotifiedLatch = new CountDownLatch(expEvtsCnt);
 
         Query<?> qry = new ContinuousQuery<>()
             .setLocalListener(events -> cqListenerNotifiedLatch.countDown())
