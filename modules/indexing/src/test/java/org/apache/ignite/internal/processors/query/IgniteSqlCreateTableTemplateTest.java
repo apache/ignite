@@ -36,9 +36,9 @@ public class IgniteSqlCreateTableTemplateTest extends AbstractIndexingCommonTest
         IgniteConfiguration configuration = new IgniteConfiguration();
         configuration.setIgniteInstanceName(name);
 
-        CacheConfiguration defaultCacheConfiguration = new CacheConfiguration();
+        CacheConfiguration dfltCacheConfiguration = new CacheConfiguration();
 
-        defaultCacheConfiguration.setName("DEFAULT_TEMPLATE*");
+        dfltCacheConfiguration.setName("DEFAULT_TEMPLATE*");
 
         CacheConfiguration customCacheConfiguration = new CacheConfiguration();
 
@@ -48,7 +48,7 @@ public class IgniteSqlCreateTableTemplateTest extends AbstractIndexingCommonTest
 
         customCacheConfiguration.setAffinityMapper(customAffMapper);
 
-        configuration.setCacheConfiguration(defaultCacheConfiguration, customCacheConfiguration);
+        configuration.setCacheConfiguration(dfltCacheConfiguration, customCacheConfiguration);
 
         return configuration;
     }
