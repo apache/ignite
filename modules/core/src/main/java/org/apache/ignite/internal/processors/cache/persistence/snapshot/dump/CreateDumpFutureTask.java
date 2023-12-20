@@ -671,7 +671,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
          *
          * @param cache Cache id.
          * @param key Key to write with {@link #writeChanged(int, long, KeyCacheObject, CacheObject, GridCacheVersion)}.
-         * @return {@code True} if key writtern by iterator, already. {@code False} otherwise.
+         * @return {@code True} if key written by iterator, already. {@code False} otherwise.
          * @see CacheDataTree#compareBytes(byte[], byte[])
          */
         private boolean writtenByIterator(int cache, KeyCacheObject key, CacheObjectContext coCtx) throws IgniteCheckedException {
