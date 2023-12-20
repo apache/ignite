@@ -2474,12 +2474,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean persistenceEnabled = recoveryMode || sharedCtx.localNode().isClient() ? desc.persistenceEnabled() :
             dataRegion != null && dataRegion.config().isPersistenceEnabled();
 
-        CompressionHandler compressHandler = CompressionHandler.create(ctx, cfg);
+        CompressionHandler compressHnd = CompressionHandler.create(ctx, cfg);
 
-        if (log.isInfoEnabled() && compressHandler.compressionEnabled()) {
+        if (log.isInfoEnabled() && compressHnd.compressionEnabled()) {
             log.info("Disk page compression is enabled [cacheGrp=" + CU.cacheOrGroupName(cfg) +
-                ", compression=" + compressHandler.diskPageCompression() + ", level=" +
-                compressHandler.diskPageCompressionLevel() + "]");
+                ", compression=" + compressHnd.diskPageCompression() + ", level=" +
+                compressHnd.diskPageCompressionLevel() + "]");
         }
 
         CacheGroupContext grp = new CacheGroupContext(sharedCtx,
@@ -2496,7 +2496,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             persistenceEnabled,
             desc.walEnabled(),
             recoveryMode,
-            compressHandler
+            compressHnd
         );
 
         for (Object obj : grp.configuredUserObjects())
