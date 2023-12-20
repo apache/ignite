@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 /**
- * A range condition is a search condition which represents a comparison predicate or a BETWEEN predicate.
+ * A range search row with inclusive flag.
  *
- * <p>Used to define bounds of a range scan.
+ * <p>Used to define bound of a range scan.
  */
-public interface RangeCondition<Row> extends Comparable<RangeCondition<Row>> {
-    /** Lower search bound. */
-    public RangeBound<Row> lower();
+public interface RangeBound<Row> extends Comparable<RangeBound<Row>> {
+    /** Search row. */
+    public Row searchRow();
 
-    /** Upper search row. */
-    public RangeBound<Row> upper();
+    /** Inlusive search by row. */
+    public boolean include();
 }

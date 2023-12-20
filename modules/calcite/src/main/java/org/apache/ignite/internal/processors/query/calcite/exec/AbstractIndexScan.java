@@ -69,11 +69,11 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
             return new IteratorImpl(idx.find(null, null, true, true, indexQueryContext()));
 
         IgniteClosure<RangeCondition<Row>, IteratorImpl> clo = range -> {
-            IdxRow lower = range.lower() == null ? null : row2indexRow(range.lower());
-            IdxRow upper = range.upper() == null ? null : row2indexRow(range.upper());
+            IdxRow lower = range.lower().searchRow() == null ? null : row2indexRow(range.lower().searchRow());
+            IdxRow upper = range.upper().searchRow() == null ? null : row2indexRow(range.upper().searchRow());
 
             return new IteratorImpl(
-                idx.find(lower, upper, range.lowerInclude(), range.upperInclude(), indexQueryContext()));
+                idx.find(lower, upper, range.lower().include(), range.upper().include(), indexQueryContext()));
         };
 
         if (!ranges.multiBounds()) {

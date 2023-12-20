@@ -28,6 +28,7 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeBound;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeCondition;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -263,24 +264,46 @@ public class SortedIndexSpoolExecutionTest extends AbstractExecutionTest {
         /** {@inheritDoc} */
         @Override public Iterator<RangeCondition<Object[]>> iterator() {
             RangeCondition<Object[]> range = new RangeCondition<Object[]>() {
-                @Override public Object[] lower() {
-                    return lower;
+                @Override public RangeBound<Object[]> lower() {
+                    return new RangeBoundImpl(lower);
                 }
 
-                @Override public Object[] upper() {
-                    return upper;
+                @Override public RangeBound<Object[]> upper() {
+                    return new RangeBoundImpl(upper);
                 }
 
-                @Override public boolean lowerInclude() {
-                    return true;
-                }
-
-                @Override public boolean upperInclude() {
-                    return true;
+                @Override public int compareTo(@NotNull RangeCondition<Object[]> o) {
+                    return 0;
                 }
             };
 
             return Collections.singleton(range).iterator();
+        }
+
+        /** */
+        private static class RangeBoundImpl implements RangeBound<Object[]> {
+            /** */
+            private final Object[] row;
+
+            /** */
+            private RangeBoundImpl(Object[] row) {
+                this.row = row;
+            }
+
+            /** {@inheritDoc} */
+            @Override public Object[] searchRow() {
+                return row;
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean include() {
+                return true;
+            }
+
+            /** {@inheritDoc} */
+            @Override public int compareTo(@NotNull RangeBound<Object[]> o) {
+                return 0;
+            }
         }
     }
 }
