@@ -24,8 +24,8 @@ event,evt
 events,evts
 exception,e,e2,ex
 execute,exec
-#frequency,freq
-#future,fut
+frequency,freq
+future,fut
 #group,grp
 #handler,hnd
 #header,hdr

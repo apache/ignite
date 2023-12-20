@@ -687,7 +687,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         Set<Integer> addedKeys = new GridConcurrentHashSet<>();
 
-        IgniteInternalFuture cacheLoadFuture = GridTestUtils.runMultiThreadedAsync(
+        IgniteInternalFuture cacheLoadFut = GridTestUtils.runMultiThreadedAsync(
             () -> {
                 while (!stop.get()) {
                     int key = keyCounter.incrementAndGet();
@@ -718,7 +718,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         stop.set(true);
 
-        cacheLoadFuture.get();
+        cacheLoadFut.get();
 
         // Deactivate and activate again.
         srv.cluster().state(INACTIVE);

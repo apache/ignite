@@ -3785,9 +3785,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            RemoteSnapshotFilesRecevier future = (RemoteSnapshotFilesRecevier)o;
+            RemoteSnapshotFilesRecevier fut = (RemoteSnapshotFilesRecevier)o;
 
-            return Objects.equals(reqId, future.reqId);
+            return Objects.equals(reqId, fut.reqId);
         }
 
         /** {@inheritDoc} */
