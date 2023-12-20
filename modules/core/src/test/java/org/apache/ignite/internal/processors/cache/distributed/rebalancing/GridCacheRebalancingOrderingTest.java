@@ -596,15 +596,15 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
                             },
                             this.causes);
 
-                        for (Event event : evts) {
+                        for (Event evt : evts) {
                             // Events returned from localQuery() are ordered by increasing local ID. Update the sync ID
                             // within a finally block to avoid applying duplicate events if the delegate listener
                             // throws an exception while processing the event.
                             try {
-                                applyInternal(event);
+                                applyInternal(evt);
                             }
                             finally {
-                                this.syncedId = event.localOrder();
+                                this.syncedId = evt.localOrder();
                             }
                         }
 

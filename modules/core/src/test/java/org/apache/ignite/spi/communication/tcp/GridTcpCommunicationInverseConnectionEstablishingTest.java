@@ -336,13 +336,13 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
         UNREACHABLE_DESTINATION.set(UNRESOLVED_HOST);
         RESPOND_TO_INVERSE_REQUEST.set(false);
 
-        AtomicBoolean clientFailedEventFlag = new AtomicBoolean(false);
+        AtomicBoolean clientFailedEvtFlag = new AtomicBoolean(false);
 
         IgniteEx srv = startGrid();
 
         srv.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event event) {
-                clientFailedEventFlag.set(true);
+                clientFailedEvtFlag.set(true);
 
                 return false;
             }
@@ -363,7 +363,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
             srv.context().io().sendIoTest(clientNode, new byte[10], false).get()
         );
 
-        assertTrue(GridTestUtils.waitForCondition(clientFailedEventFlag::get, 10_000));
+        assertTrue(GridTestUtils.waitForCondition(clientFailedEvtFlag::get, 10_000));
     }
 
     /**
