@@ -114,11 +114,11 @@ public class TcpCommunicationSpiInverseConnectionLoggingTest extends GridCommonA
 
         sendFailingMessage(server, clientNode);
 
-        LogEvent event = log4jAppender.singleEventSatisfying(
-            evt -> evt.getMessage().getFormattedMessage().startsWith("Failed to send message to remote node ")
+        LogEvent evt = log4jAppender.singleEventSatisfying(
+            e -> e.getMessage().getFormattedMessage().startsWith("Failed to send message to remote node ")
         );
 
-        assertThat(event.getLevel(), is(Level.WARN));
+        assertThat(evt.getLevel(), is(Level.WARN));
     }
 
     /**

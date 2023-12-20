@@ -368,10 +368,10 @@ public class GridFilenameUtils {
         }
 
         // add extra separator on the end to simplify code below
-        boolean lastIsDirectory = true;
+        boolean lastIsDir = true;
         if (arr[size - 1] != separator) {
             arr[size++] = separator;
-            lastIsDirectory = false;
+            lastIsDir = false;
         }
 
         // adjoining slashes
@@ -388,7 +388,7 @@ public class GridFilenameUtils {
             if (arr[i] == separator && arr[i - 1] == '.' &&
                     (i == prefix + 1 || arr[i - 2] == separator)) {
                 if (i == size - 1)
-                    lastIsDirectory = true;
+                    lastIsDir = true;
                 System.arraycopy(arr, i + 1, arr, i - 1, size - i);
                 size -= 2;
                 i--;
@@ -403,7 +403,7 @@ public class GridFilenameUtils {
                 if (i == prefix + 2)
                     return null;
                 if (i == size - 1)
-                    lastIsDirectory = true;
+                    lastIsDir = true;
                 int j;
                 for (j = i - 4; j >= prefix; j--) {
                     if (arr[j] == separator) {
@@ -427,7 +427,7 @@ public class GridFilenameUtils {
         if (size <= prefix) {  // should never be less than prefix
             return new String(arr, 0, size);
         }
-        if (lastIsDirectory && keepSeparator)
+        if (lastIsDir && keepSeparator)
             return new String(arr, 0, size);  // keep trailing separator
         return new String(arr, 0, size - 1);  // lose trailing separator
     }

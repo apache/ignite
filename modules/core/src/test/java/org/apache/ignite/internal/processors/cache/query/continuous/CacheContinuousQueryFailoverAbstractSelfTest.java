@@ -1203,8 +1203,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 if (dup) {
                     for (List<CacheEntryEvent<?, ?>> e : lsnr.evts.values()) {
                         if (!e.isEmpty()) {
-                            for (CacheEntryEvent<?, ?> event : e)
-                                log.error("Got duplicate event: " + event);
+                            for (CacheEntryEvent<?, ?> evt : e)
+                                log.error("Got duplicate event: " + evt);
                         }
                     }
                 }
