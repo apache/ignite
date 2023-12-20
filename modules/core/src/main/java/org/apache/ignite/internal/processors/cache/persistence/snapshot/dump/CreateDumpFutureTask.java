@@ -527,29 +527,31 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 try {
                     if (closed) // Partition already saved in dump.
                         reasonToSkip = "partition already saved";
-                    else if (isAfterStart(ver))
+                    else if (afterStart(ver))
                         reasonToSkip = "greater version";
                     else {
                         try {
                             CacheObjectContext coCtx = cctx.cacheObjectContext(cache);
 
                             synchronized (serializer) { // Prevent concurrent access to the dump file.
-                                if (isWrittenByIterator(cache, key, coCtx))
+                                if (writtenByIterator(cache, key, coCtx))
                                     reasonToSkip = "written by iterator"; // Saved by iterator, already. Skip.
                                 else if (!changed.get(cache).add(key)) // Entry changed several time during dump.
                                     reasonToSkip = "changed several times";
                                 else if (val == null)
                                     // Previous value is null. Entry created after dump start, skip.
                                     reasonToSkip = "newly created or already removed";
-                                else
+                                else {
                                     write(cache, expireTime, key, val, ver, coCtx);
+                                }
                             }
+
+                            if (reasonToSkip == null)
+                                changedCnt.increment();
                         }
                         catch (IOException | IgniteCheckedException e) {
                             throw new IgniteException(e);
                         }
-
-                        changedCnt.increment();
                     }
                 }
                 finally {
@@ -588,7 +590,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         ) {
             String reason = null;
 
-            if (isAfterStart(ver))
+            if (afterStart(ver))
                 reason = "greater version";
             else {
                 try {
@@ -650,7 +652,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
          * @param ver Entry version.
          * @return {@code True} if {@code ver} appeared after dump started.
          */
-        private boolean isAfterStart(GridCacheVersion ver) {
+        private boolean afterStart(GridCacheVersion ver) {
             return (startVer != null && ver.isGreater(startVer)) && !isolatedStreamerVer.equals(ver);
         }
 
@@ -658,15 +660,15 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
          * Iterator returned by {@link IgniteCacheOffheapManager#reservedIterator(int, AffinityTopologyVersion)}
          * iterates key in ascending order set by {@link CacheDataTree#compare(BPlusIO, long, int, CacheSearchRow)}.
          * So if key changed by the user (see {@link #writeChanged(int, long, KeyCacheObject, CacheObject, GridCacheVersion)})
-         * is greater then last key written by partition iterator then it not saved in dump, already, and must be written.
+         * is greater than last key written by partition iterator then it hasn't been saved in dump yet and must be written.
          * Otherwise, key already saved by the iterator and must be skiped.
          *
          * @param cache Cache id.
          * @param key Key to write with {@link #writeChanged(int, long, KeyCacheObject, CacheObject, GridCacheVersion)}.
-         * @return {@code 0} if key written by the iterator, already. {@code False} otherwise.
+         * @return {@code True} if key writtern by iterator, already. {@code False} otherwise.
          * @see CacheDataTree#compareBytes(byte[], byte[])
          */
-        private boolean isWrittenByIterator(int cache, KeyCacheObject key, CacheObjectContext coCtx) throws IgniteCheckedException {
+        private boolean writtenByIterator(int cache, KeyCacheObject key, CacheObjectContext coCtx) throws IgniteCheckedException {
             if (iterLastKey == null)
                 return false;
 
