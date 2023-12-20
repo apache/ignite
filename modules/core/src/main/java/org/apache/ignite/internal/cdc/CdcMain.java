@@ -433,7 +433,10 @@ public class CdcMain implements Runnable {
         lastSegmentConsumptionTs =
             mreg.longMetric(LAST_SEG_CONSUMPTION_TIME, "Last time of consumption of WAL segment");
         metaUpdate = mreg.histogram(META_UPDATE, new long[] {100, 500, 1000}, "Metadata update time");
-        evtCaptureTime = mreg.histogram(EVT_CAPTURE_TIME, new long[] {100, 500, 1000, 5000}, "Event capture time");
+        evtCaptureTime = mreg.histogram(
+            EVT_CAPTURE_TIME,
+            new long[] {500, 1_000, 10_000, 60_000},
+            "Time between creating an event on Ignite node and capturing it by CdcConsumer");
         mreg.register(CDC_MODE, () -> cdcModeState.name(), String.class, "CDC mode");
     }
 
