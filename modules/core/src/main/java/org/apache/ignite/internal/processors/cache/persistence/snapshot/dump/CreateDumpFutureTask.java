@@ -271,6 +271,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             long entriesCnt0 = 0;
             long writtenEntriesCnt0 = 0;
 
+            int coCtxCache = 0;
+            CacheObjectContext coCtx = null;
+
             try (PartitionDumpContext dumpCtx = dumpContext(grp, part)) {
                 try (GridCloseableIterator<CacheDataRow> rows = gctx.offheap().reservedIterator(part, dumpCtx.topVer)) {
                     if (rows == null)
@@ -283,11 +286,20 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
                         int cache = row.cacheId() == 0 ? grp : row.cacheId();
 
-                        if (dumpCtx.writeForIterator(cache, row.expireTime(), row.key(), row.value(), row.version()))
+                        if (cache != coCtxCache) {
+                            coCtxCache = cache;
+
+                            coCtx = cctx.cacheObjectContext(coCtxCache);
+                        }
+
+                        if (dumpCtx.writeForIterator(cache, row.expireTime(), row.key(), row.value(), row.version(), coCtx))
                             writtenEntriesCnt0++;
 
                         entriesCnt0++;
                     }
+                }
+                catch (IOException e) {
+                    throw new IgniteException(e);
                 }
 
                 entriesCnt.addAndGet(entriesCnt0);
@@ -337,7 +349,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
             dumpContext(grp, part).writeChanged(cctx.cacheId(), expireTime, key, val, ver);
         }
-        catch (IgniteException e) {
+        catch (IgniteException | IgniteCheckedException | IOException e) {
             acceptException(e);
         }
     }
@@ -425,7 +437,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         /** Cache id for {@link #iterLastKey} */
         int iterLastKeyCache;
 
-        /** Last key dumped via {@link #writeForIterator(int, long, KeyCacheObject, CacheObject, GridCacheVersion)}. */
+        /** Last key dumped via {@link #writeForIterator(int, long, KeyCacheObject, CacheObject, GridCacheVersion, CacheObjectContext)}. */
         @Nullable KeyCacheObject iterLastKey;
 
         /** Count of entries changed during dump creation. */
@@ -516,7 +528,13 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
          * @param val Value before change.
          * @param ver Version before change.
          */
-        public void writeChanged(int cache, long expireTime, KeyCacheObject key, CacheObject val, GridCacheVersion ver) {
+        public void writeChanged(
+            int cache,
+            long expireTime,
+            KeyCacheObject key,
+            CacheObject val,
+            GridCacheVersion ver
+        ) throws IgniteCheckedException, IOException {
             String reasonToSkip = null;
 
             if (closed) // Quick exit. Partition already saved in dump.
@@ -530,28 +548,22 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                     else if (afterStart(ver))
                         reasonToSkip = "greater version";
                     else {
-                        try {
-                            CacheObjectContext coCtx = cctx.cacheObjectContext(cache);
+                        CacheObjectContext coCtx = cctx.cacheObjectContext(cache);
 
-                            synchronized (serializer) { // Prevent concurrent access to the dump file.
-                                if (writtenByIterator(cache, key, coCtx))
-                                    reasonToSkip = "written by iterator"; // Saved by iterator, already. Skip.
-                                else if (!changed.get(cache).add(key)) // Entry changed several time during dump.
-                                    reasonToSkip = "changed several times";
-                                else if (val == null)
-                                    // Previous value is null. Entry created after dump start, skip.
-                                    reasonToSkip = "newly created or already removed";
-                                else {
-                                    write(cache, expireTime, key, val, ver, coCtx);
-                                }
-                            }
+                        synchronized (serializer) { // Prevent concurrent access to the dump file.
+                            if (writtenByIterator(cache, key, coCtx))
+                                reasonToSkip = "written by iterator"; // Saved by iterator, already. Skip.
+                            else if (!changed.get(cache).add(key)) // Entry changed several time during dump.
+                                reasonToSkip = "changed several times";
+                            else if (val == null)
+                                // Previous value is null. Entry created after dump start, skip.
+                                reasonToSkip = "newly created or already removed";
+                            else
+                                write(cache, expireTime, key, val, ver, coCtx);
+                        }
 
-                            if (reasonToSkip == null)
-                                changedCnt.increment();
-                        }
-                        catch (IOException | IgniteCheckedException e) {
-                            throw new IgniteException(e);
-                        }
+                        if (reasonToSkip == null)
+                            changedCnt.increment();
                     }
                 }
                 finally {
@@ -586,28 +598,22 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             long expireTime,
             KeyCacheObject key,
             CacheObject val,
-            GridCacheVersion ver
-        ) {
+            GridCacheVersion ver,
+            CacheObjectContext coCtx
+        ) throws IgniteCheckedException, IOException {
             String reason = null;
 
             if (afterStart(ver))
                 reason = "greater version";
             else {
-                try {
-                    CacheObjectContext coCtx = cctx.cacheObjectContext(cache);
+                synchronized (serializer) { // Prevent concurrent access to the dump file.
+                    iterLastKeyCache = cache;
+                    iterLastKey = key;
 
-                    synchronized (serializer) { // Prevent concurrent access to the dump file.
-                        iterLastKeyCache = cache;
-                        iterLastKey = key;
-
-                        if (changed.get(cache).contains(key))
-                            reason = "written by listener";
-                        else
-                            write(cache, expireTime, key, val, ver, coCtx);
-                    }
-                }
-                catch (IOException | IgniteCheckedException e) {
-                    throw new IgniteException(e);
+                    if (changed.get(cache).contains(key))
+                        reason = "written by listener";
+                    else
+                        write(cache, expireTime, key, val, ver, coCtx);
                 }
             }
 
