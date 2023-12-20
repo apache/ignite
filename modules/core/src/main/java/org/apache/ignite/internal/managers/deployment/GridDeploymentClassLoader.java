@@ -694,14 +694,14 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         }
 
         if (!clsRequestExceptions.isEmpty()) {
-            IgniteException exception = clsRequestExceptions.remove(0);
+            IgniteException ex = clsRequestExceptions.remove(0);
 
             for (Exception e : clsRequestExceptions)
-                exception.addSuppressed(e);
+                ex.addSuppressed(e);
 
-            LT.warn(log, exception.getMessage(), exception);
+            LT.warn(log, ex.getMessage(), ex);
 
-            throw exception;
+            throw ex;
         }
         else {
             ClassNotFoundException cnfe = new P2PClassNotFoundException("Failed to peer load class [" +

@@ -2838,26 +2838,26 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void destroy() throws IgniteCheckedException {
-            AtomicReference<IgniteCheckedException> exception = new AtomicReference<>();
+            AtomicReference<IgniteCheckedException> e = new AtomicReference<>();
 
             dataTree.destroy(row -> {
                 try {
                     rowStore.removeRow(row.link(), grp.statisticsHolderData());
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteCheckedException e0) {
                     U.error(log, "Failed to remove row [link=" + row.link() + "]");
 
-                    IgniteCheckedException ex = exception.get();
+                    IgniteCheckedException ex = e.get();
 
                     if (ex == null)
-                        exception.set(e);
+                        e.set(e0);
                     else
-                        ex.addSuppressed(e);
+                        ex.addSuppressed(e0);
                 }
             }, false);
 
-            if (exception.get() != null)
-                throw new IgniteCheckedException("Failed to destroy store", exception.get());
+            if (e.get() != null)
+                throw new IgniteCheckedException("Failed to destroy store", e.get());
         }
 
         /** {@inheritDoc} */

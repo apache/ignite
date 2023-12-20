@@ -1272,7 +1272,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDoInParallelException() {
-        String expectedException = "ExpectedException";
+        String expectedEx = "ExpectedException";
 
         ExecutorService executorService = Executors
             .newSingleThreadExecutor(new IgniteThreadFactory("testscope", "ignite-utils-test"));
@@ -1284,7 +1284,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                 asList(1, 2, 3),
                 i -> {
                     if (Integer.valueOf(1).equals(i))
-                        throw new IgniteCheckedException(expectedException);
+                        throw new IgniteCheckedException(expectedEx);
 
                     return null;
                 }
@@ -1293,7 +1293,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             fail("Should throw ParallelExecutionException");
         }
         catch (IgniteCheckedException e) {
-            assertEquals(expectedException, e.getMessage());
+            assertEquals(expectedEx, e.getMessage());
         }
         finally {
             executorService.shutdownNow();

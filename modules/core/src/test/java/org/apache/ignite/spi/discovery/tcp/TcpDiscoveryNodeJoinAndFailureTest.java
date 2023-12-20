@@ -228,7 +228,7 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
 
         nodeId = node2Id;
 
-        boolean expectedExceptionThrown = false;
+        boolean expectedExThrown = false;
 
         try {
             startGrid(NODE_WITH_PORT_ID_2);
@@ -249,10 +249,10 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
                 errorMsg.contains("Failed to connect to any address from IP finder")
             );
 
-            expectedExceptionThrown = true;
+            expectedExThrown = true;
         }
 
-        assertTrue("Expected exception was not thrown.", expectedExceptionThrown);
+        assertTrue("Expected exception was not thrown.", expectedExThrown);
 
         IgniteInternalFuture startGridFut = futureRef.get();
 

@@ -102,8 +102,8 @@ public class IgnitePdsCheckpointMapSnapshotTest extends GridCommonAbstractTest {
             WALPointer start,
             @Nullable IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordDeserializeFilter
         ) throws IgniteCheckedException, StorageException {
-            Exception exception = new Exception();
-            StackTraceElement[] trace = exception.getStackTrace();
+            Exception ex = new Exception();
+            StackTraceElement[] trace = ex.getStackTrace();
 
             // Here we only want to record replays from GroupStateLazyStore
             // because they're performed if the snapshot doesn't include the data for a checkpoint
