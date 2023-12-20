@@ -2875,14 +2875,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     body0();
                 }
                 catch (Throwable t) {
-                    boolean isInterruptedException = X.hasCause(t, InterruptedException.class)
+                    boolean isInterruptedEx = X.hasCause(t, InterruptedException.class)
                         || X.hasCause(t, IgniteInterruptedException.class)
                         || X.hasCause(t, IgniteInterruptedCheckedException.class);
 
-                    if (!isInterruptedException)
+                    if (!isInterruptedEx)
                         U.error(log, "Exception in discovery notifier worker thread.", t);
 
-                    if (!isInterruptedException || !isCancelled.get()) {
+                    if (!isInterruptedEx || !isCancelled.get()) {
                         FailureType type = t instanceof OutOfMemoryError ? CRITICAL_ERROR : SYSTEM_WORKER_TERMINATION;
 
                         ctx.failure().process(new FailureContext(type, t));

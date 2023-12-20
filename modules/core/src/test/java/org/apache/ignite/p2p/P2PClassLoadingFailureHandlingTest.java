@@ -153,9 +153,9 @@ public class P2PClassLoadingFailureHandlingTest extends GridCommonAbstractTest {
 
         Throwable ex = assertThrows(log, () -> client.compute(client.cluster().forRemotes()).execute(task, null),
             IgniteException.class, "Remote job threw user exception");
-        P2PClassNotFoundException p2PClassNotFoundException = X.cause(ex, P2PClassNotFoundException.class);
-        assertThat(p2PClassNotFoundException, is(notNullValue()));
-        assertThat(p2PClassNotFoundException.getMessage(), startsWith("Failed to peer load class"));
+        P2PClassNotFoundException p2PClassNotFoundEx = X.cause(ex, P2PClassNotFoundException.class);
+        assertThat(p2PClassNotFoundEx, is(notNullValue()));
+        assertThat(p2PClassNotFoundEx.getMessage(), startsWith("Failed to peer load class"));
 
         assertThatFailureHandlerIsNotCalled();
     }
@@ -258,8 +258,8 @@ public class P2PClassLoadingFailureHandlingTest extends GridCommonAbstractTest {
     /***/
     @Test
     public void remoteEventListenerP2PClassLoadingProblemShouldNotCauseFailureHandling() throws Exception {
-        IgniteEvents events = client.events(client.cluster().forRemotes());
-        events.remoteListen(
+        IgniteEvents evts = client.events(client.cluster().forRemotes());
+        evts.remoteListen(
             (nodeId, event) -> true,
             instantiateClassLoadedWithExternalClassLoader(
                 "org.apache.ignite.tests.p2p.classloadproblem.RemoteEventFilterCausingP2PClassLoadProblem"

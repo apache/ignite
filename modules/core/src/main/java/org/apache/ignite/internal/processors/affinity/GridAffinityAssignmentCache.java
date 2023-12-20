@@ -366,10 +366,10 @@ public class GridAffinityAssignmentCache {
                don't belong to affinity for current group (client node or filtered by nodeFilter). */
             boolean skipCalculation = true;
 
-            for (DiscoveryEvent event : events.events()) {
-                boolean affNode = CU.affinityNode(event.eventNode(), nodeFilter);
+            for (DiscoveryEvent evt : events.events()) {
+                boolean affNode = CU.affinityNode(evt.eventNode(), nodeFilter);
 
-                if (affNode || event.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+                if (affNode || evt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                     skipCalculation = false;
 
                     break;

@@ -20,9 +20,10 @@ database,db
 default,dflt
 destination,dest
 directory,dir
-#event,evt
-#exception,e,e2,ex
-#execute,exec
+event,evt
+events,evts
+exception,e,e2,ex
+execute,exec
 #frequency,freq
 #future,fut
 #group,grp

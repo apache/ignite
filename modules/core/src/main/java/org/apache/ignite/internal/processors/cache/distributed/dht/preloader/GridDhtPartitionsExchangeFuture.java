@@ -2970,11 +2970,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param msg Single message received from the client which didn't find original ExchangeFuture.
      */
     public void forceClientReconnect(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
-        Exception reconnectException = new IgniteNeedReconnectException(node, null);
+        Exception reconnectEx = new IgniteNeedReconnectException(node, null);
 
-        exchangeGlobalExceptions.put(node.id(), reconnectException);
+        exchangeGlobalExceptions.put(node.id(), reconnectEx);
 
-        onDone(null, reconnectException);
+        onDone(null, reconnectEx);
 
         GridDhtPartitionsFullMessage fullMsg = createPartitionsMessage(true, false);
 
