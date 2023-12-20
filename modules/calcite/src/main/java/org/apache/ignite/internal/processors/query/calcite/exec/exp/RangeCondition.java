@@ -22,7 +22,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
  *
  * <p>Used to define bounds of a range scan.
  */
-public interface RangeCondition<Row> extends Comparable<RangeCondition<Row>> {
+public interface RangeCondition<Row> {
     /** Lower search row. */
     public Row lower();
 

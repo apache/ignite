@@ -33,7 +33,6 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Primitives;
 import org.apache.calcite.DataContext;
@@ -78,7 +77,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Implements rex expression into a function object. Uses JaninoRexCompiler under the hood.
@@ -291,8 +289,6 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
         List<RangeCondition<Row>> ranges = new ArrayList<>();
 
-        Comparator<Row> rowComparator = comparator(collation);
-
         expandBounds(
             ranges,
             searchBounds,
@@ -300,14 +296,13 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             rowFactory,
             collation.getKeys(),
             0,
-            rowComparator,
             Arrays.asList(new RexNode[searchBounds.size()]),
             Arrays.asList(new RexNode[searchBounds.size()]),
             true,
             true
         );
 
-        return new RangeIterableImpl(ranges);
+        return new RangeIterableImpl(ranges, comparator(collation));
     }
 
     /**
@@ -319,7 +314,6 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
      * @param rowFactory Row factory.
      * @param collationKeys Collation keys.
      * @param collationKeyIdx Current collation key index (field to process).
-     * @param rowComparator Row comparator.
      * @param curLower Current lower row.
      * @param curUpper Current upper row.
      * @param lowerInclude Include current lower row.
@@ -332,7 +326,6 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         RowFactory<Row> rowFactory,
         List<Integer> collationKeys,
         int collationKeyIdx,
-        Comparator<Row> rowComparator,
         List<RexNode> curLower,
         List<RexNode> curUpper,
         boolean lowerInclude,
@@ -345,7 +338,6 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 scalar(curUpper, rowType),
                 lowerInclude,
                 upperInclude,
-                rowComparator,
                 rowFactory
             ));
 
@@ -391,7 +383,6 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 rowFactory,
                 collationKeys,
                 collationKeyIdx + 1,
-                rowComparator,
                 curLower,
                 curUpper,
                 lowerInclude && fieldLowerInclude,
@@ -715,9 +706,6 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         private Boolean skip;
 
         /** */
-        private final Comparator<Row> rowComparator;
-
-        /** */
         private final RowFactory<Row> factory;
 
         /** */
@@ -726,14 +714,12 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             SingleScalar upperBound,
             boolean lowerInclude,
             boolean upperInclude,
-            Comparator<Row> rowComparator,
             RowFactory<Row> factory
         ) {
             this.lowerBound = lowerBound;
             this.upperBound = upperBound;
             this.lowerInclude = lowerInclude;
             this.upperInclude = upperInclude;
-            this.rowComparator = rowComparator;
             this.factory = factory;
         }
 
@@ -755,27 +741,6 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         /** {@inheritDoc} */
         @Override public boolean upperInclude() {
             return upperInclude;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int compareTo(@NotNull RangeCondition<Row> o) {
-            int res = rowComparator.compare(lower(), o.lower());
-
-            if (res == 0)
-                res = rowComparator.compare(upper(), o.upper());
-
-            if (res == 0)
-                res = Boolean.compare(lowerInclude(), o.lowerInclude());
-
-            if (res == 0)
-                res = Boolean.compare(upperInclude(), o.upperInclude());
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            return o instanceof RangeCondition && compareTo((RangeCondition<Row>)o) == 0;
         }
 
         /** Compute row. */
@@ -827,11 +792,15 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         private List<RangeCondition<Row>> ranges;
 
         /** */
+        private final Comparator<Row> comparator;
+
+        /** */
         private boolean sorted;
 
         /** */
-        public RangeIterableImpl(List<RangeCondition<Row>> ranges) {
+        public RangeIterableImpl(List<RangeCondition<Row>> ranges, Comparator<Row> comparator) {
             this.ranges = ranges;
+            this.comparator = comparator;
         }
 
         /** {@inheritDoc} */
@@ -850,16 +819,61 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                     return ranges.iterator();
             }
 
-            // Sort ranges using collation comparator to produce sorted output. There should be no ranges'
-            // intersection, but can be duplicates.
+            Comparator<RangeCondition<Row>> cmp = (o1, o2) -> {
+                int res = compareBounds(o1.lower(), o1.lowerInclude(), o2.lower(), o2.lowerInclude());
+
+                if (res == 0)
+                    return compareBounds(o1.upper(), o1.upperInclude(), o2.upper(), o2.upperInclude());
+                else
+                    return res;
+            };
+
+            // Sort ranges and remove intersections using collation comparator to produce sorted output.
             // Do not sort again if ranges already were sorted before, different values of correlated variables
             // should not affect ordering.
             if (!sorted) {
-                ranges = ranges.stream().sorted(RangeCondition::compareTo).distinct().collect(Collectors.toList());
+                ranges.sort(cmp);
+
+                List<RangeCondition<Row>> ranges0 = new ArrayList<>(ranges.size());
+
+                RangeCondition<Row> prevRange = null;
+
+                for (RangeCondition<Row> range : ranges) {
+                    if (compareBounds(range.lower(), range.lowerInclude(), range.upper(), range.upperInclude()) > 0) {
+                        ranges0 = Collections.emptyList();
+                        break;
+                    }
+
+                    if (prevRange != null) {
+                        int cmpRes = compareBounds(prevRange.upper(), prevRange.upperInclude(), range.lower(),
+                            range.lowerInclude());
+
+                        if (cmpRes >= 0) {
+                            // TODO merge
+                            continue;
+                        }
+
+                    }
+
+                    prevRange = range;
+                }
+
+
+                ranges = ranges0;
                 sorted = true;
             }
 
             return F.iterator(ranges.iterator(), r -> r, true, r -> !((RangeConditionImpl)r).skip());
+        }
+
+        /** */
+        private int compareBounds(Row bound1, boolean includeBound1, Row bound2, boolean includeBound2) {
+            int res = comparator.compare(bound1, bound2);
+
+            if (res == 0)
+                return -Boolean.compare(includeBound1, includeBound2);
+            else
+                return res;
         }
     }
 
