@@ -934,7 +934,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                             final AtomicBoolean done = new AtomicBoolean(false);
 
-                            final AtomicBoolean exceptionThrown = new AtomicBoolean(false);
+                            final AtomicBoolean exThrown = new AtomicBoolean(false);
 
                             final IgniteCountDownLatch latch = ignite.countDownLatch("latch", threadCnt, false, true);
 
@@ -946,7 +946,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                                         l.lockInterruptibly();
                                     }
                                     catch (IgniteInterruptedException ignored) {
-                                        exceptionThrown.set(true);
+                                        exThrown.set(true);
                                     }
                                     finally {
                                         done.set(true);
@@ -980,7 +980,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                                 throw new RuntimeException(e);
                             }
 
-                            assertTrue(exceptionThrown.get());
+                            assertTrue(exThrown.get());
 
                             return null;
                         }

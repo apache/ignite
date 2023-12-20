@@ -52,7 +52,7 @@ public class GridCacheConcurrentGetCacheOnClientTest extends GridCommonAbstractT
 
         final AtomicInteger cntFails = new AtomicInteger();
 
-        final AtomicInteger exceptionFails = new AtomicInteger();
+        final AtomicInteger exFails = new AtomicInteger();
 
         final String cacheName = "TEST_CACHE";
 
@@ -69,7 +69,7 @@ public class GridCacheConcurrentGetCacheOnClientTest extends GridCommonAbstractT
                     stopLatch.countDown();
                 }
                 catch (Exception e) {
-                    exceptionFails.incrementAndGet();
+                    exFails.incrementAndGet();
                 }
             }
         });
@@ -87,7 +87,7 @@ public class GridCacheConcurrentGetCacheOnClientTest extends GridCommonAbstractT
                     stopLatch.countDown();
                 }
                 catch (Exception e) {
-                    exceptionFails.incrementAndGet();
+                    exFails.incrementAndGet();
                 }
             }
         });
@@ -103,7 +103,7 @@ public class GridCacheConcurrentGetCacheOnClientTest extends GridCommonAbstractT
 
         stopLatch.await();
 
-        if (cntFails.get() != 0 || exceptionFails.get() != 0)
-            fail("Cache return null in " + cntFails.get() + " of 3 cases. Total exception: " + exceptionFails.get());
+        if (cntFails.get() != 0 || exFails.get() != 0)
+            fail("Cache return null in " + cntFails.get() + " of 3 cases. Total exception: " + exFails.get());
     }
 }
