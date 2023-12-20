@@ -278,6 +278,10 @@ public class SortedIndexSpoolExecutionTest extends AbstractExecutionTest {
                 @Override public boolean upperInclude() {
                     return true;
                 }
+
+                @Override public int compareTo(@NotNull RangeCondition<Object[]> o) {
+                    return 0;
+                }
             };
 
             return Collections.singleton(range).iterator();
