@@ -26,12 +26,10 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
@@ -304,8 +302,6 @@ public class Dump implements AutoCloseable {
         return new DumpedPartitionIterator() {
             DumpEntry next;
 
-            Set<Object> partKeys = new HashSet<>();
-
             /** {@inheritDoc} */
             @Override public boolean hasNext() {
                 advance();
@@ -334,16 +330,6 @@ public class Dump implements AutoCloseable {
 
                 try {
                     next = serializer.read(dumpFile, group, part);
-
-                    /*
-                     * During dumping entry can be dumped twice: by partition iterator and change listener.
-                     * Excluding duplicates keys from iteration.
-                     */
-                    while (next != null && !partKeys.add(next.key()))
-                        next = serializer.read(dumpFile, group, part);
-
-                    if (next == null)
-                        partKeys = null; // Let GC do the rest.
                 }
                 catch (IOException | IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -353,8 +339,6 @@ public class Dump implements AutoCloseable {
             /** {@inheritDoc} */
             @Override public void close() {
                 U.closeQuiet(dumpFile);
-
-                partKeys = null;
             }
         };
     }
