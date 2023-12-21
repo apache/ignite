@@ -20,7 +20,6 @@ package org.apache.ignite.internal.visor.misc;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +28,6 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 @GridInternal
-@GridVisorManagementTask
 public class VisorIdAndTagViewTask extends VisorOneNodeTask<Void, VisorIdAndTagViewTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;

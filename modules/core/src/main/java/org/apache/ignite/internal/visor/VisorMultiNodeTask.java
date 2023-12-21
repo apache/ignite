@@ -28,6 +28,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
@@ -44,6 +45,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.logStart;
  * @param <R> Task result type.
  * @param <J> Job result type
  */
+@GridVisorManagementTask
 public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTaskArgument<A>, R> {
     /** Auto-injected grid instance. */
     @IgniteInstanceResource
