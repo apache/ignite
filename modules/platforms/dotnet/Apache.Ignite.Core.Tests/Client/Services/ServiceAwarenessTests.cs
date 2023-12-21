@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         {
             DoTestServiceAwareness(serviceName, FilterGridsNodes());
         }
-        
+
         /// <summary>
         /// Tests service topology is updated when the cluster topology changes.
         /// </summary>
@@ -113,16 +113,23 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         public void TestClusterTopologyChanges(string serviceName)
         {
             var prevServiceNodes = _topConsistentIds;
-            
+
             // New nodes filter includes additional node.
-            _topConsistentIds = new List<object> { GetConsistentId(1), GetConsistentId(2), GetConsistentId(3) };
-            
+            var newNodeConsistentId = "newNode";
+            _topConsistentIds = new List<object> { GetConsistentId(1), GetConsistentId(2), newNodeConsistentId };
+
             RedeployServices();
 
             // Additional node is not started. Service topology must be the same.
             DoTestServiceAwareness(serviceName, FilterGridsNodes(prevServiceNodes));
 
-            using (Ignition.Start(GetIgniteConfiguration()))
+            var newNodeCfg = new IgniteConfiguration(GetIgniteConfiguration())
+            {
+                ConsistentId = newNodeConsistentId,
+                IgniteInstanceName = newNodeConsistentId
+            };
+
+            using (Ignition.Start(newNodeCfg))
             {
                 WaitForClientConnectionsNumber(4);
 
@@ -392,7 +399,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         
         private static object GetConsistentId(IIgnite ignite) => ignite.GetCluster().GetLocalNode().ConsistentId;
         
-        private static object GetConsistentId(int idx) => GetConsistentId(GetIgnite(idx));
+        private static object GetConsistentId(int? idx) => GetConsistentId(GetIgnite(idx));
 
         /// <summary>
         /// Filters grids by consistent ids. By default uses the service topology ids. 
