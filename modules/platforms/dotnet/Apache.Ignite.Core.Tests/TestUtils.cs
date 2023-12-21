@@ -673,7 +673,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Deploys the Java service on specified nodes.
+        /// Deploys the Java service on all or specified nodes.
         /// </summary>
         public static void DeployJavaService(IIgnite ignite, IEnumerable<object> nodes = null)
         {

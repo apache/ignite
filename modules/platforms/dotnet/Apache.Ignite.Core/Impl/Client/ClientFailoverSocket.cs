@@ -425,7 +425,8 @@ namespace Apache.Ignite.Core.Impl.Client
         }
         
         /// <summary>
-        /// Provides random socket for one of the nodes. If nodes are empty or if chosen socket is disposed, provides the default socket. 
+        /// Provides random socket for to of the nodes. If the is no socket for chosen node or if it is disposed,
+        /// provides the default socket. 
         /// </summary>
         private ClientSocket GetRandomNodeSocket(IList<Guid> nodeIds)
         {
