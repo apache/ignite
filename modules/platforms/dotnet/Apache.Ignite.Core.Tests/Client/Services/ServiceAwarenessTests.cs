@@ -422,7 +422,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         private class NodeConsistentIdFilter : IClusterNodeFilter
         {
             /** */
-            private readonly IEnumerable<object> _ids;
+            private readonly IList<object> _ids;
 
             /** */
             internal NodeConsistentIdFilter(IEnumerable<object> ids)
