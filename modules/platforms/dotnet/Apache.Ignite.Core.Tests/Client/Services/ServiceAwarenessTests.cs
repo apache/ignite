@@ -347,7 +347,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
                 .Select(e => e.Message);
             
             // Check service topology is updated strictly once.
-            Assert.AreEqual(1, allLogEntries.Count());
+            Assert.AreEqual(1, allLogEntries.Single());
 
             var logEntry = allLogEntries.First();
 
