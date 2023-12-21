@@ -60,6 +60,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Litmus;
+import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Sarg;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.MappingType;
@@ -85,6 +86,7 @@ import static org.apache.calcite.sql.SqlKind.IS_NULL;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN_OR_EQUAL;
 import static org.apache.calcite.sql.SqlKind.NOT;
+import static org.apache.calcite.sql.SqlKind.OR;
 import static org.apache.calcite.sql.SqlKind.SEARCH;
 
 /** */
@@ -354,6 +356,34 @@ public class RexUtils {
                 return new ExactBounds(pred, builder.makeCall(SqlStdOperatorTable.COALESCE, val, nullBound));
             else if (op.kind == IS_NULL)
                 return new ExactBounds(pred, nullBound);
+            else if (op.kind == OR) {
+                List<SearchBounds> orBounds = new ArrayList<>();
+                int curComplexity = 0;
+
+                for (RexNode operand : pred.getOperands()) {
+                    SearchBounds opBounds = createBounds(fc, Collections.singletonList((RexCall)operand),
+                        cluster, fldType, prevComplexity);
+
+                    if (opBounds instanceof MultiBounds) {
+                        curComplexity += ((MultiBounds)opBounds).bounds().size();
+                        orBounds.addAll(((MultiBounds)opBounds).bounds());
+                    }
+                    else if (opBounds != null) {
+                        curComplexity++;
+                        orBounds.add(opBounds);
+                    }
+
+                    if (opBounds == null || curComplexity > MAX_SEARCH_BOUNDS_COMPLEXITY) {
+                        orBounds = null;
+                        break;
+                    }
+                }
+
+                if (orBounds == null)
+                    continue;
+
+                return new MultiBounds(pred, orBounds);
+            }
             else if (op.kind == SEARCH) {
                 Sarg<?> sarg = ((RexLiteral)pred.operands.get(1)).getValueAs(Sarg.class);
 
@@ -537,36 +567,84 @@ public class RexUtils {
         Map<Integer, List<RexCall>> res = new HashMap<>(conjunctions.size());
 
         for (RexNode rexNode : conjunctions) {
-            rexNode = expandBooleanFieldComparison(rexNode, builder(cluster));
+            Pair<Integer, RexCall> refPred = null;
 
-            if (!isSupportedTreeComparison(rexNode))
-                continue;
+            if (rexNode instanceof RexCall && rexNode.getKind() == OR) {
+                List<RexNode> operands = ((RexCall)rexNode).getOperands();
 
-            RexCall predCall = (RexCall)rexNode;
-            RexSlot ref;
+                Integer ref = null;
+                List<RexCall> preds = new ArrayList<>(operands.size());
 
-            if (isBinaryComparison(rexNode)) {
-                ref = (RexSlot)extractRefFromBinary(predCall, cluster);
+                for (RexNode operand : operands) {
+                    Pair<Integer, RexCall> refPredOp = extractRefPredicate(operand, cluster);
 
-                if (ref == null)
-                    continue;
+                    // Skip the whole OR condition if any operand is not support tree comparison or not on reference.
+                    if (refPredOp == null) {
+                        ref = null;
+                        break;
+                    }
 
-                // Let RexLocalRef be on the left side.
-                if (refOnTheRight(predCall))
-                    predCall = (RexCall)invert(builder(cluster), predCall);
+                    // Ensure that we have the same field reference in all operands.
+                    if (ref == null)
+                        ref = refPredOp.getKey();
+                    else if (!ref.equals(refPredOp.getKey())) {
+                        ref = null;
+                        break;
+                    }
+
+                    // For correlated variables it's required to resort and merge ranges on each nested loop,
+                    // don't support it now.
+                    if (containsFieldAccess(refPred.getValue())) {
+                        ref = null;
+                        break;
+                    }
+
+                    preds.add(refPredOp.getValue());
+                }
+
+                if (ref != null)
+                    refPred = Pair.of(ref, (RexCall)builder(cluster).makeCall(((RexCall)rexNode).getOperator(), preds));
             }
-            else {
-                ref = (RexSlot)extractRefFromOperand(predCall, cluster, 0);
+            else
+                refPred = extractRefPredicate(rexNode, cluster);
 
-                if (ref == null)
-                    continue;
+            if (refPred != null) {
+                List<RexCall> fldPreds = res.computeIfAbsent(refPred.getKey(), k -> new ArrayList<>(conjunctions.size()));
+
+                fldPreds.add(refPred.getValue());
             }
-
-            List<RexCall> fldPreds = res.computeIfAbsent(ref.getIndex(), k -> new ArrayList<>(conjunctions.size()));
-
-            fldPreds.add(predCall);
         }
         return res;
+    }
+
+    /** */
+    private static Pair<Integer, RexCall> extractRefPredicate(RexNode rexNode, RelOptCluster cluster) {
+        rexNode = expandBooleanFieldComparison(rexNode, builder(cluster));
+
+        if (!isSupportedTreeComparison(rexNode))
+            return null;
+
+        RexCall predCall = (RexCall)rexNode;
+        RexSlot ref;
+
+        if (isBinaryComparison(rexNode)) {
+            ref = (RexSlot)extractRefFromBinary(predCall, cluster);
+
+            if (ref == null)
+                return null;
+
+            // Let RexLocalRef be on the left side.
+            if (refOnTheRight(predCall))
+                predCall = (RexCall)invert(builder(cluster), predCall);
+        }
+        else {
+            ref = (RexSlot)extractRefFromOperand(predCall, cluster, 0);
+
+            if (ref == null)
+                return null;
+        }
+
+        return Pair.of(ref.getIndex(), predCall);
     }
 
     /** Extended version of RexUtil.invert with additional operators support. */
@@ -783,6 +861,24 @@ public class RexUtils {
             }
 
             @Override public Void visitLocalRef(RexLocalRef locRef) {
+                throw Util.FoundOne.NULL;
+            }
+        };
+
+        try {
+            node.accept(v);
+
+            return false;
+        }
+        catch (Util.FoundOne e) {
+            return true;
+        }
+    }
+
+    /** */
+    private static Boolean containsFieldAccess(RexNode node) {
+        RexVisitor<Void> v = new RexVisitorImpl<Void>(true) {
+            @Override public Void visitFieldAccess(RexFieldAccess fieldAccess) {
                 throw Util.FoundOne.NULL;
             }
         };
