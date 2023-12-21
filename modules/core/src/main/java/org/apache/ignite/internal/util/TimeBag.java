@@ -243,9 +243,9 @@ public class TimeBag {
                             stagesByTime.add(locStage);
                     }
 
-                    int stageCount = 0;
-                    while (!stagesByTime.isEmpty() && stageCount < maxPerCompositeStage) {
-                        stageCount++;
+                    int stageCnt = 0;
+                    while (!stagesByTime.isEmpty() && stageCnt < maxPerCompositeStage) {
+                        stageCnt++;
 
                         Stage locStage = stagesByTime.poll();
 

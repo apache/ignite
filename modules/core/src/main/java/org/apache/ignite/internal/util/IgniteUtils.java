@@ -7705,6 +7705,17 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Concats two integers to long.
+     *
+     * @param high Highest bits.
+     * @param low Lowest bits.
+     * @return Long.
+     */
+    public static long toLong(int high, int low) {
+        return (((long)high) << Integer.SIZE) | (low & 0xffffffffL);
+    }
+
+    /**
      * Copies all elements from collection to array and asserts that
      * array is big enough to hold the collection. This method should
      * always be preferred to {@link Collection#toArray(Object[])}
@@ -9880,8 +9891,8 @@ public abstract class IgniteUtils {
 
         Collection<InetSocketAddress> resolved = new HashSet<>();
 
-        for (InetSocketAddress address : sockAddr)
-            resolved.addAll(resolveAddress(addrRslvr, address));
+        for (InetSocketAddress addr : sockAddr)
+            resolved.addAll(resolveAddress(addrRslvr, addr));
 
         return resolved;
     }

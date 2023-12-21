@@ -67,6 +67,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.configuration.WarmUpConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -78,6 +79,8 @@ import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.cdc.CdcManager;
+import org.apache.ignite.internal.cdc.CdcUtilityActiveCdcManager;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -204,6 +207,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -1813,7 +1817,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
         else {
-            Map<StartCacheInfo, GridCacheContext> cacheContexts = new ConcurrentHashMap<>();
+            Map<StartCacheInfo, GridCacheContext> cacheCtxs = new ConcurrentHashMap<>();
 
             // Reserve at least 2 threads for system operations.
             int parallelismLvl = U.availableThreadCount(ctx, GridIoPolicy.SYSTEM_POOL, 2);
@@ -1832,7 +1836,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 cacheInfo.getExchangeTopVer(),
                                 cacheInfo.isDisabledAfterStart()
                             );
-                            cacheContexts.put(cacheInfo, cacheCtx);
+                            cacheCtxs.put(cacheInfo, cacheCtx);
 
                             context().exchange().exchangerUpdateHeartbeat();
 
@@ -1851,7 +1855,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
              *
              * TODO IGNITE-9729
              */
-            Set<StartCacheInfo> successfullyPreparedCaches = cacheContexts.keySet();
+            Set<StartCacheInfo> successfullyPreparedCaches = cacheCtxs.keySet();
 
             List<StartCacheInfo> cacheInfosInOriginalOrder = startCacheInfos.stream()
                 .filter(successfullyPreparedCaches::contains)
@@ -1861,7 +1865,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cacheStartFailHandler.handle(
                     startCacheInfo,
                     cacheInfo -> {
-                        GridCacheContext cctx = cacheContexts.get(cacheInfo);
+                        GridCacheContext cctx = cacheCtxs.get(cacheInfo);
 
                         if (!cctx.isRecoveryMode()) {
                             ctx.query().onCacheStart(
@@ -1883,15 +1887,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             doInParallel(
                 parallelismLvl,
                 sharedCtx.kernalContext().pools().getSystemExecutorService(),
-                cacheContexts.entrySet(),
+                cacheCtxs.entrySet(),
                 cacheCtxEntry -> {
                     cacheStartFailHandler.handle(
                         cacheCtxEntry.getKey(),
                         cacheInfo -> {
-                            GridCacheContext<?, ?> cacheContext = cacheCtxEntry.getValue();
+                            GridCacheContext<?, ?> cacheCtx = cacheCtxEntry.getValue();
 
-                            if (cacheContext.isRecoveryMode())
-                                finishRecovery(cacheInfo.getExchangeTopVer(), cacheContext);
+                            if (cacheCtx.isRecoveryMode())
+                                finishRecovery(cacheInfo.getExchangeTopVer(), cacheCtx);
                             else
                                 onCacheStarted(cacheCtxEntry.getValue());
 
@@ -2060,12 +2064,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion cacheStartVer,
         GridCacheContext<?, ?> cacheContext
     ) throws IgniteCheckedException {
-        CacheGroupContext groupContext = cacheContext.group();
+        CacheGroupContext groupCtx = cacheContext.group();
 
         // Take cluster-wide cache descriptor and try to update local cache and cache group parameters.
         DynamicCacheDescriptor updatedDescriptor = cacheDescriptor(cacheContext.cacheId());
 
-        groupContext.finishRecovery(
+        groupCtx.finishRecovery(
             cacheStartVer,
             updatedDescriptor.receivedFrom(),
             isLocalAffinity(updatedDescriptor.cacheConfiguration())
@@ -2083,7 +2087,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (log.isInfoEnabled())
             log.info("Finished recovery for cache [cache=" + cacheContext.name()
-                + ", grp=" + groupContext.cacheOrGroupName() + ", startVer=" + cacheStartVer + "]");
+                + ", grp=" + groupCtx.cacheOrGroupName() + ", startVer=" + cacheStartVer + "]");
     }
 
     /**
@@ -2093,13 +2097,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public void shutdownNotFinishedRecoveryCaches() {
         for (GridCacheAdapter cacheAdapter : caches.values()) {
-            GridCacheContext cacheContext = cacheAdapter.context();
+            GridCacheContext cacheCtx = cacheAdapter.context();
 
-            if (cacheContext.isRecoveryMode()) {
-                assert !isLocalAffinity(cacheContext.config())
+            if (cacheCtx.isRecoveryMode()) {
+                assert !isLocalAffinity(cacheCtx.config())
                     : "Cache " + cacheAdapter.context() + " is still in recovery mode after start, but not activated.";
 
-                stopCacheSafely(cacheContext);
+                stopCacheSafely(cacheCtx);
             }
         }
     }
@@ -2470,12 +2474,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean persistenceEnabled = recoveryMode || sharedCtx.localNode().isClient() ? desc.persistenceEnabled() :
             dataRegion != null && dataRegion.config().isPersistenceEnabled();
 
-        CompressionHandler compressHandler = CompressionHandler.create(ctx, cfg);
+        CompressionHandler compressHnd = CompressionHandler.create(ctx, cfg);
 
-        if (log.isInfoEnabled() && compressHandler.compressionEnabled()) {
+        if (log.isInfoEnabled() && compressHnd.compressionEnabled()) {
             log.info("Disk page compression is enabled [cacheGrp=" + CU.cacheOrGroupName(cfg) +
-                ", compression=" + compressHandler.diskPageCompression() + ", level=" +
-                compressHandler.diskPageCompressionLevel() + "]");
+                ", compression=" + compressHnd.diskPageCompression() + ", level=" +
+                compressHnd.diskPageCompressionLevel() + "]");
         }
 
         CacheGroupContext grp = new CacheGroupContext(sharedCtx,
@@ -2492,7 +2496,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             persistenceEnabled,
             desc.walEnabled(),
             recoveryMode,
-            compressHandler
+            compressHnd
         );
 
         for (Object obj : grp.configuredUserObjects())
@@ -3034,6 +3038,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteCacheDatabaseSharedManager dbMgr;
         IgnitePageStoreManager pageStoreMgr = null;
         IgniteWriteAheadLogManager walMgr = null;
+        CdcManager cdcMgr = null;
 
         if (CU.isPersistenceEnabled(ctx.config()) && !ctx.clientNode()) {
             dbMgr = new GridCacheDatabaseSharedManager(ctx);
@@ -3059,6 +3064,27 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 walMgr = new FileWriteAheadLogManager(ctx);
         }
 
+        if (CU.isCdcEnabled(ctx.config()) && !ctx.clientNode()) {
+            cdcMgr = ctx.plugins().createComponent(CdcManager.class);
+
+            if (cdcMgr != null) {
+                if (ctx.config().getDataStorageConfiguration().getWalMode() != WALMode.LOG_ONLY) {
+                    U.warn(log, "Custom CdcManager is only supported for WALMode.LOG_ONLY. CdcManager configuration will be ignored.");
+
+                    cdcMgr = null;
+                }
+
+                if (!IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, true)) {
+                    U.warn(log, "Custom CdcManager is only supported for IGNITE_WAL_MMAP=true. CdcManager configuration will be ignored.");
+
+                    cdcMgr = null;
+                }
+            }
+
+            if (cdcMgr == null)
+                cdcMgr = new CdcUtilityActiveCdcManager();
+        }
+
         IgniteSnapshotManager snapshotMgr = ctx.plugins().createComponent(IgniteSnapshotManager.class);
 
         if (snapshotMgr == null)
@@ -3082,6 +3108,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             .setJtaManager(JTA.createOptional())
             .setMvccCachingManager(new MvccCachingManager())
             .setDiagnosticManager(new CacheDiagnosticManager())
+            .setCdcManager(cdcMgr)
             .build(kernalCtx, storeSesLsnrs);
     }
 
@@ -5465,9 +5492,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DetachedClusterNode clusterNode = new DetachedClusterNode(consistentId, ctx.nodeAttributes());
 
             for (DynamicCacheDescriptor cacheDescriptor : persistentCaches()) {
-                boolean affinityNode = CU.affinityNode(clusterNode, cacheDescriptor.cacheConfiguration().getNodeFilter());
+                boolean affNode = CU.affinityNode(clusterNode, cacheDescriptor.cacheConfiguration().getNodeFilter());
 
-                if (!affinityNode)
+                if (!affNode)
                     continue;
 
                 startCacheInRecoveryMode(cacheDescriptor);

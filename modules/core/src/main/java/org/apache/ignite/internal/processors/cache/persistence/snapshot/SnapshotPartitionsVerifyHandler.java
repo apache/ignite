@@ -67,6 +67,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
@@ -364,7 +365,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         try {
             String consistentId = cctx.kernalContext().pdsFolderResolver().resolveFolders().consistentId().toString();
 
-            try (Dump dump = new Dump(opCtx.snapshotDirectory(), consistentId, true, true, log)) {
+            EncryptionSpi encSpi = opCtx.metadata().encryptionKey() != null ? cctx.gridConfig().getEncryptionSpi() : null;
+
+            try (Dump dump = new Dump(opCtx.snapshotDirectory(), consistentId, true, true, encSpi, log)) {
                 Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
                     cctx.snapshotMgr().snapshotExecutorService(),
                     partFiles,
@@ -409,7 +412,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 while (iter.hasNext()) {
                     DumpEntry e = iter.next();
 
-                    ctx.update((KeyCacheObject)e.key(), (CacheObject)e.value(), null);
+                    ctx.update((KeyCacheObject)e.key(), (CacheObject)e.value(), e.version());
 
                     size++;
                 }
@@ -471,7 +474,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** */
     protected boolean isPunchHoleEnabled(SnapshotHandlerContext opCtx, Set<Integer> grpIds) {
         SnapshotMetadata meta = opCtx.metadata();
-        Path snapshotDirectory = opCtx.snapshotDirectory().toPath();
+        Path snapshotDir = opCtx.snapshotDirectory().toPath();
 
         if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompresion)) {
             try {
@@ -485,12 +488,12 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             }
 
             try {
-                cctx.kernalContext().compress().checkPageCompressionSupported(snapshotDirectory, meta.pageSize());
+                cctx.kernalContext().compress().checkPageCompressionSupported(snapshotDir, meta.pageSize());
 
                 return true;
             }
             catch (Exception e) {
-                log.info("File system doesn't support page compression on snapshot directory: " + snapshotDirectory
+                log.info("File system doesn't support page compression on snapshot directory: " + snapshotDir
                     + ", snapshot may have larger size than expected.");
             }
         }

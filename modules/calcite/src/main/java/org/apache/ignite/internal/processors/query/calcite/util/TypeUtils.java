@@ -252,16 +252,16 @@ public class TypeUtils {
         assert resultType.isStruct();
 
         if (hasConvertableFields(resultType)) {
-            RowHandler<Row> handler = ectx.rowHandler();
+            RowHandler<Row> hnd = ectx.rowHandler();
             List<RelDataType> types = RelOptUtil.getFieldTypeList(resultType);
-            RowHandler.RowFactory<Row> factory = handler.factory(ectx.getTypeFactory(), types);
+            RowHandler.RowFactory<Row> factory = hnd.factory(ectx.getTypeFactory(), types);
             List<Function<Object, Object>> converters = transform(types, t -> fieldConverter(ectx, t));
             return r -> {
                 Row newRow = factory.create();
-                assert handler.columnCount(newRow) == converters.size();
-                assert handler.columnCount(r) == converters.size();
+                assert hnd.columnCount(newRow) == converters.size();
+                assert hnd.columnCount(r) == converters.size();
                 for (int i = 0; i < converters.size(); i++)
-                    handler.set(i, newRow, converters.get(i).apply(handler.get(i, r)));
+                    hnd.set(i, newRow, converters.get(i).apply(hnd.get(i, r)));
                 return newRow;
             };
         }

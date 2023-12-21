@@ -590,16 +590,16 @@ public class ReliabilityTest extends AbstractThinClientTest {
     public void testServiceMethodInvocationAfterFailover() throws Exception {
         PersonExternalizable person = new PersonExternalizable("Person 1");
 
-        ServiceConfiguration testServiceConfig = new ServiceConfiguration();
-        testServiceConfig.setName(SERVICE_NAME);
-        testServiceConfig.setService(new TestService());
-        testServiceConfig.setTotalCount(1);
+        ServiceConfiguration testServiceCfg = new ServiceConfiguration();
+        testServiceCfg.setName(SERVICE_NAME);
+        testServiceCfg.setService(new TestService());
+        testServiceCfg.setTotalCount(1);
 
         Ignite ignite = null;
         IgniteClient client = null;
         try {
             // Initialize cluster and client
-            ignite = startGrid(getConfiguration().setServiceConfiguration(testServiceConfig));
+            ignite = startGrid(getConfiguration().setServiceConfiguration(testServiceCfg));
             client = startClient(ignite);
             TestServiceInterface svc = client.services().serviceProxy(SERVICE_NAME, TestServiceInterface.class);
 
@@ -621,7 +621,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
             GridTestUtils.assertThrowsWithCause(() -> svc.testMethod(person), ClientConnectionException.class);
 
             // Restore the cluster and redeploy the service.
-            ignite = startGrid(getConfiguration().setServiceConfiguration(testServiceConfig));
+            ignite = startGrid(getConfiguration().setServiceConfiguration(testServiceCfg));
 
             // Invoke the service method with Externalizable parameter once again.
             // This should restore the client connection and trigger registration of the

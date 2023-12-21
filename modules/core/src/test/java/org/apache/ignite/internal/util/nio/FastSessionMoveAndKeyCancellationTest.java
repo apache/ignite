@@ -92,13 +92,13 @@ public class FastSessionMoveAndKeyCancellationTest extends GridCommonAbstractTes
             IgniteEx ignite = startGrid(1);
             IgniteClient client1 = startClient()
         ) {
-            IgniteInternalFuture<?> clientJobsFuture = multithreadedAsync(new ReconnectConstantly(), 2);
+            IgniteInternalFuture<?> clientJobsFut = multithreadedAsync(new ReconnectConstantly(), 2);
 
             try {
                 assertFalse("CancelledKeyException was thrown", failureLogMessagesLatch.await(1, TimeUnit.MINUTES));
             }
             finally {
-                clientJobsFuture.cancel();
+                clientJobsFut.cancel();
             }
         }
     }

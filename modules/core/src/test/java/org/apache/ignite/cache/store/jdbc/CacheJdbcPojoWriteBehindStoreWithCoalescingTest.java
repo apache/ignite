@@ -329,7 +329,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
             ResultSet rs = stmt.executeQuery(" SELECT * FROM TEST_CACHE");
 
-            int count = 0;
+            int cnt = 0;
 
             while (rs.next()) {
                 String value1 = rs.getString("VALUE1");
@@ -360,10 +360,10 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
                 assertEquals(c1.get(Calendar.MONTH), c2.get(Calendar.MONTH));
 
-                count++;
+                cnt++;
             }
 
-            assertEquals(count, cache.size());
+            assertEquals(cnt, cache.size());
 
             U.closeQuiet(stmt);
 
@@ -452,14 +452,14 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
         IgniteCache<Integer, TestPojo> cache = grid(0).cache("TEST_CACHE");
 
-        AtomicInteger t1Count = new AtomicInteger(5);
+        AtomicInteger t1Cnt = new AtomicInteger(5);
 
-        AtomicInteger t2Count = new AtomicInteger(5);
+        AtomicInteger t2Cnt = new AtomicInteger(5);
 
         Thread t1 = new Thread(new Runnable() {
             @Override public void run() {
                 try {
-                    while (t1Count.get() > 0) {
+                    while (t1Cnt.get() > 0) {
                         for (int i = 0; i < 200000; i++) {
                             TestPojo next = new TestPojo("ORIGIN" + i, i, new java.sql.Date(new java.util.Date().getTime()));
 
@@ -470,7 +470,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
                             assertEquals(ret, next);
                         }
 
-                        t1Count.decrementAndGet();
+                        t1Cnt.decrementAndGet();
                     }
                 }
                 catch (CacheException ignore) {
@@ -482,7 +482,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
         Thread t2 = new Thread(new Runnable() {
             @Override public void run() {
                 try {
-                    while (t2Count.get() > 0) {
+                    while (t2Cnt.get() > 0) {
                         for (int i = 200000; i < 400000; i++) {
                             TestPojo next = new TestPojo("ORIGIN" + i, i, new java.sql.Date(new java.util.Date().getTime()));
 
@@ -493,7 +493,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
                             assertEquals(ret, next);
                         }
 
-                        t2Count.decrementAndGet();
+                        t2Cnt.decrementAndGet();
                     }
                 }
                 catch (CacheException ignore) {
@@ -502,11 +502,11 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
             }
         });
 
-        TestErrorHandler handler = new TestErrorHandler();
+        TestErrorHandler hnd = new TestErrorHandler();
 
-        t1.setUncaughtExceptionHandler(handler);
+        t1.setUncaughtExceptionHandler(hnd);
 
-        t2.setUncaughtExceptionHandler(handler);
+        t2.setUncaughtExceptionHandler(hnd);
 
         t1.start();
 
@@ -529,14 +529,14 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
         IgniteCache<Integer, TestPojo> cache = grid(0).cache("TEST_CACHE");
 
-        AtomicInteger t1Count = new AtomicInteger(5);
+        AtomicInteger t1Cnt = new AtomicInteger(5);
 
-        AtomicInteger t2Count = new AtomicInteger(5);
+        AtomicInteger t2Cnt = new AtomicInteger(5);
 
         Thread t1 = new Thread(new Runnable() {
             @Override public void run() {
                 try {
-                    while (t1Count.get() > 0) {
+                    while (t1Cnt.get() > 0) {
                         for (int i = 0; i < 200000; i++) {
                             TestPojo next = new TestPojo("ORIGIN" + i, i, new java.sql.Date(new java.util.Date().getTime()));
 
@@ -547,7 +547,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
                             assertEquals(ret, next);
                         }
 
-                        t1Count.decrementAndGet();
+                        t1Cnt.decrementAndGet();
                     }
                 }
                 catch (CacheException ignore) {
@@ -559,7 +559,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
         Thread t2 = new Thread(new Runnable() {
             @Override public void run() {
                 try {
-                    while (t2Count.get() > 0) {
+                    while (t2Cnt.get() > 0) {
                         for (int i = 200000; i < 400000; i++) {
                             TestPojo next = new TestPojo("ORIGIN" + i, i, new java.sql.Date(new java.util.Date().getTime()));
 
@@ -570,7 +570,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
                             assertEquals(ret, next);
                         }
 
-                        t2Count.decrementAndGet();
+                        t2Cnt.decrementAndGet();
                     }
                 }
                 catch (CacheException ignore) {
@@ -579,11 +579,11 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
             }
         });
 
-        TestErrorHandler handler = new TestErrorHandler();
+        TestErrorHandler hnd = new TestErrorHandler();
 
-        t1.setUncaughtExceptionHandler(handler);
+        t1.setUncaughtExceptionHandler(hnd);
 
-        t2.setUncaughtExceptionHandler(handler);
+        t2.setUncaughtExceptionHandler(hnd);
 
         t1.start();
 
@@ -606,18 +606,18 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
         IgniteCache<Integer, TestPojo> cache = grid(0).cache("TEST_CACHE");
 
-        AtomicInteger t1Count = new AtomicInteger(10);
+        AtomicInteger t1Cnt = new AtomicInteger(10);
 
-        AtomicInteger t2Count = new AtomicInteger(10);
+        AtomicInteger t2Cnt = new AtomicInteger(10);
 
         Thread t1 = new Thread(new Runnable() {
             @Override public void run() {
                 try {
-                    while (t1Count.get() > 0) {
+                    while (t1Cnt.get() > 0) {
                         for (int i = 0; i < 5000; i++)
                             cache.put(i, new TestPojo("ORIGIN" + i, i, new java.sql.Date(new java.util.Date().getTime())));
 
-                        t1Count.decrementAndGet();
+                        t1Cnt.decrementAndGet();
                     }
                 }
                 catch (CacheException ignore) {
@@ -629,7 +629,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
         Thread t2 = new Thread(new Runnable() {
             @Override public void run() {
                 try {
-                    while (t2Count.get() > 0) {
+                    while (t2Cnt.get() > 0) {
                         for (int i = 0; i < 5000; i++)
                             cache.put(i, new TestPojo("UPDATE" + i, i, new java.sql.Date(new java.util.Date().getTime())));
 
@@ -640,7 +640,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
                             e.printStackTrace();
                         }
 
-                        t2Count.decrementAndGet();
+                        t2Cnt.decrementAndGet();
                     }
                 }
                 catch (CacheException ignore) {
@@ -656,13 +656,13 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
         //t1 should be completed before 10 seconds.
         U.sleep(10_000);
 
-        assertEquals(0, t1Count.get());
+        assertEquals(0, t1Cnt.get());
 
         t1.join();
 
         t2.join();
 
-        assertEquals(0, t2Count.get());
+        assertEquals(0, t2Cnt.get());
 
         //now wait for updates will be done on store size and check that the data set is the same
         if (isHangOnWriteAll)

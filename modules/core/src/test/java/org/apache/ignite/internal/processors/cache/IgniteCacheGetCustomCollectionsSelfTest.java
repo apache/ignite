@@ -41,14 +41,14 @@ public class IgniteCacheGetCustomCollectionsSelfTest extends GridCommonAbstractT
 
         cfg.setMarshaller(null);
 
-        final CacheConfiguration<String, MyMap> mapCacheConfig = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+        final CacheConfiguration<String, MyMap> mapCacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-        mapCacheConfig.setCacheMode(CacheMode.PARTITIONED);
-        mapCacheConfig.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        mapCacheConfig.setBackups(1);
-        mapCacheConfig.setName("cache");
+        mapCacheCfg.setCacheMode(CacheMode.PARTITIONED);
+        mapCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        mapCacheCfg.setBackups(1);
+        mapCacheCfg.setName("cache");
 
-        cfg.setCacheConfiguration(mapCacheConfig);
+        cfg.setCacheConfiguration(mapCacheCfg);
 
         return cfg;
     }

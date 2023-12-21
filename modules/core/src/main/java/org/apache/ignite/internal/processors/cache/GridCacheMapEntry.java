@@ -2933,16 +2933,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 @Override public boolean apply(@Nullable CacheDataRow row) {
                     boolean update0;
 
-                    GridCacheVersion currentVer = row != null ? row.version() : GridCacheMapEntry.this.ver;
+                    GridCacheVersion curVer = row != null ? row.version() : GridCacheMapEntry.this.ver;
 
-                    boolean isStartVer = cctx.shared().versions().isStartVersion(currentVer);
+                    boolean isStartVer = cctx.shared().versions().isStartVersion(curVer);
 
                     if (cctx.group().persistenceEnabled()) {
                         if (!isStartVer) {
                             if (cctx.atomic())
-                                update0 = ATOMIC_VER_COMPARATOR.compare(currentVer, ver) < 0;
+                                update0 = ATOMIC_VER_COMPARATOR.compare(curVer, ver) < 0;
                             else
-                                update0 = currentVer.compareTo(ver) < 0;
+                                update0 = curVer.compareTo(ver) < 0;
                         }
                         else
                             update0 = true;
@@ -4796,10 +4796,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 else if (res.resultType() == ResultType.LOCKED) {
                     entry.unlockEntry();
 
-                    IgniteInternalFuture<?> lockFuture =
+                    IgniteInternalFuture<?> lockFut0 =
                         cctx.kernalContext().coordinators().waitForLock(cctx, mvccVer, res.resultVersion());
 
-                    lockFuture.listen(this);
+                    lockFut0.listen(this);
 
                     return;
                 }

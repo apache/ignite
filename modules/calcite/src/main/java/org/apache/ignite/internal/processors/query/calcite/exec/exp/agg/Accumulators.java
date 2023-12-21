@@ -458,11 +458,11 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Row row) {
-            int argsCount = aggregateCall().getArgList().size();
+            int argsCnt = aggregateCall().getArgList().size();
 
-            assert argsCount == 0 || argsCount == 1;
+            assert argsCnt == 0 || argsCnt == 1;
 
-            if (argsCount == 0 || get(0, row) != null)
+            if (argsCnt == 0 || get(0, row) != null)
                 cnt++;
         }
 

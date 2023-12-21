@@ -96,6 +96,9 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     /** Replay from bound include. */
     private final WALPointer lowBound;
 
+    /** Singleton instance of {@link FilteredRecord}  */
+    private final WALRecord filteredRecord = new FilteredRecord();
+
     /**
      * Creates iterator in file-by-file iteration mode. Directory
      *
@@ -286,7 +289,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             return tup;
 
         if (!checkBounds(tup.get1()))
-            return new T2<>(tup.get1(), FilteredRecord.INSTANCE); // FilteredRecord for mark as filtered.
+            return new T2<>(tup.get1(), filteredRecord); // FilteredRecord for mark as filtered.
 
         return tup;
     }

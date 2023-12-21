@@ -566,7 +566,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        ClassLoader classLoader = U.resolveClassLoader(ldr, ctx.gridConfig());
+        ClassLoader clsLoader = U.resolveClassLoader(ldr, ctx.gridConfig());
 
         Collection<byte[]> objectsToUnmarshall = new ArrayList<>();
 
@@ -598,8 +598,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             new IgniteThrowableFunction<byte[], Object>() {
                 @Override public Object apply(byte[] binary) throws IgniteCheckedException {
                     return compressed()
-                        ? U.unmarshalZip(ctx.marshaller(), binary, classLoader)
-                        : U.unmarshal(ctx, binary, classLoader);
+                        ? U.unmarshalZip(ctx.marshaller(), binary, clsLoader)
+                        : U.unmarshal(ctx, binary, clsLoader);
                 }
             }
         );
@@ -938,13 +938,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             if (currMap == null)
                 partitions().put(grpId, updMap);
             else {
-                ClusterNode currentMapSentBy = discovery.node(currMap.nodeId());
+                ClusterNode curMapSentBy = discovery.node(currMap.nodeId());
                 ClusterNode newMapSentBy = discovery.node(updMap.nodeId());
 
                 if (newMapSentBy == null)
                     continue;
 
-                if (currentMapSentBy == null || newMapSentBy.order() > currentMapSentBy.order() || updMap.compareTo(currMap) >= 0)
+                if (curMapSentBy == null || newMapSentBy.order() > curMapSentBy.order() || updMap.compareTo(currMap) >= 0)
                     partitions().put(grpId, updMap);
             }
         }

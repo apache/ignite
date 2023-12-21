@@ -17,7 +17,9 @@
 
 package org.apache.ignite.dump;
 
+import java.util.Collection;
 import java.util.Iterator;
+import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
 import org.apache.ignite.lang.IgniteExperimental;
 
@@ -26,7 +28,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  *
  * @see Dump#iterator(String, int, int)
  * @see DumpConsumer#onPartition(int, int, Iterator)
- * @see org.apache.ignite.IgniteSnapshot#createDump(String)
+ * @see org.apache.ignite.IgniteSnapshot#createDump(String, Collection)
  */
 @IgniteExperimental
 public interface DumpEntry {
@@ -35,6 +37,11 @@ public interface DumpEntry {
 
     /** @return Expiration time. */
     public long expireTime();
+
+    /**
+     * @return Version of the entry.
+     */
+    public CacheEntryVersion version();
 
     /** @return Key. */
     public Object key();

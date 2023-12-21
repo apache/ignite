@@ -102,8 +102,8 @@ public class IgnitePdsCheckpointMapSnapshotTest extends GridCommonAbstractTest {
             WALPointer start,
             @Nullable IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordDeserializeFilter
         ) throws IgniteCheckedException, StorageException {
-            Exception exception = new Exception();
-            StackTraceElement[] trace = exception.getStackTrace();
+            Exception ex = new Exception();
+            StackTraceElement[] trace = ex.getStackTrace();
 
             // Here we only want to record replays from GroupStateLazyStore
             // because they're performed if the snapshot doesn't include the data for a checkpoint
@@ -231,15 +231,15 @@ public class IgnitePdsCheckpointMapSnapshotTest extends GridCommonAbstractTest {
             assertEquals(i, (int)cache.get(i));
 
         // Get count of WAL replays that are invoked from CheckpointEntry
-        int replayCount = wal.replayCount.get();
+        int replayCnt = wal.replayCount.get();
 
         stopGrid(1, true);
         stopGrid(2, true);
 
         // 1 is the count of checkpoint on start of the node (see checkpoint with reason "node started")
         if (removeSnapshot)
-            assertEquals(cnt + 1, replayCount);
+            assertEquals(cnt + 1, replayCnt);
         else
-            assertEquals(0, replayCount);
+            assertEquals(0, replayCnt);
     }
 }

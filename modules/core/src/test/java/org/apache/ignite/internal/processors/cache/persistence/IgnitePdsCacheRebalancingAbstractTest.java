@@ -691,7 +691,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      */
     @Test
     public void testRebalancingWithMixedDataRegionConfigurations() throws Exception {
-        int entriesCount = 10_000;
+        int entriesCnt = 10_000;
 
         Ignite ignite0 = startGrids(2);
 
@@ -700,7 +700,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         IgniteCache<Integer, TestValue> cachePds = ignite0.cache(INDEXED_CACHE);
         IgniteCache<Integer, TestValue> cacheInMem = ignite0.cache(INDEXED_CACHE_IN_MEMORY);
 
-        for (int i = 0; i < entriesCount / 2; i++) {
+        for (int i = 0; i < entriesCnt / 2; i++) {
             TestValue value = new TestValue(i, i * 2, i * 3);
 
             cachePds.put(i, value);
@@ -711,7 +711,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         stopGrid(1);
 
-        for (int i = entriesCount / 2; i < entriesCount; i++) {
+        for (int i = entriesCnt / 2; i < entriesCnt; i++) {
             TestValue value = new TestValue(i, i * 2, i * 3);
 
             cachePds.put(i, value);
@@ -727,10 +727,10 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         CachePeekMode[] peekAll = new CachePeekMode[] {CachePeekMode.ALL};
 
-        assertEquals(entriesCount, cachePds1.localSize(peekAll));
-        assertEquals(entriesCount, cacheInMem1.localSize(peekAll));
+        assertEquals(entriesCnt, cachePds1.localSize(peekAll));
+        assertEquals(entriesCnt, cacheInMem1.localSize(peekAll));
 
-        for (int i = 0; i < entriesCount; i++) {
+        for (int i = 0; i < entriesCnt; i++) {
             TestValue value = new TestValue(i, i * 2, i * 3);
 
             assertEquals(value, cachePds1.localPeek(i, peekAll));

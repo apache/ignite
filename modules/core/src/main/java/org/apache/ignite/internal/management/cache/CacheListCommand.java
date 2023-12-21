@@ -192,7 +192,7 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewC
     private static Map<String, Object> mapToPairs(CacheConfiguration cfg) {
         Map<String, Object> params = new LinkedHashMap<>();
 
-        CacheAffinityConfiguration affinityCfg = cfg.getAffinityConfiguration();
+        CacheAffinityConfiguration affCfg = cfg.getAffinityConfiguration();
         CacheNearConfiguration nearCfg = cfg.getNearConfiguration();
         CacheRebalanceConfiguration rebalanceCfg = cfg.getRebalanceConfiguration();
         CacheEvictionConfiguration evictCfg = cfg.getEvictionConfiguration();
@@ -225,11 +225,11 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewC
         params.put("Write Synchronization Mode", cfg.getWriteSynchronizationMode());
         params.put("Invalidate", cfg.isInvalidate());
 
-        params.put("Affinity Function", affinityCfg.getFunction());
-        params.put("Affinity Backups", affinityCfg.getPartitionedBackups());
-        params.put("Affinity Partitions", affinityCfg.getPartitions());
-        params.put("Affinity Exclude Neighbors", affinityCfg.isExcludeNeighbors());
-        params.put("Affinity Mapper", affinityCfg.getMapper());
+        params.put("Affinity Function", affCfg.getFunction());
+        params.put("Affinity Backups", affCfg.getPartitionedBackups());
+        params.put("Affinity Partitions", affCfg.getPartitions());
+        params.put("Affinity Exclude Neighbors", affCfg.isExcludeNeighbors());
+        params.put("Affinity Mapper", affCfg.getMapper());
 
         params.put("Rebalance Mode", rebalanceCfg.getMode());
         params.put("Rebalance Batch Size", rebalanceCfg.getBatchSize());

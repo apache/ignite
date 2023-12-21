@@ -605,7 +605,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
 
         Boolean useTls = platformCacheUpdateUseThreadLocal.get();
         if (useTls != null && useTls) {
-            long cacheIdAndPartition = ((long)part << 32) | cacheId;
+            long cacheIdAndPartition = ((long)part << 32) | (0xFFFFFFFFL & cacheId);
 
             gateway().platformCacheUpdateFromThreadLocal(
                     cacheIdAndPartition, ver.topologyVersion(), ver.minorTopologyVersion());

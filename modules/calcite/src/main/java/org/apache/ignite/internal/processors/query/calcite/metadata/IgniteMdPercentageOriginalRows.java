@@ -67,8 +67,8 @@ public class IgniteMdPercentageOriginalRows implements MetadataHandler<BuiltInMe
         // case where a huge table has been completely filtered away.
 
         for (RelNode input : rel.getInputs()) {
-            Double rowCount = mq.getRowCount(input);
-            if (rowCount == null) {
+            Double rowCnt = mq.getRowCount(input);
+            if (rowCnt == null) {
                 continue;
             }
             Double percentage = mq.getPercentageOriginalRows(input);
@@ -76,8 +76,8 @@ public class IgniteMdPercentageOriginalRows implements MetadataHandler<BuiltInMe
                 continue;
             }
             if (percentage != 0.0) {
-                denominator += rowCount / percentage;
-                numerator += rowCount;
+                denominator += rowCnt / percentage;
+                numerator += rowCnt;
             }
         }
 

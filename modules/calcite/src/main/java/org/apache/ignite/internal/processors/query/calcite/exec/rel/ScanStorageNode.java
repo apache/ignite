@@ -64,9 +64,9 @@ public class ScanStorageNode<Row> extends ScanNode<Row> {
 
     /** {@inheritDoc} */
     @Override protected int processNextBatch() throws Exception {
-        try {
-            context().ioTracker().startTracking();
+        boolean trackingStarted = context().ioTracker().startTracking();
 
+        try {
             int processed = super.processNextBatch();
 
             if (processedRowsCntr != null)
@@ -75,7 +75,8 @@ public class ScanStorageNode<Row> extends ScanNode<Row> {
             return processed;
         }
         finally {
-            context().ioTracker().stopTracking();
+            if (trackingStarted)
+                context().ioTracker().stopTracking();
         }
     }
 

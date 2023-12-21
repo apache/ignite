@@ -253,8 +253,8 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
     /** {@inheritDoc} */
     @Override public Iterable<Row> values(List<RexLiteral> values, RelDataType rowType) {
-        RowHandler<Row> handler = ctx.rowHandler();
-        RowFactory<Row> factory = handler.factory(typeFactory, rowType);
+        RowHandler<Row> hnd = ctx.rowHandler();
+        RowFactory<Row> factory = hnd.factory(typeFactory, rowType);
 
         int columns = rowType.getFieldCount();
         assert values.size() % columns == 0;
@@ -273,7 +273,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
             RexLiteral literal = values.get(i);
 
-            handler.set(field, currRow, literal.getValueAs(types.get(field)));
+            hnd.set(field, currRow, literal.getValueAs(types.get(field)));
         }
 
         return rows;
