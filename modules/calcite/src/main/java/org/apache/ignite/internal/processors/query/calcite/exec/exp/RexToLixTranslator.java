@@ -1367,8 +1367,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         Statement st = Expressions.statement(Expressions.assign(methodCall, callExpr));
         // Catch Block, wrap checked exception in unchecked exception
         ParameterExpression e = Expressions.parameter(0, Exception.class, "e");
-        Expression uncheckedException = Expressions.new_(RuntimeException.class, e);
-        CatchBlock cb = Expressions.catch_(e, Expressions.throw_(uncheckedException));
+        Expression uncheckedEx = Expressions.new_(RuntimeException.class, e);
+        CatchBlock cb = Expressions.catch_(e, Expressions.throw_(uncheckedEx));
         list.add(Expressions.tryCatch(st, cb));
         return methodCall;
     }

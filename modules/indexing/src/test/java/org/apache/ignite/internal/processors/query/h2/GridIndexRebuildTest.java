@@ -324,10 +324,10 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         VisorTaskArgument<CacheValidateIndexesCommandArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
 
-        ComputeTaskInternalFuture<ValidateIndexesTaskResult> execute = grid1.context().task().
+        ComputeTaskInternalFuture<ValidateIndexesTaskResult> exec = grid1.context().task().
             execute(new ValidateIndexesTask(), visorTaskArg);
 
-        ValidateIndexesTaskResult res = execute.get();
+        ValidateIndexesTaskResult res = exec.get();
 
         Map<?, ValidateIndexesJobResult> results = res.results();
 

@@ -2051,9 +2051,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         GridFutureAdapter<Void> restartFut = this.restartFut.get();
 
         if (X.hasCause(e, IgniteCacheRestartingException.class)) {
-            IgniteCacheRestartingException restartingException = X.cause(e, IgniteCacheRestartingException.class);
+            IgniteCacheRestartingException restartingEx = X.cause(e, IgniteCacheRestartingException.class);
 
-            if (restartingException.restartFuture() == null) {
+            if (restartingEx.restartFuture() == null) {
                 if (restartFut == null)
                     restartFut = suspend();
 
@@ -2062,7 +2062,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(restartFut, exec()), cacheName);
             }
             else
-                throw restartingException;
+                throw restartingEx;
         }
 
         if (restartFut != null) {

@@ -27,6 +27,7 @@ import org.apache.ignite.internal.management.metric.MetricCommand;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
@@ -37,6 +38,7 @@ import static org.apache.ignite.internal.management.SystemViewCommand.COLUMN_SEP
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.IGNITE_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.histogramBucketNames;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.util.SystemViewCommandTest.NODE_ID;
@@ -256,12 +258,20 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         assertEquals("1", metric(ignite0, metricName(mregName, "histogram_0_50")));
         assertEquals("2", metric(ignite0, metricName(mregName, "histogram_50_500")));
         assertEquals("3", metric(ignite0, metricName(mregName, "histogram_500_inf")));
-        assertEquals("[1, 2, 3]", metric(ignite0, metricName(mregName, "histogram")));
 
         assertEquals("1", metric(ignite0, metricName(mregName, "histogram_with_underscore_0_50")));
         assertEquals("2", metric(ignite0, metricName(mregName, "histogram_with_underscore_50_500")));
         assertEquals("3", metric(ignite0, metricName(mregName, "histogram_with_underscore_500_inf")));
-        assertEquals("[1, 2, 3]", metric(ignite0, metricName(mregName, "histogram_with_underscore")));
+
+        Map<String, String> expHistOut = F.asMap(histogram.name(), "[1, 2, 3]");
+
+        String[] names = histogramBucketNames(histogram);
+
+        for (int i = 0; i < names.length; i++)
+            expHistOut.put(names[i], String.valueOf(histogram.value()[i]));
+
+        assertEqualsMaps(expHistOut, metrics(ignite0, histogram.name()));
+        assertTrue(metrics(ignite0, mregName).entrySet().containsAll(expHistOut.entrySet()));
     }
 
     /** */
@@ -448,7 +458,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
      */
     private String metric(IgniteEx node, String name) {
         Map<String, String> metrics = metrics(node, name);
-        
+
         assertEquals(1, metrics.size());
         
         return metrics.get(name);
