@@ -61,14 +61,11 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [SetUp]
         public override void TestSetUp()
         {
-            EnablePartitionAwareness = true;
-            
-            // By default we deploy service on the second and third node. 
+            // By default we deploy service on the second and third node.
             _topConsistentIds = new List<object> { GetConsistentId(1), GetConsistentId(2) };
-
             RedeployServices();
-            
-            Client = GetClient();
+
+            StartClient(enablePartitionAwareness: true);
         }
         
         /// <summary>
@@ -92,12 +89,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         [TestCase(PlatformSvcName)]
         public void TestServiceAwarenessIsDisabled(string serviceName)
         {
-            Client.Dispose();
-
-            EnablePartitionAwareness = false;
-
-            Client = GetClient();
-
+            StartClient(enablePartitionAwareness: false);
             DoTestServiceAwareness(serviceName, null);
         }
 
@@ -129,15 +121,14 @@ namespace Apache.Ignite.Core.Tests.Client.Services
 
             // Additional node is not started. Service topology must be the same.
             DoTestServiceAwareness(serviceName, FilterGridsNodes(prevServiceNodes));
-            
-            StartIgnite(3);
-            
-            WaitForClientConnectionsNumber(4);
 
-            // Additional node is started. Service topology must include the new node.
-            DoTestServiceAwareness(serviceName, FilterGridsNodes());
+            using (Ignition.Start(GetIgniteConfiguration()))
+            {
+                WaitForClientConnectionsNumber(4);
 
-            Ignition.Stop(GetIgnite(3).Name, false);
+                // Additional node is started. Service topology must include the new node.
+                DoTestServiceAwareness(serviceName, FilterGridsNodes());
+            }
 
             WaitForClientConnectionsNumber(3);
 
@@ -217,7 +208,10 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /// <param name="srcName">Name of the test service.</param>
         /// <param name="expectedTop">Expected nodes to call the service on. If empty, service topology is not expected at all.</param>
         /// <param name="clusterGroup">If not null, filters nodes to call service on.</param>
-        private void DoTestServiceAwareness(string srcName, IEnumerable<IIgnite> expectedTop, ICollection<IIgnite> clusterGroup = null)
+        private void DoTestServiceAwareness(
+            string srcName,
+            IEnumerable<IIgnite> expectedTop,
+            ICollection<IIgnite> clusterGroup = null)
         {
             var log = (ListLogger)Client.GetConfiguration().Logger;
             
@@ -240,11 +234,11 @@ namespace Apache.Ignite.Core.Tests.Client.Services
                     expectedTop.Select(g => g.GetCluster().GetLocalNode().Id.ToString()).Intersect(top).Count());
                 
                 // Check server logs. On the target nodes we must see service invocation. On the others not.
-                foreach (var g in Ignition.GetAll())
+                foreach (var ignite in Ignition.GetAll())
                 {
-                    var requests = GetServerRequestNames(GetLoggers(g).First(), ServiceCallRequestPrefix);
-                    
-                    if(expectedTop.Contains(g))
+                    var requests = GetServerRequestNames((ListLogger)ignite.Logger, ServiceCallRequestPrefix);
+
+                    if(expectedTop.Contains(ignite))
                         Assert.IsTrue(requests.Any());
                     else
                         Assert.IsEmpty(requests);
@@ -256,11 +250,11 @@ namespace Apache.Ignite.Core.Tests.Client.Services
                 Assert.AreEqual(0, log.Entries.Count(e => e.Message.Contains(clientLogStr)));
                 
                 // Check server logs. Without service awareness we must see service invocation on each node.
-                foreach (var g in Ignition.GetAll())
+                foreach (var ignite in Ignition.GetAll())
                 {
-                    var requests = GetServerRequestNames(GetLoggers(g).First(), "service.ClientService");
-                    
-                    if (g.Equals(GetIgnite()))
+                    var requests = GetServerRequestNames((ListLogger)ignite.Logger, "service.ClientService");
+
+                    if (ignite.Equals(GetIgnite()))
                         Assert.IsTrue(requests.Any());
                     else
                         Assert.IsFalse(requests.Any());
@@ -396,14 +390,10 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             }, 20_000);
         }
         
-        /// <summary>
-        /// Provides node's consistent id.
-        /// </summary>
-        private static object GetConsistentId(IIgnite ignite)
-        {
-            return ignite.GetCluster().GetLocalNode().ConsistentId;
-        }
+        private static object GetConsistentId(IIgnite ignite) => ignite.GetCluster().GetLocalNode().ConsistentId;
         
+        private static object GetConsistentId(int idx) => GetConsistentId(GetIgnite(idx));
+
         /// <summary>
         /// Filters grids by consistent ids. By default uses the service topology ids. 
         /// </summary>
@@ -412,6 +402,15 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             consistentIds ??= _topConsistentIds;
             
             return Ignition.GetAll().Where(g => consistentIds.Contains(GetConsistentId(g)));
+        }
+
+        private void StartClient(bool enablePartitionAwareness)
+        {
+            Client?.Dispose();
+            Client = Ignition.StartClient(new IgniteClientConfiguration(GetClientConfiguration())
+            {
+                EnablePartitionAwareness = enablePartitionAwareness
+            });
         }
 
         /// <summary>
