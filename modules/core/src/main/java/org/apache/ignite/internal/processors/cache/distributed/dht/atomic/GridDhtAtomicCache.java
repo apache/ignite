@@ -2523,6 +2523,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 GridCacheVersion newConflictVer = req.conflictVersion(i);
                 long newConflictTtl = req.conflictTtl(i);
                 long newConflictExpireTime = req.conflictExpireTime(i);
+                CacheObject prevStateMeta = req.previousStateMetadata(i);
 
                 assert !(newConflictVer instanceof GridCacheVersionEx) : newConflictVer;
 
@@ -2556,6 +2557,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     newConflictTtl,
                     newConflictExpireTime,
                     newConflictVer,
+                    prevStateMeta,
                     /*conflictResolve*/true,
                     intercept,
                     taskName,
@@ -2840,6 +2842,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         replicate ? DR_PRIMARY : DR_NONE,
                         CU.TTL_NOT_CHANGED,
                         CU.EXPIRE_TIME_CALCULATE,
+                        null,
                         null,
                         /*conflict resolve*/false,
                         /*intercept*/false,
@@ -3310,6 +3313,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 ttl,
                                 expireTime,
                                 req.conflictVersion(i),
+                                null,
                                 false,
                                 intercept,
                                 taskName,

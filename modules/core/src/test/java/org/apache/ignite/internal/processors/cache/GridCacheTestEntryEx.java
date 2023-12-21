@@ -531,6 +531,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         long conflictTtl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer,
+        CacheObject prevStateMeta,
         boolean conflictResolve,
         boolean intercept,
         String taskName,

@@ -335,6 +335,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             0,
             0,
             null,
+            null,
             false,
             false,
             null,
@@ -803,6 +804,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                     CacheObjectValueContext ctx,
                     GridCacheVersionedEntryEx<K, V> oldEntry,
                     GridCacheVersionedEntryEx<K, V> newEntry,
+                    Object prevStateMeta,
                     boolean atomicVerComparator
                 ) {
                     GridCacheVersionConflictContext res = new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);

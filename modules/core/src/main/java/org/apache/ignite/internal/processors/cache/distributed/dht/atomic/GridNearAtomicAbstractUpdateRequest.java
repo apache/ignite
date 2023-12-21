@@ -442,7 +442,8 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         @Nullable Object val,
         long conflictTtl,
         long conflictExpireTime,
-        @Nullable GridCacheVersion conflictVer);
+        @Nullable GridCacheVersion conflictVer,
+        @Nullable Object conflictMeta);
 
     /**
      * @return Keys for this update request.
@@ -471,6 +472,12 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @return Write value - either value, or transform closure.
      */
     public abstract CacheObject writeValue(int idx);
+
+    /**
+     * @param idx Index to get.
+     * @return Previous state metadata.
+     */
+    public abstract CacheObject previousStateMetadata(int idx);
 
     /**
      * @return Conflict versions.

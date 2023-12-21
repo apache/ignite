@@ -79,7 +79,8 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
         GridCacheVersion writeVer,
         long expireTime,
         long updCntr,
-        boolean primary
+        boolean primary,
+        CacheObject prevStateMetadata
     ) throws IgniteCheckedException {
         // No-op for detached entries, index is updated on primary or backup nodes.
     }
@@ -90,7 +91,8 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
         CacheObject val,
         GridCacheVersion writeVer,
         long expireTime,
-        long updCntr
+        long updCntr,
+        CacheObject prevStateMetadata
     ) {
         return null;
     }

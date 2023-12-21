@@ -155,6 +155,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** Conflict version. */
     private GridCacheVersion conflictVer;
 
+    /** Conflict Metadata. */
+    private CacheObject conflictMeta;
+
     /** Explicit lock version if there is one. */
     @GridToStringInclude
     private GridCacheVersion explicitVer;
@@ -303,6 +306,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         GridCacheEntryEx entry,
         CacheEntryPredicate[] filters,
         GridCacheVersion conflictVer,
+        CacheObject conflictMeta,
         boolean skipStore,
         boolean keepBinary,
         boolean addReader
@@ -319,6 +323,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         this.ttl = ttl;
         this.filters = filters;
         this.conflictVer = conflictVer;
+        this.conflictMeta = conflictMeta;
 
         skipStore(skipStore);
         keepBinary(keepBinary);
@@ -868,6 +873,13 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
+     * @return Conflict metadata.
+     */
+    public CacheObject conflictMetadata() {
+        return conflictMeta;
+    }
+
+    /**
      * @param conflictVer Conflict version.
      */
     public void conflictVersion(@Nullable GridCacheVersion conflictVer) {
@@ -949,6 +961,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         if (oldVal != null)
             oldVal.marshal(context());
+
+        if (conflictMeta != null)
+            conflictMeta.prepareMarshal(context().cacheObjectContext());
     }
 
     /**
@@ -1181,6 +1196,11 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
                 writer.incrementState();
 
+            case 13:
+                if (!writer.writeMessage("conflictMeta", conflictMeta))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -1298,6 +1318,13 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
                 reader.incrementState();
 
+            case 13:
+                conflictMeta = reader.readMessage("conflictMeta");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(IgniteTxEntry.class);

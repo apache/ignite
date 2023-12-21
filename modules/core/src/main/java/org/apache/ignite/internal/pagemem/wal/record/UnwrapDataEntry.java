@@ -63,7 +63,7 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
         final CacheObjectValueContext cacheObjValCtx,
         final boolean keepBinary,
         final byte flags) {
-        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, flags);
+        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, null, flags);
         this.cacheObjValCtx = cacheObjValCtx;
         this.keepBinary = keepBinary;
     }

@@ -1482,7 +1482,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             updateCntr0 = nextPartitionCounter(tx, updateCntr);
 
             if (tx != null && cctx.group().logDataRecords())
-                logPtr = logTxUpdate(tx, val, addConflictVersion(tx.writeVersion(), newVer), expireTime, updateCntr0);
+                logPtr = logTxUpdate(tx, val, addConflictVersion(tx.writeVersion(), newVer), expireTime, updateCntr0, previousStateMetadata());
 
             update(val, expireTime, ttl, newVer, true);
 
@@ -1712,7 +1712,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             updateCntr0 = nextPartitionCounter(tx, updateCntr);
 
             if (tx != null && cctx.group().logDataRecords())
-                logPtr = logTxUpdate(tx, null, addConflictVersion(tx.writeVersion(), newVer), 0, updateCntr0);
+                logPtr = logTxUpdate(tx, null, addConflictVersion(tx.writeVersion(), newVer), 0, updateCntr0, previousStateMetadata());
 
             drReplicate(drType, null, newVer, topVer);
 
@@ -1837,6 +1837,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         final long explicitTtl,
         final long explicitExpireTime,
         @Nullable final GridCacheVersion conflictVer,
+        @Nullable final CacheObject prevStateMeta,
         final boolean conflictResolve,
         final boolean intercept,
         final String taskName,
@@ -1886,6 +1887,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 explicitTtl,
                 explicitExpireTime,
                 conflictVer,
+                prevStateMeta,
                 conflictResolve,
                 intercept,
                 updateCntr,
@@ -3010,6 +3012,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         expireTime,
                         partition(),
                         updateCntr,
+                        previousStateMetadata(),
                         DataEntry.flags(primary, preload, fromStore)
                     )));
                 }
@@ -3863,6 +3866,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param expireTime Expire time.
      * @param updCntr Update counter.
      * @param primary {@code True} if node is primary for entry in the moment of logging.
+     * @param prevStateMetadata Previous state metadata.
      */
     protected void logUpdate(
         GridCacheOperation op,
@@ -3870,7 +3874,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         GridCacheVersion writeVer,
         long expireTime,
         long updCntr,
-        boolean primary
+        boolean primary,
+        CacheObject prevStateMetadata
     ) throws IgniteCheckedException {
         // We log individual updates only in ATOMIC cache.
         assert cctx.atomic();
@@ -3887,6 +3892,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     expireTime,
                     partition(),
                     updCntr,
+                    prevStateMetadata,
                     DataEntry.flags(primary))));
         }
         catch (StorageException e) {
@@ -3901,6 +3907,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param writeVer New entry version.
      * @param expireTime Expire time (or 0 if not applicable).
      * @param updCntr Update counter.
+     * @param prevStateMetadata Previous state metadata.
      * @throws IgniteCheckedException In case of log failure.
      */
     protected WALPointer logTxUpdate(
@@ -3908,7 +3915,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         CacheObject val,
         GridCacheVersion writeVer,
         long expireTime,
-        long updCntr
+        long updCntr,
+        CacheObject prevStateMetadata
     ) throws IgniteCheckedException {
         assert cctx.transactional();
 
@@ -3929,6 +3937,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 expireTime,
                 key.partition(),
                 updCntr,
+                prevStateMetadata,
                 DataEntry.flags(CU.txOnPrimary(tx)))));
         }
         else
@@ -4617,6 +4626,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Override public void touch() {
         context().evicts().touch(this);
+    }
+
+    /** */
+    private CacheObject previousStateMetadata() {
+        return cctx.toCacheObject(cctx.conflictResolver().previousStateMetadata(cctx.cacheObjectContext(), key, val, ver));
     }
 
     /** {@inheritDoc} */
@@ -5490,6 +5504,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private final boolean conflictResolve;
 
         /** */
+        private final CacheObject prevStateMeta;
+
+        /** */
         private final boolean intercept;
 
         /** */
@@ -5535,6 +5552,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             long explicitTtl,
             long explicitExpireTime,
             @Nullable GridCacheVersion conflictVer,
+            @Nullable CacheObject prevStateMeta,
             boolean conflictResolve,
             boolean intercept,
             @Nullable Long updateCntr,
@@ -5558,6 +5576,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             this.explicitTtl = explicitTtl;
             this.explicitExpireTime = explicitExpireTime;
             this.conflictVer = conflictVer;
+            this.prevStateMeta = prevStateMeta;
             this.conflictResolve = conflictResolve;
             this.intercept = intercept;
             this.updateCntr = updateCntr;
@@ -5659,7 +5678,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             GridCacheVersionConflictContext<?, ?> conflictCtx = null;
 
             if (conflictResolve) {
-                conflictCtx = resolveConflict(newVal, invokeRes);
+                conflictCtx = resolveConflict(newVal, prevStateMeta, invokeRes);
 
                 if (updateRes != null) {
                     assert conflictCtx != null && conflictCtx.isUseOld() : conflictCtx;
@@ -6015,7 +6034,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             long updateCntr0 = entry.nextPartitionCounter(topVer, primary, false, updateCntr);
 
-            entry.logUpdate(op, updated, newVer, newExpireTime, updateCntr0, primary);
+            entry.logUpdate(op, updated, newVer, newExpireTime, updateCntr0, primary, previousStateMetadata(cctx));
 
             if (!entry.isNear()) {
                 newRow = entry.localPartition().dataStore().createRow(
@@ -6114,7 +6133,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             long updateCntr0 = entry.nextPartitionCounter(topVer, primary, false, updateCntr);
 
-            entry.logUpdate(op, null, newVer, 0, updateCntr0, primary);
+            entry.logUpdate(op, null, newVer, 0, updateCntr0, primary, previousStateMetadata(cctx));
 
             if (oldVal != null) {
                 assert !entry.deletedUnlocked();
@@ -6158,6 +6177,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 transformed);
         }
 
+        /** */
+        private CacheObject previousStateMetadata(GridCacheContext cctx) {
+            return cctx.toCacheObject(cctx.conflictResolver().previousStateMetadata(
+                cctx.cacheObjectContext(), entry.key, entry.val, entry.ver));
+        }
+
         /**
          * @param newVal New entry value.
          * @param invokeRes Entry processor result (for invoke operation).
@@ -6166,6 +6191,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
          */
         private GridCacheVersionConflictContext<?, ?> resolveConflict(
             CacheObject newVal,
+            CacheObject prevStateMeta,
             @Nullable IgniteBiTuple<Object, Exception> invokeRes)
             throws IgniteCheckedException {
             GridCacheContext cctx = entry.context();
@@ -6198,7 +6224,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     keepBinary);
 
                 // Resolve conflict.
-                GridCacheVersionConflictContext<?, ?> conflictCtx = cctx.conflictResolve(oldEntry, newEntry, verCheck);
+                GridCacheVersionConflictContext<?, ?> conflictCtx = cctx.conflictResolve(oldEntry, newEntry, prevStateMeta, verCheck);
 
                 assert conflictCtx != null;
 

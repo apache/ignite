@@ -128,6 +128,7 @@ import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.pagemem.wal.record.DataEntry.PREV_STATE_FLAG;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
@@ -2104,6 +2105,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         if (!(entry instanceof MvccDataEntry))
             buf.put(entry.flags());
+
+        CacheObject prevStare = entry.previousStateMetadata();
+
+        if (prevStare != null)
+            prevStare.putValue(buf);
     }
 
     /**
@@ -2208,6 +2214,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         long expireTime = in.readLong();
         byte flags = type == DATA_RECORD_V2 || type == CDC_DATA_RECORD ? in.readByte() : (byte)0;
 
+        byte[] prevStateBytes = null;
+        byte prevStateType = 0;
+
+        if ((flags & PREV_STATE_FLAG) == PREV_STATE_FLAG) {
+            int prevStateSize = in.readByte();
+            prevStateType = in.readByte();
+            prevStateBytes = new byte[prevStateSize];
+            in.readFully(prevStateBytes);
+        }
+
         GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
         if (cacheCtx != null) {
@@ -2219,35 +2235,39 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 key.partition(partId);
 
             CacheObject val = valBytes != null ? co.toCacheObject(coCtx, valType, valBytes) : null;
+            CacheObject prevState = prevStateBytes != null ? co.toCacheObject(coCtx, prevStateType, prevStateBytes) : null;
 
             return new DataEntry(
-                    cacheId,
-                    key,
-                    val,
-                    op,
-                    nearXidVer,
-                    writeVer,
-                    expireTime,
-                    partId,
-                    partCntr,
-                    flags
+                cacheId,
+                key,
+                val,
+                op,
+                nearXidVer,
+                writeVer,
+                expireTime,
+                partId,
+                partCntr,
+                prevState,
+                flags
             );
         }
         else
             return new LazyDataEntry(
-                    cctx,
-                    cacheId,
-                    keyType,
-                    keyBytes,
-                    valType,
-                    valBytes,
-                    op,
-                    nearXidVer,
-                    writeVer,
-                    expireTime,
-                    partId,
-                    partCntr,
-                    flags
+                cctx,
+                cacheId,
+                keyType,
+                keyBytes,
+                valType,
+                valBytes,
+                op,
+                nearXidVer,
+                writeVer,
+                expireTime,
+                partId,
+                partCntr,
+                prevStateType,
+                prevStateBytes,
+                flags
             );
     }
 
@@ -2445,7 +2465,17 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     public static class EncryptedDataEntry extends DataEntry {
         /** Constructor. */
         EncryptedDataEntry() {
-            super(0, null, null, READ, null, null, 0, 0, 0, EMPTY_FLAGS);
+            super(0,
+                null,
+                null,
+                READ,
+                null,
+                null,
+                0,
+                0,
+                0,
+                null,
+                EMPTY_FLAGS);
         }
     }
 }

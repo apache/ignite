@@ -47,6 +47,12 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
     /** Value value bytes. */
     private byte[] valBytes;
 
+    /** Previous state metadata bytes type code. See {@link CacheObject} for built-in value type codes */
+    private byte prevStateMetadataType;
+
+    /** Previous state metadata bytes. */
+    private byte[] prevStateMetadataBytes;
+
     /**
      * @param cctx Shared context.
      * @param cacheId Cache ID.
@@ -60,6 +66,8 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
+     * @param prevStateMetadataType Object type code for previous state metadata.
+     * @param prevStateMetadataBytes Previous state metadata bytes.
      * @param flags Flags.
      */
     public LazyDataEntry(
@@ -75,15 +83,19 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
         long expireTime,
         int partId,
         long partCnt,
+        byte prevStateMetadataType,
+        byte[] prevStateMetadataBytes,
         byte flags
     ) {
-        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt, flags);
+        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt, null, flags);
 
         this.cctx = cctx;
         this.keyType = keyType;
         this.keyBytes = keyBytes;
         this.valType = valType;
         this.valBytes = valBytes;
+        this.prevStateMetadataType = prevStateMetadataType;
+        this.prevStateMetadataBytes = prevStateMetadataBytes;
     }
 
     /** {@inheritDoc} */
@@ -124,6 +136,22 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
         }
 
         return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject previousStateMetadata() {
+        if (prevStateMetadata == null && prevStateMetadataBytes != null) {
+            GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+
+            if (cacheCtx == null)
+                throw new IgniteException("Failed to find cache context for the given cache ID: " + cacheId);
+
+            IgniteCacheObjectProcessor co = cctx.kernalContext().cacheObjects();
+
+            prevStateMetadata = co.toCacheObject(cacheCtx.cacheObjectContext(), prevStateMetadataType, prevStateMetadataBytes);
+        }
+
+        return prevStateMetadata;
     }
 
     /** {@inheritDoc} */

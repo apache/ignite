@@ -616,6 +616,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                             -1L,
                             -1L,
                             null,
+                            null,
                             skipStore,
                             keepBinary,
                             nearCache);

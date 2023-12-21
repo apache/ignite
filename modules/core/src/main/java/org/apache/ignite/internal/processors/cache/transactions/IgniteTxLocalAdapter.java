@@ -1381,6 +1381,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         long drTtl,
         long drExpireTime,
         @Nullable GridCacheVersion drVer,
+        @Nullable CacheObject drMeta,
         boolean skipStore,
         boolean keepBinary,
         boolean addReader
@@ -1452,6 +1453,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 entry,
                 filter,
                 drVer,
+                drMeta,
                 skipStore,
                 keepBinary,
                 addReader);

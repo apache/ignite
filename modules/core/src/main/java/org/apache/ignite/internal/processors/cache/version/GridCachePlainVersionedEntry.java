@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Plain versioned entry.
  */
-public class GridCachePlainVersionedEntry<K, V> implements GridCacheVersionedEntryEx<K, V> {
+public abstract class GridCachePlainVersionedEntry<K, V> implements GridCacheVersionedEntryEx<K, V> {
     /** Key. */
     @GridToStringInclude
     protected K key;

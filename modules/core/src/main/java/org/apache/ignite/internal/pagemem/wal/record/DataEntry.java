@@ -41,6 +41,9 @@ public class DataEntry {
     /** */
     public static final byte FROM_STORE_FLAG = 0b00000100;
 
+    /** */
+    public static final byte PREV_STATE_FLAG = 0b00001000;
+
     /** Cache ID. */
     @GridToStringInclude
     protected int cacheId;
@@ -74,6 +77,9 @@ public class DataEntry {
     @GridToStringInclude
     protected long partCnt;
 
+    /** Previous state metadata (based on old value and/or version). */
+    protected CacheObject prevStateMetadata;
+
     /**
      * Bit flags.
      * <ul>
@@ -100,6 +106,7 @@ public class DataEntry {
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
+     * @param prevStateMetadata Previous state metadata.
      * @param flags Entry flags.
      */
     public DataEntry(
@@ -112,6 +119,7 @@ public class DataEntry {
         long expireTime,
         int partId,
         long partCnt,
+        CacheObject prevStateMetadata,
         byte flags
     ) {
         this.cacheId = cacheId;
@@ -123,7 +131,11 @@ public class DataEntry {
         this.expireTime = expireTime;
         this.partId = partId;
         this.partCnt = partCnt;
+        this.prevStateMetadata = prevStateMetadata;
         this.flags = flags;
+
+        if (this.prevStateMetadata != null)
+            this.flags |= PREV_STATE_FLAG;
 
         // Only READ, CREATE, UPDATE and DELETE operations should be stored in WAL.
         assert op == GridCacheOperation.READ
@@ -229,6 +241,13 @@ public class DataEntry {
      */
     public long expireTime() {
         return expireTime;
+    }
+
+    /**
+     * Previous state metadata.
+     */
+    public CacheObject previousStateMetadata() {
+        return prevStateMetadata;
     }
 
     /**

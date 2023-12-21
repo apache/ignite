@@ -223,6 +223,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                 CacheObjectValueContext ctx,
                 GridCacheVersionedEntryEx<K1, V1> oldEntry,
                 GridCacheVersionedEntryEx<K1, V1> newEntry,
+                Object prevStateMeta,
                 boolean atomicVerComparator
             ) {
                 GridCacheVersionConflictContext<K1, V1> res =

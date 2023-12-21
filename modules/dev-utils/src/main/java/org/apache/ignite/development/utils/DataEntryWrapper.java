@@ -66,6 +66,7 @@ class DataEntryWrapper extends DataEntry {
             dataEntry.expireTime(),
             dataEntry.partitionId(),
             dataEntry.partitionCounter(),
+            dataEntry.previousStateMetadata(),
             dataEntry.flags()
         );
 
