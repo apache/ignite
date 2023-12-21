@@ -156,7 +156,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             RedeployServices(true);
 
             // Wait for the update interval.
-            Thread.Sleep(10_000);
+            Thread.Sleep(Impl.Client.Services.ServicesClient.SrvTopUpdatePeriod);
 
             DoTestServiceAwareness(serviceName, Ignition.GetAll());
         }

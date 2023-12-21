@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Client.Services
     using System.Collections;
     using System.Collections.Concurrent;
     using System.Diagnostics;
-    using System.IO;
     using System.Linq;
     using System.Reflection;
     using System.Threading;
@@ -42,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
     internal class ServicesClient : IServicesClient
     {
         /** Max service topology update period in millis. */
-        private const long SrvTopUpdatePeriod = 10 * TimeSpan.TicksPerSecond;
+        internal static readonly TimeSpan SrvTopUpdatePeriod = TimeSpan.FromSeconds(10);
         
         /** */
         [Flags]
@@ -248,7 +247,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             private int _updateInProgress;
 
             /** Time of the last update. */
-            private long _lastUpdateRequestTime;
+            private long _lastUpdateRequestTimeTicks;
 
             /** Cluster topology version of the last update. */
             private long _lastAffTop;
@@ -302,7 +301,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
 
                 _nodes = FilterTopology(top, groupNodes?.Select(n => n.Id));
                 
-                Interlocked.Exchange(ref _lastUpdateRequestTime, DateTime.Now.Ticks);
+                Interlocked.Exchange(ref _lastUpdateRequestTimeTicks, DateTime.Now.Ticks);
                 Interlocked.Exchange(ref _lastAffTop, topVer);
 
                 if (log.IsEnabled(LogLevel.Debug))
@@ -334,7 +333,8 @@ namespace Apache.Ignite.Core.Impl.Client.Services
 
                 var curAff = _svcClient._ignite.Socket.GetTopologyVersion();
                 var lastKnownAff = Interlocked.Read(ref _lastAffTop);
-                var sinceLastUpdate = DateTime.Now.Ticks - Interlocked.Read(ref _lastUpdateRequestTime);
+                var sinceLastUpdate = TimeSpan.FromTicks(
+                    DateTime.Now.Ticks - Interlocked.Read(ref _lastUpdateRequestTimeTicks));
 
                 if (curAff > lastKnownAff || sinceLastUpdate > SrvTopUpdatePeriod)
                     _ = UpdateTopologyAsync().ConfigureAwait(false);
