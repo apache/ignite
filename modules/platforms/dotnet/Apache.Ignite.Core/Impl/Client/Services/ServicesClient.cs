@@ -245,7 +245,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             private readonly ServicesClient _svcClient;
 
             /** Flag of topology update progress. */
-            private volatile int _updateInProgress;
+            private int _updateInProgress;
 
             /** Time of the last update. */
             private long _lastUpdateRequestTime;
@@ -299,24 +299,27 @@ namespace Apache.Ignite.Core.Impl.Client.Services
 
                         return _nodes;
                     }).ConfigureAwait(false);
-                
-                _nodes = FilterTopology(top, groupNodes?.Select(n => n.Id).ToList());
+
+                _nodes = FilterTopology(top, groupNodes?.Select(n => n.Id));
                 
                 Interlocked.Exchange(ref _lastUpdateRequestTime, DateTime.Now.Ticks);
                 Interlocked.Exchange(ref _lastAffTop, topVer);
 
-                log.Debug("Topology of service '" + _svcName + "' has been updated. The " +
-                          "service instance nodes: " + string.Join(", ", top.Select(gid=>gid.ToString())) +
-                          ". Effective topology with the cluster group is: " + 
-                          string.Join(", ", _nodes.Select(gid=>gid.ToString())) + '.');
+                if (log.IsEnabled(LogLevel.Debug))
+                {
+                    log.Debug("Topology of service '" + _svcName + "' has been updated. The " +
+                              "service instance nodes: " + string.Join(", ", top.Select(gid => gid.ToString())) +
+                              ". Effective topology with the cluster group is: " +
+                              string.Join(", ", _nodes.Select(gid => gid.ToString())) + '.');
+                }
 
-                _updateInProgress = 0;
+                Interlocked.Exchange(ref _updateInProgress, 0);
             }
 
             /// <summary>
             /// Filters service topology regarding to the cluster group.
             /// </summary>
-            private static IList<Guid> FilterTopology(IList<Guid> serviceTopology, IList<Guid> clusterGroup)
+            private static IList<Guid> FilterTopology(IList<Guid> serviceTopology, IEnumerable<Guid> clusterGroup)
             {
                 return clusterGroup == null ? serviceTopology : serviceTopology.Intersect(clusterGroup).ToList();
             }
@@ -326,7 +329,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             /// </summary>
             internal IList<Guid> GetAndUpdate()
             {
-                if (_updateInProgress != 0)
+                if (Interlocked.CompareExchange(ref _updateInProgress, 0, 0) != 0)
                     return _nodes;
 
                 var curAff = _svcClient._ignite.Socket.GetTopologyVersion();
@@ -334,7 +337,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
                 var sinceLastUpdate = DateTime.Now.Ticks - Interlocked.Read(ref _lastUpdateRequestTime);
 
                 if (curAff > lastKnownAff || sinceLastUpdate > SrvTopUpdatePeriod)
-                    UpdateTopologyAsync().ConfigureAwait(false);
+                    _ = UpdateTopologyAsync().ConfigureAwait(false);
 
                 return _nodes;
             }

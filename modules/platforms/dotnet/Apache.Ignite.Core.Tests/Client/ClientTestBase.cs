@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Tests.Client
         private readonly bool _enableSsl;
 
         /** Partition Awareness */
-        private readonly bool _enablePartitionAwareness;
+        protected bool EnablePartitionAwareness;
 
         /** Enable logging to a list logger for checks and assertions. */
         private readonly bool _enableServerListLogging;
@@ -64,6 +64,9 @@ namespace Apache.Ignite.Core.Tests.Client
 
         /** */
         protected readonly bool UseBinaryArray;
+        
+        /** */
+        private readonly bool _startClient;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientTestBase"/> class.
@@ -82,15 +85,17 @@ namespace Apache.Ignite.Core.Tests.Client
             bool enablePartitionAwareness = false,
             bool enableServerListLogging = false,
             LogLevel[] serverListLoggerLevels = null,
-            bool useBinaryArray = false)
+            bool useBinaryArray = false,
+            bool startClient = true)
         {
             _gridCount = gridCount;
             _enableSsl = enableSsl;
-            _enablePartitionAwareness = enablePartitionAwareness;
+            EnablePartitionAwareness = enablePartitionAwareness;
             _enableServerListLogging = enableServerListLogging;
             _serverListLoggerLevels =
                 serverListLoggerLevels ?? new[] { LogLevel.Trace, LogLevel.Debug, LogLevel.Warn, LogLevel.Error };
             UseBinaryArray = useBinaryArray;
+            _startClient = startClient;
         }
 
         /// <summary>
@@ -99,18 +104,13 @@ namespace Apache.Ignite.Core.Tests.Client
         [TestFixtureSetUp]
         public virtual void FixtureSetUp()
         {
-            var cfg = GetIgniteConfiguration();
-            Ignition.Start(cfg);
-
+            StartIgnite();
+            
             for (var i = 1; i < _gridCount; i++)
-            {
-                cfg = GetIgniteConfiguration();
-                cfg.IgniteInstanceName = i.ToString();
+                StartIgnite(i);
 
-                Ignition.Start(cfg);
-            }
-
-            Client = GetClient();
+            if(_startClient)
+                Client = GetClient();
         }
 
         /// <summary>
@@ -120,7 +120,9 @@ namespace Apache.Ignite.Core.Tests.Client
         public void FixtureTearDown()
         {
             Ignition.StopAll(true);
-            Client.Dispose();
+
+            if (_startClient)
+                Client.Dispose();
         }
 
         /// <summary>
@@ -142,7 +144,23 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Gets the client.
         /// </summary>
-        public IIgniteClient Client { get; set; }
+        protected IIgniteClient Client { get; set; }
+
+        /// <summary>
+        /// Starts Ignite.
+        /// </summary>
+        protected void StartIgnite(int? idx = null)
+        {
+            var cfg = GetIgniteConfiguration();
+
+            if (idx != null)
+            {
+                cfg.IgniteInstanceName = idx.ToString();
+                cfg.ConsistentId = GetConsistentId(idx.Value);
+            }
+
+            Ignition.Start(cfg);
+        }
 
         /// <summary>
         /// Gets Ignite.
@@ -210,7 +228,7 @@ namespace Apache.Ignite.Core.Tests.Client
                         SslProtocols = SslProtocols.Tls12
                     }
                     : null,
-                EnablePartitionAwareness = _enablePartitionAwareness
+                EnablePartitionAwareness = this.EnablePartitionAwareness
             };
         }
 
@@ -231,6 +249,14 @@ namespace Apache.Ignite.Core.Tests.Client
                 RedirectJavaConsoleOutput = false,
                 LifecycleHandlers = UseBinaryArray ? new[] { new SetUseBinaryArray() } : null
             };
+        }
+        
+        /// <summary>
+        /// Provides consistent id by node index.
+        /// </summary>
+        protected static object GetConsistentId(int gridIdx)
+        {
+            return gridIdx.ToString();
         }
 
         /// <summary>
@@ -327,9 +353,10 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Gets loggers from all server nodes.
         /// </summary>
-        protected static IEnumerable<ListLogger> GetLoggers()
+        protected static IEnumerable<ListLogger> GetLoggers(IIgnite grid = null)
         {
             return Ignition.GetAll()
+                .Where(g => grid == null || g.GetCluster().Ignite.Equals(grid.GetCluster().Ignite))
                 .OrderBy(i => i.Name)
                 .Select(i => i.Logger)
                 .OfType<ListLogger>();

@@ -675,7 +675,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Deploys the Java service on specified nodes.
         /// </summary>
-        public static void DeployJavaService(IIgnite ignite, ICollection<object> nodes = null)
+        public static void DeployJavaService(IIgnite ignite, IEnumerable<object> nodes = null)
         {
             ignite.GetCompute()
                 .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", nodes?.ToArray());
