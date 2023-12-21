@@ -89,7 +89,7 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
 
         AtomicInteger txLoaderNo = new AtomicInteger(0);
 
-        IgniteInternalFuture txLoadFuture = GridTestUtils.runMultiThreadedAsync(() -> {
+        IgniteInternalFuture txLoadFut = GridTestUtils.runMultiThreadedAsync(() -> {
             Ignite node = grid(txLoaderNo.getAndIncrement());
             IgniteCache<Object, Object> cache = node.cache(CACHE_NAME);
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -119,7 +119,7 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
 
         AtomicBoolean cacheRestartStop = new AtomicBoolean();
 
-        IgniteInternalFuture cacheRestartFuture = GridTestUtils.runAsync(() -> {
+        IgniteInternalFuture cacheRestartFut = GridTestUtils.runAsync(() -> {
             Ignite node = grid(0);
 
             final String tmpCacheName = "tmp";
@@ -156,8 +156,8 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
         cacheRestartStop.set(true);
         txLoadStop.set(true);
 
-        cacheRestartFuture.get();
-        txLoadFuture.get();
+        cacheRestartFut.get();
+        txLoadFut.get();
 
         Assert.assertFalse(hasRebalance.get());
     }

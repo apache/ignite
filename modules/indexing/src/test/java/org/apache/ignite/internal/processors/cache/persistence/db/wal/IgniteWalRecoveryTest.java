@@ -1355,7 +1355,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             }
         );
 
-        IgniteInternalFuture<Object> future = GridTestUtils.runAsync(
+        IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(
             () -> {
                 for (int i = 0; i < 10000; i++)
                     cache0.put(i, new IndexedObject(i));
@@ -1364,7 +1364,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             }
         );
 
-        future.get();
+        fut.get();
 
         insertFinished.countDown();
 

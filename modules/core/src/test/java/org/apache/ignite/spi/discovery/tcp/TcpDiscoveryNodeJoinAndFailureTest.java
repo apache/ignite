@@ -134,7 +134,7 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
 
         final AtomicInteger joinReqsCntr = new AtomicInteger(0);
 
-        final AtomicReference<IgniteInternalFuture> futureRef = new AtomicReference();
+        final AtomicReference<IgniteInternalFuture> futRef = new AtomicReference();
 
         final UUID node2Id = UUID.randomUUID();
 
@@ -179,7 +179,7 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
                             // No-op.
                         }
 
-                        futureRef.set(GridTestUtils.runAsync(() -> {
+                        futRef.set(GridTestUtils.runAsync(() -> {
                             try {
                                 startGrid(NODE_WITH_PORT_ID_3);
                             }
@@ -254,7 +254,7 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
 
         assertTrue("Expected exception was not thrown.", expectedExThrown);
 
-        IgniteInternalFuture startGridFut = futureRef.get();
+        IgniteInternalFuture startGridFut = futRef.get();
 
         if (startGridFut != null)
             startGridFut.get();

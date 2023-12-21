@@ -322,12 +322,12 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
             }
         };
 
-        IgniteFuture igniteFuture = semaphore.acquireAndExecute(callable, 1);
+        IgniteFuture igniteFut = semaphore.acquireAndExecute(callable, 1);
 
         Runnable runnable = new Runnable() {
             /** {@inheritDoc} */
             @Override public void run() {
-                IgniteFutureImpl impl = (IgniteFutureImpl<Integer>)igniteFuture;
+                IgniteFutureImpl impl = (IgniteFutureImpl<Integer>)igniteFut;
 
                 GridFutureAdapter fut = (GridFutureAdapter)(impl.internalFuture());
                 fut.onDone(true);
@@ -337,9 +337,9 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
         executorService.submit(runnable);
 
         Thread.sleep(1000);
-        igniteFuture.get(7000, MILLISECONDS);
+        igniteFut.get(7000, MILLISECONDS);
 
-        assertTrue(igniteFuture.isDone());
+        assertTrue(igniteFut.isDone());
 
         assertTrue(semaphore.availablePermits() == 1);
 
@@ -364,14 +364,14 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteFuture igniteFuture = semaphore.acquireAndExecute(callable, 1);
+                IgniteFuture igniteFut = semaphore.acquireAndExecute(callable, 1);
 
                 Runnable runnable = new Runnable() {
                     /** {@inheritDoc} */
                     @Override public void run() {
                         try {
                             Thread.sleep(1000);
-                            IgniteFutureImpl impl = (IgniteFutureImpl<Integer>)igniteFuture;
+                            IgniteFutureImpl impl = (IgniteFutureImpl<Integer>)igniteFut;
 
                             GridFutureAdapter fut = (GridFutureAdapter)(impl.internalFuture());
                             fut.onDone(true);
@@ -384,9 +384,9 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
 
                 executorService.submit(runnable);
 
-                ((IgniteFutureImpl)igniteFuture).internalFuture().get();
+                ((IgniteFutureImpl)igniteFut).internalFuture().get();
 
-                assertTrue(igniteFuture.isDone());
+                assertTrue(igniteFut.isDone());
 
                 return null;
             }

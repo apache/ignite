@@ -152,8 +152,8 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
 
             latch.await();
 
-            for (IgniteFuture future: cancelFutures)
-                future.cancel();
+            for (IgniteFuture fut: cancelFutures)
+                fut.cancel();
 
             slowFileIoEnabled.set(false);
 
