@@ -385,6 +385,7 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
                             0,
                             0,
                             null,
+                            null,
                             false,
                             false,
                             null,

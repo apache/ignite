@@ -612,6 +612,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             val,
             CU.TTL_NOT_CHANGED,
             CU.EXPIRE_TIME_CALCULATE,
+            null,
             null);
 
         return new PrimaryRequestState(req, nodes, true);

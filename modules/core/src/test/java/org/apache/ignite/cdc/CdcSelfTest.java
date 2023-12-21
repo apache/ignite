@@ -54,9 +54,16 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
+import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -66,7 +73,12 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.metric.MetricRegistry;
+import org.apache.ignite.plugin.AbstractCachePluginProvider;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.CachePluginContext;
+import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -114,6 +126,9 @@ public class CdcSelfTest extends AbstractCdcTest {
     private long cdcWalDirMaxSize = DFLT_CDC_WAL_DIRECTORY_MAX_SIZE;
 
     /** */
+    private volatile Supplier<CacheVersionConflictResolver> conflictResolutionMgrSupplier;
+
+    /** */
     @Parameterized.Parameters(name = "consistentId={0}, wal={1}, persistence={2}")
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
@@ -147,6 +162,23 @@ public class CdcSelfTest extends AbstractCdcTest {
                 .setAtomicityMode(TRANSACTIONAL)
                 .setBackups(1)
         );
+
+        cfg.setPluginProviders(new AbstractTestPluginProvider() {
+            @Override public String name() {
+                return "ConflictResolverProvider";
+            }
+
+            @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
+                return new AbstractCachePluginProvider() {
+                    @Override public @Nullable Object createComponent(Class cls) {
+                        if (cls != CacheConflictResolutionManager.class || conflictResolutionMgrSupplier == null)
+                            return null;
+
+                        return new TestCacheConflictResolutionManager<>();
+                    }
+                };
+            }
+        });
 
         return cfg;
     }
@@ -188,6 +220,46 @@ public class CdcSelfTest extends AbstractCdcTest {
 
     /** */
     @Test
+    public void testPreviousStateMetadataWritten() throws Exception {
+        conflictResolutionMgrSupplier = () -> new CacheVersionConflictResolver() {
+            @Override public <K1, V1> GridCacheVersionConflictContext<K1, V1> resolve(
+                CacheObjectValueContext ctx,
+                GridCacheVersionedEntryEx<K1, V1> oldEntry,
+                GridCacheVersionedEntryEx<K1, V1> newEntry,
+                Object prevStateMeta,
+                boolean atomicVerComparator
+            ) {
+                GridCacheVersionConflictContext<K1, V1> res = new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
+
+                res.useNew();
+
+                return res;
+            }
+
+            @Override public Object previousStateMetadata(GridCacheEntryEx entry) {
+                // Checking Previous state meta delivery to the log records as well (using key);
+                return entry.key();
+            }
+
+            @Override public String toString() {
+                return "TestCacheConflictResolutionManager";
+            }
+        };
+
+        try {
+            readAll(new UserCdcConsumer() {
+                @Override public void checkEvent(CdcEvent evt) {
+                    assertEquals(evt.unwrappedKey(), evt.unwrappedPreviousStateMetadata());
+                }
+            }, true);
+        }
+        finally {
+            conflictResolutionMgrSupplier = null;
+        }
+    }
+
+    /** */
+    @Test
     public void testReadExpireTime() throws Exception {
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
@@ -220,7 +292,7 @@ public class CdcSelfTest extends AbstractCdcTest {
             @Override public void checkEvent(CdcEvent evt) {
                 super.checkEvent(evt);
 
-                Integer key = (Integer)evt.key();
+                Integer key = (Integer)evt.unwrappedKey();
 
                 if (evt.value() == null || key % 2 != 0) {
                     assertEquals("Expire time must not be set [key=" + key + ']', CU.EXPIRE_TIME_ETERNAL, evt.expireTime());
@@ -356,6 +428,15 @@ public class CdcSelfTest extends AbstractCdcTest {
             AtomicBoolean firstEvt = new AtomicBoolean(true);
 
             CdcConsumer cnsmr = new CdcConsumer() {
+                @Override
+                public void start(MetricRegistry mreg) {
+                    // No-op.
+                }
+
+                @Override public void stop() {
+                    // No-op.
+                }
+
                 @Override public boolean onEvents(Iterator<CdcEvent> evts) {
                     if (!evts.hasNext())
                         return true;
@@ -363,7 +444,7 @@ public class CdcSelfTest extends AbstractCdcTest {
                     if (!firstEvt.get())
                         throw new RuntimeException("Expected fail.");
 
-                    data.add((Integer)evts.next().key());
+                    data.add((Integer)evts.next().unwrappedKey());
 
                     firstEvt.set(false);
 
@@ -388,14 +469,6 @@ public class CdcSelfTest extends AbstractCdcTest {
                 /** {@inheritDoc} */
                 @Override public void onCacheDestroy(Iterator<Integer> caches) {
                     caches.forEachRemaining(ce -> assertNotNull(ce));
-                }
-
-                @Override public void stop() {
-                    // No-op.
-                }
-
-                @Override public void start(MetricRegistry mreg) {
-                    // No-op.
                 }
             };
 
@@ -455,7 +528,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
                     CdcEvent evt = evts.next();
 
-                    assertEquals(expKey.get(), evt.key());
+                    assertEquals(expKey.get(), evt.unwrappedKey());
 
                     expKey.incrementAndGet();
 
@@ -748,7 +821,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
                     data.computeIfAbsent(
                         F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
-                        k -> new ArrayList<>()).add((Integer)evt.key()
+                        k -> new ArrayList<>()).add((Integer)evt.unwrappedKey()
                     );
 
                     if (consumeHalf.get())
@@ -900,5 +973,15 @@ public class CdcSelfTest extends AbstractCdcTest {
     private void removeData(IgniteCache<Integer, ?> cache, int from, int to) {
         for (int i = from; i < to; i++)
             cache.remove(i);
+    }
+
+    /** */
+    public class TestCacheConflictResolutionManager<K, V> extends GridCacheManagerAdapter<K, V>
+        implements CacheConflictResolutionManager<K, V> {
+
+        /** {@inheritDoc} */
+        @Override public CacheVersionConflictResolver conflictResolver() {
+            return conflictResolutionMgrSupplier.get();
+        }
     }
 }

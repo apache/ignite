@@ -602,7 +602,7 @@ public class CdcMain implements Runnable {
             boolean interrupted;
 
             do {
-                boolean commit = consumer.onRecords(iter, WalRecordsConsumer.CDC_EVENT_TRANSFORMER, null);
+                boolean commit = consumer.onRecords(iter, null);
 
                 if (commit)
                     saveStateAndRemoveProcessed(iter.state());

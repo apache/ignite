@@ -1555,6 +1555,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                     CacheObjectValueContext ctx,
                     GridCacheVersionedEntryEx<K, V> oldEntry,
                     GridCacheVersionedEntryEx<K, V> newEntry,
+                    Object prevStateMeta,
                     boolean atomicVerComparator
                 ) {
                     GridCacheVersionConflictContext<K, V> res =
