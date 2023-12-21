@@ -155,7 +155,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         {
             DoTestServiceAwareness(serviceName, FilterGridsNodes());
 
-            RedeployServices();
+            RedeployServices(true);
 
             // Wait for the update interval.
             Thread.Sleep(10_000);
