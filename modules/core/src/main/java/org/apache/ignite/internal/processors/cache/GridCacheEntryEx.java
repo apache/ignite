@@ -431,6 +431,7 @@ public interface GridCacheEntryEx {
      * @param conflictTtl Conflict TTL (if any).
      * @param conflictExpireTime Conflict expire time (if any).
      * @param conflictVer DR version (if any).
+     * @param prevStateMeta Previous entry state metadata.
      * @param conflictResolve If {@code true} then performs conflicts resolution.
      * @param intercept If {@code true} then calls cache interceptor.
      * @param taskName Task name.
@@ -468,6 +469,7 @@ public interface GridCacheEntryEx {
         long conflictTtl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer,
+        CacheObject prevStateMeta,
         boolean conflictResolve,
         boolean intercept,
         String taskName,

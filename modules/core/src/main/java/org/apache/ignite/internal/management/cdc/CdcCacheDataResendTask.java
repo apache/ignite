@@ -213,6 +213,7 @@ public class CdcCacheDataResendTask extends VisorMultiNodeTask<CdcResendCommandA
                     row.expireTime(),
                     key.partition(),
                     -1,
+                    null, // Conflict resolve should not happen at data copying.
                     DataEntry.flags(true))
                 );
 

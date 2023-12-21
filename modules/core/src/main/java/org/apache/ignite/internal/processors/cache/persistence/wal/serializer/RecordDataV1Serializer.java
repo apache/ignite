@@ -124,6 +124,7 @@ import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.pagemem.wal.record.DataEntry.PREV_STATE_FLAG;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
@@ -2020,6 +2021,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         buf.putLong(entry.expireTime());
 
         buf.put(entry.flags());
+
+        CacheObject prevStare = entry.previousStateMetadata();
+
+        if (prevStare != null)
+            if (!prevStare.putValue(buf))
+                throw new AssertionError();
     }
 
     /**
@@ -2124,6 +2131,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         long expireTime = in.readLong();
         byte flags = type == DATA_RECORD_V2 || type == CDC_DATA_RECORD ? in.readByte() : (byte)0;
 
+        byte[] prevStateMetaBytes = null;
+        byte prevStateMetaType = 0;
+
+        if ((flags & PREV_STATE_FLAG) == PREV_STATE_FLAG) {
+            int prevStateMetaSize = in.readInt();
+            prevStateMetaType = in.readByte();
+            prevStateMetaBytes = new byte[prevStateMetaSize];
+            in.readFully(prevStateMetaBytes);
+        }
+
         GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
         if (cacheCtx != null) {
@@ -2135,35 +2152,39 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 key.partition(partId);
 
             CacheObject val = valBytes != null ? co.toCacheObject(coCtx, valType, valBytes) : null;
+            CacheObject prevStateMeta = prevStateMetaBytes != null ? co.toCacheObject(coCtx, prevStateMetaType, prevStateMetaBytes) : null;
 
             return new DataEntry(
-                    cacheId,
-                    key,
-                    val,
-                    op,
-                    nearXidVer,
-                    writeVer,
-                    expireTime,
-                    partId,
-                    partCntr,
-                    flags
+                cacheId,
+                key,
+                val,
+                op,
+                nearXidVer,
+                writeVer,
+                expireTime,
+                partId,
+                partCntr,
+                prevStateMeta,
+                flags
             );
         }
         else
             return new LazyDataEntry(
-                    cctx,
-                    cacheId,
-                    keyType,
-                    keyBytes,
-                    valType,
-                    valBytes,
-                    op,
-                    nearXidVer,
-                    writeVer,
-                    expireTime,
-                    partId,
-                    partCntr,
-                    flags
+                cctx,
+                cacheId,
+                keyType,
+                keyBytes,
+                valType,
+                valBytes,
+                op,
+                nearXidVer,
+                writeVer,
+                expireTime,
+                partId,
+                partCntr,
+                prevStateMetaType,
+                prevStateMetaBytes,
+                flags
             );
     }
 
@@ -2328,7 +2349,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             /*part ID*/4 +
             /*expire Time*/8 +
             /*part cnt*/8 +
-            /*flags*/1;
+            /*flags*/1 +
+            /*prev state meta*/(entry.previousStateMetadata() == null ? 0 : entry.previousStateMetadata().valueBytesLength(coCtx));
     }
 
     /**
@@ -2361,7 +2383,17 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     public static class EncryptedDataEntry extends DataEntry {
         /** Constructor. */
         EncryptedDataEntry() {
-            super(0, null, null, READ, null, null, 0, 0, 0, EMPTY_FLAGS);
+            super(0,
+                null,
+                null,
+                READ,
+                null,
+                null,
+                0,
+                0,
+                0,
+                null,
+                EMPTY_FLAGS);
         }
     }
 }

@@ -107,18 +107,13 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         return key.partition();
     }
 
-    /**
-     * @param key Key to add.
-     * @param val Optional update value.
-     * @param conflictTtl Conflict TTL (optional).
-     * @param conflictExpireTime Conflict expire time (optional).
-     * @param conflictVer Conflict version (optional).
-     */
+    /** {@inheritDoc} */
     @Override public void addUpdateEntry(KeyCacheObject key,
         @Nullable Object val,
         long conflictTtl,
         long conflictExpireTime,
-        @Nullable GridCacheVersion conflictVer) {
+        @Nullable GridCacheVersion conflictVer,
+        @Nullable Object prevStateMeta) {
         assert op != TRANSFORM;
         assert val != null || op == DELETE;
         assert conflictTtl < 0 : conflictTtl;
@@ -177,6 +172,11 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         assert idx == 0 : idx;
 
         return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject previousStateMetadata(int idx) {
+        return null;
     }
 
     /** {@inheritDoc} */

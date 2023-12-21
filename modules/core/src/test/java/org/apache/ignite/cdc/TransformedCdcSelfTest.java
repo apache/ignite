@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.transform.TestCacheObjectTransformerPluginProvider;
 import org.apache.ignite.internal.processors.cache.transform.TestCacheObjectTransformerProcessorAdapter;
+import org.apache.ignite.plugin.PluginProvider;
 
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
 
@@ -30,8 +31,15 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED
 public class TransformedCdcSelfTest extends CdcSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setPluginProviders(
-            new TestCacheObjectTransformerPluginProvider(new CacheObjectShiftTransformer()));
+        PluginProvider<?>[] providers = super.getConfiguration(igniteInstanceName).getPluginProviders();
+        PluginProvider<?>[] extendedProviders = new PluginProvider[providers.length + 1];
+
+        System.arraycopy(providers, 0, extendedProviders, 0, providers.length);
+
+        extendedProviders[extendedProviders.length - 1] =
+            new TestCacheObjectTransformerPluginProvider(new CacheObjectShiftTransformer());
+
+        return super.getConfiguration(igniteInstanceName).setPluginProviders(extendedProviders);
     }
 
     /**

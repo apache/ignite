@@ -1633,16 +1633,23 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param oldEntry Old entry.
      * @param newEntry New entry.
+     * @param prevStateMeta Previous entry state metadata.
      * @param atomicVerComp Whether to use atomic version comparator.
      * @return Conflict resolution result.
      * @throws IgniteCheckedException In case of exception.
      */
-    public GridCacheVersionConflictContext<K, V> conflictResolve(GridCacheVersionedEntryEx<K, V> oldEntry,
-        GridCacheVersionedEntryEx<K, V> newEntry, boolean atomicVerComp) throws IgniteCheckedException {
+    public GridCacheVersionConflictContext<K, V> conflictResolve(
+        GridCacheVersionedEntryEx<K, V> oldEntry,
+        GridCacheVersionedEntryEx<K, V> newEntry,
+        CacheObject prevStateMeta,
+        boolean atomicVerComp) throws IgniteCheckedException {
         assert conflictRslvr != null : "Should not reach this place.";
 
-        GridCacheVersionConflictContext<K, V> ctx = conflictRslvr.resolve(cacheObjCtx, oldEntry, newEntry,
-            atomicVerComp);
+        Object prevStateMetaObj = prevStateMeta != null ?
+            cacheObjCtx.unwrapBinaryIfNeeded(prevStateMeta, false, true, null) : null;
+
+        GridCacheVersionConflictContext<K, V> ctx =
+            conflictRslvr.resolve(cacheObjCtx, oldEntry, newEntry, prevStateMetaObj, atomicVerComp);
 
         if (ctx.isUseNew())
             cache().metrics0().incrementResolverAcceptedCount();

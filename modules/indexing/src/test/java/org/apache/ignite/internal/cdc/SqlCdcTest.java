@@ -233,12 +233,12 @@ public class SqlCdcTest extends AbstractCdcTest {
                 return;
 
             if (evt.cacheId() == cacheId(USER)) {
-                int id = ((BinaryObject)evt.key()).field(ID);
-                int cityId = ((BinaryObject)evt.key()).field(CITY_ID);
+                int id = ((BinaryObject)evt.unwrappedKey()).field(ID);
+                int cityId = ((BinaryObject)evt.unwrappedKey()).field(CITY_ID);
 
                 assertEquals(42 * id, cityId);
 
-                String name = ((BinaryObject)evt.value()).field(NAME);
+                String name = ((BinaryObject)evt.unwrappedValue()).field(NAME);
 
                 if (id % 2 == 0)
                     assertTrue(name.startsWith(JOHN));
@@ -246,9 +246,9 @@ public class SqlCdcTest extends AbstractCdcTest {
                     assertTrue(name.startsWith(SARAH));
             }
             else {
-                int id = (Integer)evt.key();
-                String name = ((BinaryObject)evt.value()).field(NAME);
-                String zipCode = ((BinaryObject)evt.value()).field(ZIP_CODE);
+                int id = (Integer)evt.unwrappedKey();
+                String name = ((BinaryObject)evt.unwrappedValue()).field(NAME);
+                String zipCode = ((BinaryObject)evt.unwrappedValue()).field(ZIP_CODE);
 
                 assertEquals(Integer.toString(127000 + id), zipCode);
 
