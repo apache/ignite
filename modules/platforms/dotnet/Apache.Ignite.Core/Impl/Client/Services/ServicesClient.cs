@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
     internal class ServicesClient : IServicesClient
     {
         /** Max service topology update period in millis. */
-        internal static readonly TimeSpan SrvTopUpdatePeriod = TimeSpan.FromSeconds(10);
+        internal static readonly TimeSpan SrvTopUpdatePeriod = TimeSpan.FromSeconds(60);
         
         /** */
         [Flags]

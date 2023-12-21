@@ -342,15 +342,11 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /// </summary>
         private static IList<string> ExtractServiceTopology(ListLogger log, string stringToSearch)
         {
-            var allLogEntries = log.Entries
+            var logEntry = log.Entries
                 .Where(e => e.Message.Contains(stringToSearch))
-                .Select(e => e.Message);
+                .Select(e => e.Message)
+                .Single();
             
-            // Check service topology is updated strictly once.
-            Assert.AreEqual(1, allLogEntries.Single());
-
-            var logEntry = allLogEntries.First();
-
             var nodeIdsIdx = logEntry.LastIndexOf(": ", StringComparison.Ordinal) + 2;
             var idsStr = logEntry.Substring(nodeIdsIdx, logEntry.Length - nodeIdsIdx - 1);
 
