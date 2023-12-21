@@ -217,14 +217,14 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /// <param name="clusterGroup">If not null, filters nodes to call service on.</param>
         private void DoTestServiceAwareness(
             string srcName,
-            IEnumerable<IIgnite> expectedTop,
+            ICollection<IIgnite> expectedTop,
             ICollection<IIgnite> clusterGroup = null)
         {
             var log = (ListLogger)Client.GetConfiguration().Logger;
             
             log.Clear();
 
-            var expCnt = expectedTop?.Count();
+            var expCnt = expectedTop?.Count;
             
             CallService(ServicesClient(clusterGroup).GetServiceProxy<IJavaService>(srcName), expCnt == 0);
             
@@ -339,22 +339,24 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /// <summary>
         /// Extracts received effective service topology from the client' log.
         /// </summary>
-        private static IEnumerable<string> ExtractServiceTopology(ListLogger log, string stringToSearch)
+        private static IList<string> ExtractServiceTopology(ListLogger log, string stringToSearch)
         {
-            var logEntries = log.Entries.Where(e => e.Message.Contains(stringToSearch))
-                .Select(e => e.Message).ToArray();
+            var logEntry = log.Entries
+                .Where(e => e.Message.Contains(stringToSearch))
+                .Select(e => e.Message)
+                .Single();
 
-            Assert.AreEqual(1, logEntries.Length);
-
-            var nodeIdsIdx = logEntries[0].LastIndexOf(": ") + 2;
-
-            var idsStr = logEntries[0].Substring(nodeIdsIdx, logEntries[0].Length - nodeIdsIdx - 1);
+            var nodeIdsIdx = logEntry.LastIndexOf(": ", StringComparison.Ordinal) + 2;
+            var idsStr = logEntry.Substring(nodeIdsIdx, logEntry.Length - nodeIdsIdx - 1);
 
             if (idsStr.Length == 0)
-                return new List<string>();
+            {
+                return Array.Empty<string>();
+            }
 
-            return logEntries[0].Substring(nodeIdsIdx, logEntries[0].Length - nodeIdsIdx - 1)
-                .Replace(stringToSearch, "").Split(", ");
+            return logEntry.Substring(nodeIdsIdx, logEntry.Length - nodeIdsIdx - 1)
+                .Replace(stringToSearch, "")
+                .Split(", ");
         }
 
         /// <summary>
@@ -404,11 +406,11 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /// <summary>
         /// Filters grids by consistent ids. By default uses the service topology ids. 
         /// </summary>
-        private IEnumerable<IIgnite> FilterGridsNodes(IEnumerable<object> consistentIds = null)
+        private ICollection<IIgnite> FilterGridsNodes(IEnumerable<object> consistentIds = null)
         {
             consistentIds ??= _topConsistentIds;
             
-            return Ignition.GetAll().Where(g => consistentIds.Contains(GetConsistentId(g)));
+            return Ignition.GetAll().Where(g => consistentIds.Contains(GetConsistentId(g))).ToList();
         }
 
         private void StartClient(bool enablePartitionAwareness)
