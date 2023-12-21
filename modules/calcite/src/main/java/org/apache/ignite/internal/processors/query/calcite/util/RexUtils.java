@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -336,6 +337,18 @@ public class RexUtils {
         boolean upperInclude = true;
         boolean lowerInclude = true;
 
+        // Give priority to equality operators.
+        collFldPreds.sort(Comparator.comparingInt(pred -> {
+            switch (pred.getOperator().getKind()) {
+                case EQUALS:
+                case IS_NOT_DISTINCT_FROM:
+                case IS_NULL:
+                    return 0;
+                default:
+                    return 1;
+            }
+        }));
+
         for (RexCall pred : collFldPreds) {
             RexNode val = null;
             RexNode ref = pred.getOperands().get(0);
@@ -594,7 +607,7 @@ public class RexUtils {
 
                     // For correlated variables it's required to resort and merge ranges on each nested loop,
                     // don't support it now.
-                    if (containsFieldAccess(refPred.getValue())) {
+                    if (containsFieldAccess(refPredOp.getValue())) {
                         ref = null;
                         break;
                     }
