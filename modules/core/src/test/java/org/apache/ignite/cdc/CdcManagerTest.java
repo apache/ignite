@@ -39,6 +39,8 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
@@ -382,6 +384,9 @@ public class CdcManagerTest extends GridCommonAbstractTest {
         /** Buffer to store collected data. */
         private final ByteBuffer buf;
 
+        /** Set to {@code true} after first {@link #collect(ByteBuffer)} call. */
+        private volatile boolean collected;
+
         /** */
         TestCdcManager() {
             buf = ByteBuffer.allocate(2 * WAL_SEG_SIZE);
@@ -393,6 +398,8 @@ public class CdcManagerTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void collect(ByteBuffer dataBuf) {
+            collected = true;
+
             if (failCollect)
                 throw new RuntimeException();
 
@@ -400,6 +407,14 @@ public class CdcManagerTest extends GridCommonAbstractTest {
                 log.debug("Collect data buffer [offset=" + dataBuf.position() + ", limit=" + dataBuf.limit() + ']');
 
             buf.put(dataBuf);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void afterBinaryMemoryRestore(
+            IgniteCacheDatabaseSharedManager mgr,
+            GridCacheDatabaseSharedManager.RestoreBinaryState restoreState
+        ) {
+            assert !collected;
         }
 
         /** {@inheritDoc} */
