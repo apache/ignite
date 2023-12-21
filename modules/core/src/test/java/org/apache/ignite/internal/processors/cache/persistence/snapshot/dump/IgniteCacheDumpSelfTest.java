@@ -455,7 +455,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             if (node.configuration().isClientMode() == TRUE)
                 continue;
 
-            ((IgniteEx)node).context().cache().context().snapshotMgr().ioFactory(new DumpFailingFactory((IgniteEx)node, false));
+            ((IgniteEx)node).context().cache().context().snapshotMgr().dumpIoFactory(new DumpFailingFactory((IgniteEx)node, false));
         }
 
         assertThrows(null, () -> ign.snapshot().createDump(DMP_NAME, null).get(), IgniteException.class, "Test error");
@@ -472,7 +472,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
         DumpFailingFactory ioFactory = new DumpFailingFactory(ign, true);
 
-        ign.context().cache().context().snapshotMgr().ioFactory(ioFactory);
+        ign.context().cache().context().snapshotMgr().dumpIoFactory(ioFactory);
 
         assertThrows(null, () -> ign.snapshot().createDump(DMP_NAME, null).get(), IgniteException.class, "Test write error");
 
@@ -502,7 +502,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
         FileIOFactory delegate = ign.context().cache().context().snapshotMgr().ioFactory();
 
-        ign.context().cache().context().snapshotMgr().ioFactory(new FileIOFactory() {
+        ign.context().cache().context().snapshotMgr().dumpIoFactory(new FileIOFactory() {
             @Override public FileIO create(File file, OpenOption... modes) throws IOException {
                 if (file.getName().endsWith(DUMP_FILE_EXT)) {
                     return new FileIODecorator(delegate.create(file, modes)) {
