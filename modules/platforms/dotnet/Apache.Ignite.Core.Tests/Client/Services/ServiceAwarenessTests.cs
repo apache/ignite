@@ -256,10 +256,10 @@ namespace Apache.Ignite.Core.Tests.Client.Services
                 // Check the client logs. There must be no service topology. 
                 Assert.AreEqual(0, log.Entries.Count(e => e.Message.Contains(clientLogStr)));
                 
-                // Check server logs. Without service awareness we must see service invocation on each node.
+                // Check server logs. Without service awareness we must see service invocation only on the first node.
                 foreach (var ignite in Ignition.GetAll())
                 {
-                    var requests = GetServerRequestNames((ListLogger)ignite.Logger, "service.ClientService");
+                    var requests = GetServerRequestNames((ListLogger)ignite.Logger, ServiceCallRequestPrefix);
 
                     if (ignite.Equals(GetIgnite()))
                         Assert.IsTrue(requests.Any());
@@ -337,14 +337,19 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         }
         
         /// <summary>
-        /// Extracts received effective service topology from the client' log.
+        /// Extracts received effective service topology from the client' log. Expects strictly one record. Ensures
+        /// that service topology is updated once.
         /// </summary>
         private static IList<string> ExtractServiceTopology(ListLogger log, string stringToSearch)
         {
-            var logEntry = log.Entries
+            var allLogEntries = log.Entries
                 .Where(e => e.Message.Contains(stringToSearch))
-                .Select(e => e.Message)
-                .Single();
+                .Select(e => e.Message);
+            
+            // Check service topology is updated strictly once.
+            Assert.AreEqual(1, allLogEntries.Count());
+
+            var logEntry = allLogEntries.First();
 
             var nodeIdsIdx = logEntry.LastIndexOf(": ", StringComparison.Ordinal) + 2;
             var idsStr = logEntry.Substring(nodeIdsIdx, logEntry.Length - nodeIdsIdx - 1);
