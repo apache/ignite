@@ -25,7 +25,6 @@ import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -64,7 +63,7 @@ import org.apache.ignite.plugin.PluginProvider;
  * @see CdcConsumerState#saveCdcMode(CdcMode)
  */
 @IgniteExperimental
-public interface CdcManager extends GridCacheSharedManager, DatabaseLifecycleListener {
+public interface CdcManager extends GridCacheSharedManager {
     /**
      * If this manager isn't enabled then Ignite skips notifying the manager with following methods.
      *
@@ -82,7 +81,7 @@ public interface CdcManager extends GridCacheSharedManager, DatabaseLifecycleLis
      *     <li>Ignite node will fail in case the method throws an exception.</li>
      * </ul>
      */
-    @Override public default void afterBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr,
+    public default void afterBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr,
         GridCacheDatabaseSharedManager.RestoreBinaryState restoreState) throws IgniteCheckedException {
         // No-op.
     }
