@@ -26,7 +26,6 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.file.OpenOption;
 import org.apache.ignite.internal.processors.cache.persistence.file.AbstractFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * {@link FileIO} that allows to write file with buffering.

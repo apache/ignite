@@ -27,13 +27,12 @@ import java.util.Random;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /***/
-public class WriteOnlyBufferedFileIOTest  extends GridCommonAbstractTest {
+public class WriteOnlyBufferedFileIOTest extends GridCommonAbstractTest {
     /** */
     private static final File TEST_FILE = new File("test-write-only-file-io.dmp");
 
@@ -53,7 +52,8 @@ public class WriteOnlyBufferedFileIOTest  extends GridCommonAbstractTest {
             check(bufSz, ByteBuffer.wrap(randBytes(10)));
     }
 
-    @NotNull private static byte[] randBytes(int cnt) {
+    /** */
+    private static byte[] randBytes(int cnt) {
         byte[] bytes = new byte[cnt];
 
         new Random().nextBytes(bytes);
