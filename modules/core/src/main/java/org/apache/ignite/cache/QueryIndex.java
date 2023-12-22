@@ -304,12 +304,12 @@ public class QueryIndex implements Serializable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        QueryIndex index = (QueryIndex)o;
+        QueryIndex idx = (QueryIndex)o;
 
-        return inlineSize == index.inlineSize &&
-            F.eq(name, index.name) &&
-            F.eq(fields, index.fields) &&
-            type == index.type;
+        return inlineSize == idx.inlineSize &&
+            F.eq(name, idx.name) &&
+            F.eq(fields, idx.fields) &&
+            type == idx.type;
     }
 
     /** {@inheritDoc} */

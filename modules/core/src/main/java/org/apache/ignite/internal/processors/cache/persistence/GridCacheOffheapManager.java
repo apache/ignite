@@ -185,7 +185,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         Metas metas = getOrAllocateCacheMetas();
 
         String reuseListName = grp.cacheOrGroupName() + "##ReuseList";
-        String indexStorageTreeName = grp.cacheOrGroupName() + "##IndexStorageTree";
+        String idxStorageTreeName = grp.cacheOrGroupName() + "##IndexStorageTree";
 
         RootPage reuseListRoot = metas.reuseListRoot;
 
@@ -209,7 +209,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         RootPage metastoreRoot = metas.treeRoot;
 
         indexStorage = new IndexStorageImpl(
-            indexStorageTreeName,
+            idxStorageTreeName,
             grp.dataRegion().pageMemory(),
             ctx.wal(),
             globalRemoveId(),

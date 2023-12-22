@@ -798,11 +798,11 @@ public class GridFilenameUtils {
         int prefix = getPrefixLength(filename);
         if (prefix < 0)
             return null;
-        int index = indexOfLastSeparator(filename);
-        int endIndex = index + separatorAdd;
-        if (prefix >= filename.length() || index < 0 || prefix >= endIndex)
+        int idx = indexOfLastSeparator(filename);
+        int endIdx = idx + separatorAdd;
+        if (prefix >= filename.length() || idx < 0 || prefix >= endIdx)
             return "";
-        return filename.substring(prefix, endIndex);
+        return filename.substring(prefix, endIdx);
     }
 
     /**
@@ -883,10 +883,10 @@ public class GridFilenameUtils {
             else
                 return filename;
         }
-        int index = indexOfLastSeparator(filename);
-        if (index < 0)
+        int idx = indexOfLastSeparator(filename);
+        if (idx < 0)
             return filename.substring(0, prefix);
-        int end = index + (includeSeparator ? 1 : 0);
+        int end = idx + (includeSeparator ? 1 : 0);
         if (end == 0)
             end++;
         return filename.substring(0, end);
@@ -912,8 +912,8 @@ public class GridFilenameUtils {
     public static String getName(String filename) {
         if (filename == null)
             return null;
-        int index = indexOfLastSeparator(filename);
-        return filename.substring(index + 1);
+        int idx = indexOfLastSeparator(filename);
+        return filename.substring(idx + 1);
     }
 
     /**
@@ -958,11 +958,11 @@ public class GridFilenameUtils {
     public static String getExtension(String filename) {
         if (filename == null)
             return null;
-        int index = indexOfExtension(filename);
-        if (index == -1)
+        int idx = indexOfExtension(filename);
+        if (idx == -1)
             return "";
         else
-            return filename.substring(index + 1);
+            return filename.substring(idx + 1);
     }
 
     //-----------------------------------------------------------------------
@@ -986,11 +986,11 @@ public class GridFilenameUtils {
     public static String removeExtension(String filename) {
         if (filename == null)
             return null;
-        int index = indexOfExtension(filename);
-        if (index == -1)
+        int idx = indexOfExtension(filename);
+        if (idx == -1)
             return filename;
         else
-            return filename.substring(0, index);
+            return filename.substring(0, idx);
     }
 
     //-----------------------------------------------------------------------
@@ -1531,9 +1531,9 @@ public class GridFilenameUtils {
          * @since 2.0
          */
         public int checkIndexOf(String str, int strStartIndex, String search) {
-            int endIndex = str.length() - search.length();
-            if (endIndex >= strStartIndex) {
-                for (int i = strStartIndex; i <= endIndex; i++) {
+            int endIdx = str.length() - search.length();
+            if (endIdx >= strStartIndex) {
+                for (int i = strStartIndex; i <= endIdx; i++) {
                     if (checkRegionMatches(str, i, search))
                         return i;
                 }

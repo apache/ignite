@@ -1038,11 +1038,11 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
             String idxName = idx.indexDefinition().idxName().idxName();
 
             try {
-                long indexSize = idx.totalCount();
+                long idxSize = idx.totalCount();
 
                 idleChecker.apply(cacheCtx.groupId());
 
-                return new T2<>(null, indexSize);
+                return new T2<>(null, idxSize);
             }
             catch (Throwable t) {
                 Throwable idxSizeErr = new IgniteException("Index size calculation error [" +
