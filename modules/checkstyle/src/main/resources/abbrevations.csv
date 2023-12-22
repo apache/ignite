@@ -29,8 +29,8 @@ future,fut
 #group,grp
 handler,hnd
 header,hdr
-#implementation,impl
-#index,idx
+implementation,impl
+index,idx
 #initial,init
 #initialize,init
 #iterator,iter
