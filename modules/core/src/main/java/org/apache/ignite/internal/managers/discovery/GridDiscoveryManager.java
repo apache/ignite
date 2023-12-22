@@ -800,8 +800,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                         ctx.cache().context().versions().onLocalJoin(topVer);
 
-                        ctx.cache().context().coordinators().onLocalJoin(discoEvt, discoCache);
-
                         ctx.cache().context().exchange().onLocalJoin(discoEvt, discoCache);
 
                         ctx.service().onLocalJoin(discoEvt, discoCache);

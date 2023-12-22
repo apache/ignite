@@ -321,10 +321,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @GridToStringExclude
     private DataStructuresProcessor dataStructuresProc;
 
-    /** Cache mvcc coordinators. */
-    @GridToStringExclude
-    private MvccProcessor coordProc;
-
     /** Diagnostic processor. */
     @GridToStringInclude
     private DiagnosticProcessor diagnosticProcessor;
@@ -574,8 +570,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             poolProc = (PoolProcessor)comp;
         else if (comp instanceof GridMarshallerMappingProcessor)
             mappingProc = (GridMarshallerMappingProcessor)comp;
-        else if (comp instanceof MvccProcessor)
-            coordProc = (MvccProcessor)comp;
         else if (comp instanceof PdsFoldersResolver)
             pdsFolderRslvr = (PdsFoldersResolver)comp;
         else if (comp instanceof GridInternalSubscriptionProcessor)
@@ -876,7 +870,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public MvccProcessor coordinators() {
-        return coordProc;
+        return null;
     }
 
     /** {@inheritDoc} */
