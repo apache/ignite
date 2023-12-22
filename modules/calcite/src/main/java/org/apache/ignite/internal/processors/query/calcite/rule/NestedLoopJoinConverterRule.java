@@ -40,7 +40,7 @@ public class NestedLoopJoinConverterRule extends AbstractIgniteJoinConverterRule
      * Creates a converter.
      */
     public NestedLoopJoinConverterRule() {
-        super("NestedLoopJoinConverter", HintDefinition.NL_JOIN, HintDefinition.NO_NL_JOIN);
+        super("NestedLoopJoinConverter", HintDefinition.NL_JOIN);
     }
 
     /** {@inheritDoc} */

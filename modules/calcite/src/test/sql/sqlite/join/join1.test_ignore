@@ -25,7 +25,7 @@ statement ok
 INSERT INTO t2 VALUES(3,4,5);
 
 query III rowsort
-SELECT /*+ NO_MERGE_JOIN, NO_NL_JOIN */ t2.* FROM t2 NATURAL JOIN t1;
+SELECT /*+ CNL_JOIN */ t2.* FROM t2 NATURAL JOIN t1;
 ----
 2	3	4
 3	4	5

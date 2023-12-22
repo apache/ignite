@@ -345,7 +345,7 @@ SELECT t1.v1, t3.v2 FROM TBL1 t1 JOIN TBL3 t3 on t1.v3=t3.v3 WHERE t1.v2 in (SEL
 ==== MERGE_JOIN, NL_JOIN, CNL_JOIN
 Forces certain join type: Merge, Nested Loop and Correlated Nested Loop respectively.
 
-Every of those has the negation like 'NO_INDEX': NO_MERGE_JOIN, NO_NL_JOIN, NO_CNL_JOIN. The negation hint disables certain join type.
+Every of those has the negation like 'NO_INDEX': CNL_JOIN, NO_CNL_JOIN. The negation hint disables certain join type.
 
 ===== Parameters:
 * Empty. To force or disable certain join type for every join.

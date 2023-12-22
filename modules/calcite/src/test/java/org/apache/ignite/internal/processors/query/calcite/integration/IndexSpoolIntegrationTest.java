@@ -136,7 +136,7 @@ public class IndexSpoolIntegrationTest extends GridCommonAbstractTest {
         List<FieldsQueryCursor<List<?>>> cursors = engine.query(
             null,
             "PUBLIC",
-            "SELECT /*+ NO_MERGE_JOIN, NO_NL_JOIN */" +
+            "SELECT /*+ CNL_JOIN */" +
                 "T0.val, T1.val FROM TEST0 as T0 " +
                 "JOIN TEST1 as T1 on T0.jid = T1.jid ",
             X.EMPTY_OBJECT_ARRAY

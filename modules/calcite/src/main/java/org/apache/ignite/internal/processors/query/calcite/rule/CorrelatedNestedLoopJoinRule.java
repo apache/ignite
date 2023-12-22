@@ -57,7 +57,7 @@ public class CorrelatedNestedLoopJoinRule extends AbstractIgniteJoinConverterRul
 
     /** */
     public CorrelatedNestedLoopJoinRule(int batchSize) {
-        super("CorrelatedNestedLoopJoin", HintDefinition.CNL_JOIN, HintDefinition.NO_CNL_JOIN);
+        super("CorrelatedNestedLoopJoin", HintDefinition.CNL_JOIN);
 
         this.batchSize = batchSize;
     }

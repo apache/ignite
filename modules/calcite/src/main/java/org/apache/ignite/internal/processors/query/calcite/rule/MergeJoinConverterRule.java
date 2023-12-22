@@ -44,7 +44,7 @@ public class MergeJoinConverterRule extends AbstractIgniteJoinConverterRule {
      * Creates a converter.
      */
     public MergeJoinConverterRule() {
-        super("MergeJoinConverter", HintDefinition.MERGE_JOIN, HintDefinition.NO_MERGE_JOIN);
+        super("MergeJoinConverter", HintDefinition.MERGE_JOIN);
     }
 
     /** {@inheritDoc} */

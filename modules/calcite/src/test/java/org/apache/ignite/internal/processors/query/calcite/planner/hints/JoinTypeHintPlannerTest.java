@@ -76,10 +76,10 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
     }
 
     /**
-     * Tests nested loop join is disabled by hinta.
+     * Tests nested loop join is disabled by hint.
      */
     @Test
-    public void testDisableNCLJoin() throws Exception {
+    public void testDisableCNLJoin() throws Exception {
         for (HintDefinition hint : Arrays.asList(NO_CNL_JOIN, NL_JOIN, MERGE_JOIN)) {
             doTestDisableJoinTypeWith("TBL2", "TBL1", "INNER", IgniteCorrelatedNestedLoopJoin.class,
                 hint);

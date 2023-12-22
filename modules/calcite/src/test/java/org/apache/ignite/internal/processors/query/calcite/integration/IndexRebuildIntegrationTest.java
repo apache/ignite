@@ -321,7 +321,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
         IgniteEx initNode = grid(0);
 
         // Correlated join with correlation in filter, without project.
-        String sql = "SELECT /*+ NO_MERGE_JOIN, NO_NL_JOIN */ tbl2.id, tbl.val " +
+        String sql = "SELECT /*+ CNL_JOIN */ tbl2.id, tbl.val " +
             "FROM tbl2 LEFT JOIN tbl ON tbl.id = tbl2.id AND tbl.val = tbl2.val AND tbl.id % 2 = 0 " +
             "WHERE tbl2.id BETWEEN 10 AND 19";
 
@@ -334,7 +334,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
         checkRebuildIndexQuery(grid(1), checker, checker);
 
         // Correlated join with correlation in filter, with project.
-        sql = "SELECT /*+ NO_MERGE_JOIN, NO_NL_JOIN */ tbl2.id, tbl.val1 " +
+        sql = "SELECT /*+ CNL_JOIN */ tbl2.id, tbl.val1 " +
             "FROM tbl2 JOIN (SELECT tbl.val || '-' AS val1, val, id FROM tbl) AS tbl " +
             "ON tbl.id = tbl2.id AND tbl.val = tbl2.val " +
             "WHERE tbl2.id BETWEEN 10 AND 12";
@@ -353,7 +353,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
         IgniteEx initNode = grid(0);
 
         // Correlated join with correlation in filter, with project as a subset of collation.
-        String sql = "SELECT /*+ NO_MERGE_JOIN, NO_NL_JOIN */ tbl2.id, tbl.id1 " +
+        String sql = "SELECT /*+ CNL_JOIN */ tbl2.id, tbl.id1 " +
             "FROM tbl2 JOIN (SELECT tbl.id + 1 AS id1, id FROM tbl WHERE val >= 'val') AS tbl " +
             "ON tbl.id = tbl2.id " +
             "WHERE tbl2.val BETWEEN 'val10' AND 'val12'";
@@ -366,7 +366,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
         checkRebuildIndexQuery(grid(1), checker, checker);
 
         // Correlated join with correlation in filter, with a project as a subset of collation with DESC ordering.
-        sql = "SELECT /*+ NO_MERGE_JOIN, NO_NL_JOIN */ tbl2.id, tbl.id1 " +
+        sql = "SELECT /*+ CNL_JOIN */ tbl2.id, tbl.id1 " +
             "FROM tbl2 JOIN (SELECT tbl.id + 1 AS id1, id FROM tbl WHERE val2 >= 'val') AS tbl " +
             "ON tbl.id = tbl2.id " +
             "WHERE tbl2.val BETWEEN 'val10' AND 'val12'";
