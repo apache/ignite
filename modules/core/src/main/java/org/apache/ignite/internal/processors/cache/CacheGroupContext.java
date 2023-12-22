@@ -345,8 +345,8 @@ public class CacheGroupContext {
     public boolean hasCache(String cacheName) {
         List<GridCacheContext> caches = this.caches;
 
-        for (GridCacheContext cacheContext : caches)
-            if (cacheContext.name().equals(cacheName))
+        for (GridCacheContext cacheCtx : caches)
+            if (cacheCtx.name().equals(cacheName))
                 return true;
 
         return false;
@@ -408,8 +408,8 @@ public class CacheGroupContext {
         if (QueryUtils.isEnabled(cctx.config())) {
             boolean qryEnabled = false;
 
-            for (GridCacheContext cacheContext : copy)
-                if (QueryUtils.isEnabled(cacheContext.config())) {
+            for (GridCacheContext cacheCtx : copy)
+                if (QueryUtils.isEnabled(cacheCtx.config())) {
                     qryEnabled = true;
 
                     break;
@@ -421,8 +421,8 @@ public class CacheGroupContext {
         if (cctx.isDrEnabled()) {
             boolean drEnabled = false;
 
-            for (GridCacheContext cacheContext : copy)
-                if (QueryUtils.isEnabled(cacheContext.config())) {
+            for (GridCacheContext cacheCtx : copy)
+                if (QueryUtils.isEnabled(cacheCtx.config())) {
                     drEnabled = true;
 
                     break;

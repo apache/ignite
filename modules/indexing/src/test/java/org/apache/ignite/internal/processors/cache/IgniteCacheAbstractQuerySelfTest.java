@@ -956,11 +956,11 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     @Test
     public void testObjectQueryWithSwap() {
-        CacheConfiguration<Integer, ObjectValue> config = new CacheConfiguration<Integer, ObjectValue>(cacheConfiguration());
+        CacheConfiguration<Integer, ObjectValue> cfg = new CacheConfiguration<Integer, ObjectValue>(cacheConfiguration());
 
-        config.setOnheapCacheEnabled(true);
+        cfg.setOnheapCacheEnabled(true);
 
-        IgniteCache<Integer, ObjectValue> cache = jcache(ignite(), config, Integer.class, ObjectValue.class);
+        IgniteCache<Integer, ObjectValue> cache = jcache(ignite(), cfg, Integer.class, ObjectValue.class);
 
         boolean partitioned = cache.getConfiguration(CacheConfiguration.class).getCacheMode() == PARTITIONED;
 

@@ -61,9 +61,9 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cacheobject.PlatformCacheObjectImpl;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
@@ -861,9 +861,9 @@ public class PlatformUtils {
             return deserialize ? reader.readObject() : reader.readObjectDetached();
         else {
             // 3. Read whether exception is in form of object or string.
-            boolean hasException = reader.readBoolean();
+            boolean hasEx = reader.readBoolean();
 
-            if (hasException) {
+            if (hasEx) {
                 // 4. Full exception.
                 Object nativeErr = reader.readObjectDetached();
 
@@ -1393,7 +1393,9 @@ public class PlatformUtils {
 
         byte[] objBytes = in.readByteArray(pos1 - pos0);
 
-        return isKey ? (T)new KeyCacheObjectImpl(obj, objBytes, -1) : (T)new CacheObjectImpl(obj, objBytes);
+        return isKey ?
+            (T)new KeyCacheObjectImpl(obj, objBytes, -1) :
+            (T)new PlatformCacheObjectImpl(obj, objBytes);
     }
 
     /**

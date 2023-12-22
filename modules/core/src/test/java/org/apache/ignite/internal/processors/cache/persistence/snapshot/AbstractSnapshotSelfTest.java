@@ -678,7 +678,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 expPartCopiesInSnp = 1;
             else {
                 int backups = -1;
-                int affinityNodes = 0;
+                int affNodes = 0;
 
                 for (Ignite node: G.allGrids()) {
                     if (!filter.test(node))
@@ -690,17 +690,17 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                         backups = grpCtx.config().getBackups();
                         parts = grpCtx.affinity().partitions();
 
-                        affinityNodes++;
+                        affNodes++;
                     }
                 }
 
                 assertTrue(backups != -1);
                 assertTrue(parts != -1);
-                assertTrue(affinityNodes > 0);
+                assertTrue(affNodes > 0);
 
                 expPartCopiesInSnp = backups == Integer.MAX_VALUE
-                    ? affinityNodes
-                    : Math.min(backups + 1, affinityNodes);
+                    ? affNodes
+                    : Math.min(backups + 1, affNodes);
             }
 
             Map<Integer, Integer> cacheParts = entry.getValue();
@@ -823,8 +823,17 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         boolean withMetaStorage,
         SnapshotSender snpSndr
     ) throws IgniteCheckedException {
-        AbstractSnapshotFutureTask<?> task = cctx.snapshotMgr().registerSnapshotTask(snpName, null, cctx.localNodeId(), null,
-            parts, withMetaStorage, false, snpSndr);
+        AbstractSnapshotFutureTask<?> task = cctx.snapshotMgr().registerSnapshotTask(snpName,
+            null,
+            cctx.localNodeId(),
+            null,
+            parts,
+            withMetaStorage,
+            false,
+            false,
+            false,
+            snpSndr
+        );
 
         if (!(task instanceof SnapshotFutureTask))
             throw new IgniteCheckedException("Snapshot task hasn't been registered: " + task);

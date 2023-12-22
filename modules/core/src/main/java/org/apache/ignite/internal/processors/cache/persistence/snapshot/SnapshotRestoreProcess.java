@@ -421,6 +421,8 @@ public class SnapshotRestoreProcess {
                 false,
                 incIdx,
                 onlyPrimary,
+                false,
+                false,
                 false
             );
 
@@ -2035,9 +2037,9 @@ public class SnapshotRestoreProcess {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            PartitionRestoreFuture future = (PartitionRestoreFuture)o;
+            PartitionRestoreFuture fut = (PartitionRestoreFuture)o;
 
-            return partId == future.partId;
+            return partId == fut.partId;
         }
 
         /** {@inheritDoc} */

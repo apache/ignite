@@ -150,9 +150,9 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
             if (addrId < FREE_ADDR_CNT)
                 depId = null;
 
-            String address = UUID.randomUUID().toString();
+            String addr = UUID.randomUUID().toString();
 
-            execute(insConf.setArgs(addrId, depId, depId, address));
+            execute(insConf.setArgs(addrId, depId, depId, addr));
         }
     }
 

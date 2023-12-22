@@ -189,9 +189,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         RootPage reuseListRoot = metas.reuseListRoot;
 
-        GridCacheDatabaseSharedManager databaseSharedManager = (GridCacheDatabaseSharedManager)ctx.database();
+        GridCacheDatabaseSharedManager dbSharedManager = (GridCacheDatabaseSharedManager)ctx.database();
 
-        pageListCacheLimit = databaseSharedManager.pageListCacheLimitHolder(grp.dataRegion());
+        pageListCacheLimit = dbSharedManager.pageListCacheLimitHolder(grp.dataRegion());
 
         reuseList = new ReuseListImpl(
             grp.groupId(),
@@ -224,7 +224,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ctx.diagnostic().pageLockTracker()
         );
 
-        databaseSharedManager.addCheckpointListener(this, grp.dataRegion());
+        dbSharedManager.addCheckpointListener(this, grp.dataRegion());
     }
 
     /**
@@ -1057,7 +1057,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (partCntrs == null || partCntrs.isEmpty())
             return null;
 
-        GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)grp.shared().database();
+        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)grp.shared().database();
 
         Map<Integer, Long> partsCounters = new HashMap<>();
 
@@ -1069,10 +1069,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         try {
-            WALPointer minPtr = database.checkpointHistory().searchEarliestWalPointer(grp.groupId(),
+            WALPointer minPtr = db.checkpointHistory().searchEarliestWalPointer(grp.groupId(),
                 partsCounters, grp.hasAtomicCaches() ? walAtomicCacheMargin : 0L);
 
-            WALPointer latestReservedPointer = database.latestWalPointerReservedForPreloading();
+            WALPointer latestReservedPointer = db.latestWalPointerReservedForPreloading();
 
             assert latestReservedPointer == null || latestReservedPointer.compareTo(minPtr) <= 0
                 : "Historical iterator tries to iterate WAL out of reservation [cache=" + grp.cacheOrGroupName()

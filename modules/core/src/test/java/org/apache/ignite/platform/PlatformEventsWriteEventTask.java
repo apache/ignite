@@ -114,18 +114,18 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
 
                 ctx.writeEvent(writer, new CheckpointEvent(node, msg, evtType, "cpKey"));
 
-                DiscoveryEvent discoveryEvent = new DiscoveryEvent(node, msg, evtType, node);
-                discoveryEvent.topologySnapshot(ignite.cluster().topologyVersion(), ignite.cluster().nodes());
-                ctx.writeEvent(writer, discoveryEvent);
+                DiscoveryEvent discoveryEvt = new DiscoveryEvent(node, msg, evtType, node);
+                discoveryEvt.topologySnapshot(ignite.cluster().topologyVersion(), ignite.cluster().nodes());
+                ctx.writeEvent(writer, discoveryEvt);
 
-                JobEvent jobEvent = new JobEvent(node, msg, evtType);
-                jobEvent.jobId(igniteUuid);
-                jobEvent.taskClassName("taskClsName");
-                jobEvent.taskName("taskName");
-                jobEvent.taskNode(node);
-                jobEvent.taskSessionId(igniteUuid);
-                jobEvent.taskSubjectId(uuid);
-                ctx.writeEvent(writer, jobEvent);
+                JobEvent jobEvt = new JobEvent(node, msg, evtType);
+                jobEvt.jobId(igniteUuid);
+                jobEvt.taskClassName("taskClsName");
+                jobEvt.taskName("taskName");
+                jobEvt.taskNode(node);
+                jobEvt.taskSessionId(igniteUuid);
+                jobEvt.taskSubjectId(uuid);
+                ctx.writeEvent(writer, jobEvt);
 
                 ctx.writeEvent(writer, new TaskEvent(node, msg, evtType, igniteUuid, "taskName", "taskClsName",
                     true, uuid));

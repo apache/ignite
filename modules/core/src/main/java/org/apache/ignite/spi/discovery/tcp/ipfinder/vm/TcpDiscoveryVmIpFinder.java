@@ -185,9 +185,9 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
         Collection<InetSocketAddress> col = new LinkedHashSet<>();
 
         try {
-            InetAddress[] inetAddresses = InetAddress.getAllByName(ipStr);
+            InetAddress[] inetAddrs = InetAddress.getAllByName(ipStr);
 
-            for (InetAddress addrs : inetAddresses)
+            for (InetAddress addrs : inetAddrs)
                 col.add(new InetSocketAddress(addrs, 0));
         }
         catch (UnknownHostException ignored) {
@@ -230,10 +230,10 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
             try {
                 Collection<InetSocketAddress> res = new ArrayList<>();
 
-                InetAddress[] inetAddresses;
+                InetAddress[] inetAddrs;
 
                 try {
-                    inetAddresses = InetAddress.getAllByName(addrStr);
+                    inetAddrs = InetAddress.getAllByName(addrStr);
                 }
                 catch (UnknownHostException e) {
                     // Ignore
@@ -243,7 +243,7 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
                     return res;
                 }
 
-                for (InetAddress curAddr : inetAddresses) {
+                for (InetAddress curAddr : inetAddrs) {
                     // Upper bound included.
                     for (int i = port1; i <= port2; i++)
                         res.add(new InetSocketAddress(curAddr, i));

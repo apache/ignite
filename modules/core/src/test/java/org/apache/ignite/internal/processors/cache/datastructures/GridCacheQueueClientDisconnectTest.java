@@ -98,9 +98,9 @@ public class GridCacheQueueClientDisconnectTest extends GridCommonAbstractTest {
 
             server.close();
 
-            boolean countReachedZero = latch.await(FAILURE_DETECTION_TIMEOUT * 2, TimeUnit.MILLISECONDS);
+            boolean cntReachedZero = latch.await(FAILURE_DETECTION_TIMEOUT * 2, TimeUnit.MILLISECONDS);
 
-            assertTrue("IgniteClientDisconnectedException was not thrown", countReachedZero);
+            assertTrue("IgniteClientDisconnectedException was not thrown", cntReachedZero);
         }
         finally {
             stopAllGrids();

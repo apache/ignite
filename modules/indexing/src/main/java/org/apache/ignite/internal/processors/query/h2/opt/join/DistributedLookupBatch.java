@@ -364,12 +364,12 @@ public class DistributedLookupBatch implements IndexLookupBatch {
             throw H2Utils.retryException("Failed to collect affinity nodes during broadcast [" +
                 "cacheName=" + cctx.name() + ']');
 
-        int segmentsCount = idx.segmentsCount();
+        int segmentsCnt = idx.segmentsCount();
 
-        List<SegmentKey> res = new ArrayList<>(nodes.size() * segmentsCount);
+        List<SegmentKey> res = new ArrayList<>(nodes.size() * segmentsCnt);
 
         for (ClusterNode node : nodes) {
-            for (int seg = 0; seg < segmentsCount; seg++)
+            for (int seg = 0; seg < segmentsCnt; seg++)
                 res.add(new SegmentKey(node, seg));
         }
 

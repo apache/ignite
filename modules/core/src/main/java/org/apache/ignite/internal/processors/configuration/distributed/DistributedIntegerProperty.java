@@ -22,15 +22,16 @@ package org.apache.ignite.internal.processors.configuration.distributed;
  */
 public class DistributedIntegerProperty extends DistributedComparableProperty<Integer> {
     /** {@inheritDoc} */
-    DistributedIntegerProperty(String name) {
-        super(name, Integer::parseInt);
+    DistributedIntegerProperty(String name, String desc) {
+        super(name, Integer::parseInt, desc);
     }
 
     /**
      * @param name Name of property.
+     * @param desc Description of property.
      * @return Property detached from processor.(Distributed updating are not accessable).
      */
-    public static DistributedIntegerProperty detachedIntegerProperty(String name) {
-        return new DistributedIntegerProperty(name);
+    public static DistributedIntegerProperty detachedIntegerProperty(String name, String desc) {
+        return new DistributedIntegerProperty(name, desc);
     }
 }

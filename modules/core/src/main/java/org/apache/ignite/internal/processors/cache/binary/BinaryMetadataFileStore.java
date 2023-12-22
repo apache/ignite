@@ -46,6 +46,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
 
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
 
 /**
@@ -150,16 +152,23 @@ class BinaryMetadataFileStore {
 
         try {
             File file = new File(metadataDir, BinaryUtils.binaryMetaFileName(binMeta.typeId()));
+            File tmpFile = new File(file.getAbsolutePath() + TMP_SUFFIX);
+
+            // TODO: delete it on Ignite start. https://issues.apache.org/jira/browse/IGNITE-20897
+            if (tmpFile.exists())
+                U.delete(tmpFile);
 
             byte[] marshalled = U.marshal(ctx, binMeta);
 
-            try (final FileIO out = fileIOFactory.create(file)) {
+            try (final FileIO out = fileIOFactory.create(tmpFile)) {
                 int left = marshalled.length;
                 while ((left -= out.writeFully(marshalled, 0, Math.min(marshalled.length, left))) > 0)
                     ;
 
                 out.force();
             }
+
+            Files.move(tmpFile.toPath(), file.toPath(), ATOMIC_MOVE, REPLACE_EXISTING);
         }
         catch (Exception e) {
             final String msg = "Failed to save metadata for typeId: " + binMeta.typeId() +
@@ -208,7 +217,7 @@ class BinaryMetadataFileStore {
         if (!enabled)
             return;
 
-        for (File file : metadataDir.listFiles())
+        for (File file : metadataDir.listFiles(BinaryUtils::notTmpFile))
             restoreMetadata(file);
     }
 

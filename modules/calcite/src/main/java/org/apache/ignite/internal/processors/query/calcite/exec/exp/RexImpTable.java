@@ -1056,32 +1056,32 @@ public class RexImpTable {
             List<Expression> leftExprs = Util.skip(argValueList, 2);
             // Default value for JSON_VALUE behaviors.
             Expression emptyBehavior = Expressions.constant(SqlJsonValueEmptyOrErrorBehavior.NULL);
-            Expression defaultValueOnEmpty = Expressions.constant(null);
+            Expression dfltValueOnEmpty = Expressions.constant(null);
             Expression errorBehavior = Expressions.constant(SqlJsonValueEmptyOrErrorBehavior.NULL);
-            Expression defaultValueOnError = Expressions.constant(null);
+            Expression dfltValueOnError = Expressions.constant(null);
             // Patched up with user defines.
             if (!leftExprs.isEmpty()) {
                 for (int i = 0; i < leftExprs.size(); i++) {
                     Expression expr = leftExprs.get(i);
                     final Object exprVal = translator.getLiteralValue(expr);
                     if (exprVal != null) {
-                        int defaultSymbolIdx = i - 2;
+                        int dfltSymbolIdx = i - 2;
                         if (exprVal == SqlJsonEmptyOrError.EMPTY) {
-                            if (defaultSymbolIdx >= 0
-                                && translator.getLiteralValue(leftExprs.get(defaultSymbolIdx))
+                            if (dfltSymbolIdx >= 0
+                                && translator.getLiteralValue(leftExprs.get(dfltSymbolIdx))
                                 == SqlJsonValueEmptyOrErrorBehavior.DEFAULT) {
-                                defaultValueOnEmpty = leftExprs.get(i - 1);
-                                emptyBehavior = leftExprs.get(defaultSymbolIdx);
+                                dfltValueOnEmpty = leftExprs.get(i - 1);
+                                emptyBehavior = leftExprs.get(dfltSymbolIdx);
                             }
                             else
                                 emptyBehavior = leftExprs.get(i - 1);
                         }
                         else if (exprVal == SqlJsonEmptyOrError.ERROR) {
-                            if (defaultSymbolIdx >= 0
-                                && translator.getLiteralValue(leftExprs.get(defaultSymbolIdx))
+                            if (dfltSymbolIdx >= 0
+                                && translator.getLiteralValue(leftExprs.get(dfltSymbolIdx))
                                 == SqlJsonValueEmptyOrErrorBehavior.DEFAULT) {
-                                defaultValueOnError = leftExprs.get(i - 1);
-                                errorBehavior = leftExprs.get(defaultSymbolIdx);
+                                dfltValueOnError = leftExprs.get(i - 1);
+                                errorBehavior = leftExprs.get(dfltSymbolIdx);
                             }
                             else
                                 errorBehavior = leftExprs.get(i - 1);
@@ -1090,9 +1090,9 @@ public class RexImpTable {
                 }
             }
             newOperands.add(emptyBehavior);
-            newOperands.add(defaultValueOnEmpty);
+            newOperands.add(dfltValueOnEmpty);
             newOperands.add(errorBehavior);
-            newOperands.add(defaultValueOnError);
+            newOperands.add(dfltValueOnError);
             Class clazz = method.getDeclaringClass();
             expression = EnumUtils.call(null, clazz, method.getName(), newOperands);
 
@@ -1998,7 +1998,7 @@ public class RexImpTable {
         /** Ensures that operands have identical type. */
         private List<Expression> harmonize(final List<Expression> argValueList,
             final RexToLixTranslator translator, final RexCall call) {
-            int nullCount = 0;
+            int nullCnt = 0;
             final List<RelDataType> types = new ArrayList<>();
             final RelDataTypeFactory typeFactory =
                 translator.builder.getTypeFactory();
@@ -2006,7 +2006,7 @@ public class RexImpTable {
                 RelDataType type = operand.getType();
                 type = toSql(typeFactory, type);
                 if (translator.isNullable(operand))
-                    ++nullCount;
+                    ++nullCnt;
                 else
                     type = typeFactory.createTypeWithNullability(type, false);
 
@@ -2024,13 +2024,13 @@ public class RexImpTable {
                 // to be harmonized.
                 return argValueList;
             }
-            assert (nullCount > 0) == type.isNullable();
-            final Type javaClass =
+            assert (nullCnt > 0) == type.isNullable();
+            final Type javaCls =
                 translator.typeFactory.getJavaClass(type);
             final List<Expression> harmonizedArgValues = new ArrayList<>();
             for (Expression argValue : argValueList) {
                 harmonizedArgValues.add(
-                    EnumUtils.convert(argValue, javaClass));
+                    EnumUtils.convert(argValue, javaCls));
             }
             return harmonizedArgValues;
         }
@@ -2481,9 +2481,9 @@ public class RexImpTable {
         return (translator, call, nullAs) -> {
             final RexImpTable.RexCallImplementor rexCallImplementor
                 = createRexCallImplementor(implementor, nullPolicy, harmonize);
-            final List<RexToLixTranslator.Result> arguments = translator.getCallOperandResult(call);
-            assert arguments != null;
-            final RexToLixTranslator.Result result = rexCallImplementor.implement(translator, call, arguments);
+            final List<RexToLixTranslator.Result> args = translator.getCallOperandResult(call);
+            assert args != null;
+            final RexToLixTranslator.Result result = rexCallImplementor.implement(translator, call, args);
             return nullAs.handle(result.valueVariable);
         };
     }

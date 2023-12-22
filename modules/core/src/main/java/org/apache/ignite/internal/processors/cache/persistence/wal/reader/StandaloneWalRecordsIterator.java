@@ -96,8 +96,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     /** Replay from bound include. */
     private final WALPointer lowBound;
 
-    /** Replay to bound include */
-    private final WALPointer highBound;
+    /** Singleton instance of {@link FilteredRecord}  */
+    private final WALRecord filteredRecord = new FilteredRecord();
 
     /**
      * Creates iterator in file-by-file iteration mode. Directory
@@ -128,6 +128,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             new RecordSerializerFactoryImpl(sharedCtx, readTypeFilter),
             ioFactory,
             initialReadBufferSize,
+            highBound,
             FILE_INPUT_FACTORY
         );
 
@@ -135,7 +136,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             strictCheck(walFiles, lowBound, highBound);
 
         this.lowBound = lowBound;
-        this.highBound = highBound;
 
         this.keepBinary = keepBinary;
 
@@ -288,17 +288,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         if (tup == null)
             return tup;
 
-        if (!checkBounds(tup.get1())) {
-            if (curRec != null) {
-                WALPointer prevRecPtr = curRec.get1();
-
-                // Fast stop condition, after high bound reached.
-                if (prevRecPtr != null && prevRecPtr.compareTo(highBound) > 0)
-                    return null;
-            }
-
-            return new T2<>(tup.get1(), FilteredRecord.INSTANCE); // FilteredRecord for mark as filtered.
-        }
+        if (!checkBounds(tup.get1()))
+            return new T2<>(tup.get1(), filteredRecord); // FilteredRecord for mark as filtered.
 
         return tup;
     }

@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLong;
@@ -147,6 +148,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         super.afterTest();
 
         stopAllGrids();
+
+        cleanPerformanceStatisticsDir();
     }
 
     /** */
@@ -428,6 +431,129 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         assertEquals((Long)1000L, rowsFetchedPerQuery.get(firstQryId.get()));
         assertEquals((Long)4L, rowsFetchedPerQuery.get(lastQryId.get()));
         assertEquals(5L, rowsScanned.get());
+    }
+
+    /** */
+    @Test
+    public void testPerformanceStatisticsEnableAfterQuery() throws Exception {
+        cleanPerformanceStatisticsDir();
+
+        String qry = "SELECT * FROM table(system_range(1, 1000))";
+
+        sql(grid(0), qry);
+
+        startCollectStatistics();
+
+        AtomicInteger finishQryCnt = new AtomicInteger();
+        grid(0).context().query().runningQueryManager().registerQueryFinishedListener(q -> finishQryCnt.incrementAndGet());
+
+        sql(grid(0), qry);
+
+        assertTrue(GridTestUtils.waitForCondition(() -> finishQryCnt.get() == 1, 1_000L));
+
+        AtomicInteger qryCnt = new AtomicInteger();
+        AtomicBoolean hasPlan = new AtomicBoolean();
+
+        stopCollectStatisticsAndRead(new AbstractPerformanceStatisticsTest.TestHandler() {
+            @Override public void query(
+                UUID nodeId,
+                GridCacheQueryType type,
+                String text,
+                long id,
+                long qryStartTime,
+                long duration,
+                boolean success
+            ) {
+                qryCnt.incrementAndGet();
+
+                assertEquals(grid(0).localNode().id(), nodeId);
+                assertEquals(SQL_FIELDS, type);
+                assertTrue(success);
+            }
+
+            @Override public void queryProperty(
+                UUID nodeId,
+                GridCacheQueryType type,
+                UUID qryNodeId,
+                long id,
+                String name,
+                String val
+            ) {
+                if ("Query plan".equals(name)) {
+                    assertFalse(F.isEmpty(val));
+                    hasPlan.set(true);
+                }
+            }
+        });
+
+        assertEquals(1, qryCnt.get());
+        assertTrue(hasPlan.get());
+    }
+
+    /** */
+    @Test
+    public void testPerformanceStatisticsNestedScan() throws Exception {
+        sql(grid(0), "CREATE TABLE test_perf_stat_nested (a INT) WITH template=REPLICATED");
+        sql(grid(0), "INSERT INTO test_perf_stat_nested VALUES (0), (1), (2), (3), (4)");
+
+        cleanPerformanceStatisticsDir();
+        startCollectStatistics();
+
+        AtomicInteger finishQryCnt = new AtomicInteger();
+        grid(0).context().query().runningQueryManager().registerQueryFinishedListener(q -> finishQryCnt.incrementAndGet());
+
+        sql(grid(0), "SELECT * FROM test_perf_stat_nested UNION ALL SELECT * FROM test_perf_stat_nested");
+
+        assertTrue(GridTestUtils.waitForCondition(() -> finishQryCnt.get() == 1, 1_000L));
+
+        AtomicInteger qryCnt = new AtomicInteger();
+        AtomicInteger readsCnt = new AtomicInteger();
+        AtomicLong rowsCnt = new AtomicLong();
+
+        stopCollectStatisticsAndRead(new AbstractPerformanceStatisticsTest.TestHandler() {
+            @Override public void query(
+                UUID nodeId,
+                GridCacheQueryType type,
+                String text,
+                long id,
+                long qryStartTime,
+                long duration,
+                boolean success
+            ) {
+                qryCnt.incrementAndGet();
+                assertTrue(success);
+            }
+
+            @Override public void queryReads(
+                UUID nodeId,
+                GridCacheQueryType type,
+                UUID qryNodeId,
+                long id,
+                long logicalReads,
+                long physicalReads
+            ) {
+                readsCnt.incrementAndGet();
+                assertTrue(logicalReads > 0);
+            }
+
+            @Override public void queryRows(
+                UUID nodeId,
+                GridCacheQueryType type,
+                UUID qryNodeId,
+                long id,
+                String action,
+                long rows
+            ) {
+                if ("Fetched".equals(action))
+                    rowsCnt.addAndGet(rows);
+            }
+        });
+
+        assertEquals(1, qryCnt.get());
+        // The second scan is executed inside the first scan processNextBatch() method,
+        // after the first scan invoke downstream().end(), so here we have only one read record.
+        assertEquals(1, readsCnt.get());
+        assertEquals(10, rowsCnt.get());
     }
 
     /** */

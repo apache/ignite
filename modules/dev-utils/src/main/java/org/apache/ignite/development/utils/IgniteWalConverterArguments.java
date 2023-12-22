@@ -406,11 +406,11 @@ public class IgniteWalConverterArguments {
             else if (arg.startsWith(RECORD_TYPES + "=")) {
                 final String recordTypesStr = arg.substring(RECORD_TYPES.length() + 1);
 
-                final String[] recordTypesStrArray = recordTypesStr.split(",");
+                final String[] recordTypesStrArr = recordTypesStr.split(",");
 
                 final SortedSet<String> unknownRecordTypes = new TreeSet<>();
 
-                for (String recordTypeStr : recordTypesStrArray) {
+                for (String recordTypeStr : recordTypesStrArr) {
                     try {
                         recordTypes.add(WALRecord.RecordType.valueOf(recordTypeStr));
                     }

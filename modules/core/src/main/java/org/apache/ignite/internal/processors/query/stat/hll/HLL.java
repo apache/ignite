@@ -890,9 +890,9 @@ public class HLL implements Cloneable {
             case SPARSE:
                 for (final int registerIndex : other.sparseProbabilisticStorage.keySet()) {
                     final byte registerValue = other.sparseProbabilisticStorage.get(registerIndex);
-                    final byte currentRegisterValue = sparseProbabilisticStorage.getOrDefault(registerIndex, (byte)0);
+                    final byte curRegisterValue = sparseProbabilisticStorage.getOrDefault(registerIndex, (byte)0);
 
-                    if (registerValue > currentRegisterValue)
+                    if (registerValue > curRegisterValue)
                         sparseProbabilisticStorage.put(registerIndex, registerValue);
                 }
 

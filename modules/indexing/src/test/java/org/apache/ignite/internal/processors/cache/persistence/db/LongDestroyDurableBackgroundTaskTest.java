@@ -371,7 +371,6 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         taskArg.caches(new String[]{"SQL_PUBLIC_T"});
         taskArg.nodeIds(nodeIds.toArray(EMPTY_UUIDS));
-        taskArg.checkFirst(0);
         taskArg.checkThrough(1);
         taskArg.checkCrc(true);
         taskArg.checkSizes(true);

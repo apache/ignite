@@ -69,6 +69,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.F;
@@ -767,9 +768,9 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testResolveLocalAddresses() throws Exception {
-        InetAddress inetAddress = InetAddress.getByName("0.0.0.0");
+        InetAddress inetAddr = InetAddress.getByName("0.0.0.0");
 
-        IgniteBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(inetAddress);
+        IgniteBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(inetAddr);
 
         Collection<String> hostNames = addrs.get2();
 
@@ -1271,7 +1272,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDoInParallelException() {
-        String expectedException = "ExpectedException";
+        String expectedEx = "ExpectedException";
 
         ExecutorService executorService = Executors
             .newSingleThreadExecutor(new IgniteThreadFactory("testscope", "ignite-utils-test"));
@@ -1283,7 +1284,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                 asList(1, 2, 3),
                 i -> {
                     if (Integer.valueOf(1).equals(i))
-                        throw new IgniteCheckedException(expectedException);
+                        throw new IgniteCheckedException(expectedEx);
 
                     return null;
                 }
@@ -1292,7 +1293,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             fail("Should throw ParallelExecutionException");
         }
         catch (IgniteCheckedException e) {
-            assertEquals(expectedException, e.getMessage());
+            assertEquals(expectedEx, e.getMessage());
         }
         finally {
             executorService.shutdownNow();
@@ -1471,7 +1472,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      * @param consumer Consumer.
      * @throws Exception If failed.
      */
-    private void readLines(String rsrcName, ThrowableConsumer<String> consumer) throws Exception {
+    private void readLines(String rsrcName, ConsumerX<String> consumer) throws Exception {
         byte[] content = readResource(getClass().getClassLoader(), rsrcName);
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(content)))) {
@@ -1524,7 +1525,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             System.out.println(localVar);
         };
 
-        Runnable capturingOuterClassLambda = () -> {
+        Runnable capturingOuterClsLambda = () -> {
             System.out.println(repeatRule);
         };
 
@@ -1532,7 +1533,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
         assertTrue(IgniteUtils.isLambda(someLambda.getClass()));
         assertTrue(IgniteUtils.isLambda(capturingLocalLambda.getClass()));
-        assertTrue(IgniteUtils.isLambda(capturingOuterClassLambda.getClass()));
+        assertTrue(IgniteUtils.isLambda(capturingOuterClsLambda.getClass()));
         assertTrue(IgniteUtils.isLambda(methodReference.getClass()));
     }
 
@@ -1588,18 +1589,18 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             boolean ignoreLocalHostname = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME);
             String userDefinedHost = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_LOCAL_HOST);
 
-            InetSocketAddress inetSocketAddress = new InetSocketAddress(userDefinedHost, 0);
-            InetAddress addr = inetSocketAddress.getAddress();
-            IgniteBiTuple<Collection<String>, Collection<String>> localAddresses = IgniteUtils.resolveLocalAddresses(addr);
+            InetSocketAddress inetSocketAddr = new InetSocketAddress(userDefinedHost, 0);
+            InetAddress addr = inetSocketAddr.getAddress();
+            IgniteBiTuple<Collection<String>, Collection<String>> localAddrs = IgniteUtils.resolveLocalAddresses(addr);
 
             if (ignoreLocalHostname) {
                 // If local hostname is ignored, then no hostname should be resolved.
-                assertTrue(localAddresses.get2().isEmpty());
+                assertTrue(localAddrs.get2().isEmpty());
             }
             else {
                 // If local hostname is not ignored, then we should receive example.com.
-                assertFalse(localAddresses.get2().isEmpty());
-                assertEquals("example.com", F.first(localAddresses.get2()));
+                assertFalse(localAddrs.get2().isEmpty());
+                assertEquals("example.com", F.first(localAddrs.get2()));
             }
         }
         finally {
@@ -1654,25 +1655,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
     /** */
     private interface I5 extends I4 {}
-
-    /**
-     * Represents an operation that accepts a single input argument and returns
-     * no result. Unlike most other functional interfaces,
-     * {@code ThrowableConsumer} is expected to operate via side-effects.
-     *
-     * Also it is able to throw {@link Exception} unlike {@link Consumer}.
-     *
-     * @param <T> The type of the input to the operation.
-     */
-    @FunctionalInterface
-    private static interface ThrowableConsumer<T> {
-        /**
-         * Performs this operation on the given argument.
-         *
-         * @param t the input argument.
-         */
-        void accept(@Nullable T t) throws Exception;
-    }
 
     /**
      * Test to verify the {@link U#hashToIndex(int, int)}.

@@ -454,9 +454,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             new MessageHandler<GridDhtPartitionsFullMessage>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsFullMessage msg) {
                     if (msg.exchangeId() == null) {
-                        GridDhtPartitionsExchangeFuture currentExchange = lastTopologyFuture();
+                        GridDhtPartitionsExchangeFuture curExchange = lastTopologyFuture();
 
-                        if (currentExchange != null && currentExchange.addOrMergeDelayedFullMessage(node, msg)) {
+                        if (curExchange != null && curExchange.addOrMergeDelayedFullMessage(node, msg)) {
                             if (log.isInfoEnabled()) {
                                 log.info("Delay process full message without exchange id (there is exchange in progress) " +
                                     "[nodeId=" + node.id() + "]");

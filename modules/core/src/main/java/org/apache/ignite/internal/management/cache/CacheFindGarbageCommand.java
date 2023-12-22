@@ -62,10 +62,10 @@ public class CacheFindGarbageCommand
 
             FindAndDeleteGarbageInPersistenceJobResult value = nodeEntry.getValue();
 
-            Map<Integer, Map<Integer, Long>> grpPartErrorsCount = value.checkResult();
+            Map<Integer, Map<Integer, Long>> grpPartErrorsCnt = value.checkResult();
 
-            if (!grpPartErrorsCount.isEmpty()) {
-                for (Map.Entry<Integer, Map<Integer, Long>> entry : grpPartErrorsCount.entrySet()) {
+            if (!grpPartErrorsCnt.isEmpty()) {
+                for (Map.Entry<Integer, Map<Integer, Long>> entry : grpPartErrorsCnt.entrySet()) {
                     for (Map.Entry<Integer, Long> e : entry.getValue().entrySet()) {
                         printer.accept(INDENT + "Group=" + entry.getKey() +
                             ", partition=" + e.getKey() +

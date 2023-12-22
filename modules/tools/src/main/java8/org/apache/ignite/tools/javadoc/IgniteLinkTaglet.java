@@ -122,18 +122,18 @@ public class IgniteLinkTaglet implements Taglet {
 
         File f = tag.position().file();
 
-        String curClass = f == null ? "" : f.getAbsolutePath().replace(File.separator, ".");
+        String curCls = f == null ? "" : f.getAbsolutePath().replace(File.separator, ".");
 
         String packPref = "src.main.java.";
 
-        int idx = curClass.indexOf(packPref);
+        int idx = curCls.indexOf(packPref);
 
         StringBuilder path = new StringBuilder();
 
         if (idx != -1) {
-            curClass = curClass.substring(idx + packPref.length());
+            curCls = curCls.substring(idx + packPref.length());
 
-            for (int i = 0, n = curClass.split("\\.").length - 2; i < n; i++)
+            for (int i = 0, n = curCls.split("\\.").length - 2; i < n; i++)
                 path.append("../");
         }
 

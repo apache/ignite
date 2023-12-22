@@ -132,7 +132,7 @@ class ServiceDeploymentTask {
         this.depId = depId;
         this.ctx = ctx;
 
-        srvcProc = (IgniteServiceProcessor)ctx.service();
+        srvcProc = ctx.service();
         log = ctx.log(getClass());
     }
 
@@ -213,21 +213,21 @@ class ServiceDeploymentTask {
                 else {
                     assert evtType == EVT_NODE_JOINED || evtType == EVT_NODE_LEFT || evtType == EVT_NODE_FAILED;
 
-                    final ClusterNode eventNode = evt.eventNode();
+                    final ClusterNode evtNode = evt.eventNode();
 
                     final Map<IgniteUuid, ServiceInfo> deployedServices = srvcProc.deployedServices();
 
                     if (evtType == EVT_NODE_LEFT || evtType == EVT_NODE_FAILED) {
                         deployedServices.forEach((srvcId, desc) -> {
-                            if (desc.topologySnapshot().containsKey(eventNode.id()) ||
-                                (desc.cacheName() != null && !eventNode.isClient())) // If affinity service
+                            if (desc.topologySnapshot().containsKey(evtNode.id()) ||
+                                (desc.cacheName() != null && !evtNode.isClient())) // If affinity service
                                 toDeploy.put(srvcId, desc);
                         });
                     }
                     else {
                         toDeploy.putAll(deployedServices);
 
-                        toDeploy.putAll(srvcProc.servicesReceivedFromJoin(eventNode.id()));
+                        toDeploy.putAll(srvcProc.servicesReceivedFromJoin(evtNode.id()));
                     }
                 }
 

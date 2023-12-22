@@ -259,10 +259,10 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
 
         qry.setLocalListener(
             new CacheEntryUpdatedListener<Integer, String>() {
-                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> events)
+                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> evts)
                     throws CacheEntryListenerException {
-                    for (CacheEntryEvent<? extends Integer, ? extends String> event : events)
-                        System.out.println("Key = " + event.getKey() + ", Value = " + event.getValue());
+                    for (CacheEntryEvent<? extends Integer, ? extends String> evt : evts)
+                        System.out.println("Key = " + evt.getKey() + ", Value = " + evt.getValue());
                 }
             }
         );

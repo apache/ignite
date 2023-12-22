@@ -2231,7 +2231,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 // Fallback to previous mode.
                 ress = new ArrayList<>(argss.size());
 
-                SQLException batchException = null;
+                SQLException batchEx = null;
 
                 int[] cntPerRow = new int[argss.size()];
 
@@ -2258,15 +2258,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     catch (Exception e ) {
                         SQLException sqlEx = QueryUtils.toSqlException(e);
 
-                        batchException = DmlUtils.chainException(batchException, sqlEx);
+                        batchEx = DmlUtils.chainException(batchEx, sqlEx);
 
                         cntPerRow[cntr++] = Statement.EXECUTE_FAILED;
                     }
                 }
 
-                if (batchException != null) {
-                    BatchUpdateException e = new BatchUpdateException(batchException.getMessage(),
-                        batchException.getSQLState(), batchException.getErrorCode(), cntPerRow, batchException);
+                if (batchEx != null) {
+                    BatchUpdateException e = new BatchUpdateException(batchEx.getMessage(),
+                        batchEx.getSQLState(), batchEx.getErrorCode(), cntPerRow, batchEx);
 
                     throw new IgniteCheckedException(e);
                 }

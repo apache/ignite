@@ -26,11 +26,10 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Set;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
@@ -51,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -59,6 +59,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
@@ -68,6 +69,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
@@ -95,6 +97,9 @@ public class Dump implements AutoCloseable {
     /** If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}. */
     private final boolean raw;
 
+    /** Encryption SPI. */
+    private final @Nullable EncryptionSpi encSpi;
+
     /**
      * Map shared across all instances of {@link DumpEntrySerializer}.
      * We use per thread buffer because number of threads is fewer then number of partitions.
@@ -103,6 +108,9 @@ public class Dump implements AutoCloseable {
      */
     private final ConcurrentMap<Long, ByteBuffer> thLocBufs = new ConcurrentHashMap<>();
 
+    /** If {@code true} then compress partition files. */
+    private final boolean comprParts;
+
     /**
      * @param dumpDir Dump directory.
      * @param keepBinary If {@code true} then keep read entries in binary form.
@@ -110,7 +118,7 @@ public class Dump implements AutoCloseable {
      * @param log Logger.
      */
     public Dump(File dumpDir, boolean keepBinary, boolean raw, IgniteLogger log) {
-        this(dumpDir, null, keepBinary, raw, log);
+        this(dumpDir, null, keepBinary, raw, null, log);
     }
 
     /**
@@ -118,9 +126,17 @@ public class Dump implements AutoCloseable {
      * @param consistentId If specified, read dump data only for specific node.
      * @param keepBinary If {@code true} then keep read entries in binary form.
      * @param raw If {@code true} then keep read entries in form of {@link KeyCacheObject} and {@link CacheObject}.
+     * @param encSpi Encryption SPI instance.
      * @param log Logger.
      */
-    public Dump(File dumpDir, @Nullable String consistentId, boolean keepBinary, boolean raw, IgniteLogger log) {
+    public Dump(
+        File dumpDir,
+        @Nullable String consistentId,
+        boolean keepBinary,
+        boolean raw,
+        @Nullable EncryptionSpi encSpi,
+        IgniteLogger log
+    ) {
         A.ensure(dumpDir != null, "dump directory is null");
         A.ensure(dumpDir.exists(), "dump directory not exists");
 
@@ -130,6 +146,13 @@ public class Dump implements AutoCloseable {
         this.keepBinary = keepBinary;
         this.cctx = standaloneKernalContext(dumpDir, log);
         this.raw = raw;
+        this.encSpi = encSpi;
+        this.comprParts = metadata.get(0).compressPartitions();
+
+        for (SnapshotMetadata meta : metadata) {
+            if (meta.encryptionKey() != null && encSpi == null)
+                throw new IllegalArgumentException("Encryption SPI required to read encrypted dump");
+        }
     }
 
     /**
@@ -225,14 +248,16 @@ public class Dump implements AutoCloseable {
      * @return Dump iterator.
      */
     public List<Integer> partitions(String node, int group) {
+        String suffix = comprParts ? DUMP_FILE_EXT + ZIP_SUFFIX : DUMP_FILE_EXT;
+
         File[] parts = dumpGroupDirectory(node, group)
-            .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(DUMP_FILE_EXT));
+            .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(suffix));
 
         if (parts == null)
             return Collections.emptyList();
 
         return Arrays.stream(parts)
-            .map(partFile -> Integer.parseInt(partFile.getName().replace(PART_FILE_PREFIX, "").replace(DUMP_FILE_EXT, "")))
+            .map(partFile -> Integer.parseInt(partFile.getName().replace(PART_FILE_PREFIX, "").replace(suffix, "")))
             .collect(Collectors.toList());
     }
 
@@ -242,18 +267,33 @@ public class Dump implements AutoCloseable {
      * @return Dump iterator.
      */
     public DumpedPartitionIterator iterator(String node, int group, int part) {
-        FileIOFactory ioFactory = new RandomAccessFileIOFactory();
+        FileIOFactory ioFactory = comprParts ? new UnzipFileIOFactory() : new RandomAccessFileIOFactory();
 
         FileIO dumpFile;
 
         try {
-            dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, group), PART_FILE_PREFIX + part + DUMP_FILE_EXT));
+            dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, group), dumpPartFileName(part, comprParts)));
         }
         catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        DumpEntrySerializer serializer = new DumpEntrySerializer(thLocBufs);
+        SnapshotMetadata meta = metadata.stream().filter(m -> Objects.equals(m.folderName(), node)).findFirst().orElseGet(null);
+
+        boolean encrypted = meta.encryptionKey() != null;
+
+        if (encrypted && !Arrays.equals(meta.masterKeyDigest(), encSpi.masterKeyDigest())) {
+            throw new IllegalArgumentException("Dump '" +
+                meta.snapshotName() + "' has different master key digest. To restore this " +
+                "dump, provide the same master key.");
+        }
+
+        DumpEntrySerializer serializer = new DumpEntrySerializer(
+            thLocBufs,
+            encrypted ? new ConcurrentHashMap<>() : null,
+            encrypted ? encSpi.decryptKey(meta.encryptionKey()) : null,
+            encSpi
+        );
 
         serializer.kernalContext(cctx);
         serializer.keepBinary(keepBinary);
@@ -261,8 +301,6 @@ public class Dump implements AutoCloseable {
 
         return new DumpedPartitionIterator() {
             DumpEntry next;
-
-            Set<Object> partKeys = new HashSet<>();
 
             /** {@inheritDoc} */
             @Override public boolean hasNext() {
@@ -292,16 +330,6 @@ public class Dump implements AutoCloseable {
 
                 try {
                     next = serializer.read(dumpFile, group, part);
-
-                    /*
-                     * During dumping entry can be dumped twice: by partition iterator and change listener.
-                     * Excluding duplicates keys from iteration.
-                     */
-                    while (next != null && !partKeys.add(next.key()))
-                        next = serializer.read(dumpFile, group, part);
-
-                    if (next == null)
-                        partKeys = null; // Let GC do the rest.
                 }
                 catch (IOException | IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -311,10 +339,17 @@ public class Dump implements AutoCloseable {
             /** {@inheritDoc} */
             @Override public void close() {
                 U.closeQuiet(dumpFile);
-
-                partKeys = null;
             }
         };
+    }
+
+    /**
+     * @param part Partition number.
+     * @param compressed If {@code true} then compressed partition file.
+     * @return Dump partition file name.
+     */
+    public static String dumpPartFileName(int part, boolean compressed) {
+        return PART_FILE_PREFIX + part + DUMP_FILE_EXT + (compressed ? ZIP_SUFFIX : "");
     }
 
     /** @return Root dump directory. */
@@ -350,6 +385,9 @@ public class Dump implements AutoCloseable {
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
         closeAllComponents(cctx);
+
+        if (encSpi != null)
+            encSpi.spiStop();
     }
 
     /**

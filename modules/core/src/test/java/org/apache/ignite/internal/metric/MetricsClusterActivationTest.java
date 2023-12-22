@@ -202,19 +202,19 @@ public class MetricsClusterActivationTest extends GridCommonAbstractTest {
             return;
         }
 
-        long offHeapEntriesCount = mreg.<LongMetric>findMetric("OffHeapEntriesCount").value();
-        long offHeapPrimaryEntriesCount = mreg.<LongMetric>findMetric("OffHeapPrimaryEntriesCount").value();
-        long offHeapBackupEntriesCount = mreg.<LongMetric>findMetric("OffHeapBackupEntriesCount").value();
+        long offHeapEntriesCnt = mreg.<LongMetric>findMetric("OffHeapEntriesCount").value();
+        long offHeapPrimaryEntriesCnt = mreg.<LongMetric>findMetric("OffHeapPrimaryEntriesCount").value();
+        long offHeapBackupEntriesCnt = mreg.<LongMetric>findMetric("OffHeapBackupEntriesCount").value();
 
         if (expEntries) {
-            assertEquals(ENTRY_CNT, offHeapEntriesCount);
-            assertTrue(offHeapPrimaryEntriesCount > 0);
-            assertTrue(offHeapBackupEntriesCount > 0);
+            assertEquals(ENTRY_CNT, offHeapEntriesCnt);
+            assertTrue(offHeapPrimaryEntriesCnt > 0);
+            assertTrue(offHeapBackupEntriesCnt > 0);
         }
         else {
-            assertEquals(0, offHeapEntriesCount);
-            assertEquals(0, offHeapPrimaryEntriesCount);
-            assertEquals(0, offHeapBackupEntriesCount);
+            assertEquals(0, offHeapEntriesCnt);
+            assertEquals(0, offHeapPrimaryEntriesCnt);
+            assertEquals(0, offHeapBackupEntriesCnt);
         }
     }
 }

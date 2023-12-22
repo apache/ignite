@@ -26,8 +26,8 @@ import java.util.function.Function;
  */
 public class DistributedComparableProperty<T extends Comparable<T> & Serializable> extends SimpleDistributedProperty<T> {
     /** {@inheritDoc} */
-    DistributedComparableProperty(String name, Function<String, T> parser) {
-        super(name, parser);
+    DistributedComparableProperty(String name, Function<String, T> parser, String desc) {
+        super(name, parser, desc);
     }
 
     /** */

@@ -1018,10 +1018,10 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         hashLoginService.setName("Test Realm");
         createRealm();
         hashLoginService.setConfig("/tmp/realm.properties");
-        SecurityHandler securityHandler = ctx.getSecurityHandler();
+        SecurityHandler securityHnd = ctx.getSecurityHandler();
         // DefaultAuthenticatorFactory doesn't default to basic auth anymore.
-        securityHandler.setAuthMethod(Constraint.__BASIC_AUTH);
-        securityHandler.setLoginService(hashLoginService);
+        securityHnd.setAuthMethod(Constraint.__BASIC_AUTH);
+        securityHnd.setLoginService(hashLoginService);
 
         srv.setHandler(ctx);
 

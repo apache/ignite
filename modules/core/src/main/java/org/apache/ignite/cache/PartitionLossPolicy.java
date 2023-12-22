@@ -52,6 +52,7 @@ public enum PartitionLossPolicy {
      *
      * @deprecated {@link #READ_ONLY_SAFE} is used instead.
      */
+    @Deprecated
     READ_ONLY_ALL,
 
     /**
@@ -66,6 +67,7 @@ public enum PartitionLossPolicy {
      *
      * @deprecated {@link #READ_WRITE_SAFE} is used instead.
      */
+    @Deprecated
     READ_WRITE_ALL,
 
     /**

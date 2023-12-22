@@ -2225,7 +2225,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         // Find any single message with affinity request. This request exists only for newly joined nodes.
-        Optional<GridDhtPartitionsSingleMessage> singleMsgWithAffinityReq = nodes.stream()
+        Optional<GridDhtPartitionsSingleMessage> singleMsgWithAffReq = nodes.stream()
             .flatMap(node -> Optional.ofNullable(msgs.get(node.id()))
                 .filter(singleMsg -> singleMsg.cacheGroupsAffinityRequest() != null)
                 .map(Stream::of)
@@ -2233,7 +2233,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             .findAny();
 
         // Prepare full message for newly joined nodes with affinity request.
-        final GridDhtPartitionsFullMessage fullMsgWithAffinity = singleMsgWithAffinityReq
+        final GridDhtPartitionsFullMessage fullMsgWithAff = singleMsgWithAffReq
             .filter(singleMessage -> affinityForJoinedNodes != null)
             .map(singleMessage -> fullMsg.copy().joinedNodeAffinity(affinityForJoinedNodes))
             .orElse(null);
@@ -2242,7 +2242,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         nodes.stream()
             .map(node -> {
                 // No joined nodes, just send a regular full message.
-                if (fullMsgWithAffinity == null)
+                if (fullMsgWithAff == null)
                     return new T2<>(node, fullMsg);
 
                 return new T2<>(
@@ -2250,7 +2250,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     // If single message contains affinity request, use special full message for such single messages.
                     Optional.ofNullable(msgs.get(node.id()))
                         .filter(singleMsg -> singleMsg.cacheGroupsAffinityRequest() != null)
-                        .map(singleMsg -> fullMsgWithAffinity)
+                        .map(singleMsg -> fullMsgWithAff)
                         .orElse(fullMsg)
                 );
             })
@@ -2970,11 +2970,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param msg Single message received from the client which didn't find original ExchangeFuture.
      */
     public void forceClientReconnect(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
-        Exception reconnectException = new IgniteNeedReconnectException(node, null);
+        Exception reconnectEx = new IgniteNeedReconnectException(node, null);
 
-        exchangeGlobalExceptions.put(node.id(), reconnectException);
+        exchangeGlobalExceptions.put(node.id(), reconnectEx);
 
-        onDone(null, reconnectException);
+        onDone(null, reconnectEx);
 
         GridDhtPartitionsFullMessage fullMsg = createPartitionsMessage(true, false);
 
@@ -4676,11 +4676,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 exchCtx.events().processEvents(this);
 
                 if (localJoinExchange()) {
-                    Set<Integer> noAffinityGroups = cctx.affinity().onLocalJoin(this, msg.joinedNodeAffinity(), resTopVer);
+                    Set<Integer> noAffGroups = cctx.affinity().onLocalJoin(this, msg.joinedNodeAffinity(), resTopVer);
 
                     // Prevent cache usage by a user.
-                    if (!noAffinityGroups.isEmpty()) {
-                        List<GridCacheAdapter> closedCaches = cctx.cache().blockGateways(noAffinityGroups);
+                    if (!noAffGroups.isEmpty()) {
+                        List<GridCacheAdapter> closedCaches = cctx.cache().blockGateways(noAffGroups);
 
                         closedCaches.forEach(cache -> log.warning("Affinity for cache " + cache.context().name()
                             + " has not received from coordinator during local join. "

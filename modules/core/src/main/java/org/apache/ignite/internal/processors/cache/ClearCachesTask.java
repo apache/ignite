@@ -26,8 +26,11 @@ import org.apache.ignite.internal.management.cache.CacheClearCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
 
 /** Clears specified caches. */
 @GridInternal
@@ -71,6 +74,13 @@ public class ClearCachesTask extends VisorOneNodeTask<CacheClearCommandArg, Clea
             }
 
             return new ClearCachesTaskResult(clearedCaches, nonExistentCaches);
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecurityPermissionSet requiredPermissions() {
+            // This task does nothing but delegates the call to the Ignite public API.
+            // Therefore, it is safe to execute task without any additional permissions check.
+            return NO_PERMISSIONS;
         }
 
         /** */

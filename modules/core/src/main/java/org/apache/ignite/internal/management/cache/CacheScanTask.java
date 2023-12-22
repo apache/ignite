@@ -37,9 +37,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
 import static java.lang.Math.min;
 import static org.apache.ignite.cache.query.Query.DFLT_PAGE_SIZE;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
 
 /**
  * Task that scan cache entries.
@@ -103,6 +105,13 @@ public class CacheScanTask extends VisorOneNodeTask<CacheScanCommandArg, CacheSc
             }
 
             return new CacheScanTaskResult(titles, entries);
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecurityPermissionSet requiredPermissions() {
+            // This task does nothing but delegates the call to the Ignite public API.
+            // Therefore, it is safe to execute task without any additional permissions check.
+            return NO_PERMISSIONS;
         }
 
         /**

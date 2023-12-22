@@ -140,9 +140,9 @@ public class BigEndianAscendingWordDeserializer implements IWordDeserializer {
 
         // --------------------------------------------------------------------
         // Middle bytes
-        final int middleByteCount = (lastByteIndex - firstByteIndex - 1);
+        final int middleByteCnt = (lastByteIndex - firstByteIndex - 1);
 
-        for (int i = 0; i < middleByteCount; i++) {
+        for (int i = 0; i < middleByteCnt; i++) {
             final long middleByte = (bytes[firstByteIndex + i + 1] & BYTE_MASK);
             // Push middle byte onto accumulator.
             value <<= BITS_PER_BYTE;

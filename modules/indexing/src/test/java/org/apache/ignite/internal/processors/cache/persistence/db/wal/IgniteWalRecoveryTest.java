@@ -1118,7 +1118,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     @Test
     public void testMetastorageLargeArray() throws Exception {
         int cnt = 5000;
-        int arraySize = 32_768;
+        int arrSize = 32_768;
 
         IgniteEx ignite = (IgniteEx)startGrid("node1");
 
@@ -1129,8 +1129,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         MetaStorage storage = sharedCtx.database().metaStorage();
 
         for (int i = 0; i < cnt; i++) {
-            byte[] b1 = new byte[arraySize];
-            for (int k = 0; k < arraySize; k++) {
+            byte[] b1 = new byte[arrSize];
+            for (int k = 0; k < arrSize; k++) {
                 b1[k] = (byte)(k % 100);
             }
 
@@ -1146,9 +1146,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < cnt; i++) {
             byte[] d2 = storage.readRaw(String.valueOf(i));
-            assertEquals(arraySize, d2.length);
+            assertEquals(arrSize, d2.length);
 
-            for (int k = 0; k < arraySize; k++) {
+            for (int k = 0; k < arrSize; k++) {
                 assertEquals((byte)(k % 100), d2[k]);
             }
         }
@@ -1355,7 +1355,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             }
         );
 
-        IgniteInternalFuture<Object> future = GridTestUtils.runAsync(
+        IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(
             () -> {
                 for (int i = 0; i < 10000; i++)
                     cache0.put(i, new IndexedObject(i));
@@ -1364,7 +1364,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             }
         );
 
-        future.get();
+        fut.get();
 
         insertFinished.countDown();
 

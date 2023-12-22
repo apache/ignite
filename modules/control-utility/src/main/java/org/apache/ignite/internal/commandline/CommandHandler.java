@@ -89,6 +89,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS
 import static org.apache.ignite.internal.management.api.CommandUtils.asOptional;
 import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
 import static org.apache.ignite.internal.management.api.CommandUtils.executable;
+import static org.apache.ignite.internal.management.api.CommandUtils.hasDescription;
 import static org.apache.ignite.internal.management.api.CommandUtils.join;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
@@ -236,7 +237,7 @@ public class CommandHandler {
         logger.info("User: " + System.getProperty("user.name"));
         logger.info("Time: " + startTime.format(formatter));
 
-        String commandName = "";
+        String cmdName = "";
 
         Throwable err = null;
         boolean verbose = false;
@@ -252,10 +253,10 @@ public class CommandHandler {
 
             ConnectionAndSslParameters<A> args = new ArgumentParser(logger, registry).parseAndValidate(rawArgs);
 
-            commandName = toFormattedCommandName(args.cmdPath().peekLast().getClass()).toUpperCase();
+            cmdName = toFormattedCommandName(args.cmdPath().peekLast().getClass()).toUpperCase();
 
             try (CliCommandInvoker<A> invoker = new CliCommandInvoker<>(args.command(), args.commandArg(), getClientConfiguration(args))) {
-                int tryConnectMaxCount = 3;
+                int tryConnectMaxCnt = 3;
 
                 boolean suppliedAuth = !F.isEmpty(args.userName()) && !F.isEmpty(args.password());
 
@@ -274,7 +275,7 @@ public class CommandHandler {
                             }
                         }
 
-                        logger.info("Command [" + commandName + "] started");
+                        logger.info("Command [" + cmdName + "] started");
                         logger.info("Arguments: " + argumentsToString(rawArgs));
                         logger.info(U.DELIM);
 
@@ -309,7 +310,7 @@ public class CommandHandler {
                         if (suppliedAuth)
                             throw new GridClientAuthenticationException("Wrong credentials.");
 
-                        if (tryConnectMaxCount == 0) {
+                        if (tryConnectMaxCnt == 0) {
                             throw new GridClientAuthenticationException("Maximum number of " +
                                 "retries exceeded");
                         }
@@ -319,7 +320,7 @@ public class CommandHandler {
                             "This cluster requires authentication.");
 
                         if (credentialsRequested)
-                            tryConnectMaxCount--;
+                            tryConnectMaxCnt--;
 
                         invoker.clientConfiguration(getClientConfiguration(
                             retrieveUserName(args, invoker.clientConfiguration()),
@@ -332,13 +333,13 @@ public class CommandHandler {
                 }
             }
 
-            logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_OK);
+            logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_OK);
 
             return EXIT_CODE_OK;
         }
         catch (IllegalArgumentException e) {
             logger.error("Check arguments. " + errorMessage(e));
-            logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
+            logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
 
             if (verbose)
                 err = e;
@@ -348,7 +349,7 @@ public class CommandHandler {
         catch (Throwable e) {
             if (isAuthError(e)) {
                 logger.error("Authentication error. " + errorMessage(e));
-                logger.info("Command [" + commandName + "] finished with code: " + ERR_AUTHENTICATION_FAILED);
+                logger.info("Command [" + cmdName + "] finished with code: " + ERR_AUTHENTICATION_FAILED);
 
                 if (verbose)
                     err = e;
@@ -370,7 +371,7 @@ public class CommandHandler {
 
                 }
 
-                logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_CONNECTION_FAILED);
+                logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_CONNECTION_FAILED);
 
                 if (verbose)
                     err = e;
@@ -382,7 +383,7 @@ public class CommandHandler {
                 IllegalArgumentException iae = X.cause(e, IllegalArgumentException.class);
 
                 logger.error("Check arguments. " + errorMessage(iae));
-                logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
+                logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
 
                 if (verbose)
                     err = e;
@@ -391,7 +392,7 @@ public class CommandHandler {
             }
 
             logger.error(errorMessage(e));
-            logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_UNEXPECTED_ERROR);
+            logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_UNEXPECTED_ERROR);
 
             err = e;
 
@@ -867,16 +868,15 @@ public class CommandHandler {
                         );
                     };
 
-                    if (!fld.isAnnotationPresent(EnumDescription.class)) {
-                        logParam.accept(
-                            parameterExample(fld, false),
-                            fld.getAnnotation(Argument.class).description()
-                        );
-                    }
-                    else {
+                    logParam.accept(
+                        parameterExample(fld, false),
+                        fld.getAnnotation(Argument.class).description()
+                    );
+
+                    if (fld.isAnnotationPresent(EnumDescription.class)) {
                         EnumDescription enumDesc = fld.getAnnotation(EnumDescription.class);
 
-                        String[] names = enumDesc.names();
+                        String[] names = formattedEnumNames(fld);
                         String[] descriptions = enumDesc.descriptions();
 
                         for (int i = 0; i < names.length; i++)
@@ -965,18 +965,28 @@ public class CommandHandler {
     }
 
     /** */
+    private static String[] formattedEnumNames(Field fld) {
+        EnumDescription desc = fld.getAnnotation(EnumDescription.class);
+
+        String indent = fld.isAnnotationPresent(Positional.class) ? "" : INDENT;
+
+        return Arrays.stream(desc.names()).map(s -> indent + s).toArray(String[]::new);
+    }
+
+    /** */
     private static class LengthCalculator implements Consumer<Field> {
         /** */
         int length;
 
         /** {@inheritDoc} */
         @Override public void accept(Field fld) {
+            if (!hasDescription(fld))
+                return;
+
             length = Math.max(length, parameterExample(fld, false).length());
 
             if (fld.isAnnotationPresent(EnumDescription.class)) {
-                EnumDescription enumDesc = fld.getAnnotation(EnumDescription.class);
-
-                for (String name : enumDesc.names())
+                for (String name : formattedEnumNames(fld))
                     length = Math.max(length, name.length());
             }
         }
