@@ -4796,10 +4796,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 else if (res.resultType() == ResultType.LOCKED) {
                     entry.unlockEntry();
 
-                    IgniteInternalFuture<?> lockFuture =
+                    IgniteInternalFuture<?> lockFut0 =
                         cctx.kernalContext().coordinators().waitForLock(cctx, mvccVer, res.resultVersion());
 
-                    lockFuture.listen(this);
+                    lockFut0.listen(this);
 
                     return;
                 }

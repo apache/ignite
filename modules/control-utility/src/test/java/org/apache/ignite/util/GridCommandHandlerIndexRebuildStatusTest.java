@@ -144,7 +144,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         injectTestSystemOut();
         idxRebuildsStartedNum.set(0);
 
-        final TestCommandHandler handler = newCommandHandler(createTestLogger());
+        final TestCommandHandler hnd = newCommandHandler(createTestLogger());
 
         stopGrid(GRIDS_NUM - 1);
         stopGrid(GRIDS_NUM - 2);
@@ -163,9 +163,9 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         boolean allRebuildsStarted = GridTestUtils.waitForCondition(() -> idxRebuildsStartedNum.get() == 6, 30_000);
         assertTrue("Failed to wait for all indexes to start being rebuilt", allRebuildsStarted);
 
-        assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_rebuild_status"));
+        assertEquals(EXIT_CODE_OK, execute(hnd, "--cache", "indexes_rebuild_status"));
 
-        checkResult(handler, 1, 2);
+        checkResult(hnd, 1, 2);
 
         statusRequestingFinished.set(true);
 
@@ -187,7 +187,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
 
         assertTrue(idxProgressBlockedLatch.await(getTestTimeout(), MILLISECONDS));
 
-        assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_rebuild_status"));
+        assertEquals(EXIT_CODE_OK, execute(hnd, "--cache", "indexes_rebuild_status"));
 
         checkRebuildInProgressOutputFor("cache1");
 
@@ -202,7 +202,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         injectTestSystemOut();
         idxRebuildsStartedNum.set(0);
 
-        final TestCommandHandler handler = newCommandHandler(createTestLogger());
+        final TestCommandHandler hnd = newCommandHandler(createTestLogger());
 
         stopGrid(GRIDS_NUM - 1);
         stopGrid(GRIDS_NUM - 2);
@@ -221,11 +221,11 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         boolean allRebuildsStarted = GridTestUtils.waitForCondition(() -> idxRebuildsStartedNum.get() == 6, 30_000);
         assertTrue("Failed to wait for all indexes to start being rebuilt", allRebuildsStarted);
 
-        assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_rebuild_status", "--node-id", id1.toString()));
+        assertEquals(EXIT_CODE_OK, execute(hnd, "--cache", "indexes_rebuild_status", "--node-id", id1.toString()));
 
         statusRequestingFinished.set(true);
 
-        checkResult(handler, 2);
+        checkResult(hnd, 2);
     }
 
     /**

@@ -52,6 +52,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cdc.WalRecordsConsumer.DataEntryIterator;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -157,6 +158,9 @@ public class CdcMain implements Runnable {
     /** Metadata update time. */
     public static final String META_UPDATE = "MetadataUpdateTime";
 
+    /** Event capture time. */
+    public static final String EVT_CAPTURE_TIME = "EventCaptureTime";
+
     /** Binary metadata metric name. */
     public static final String BINARY_META_DIR = "BinaryMetaDir";
 
@@ -200,6 +204,12 @@ public class CdcMain implements Runnable {
 
     /** Metadata update time. */
     private HistogramMetricImpl metaUpdate;
+
+    /**
+     * Metric represents time between creating {@link DataRecord}, containing the data change events, and capturing them
+     * by {@link CdcConsumer}.
+     */
+    private HistogramMetricImpl evtCaptureTime;
 
     /** Change Data Capture configuration. */
     protected final CdcConfiguration cdcCfg;
@@ -423,6 +433,10 @@ public class CdcMain implements Runnable {
         lastSegmentConsumptionTs =
             mreg.longMetric(LAST_SEG_CONSUMPTION_TIME, "Last time of consumption of WAL segment");
         metaUpdate = mreg.histogram(META_UPDATE, new long[] {100, 500, 1000}, "Metadata update time");
+        evtCaptureTime = mreg.histogram(
+            EVT_CAPTURE_TIME,
+            new long[] {5_000, 10_000, 15_000, 30_000, 60_000},
+            "Time between creating an event on Ignite node and capturing it by CdcConsumer");
         mreg.register(CDC_MODE, () -> cdcModeState.name(), String.class, "CDC mode");
     }
 
@@ -572,7 +586,10 @@ public class CdcMain implements Runnable {
      * Consumes CDC events in {@link CdcMode#CDC_UTILITY_ACTIVE} mode.
      */
     private void consumeSegmentActively(IgniteWalIteratorFactory.IteratorParametersBuilder builder) {
-        try (DataEntryIterator iter = new DataEntryIterator(new IgniteWalIteratorFactory(log).iterator(builder.addFilter(ACTIVE_RECS)))) {
+        try (DataEntryIterator iter = new DataEntryIterator(
+            new IgniteWalIteratorFactory(log).iterator(builder.addFilter(ACTIVE_RECS)),
+            evtCaptureTime)
+        ) {
             if (walState != null)
                 iter.init(walState.get2());
 

@@ -502,11 +502,11 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
             }
         });
 
-        TestErrorHandler handler = new TestErrorHandler();
+        TestErrorHandler hnd = new TestErrorHandler();
 
-        t1.setUncaughtExceptionHandler(handler);
+        t1.setUncaughtExceptionHandler(hnd);
 
-        t2.setUncaughtExceptionHandler(handler);
+        t2.setUncaughtExceptionHandler(hnd);
 
         t1.start();
 
@@ -579,11 +579,11 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
             }
         });
 
-        TestErrorHandler handler = new TestErrorHandler();
+        TestErrorHandler hnd = new TestErrorHandler();
 
-        t1.setUncaughtExceptionHandler(handler);
+        t1.setUncaughtExceptionHandler(hnd);
 
-        t2.setUncaughtExceptionHandler(handler);
+        t2.setUncaughtExceptionHandler(hnd);
 
         t1.start();
 
