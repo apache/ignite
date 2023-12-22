@@ -28,7 +28,7 @@ frequency,freq
 future,fut
 #group,grp
 handler,hnd
-#header,hdr
+header,hdr
 #implementation,impl
 #index,idx
 #initial,init
