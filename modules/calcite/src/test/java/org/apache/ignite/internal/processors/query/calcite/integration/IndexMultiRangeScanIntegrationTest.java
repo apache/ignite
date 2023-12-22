@@ -193,6 +193,7 @@ public class IndexMultiRangeScanIntegrationTest extends AbstractBasicIntegration
             .returns(3, "2", 6)
             .check();
 
+        // Check order for table with DESC ordering.
         assertQuery("SELECT * FROM test_desc " +
                 "WHERE c1 IN (%s, %s) AND c2 IN (%s, %s) ORDER BY c1 DESC, c2 DESC, c3 DESC",
             3, 2, "3", "2")
@@ -246,6 +247,28 @@ public class IndexMultiRangeScanIntegrationTest extends AbstractBasicIntegration
                 .returns(4, "4", 16)
                 .check();
 
+            // Different combinations of LESS_THAN and LESS_THAN_OR_EQUAL.
+            assertQuery("SELECT * FROM " + tbl + " WHERE c1 IN (%s, %s) AND (c2 < %s OR c2 < %s)",
+                3, 4, "1", "2")
+                .returns(3, "1", 3)
+                .returns(4, "1", 4)
+                .check();
+
+            assertQuery("SELECT * FROM " + tbl + " WHERE c1 IN (%s, %s) AND (c2 <= %s OR c2 < %s)",
+                3, 4, "1", "2")
+                .returns(3, "1", 3)
+                .returns(4, "1", 4)
+                .check();
+
+            assertQuery("SELECT * FROM " + tbl + " WHERE c1 IN (%s, %s) AND (c2 <= %s OR c2 <= %s)",
+                3, 4, "1", "2")
+                .returns(3, "1", 3)
+                .returns(3, "2", 6)
+                .returns(4, "1", 4)
+                .returns(4, "2", 8)
+                .check();
+
+            // Different combinations of LESS_THAN, LESS_THAN_OR_EQUAL, GREATER_THAN, GREATER_THAN_OR_EQUAL.
             assertQuery("SELECT * FROM " + tbl + " WHERE c1 IN (%s, %s) " +
                     "AND ((c2 > %s AND c2 <= %s) OR (c2 > %s AND c2 <= %s) OR (c2 >= %s AND c2 < %s))",
                 1, 2, "1", "2", "2", "3", "3", "4")

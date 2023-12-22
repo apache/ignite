@@ -152,25 +152,24 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 for (RelFieldCollation field : collation.getFieldCollations()) {
                     int fieldIdx = field.getFieldIndex();
                     int nullComparison = field.nullDirection.nullComparison;
-                    boolean ascending = (field.direction == RelFieldCollation.Direction.ASCENDING);
 
                     Object c1 = hnd.get(fieldIdx, o1);
                     Object c2 = hnd.get(fieldIdx, o2);
 
                     if (c1 == LOWEST_VALUE || c2 == LOWEST_VALUE) {
                         if (c1 != LOWEST_VALUE)
-                            return ascending ? 1 : -1;
+                            return 1;
                         else if (c2 != LOWEST_VALUE)
-                            return ascending ? -1 : 1;
+                            return -1;
                         else
                             return 0;
                     }
 
                     if (c1 == HIGHEST_VALUE || c2 == HIGHEST_VALUE) {
                         if (c1 != HIGHEST_VALUE)
-                            return ascending ? -1 : 1;
+                            return -1;
                         else if (c2 != HIGHEST_VALUE)
-                            return ascending ? 1 : -1;
+                            return 1;
                         else
                             return 0;
                     }
@@ -179,7 +178,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                     if (c1 == unspecifiedVal || c2 == unspecifiedVal)
                         return 0;
 
-                    int res = ascending ?
+                    int res = (field.direction == RelFieldCollation.Direction.ASCENDING) ?
                         ExpressionFactoryImpl.compare(c1, c2, nullComparison) :
                         ExpressionFactoryImpl.compare(c2, c1, -nullComparison);
 
@@ -769,12 +768,12 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
         /** {@inheritDoc} */
         @Override public Row lower() {
-            return lowerRow != null ? lowerRow : (lowerRow = getRow(lowerScalar, true, lowerInclude));
+            return lowerRow != null ? lowerRow : (lowerRow = getRow(lowerScalar));
         }
 
         /** {@inheritDoc} */
         @Override public Row upper() {
-            return upperRow != null ? upperRow : (upperRow = getRow(upperScalar, false, upperInclude));
+            return upperRow != null ? upperRow : (upperRow = getRow(upperScalar));
         }
 
         /** {@inheritDoc} */
@@ -831,7 +830,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         }
 
         /** Compute row. */
-        private Row getRow(SingleScalar scalar, boolean lower, boolean include) {
+        private Row getRow(SingleScalar scalar) {
             Row res = factory.create();
             scalar.execute(ctx, null, res);
 
@@ -916,7 +915,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             Row newUpperBound;
             boolean newUpperInclude;
 
-            if (rowComparator.compare(upperBound, o.upperBound) <= 0) {
+            if (rowComparator.compare(upperBound, o.upperBound) >= 0) {
                 newUpperScalar = upperScalar;
                 newUpperRow = upperRow;
                 newUpperBound = upperBound;
