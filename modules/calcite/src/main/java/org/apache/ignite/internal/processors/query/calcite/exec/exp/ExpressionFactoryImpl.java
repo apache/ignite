@@ -87,6 +87,12 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     /** */
     private static final Map<String, Scalar> SCALAR_CACHE = new GridBoundedConcurrentLinkedHashMap<>(1024);
 
+    /** Placeholder for lowest possible value in range bound. */
+    private static final Object LOWEST_VALUE = new Object();
+
+    /** Placeholder for highest possible value in range bound. */
+    private static final Object HIGHEST_VALUE = new Object();
+
     /** */
     private final IgniteTypeFactory typeFactory;
 
@@ -149,6 +155,24 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
                     Object c1 = hnd.get(fieldIdx, o1);
                     Object c2 = hnd.get(fieldIdx, o2);
+
+                    if (c1 == LOWEST_VALUE || c2 == LOWEST_VALUE) {
+                        if (c1 != LOWEST_VALUE)
+                            return 1;
+                        else if (c2 != LOWEST_VALUE)
+                            return -1;
+                        else
+                            return 0;
+                    }
+
+                    if (c1 == HIGHEST_VALUE || c2 == HIGHEST_VALUE) {
+                        if (c1 != HIGHEST_VALUE)
+                            return -1;
+                        else if (c2 != HIGHEST_VALUE)
+                            return 1;
+                        else
+                            return 0;
+                    }
 
                     // If filter for some field is unspecified, assume equality for this field and all subsequent fields.
                     if (c1 == unspecifiedVal || c2 == unspecifiedVal)
@@ -691,50 +715,6 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     }
 
     /** */
-    private class RangeBoundImpl implements Comparable<RangeBoundImpl> {
-        /** */
-        private final Row searchRow;
-
-        /** */
-        private final boolean include;
-
-        /** */
-        private final Comparator<Row> rowComparator;
-
-        /** */
-        private RangeBoundImpl(Row row, boolean include, Comparator<Row> comparator) {
-            searchRow = row;
-            this.include = include;
-            rowComparator = comparator;
-        }
-
-        /** */
-        public Row searchRow() {
-            return searchRow;
-        }
-
-        /** */
-        public boolean include() {
-            return include;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int compareTo(RangeBoundImpl o) {
-            int res = rowComparator.compare(searchRow(), o.searchRow());
-
-            if (res == 0)
-                return -Boolean.compare(include(), o.include());
-            else
-                return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            return o instanceof ExpressionFactoryImpl.RangeBoundImpl && compareTo((RangeBoundImpl)o) == 0;
-        }
-    }
-
-    /** */
     private class RangeConditionImpl implements RangeCondition<Row>, Comparable<RangeConditionImpl> {
         /** */
         private final SingleScalar lowerScalar;
@@ -748,11 +728,17 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         /** */
         private final boolean upperInclude;
 
-        /** */
-        private RangeBoundImpl lowerBound;
+        /** Lower row, to return to consumer (can contain ctx.unspecifiedValue()). */
+        private Row lowerRow;
 
-        /** */
-        private RangeBoundImpl upperBound;
+        /** Upper row, to return to consumer (can contain ctx.unspecifiedValue()). */
+        private Row upperRow;
+
+        /** Lower row, for comparison (can contain LOWEST_VALUE, HIGHEST_VALUE). */
+        private Row lowerBound;
+
+        /** Upper row, for comparison (can contain LOWEST_VALUE, HIGHEST_VALUE). */
+        private Row upperBound;
 
         /** Cached skip range flag. */
         private Boolean skip;
@@ -782,18 +768,12 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
         /** {@inheritDoc} */
         @Override public Row lower() {
-            if (lowerBound == null)
-                lowerBound = new RangeBoundImpl(getRow(lowerScalar), lowerInclude, rowComparator);
-
-            return lowerBound.searchRow();
+            return lowerRow != null ? lowerRow : (lowerRow = getRow(lowerScalar, true, lowerInclude));
         }
 
         /** {@inheritDoc} */
         @Override public Row upper() {
-            if (upperBound == null)
-                upperBound = new RangeBoundImpl(getRow(upperScalar), upperInclude, rowComparator);
-
-            return upperBound.searchRow();
+            return upperRow != null ? upperRow : (upperRow = getRow(upperScalar, false, upperInclude));
         }
 
         /** {@inheritDoc} */
@@ -808,12 +788,13 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
         /** {@inheritDoc} */
         @Override public int compareTo(RangeConditionImpl o) {
-            assert lowerBound != null && upperBound != null;
+            calcBounds();
+            o.calcBounds();
 
-            int res = lowerBound.compareTo(o.lowerBound);
+            int res = rowComparator.compare(lowerBound, o.lowerBound);
 
             if (res == 0)
-                return upperBound.compareTo(o.upperBound);
+                return rowComparator.compare(upperBound, o.upperBound);
             else
                 return res;
         }
@@ -823,8 +804,33 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             return o instanceof ExpressionFactoryImpl.RangeConditionImpl && compareTo((RangeConditionImpl)o) == 0;
         }
 
+        /** */
+        private void calcBounds() {
+            if (lowerBound == null)
+                lowerBound = calcBound(lower(), lowerInclude ? LOWEST_VALUE : HIGHEST_VALUE);
+
+            if (upperBound == null)
+                upperBound = calcBound(upper(), upperInclude ? HIGHEST_VALUE : LOWEST_VALUE);
+        }
+
+        /** */
+        private Row calcBound(Row row, Object unspecifiedValReplacer) {
+            RowHandler<Row> hnd = ctx.rowHandler();
+
+            Object[] vals = new Object[hnd.columnCount(row)];
+
+            for (int i = 0; i < vals.length; i++) {
+                vals[i] = hnd.get(i, row);
+
+                if (vals[i] == ctx.unspecifiedValue())
+                    vals[i] = unspecifiedValReplacer;
+            }
+
+            return factory.create(vals);
+        }
+
         /** Compute row. */
-        private Row getRow(SingleScalar scalar) {
+        private Row getRow(SingleScalar scalar, boolean lower, boolean include) {
             Row res = factory.create();
             scalar.execute(ctx, null, res);
 
@@ -847,6 +853,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
         /** Clear cached rows. */
         public void clearCache() {
+            lowerRow = upperRow = null;
             lowerBound = upperBound = null;
             skip = null;
         }
@@ -859,50 +866,73 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 upper();
 
                 if (skip == null)
-                    skip = lowerBound.compareTo(upperBound) > 0;
+                    skip = Boolean.FALSE;
             }
 
             return skip;
         }
 
+        /** Check if bounds is valid. */
+        public boolean valid() {
+            calcBounds();
+
+            return rowComparator.compare(lowerBound, upperBound) <= 0;
+        }
         /** Range intersects another range. */
         public boolean intersects(RangeConditionImpl o) {
-            assert lowerBound != null && upperBound != null;
+            calcBounds();
+            o.calcBounds();
 
-            return lowerBound.compareTo(o.upperBound) <= 0 && o.lowerBound.compareTo(upperBound) < 0;
+            return rowComparator.compare(lowerBound, o.upperBound) <= 0
+                && rowComparator.compare(o.lowerBound, upperBound) < 0;
         }
 
         /** Merge two intersected ranges. */
         public RangeConditionImpl merge(RangeConditionImpl o) {
-            assert lowerBound != null && upperBound != null;
+            calcBounds();
+            o.calcBounds();
 
             SingleScalar newLowerScalar;
-            RangeBoundImpl newLowerBound;
+            Row newLowerRow;
+            Row newLowerBound;
+            boolean newLowerInclude;
 
-            if (lowerBound.compareTo(o.lowerBound) <= 0) {
+            if (rowComparator.compare(lowerBound, o.lowerBound) <= 0) {
                 newLowerScalar = lowerScalar;
+                newLowerRow = lowerRow;
                 newLowerBound = lowerBound;
+                newLowerInclude = lowerInclude;
             }
             else {
                 newLowerScalar = o.lowerScalar;
+                newLowerRow = o.lowerRow;
                 newLowerBound = o.lowerBound;
+                newLowerInclude = o.lowerInclude;
             }
 
             SingleScalar newUpperScalar;
-            RangeBoundImpl newUpperBound;
+            Row newUpperRow;
+            Row newUpperBound;
+            boolean newUpperInclude;
 
-            if (upperBound.compareTo(o.upperBound) <= 0) {
+            if (rowComparator.compare(upperBound, o.upperBound) <= 0) {
                 newUpperScalar = upperScalar;
+                newUpperRow = upperRow;
                 newUpperBound = upperBound;
+                newUpperInclude = upperInclude;
             }
             else {
                 newUpperScalar = o.upperScalar;
+                newUpperRow = o.upperRow;
                 newUpperBound = o.upperBound;
+                newUpperInclude = o.upperInclude;
             }
 
             RangeConditionImpl newRangeCondition = new RangeConditionImpl(newLowerScalar, newUpperScalar,
-                newLowerBound.include(), newUpperBound.include(), rowComparator, factory);
+                newLowerInclude, newUpperInclude, rowComparator, factory);
 
+            newRangeCondition.lowerRow = newLowerRow;
+            newRangeCondition.upperRow = newUpperRow;
             newRangeCondition.lowerBound = newLowerBound;
             newRangeCondition.upperBound = newUpperBound;
             newRangeCondition.skip = Boolean.FALSE;
@@ -952,6 +982,9 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 RangeConditionImpl prevRange = null;
 
                 for (RangeConditionImpl range : ranges) {
+                    if (!range.valid())
+                        continue;
+
                     if (prevRange != null) {
                         if (prevRange.intersects(range))
                             range = prevRange.merge(range);

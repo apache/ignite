@@ -21,9 +21,9 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
 /**
- * Tests of SEARCH/SARG operator.
+ * Tests index multi-range scans (with SEARCH/SARG operator or with dynamic parameters).
  */
-public class SearchSargOnIndexIntegrationTest extends AbstractBasicIntegrationTest {
+public class IndexMultiRangeScanIntegrationTest extends AbstractBasicIntegrationTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
