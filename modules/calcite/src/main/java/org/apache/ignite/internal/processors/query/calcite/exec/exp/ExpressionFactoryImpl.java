@@ -87,10 +87,10 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     /** */
     private static final Map<String, Scalar> SCALAR_CACHE = new GridBoundedConcurrentLinkedHashMap<>(1024);
 
-    /** Placeholder for lowest possible value in range bound. */
+    /** Placeholder for lowest possible value in range bound. This placeholder is only reqired to compare ranges. */
     private static final Object LOWEST_VALUE = new Object();
 
-    /** Placeholder for highest possible value in range bound. */
+    /** Placeholder for highest possible value in range bound. This placeholder is only reqired to compare ranges. */
     private static final Object HIGHEST_VALUE = new Object();
 
     /** */
@@ -152,24 +152,25 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 for (RelFieldCollation field : collation.getFieldCollations()) {
                     int fieldIdx = field.getFieldIndex();
                     int nullComparison = field.nullDirection.nullComparison;
+                    boolean ascending = (field.direction == RelFieldCollation.Direction.ASCENDING);
 
                     Object c1 = hnd.get(fieldIdx, o1);
                     Object c2 = hnd.get(fieldIdx, o2);
 
                     if (c1 == LOWEST_VALUE || c2 == LOWEST_VALUE) {
                         if (c1 != LOWEST_VALUE)
-                            return 1;
+                            return ascending ? 1 : -1;
                         else if (c2 != LOWEST_VALUE)
-                            return -1;
+                            return ascending ? -1 : 1;
                         else
                             return 0;
                     }
 
                     if (c1 == HIGHEST_VALUE || c2 == HIGHEST_VALUE) {
                         if (c1 != HIGHEST_VALUE)
-                            return -1;
+                            return ascending ? -1 : 1;
                         else if (c2 != HIGHEST_VALUE)
-                            return 1;
+                            return ascending ? 1 : -1;
                         else
                             return 0;
                     }
@@ -178,7 +179,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                     if (c1 == unspecifiedVal || c2 == unspecifiedVal)
                         return 0;
 
-                    int res = (field.direction == RelFieldCollation.Direction.ASCENDING) ?
+                    int res = ascending ?
                         ExpressionFactoryImpl.compare(c1, c2, nullComparison) :
                         ExpressionFactoryImpl.compare(c2, c1, -nullComparison);
 
@@ -876,7 +877,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         public boolean valid() {
             calcBounds();
 
-            return rowComparator.compare(lowerBound, upperBound) <= 0;
+            return rowComparator.compare(lowerBound, upperBound) < 0;
         }
         /** Range intersects another range. */
         public boolean intersects(RangeConditionImpl o) {
@@ -884,7 +885,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             o.calcBounds();
 
             return rowComparator.compare(lowerBound, o.upperBound) <= 0
-                && rowComparator.compare(o.lowerBound, upperBound) < 0;
+                && rowComparator.compare(o.lowerBound, upperBound) <= 0;
         }
 
         /** Merge two intersected ranges. */
