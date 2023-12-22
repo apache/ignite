@@ -1102,6 +1102,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             // Wal logging is now available.
             cctx.wal().resumeLogging(restored);
 
+            if (cctx.cdc() != null && cctx.cdc().enabled())
+                cctx.cdc().afterBinaryMemoryRestore(this, binaryState);
+
             // Log MemoryRecoveryRecord to make sure that old physical records are not replayed during
             // next physical recovery.
             checkpointManager.memoryRecoveryRecordPtr(cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis())));
