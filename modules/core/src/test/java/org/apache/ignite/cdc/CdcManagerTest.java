@@ -287,6 +287,31 @@ public class CdcManagerTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testCollectInvokedAfterRestore() throws Exception {
+        stopAllGrids();
+
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
+
+        cfg.setPluginProviders(new AbstractTestPluginProvider() {
+            @Override public String name() {
+                return "CdcManagerPluginProvider";
+            }
+
+            @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
+                if (CdcManager.class.equals(cls))
+                    return (T)new DelayedCdcManager();
+
+                return null;
+            }
+        });
+
+        ign = startGrid(cfg);
+
+        ign.cluster().state(ClusterState.ACTIVE);
+    }
+
+    /** */
     public void checkCdcContentWithRollover(Runnable rollSegment) throws Exception {
         for (int i = 0; i < 10_000; i++)
             ign.cache(DEFAULT_CACHE_NAME).put(i, i);
@@ -384,9 +409,6 @@ public class CdcManagerTest extends GridCommonAbstractTest {
         /** Buffer to store collected data. */
         private final ByteBuffer buf;
 
-        /** Set to {@code true} after first {@link #collect(ByteBuffer)} call. */
-        private volatile boolean collected;
-
         /** */
         TestCdcManager() {
             buf = ByteBuffer.allocate(2 * WAL_SEG_SIZE);
@@ -398,8 +420,6 @@ public class CdcManagerTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void collect(ByteBuffer dataBuf) {
-            collected = true;
-
             if (failCollect)
                 throw new RuntimeException();
 
@@ -410,14 +430,6 @@ public class CdcManagerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void afterBinaryMemoryRestore(
-            IgniteCacheDatabaseSharedManager mgr,
-            GridCacheDatabaseSharedManager.RestoreBinaryState restoreState
-        ) {
-            assert !collected;
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean enabled() {
             return true;
         }
@@ -425,6 +437,38 @@ public class CdcManagerTest extends GridCommonAbstractTest {
         /** @return CdcManager for specified Ignite node. */
         static TestCdcManager cdcMgr(IgniteEx ign) {
             return (TestCdcManager)ign.context().cache().context().cdc();
+        }
+    }
+
+    /** Test {@link CdcManager} order of calling methods. */
+    protected static class DelayedCdcManager extends GridCacheSharedManagerAdapter implements CdcManager {
+        /** Set to {@code true} after first {@link #collect(ByteBuffer)} call. */
+        private volatile boolean collected;
+
+        /** {@inheritDoc} */
+        @Override public void collect(ByteBuffer dataBuf) {
+            collected = true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void afterBinaryMemoryRestore(
+            IgniteCacheDatabaseSharedManager mgr,
+            GridCacheDatabaseSharedManager.RestoreBinaryState restoreState
+        ) {
+            try {
+                // Wait if any WALRecord is being written in background and collected.
+                Thread.sleep(5_000);
+
+                assert !collected;
+            }
+            catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean enabled() {
+            return true;
         }
     }
 }
