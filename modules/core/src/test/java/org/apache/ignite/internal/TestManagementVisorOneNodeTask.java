@@ -22,18 +22,19 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
 @GridVisorManagementTask
-public class TestManagementVisorOneNodeTask extends VisorOneNodeTask<String, Object> {
+public class TestManagementVisorOneNodeTask extends VisorOneNodeTask<VisorTaskArgument, Object> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorValidOneNodeJob job(String arg) {
+    @Override protected VisorValidOneNodeJob job(VisorTaskArgument arg) {
         return new VisorValidOneNodeJob(arg, debug);
     }
 
@@ -45,7 +46,7 @@ public class TestManagementVisorOneNodeTask extends VisorOneNodeTask<String, Obj
     /**
      * Valid Management one node visor job.
      */
-    private static class VisorValidOneNodeJob extends VisorJob<String, Object> {
+    private static class VisorValidOneNodeJob extends VisorJob<VisorTaskArgument, Object> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -53,12 +54,12 @@ public class TestManagementVisorOneNodeTask extends VisorOneNodeTask<String, Obj
          * @param arg Argument.
          * @param debug Debug flag.
          */
-        protected VisorValidOneNodeJob(String arg, boolean debug) {
+        protected VisorValidOneNodeJob(VisorTaskArgument arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Object run(String arg) {
+        @Override protected Object run(VisorTaskArgument arg) {
             return null;
         }
     }
