@@ -59,7 +59,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
-import org.apache.ignite.internal.events.ManagementTaskEvent;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -717,17 +716,16 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                 if (ctx.event().isRecordable(EVT_MANAGEMENT_TASK_STARTED) && dep.visorManagementTask(task, taskCls)) {
                     VisorTaskArgument visorTaskArg = (VisorTaskArgument)arg;
 
-                    Event evt = new ManagementTaskEvent(
+                    Event evt = new TaskEvent(
                         ctx.discovery().localNode(),
                         visorTaskArg != null && visorTaskArg.getArgument() != null
                             ? visorTaskArg.getArgument().toString() : "[]",
                         EVT_MANAGEMENT_TASK_STARTED,
                         ses.getId(),
-                        taskName,
-                        taskCls == null ? null : taskCls.getName(),
+                        taskCls == null ? null : taskCls.getSimpleName(),
+                        "VisorManagementTask",
                         false,
-                        securitySubjectId(ctx),
-                        visorTaskArg
+                        securitySubjectId(ctx)
                     );
 
                     ctx.event().record(evt);
