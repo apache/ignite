@@ -70,7 +70,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.consistency.
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorChangeAware;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
@@ -3250,25 +3249,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (mvccSnapshot0 != null)
             return new GridFinishedFuture<>(mvccSnapshot0);
 
-        MvccProcessor prc = cctx.coordinators();
-
-        MvccCoordinator crd = prc.currentCoordinator();
-
-        synchronized (this) {
-            crdVer = crd.version();
-        }
-
-        if (crd.local())
-            mvccSnapshot0 = prc.requestWriteSnapshotLocal();
-
-        if (mvccSnapshot0 == null) {
-            MvccSnapshotFuture fut = new MvccTxSnapshotFuture();
-
-            prc.requestWriteSnapshotAsync(crd, fut);
-
-            return fut;
-        }
-
         GridFutureAdapter<MvccSnapshot> fut = new GridFutureAdapter<>();
 
         onResponse0(mvccSnapshot0, fut);
@@ -3284,8 +3264,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             // The transaction were concurrently rolled back.
             // We need to notify the coordinator about that.
             assert isRollbackOnly();
-
-            cctx.coordinators().ackTxRollback(res);
 
             fut.onDone(timedOut() ? timeoutException() : rollbackException());
         }
@@ -3312,11 +3290,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (mvccSnapshot == null)
             return MVCC_TRACKER_ID_NA;
 
-        if (qryId == MVCC_TRACKER_ID_NA) {
-            long qryId0 = qryId = ID_CNTR.incrementAndGet();
-
-            finishFuture().listen(f -> cctx.coordinators().ackQueryDone(mvccSnapshot, qryId0));
-        }
+        if (qryId == MVCC_TRACKER_ID_NA)
+            qryId = ID_CNTR.incrementAndGet();
 
         return qryId;
     }

@@ -862,8 +862,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     ((IgniteKernal)ctx.grid()).onReconnected(clusterRestarted);
 
-                    ctx.cache().context().coordinators().onLocalJoin(localJoinEvent(), discoCache);
-
                     ctx.cache().context().exchange().onLocalJoin(localJoinEvent(), discoCache);
 
                     ctx.service().onLocalJoin(localJoinEvent(), discoCache);

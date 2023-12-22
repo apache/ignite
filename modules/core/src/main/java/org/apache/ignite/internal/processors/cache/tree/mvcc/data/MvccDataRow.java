@@ -183,9 +183,6 @@ public class MvccDataRow extends DataRow {
         mvccOpCntr = withHint & MVCC_OP_COUNTER_MASK;
         mvccTxState = (byte)(withHint >>> MVCC_HINTS_BIT_OFF);
 
-        if (addHints && mvccTxState == TxState.NA)
-            mvccTxState = MvccUtils.state(sharedCtx.coordinators(), mvccCrd, mvccCntr, mvccOpCntr);
-
         assert MvccUtils.mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr);
 
         keyAbsentFlag = (withHint & MVCC_KEY_ABSENT_BEFORE_MASK) != 0;
@@ -201,12 +198,8 @@ public class MvccDataRow extends DataRow {
 
         assert newMvccCrd == MVCC_CRD_COUNTER_NA || MvccUtils.mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr);
 
-        if (newMvccCrd != MVCC_CRD_COUNTER_NA) {
+        if (newMvccCrd != MVCC_CRD_COUNTER_NA)
             keyAbsentFlag = (withHint & MVCC_KEY_ABSENT_BEFORE_MASK) != 0;
-
-            if (addHints && newMvccTxState == TxState.NA)
-                newMvccTxState = MvccUtils.state(sharedCtx.coordinators(), newMvccCrd, newMvccCntr, newMvccOpCntr);
-        }
 
         return MVCC_INFO_SIZE;
     }

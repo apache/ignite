@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxAbstractEnlistFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
@@ -918,11 +917,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @throws ClusterTopologyCheckedException If failed.
      */
     private void checkCoordinatorVersion() throws ClusterTopologyCheckedException {
-        MvccCoordinator crd = cctx.shared().coordinators().currentCoordinator();
-
-        if (!crd.initialized() || crd.version() != mvccSnapshot.coordinatorVersion())
-            throw new ClusterTopologyCheckedException("Cannot perform update, coordinator was changed: " +
-                "[currentCoordinator=" + crd + ", mvccSnapshot=" + mvccSnapshot + "].");
+        // No-op.
     }
 
     /**

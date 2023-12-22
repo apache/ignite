@@ -81,7 +81,6 @@ import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.PartitionClearingStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
@@ -2483,22 +2482,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         break;
 
-                    case MVCC_TX_RECORD:
-                        checkpointReadLock();
-
-                        try {
-                            MvccTxRecord txRecord = (MvccTxRecord)rec;
-
-                            byte txState = convertToTxState(txRecord.state());
-
-                            cctx.coordinators().updateState(txRecord.mvccVersion(), txState, true);
-                        }
-                        finally {
-                            checkpointReadUnlock();
-                        }
-
-                        break;
-
                     default:
                         // Skip other records.
                 }
@@ -2634,15 +2617,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 applied.incrementAndGet();
                             }, cacheDesc.groupId(), dataEntry.partitionId());
                         }
-
-                        break;
-
-                    case MVCC_TX_RECORD:
-                        MvccTxRecord txRecord = (MvccTxRecord)rec;
-
-                        byte txState = convertToTxState(txRecord.state());
-
-                        cctx.coordinators().updateState(txRecord.mvccVersion(), txState, true);
 
                         break;
 

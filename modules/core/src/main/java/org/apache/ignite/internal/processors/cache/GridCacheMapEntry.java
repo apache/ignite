@@ -1083,16 +1083,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             else if (res.resultType() == ResultType.LOCKED) {
                 unlockEntry();
 
-                MvccVersion lockVer = res.resultVersion();
-
-                GridFutureAdapter<GridCacheUpdateTxResult> resFut = new GridFutureAdapter<>();
-
-                IgniteInternalFuture<?> lockFut = cctx.kernalContext().coordinators().waitForLock(cctx, mvccVer, lockVer);
-
-                lockFut.listen(new MvccUpdateLockListener(tx, this, affNodeId, topVer, val, ttl0, mvccVer,
-                    op, needHistory, noCreate, resFut, needOldVal, filter, retVal, keepBinary, entryProc, invokeArgs));
-
-                return new GridCacheUpdateTxResult(false, resFut);
+                return null;
             }
             else if (op == CREATE && tx.local() && (res.resultType() == ResultType.PREV_NOT_NULL ||
                 res.resultType() == ResultType.VERSION_FOUND))
@@ -1232,16 +1223,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             else if (res.resultType() == ResultType.LOCKED) {
                 unlockEntry();
 
-                MvccVersion lockVer = res.resultVersion();
-
-                GridFutureAdapter<GridCacheUpdateTxResult> resFut = new GridFutureAdapter<>();
-
-                IgniteInternalFuture<?> lockFut = cctx.kernalContext().coordinators().waitForLock(cctx, mvccVer, lockVer);
-
-                lockFut.listen(new MvccRemoveLockListener(tx, this, affNodeId, topVer, mvccVer, needHistory,
-                    resFut, needOldVal, retVal, filter));
-
-                return new GridCacheUpdateTxResult(false, resFut);
+                return null;
             }
 
             if (cctx.deferredDelete() && deletedUnlocked() && !detached())
@@ -1321,15 +1303,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             else if (res.resultType() == ResultType.LOCKED) {
                 unlockEntry();
 
-                MvccVersion lockVer = res.resultVersion();
-
-                GridFutureAdapter<GridCacheUpdateTxResult> resFut = new GridFutureAdapter<>();
-
-                IgniteInternalFuture<?> lockFut = cctx.kernalContext().coordinators().waitForLock(cctx, mvccVer, lockVer);
-
-                lockFut.listen(new MvccAcquireLockListener(tx, this, mvccVer, resFut));
-
-                return new GridCacheUpdateTxResult(false, resFut);
+                return null;
             }
         }
         finally {
@@ -4796,11 +4770,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 else if (res.resultType() == ResultType.LOCKED) {
                     entry.unlockEntry();
 
-                    IgniteInternalFuture<?> lockFut0 =
-                        cctx.kernalContext().coordinators().waitForLock(cctx, mvccVer, res.resultVersion());
-
-                    lockFut0.listen(this);
-
                     return;
                 }
 
@@ -4923,8 +4892,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
                 else if (res.resultType() == ResultType.LOCKED) {
                     entry.unlockEntry();
-
-                    cctx.kernalContext().coordinators().waitForLock(cctx, mvccVer, res.resultVersion()).listen(this);
 
                     return;
                 }
@@ -5103,8 +5070,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
                 else if (res.resultType() == ResultType.LOCKED) {
                     entry.unlockEntry();
-
-                    cctx.kernalContext().coordinators().waitForLock(cctx, mvccVer, res.resultVersion()).listen(this);
 
                     return;
                 }

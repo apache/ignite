@@ -89,7 +89,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOptimisticTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
@@ -2740,19 +2739,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param state New state.
      */
     public void setMvccState(IgniteInternalTx tx, TransactionState state) {
-        if (cctx.kernalContext().clientNode() || tx.mvccSnapshot() == null || tx.near() && !tx.local())
-            return;
-
-        byte state0 = toMvccState(state);
-
-        cctx.database().checkpointReadLock();
-
-        try {
-            cctx.coordinators().updateState(tx.mvccSnapshot(), state0, tx.local());
-        }
-        finally {
-            cctx.database().checkpointReadUnlock();
-        }
+        // No-op.
     }
 
     /** */
@@ -2774,10 +2761,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *  @param tx Transaction.
      */
     public void mvccFinish(IgniteTxAdapter tx) {
-        if (cctx.kernalContext().clientNode() || tx.mvccSnapshot == null || !tx.local())
-            return;
-
-        cctx.coordinators().releaseWaiters(tx.mvccSnapshot);
+        // No-op.
     }
 
     /**
@@ -3180,9 +3164,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         /** */
         private final ClusterNode node;
 
-        /** */
-        private final MvccCoordinator mvccCrd;
-
         /** Time bag to measure and store tx recovery stages times. */
         private final TimeBag timeBag = new TimeBag(log.isInfoEnabled());
 
@@ -3194,11 +3175,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         /**
          * @param node Failed node.
-         * @param mvccCrd Mvcc coordinator at time of node failure.
          */
-        private TxRecoveryInitRunnable(ClusterNode node, MvccCoordinator mvccCrd) {
+        private TxRecoveryInitRunnable(ClusterNode node) {
             this.node = node;
-            this.mvccCrd = mvccCrd;
         }
 
         /** {@inheritDoc} */
@@ -3642,7 +3621,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         /** {@inheritDoc} */
         @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
             IgniteInternalFuture<?> recInitFut = cctx.kernalContext().closure().runLocalSafe(
-                new TxRecoveryInitRunnable(evt.eventNode(), cctx.coordinators().currentCoordinator()));
+                new TxRecoveryInitRunnable(evt.eventNode()));
 
             recInitFut.listen(() -> {
                 if (recInitFut.error() != null)

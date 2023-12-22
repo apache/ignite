@@ -57,7 +57,6 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentationImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
@@ -866,11 +865,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public DataStructuresProcessor dataStructures() {
         return dataStructuresProc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public MvccProcessor coordinators() {
-        return null;
     }
 
     /** {@inheritDoc} */

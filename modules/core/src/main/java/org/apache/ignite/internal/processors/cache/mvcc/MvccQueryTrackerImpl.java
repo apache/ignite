@@ -133,8 +133,6 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
             done = true;
         }
 
-        cctx.shared().coordinators().removeQueryTracker(id);
-
         if (state0 != null && state0.getClass() == SnapshotFuture.class)
             ((SnapshotFuture)state0).cancel();
         else
@@ -175,10 +173,6 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
             }
 
             this.topVer = topVer;
-
-            cctx.shared().coordinators().addQueryTracker(this);
-
-            cctx.shared().coordinators().requestReadSnapshotAsync(crd, lsnr);
         }
         else
             remap(crdTopVer, lsnr);
@@ -232,8 +226,6 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
             return false;
         }
-
-        cctx.shared().coordinators().removeQueryTracker(id);
 
         return true;
     }
@@ -289,13 +281,12 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
     /** */
     private void ackQueryDone(MvccSnapshot snapshot) {
-        if (snapshot != null)
-            cctx.shared().coordinators().ackQueryDone(snapshot, id);
+        // No-op.
     }
 
     /** */
     @NotNull private MvccCoordinator coordinator() {
-        return cctx.shared().coordinators().currentCoordinator();
+        return null;
     }
 
     /** {@inheritDoc} */
