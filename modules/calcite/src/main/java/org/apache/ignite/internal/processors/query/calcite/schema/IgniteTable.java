@@ -21,6 +21,7 @@ import java.util.Map;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexNode;
@@ -57,7 +58,7 @@ public interface IgniteTable extends TranslatableTable {
 
     /** {@inheritDoc} */
     @Override default TableScan toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-        return toRel(context.getCluster(), relOptTable, null, null, null);
+        return toRel(context.getCluster(), relOptTable, null, null, null, context.getTableHints());
     }
 
     /**
@@ -75,7 +76,8 @@ public interface IgniteTable extends TranslatableTable {
         RelOptTable relOptTbl,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
-        @Nullable ImmutableBitSet requiredColumns
+        @Nullable ImmutableBitSet requiredColumns,
+        @Nullable List<RelHint> hints
     );
 
     /**

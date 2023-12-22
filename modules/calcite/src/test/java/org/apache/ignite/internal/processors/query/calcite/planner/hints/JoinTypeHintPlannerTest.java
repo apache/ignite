@@ -36,6 +36,7 @@ import org.apache.logging.log4j.Level;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.CNL_JOIN;
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.FORCE_INDEX;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.MERGE_JOIN;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NL_JOIN;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_CNL_JOIN;
@@ -288,9 +289,15 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
      * 'SELECT /*+ {@code hint} *&#47; t1.v1, t2.v2 FROM {@code tbl1} t1 {@code joinType} JOIN {@code tbl2} t2 on
      * t1.v3=t2.v3'.
      */
-    private void doTestCertainJoinTypeEnabled(String tbl1, String joinType, String tbl2,
-        Class<? extends AbstractIgniteJoin> expectedJoin, HintDefinition hint,
-        Class<? extends AbstractIgniteJoin> newJoin, String... disabledRules) throws Exception {
+    private void doTestCertainJoinTypeEnabled(
+        String tbl1,
+        String joinType,
+        String tbl2,
+        Class<? extends AbstractIgniteJoin> expectedJoin,
+        HintDefinition hint,
+        Class<? extends AbstractIgniteJoin> newJoin,
+        String... disabledRules
+    ) throws Exception {
         String sqlTpl = String.format("SELECT %%s t1.v1, t2.v2 FROM %s t1 %s JOIN %s t2 on t1.v3=t2.v3", tbl1,
             joinType, tbl2);
 
@@ -317,9 +324,15 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
     }
 
     /** */
-    private void doTestDisableJoinTypeWith(String tbl1, String tbl2, String sqlJoinType,
-        Class<? extends AbstractIgniteJoin> joinRel, HintDefinition hint, String... disabledRules) throws Exception {
-        String sqlTpl = String.format("SELECT %%s t1.v1, t2.v2 FROM %s t1 %s JOIN %s t2 on t1.v3=t2.v3", tbl1,
+    private void doTestDisableJoinTypeWith(
+        String tbl1,
+        String tbl2,
+        String sqlJoinType,
+        Class<? extends AbstractIgniteJoin> joinRel,
+        HintDefinition hint,
+        String... disabledRules
+    ) throws Exception {
+        String sqlTpl = String.format("SELECT t1.v1, t2.v2 FROM %s t1 %s JOIN %s %%s t2 on t1.v3=t2.v3", tbl1,
             sqlJoinType, tbl2);
 
         String hintPref = "/*+ " + hint.name();
@@ -347,6 +360,20 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
         // Hint with correct and incorrect tbl.
         assertPlan(String.format(sqlTpl, hintPref + '(' + tbl1 + ",UNEXISTING) */"), schema,
             nodeOrAnyChild(isInstanceOf(joinRel)).negate(), disabledRules);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testHintsAtJoinOperator() throws Exception {
+        String sqlTpl = "SELECT t1.v1, t2.v2 FROM TBL2 t1 JOIN TBL1 %s t2 on t1.v3=t2.v3";
+
+        assertPlan(String.format(sqlTpl, "/*+ " + NO_NL_JOIN + "*/", ""), schema,
+            nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
+                .and(input(0, noJoinChildren()))
+                .and(input(1, noJoinChildren()))
+            ).negate(), CORE_JOIN_REORDER_RULES);
     }
 
     /**
