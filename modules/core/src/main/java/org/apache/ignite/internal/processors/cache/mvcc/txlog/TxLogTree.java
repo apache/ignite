@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -56,8 +57,8 @@ public class TxLogTree extends BPlusTree<TxKey, TxRow> {
     ) throws IgniteCheckedException {
         super(
             name,
-            TxLog.TX_LOG_CACHE_ID,
-            TxLog.TX_LOG_CACHE_NAME,
+            CU.cacheId("TxLog"),
+            "TxLog",
             pageMem,
             wal,
             new AtomicLong(),
