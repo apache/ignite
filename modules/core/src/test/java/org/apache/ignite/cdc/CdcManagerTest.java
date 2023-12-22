@@ -289,9 +289,9 @@ public class CdcManagerTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testCollectInvokedAfterRestore() throws Exception {
-        stopAllGrids();
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName());
 
-        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
+        AtomicBoolean restored = new AtomicBoolean();
 
         cfg.setPluginProviders(new AbstractTestPluginProvider() {
             @Override public String name() {
@@ -300,15 +300,15 @@ public class CdcManagerTest extends GridCommonAbstractTest {
 
             @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
                 if (CdcManager.class.equals(cls))
-                    return (T)new DelayedCdcManager();
+                    return (T)new DelayedCdcManager(restored);
 
                 return null;
             }
         });
 
-        ign = startGrid(cfg);
+        startGrid(cfg);
 
-        ign.cluster().state(ClusterState.ACTIVE);
+        assertTrue(restored.get());
     }
 
     /** */
@@ -445,6 +445,14 @@ public class CdcManagerTest extends GridCommonAbstractTest {
         /** Set to {@code true} after first {@link #collect(ByteBuffer)} call. */
         private volatile boolean collected;
 
+        /** Set to {@code true} after binary memory restored. */
+        private final AtomicBoolean restored;
+
+        /** */
+        DelayedCdcManager(AtomicBoolean restored) {
+            this.restored = restored;
+        }
+
         /** {@inheritDoc} */
         @Override public void collect(ByteBuffer dataBuf) {
             collected = true;
@@ -460,6 +468,8 @@ public class CdcManagerTest extends GridCommonAbstractTest {
                 Thread.sleep(5_000);
 
                 assert !collected;
+
+                restored.set(true);
             }
             catch (InterruptedException e) {
                 throw new RuntimeException(e);
