@@ -350,7 +350,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             var nodeIdsIdx = logEntry.LastIndexOf(": ", StringComparison.Ordinal) + 2;
             var idsStr = logEntry.Substring(nodeIdsIdx, logEntry.Length - nodeIdsIdx - 1);
 
-            return idsStr.Split(", ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            return idsStr.Split(", ", StringSplitOptions.RemoveEmptyEntries);
         }
 
         /// <summary>
