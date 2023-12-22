@@ -97,8 +97,6 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
     private void doTestVisorTask(Class<? extends ComputeTask<?, ?>> cls, boolean expEvt) throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        String arg = "test-arg";
-
         final AtomicReference<TaskEvent> evt = new AtomicReference<>();
 
         final CountDownLatch evtLatch = new CountDownLatch(1);
@@ -114,7 +112,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
         }, EventType.EVT_MANAGEMENT_TASK_STARTED);
 
         for (ClusterNode node : ignite.cluster().forServers().nodes())
-            ignite.compute().executeAsync(cls.getName(), new VisorTaskArgument<>(node.id(), arg, true));
+            ignite.compute().executeAsync(cls.getName(), new VisorTaskArgument<>(node.id(), new VisorTaskArgument(), true));
 
         if (expEvt) {
             assertTrue(evtLatch.await(10000, TimeUnit.MILLISECONDS));
