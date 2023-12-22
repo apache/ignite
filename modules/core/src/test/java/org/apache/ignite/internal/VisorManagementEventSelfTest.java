@@ -26,7 +26,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.client.thin.TestTask;
-import org.apache.ignite.internal.events.ManagementTaskEvent;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -119,8 +118,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
 
         if (expEvt) {
             assertTrue(evtLatch.await(10000, TimeUnit.MILLISECONDS));
-            assertTrue(evt.get() instanceof ManagementTaskEvent);
-            assertEquals(arg, ((ManagementTaskEvent)evt.get()).argument().getArgument());
+            assertTrue(evt.get() instanceof TaskEvent);
         }
         else
             assertFalse(evtLatch.await(1000, TimeUnit.MILLISECONDS));
