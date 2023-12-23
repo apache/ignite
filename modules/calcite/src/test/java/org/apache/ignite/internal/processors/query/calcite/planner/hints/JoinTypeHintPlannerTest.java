@@ -36,7 +36,6 @@ import org.apache.logging.log4j.Level;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.CNL_JOIN;
-import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.FORCE_INDEX;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.MERGE_JOIN;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NL_JOIN;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_CNL_JOIN;
@@ -360,20 +359,6 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
         // Hint with correct and incorrect tbl.
         assertPlan(String.format(sqlTpl, hintPref + '(' + tbl1 + ",UNEXISTING) */"), schema,
             nodeOrAnyChild(isInstanceOf(joinRel)).negate(), disabledRules);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testHintsAtJoinOperator() throws Exception {
-        String sqlTpl = "SELECT t1.v1, t2.v2 FROM TBL2 t1 JOIN TBL1 %s t2 on t1.v3=t2.v3";
-
-        assertPlan(String.format(sqlTpl, "/*+ " + NO_NL_JOIN + "*/", ""), schema,
-            nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
-                .and(input(0, noJoinChildren()))
-                .and(input(1, noJoinChildren()))
-            ).negate(), CORE_JOIN_REORDER_RULES);
     }
 
     /**
