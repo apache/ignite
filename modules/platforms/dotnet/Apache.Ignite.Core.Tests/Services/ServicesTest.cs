@@ -1717,12 +1717,7 @@ namespace Apache.Ignite.Core.Tests.Services
             if (Grid1 != null)
                 return;
 
-            var home = "/home/fmj/src/ignite/modules/platforms/dotnet/Apache.Ignite.Core.Tests";
-
-            var path = Path.Combine(home, "Config", "Compute", "compute-grid");
-
-            var currentDIr = Directory.GetCurrentDirectory();
-            
+            var path = Path.Combine("Config", "Compute", "compute-grid");
             Grid1 = Ignition.Start(GetConfiguration(path + "1.xml"));
             Grid2 = Ignition.Start(GetConfiguration(path + "2.xml"));
 
