@@ -36,7 +36,7 @@ initialize,init
 #iterator,iter
 label,lbl
 #local,loc
-#logger,log
+logger,log
 #loader,ldr
 #manager,mgr
 #message,msg
