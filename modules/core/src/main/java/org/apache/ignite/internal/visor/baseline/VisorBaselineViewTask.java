@@ -69,6 +69,7 @@ public class VisorBaselineViewTask extends VisorOneNodeTask<Void, BaselineTaskRe
 
             return new BaselineTaskResult(
                 ignite.cluster().state().active(),
+                ignite.cluster().state(),
                 cluster.topologyVersion(),
                 cluster.currentBaselineTopology(),
                 cluster.forServers().nodes(),

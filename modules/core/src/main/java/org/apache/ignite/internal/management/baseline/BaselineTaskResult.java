@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -45,8 +46,11 @@ public class BaselineTaskResult extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Cluster state. */
+    /** Cluster activated flag. */
     private boolean active;
+
+    /** Cluster state. */
+    private ClusterState clusterState;
 
     /** Current topology version. */
     private long topVer;
@@ -171,7 +175,8 @@ public class BaselineTaskResult extends VisorDataTransferObject {
     /**
      * Constructor.
      *
-     * @param active Cluster state.
+     * @param active Cluster activated flag.
+     * @param clusterState Cluster state.
      * @param topVer Current topology version.
      * @param baseline Current baseline nodes.
      * @param servers Current server nodes.
@@ -180,6 +185,7 @@ public class BaselineTaskResult extends VisorDataTransferObject {
      */
     public BaselineTaskResult(
         boolean active,
+        ClusterState clusterState,
         long topVer,
         Collection<? extends org.apache.ignite.cluster.BaselineNode> baseline,
         Collection<? extends org.apache.ignite.cluster.BaselineNode> servers,
@@ -187,6 +193,7 @@ public class BaselineTaskResult extends VisorDataTransferObject {
         long remainingTimeToBaselineAdjust,
         boolean baselineAdjustInProgress) {
         this.active = active;
+        this.clusterState = clusterState;
         this.topVer = topVer;
         this.baseline = toMap(baseline);
         this.servers = toMapWithResolvedAddresses(servers);
@@ -196,10 +203,17 @@ public class BaselineTaskResult extends VisorDataTransferObject {
     }
 
     /**
-     * @return Cluster state.
+     * @return Cluster activated flag.
      */
     public boolean isActive() {
         return active;
+    }
+
+    /**
+     * @return Cluster state.
+     */
+    public ClusterState clusterState() {
+        return clusterState;
     }
 
     /**
@@ -252,6 +266,7 @@ public class BaselineTaskResult extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeBoolean(active);
+        out.writeObject(clusterState);
         out.writeLong(topVer);
         U.writeMap(out, baseline);
         U.writeMap(out, servers);
@@ -264,6 +279,7 @@ public class BaselineTaskResult extends VisorDataTransferObject {
     @Override protected void readExternalData(byte protoVer,
         ObjectInput in) throws IOException, ClassNotFoundException {
         active = in.readBoolean();
+        clusterState = (ClusterState) in.readObject();
         topVer = in.readLong();
         baseline = U.readTreeMap(in);
         servers = U.readTreeMap(in);
