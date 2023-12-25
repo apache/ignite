@@ -22,7 +22,6 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.Nullable;
@@ -36,7 +35,7 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     /** Active cache IDs. */
     private GridIntList activeCacheIds = new GridIntList();
 
-    /** Cache ids used for mvcc caching. See {@link MvccCachingManager}. */
+    /** Cache ids used for mvcc caching. */
     private GridIntList mvccCachingCacheIds = new GridIntList();
 
     /** */

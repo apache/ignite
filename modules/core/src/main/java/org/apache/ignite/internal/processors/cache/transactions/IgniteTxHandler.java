@@ -2014,10 +2014,6 @@ public class IgniteTxHandler {
                             }
                         }
 
-                        if (!updRes.filtered())
-                            ctx.shared().mvccCaching().addEnlisted(key, updRes.newValue(), 0, 0, tx.xidVersion(),
-                                updRes.oldValue(), tx.local(), tx.topologyVersion(), snapshot, ctx.cacheId(), tx, futId, batchNum);
-
                         assert updRes.updateFuture() == null : "Entry should not be locked on the backup";
                     }
 
