@@ -18,9 +18,8 @@
 package org.apache.ignite.internal.processors.cache.version;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 
 /**
  * Cache version conflict resolver.
@@ -46,13 +45,10 @@ public interface CacheVersionConflictResolver {
     /**
      * Generates serialized previous state metadata.
      *
-     * @param ctx
-     * @param key Key.
-     * @param val Previous value.
-     * @param ver Previous version.
+     * @param entry Cache entry.
      * @return Serialized previous state metadata.
      */
-    public default Object previousStateMetadata(CacheObjectValueContext ctx, KeyCacheObject key, CacheObject val, GridCacheVersion ver){
+    public default Object previousStateMetadata(GridCacheEntryEx entry) {
         return null;
     }
 }

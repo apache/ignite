@@ -4630,7 +4630,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** */
     private CacheObject previousStateMetadata() {
-        return cctx.toCacheObject(cctx.conflictResolver().previousStateMetadata(cctx.cacheObjectContext(), key, val, ver));
+        return cctx.toCacheObject(cctx.conflictResolver().previousStateMetadata(this));
     }
 
     /** {@inheritDoc} */
@@ -6034,7 +6034,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             long updateCntr0 = entry.nextPartitionCounter(topVer, primary, false, updateCntr);
 
-            entry.logUpdate(op, updated, newVer, newExpireTime, updateCntr0, primary, previousStateMetadata(cctx));
+            entry.logUpdate(op, updated, newVer, newExpireTime, updateCntr0, primary, previousStateMetadata());
 
             if (!entry.isNear()) {
                 newRow = entry.localPartition().dataStore().createRow(
@@ -6133,7 +6133,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             long updateCntr0 = entry.nextPartitionCounter(topVer, primary, false, updateCntr);
 
-            entry.logUpdate(op, null, newVer, 0, updateCntr0, primary, previousStateMetadata(cctx));
+            entry.logUpdate(op, null, newVer, 0, updateCntr0, primary, previousStateMetadata());
 
             if (oldVal != null) {
                 assert !entry.deletedUnlocked();
@@ -6178,9 +6178,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
 
         /** */
-        private CacheObject previousStateMetadata(GridCacheContext cctx) {
-            return cctx.toCacheObject(cctx.conflictResolver().previousStateMetadata(
-                cctx.cacheObjectContext(), entry.key, entry.val, entry.ver));
+        private CacheObject previousStateMetadata() {
+            GridCacheContext ctx = entry.context();
+
+            return ctx.toCacheObject(ctx.conflictResolver().previousStateMetadata(entry));
         }
 
         /**
