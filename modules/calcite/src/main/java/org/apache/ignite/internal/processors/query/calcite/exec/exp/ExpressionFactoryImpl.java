@@ -878,6 +878,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
             return rowComparator.compare(lowerBound, upperBound) < 0;
         }
+
         /** Range intersects another range. */
         public boolean intersects(RangeConditionImpl o) {
             calcBounds();

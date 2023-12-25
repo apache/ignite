@@ -39,6 +39,7 @@ public class IndexMultiRangeScanIntegrationTest extends AbstractBasicIntegration
     public static List<Boolean> parameters() {
         return F.asList(true, false);
     }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -112,8 +113,8 @@ public class IndexMultiRangeScanIntegrationTest extends AbstractBasicIntegration
                 .returns(2, "3", 6)
                 .check();
 
-            assertQuery("SELECT * FROM "+ tbl +
-                " WHERE c1 = %s AND c2 > %s AND c3 IN (%s, %s)", 4, "3", 16, 20)
+            assertQuery("SELECT * FROM " + tbl +
+                    " WHERE c1 = %s AND c2 > %s AND c3 IN (%s, %s)", 4, "3", 16, 20)
                 .returns(4, "4", 16)
                 .returns(4, "5", 20)
                 .check();
