@@ -148,11 +148,11 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
         final IgniteConfiguration cfg = getConfiguration(igniteInstanceName); // stub - won't be used at node startup
 
-        final ListeningTestLogger logger = new ListeningTestLogger(log);
+        final ListeningTestLogger log0 = new ListeningTestLogger(log);
 
-        IgniteProcessProxy ignite = new IgniteProcessProxy(cfg, logger, locJvmInstance == null ? null : () -> locJvmInstance, true) {
+        IgniteProcessProxy ignite = new IgniteProcessProxy(cfg, log0, locJvmInstance == null ? null : () -> locJvmInstance, true) {
             @Override protected IgniteLogger logger(IgniteLogger log, Object ctgr) {
-                return logger.getLogger(ctgr + "#" + ver.replaceAll("\\.", "_"));
+                return log0.getLogger(ctgr + "#" + ver.replaceAll("\\.", "_"));
             }
 
             @Override protected String igniteNodeRunnerClassName() throws Exception {
@@ -177,14 +177,14 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
             LogListener lsnr = LogListener.matches(SYNCHRONIZATION_LOG_MESSAGE + nodeId).build();
 
-            logger.registerListener(lsnr);
+            log0.registerListener(lsnr);
 
             final long joinTimeout = getNodeJoinTimeout();
 
             assertTrue("Node has not joined [id=" + nodeId + "]/" +
                 "or does not completed its startup during timeout: " + joinTimeout + " ms.", lsnr.check(joinTimeout));
 
-            logger.clearListeners();
+            log0.clearListeners();
         }
 
         if (rmJvmInstance == null)
