@@ -92,8 +92,6 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
             F.flatCollections(joinTables.stream().map(TableScan::getHints).collect(Collectors.toList())).stream(),
             HintUtils.allRelHints(join).stream()).collect(Collectors.toList());
 
-        hints = HintUtils.allRelHints(join);
-
         if (hints.isEmpty())
             return false;
 
