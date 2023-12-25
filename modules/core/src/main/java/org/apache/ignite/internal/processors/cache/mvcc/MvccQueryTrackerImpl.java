@@ -135,8 +135,6 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
         if (state0 != null && state0.getClass() == SnapshotFuture.class)
             ((SnapshotFuture)state0).cancel();
-        else
-            ackQueryDone((MvccSnapshot)state0);
     }
 
     /** {@inheritDoc} */
@@ -203,8 +201,6 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
         if (needRemap) // Coordinator is failed or reassigned, need remap.
             tryRemap(coordinator().topologyVersion(), lsnr);
-        else if (ackQueryDone) // Coordinator is not failed, but the tracker is already closed.
-            ackQueryDone(res);
 
         return false;
     }
@@ -277,11 +273,6 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
         catch (IgniteCheckedException e) {
             lsnr.onError(e);
         }
-    }
-
-    /** */
-    private void ackQueryDone(MvccSnapshot snapshot) {
-        // No-op.
     }
 
     /** */

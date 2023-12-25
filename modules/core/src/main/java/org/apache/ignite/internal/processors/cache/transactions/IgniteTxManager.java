@@ -2732,16 +2732,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         return false;
     }
 
-    /**
-     * Sets MVCC state.
-     *
-     * @param tx Transaction.
-     * @param state New state.
-     */
-    public void setMvccState(IgniteInternalTx tx, TransactionState state) {
-        // No-op.
-    }
-
     /** */
     private byte toMvccState(TransactionState state) {
         switch (state) {
@@ -2754,14 +2744,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             default:
                 throw new IllegalStateException("Unexpected state: " + state);
         }
-    }
-
-    /**
-     *  Finishes MVCC transaction.
-     *  @param tx Transaction.
-     */
-    public void mvccFinish(IgniteTxAdapter tx) {
-        // No-op.
     }
 
     /**

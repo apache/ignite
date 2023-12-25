@@ -1210,11 +1210,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 if (state != ACTIVE && state != SUSPENDED)
                     seal();
 
-                if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
-                    cctx.tm().setMvccState(this, state);
-
+                if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK)
                     ptr = cctx.tm().logTxRecord(this);
-                }
             }
         }
 

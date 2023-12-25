@@ -319,8 +319,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             cctx.time().addTimeoutObject(timeoutObj);
 
         try {
-            checkCoordinatorVersion();
-
             UpdateSourceIterator<?> it = createIterator();
 
             if (!it.hasNext()) {
@@ -907,17 +905,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         assert !nodes.isEmpty() && nodes.get(0).isLocal();
 
         return nodes.subList(1, nodes.size());
-    }
-
-    /**
-     * Checks whether new coordinator was initialized after the snapshot is acquired.
-     * <p>
-     * Need to fit invariant that all updates are finished before a new coordinator is initialized.
-     *
-     * @throws ClusterTopologyCheckedException If failed.
-     */
-    private void checkCoordinatorVersion() throws ClusterTopologyCheckedException {
-        // No-op.
     }
 
     /**

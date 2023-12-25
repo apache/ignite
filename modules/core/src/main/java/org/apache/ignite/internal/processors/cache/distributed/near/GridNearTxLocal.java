@@ -4120,11 +4120,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (F.isEmpty(dhtMap) && F.isEmpty(nearMap)) {
             IgniteInternalFuture fut = prep != null ? prep : new GridFinishedFuture<>(this);
 
-            if (fut.isDone())
-                cctx.tm().mvccFinish(this);
-            else
-                fut.listen(() -> cctx.tm().mvccFinish(this));
-
             return fut;
         }
 
