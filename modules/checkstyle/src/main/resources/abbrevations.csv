@@ -34,7 +34,7 @@ index,idx
 initial,init
 initialize,init
 #iterator,iter
-#label,lbl
+label,lbl
 #local,loc
 #logger,log
 #loader,ldr
