@@ -48,13 +48,14 @@ public class IndexMultiRangeScanIntegrationTest extends AbstractBasicIntegration
         sql("CREATE INDEX c1c2c3 ON test(c1, c2, c3)");
         sql("CREATE TABLE test_desc (c1 INTEGER, c2 VARCHAR, c3 INTEGER)");
         sql("CREATE INDEX c1c2c3_desc ON test_desc(c1 DESC, c2 DESC, c3 DESC)");
+        sql("CREATE TABLE test_pk (c1 INTEGER, c2 VARCHAR, c3 INTEGER, PRIMARY KEY(c1, c2, c3))");
 
-        for (String tbl : F.asList("test", "test_desc")) {
-            sql("INSERT INTO " + tbl + " VALUES (0, null, 0)");
+        for (String tbl : F.asList("test", "test_desc", "test_pk")) {
+            sql("INSERT INTO " + tbl + "(c1, c2, c3) VALUES (0, null, 0)");
 
             for (int i = 0; i <= 5; i++) {
                 for (int j = 1; j <= 5; j++)
-                    sql("INSERT INTO " + tbl + " VALUES (?, ?, ?)", i == 0 ? null : i, Integer.toString(j), i * j);
+                    sql("INSERT INTO " + tbl + "(c1, c2, c3) VALUES (?, ?, ?)", i == 0 ? null : i, Integer.toString(j), i * j);
             }
         }
     }
@@ -67,25 +68,31 @@ public class IndexMultiRangeScanIntegrationTest extends AbstractBasicIntegration
     /** */
     @Test
     public void testIn() {
-        assertQuery("SELECT * FROM test WHERE c1 IN (%s, %s) AND c2 IN (%s, %s) AND c3 IN (%s, %s)",
-            2, 3, "2", "3", 6, 9)
-            .returns(2, "3", 6)
-            .returns(3, "2", 6)
-            .returns(3, "3", 9)
-            .check();
+        for (String tbl : F.asList("test", "test_desc", "test_pk")) {
+            log.info("Processing table: " + tbl);
 
-        assertQuery("SELECT * FROM test WHERE (c1 = %s OR c1 IS NULL) AND c2 IN (%s, %s) AND c3 IN (%s, %s)",
-            2, "2", "3", 0, 6)
-            .returns(null, "2", 0)
-            .returns(null, "3", 0)
-            .returns(2, "3", 6)
-            .check();
+            assertQuery("SELECT * FROM " + tbl + " WHERE c1 IN (%s, %s) AND c2 IN (%s, %s) AND c3 IN (%s, %s)",
+                2, 3, "2", "3", 6, 9)
+                .returns(2, "3", 6)
+                .returns(3, "2", 6)
+                .returns(3, "3", 9)
+                .check();
+
+            assertQuery("SELECT * FROM " + tbl + " WHERE (c1 = %s OR c1 IS NULL) AND c2 IN (%s, %s) AND c3 IN (%s, %s)",
+                2, "2", "3", 0, 6)
+                .returns(null, "2", 0)
+                .returns(null, "3", 0)
+                .returns(2, "3", 6)
+                .check();
+        }
     }
 
     /** */
     @Test
     public void testRange() {
-        for (String tbl : F.asList("test", "test_desc")) {
+        for (String tbl : F.asList("test", "test_desc", "test_pk")) {
+            log.info("Processing table: " + tbl);
+
             assertQuery("SELECT * FROM " + tbl +
                     " WHERE ((c1 > %s AND c1 < %s) OR (c1 > %s AND c1 < %s)) AND c2 > %s AND c2 < %s",
                 1, 3, 3, 5, "2", "5")
@@ -130,9 +137,29 @@ public class IndexMultiRangeScanIntegrationTest extends AbstractBasicIntegration
     /** */
     @Test
     public void testNulls() {
-        for (String tbl : F.asList("test", "test_desc")) {
+        for (String tbl : F.asList("test", "test_desc", "test_pk")) {
+            log.info("Processing table: " + tbl);
+
             assertQuery("SELECT * FROM " + tbl + " WHERE c1 IS NULL AND c2 <= %s", "1")
                 .returns(null, "1", 0)
+                .check();
+
+            assertQuery("SELECT * FROM " + tbl + " WHERE (c1 IS NULL OR c1 = %s) AND c2 = %s AND c3 in (%s, %s)",
+                3, "1", 0, 3)
+                .returns(null, "1", 0)
+                .returns(3, "1", 3)
+                .check();
+
+            assertQuery("SELECT * FROM " + tbl + " WHERE (c1 IS NULL OR c1 < %s) AND c2 = %s AND c3 in (%s, %s)",
+                3, "1", 0, 1)
+                .returns(null, "1", 0)
+                .returns(1, "1", 1)
+                .check();
+
+            assertQuery("SELECT * FROM " + tbl + " WHERE (c1 IS NULL OR c1 > %s) AND c2 = %s AND c3 in (%s, %s)",
+                3, "5", 0, 25)
+                .returns(null, "5", 0)
+                .returns(5, "5", 25)
                 .check();
 
             assertQuery("SELECT * FROM " + tbl + " WHERE c1 IS NOT NULL AND c2 IS NULL")
@@ -228,7 +255,9 @@ public class IndexMultiRangeScanIntegrationTest extends AbstractBasicIntegration
     /** */
     @Test
     public void testRangeIntersection() {
-        for (String tbl : F.asList("test", "test_desc")) {
+        for (String tbl : F.asList("test", "test_desc", "test_pk")) {
+            log.info("Processing table: " + tbl);
+
             assertQuery("SELECT * FROM " + tbl + " WHERE c1 IN (%s, %s, %s, %s) and c3 in (%s, %s, %s, %s)",
                 3, 4, 4, 3, 12, 9, 16, 12)
                 .returns(3, "3", 9)
@@ -291,7 +320,9 @@ public class IndexMultiRangeScanIntegrationTest extends AbstractBasicIntegration
     /** */
     @Test
     public void testInvalidRange() {
-        for (String tbl : F.asList("test", "test_desc")) {
+        for (String tbl : F.asList("test", "test_desc", "test_pk")) {
+            log.info("Processing table: " + tbl);
+
             assertQuery("SELECT * FROM " + tbl + " WHERE c1 BETWEEN %s AND %s", 4, 3)
                 .resultSize(0)
                 .check();

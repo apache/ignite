@@ -876,7 +876,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         public boolean valid() {
             calcBounds();
 
-            return rowComparator.compare(lowerBound, upperBound) < 0;
+            return rowComparator.compare(lowerBound, upperBound) <= 0;
         }
 
         /** Range intersects another range. */
