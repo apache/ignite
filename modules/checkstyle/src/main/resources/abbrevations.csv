@@ -31,8 +31,8 @@ handler,hnd
 header,hdr
 implementation,impl
 index,idx
-#initial,init
-#initialize,init
+initial,init
+initialize,init
 #iterator,iter
 #label,lbl
 #local,loc
