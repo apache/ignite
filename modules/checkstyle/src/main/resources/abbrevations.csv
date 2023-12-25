@@ -37,7 +37,7 @@ initialize,init
 label,lbl
 #local,loc
 logger,log
-#loader,ldr
+loader,ldr
 #manager,mgr
 #message,msg
 #mutex,mux
