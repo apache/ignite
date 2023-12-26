@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -51,6 +52,8 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.metric.IgniteMetricRegistry;
+import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
@@ -60,6 +63,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.fromFullName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
@@ -134,6 +138,12 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Whether cluster is in fully rebalanced state metric name. */
     public static final String REBALANCED = "Rebalanced";
 
+    /** Custom metrics registry name. */
+    public static final String CUSTOM_REGISTRY_NAME = "custom";
+
+    /** */
+    public static final Pattern SEPARATOR_PATTERN = Pattern.compile("\\" + SEPARATOR);
+
     /** JVM interface to memory consumption info */
     private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
 
@@ -188,6 +198,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** */
     private final SunOperatingSystemMXBeanAccessor sunOs;
 
+    /** */
+    private final IgniteMetrics customMetrics;
+
     /**
      * @param ctx Kernal context.
      */
@@ -241,6 +254,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         pmeReg.histogram(PME_OPS_BLOCKED_DURATION_HISTOGRAM, pmeBounds,
             "Histogram of cache operations blocked PME durations in milliseconds.");
+
+        customMetrics = new IgniteMetricsImpl();
     }
 
     /** {@inheritDoc} */
@@ -307,10 +322,22 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @return Group of metrics.
      */
     public MetricRegistry registry(String name) {
+        return registry(name, false);
+    }
+
+    /**
+     * Gets or creates metric registry.
+     *
+     * @param name Group name.
+     * @param custom Custom metrics flag.
+     * @return Group of metrics.
+     */
+    public MetricRegistry registry(String name, boolean custom) {
         return (MetricRegistry)registries.computeIfAbsent(name, n -> {
             MetricRegistry mreg = new MetricRegistry(name,
-                mname -> readFromMetastorage(metricName(HITRATE_CFG_PREFIX, mname)),
-                mname -> readFromMetastorage(metricName(HISTOGRAM_CFG_PREFIX, mname)),
+                custom,
+                custom ? null : mname -> readFromMetastorage(metricName(HITRATE_CFG_PREFIX, mname)),
+                custom ? null : mname -> readFromMetastorage(metricName(HISTOGRAM_CFG_PREFIX, mname)),
                 log);
 
             notifyListeners(mreg, metricRegCreationLsnrs, log);
@@ -336,6 +363,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /** @return Custom metrics. */
+    public IgniteMetrics custom() {
+        return customMetrics;
     }
 
     /** {@inheritDoc} */
@@ -744,5 +776,67 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         /** @see com.sun.management.OperatingSystemMXBean#getTotalPhysicalMemorySize() */
         long getTotalPhysicalMemorySize();
+    }
+
+    /** Custom metrics impl. */
+    private class IgniteMetricsImpl implements IgniteMetrics {
+        /** {@inheritDoc} */
+        @Override public @Nullable ReadOnlyMetricRegistry findRegistry(String registryName) {
+            return registries.get(registryName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteMetricRegistry customRegistry(String registryName) {
+            return registry(customName(registryName), true);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeCustomRegistry(String registryName) {
+            remove(customName(registryName), false);
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Iterator<ReadOnlyMetricRegistry> iterator() {
+            return GridMetricManager.this.iterator();
+        }
+
+        /** Ensures that {@code name} starts with {@link #CUSTOM_REGISTRY_NAME}. */
+        private String customName(String name) {
+            if (name == null)
+                return CUSTOM_REGISTRY_NAME;
+
+            name = name.trim();
+
+            if (name.isEmpty())
+                return CUSTOM_REGISTRY_NAME;
+
+            String[] splited = SEPARATOR_PATTERN.split(name);
+
+            if (splited.length == 0 || (splited.length == 1 && F.isEmpty(splited[0])))
+                return CUSTOM_REGISTRY_NAME;
+
+            boolean addPrefix = true;
+
+            for (int i = 0; i < splited.length; ++i)
+                splited[i] = metricName(splited[i]);
+
+            if (splited[0].equalsIgnoreCase(CUSTOM_REGISTRY_NAME)) {
+                splited[0] = splited[0].toLowerCase();
+
+                addPrefix = false;
+            }
+
+            String[] prefixed = splited;
+
+            if (addPrefix) {
+                prefixed = new String[splited.length + 1];
+
+                System.arraycopy(splited, 0, prefixed, 1, splited.length);
+
+                prefixed[0] = CUSTOM_REGISTRY_NAME;
+            }
+
+            return metricName(prefixed);
+        }
     }
 }

@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processors.metric.impl;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
-import org.apache.ignite.spi.metric.IntMetric;
+import org.apache.ignite.metric.IntValueMetric;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Int metric implementation.
  */
-public class IntMetricImpl extends AbstractMetric implements IntMetric {
+public class IntMetricImpl extends AbstractMetric implements IntValueMetric {
     /** Field updater. */
     private static final AtomicIntegerFieldUpdater<IntMetricImpl> updater =
         AtomicIntegerFieldUpdater.newUpdater(IntMetricImpl.class, "val");
@@ -41,41 +41,33 @@ public class IntMetricImpl extends AbstractMetric implements IntMetric {
         super(name, desc);
     }
 
-    /**
-     * Adds x to the metric.
-     *
-     * @param x Value to be added.
-     */
-    public void add(int x) {
+    /** {@inheritDoc} */
+    @Override public void add(int x) {
         updater.addAndGet(this, x);
     }
 
-    /** Adds 1 to the metric. */
-    public void increment() {
+    /** {@inheritDoc} */
+    @Override public void increment() {
         add(1);
     }
 
-    /** Adds -1 to the metric. */
-    public void decrement() {
+    /** {@inheritDoc} */
+    @Override public void decrement() {
         add(-1);
     }
 
-    /**
-     * Sets value.
-     *
-     * @param val Value.
-     */
-    public void value(int val) {
-        this.val = val;
+    /** {@inheritDoc} */
+    @Override public int value() {
+        return updater.get(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void value(int value) {
+        updater.set(this, value);
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
         updater.set(this, 0);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int value() {
-        return val;
     }
 }

@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.processors.metric.impl;
 
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
+import org.apache.ignite.metric.CustomMetric;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of {@link ObjectMetric}.
  */
-public class ObjectMetricImpl<T> extends AbstractMetric implements ObjectMetric<T> {
+public class ObjectMetricImpl<T> extends AbstractMetric implements CustomMetric<T> {
     /** Value. */
     private volatile T val;
 
@@ -52,12 +53,8 @@ public class ObjectMetricImpl<T> extends AbstractMetric implements ObjectMetric<
         return type;
     }
 
-    /**
-     * Sets value.
-     *
-     * @param val Value.
-     */
-    public void value(T val) {
+    /** {@inheritDoc} */
+    @Override public void value(T val) {
         this.val = val;
     }
 }

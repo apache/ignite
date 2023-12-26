@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processors.metric.impl;
 
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
-import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.metric.LongSumMetric;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Long metric implementation based on {@link LongAdder}.
  */
-public class LongAdderMetric extends AbstractMetric implements LongMetric {
+public class LongAdderMetric extends AbstractMetric implements LongSumMetric {
     /** Field value. */
     private volatile LongAdder val = new LongAdder();
 
@@ -37,22 +37,18 @@ public class LongAdderMetric extends AbstractMetric implements LongMetric {
         super(name, desc);
     }
 
-    /**
-     * Adds x to the metric.
-     *
-     * @param x Value to be added.
-     */
-    public void add(long x) {
+    /** {@inheritDoc} */
+    @Override public void add(long x) {
         add0(x);
     }
 
-    /** Adds 1 to the metric. */
-    public void increment() {
+    /** {@inheritDoc} */
+    @Override public void increment() {
         add0(1);
     }
 
-    /** Adds -1 to the metric. */
-    public void decrement() {
+    /** {@inheritDoc} */
+    @Override public void decrement() {
         add0(-1);
     }
 

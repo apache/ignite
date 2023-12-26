@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.metric.impl;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -45,6 +47,9 @@ public class MetricUtils {
     /** Histogram name divider. */
     public static final char HISTOGRAM_NAME_DIVIDER = '_';
 
+    /** Metric name part separator. */
+    private static final Pattern SPACES_APTTERN = Pattern.compile("\\s*");
+
     /**
      * Builds metric name. Each parameter will separated by '.' char.
      *
@@ -53,7 +58,8 @@ public class MetricUtils {
      */
     public static String metricName(String... names) {
         assert names != null;
-        assert ensureAllNamesNotEmpty(names);
+
+        triamAllAndEnsureNotEmpty(names);
 
         if (names.length == 1)
             return names[0];
@@ -149,13 +155,15 @@ public class MetricUtils {
      * Asserts all arguments are not empty.
      *
      * @param names Names.
-     * @return True.
      */
-    private static boolean ensureAllNamesNotEmpty(String... names) {
-        for (int i = 0; i < names.length; i++)
-            assert names[i] != null && !names[i].isEmpty() : i + " element is empty [" + String.join(".", names) + "]";
+    private static void triamAllAndEnsureNotEmpty(String... names) {
+        for (int i = 0; i < names.length; i++) {
+            if (names[i] != null && !names[i].isEmpty())
+                names[i] = SPACES_APTTERN.matcher(names[i]).replaceAll("");
 
-        return true;
+            if (names[i] == null || names[i].isEmpty())
+                throw new IgniteException("Metric name element " + i + " is completely empty. Any spaces are not allowed.");
+        }
     }
 
     /**
