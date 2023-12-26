@@ -24,7 +24,7 @@ import org.apache.ignite.spi.metric.DoubleMetric;
 @IgniteExperimental
 public interface DoubleValueMetric extends DoubleMetric {
     /**
-     * Raises metric value metric.
+     * Raises metric value.
      *
      * @param value An increment to add to current metric's value.
      */

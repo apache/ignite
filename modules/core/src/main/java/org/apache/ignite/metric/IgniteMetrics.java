@@ -22,11 +22,17 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Allows to manage custom metrics and to get any read only metrics including the Ignite's internals.
- *
- * Note: Names of custom metric registries are required to start with 'custom.' (lower case), may have additional
- * dot-separated qualifiers. Any custom name qualifier cannot have spaces and must not be empty. Names of internal
- * metrics do not meet such requirement.
+ * Allows to manage custom metrics and to obtain read-only internal metrics.
+ * <p>
+ * Metrics are grouped into registries (groups). Every metric has full name which is the conjunction of registry name
+ * and the metric short name. Within a registry metric has only its own short name.
+ * <p>
+ * Note: Names of custom metric registries are required to start with 'custom.' (lower case) and may have additional
+ * dot-separated qualifiers. The prefix is automatically added if missed. For example, if provided custom registry name
+ * is "a.b.c.mname", it is automatically extended to "custom.a.b.c.mname".
+ * <p>
+ * Any custom name or dot-separated name part cannot have spaces and must not be empty. Spaces are removed.
+ * <p>
  * Examples of custom metric registry names: "custom", "custom.admin", "custom.admin.sessions", "custom.processes", etc.
  *
  * @see ReadOnlyMetricRegistry
@@ -35,7 +41,7 @@ import org.jetbrains.annotations.Nullable;
 @IgniteExperimental
 public interface IgniteMetrics extends Iterable<ReadOnlyMetricRegistry> {
     /**
-     * Gets or creates custom metric registry named "custom." + the passed name.
+     * Gets or creates custom metric registry named "custom." + {@code registryName}.
      *
      * @param registryName name part to add to the prefix "custom.".
      * @return {@link IgniteMetricRegistry} registry.

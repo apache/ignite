@@ -27,6 +27,7 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * Metric registry. Allows to get, add or remove metrics.
  *
  * @see IgniteMetrics
  * @see ReadOnlyMetricRegistry
@@ -36,9 +37,9 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
      /**
      * Registers an int metric which value will be queried from the specified supplier.
      *
-     * @param name Metric name
-     * @param supplier Supplier.
-     * @param desc Description.
+     * @param name Metric name.
+     * @param supplier Metric value supplier.
+     * @param desc Metric description.
      * @return {@code True} if new metric was added. {@code False} is other metric already exists with the same name.
      */
     boolean gauge(String name, IntSupplier supplier, @Nullable String desc);
@@ -46,9 +47,9 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
     /**
      * Registers a long which value will be queried from the specified supplier.
      *
-     * @param name Metric name
-     * @param supplier Supplier.
-     * @param desc Description.
+     * @param name Metric name.
+     * @param supplier Metric value supplier.
+     * @param desc Metric description.
      * @return {@code True} if new metric was added. {@code False} is other metric already exists with the same name.
      */
     boolean gauge(String name, LongSupplier supplier, @Nullable String desc);
@@ -56,9 +57,9 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
     /**
      * Registers a double metric which value will be queried from the specified supplier.
      *
-     * @param name Metric name
-     * @param supplier Supplier.
-     * @param desc Description.
+     * @param name Metric name.
+     * @param supplier Metric value supplier.
+     * @param desc Metric description.
      * @return {@code True} if new metric was added. {@code False} is other metric already exists with the same name.
      */
     boolean gauge(String name, DoubleSupplier supplier, @Nullable String desc);
@@ -66,10 +67,10 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
     /**
      * Registers an object metric which value will be queried from the specified supplier.
      *
-     * @param name Metric name
-     * @param supplier Supplier.
+     * @param name Metric name.
+     * @param supplier Metric value supplier.
      * @param type Metric value type.
-     * @param desc Description.
+     * @param desc Metric description.
      * @param <T> Metric value type.
      * @return {@code True} if new metric was added. {@code False} is other metric already exists with the same name.
      */
@@ -78,9 +79,9 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
     /**
      * Registers a boolean metric which value will be queried from the specified supplier.
      *
-     * @param name Metric name
-     * @param supplier Supplier.
-     * @param desc Description.
+     * @param name Metric name.
+     * @param supplier Metric value supplier.
+     * @param desc Metric description.
      * @return {@code True} if new metric was added. {@code False} is other metric already exists with the same name.
      */
     boolean gauge(String name, BooleanSupplier supplier, @Nullable String desc);
@@ -88,8 +89,8 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
     /**
      * Registers an updatable int metric.
      *
-     * @param name Metric name
-     * @param desc Description.
+     * @param name Metric name.
+     * @param desc Metric description.
      * @return New {@link IntValueMetric} or previous one with the same name. {@code Null} if previous metric exists and
      * is not a {@link IntValueMetric}.
      */
@@ -98,8 +99,8 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
     /**
      * Registers an updatable long metric.
      *
-     * @param name Metric name
-     * @param desc Description.
+     * @param name Metric name.
+     * @param desc Metric description.
      * @return New {@link LongValueMetric} or previous one with the same name. {@code Null} if previous metric exists and
      * is not a {@link LongValueMetric}.
      */
@@ -108,8 +109,8 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
     /**
      * Registers an updatable long adder metric.
      *
-     * @param name Metric name
-     * @param desc Description.
+     * @param name Metric name.
+     * @param desc Metric description.
      * @return New {@link LongValueMetric} or previous one with the same name. {@code Null} if previous metric exists and
      * is not a {@link LongValueMetric}.
      */
@@ -118,8 +119,8 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
     /**
      * Registers an updatable double metric.
      *
-     * @param name Metric name
-     * @param desc Description.
+     * @param name Metric name.
+     * @param desc Metric description.
      * @return New {@link DoubleValueMetric} or previous one with the same name. {@code Null} if previous metric exists and
      * is not a {@link DoubleValueMetric}.
      */
@@ -128,19 +129,19 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
     /**
      * Registers an updatable double metric.
      *
-     * @param name Metric name
+     * @param name Metric name.
      * @param type Metric value type.
-     * @param desc Description.
+     * @param desc Metric description.
      * @param <T> Metric value type.
-     * @return New {@link CustomMetric} or previous one with the same name. {@code Null} if previous metric exists and
-     * is not a {@link CustomMetric}.
+     * @return New {@link AnyValueMetric} or previous one with the same name. {@code Null} if previous metric exists and
+     * is not a {@link AnyValueMetric}.
      */
-    @Nullable <T> CustomMetric<T> objectMetric(String name, Class<T> type, @Nullable String desc);
+    @Nullable <T> AnyValueMetric<T> objectMetric(String name, Class<T> type, @Nullable String desc);
 
     /**
      * Removes metrics with the {@code name}.
      *
-     * @param name Metric name.
+     * @param name Metric name..
      */
     void remove(String name);
 

@@ -24,15 +24,15 @@ import org.apache.ignite.spi.metric.LongMetric;
 @IgniteExperimental
 public interface LongSumMetric extends LongMetric {
     /**
-     * Raises metric value metric.
+     * Raises metric value.
      *
      * @param value An increment to add to current metric's value.
      */
     void add(long value);
 
-    /** Increments metric value by 1L. */
+    /** Increments metric value with 1L. */
     void increment();
 
-    /** Decrements metric value by -1L. */
+    /** Decrements metric value with -1L. */
     void decrement();
 }

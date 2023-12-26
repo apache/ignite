@@ -24,7 +24,7 @@ import org.apache.ignite.spi.metric.IntMetric;
 @IgniteExperimental
 public interface IntValueMetric extends IntMetric {
     /**
-     * Raises metric value metric.
+     * Raises metric value.
      *
      * @param value An increment to add to current metric's value.
      */
@@ -37,9 +37,9 @@ public interface IntValueMetric extends IntMetric {
      */
     void value(int value);
 
-    /** Increments metric value by 1. */
+    /** Increments metric value with 1. */
     void increment();
 
-    /** Decrements metric value by -1. */
+    /** Decrements metric value with -1. */
     void decrement();
 }
