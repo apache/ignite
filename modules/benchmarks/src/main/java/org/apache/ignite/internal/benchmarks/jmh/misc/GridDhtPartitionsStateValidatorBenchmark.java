@@ -132,15 +132,15 @@ public class GridDhtPartitionsStateValidatorBenchmark extends JmhAbstractBenchma
             Mockito.when(topologyMock.currentLocalPartitions()).thenReturn(localPartitions);
 
             // Form single messages map.
-            Map<UUID, GridDhtPartitionsSingleMessage> messages = new HashMap<>();
+            Map<UUID, GridDhtPartitionsSingleMessage> msgs = new HashMap<>();
 
             for (int n = 0; n < NODES; ++n) {
                 UUID remoteNode = UUID.randomUUID();
 
-                messages.put(remoteNode, from(updateCountersMap, cacheSizesMap));
+                msgs.put(remoteNode, from(updateCountersMap, cacheSizesMap));
             }
 
-            messages.put(ignoreNode, from(updateCountersMap, cacheSizesMap));
+            msgs.put(ignoreNode, from(updateCountersMap, cacheSizesMap));
 
             validator = new GridDhtPartitionsStateValidator(cctxMock);
         }

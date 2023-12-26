@@ -293,17 +293,17 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         ).matcher(testOut.toString());
 
         List<Integer> rebuildProgressStatuses = new ArrayList<>();
-        List<Integer> indexBuildPartitionsLeftCounts = new ArrayList<>();
+        List<Integer> idxBuildPartitionsLeftCounts = new ArrayList<>();
 
         while (matcher.find()) {
-            indexBuildPartitionsLeftCounts.add(Integer.parseInt(matcher.group(1)));
+            idxBuildPartitionsLeftCounts.add(Integer.parseInt(matcher.group(1)));
 
             rebuildProgressStatuses.add(Integer.parseInt(matcher.group(3)));
         }
 
         assertTrue(rebuildProgressStatuses.stream().anyMatch(progress -> progress > 0));
 
-        int cacheTotalRebuildingPartsCnt = indexBuildPartitionsLeftCounts.stream().mapToInt(Integer::intValue).sum();
+        int cacheTotalRebuildingPartsCnt = idxBuildPartitionsLeftCounts.stream().mapToInt(Integer::intValue).sum();
 
         assertTrue(waitForCondition(
             () -> grid(0).cache(cacheName).metrics().getIndexBuildPartitionsLeftCount() == cacheTotalRebuildingPartsCnt,

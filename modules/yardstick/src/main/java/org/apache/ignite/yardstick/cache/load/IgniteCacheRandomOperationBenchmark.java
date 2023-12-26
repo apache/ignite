@@ -419,8 +419,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
         Map<String, Class> indexedFields = new HashMap<>();
 
-        for (QueryIndex index : qryEntity.getIndexes()) {
-            for (String iField : index.getFieldNames()) {
+        for (QueryIndex idx : qryEntity.getIndexes()) {
+            for (String iField : idx.getFieldNames()) {
                 indexedFields.put(iField,
                     Class.forName(qryEntity.getFields().get(iField)));
             }

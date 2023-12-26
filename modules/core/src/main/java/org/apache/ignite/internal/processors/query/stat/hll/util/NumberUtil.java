@@ -113,10 +113,10 @@ public class NumberUtil {
         final int upperBound = offset + charCnt;
 
         final byte[] bytes = new byte[charCnt >>> 1/*aka /2*/];
-        int byteIndex = 0/*beginning*/;
+        int byteIdx = 0/*beginning*/;
 
         for (int i = offset; i < upperBound; i += 2)
-            bytes[byteIndex++] = (byte)(( (digit(string.charAt(i)) << 4) | digit(string.charAt(i + 1))) & 0xFF);
+            bytes[byteIdx++] = (byte)(( (digit(string.charAt(i)) << 4) | digit(string.charAt(i + 1))) & 0xFF);
 
         return bytes;
     }

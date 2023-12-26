@@ -249,7 +249,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
 
         AtomicBoolean timeoutReached = new AtomicBoolean(false);
 
-        CheckpointManager checkpointManager = U.field(ig0.context().cache().context().database(), "checkpointManager");
+        CheckpointManager checkpointMgr = U.field(ig0.context().cache().context().database(), "checkpointManager");
 
         IgniteInternalFuture<?> ldrFut = runMultiThreadedAsync(() -> {
             while (!timeoutReached.get()) {
@@ -271,7 +271,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> cpWriteLockUnlockFut = runAsync(() -> {
             Object checkpointReadWriteLock = U.field(
-                checkpointManager.checkpointTimeoutLock(), "checkpointReadWriteLock"
+                checkpointMgr.checkpointTimeoutLock(), "checkpointReadWriteLock"
             );
 
             ReentrantReadWriteLockWithTracking lock = U.field(checkpointReadWriteLock, "checkpointLock");

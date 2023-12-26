@@ -106,17 +106,17 @@ public class BitVector implements Cloneable {
      */
     // NOTE:  if this changes then setMaxRegister() must change
     public long getRegister(final long registerIndex) {
-        final long bitIndex = registerIndex * registerWidth;
-        final int firstWordIndex = (int)(bitIndex >>> LOG2_BITS_PER_WORD)/*aka (bitIndex / BITS_PER_WORD)*/;
-        final int secondWordIndex = (int)((bitIndex + registerWidth - 1) >>> LOG2_BITS_PER_WORD)/*see above*/;
-        final int bitRemainder = (int)(bitIndex & BITS_PER_WORD_MASK)/*aka (bitIndex % BITS_PER_WORD)*/;
+        final long bitIdx = registerIndex * registerWidth;
+        final int firstWordIdx = (int)(bitIdx >>> LOG2_BITS_PER_WORD)/*aka (bitIndex / BITS_PER_WORD)*/;
+        final int secondWordIdx = (int)((bitIdx + registerWidth - 1) >>> LOG2_BITS_PER_WORD)/*see above*/;
+        final int bitRemainder = (int)(bitIdx & BITS_PER_WORD_MASK)/*aka (bitIndex % BITS_PER_WORD)*/;
 
-        if (firstWordIndex == secondWordIndex)
-            return ((words[firstWordIndex] >>> bitRemainder) & registerMask);
+        if (firstWordIdx == secondWordIdx)
+            return ((words[firstWordIdx] >>> bitRemainder) & registerMask);
         /* else -- register spans words */
 
-        return (words[firstWordIndex] >>> bitRemainder)/*no need to mask since at top of word*/
-            | (words[secondWordIndex] << (BITS_PER_WORD - bitRemainder)) & registerMask;
+        return (words[firstWordIdx] >>> bitRemainder)/*no need to mask since at top of word*/
+            | (words[secondWordIdx] << (BITS_PER_WORD - bitRemainder)) & registerMask;
     }
 
     /**
@@ -128,26 +128,26 @@ public class BitVector implements Cloneable {
      */
     // NOTE:  if this changes then setMaxRegister() must change
     public void setRegister(final long registerIndex, final long value) {
-        final long bitIndex = registerIndex * registerWidth;
-        final int firstWordIndex = (int)(bitIndex >>> LOG2_BITS_PER_WORD)/*aka (bitIndex / BITS_PER_WORD)*/;
-        final int secondWordIndex = (int)((bitIndex + registerWidth - 1) >>> LOG2_BITS_PER_WORD)/*see above*/;
-        final int bitRemainder = (int)(bitIndex & BITS_PER_WORD_MASK)/*aka (bitIndex % BITS_PER_WORD)*/;
+        final long bitIdx = registerIndex * registerWidth;
+        final int firstWordIdx = (int)(bitIdx >>> LOG2_BITS_PER_WORD)/*aka (bitIndex / BITS_PER_WORD)*/;
+        final int secondWordIdx = (int)((bitIdx + registerWidth - 1) >>> LOG2_BITS_PER_WORD)/*see above*/;
+        final int bitRemainder = (int)(bitIdx & BITS_PER_WORD_MASK)/*aka (bitIndex % BITS_PER_WORD)*/;
 
         final long words[] = this.words/*for convenience/performance*/;
 
-        if (firstWordIndex == secondWordIndex) {
+        if (firstWordIdx == secondWordIdx) {
             // clear then set
-            words[firstWordIndex] &= ~(registerMask << bitRemainder);
-            words[firstWordIndex] |= (value << bitRemainder);
+            words[firstWordIdx] &= ~(registerMask << bitRemainder);
+            words[firstWordIdx] |= (value << bitRemainder);
         }
         else {
             /*register spans words*/
             // clear then set each partial word
-            words[firstWordIndex] &= (1L << bitRemainder) - 1;
-            words[firstWordIndex] |= (value << bitRemainder);
+            words[firstWordIdx] &= (1L << bitRemainder) - 1;
+            words[firstWordIdx] |= (value << bitRemainder);
 
-            words[secondWordIndex] &= ~(registerMask >>> (BITS_PER_WORD - bitRemainder));
-            words[secondWordIndex] |= (value >>> (BITS_PER_WORD - bitRemainder));
+            words[secondWordIdx] &= ~(registerMask >>> (BITS_PER_WORD - bitRemainder));
+            words[secondWordIdx] |= (value >>> (BITS_PER_WORD - bitRemainder));
         }
     }
 
@@ -222,36 +222,36 @@ public class BitVector implements Cloneable {
      */
     // NOTE:  if this changes then setRegister() must change
     public boolean setMaxRegister(final long registerIndex, final long value) {
-        final long bitIndex = registerIndex * registerWidth;
-        final int firstWordIndex = (int)(bitIndex >>> LOG2_BITS_PER_WORD)/*aka (bitIndex / BITS_PER_WORD)*/;
-        final int secondWordIndex = (int)((bitIndex + registerWidth - 1) >>> LOG2_BITS_PER_WORD)/*see above*/;
-        final int bitRemainder = (int)(bitIndex & BITS_PER_WORD_MASK)/*aka (bitIndex % BITS_PER_WORD)*/;
+        final long bitIdx = registerIndex * registerWidth;
+        final int firstWordIdx = (int)(bitIdx >>> LOG2_BITS_PER_WORD)/*aka (bitIndex / BITS_PER_WORD)*/;
+        final int secondWordIdx = (int)((bitIdx + registerWidth - 1) >>> LOG2_BITS_PER_WORD)/*see above*/;
+        final int bitRemainder = (int)(bitIdx & BITS_PER_WORD_MASK)/*aka (bitIndex % BITS_PER_WORD)*/;
 
         // NOTE:  matches getRegister()
         final long registerValue;
         final long words[] = this.words/*for convenience/performance*/;
-        if (firstWordIndex == secondWordIndex)
-            registerValue = ((words[firstWordIndex] >>> bitRemainder) & registerMask);
+        if (firstWordIdx == secondWordIdx)
+            registerValue = ((words[firstWordIdx] >>> bitRemainder) & registerMask);
         else /*register spans words*/
-            registerValue = (words[firstWordIndex] >>> bitRemainder)/*no need to mask since at top of word*/
-                | (words[secondWordIndex] << (BITS_PER_WORD - bitRemainder)) & registerMask;
+            registerValue = (words[firstWordIdx] >>> bitRemainder)/*no need to mask since at top of word*/
+                | (words[secondWordIdx] << (BITS_PER_WORD - bitRemainder)) & registerMask;
 
         // determine which is the larger and update as necessary
         if (value > registerValue) {
             // NOTE:  matches setRegister()
-            if (firstWordIndex == secondWordIndex) {
+            if (firstWordIdx == secondWordIdx) {
                 // clear then set
-                words[firstWordIndex] &= ~(registerMask << bitRemainder);
-                words[firstWordIndex] |= (value << bitRemainder);
+                words[firstWordIdx] &= ~(registerMask << bitRemainder);
+                words[firstWordIdx] |= (value << bitRemainder);
             }
             else {
                 /*register spans words*/
                 // clear then set each partial word
-                words[firstWordIndex] &= (1L << bitRemainder) - 1;
-                words[firstWordIndex] |= (value << bitRemainder);
+                words[firstWordIdx] &= (1L << bitRemainder) - 1;
+                words[firstWordIdx] |= (value << bitRemainder);
 
-                words[secondWordIndex] &= ~(registerMask >>> (BITS_PER_WORD - bitRemainder));
-                words[secondWordIndex] |= (value >>> (BITS_PER_WORD - bitRemainder));
+                words[secondWordIdx] &= ~(registerMask >>> (BITS_PER_WORD - bitRemainder));
+                words[secondWordIdx] |= (value >>> (BITS_PER_WORD - bitRemainder));
             }
         } /* else -- the register value is greater (or equal) so nothing needs to be done */
 

@@ -458,7 +458,7 @@ public class ValidationOnNodeJoinUtils {
      * @return List of validation errors.
      */
     private static List<String> validateRmtRegions(ClusterNode rmtNode, GridKernalContext ctx) {
-        List<String> errorMessages = new ArrayList<>();
+        List<String> errorMsgs = new ArrayList<>();
 
         DataStorageConfiguration rmtStorageCfg = extractDataStorage(rmtNode, ctx);
         Map<String, DataRegionConfiguration> rmtRegionCfgs = dataRegionCfgs(rmtStorageCfg);
@@ -466,7 +466,7 @@ public class ValidationOnNodeJoinUtils {
         DataStorageConfiguration locStorageCfg = ctx.config().getDataStorageConfiguration();
 
         if (isDefaultDataRegionPersistent(locStorageCfg) != isDefaultDataRegionPersistent(rmtStorageCfg)) {
-            errorMessages.add(String.format(
+            errorMsgs.add(String.format(
                 INVALID_REGION_CONFIGURATION_MESSAGE,
                 "DEFAULT",
                 ctx.localNodeId(),
@@ -485,7 +485,7 @@ public class ValidationOnNodeJoinUtils {
                 DataRegionConfiguration rmtRegionCfg = rmtRegionCfgs.get(regionName);
 
                 if (rmtRegionCfg != null && rmtRegionCfg.isPersistenceEnabled() != nodeRegionCfgEntry.getValue().isPersistenceEnabled())
-                    errorMessages.add(String.format(
+                    errorMsgs.add(String.format(
                         INVALID_REGION_CONFIGURATION_MESSAGE,
                         regionName,
                         ctx.localNodeId(),
@@ -496,7 +496,7 @@ public class ValidationOnNodeJoinUtils {
             }
         }
 
-        return errorMessages;
+        return errorMsgs;
     }
 
     /**

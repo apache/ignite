@@ -66,19 +66,19 @@ public class CacheCheckIndexInlineSizesCommand
 
     /** {@inheritDoc} */
     @Override public void printResult(NoArg arg, CheckIndexInlineSizesResult res, Consumer<String> printer) {
-        Map<String, Map<Integer, Set<UUID>>> indexToSizeNode = new HashMap<>();
+        Map<String, Map<Integer, Set<UUID>>> idxToSizeNode = new HashMap<>();
 
         for (Map.Entry<UUID, Map<String, Integer>> nodeRes : res.inlineSizes().entrySet()) {
-            for (Map.Entry<String, Integer> index : nodeRes.getValue().entrySet()) {
-                Map<Integer, Set<UUID>> sizeToNodes = indexToSizeNode.computeIfAbsent(index.getKey(), x -> new HashMap<>());
+            for (Map.Entry<String, Integer> idx : nodeRes.getValue().entrySet()) {
+                Map<Integer, Set<UUID>> sizeToNodes = idxToSizeNode.computeIfAbsent(idx.getKey(), x -> new HashMap<>());
 
-                sizeToNodes.computeIfAbsent(index.getValue(), x -> new HashSet<>()).add(nodeRes.getKey());
+                sizeToNodes.computeIfAbsent(idx.getValue(), x -> new HashSet<>()).add(nodeRes.getKey());
             }
         }
 
-        printer.accept("Found " + indexToSizeNode.size() + " secondary indexes.");
+        printer.accept("Found " + idxToSizeNode.size() + " secondary indexes.");
 
-        Map<String, Map<Integer, Set<UUID>>> problems = indexToSizeNode.entrySet().stream()
+        Map<String, Map<Integer, Set<UUID>>> problems = idxToSizeNode.entrySet().stream()
             .filter(e -> e.getValue().size() > 1)
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
