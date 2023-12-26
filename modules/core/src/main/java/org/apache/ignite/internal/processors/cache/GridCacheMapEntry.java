@@ -1482,7 +1482,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             updateCntr0 = nextPartitionCounter(tx, updateCntr);
 
             if (tx != null && cctx.group().logDataRecords())
-                logPtr = logTxUpdate(tx, val, addConflictVersion(tx.writeVersion(), newVer), expireTime, updateCntr0, previousStateMetadata());
+                logPtr = logTxUpdate(
+                    tx, val, addConflictVersion(tx.writeVersion(), newVer), expireTime, updateCntr0, previousStateMetadata());
 
             update(val, expireTime, ttl, newVer, true);
 

@@ -360,8 +360,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean checkSerializableReadVersion(GridCacheVersion serReadVer) {
+    @Override public boolean checkSerializableReadVersion(GridCacheVersion serReadVer) {
         return false;
     }
 
@@ -432,8 +431,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean lockedByThread(long threadId, GridCacheVersion exclude) {
+    @Override public boolean lockedByThread(long threadId, GridCacheVersion exclude) {
         return false;
     }
 
@@ -565,8 +563,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override
-    public @Nullable CacheObject unswap(boolean needVal) throws IgniteCheckedException, GridCacheEntryRemovedException {
+    @Override public @Nullable CacheObject unswap(boolean needVal) throws IgniteCheckedException, GridCacheEntryRemovedException {
         return null;
     }
 
