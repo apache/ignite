@@ -39,7 +39,8 @@ label,lbl
 logger,log
 loader,ldr
 manager,mgr
-#message,msg
+message,msg
+messages,msgs
 #mutex,mux
 #network,net
 #object,obj

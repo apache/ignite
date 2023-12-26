@@ -148,7 +148,7 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
         });
 
         // Compare previous single message with current.
-        MessageComparator prevMessageComparator = new MessageComparator();
+        MessageComparator prevMsgComparator = new MessageComparator();
 
         // Pause rebalance and count of single map messages.
         unwrapSPI(ig3).pause(GridDhtPartitionDemandMessage.class, (msg) -> {
@@ -158,8 +158,8 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
             if (msg.exchangeId() != null)
                 awaitlatch.countDown();
 
-            if (!done.get() && prevMessageComparator.prevEquals(msg)) {
-                System.out.println("Equals messages, prev=" + prevMessageComparator.prev + " , curr=" + msg);
+            if (!done.get() && prevMsgComparator.prevEquals(msg)) {
+                System.out.println("Equals messages, prev=" + prevMsgComparator.prev + " , curr=" + msg);
 
                 cnt.incrementAndGet();
             }

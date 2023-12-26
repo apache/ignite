@@ -164,13 +164,13 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                 try {
                     latch.countDown();
 
-                    Collection<TestMessage1> messages = ((TestMessage)msg).entries();
+                    Collection<TestMessage1> msgs = ((TestMessage)msg).entries();
 
-                    assertEquals(10, messages.size());
+                    assertEquals(10, msgs.size());
 
                     int cnt = 0;
 
-                    for (TestMessage1 msg1 : messages) {
+                    for (TestMessage1 msg1 : msgs) {
                         assertTrue(msg1.body().contains(TEST_BODY));
 
                         int i = Integer.parseInt(msg1.body().substring(TEST_BODY.length() + 1));
