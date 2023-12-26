@@ -279,7 +279,7 @@ public class BaselineTaskResult extends VisorDataTransferObject {
     @Override protected void readExternalData(byte protoVer,
         ObjectInput in) throws IOException, ClassNotFoundException {
         active = in.readBoolean();
-        clusterState = (ClusterState) in.readObject();
+        clusterState = (ClusterState)in.readObject();
         topVer = in.readLong();
         baseline = U.readTreeMap(in);
         servers = U.readTreeMap(in);
