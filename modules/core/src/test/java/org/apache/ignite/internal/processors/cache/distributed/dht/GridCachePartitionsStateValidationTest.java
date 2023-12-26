@@ -215,12 +215,12 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
             try {
                 spi.waitUntilAllSingleMessagesAreSent();
 
-                List<GridDhtPartitionsSingleMessage> interceptedMessages = spi.getMessages();
+                List<GridDhtPartitionsSingleMessage> interceptedMsgs = spi.getMessages();
 
                 // Associate each message with existing node UUID.
-                Map<UUID, GridDhtPartitionsSingleMessage> messagesMap = new HashMap<>();
-                for (int i = 0; i < interceptedMessages.size(); i++)
-                    messagesMap.put(grid(i + 1).context().localNodeId(), interceptedMessages.get(i));
+                Map<UUID, GridDhtPartitionsSingleMessage> msgsMap = new HashMap<>();
+                for (int i = 0; i < interceptedMsgs.size(); i++)
+                    msgsMap.put(grid(i + 1).context().localNodeId(), interceptedMsgs.get(i));
 
                 GridDhtPartitionsStateValidator validator =
                     new GridDhtPartitionsStateValidator(ignite.context().cache().context());
@@ -228,12 +228,12 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
                 // Validate partition update counters. If counters are not consistent, exception will be thrown.
                 validator.validatePartitionsUpdateCounters(
                     ignite.cachex(atomicCacheName).context().topology(),
-                    messagesMap,
+                    msgsMap,
                     Collections.emptySet()
                 );
                 validator.validatePartitionsUpdateCounters(
                     ignite.cachex(txCacheName).context().topology(),
-                    messagesMap,
+                    msgsMap,
                     Collections.emptySet()
                 );
             }
