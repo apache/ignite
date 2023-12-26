@@ -2543,7 +2543,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         RestoreLogicalState restoreLogicalState =
             new RestoreLogicalState(status, it, lastArchivedSegment, cacheGroupsPredicate, partitionRecoveryStates);
 
-        final IgniteTxManager txManager = cctx.tm();
+        final IgniteTxManager txMgr = cctx.tm();
 
         try {
             while (restoreLogicalState.hasNext()) {
@@ -2557,7 +2557,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (restoreMeta) { // Also restore tx states.
                             TxRecord txRec = (TxRecord)rec;
 
-                            txManager.collectTxStates(txRec);
+                            txMgr.collectTxStates(txRec);
                         }
 
                         break;
@@ -2607,7 +2607,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         for (int i = 0; i < entryCnt; i++) {
                             DataEntry dataEntry = dataRec.get(i);
 
-                            if (!restoreMeta && txManager.uncommitedTx(dataEntry))
+                            if (!restoreMeta && txMgr.uncommitedTx(dataEntry))
                                 continue;
 
                             int cacheId = dataEntry.cacheId();
