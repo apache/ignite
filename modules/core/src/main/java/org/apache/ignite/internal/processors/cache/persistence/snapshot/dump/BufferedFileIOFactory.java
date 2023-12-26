@@ -21,12 +21,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * File I/O factory which provides {@link WriteOnlyBufferedFileIO} implementation of FileIO.
+ * File I/O factory which provides {@link BufferedFileIO} implementation of FileIO.
  */
-public class WriteOnlyBufferedFileIOFactory implements FileIOFactory {
+public class BufferedFileIOFactory implements FileIOFactory {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -34,22 +33,24 @@ public class WriteOnlyBufferedFileIOFactory implements FileIOFactory {
     public static final int DEFAULT_BUFFER_SIZE = 512 * 1024;
 
     /** */
+    private final FileIOFactory factory;
+
+    /** */
     private final int bufSz;
 
     /** */
-    public WriteOnlyBufferedFileIOFactory(int bufSz) {
-        A.ensure(bufSz > 0, "bufSz must be positive");
-
-        this.bufSz = bufSz;
+    public BufferedFileIOFactory(FileIOFactory fileIOFactory) {
+        this(fileIOFactory, DEFAULT_BUFFER_SIZE);
     }
 
     /** */
-    public WriteOnlyBufferedFileIOFactory() {
-        this(DEFAULT_BUFFER_SIZE);
+    public BufferedFileIOFactory(FileIOFactory factory, int bufSz) {
+        this.factory = factory;
+        this.bufSz = bufSz;
     }
 
     /** {@inheritDoc} */
-    @Override public WriteOnlyBufferedFileIO create(File file, OpenOption... modes) throws IOException {
-        return new WriteOnlyBufferedFileIO(file, bufSz, modes);
+    @Override public BufferedFileIO create(File file, OpenOption... modes) throws IOException {
+        return new BufferedFileIO(factory.create(file, modes), bufSz);
     }
 }

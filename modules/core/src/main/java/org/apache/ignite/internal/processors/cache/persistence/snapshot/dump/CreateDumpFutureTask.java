@@ -71,7 +71,6 @@ import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
@@ -94,6 +93,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.toLong;
 public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask implements DumpEntryChangeListener {
     /** Dump files name. */
     public static final String DUMP_FILE_EXT = ".dump";
+
+    /** */
+    public static final int DEFAULT_BUFFER_SIZE = 512 * 1024;
 
     /** Root dump directory. */
     private final File dumpDir;
@@ -173,7 +175,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         );
 
         this.dumpDir = dumpDir;
-        this.ioFactory = compress ? new WriteOnlyZipFileIOFactory() : ioFactory;
+        this.ioFactory = compress ? new WriteOnlyZipFileIOFactory() : new BufferedFileIOFactory(ioFactory, DEFAULT_BUFFER_SIZE);
         this.compress = compress;
         this.rateLimiter = rateLimiter;
         this.encKey = encrypt ? cctx.gridConfig().getEncryptionSpi().create() : null;
@@ -708,7 +710,12 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             while (writers.get() > 0) // Waiting for all on the fly listeners to complete.
                 LockSupport.parkNanos(1_000_000);
 
-            U.closeQuiet(file);
+            try {
+                file.close();
+            }
+            catch (IOException e) {
+                throw new IgniteException(e);
+            }
         }
     }
 

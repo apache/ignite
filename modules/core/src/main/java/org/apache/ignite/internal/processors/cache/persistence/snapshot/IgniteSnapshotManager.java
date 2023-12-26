@@ -142,7 +142,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadO
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.WriteOnlyBufferedFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -421,9 +420,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Factory to working with delta as file storage. */
     private volatile FileIOFactory ioFactory = new RandomAccessFileIOFactory();
-
-    /** Factory to create dump. */
-    private volatile FileIOFactory dumpIoFactory = new WriteOnlyBufferedFileIOFactory();
 
     /** File store manager to create page store for restore. */
     private volatile @Nullable FilePageStoreManager storeMgr;
@@ -2779,7 +2775,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 requestId,
                 snpName,
                 snapshotLocalDir(snpName, snpPath),
-                dumpIoFactory,
+                ioFactory,
                 transferRateLimiter,
                 snpSndr,
                 parts,
@@ -3026,20 +3022,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public FileIOFactory ioFactory() {
         return ioFactory;
-    }
-
-    /**
-     * @param dumpIoFactory Factory to create IO interface for creating dump.
-     */
-    public void dumpIoFactory(FileIOFactory dumpIoFactory) {
-        this.dumpIoFactory = dumpIoFactory;
-    }
-
-    /**
-     * @return Factory to create IO interface for creating dump.
-     */
-    public FileIOFactory dumpIoFactory() {
-        return dumpIoFactory;
     }
 
     /**

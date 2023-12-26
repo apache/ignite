@@ -26,13 +26,14 @@ import java.util.Arrays;
 import java.util.Random;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /***/
-public class WriteOnlyBufferedFileIOTest extends GridCommonAbstractTest {
+public class BufferedFileIOTest extends GridCommonAbstractTest {
     /** */
     private static final File TEST_FILE = new File("test-write-only-file-io.dmp");
 
@@ -104,14 +105,21 @@ public class WriteOnlyBufferedFileIOTest extends GridCommonAbstractTest {
     public void testWrongArg() {
         assertThrows(
             null,
-            () -> new WriteOnlyBufferedFileIOFactory(0),
+            () -> new BufferedFileIO(null, 0),
+            IllegalArgumentException.class,
+            "fileIO must not be null"
+        );
+
+        assertThrows(
+            null,
+            () -> new BufferedFileIO(new RandomAccessFileIOFactory().create(TEST_FILE), 0),
             IllegalArgumentException.class,
             "bufSz must be positive"
         );
 
         assertThrows(
             null,
-            () -> new WriteOnlyBufferedFileIOFactory(-1),
+            () -> new BufferedFileIO(new RandomAccessFileIOFactory().create(TEST_FILE), -1),
             IllegalArgumentException.class,
             "bufSz must be positive"
         );
@@ -122,9 +130,9 @@ public class WriteOnlyBufferedFileIOTest extends GridCommonAbstractTest {
         if (TEST_FILE.exists() && !TEST_FILE.delete())
             throw new IgniteException(" Unable to delete " + TEST_FILE.getAbsolutePath());
 
-        WriteOnlyBufferedFileIOFactory factory = new WriteOnlyBufferedFileIOFactory(bufSz);
+        RandomAccessFileIOFactory factory = new RandomAccessFileIOFactory();
 
-        FileIO fileIO = factory.create(TEST_FILE);
+        FileIO fileIO = new BufferedFileIO(factory.create(TEST_FILE), bufSz);
 
         ByteBuffer expectedData = ByteBuffer.allocate(Arrays.stream(data).mapToInt(Buffer::remaining).sum());
 
