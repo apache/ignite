@@ -38,7 +38,7 @@ label,lbl
 #local,loc
 logger,log
 loader,ldr
-#manager,mgr
+manager,mgr
 #message,msg
 #mutex,mux
 #network,net

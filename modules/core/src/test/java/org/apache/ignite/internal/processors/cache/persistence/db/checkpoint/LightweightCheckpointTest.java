@@ -142,7 +142,7 @@ public class LightweightCheckpointTest extends GridCommonAbstractTest {
         DataRegion regionForCheckpoint = db.dataRegion(DFLT_DATA_REG_DEFAULT_NAME);
 
         //and: Create light checkpoint with only one region.
-        LightweightCheckpointManager lightweightCheckpointManager = new LightweightCheckpointManager(
+        LightweightCheckpointManager lightweightCheckpointMgr = new LightweightCheckpointManager(
             ctx::log,
             ctx.igniteInstanceName(),
             "light-test-checkpoint",
@@ -158,12 +158,12 @@ public class LightweightCheckpointTest extends GridCommonAbstractTest {
         );
 
         //and: Add checkpoint listener for DEFAULT_CACHE in order of storing the meta pages.
-        lightweightCheckpointManager.addCheckpointListener(
+        lightweightCheckpointMgr.addCheckpointListener(
             (CheckpointListener)ctx.cache().cacheGroup(groupIdForCache(ignite0, DEFAULT_CACHE_NAME)).offheap(),
             regionForCheckpoint
         );
 
-        lightweightCheckpointManager.start();
+        lightweightCheckpointMgr.start();
 
         //when: Fill the caches
         for (int j = 0; j < 1024; j++) {
@@ -172,7 +172,7 @@ public class LightweightCheckpointTest extends GridCommonAbstractTest {
         }
 
         //and: Trigger and wait for the checkpoint.
-        lightweightCheckpointManager.forceCheckpoint("test", null)
+        lightweightCheckpointMgr.forceCheckpoint("test", null)
             .futureFor(CheckpointState.FINISHED)
             .get();
 

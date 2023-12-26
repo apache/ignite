@@ -189,9 +189,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         RootPage reuseListRoot = metas.reuseListRoot;
 
-        GridCacheDatabaseSharedManager dbSharedManager = (GridCacheDatabaseSharedManager)ctx.database();
+        GridCacheDatabaseSharedManager dbSharedMgr = (GridCacheDatabaseSharedManager)ctx.database();
 
-        pageListCacheLimit = dbSharedManager.pageListCacheLimitHolder(grp.dataRegion());
+        pageListCacheLimit = dbSharedMgr.pageListCacheLimitHolder(grp.dataRegion());
 
         reuseList = new ReuseListImpl(
             grp.groupId(),
@@ -224,7 +224,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ctx.diagnostic().pageLockTracker()
         );
 
-        dbSharedManager.addCheckpointListener(this, grp.dataRegion());
+        dbSharedMgr.addCheckpointListener(this, grp.dataRegion());
     }
 
     /**
