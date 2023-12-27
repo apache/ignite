@@ -43,7 +43,7 @@ message,msg
 messages,msgs
 mutex,mux
 network,net
-object,obj
+#object,obj
 #package,pkg
 #parameter,param
 #password,pwd
