@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -520,13 +519,6 @@ public class MvccUtils {
      */
     public static boolean mvccVersionIsValid(long crdVer, long cntr) {
         return crdVer > MVCC_CRD_COUNTER_NA && cntr > MVCC_COUNTER_NA;
-    }
-
-    /**
-     * @return Error.
-     */
-    public static ClusterTopologyServerNotFoundException noCoordinatorError() {
-        return new ClusterTopologyServerNotFoundException("Mvcc coordinator is not assigned.");
     }
 
     /**
