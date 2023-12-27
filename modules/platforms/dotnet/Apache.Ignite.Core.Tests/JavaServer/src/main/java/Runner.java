@@ -33,7 +33,7 @@ public class Runner {
         ClientConnectorConfiguration connectorConfiguration = new ClientConnectorConfiguration().setPort(10890);
 
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder()
-                .setAddresses(Collections.singleton("127.0.0.1:47500..47510"));
+                .setAddresses(Collections.singleton("127.0.0.1:47500"));
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi()
             .setIpFinder(ipFinder)
