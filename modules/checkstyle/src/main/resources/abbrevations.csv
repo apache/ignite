@@ -41,8 +41,8 @@ loader,ldr
 manager,mgr
 message,msg
 messages,msgs
-#mutex,mux
-#network,net
+mutex,mux
+network,net
 #object,obj
 #package,pkg
 #parameter,param
