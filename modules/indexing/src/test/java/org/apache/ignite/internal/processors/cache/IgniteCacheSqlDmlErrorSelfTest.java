@@ -254,19 +254,19 @@ public class IgniteCacheSqlDmlErrorSelfTest extends AbstractIndexingCommonTest {
         // It's ok to assert just fact of failure if we update key to null.
         // Both reasons (the fact of updating key and setting _key to null) are correct.
         // Empty string is contained by any exception message.
-        final String ANY_MESSAGE = "";
+        final String ANY_MSG = "";
 
         assertThrows(() ->
                 execute("UPDATE COMPOSITE SET _key = ?, _val = ?", null, new CompositeValue()),
-            ANY_MESSAGE);
+            ANY_MSG);
 
         assertThrows(() ->
                 execute("UPDATE SIMPLE SET id = ?, _val = ?", null, "simple name"),
-            ANY_MESSAGE);
+            ANY_MSG);
 
         assertThrows(() ->
                 execute("UPDATE SIMPLE SET id = ?, _val = ?", null, "simple name"),
-            ANY_MESSAGE);
+            ANY_MSG);
     }
 
     /**

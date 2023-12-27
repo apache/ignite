@@ -527,9 +527,9 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
         DataRegion dataRegion = new DataRegion(pageMem, plcCfg, regionMetrics, new NoOpPageEvictionTracker());
 
-        PageLockTrackerManager pageLockTrackerManager = mock(PageLockTrackerManager.class);
+        PageLockTrackerManager pageLockTrackerMgr = mock(PageLockTrackerManager.class);
 
-        when(pageLockTrackerManager.createPageLockTracker(anyString())).thenReturn(PageLockTrackerManager.NOOP_LSNR);
+        when(pageLockTrackerMgr.createPageLockTracker(anyString())).thenReturn(PageLockTrackerManager.NOOP_LSNR);
 
         return new CacheFreeList(
             1,
@@ -538,7 +538,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
             null,
             metaPageId,
             true,
-            pageLockTrackerManager,
+            pageLockTrackerMgr,
             new GridTestKernalContext(log),
             null,
             PageIdAllocator.FLAG_IDX

@@ -3860,8 +3860,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (warningsTotal > 0) {
                 U.warn(log, String.format(title, warningsLimit, warningsTotal));
 
-                for (String message : messages)
-                    U.warn(log, message);
+                for (String msg : messages)
+                    U.warn(log, msg);
             }
         }
     }

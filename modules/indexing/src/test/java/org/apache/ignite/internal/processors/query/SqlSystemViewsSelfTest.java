@@ -419,9 +419,9 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             return res.stream().allMatch(row -> {
                 assertEquals(1, row.size());
 
-                Boolean isIndexRebuildInProgress = (Boolean)row.get(0);
+                Boolean isIdxRebuildInProgress = (Boolean)row.get(0);
 
-                return isIndexRebuildInProgress == rebuild;
+                return isIdxRebuildInProgress == rebuild;
             });
         }, 5_000));
     }

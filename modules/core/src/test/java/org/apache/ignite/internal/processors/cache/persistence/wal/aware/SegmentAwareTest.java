@@ -224,10 +224,10 @@ public class SegmentAwareTest {
         aware.curAbsWalIdx(5);
 
         //when: request next work segment.
-        long segmentIndex = aware.nextAbsoluteSegmentIndex();
+        long segmentIdx = aware.nextAbsoluteSegmentIndex();
 
         //then:
-        assertThat(segmentIndex, is(6L));
+        assertThat(segmentIdx, is(6L));
     }
 
     /**

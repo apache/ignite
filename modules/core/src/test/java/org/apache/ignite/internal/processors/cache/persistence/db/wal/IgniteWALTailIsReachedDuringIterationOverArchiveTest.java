@@ -153,10 +153,10 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
                 .filesOrDirs(walArchiveDir)
         );
 
-        int maxIndex = descs.size() - 1;
-        int minIndex = 1;
+        int maxIdx = descs.size() - 1;
+        int minIdx = 1;
 
-        int corruptedIdx = current().nextInt(minIndex, maxIndex);
+        int corruptedIdx = current().nextInt(minIdx, maxIdx);
 
         log.info("Corrupted segment with idx:" + corruptedIdx);
 

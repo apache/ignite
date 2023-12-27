@@ -176,15 +176,15 @@ public class BinaryTypeMismatchLoggingTest extends GridCommonAbstractTest {
 
         assertEquals(0, countRows(binary));
 
-        String capturedMessages = this.capture.toString();
+        String capturedMsgs = this.capture.toString();
 
-        assertContainsExactlyOnce(capturedMessages,
+        assertContainsExactlyOnce(capturedMsgs,
             "Key-value pair is not inserted into any SQL table [cacheName=binary, " + MESSAGE_PAYLOAD_VALUE + "]");
-        assertContainsExactlyOnce(capturedMessages,
+        assertContainsExactlyOnce(capturedMsgs,
             "Value type(s) are specified via CacheConfiguration.indexedTypes or CacheConfiguration.queryEntities");
-        assertContainsExactlyOnce(capturedMessages,
+        assertContainsExactlyOnce(capturedMsgs,
             "Make sure that same type(s) used when adding Object or BinaryObject to cache");
-        assertContainsExactlyOnce(capturedMessages,
+        assertContainsExactlyOnce(capturedMsgs,
             "Otherwise, entries will be stored in cache, but not appear as SQL Table rows");
     }
 

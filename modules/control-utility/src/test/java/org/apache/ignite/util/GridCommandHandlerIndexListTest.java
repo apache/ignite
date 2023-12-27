@@ -77,7 +77,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
     public void testCacheIndexList() {
         final String idxName = "PERSON_ORGID_ASC_IDX";
         final int expectedLinesNum = 4 + commandHandlerExtraLines();
-        final int expectedIndexDescrLinesNum = 2;
+        final int expectedIdxDescrLinesNum = 2;
 
         injectTestSystemOut();
 
@@ -100,13 +100,13 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
         assertEquals("Unexpected number of lines: " + outputLinesNum, outputLinesNum, expectedLinesNum);
 
-        long indexDescrLinesNum =
+        long idxDescrLinesNum =
             Arrays.stream(outputLines)
                 .filter(s -> s.contains("grpName="))
                 .count();
 
-        assertEquals("Unexpected number of index description lines: " + indexDescrLinesNum,
-            indexDescrLinesNum, expectedIndexDescrLinesNum);
+        assertEquals("Unexpected number of index description lines: " + idxDescrLinesNum,
+            idxDescrLinesNum, expectedIdxDescrLinesNum);
 
         Set<IndexListInfoContainer> cmdResult = hnd.getLastOperationResult();
         assertNotNull(cmdResult);

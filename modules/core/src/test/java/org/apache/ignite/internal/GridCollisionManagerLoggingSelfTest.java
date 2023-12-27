@@ -54,9 +54,9 @@ public class GridCollisionManagerLoggingSelfTest {
      */
     @Test
     public void collisionResolutionDisabledMessageShouldBeLoggedAtInfoLevel() throws Exception {
-        GridCollisionManager manager = new GridCollisionManager(collisionResolutionDisabledContext());
+        GridCollisionManager mgr = new GridCollisionManager(collisionResolutionDisabledContext());
 
-        manager.start();
+        mgr.start();
 
         verify(logger).info("Collision resolution is disabled (all jobs will be activated upon arrival).");
     }

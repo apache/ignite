@@ -83,10 +83,10 @@ public abstract class AbstractJdbcPojoQuerySelfTest extends GridCommonAbstractTe
         builder2.setField("id", 1);
         builder2.setField("boolVal", true);
 
-        BinaryObject testObject = builder2.build();
+        BinaryObject testObj = builder2.build();
 
         builder.setField("id", 1);
-        builder.setField("testObject", testObject);
+        builder.setField("testObject", testObj);
 
         BinaryObject binObj = builder.build();
 

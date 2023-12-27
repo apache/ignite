@@ -365,9 +365,9 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
             assertThat(wal.lastTruncatedSegment(), equalTo(-1L));
 
             // Let's try to reserve all the segments and then immediately release them.
-            long lastWalSegmentIndex = wal.lastWritePointer().index();
+            long lastWalSegmentIdx = wal.lastWritePointer().index();
 
-            for (int i = (int)(idxLastCp + 1); i < lastWalSegmentIndex; i++) {
+            for (int i = (int)(idxLastCp + 1); i < lastWalSegmentIdx; i++) {
                 WALPointer pointer = new WALPointer(i, 0, 0);
 
                 // Should be able to reserve segments because the checkpoint has not happened yet.
@@ -377,11 +377,11 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
             }
 
             assertTrue(
-                String.valueOf(lastWalSegmentIndex),
-                wal.reserve(new WALPointer(lastWalSegmentIndex, 0, 0))
+                String.valueOf(lastWalSegmentIdx),
+                wal.reserve(new WALPointer(lastWalSegmentIdx, 0, 0))
             );
 
-            wal.release(new WALPointer(lastWalSegmentIndex, 0, 0));
+            wal.release(new WALPointer(lastWalSegmentIdx, 0, 0));
 
             // Let's wait a bit, suddenly there will be a deletion from the archive?
             assertFalse(waitForCondition(() -> wal.lastTruncatedSegment() >= 0, 1_000, 100));

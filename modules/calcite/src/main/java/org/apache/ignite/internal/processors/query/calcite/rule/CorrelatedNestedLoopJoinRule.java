@@ -96,10 +96,10 @@ public class CorrelatedNestedLoopJoinRule extends AbstractIgniteConverterRule<Lo
 
         // Add batchSize-1 other conditions
         for (int i = 1; i < batchSize; i++) {
-            final int corrIndex = i;
+            final int corrIdx = i;
             final RexNode condition2 = condition.accept(new RexShuttle() {
                 @Override public RexNode visitCorrelVariable(RexCorrelVariable variable) {
-                    return corrVar.get(corrIndex);
+                    return corrVar.get(corrIdx);
                 }
             });
             conditionList.add(condition2);

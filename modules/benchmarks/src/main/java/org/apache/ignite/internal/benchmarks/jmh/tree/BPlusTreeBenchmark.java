@@ -224,11 +224,11 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
 
         /** */
         private static PageLockTrackerManager mockPageLockTrackerManager() {
-            PageLockTrackerManager manager = mock(PageLockTrackerManager.class);
+            PageLockTrackerManager mgr = mock(PageLockTrackerManager.class);
 
-            when(manager.createPageLockTracker(anyString())).thenReturn(PageLockTrackerManager.NOOP_LSNR);
+            when(mgr.createPageLockTracker(anyString())).thenReturn(PageLockTrackerManager.NOOP_LSNR);
 
-            return manager;
+            return mgr;
         }
     }
 

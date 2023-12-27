@@ -318,12 +318,12 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         AbstractFileDescriptor fd = desc;
         SegmentIO fileIO = null;
-        SegmentHeader segmentHeader;
+        SegmentHeader segmentHdr;
         while (true) {
             try {
                 fileIO = fd.toReadOnlyIO(ioFactory);
 
-                segmentHeader = readSegmentHeader(fileIO, FILE_INPUT_FACTORY);
+                segmentHdr = readSegmentHeader(fileIO, FILE_INPUT_FACTORY);
 
                 break;
             }
@@ -341,7 +341,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             }
         }
 
-        return initReadHandle(fd, start, fileIO, segmentHeader);
+        return initReadHandle(fd, start, fileIO, segmentHdr);
     }
 
     /** {@inheritDoc} */

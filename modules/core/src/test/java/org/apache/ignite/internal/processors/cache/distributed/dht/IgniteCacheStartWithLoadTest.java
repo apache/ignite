@@ -87,10 +87,10 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
 
         AtomicBoolean txLoadStop = new AtomicBoolean();
 
-        AtomicInteger txLoaderNo = new AtomicInteger(0);
+        AtomicInteger txLdrNo = new AtomicInteger(0);
 
         IgniteInternalFuture txLoadFut = GridTestUtils.runMultiThreadedAsync(() -> {
-            Ignite node = grid(txLoaderNo.getAndIncrement());
+            Ignite node = grid(txLdrNo.getAndIncrement());
             IgniteCache<Object, Object> cache = node.cache(CACHE_NAME);
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 

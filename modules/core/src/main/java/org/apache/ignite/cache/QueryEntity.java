@@ -201,13 +201,13 @@ public class QueryEntity implements Serializable {
             ));
 
         if (!indexesToAdd.isEmpty()) {
-            for (QueryIndex index : indexesToAdd) {
+            for (QueryIndex idx : indexesToAdd) {
                 patchOperations.add(new SchemaIndexCreateOperation(
                     UUID.randomUUID(),
                     null,
                     null,
                     tableName,
-                    index,
+                    idx,
                     true,
                     0
                 ));
@@ -229,22 +229,22 @@ public class QueryEntity implements Serializable {
 
         Map<String, QueryIndex> curIndexes = new HashMap<>();
 
-        for (QueryIndex index : getIndexes()) {
-            if (curIndexes.put(index.getName(), index) != null)
+        for (QueryIndex idx : getIndexes()) {
+            if (curIndexes.put(idx.getName(), idx) != null)
                 throw new IllegalStateException("Duplicate key");
         }
 
-        for (QueryIndex queryIndex : target.getIndexes()) {
-            if (curIndexes.containsKey(queryIndex.getName())) {
+        for (QueryIndex queryIdx : target.getIndexes()) {
+            if (curIndexes.containsKey(queryIdx.getName())) {
                 checkEquals(
                     conflicts,
-                    "index " + queryIndex.getName(),
-                    curIndexes.get(queryIndex.getName()),
-                    queryIndex
+                    "index " + queryIdx.getName(),
+                    curIndexes.get(queryIdx.getName()),
+                    queryIdx
                 );
             }
             else
-                indexesToAdd.add(queryIndex);
+                indexesToAdd.add(queryIdx);
         }
         return indexesToAdd;
     }

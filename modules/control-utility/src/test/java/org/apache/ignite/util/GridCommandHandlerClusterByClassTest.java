@@ -1817,11 +1817,11 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
                                 .map(String::trim)
                                 .collect(toList());
 
-        int firstIndex = outLines.indexOf("[next group: id=1544803905, name=default]");
-        int lastIndex = outLines.lastIndexOf("[next group: id=1544803905, name=default]");
+        int firstIdx = outLines.indexOf("[next group: id=1544803905, name=default]");
+        int lastIdx = outLines.lastIndexOf("[next group: id=1544803905, name=default]");
 
-        String dataLine = outLines.get(firstIndex + 1);
-        String userArrtDataLine = outLines.get(lastIndex + 1);
+        String dataLine = outLines.get(firstIdx + 1);
+        String userArrtDataLine = outLines.get(lastIdx + 1);
 
         long commaNum = dataLine.chars().filter(i -> i == ',').count();
         long userArrtCommaNum = userArrtDataLine.chars().filter(i -> i == ',').count();

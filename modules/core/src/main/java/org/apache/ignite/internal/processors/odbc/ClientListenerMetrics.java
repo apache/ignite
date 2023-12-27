@@ -106,10 +106,10 @@ public class ClientListenerMetrics {
             "The number of affinity-aware query requests that were sent not to the primary node");
 
         for (byte clientType : CLI_TYPES) {
-            String clientLabel = clientTypeLabel(clientType);
+            String clientLbl = clientTypeLabel(clientType);
 
-            String labelAccepted = MetricUtils.metricName(clientLabel, METRIC_ACEPTED);
-            accepted[clientType] = mreg.intMetric(labelAccepted,
+            String lblAccepted = MetricUtils.metricName(clientLbl, METRIC_ACEPTED);
+            accepted[clientType] = mreg.intMetric(lblAccepted,
                     "Number of successfully established sessions for the client type.");
         }
     }

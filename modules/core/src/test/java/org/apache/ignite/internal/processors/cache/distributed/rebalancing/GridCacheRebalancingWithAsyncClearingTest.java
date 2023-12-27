@@ -164,14 +164,14 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
 
         forceCheckpoint();
 
-        GridCachePartitionExchangeManager exchangeManager = ig.cachex(CACHE_NAME).context().shared().exchange();
+        GridCachePartitionExchangeManager exchangeMgr = ig.cachex(CACHE_NAME).context().shared().exchange();
 
-        long topVer = exchangeManager.lastTopologyFuture().topologyVersion().topologyVersion();
+        long topVer = exchangeMgr.lastTopologyFuture().topologyVersion().topologyVersion();
 
         startGrid(2);
 
         // Check that exchange future is completed and version is incremented
-        GridDhtPartitionsExchangeFuture fut1 = exchangeManager.lastTopologyFuture();
+        GridDhtPartitionsExchangeFuture fut1 = exchangeMgr.lastTopologyFuture();
 
         fut1.get();
 

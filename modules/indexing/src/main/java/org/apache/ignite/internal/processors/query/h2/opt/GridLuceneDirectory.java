@@ -107,8 +107,8 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
 
     /** {@inheritDoc} */
     @Override public IndexOutput createTempOutput(String prefix, String suffix, IOContext ctx) throws IOException {
-        String suffixWithIndex = suffix + "_" + Long.toString(nextTmpFileIndex.getAndIncrement(), Character.MAX_RADIX);
-        String name = IndexFileNames.segmentFileName(prefix, suffixWithIndex, "tmp");
+        String suffixWithIdx = suffix + "_" + Long.toString(nextTmpFileIndex.getAndIncrement(), Character.MAX_RADIX);
+        String name = IndexFileNames.segmentFileName(prefix, suffixWithIdx, "tmp");
 
         return createOutput(name, ctx);
     }

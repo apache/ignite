@@ -1179,15 +1179,15 @@ public class GridNioServerWrapper {
         GridSslMeta sslMeta,
         HandshakeMessage msg
     ) throws IgniteCheckedException {
-        HandshakeTimeoutObject timeoutObject = new HandshakeTimeoutObject(ch);
+        HandshakeTimeoutObject timeoutObj = new HandshakeTimeoutObject(ch);
 
-        handshakeTimeoutExecutorService.schedule(timeoutObject, timeout, TimeUnit.MILLISECONDS);
+        handshakeTimeoutExecutorService.schedule(timeoutObj, timeout, TimeUnit.MILLISECONDS);
 
         try {
             return tcpHandshakeExecutor.tcpHandshake(ch, rmtNodeId, sslMeta, msg);
         }
         finally {
-            if (!timeoutObject.cancel())
+            if (!timeoutObj.cancel())
                 throw handshakeTimeoutException();
         }
     }

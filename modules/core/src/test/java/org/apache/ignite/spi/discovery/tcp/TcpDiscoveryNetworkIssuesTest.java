@@ -154,7 +154,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         usePortFromNodeName = true;
         connectionRecoveryTimeout = 0;
 
-        AtomicBoolean networkBroken = new AtomicBoolean(false);
+        AtomicBoolean netBroken = new AtomicBoolean(false);
 
         IgniteEx ig0 = startGrid(NODE_0_NAME);
 
@@ -162,7 +162,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         specialSpi = new TcpDiscoverySpi() {
             @Override protected int readReceipt(Socket sock, long timeout) throws IOException {
-                if (networkBroken.get() && sock.getPort() == NODE_3_PORT)
+                if (netBroken.get() && sock.getPort() == NODE_3_PORT)
                     throw new SocketTimeoutException("Read timed out");
 
                 return super.readReceipt(sock, timeout);
@@ -170,7 +170,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
             @Override protected Socket openSocket(InetSocketAddress sockAddr,
                 IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
-                if (networkBroken.get() && sockAddr.getPort() == NODE_4_PORT)
+                if (netBroken.get() && sockAddr.getPort() == NODE_4_PORT)
                     throw new SocketTimeoutException("connect timed out");
 
                 return super.openSocket(sockAddr, timeoutHelper);
@@ -197,7 +197,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         breakDiscoConnectionToNext(ig1);
 
-        networkBroken.set(true);
+        netBroken.set(true);
 
         GridTestUtils.waitForCondition(illNodeSegmented::get, 10_000);
 

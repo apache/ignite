@@ -87,11 +87,11 @@ public class CheckIndexInlineSizesTask extends VisorMultiNodeTask<NoArg, CheckIn
 
         /** {@inheritDoc} */
         @Override protected CheckIndexInlineSizesResult run(@Nullable NoArg arg) throws IgniteException {
-            Map<String, Integer> indexNameToInlineSize = ignite.context().query().secondaryIndexesInlineSize();
+            Map<String, Integer> idxNameToInlineSize = ignite.context().query().secondaryIndexesInlineSize();
 
             CheckIndexInlineSizesResult res = new CheckIndexInlineSizesResult();
 
-            res.addResult(ignite.localNode().id(), indexNameToInlineSize);
+            res.addResult(ignite.localNode().id(), idxNameToInlineSize);
 
             return res;
         }

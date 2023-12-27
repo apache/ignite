@@ -309,14 +309,14 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
         ValidateIndexesClosure clo = new ValidateIndexesClosure(cancelled::get, Collections.singleton(DEFAULT_CACHE_NAME),
             0, 0, false, true);
 
-        ListeningTestLogger listeningLogger = new ListeningTestLogger(log);
+        ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
         GridTestUtils.setFieldValue(clo, "ignite", ignite0);
-        GridTestUtils.setFieldValue(clo, "log", listeningLogger);
+        GridTestUtils.setFieldValue(clo, "log", listeningLog);
 
         LogListener lnsrValidationStarted = LogListener.matches("Current progress of ValidateIndexesClosure").build();
 
-        listeningLogger.registerListener(lnsrValidationStarted);
+        listeningLog.registerListener(lnsrValidationStarted);
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(() ->
             GridTestUtils.assertThrows(log, clo::call, IgniteException.class, ValidateIndexesClosure.CANCELLED_MSG));

@@ -80,7 +80,10 @@ public enum IgniteReleasedVersion {
     VER_2_14_0("2.14.0"),
 
     /** */
-    VER_2_15_0("2.15.0");
+    VER_2_15_0("2.15.0"),
+
+    /** */
+    VER_2_16_0("2.16.0");
 
     /** Ignite version. */
     private final IgniteProductVersion ver;

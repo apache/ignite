@@ -98,11 +98,11 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         byte[] buf = marshaller.marshal(msg);
 
-        Object readObject = marshaller.unmarshal(buf, getClass().getClassLoader());
+        Object readObj = marshaller.unmarshal(buf, getClass().getClassLoader());
 
-        assertTrue(readObject instanceof TcpDiscoveryMetricsUpdateMessage);
+        assertTrue(readObj instanceof TcpDiscoveryMetricsUpdateMessage);
 
-        TcpDiscoveryMetricsUpdateMessage msg2 = (TcpDiscoveryMetricsUpdateMessage)readObject;
+        TcpDiscoveryMetricsUpdateMessage msg2 = (TcpDiscoveryMetricsUpdateMessage)readObj;
 
         Map<Integer, CacheMetrics> cacheMetrics2 = msg2.cacheMetrics().values().iterator().next();
 

@@ -3356,9 +3356,9 @@ public class ZookeeperDiscoveryImpl {
 
         String futPath = zkPaths.distributedFutureBasePath(futId);
 
-        List<ClusterNode> initialNodes = rtState.commErrProcNodes;
+        List<ClusterNode> initNodes = rtState.commErrProcNodes;
 
-        assert initialNodes != null;
+        assert initNodes != null;
 
         rtState.commErrProcNodes = null;
 
@@ -3396,7 +3396,7 @@ public class ZookeeperDiscoveryImpl {
             boolean fullyConnected = true;
 
             for (Map.Entry<UUID, BitSet> e : nodesRes.entrySet()) {
-                if (!checkFullyConnected(e.getValue(), initialNodes, rtState.top)) {
+                if (!checkFullyConnected(e.getValue(), initNodes, rtState.top)) {
                     fullyConnected = false;
 
                     break;
@@ -3421,7 +3421,7 @@ public class ZookeeperDiscoveryImpl {
                     ZkCommunicationFailureContext ctx = new ZkCommunicationFailureContext(
                         ((IgniteKernal)spi.ignite()).context().cache().context(),
                         topSnapshot,
-                        initialNodes,
+                        initNodes,
                         nodesRes);
 
                     try {

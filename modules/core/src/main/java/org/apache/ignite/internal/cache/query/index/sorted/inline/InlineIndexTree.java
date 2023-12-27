@@ -565,12 +565,12 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     @Override protected CorruptedTreeException corruptedTreeException(String msg, Throwable cause, int grpId, long... pageIds) {
         IndexName idx = def.idxName();
 
-        String indexName = idx.idxName();
+        String idxName = idx.idxName();
         String cacheName = idx.cacheName();
         String tableName = idx.tableName();
 
         CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpName, cacheName,
-            indexName, grpId, pageIds);
+            idxName, grpId, pageIds);
 
         String errorMsg = "Index " + idx + " of the table " + tableName + " (cache " + cacheName + ") is " +
             "corrupted, to fix this issue a rebuild is required. On the next restart, node will enter the " +
@@ -581,7 +581,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         int cacheId = CU.cacheId(cacheName);
 
         try {
-            MaintenanceTask task = toMaintenanceTask(cacheId, indexName);
+            MaintenanceTask task = toMaintenanceTask(cacheId, idxName);
 
             grpCtx.shared().kernalContext().maintenanceRegistry().registerMaintenanceTask(
                 task,

@@ -59,7 +59,7 @@ public class LongRunningTransactionsGenerator extends IgniteAwareApplication {
 
         String keyPrefix = jsonNode.get("key_prefix") != null ? jsonNode.get("key_prefix").asText() : LOCKED_KEY_PREFIX;
 
-        String label = jsonNode.get("label") != null ? jsonNode.get("label").asText() : null;
+        String lbl = jsonNode.get("label") != null ? jsonNode.get("label").asText() : null;
 
         long expectedTopologyVersion = jsonNode.get("wait_for_topology_version") != null ?
             jsonNode.get("wait_for_topology_version").asLong() : -1L;
@@ -124,7 +124,7 @@ public class LongRunningTransactionsGenerator extends IgniteAwareApplication {
                 data.put(key, key);
             }
 
-            IgniteTransactions igniteTransactions = label != null ? ignite.transactions().withLabel(label) :
+            IgniteTransactions igniteTransactions = lbl != null ? ignite.transactions().withLabel(lbl) :
                 ignite.transactions();
 
             pool.execute(() -> {

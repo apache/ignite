@@ -61,11 +61,11 @@ public class ReduceTable extends TableBase {
      * @return Merge index.
      */
     public Reducer getReducer() {
-        final Index index = idxs.get(idxs.size() - 1);
+        final Index idx = idxs.get(idxs.size() - 1);
 
-        assert index instanceof AbstractReduceIndexAdapter : "Reducer index not found.";
+        assert idx instanceof AbstractReduceIndexAdapter : "Reducer index not found.";
 
-        return ((AbstractReduceIndexAdapter)index).reducer(); // Sorted index must be the last.
+        return ((AbstractReduceIndexAdapter)idx).reducer(); // Sorted index must be the last.
     }
 
     /**

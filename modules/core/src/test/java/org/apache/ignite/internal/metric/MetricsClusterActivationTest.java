@@ -159,12 +159,12 @@ public class MetricsClusterActivationTest extends GridCommonAbstractTest {
         }
 
         long offHeapSize = mreg.<LongMetric>findMetric("OffHeapSize").value();
-        long initialSize = mreg.<LongMetric>findMetric("InitialSize").value();
+        long initSize = mreg.<LongMetric>findMetric("InitialSize").value();
         long maxSize = mreg.<LongMetric>findMetric("MaxSize").value();
 
         assertTrue(offHeapSize > 0);
         assertTrue(offHeapSize <= region.config().getMaxSize());
-        assertEquals(region.config().getInitialSize(), initialSize);
+        assertEquals(region.config().getInitialSize(), initSize);
         assertEquals(region.config().getMaxSize(), maxSize);
     }
 

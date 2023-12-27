@@ -239,23 +239,23 @@ public class GridCommandHandlerScheduleIndexRebuildTest extends GridCommandHandl
                 "--cache-names", CACHE_NAME_1_1 + "[non-existing-index]"));
         }
 
-        String notExistingIndexOutputStr = testOut.toString();
+        String notExistingIdxOutputStr = testOut.toString();
 
         if (allNodes) {
             for (Ignite ig : G.allGrids()) {
-                validateMultiNodeOutput(notExistingIndexOutputStr, PREF_REBUILD_NOT_SCHEDULED_MULTI,
+                validateMultiNodeOutput(notExistingIdxOutputStr, PREF_REBUILD_NOT_SCHEDULED_MULTI,
                     ig.cluster().localNode().id().toString());
 
-                validateMultiNodeOutput(notExistingIndexOutputStr, PREF_INDEXES_NOT_FOUND,
+                validateMultiNodeOutput(notExistingIdxOutputStr, PREF_INDEXES_NOT_FOUND,
                     ig.cluster().localNode().id().toString());
             }
 
-            validateMultiNodeOutput(notExistingIndexOutputStr, PREF_INDEXES_NOT_FOUND, "non-existing-index");
+            validateMultiNodeOutput(notExistingIdxOutputStr, PREF_INDEXES_NOT_FOUND, "non-existing-index");
         }
         else {
-            assertTrue(notExistingIndexOutputStr.contains(PREF_REBUILD_NOT_SCHEDULED));
+            assertTrue(notExistingIdxOutputStr.contains(PREF_REBUILD_NOT_SCHEDULED));
 
-            assertTrue(notExistingIndexOutputStr.contains(
+            assertTrue(notExistingIdxOutputStr.contains(
                 PREF_INDEXES_NOT_FOUND + System.lineSeparator()
                     + INDENT + CACHE_NAME_1_1 + ":" + System.lineSeparator()
                     + INDENT + INDENT + "non-existing-index")

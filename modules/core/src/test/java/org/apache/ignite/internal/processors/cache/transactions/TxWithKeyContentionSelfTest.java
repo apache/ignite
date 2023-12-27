@@ -229,7 +229,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         Ignite cl = startGrid();
 
-        IgniteTransactions txMgr = cl.transactions();
+        IgniteTransactions cliTxMgr = cl.transactions();
 
         IgniteCache<Integer, Integer> cache = ig.cache(DEFAULT_CACHE_NAME);
 
@@ -260,7 +260,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
         }
 
         IgniteInternalFuture f = GridTestUtils.runAsync(() -> {
-            try (Transaction tx = txMgr.txStart(concurrency, isolation)) {
+            try (Transaction tx = cliTxMgr.txStart(concurrency, isolation)) {
                 cache0.put(keyId, 0);
                 tx.commit();
             }
@@ -272,7 +272,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < contCnt; ++i) {
             IgniteInternalFuture f0 = GridTestUtils.runAsync(() -> {
-                try (Transaction tx = txMgr.txStart(concurrency, isolation)) {
+                try (Transaction tx = cliTxMgr.txStart(concurrency, isolation)) {
                     cache0.put(keyId, 0);
 
                     tx.commit();
@@ -296,12 +296,12 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
             commSpi0.stopBlock();
         }
 
-        IgniteTxManager txManager = ((IgniteEx)ig).context().cache().context().tm();
+        IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 try {
-                    U.invoke(IgniteTxManager.class, txManager, "collectTxCollisionsInfo");
+                    U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
                 }
                 catch (IgniteCheckedException e) {
                     fail(e.toString());

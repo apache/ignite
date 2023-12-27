@@ -1294,7 +1294,7 @@ public class GridReduceQueryExecutor {
             else
                 data.columns = planColumns();
 
-            boolean sortedIndex = !F.isEmpty(qry.sortColumns());
+            boolean sortedIdx = !F.isEmpty(qry.sortColumns());
 
             ReduceTable tbl = new ReduceTable(data);
 
@@ -1302,9 +1302,9 @@ public class GridReduceQueryExecutor {
 
             if (explain) {
                 idxs.add(new UnsortedReduceIndexAdapter(ctx, tbl,
-                    sortedIndex ? MERGE_INDEX_SORTED : MERGE_INDEX_UNSORTED));
+                    sortedIdx ? MERGE_INDEX_SORTED : MERGE_INDEX_UNSORTED));
             }
-            else if (sortedIndex) {
+            else if (sortedIdx) {
                 List<GridSqlSortColumn> sortCols = (List<GridSqlSortColumn>)qry.sortColumns();
 
                 SortedReduceIndexAdapter sortedMergeIdx = new SortedReduceIndexAdapter(ctx, tbl, MERGE_INDEX_SORTED,

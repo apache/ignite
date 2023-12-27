@@ -1925,9 +1925,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 return true;
             if (o == null || getClass() != o.getClass())
                 return false;
-            BigObject bigObject = (BigObject)o;
-            return index == bigObject.index &&
-                Arrays.equals(payload, bigObject.payload);
+            BigObject bigObj = (BigObject)o;
+            return index == bigObj.index &&
+                Arrays.equals(payload, bigObj.payload);
         }
 
         /** {@inheritDoc} */

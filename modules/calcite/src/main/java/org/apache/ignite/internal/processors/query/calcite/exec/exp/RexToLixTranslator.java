@@ -1211,7 +1211,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
             return rexWithStorageTypeResultMap.get(key);
 
         final RexNode target = deref(fieldAccess.getReferenceExpr());
-        int fieldIndex = fieldAccess.getField().getIndex();
+        int fieldIdx = fieldAccess.getField().getIndex();
         String fieldName = fieldAccess.getField().getName();
         switch (target.getKind()) {
             case CORREL_VARIABLE:
@@ -1222,7 +1222,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                 final RexToLixTranslator.InputGetter getter =
                     correlates.apply(((RexCorrelVariable)target).getName());
                 final Expression input = getter.field(
-                    list, fieldIndex, currentStorageType);
+                    list, fieldIdx, currentStorageType);
                 final Expression condition = checkNull(input);
                 final ParameterExpression valueVariable =
                     Expressions.parameter(input.getType(), list.newName("corInp_value"));
@@ -1238,13 +1238,13 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                 rexWithStorageTypeResultMap.put(key, result1);
                 return result1;
             default:
-                RexNode rxIndex =
-                    builder.makeLiteral(fieldIndex, typeFactory.createType(int.class), true);
+                RexNode rxIdx =
+                    builder.makeLiteral(fieldIdx, typeFactory.createType(int.class), true);
                 RexNode rxName =
                     builder.makeLiteral(fieldName, typeFactory.createType(String.class), true);
                 RexCall accessCall = (RexCall)builder.makeCall(
                     fieldAccess.getType(), SqlStdOperatorTable.STRUCT_ACCESS,
-                    ImmutableList.of(target, rxIndex, rxName));
+                    ImmutableList.of(target, rxIdx, rxName));
                 final Result result2 = accessCall.accept(this);
                 rexWithStorageTypeResultMap.put(key, result2);
                 return result2;

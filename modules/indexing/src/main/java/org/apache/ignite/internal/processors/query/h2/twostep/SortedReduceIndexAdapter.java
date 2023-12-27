@@ -74,10 +74,10 @@ public final class SortedReduceIndexAdapter extends AbstractReduceIndexAdapter {
             return 0;
 
         for (int i = 0, len = indexColumns.length; i < len; i++) {
-            int index = columnIds[i];
+            int idx = columnIds[i];
             int sortType = indexColumns[i].sortType;
-            Value v1 = rowData.getValue(index);
-            Value v2 = compare.getValue(index);
+            Value v1 = rowData.getValue(idx);
+            Value v2 = compare.getValue(idx);
 
             if (v1 == null || v2 == null)
                 return 0;
