@@ -57,7 +57,13 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                 if (res != 0)
                     return res;
 
-                return o1.timeoutId().compareTo(o2.timeoutId());
+                res = o1.timeoutId().compareTo(o2.timeoutId());
+
+                if (res != 0)
+                    return res;
+
+                // There can be an intersection between timeouts and ids for different subsystems.
+                return o1.getClass().getName().compareTo(o2.getClass().getName());
             }
         });
 
