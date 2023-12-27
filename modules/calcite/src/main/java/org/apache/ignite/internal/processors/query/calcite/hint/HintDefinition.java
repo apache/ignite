@@ -181,7 +181,6 @@ public enum HintDefinition {
      * @return Hint predicate for join hints.
      */
     private static HintPredicate joinHintPredicate() {
-//        return HintPredicates.or(HintPredicates.JOIN, HintPredicates.TABLE_SCAN, HintPredicates.VALUES);
         return new HintPredicate() {
             @Override public boolean apply(RelHint hint, RelNode rel) {
                 return true;
