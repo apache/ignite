@@ -105,8 +105,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
             return locPart.nextUpdateCounter(cctx.cacheId(), topVer, primary, init, primaryCntr);
         }
         catch (Throwable t) {
-            log.error("Failed to update counter for atomic cache [" +
-                ", initial=" + init +
+            log.error("Failed to update counter for atomic cache [initial=" + init +
                 ", primaryCntr=" + primaryCntr +
                 ", part=" + locPart + ']', t);
 
@@ -120,8 +119,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
             return locPart.nextUpdateCounter(cctx.cacheId(), tx, primaryCntr);
         }
         catch (Throwable t) {
-            log.error("Failed to update counter for tx cache [" +
-                ", primaryCntr=" + primaryCntr +
+            log.error("Failed to update counter for tx cache [primaryCntr=" + primaryCntr +
                 ", part=" + locPart + ", tx=" + CU.txString(tx) + ']', t);
 
             throw t;

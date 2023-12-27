@@ -1007,7 +1007,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         GridCacheContext<K, V> cctx = cacheContext(ctx);
 
-        IgniteCache<?, ?> cache = ctx.cache().jcache(cctx.name());
+        IgniteCache<?, ?> cache = ctx.cache().jcache(cacheName);
 
         // Initial query entry or evicted entry. These events should be fired immediately.
         if (internal || e.updateCounter() == -1L)
