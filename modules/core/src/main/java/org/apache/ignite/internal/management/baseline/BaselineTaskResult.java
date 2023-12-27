@@ -46,9 +46,6 @@ public class BaselineTaskResult extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Cluster activated flag. */
-    private boolean active;
-
     /** Cluster state. */
     private ClusterState clusterState;
 
@@ -175,7 +172,6 @@ public class BaselineTaskResult extends VisorDataTransferObject {
     /**
      * Constructor.
      *
-     * @param active Cluster activated flag.
      * @param clusterState Cluster state.
      * @param topVer Current topology version.
      * @param baseline Current baseline nodes.
@@ -184,7 +180,6 @@ public class BaselineTaskResult extends VisorDataTransferObject {
      * @param baselineAdjustInProgress {@code true} If baseline adjust is in progress.
      */
     public BaselineTaskResult(
-        boolean active,
         ClusterState clusterState,
         long topVer,
         Collection<? extends org.apache.ignite.cluster.BaselineNode> baseline,
@@ -192,7 +187,6 @@ public class BaselineTaskResult extends VisorDataTransferObject {
         BaselineAutoAdjustSettings autoAdjustSettings,
         long remainingTimeToBaselineAdjust,
         boolean baselineAdjustInProgress) {
-        this.active = active;
         this.clusterState = clusterState;
         this.topVer = topVer;
         this.baseline = toMap(baseline);
@@ -200,13 +194,6 @@ public class BaselineTaskResult extends VisorDataTransferObject {
         this.autoAdjustSettings = autoAdjustSettings;
         this.remainingTimeToBaselineAdjust = remainingTimeToBaselineAdjust;
         this.baselineAdjustInProgress = baselineAdjustInProgress;
-    }
-
-    /**
-     * @return Cluster activated flag.
-     */
-    public boolean isActive() {
-        return active;
     }
 
     /**
@@ -265,8 +252,7 @@ public class BaselineTaskResult extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeBoolean(active);
-        out.writeObject(clusterState);
+        U.writeEnum(out, clusterState);
         out.writeLong(topVer);
         U.writeMap(out, baseline);
         U.writeMap(out, servers);
@@ -278,8 +264,7 @@ public class BaselineTaskResult extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer,
         ObjectInput in) throws IOException, ClassNotFoundException {
-        active = in.readBoolean();
-        clusterState = (ClusterState)in.readObject();
+        clusterState = U.readEnum(in, ClusterState.class);
         topVer = in.readLong();
         baseline = U.readTreeMap(in);
         servers = U.readTreeMap(in);
