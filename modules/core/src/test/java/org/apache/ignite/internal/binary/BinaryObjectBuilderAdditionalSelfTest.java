@@ -1896,9 +1896,9 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
      */
     @Test
     public void testGetNotAssignedFieldInBuilder() {
-        GridBinaryTestClasses.TestObjectContainer testObjectContainer = new GridBinaryTestClasses.TestObjectContainer();
-        testObjectContainer.foo = "binaryCachedValue";
-        BinaryObjectBuilderImpl builder = wrap(testObjectContainer);
+        GridBinaryTestClasses.TestObjectContainer testObjContainer = new GridBinaryTestClasses.TestObjectContainer();
+        testObjContainer.foo = "binaryCachedValue";
+        BinaryObjectBuilderImpl builder = wrap(testObjContainer);
         builder.setField("w", "wewe");
 
         assertNull(builder.getField("field"));
