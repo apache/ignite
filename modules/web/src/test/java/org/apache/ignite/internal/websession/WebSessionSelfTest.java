@@ -1073,18 +1073,18 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     private String getSessionIdFromCookie(URLConnection conn) {
         String sessionCookieValue = null;
         String sesId = null;
-        Map<String, List<String>> headerFields = conn.getHeaderFields();
-        Set<String> headerFieldsSet = headerFields.keySet();
-        Iterator<String> hearerFieldsIter = headerFieldsSet.iterator();
+        Map<String, List<String>> hdrFields = conn.getHeaderFields();
+        Set<String> hdrFieldsSet = hdrFields.keySet();
+        Iterator<String> hdrFieldsIter = hdrFieldsSet.iterator();
 
-        while (hearerFieldsIter.hasNext()) {
-            String headerFieldKey = hearerFieldsIter.next();
+        while (hdrFieldsIter.hasNext()) {
+            String hdrFieldKey = hdrFieldsIter.next();
 
-            if ("Set-Cookie".equalsIgnoreCase(headerFieldKey)) {
-                List<String> headerFieldValue = headerFields.get(headerFieldKey);
+            if ("Set-Cookie".equalsIgnoreCase(hdrFieldKey)) {
+                List<String> hdrFieldValue = hdrFields.get(hdrFieldKey);
 
-                for (String headerValue : headerFieldValue) {
-                    String[] fields = headerValue.split(";");
+                for (String hdrValue : hdrFieldValue) {
+                    String[] fields = hdrValue.split(";");
                     sessionCookieValue = fields[0];
                     sesId = sessionCookieValue.substring(sessionCookieValue.indexOf("=") + 1,
                             sessionCookieValue.length());

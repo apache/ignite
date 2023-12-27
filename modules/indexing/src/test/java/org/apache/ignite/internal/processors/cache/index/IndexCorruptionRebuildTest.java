@@ -208,12 +208,12 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
 
         Collection<DurableBackgroundTaskState<?>> durableTasks = tasks(srv.context().durableBackgroundTask()).values();
 
-        Map<Integer, Set<String>> indexTasksByCache = durableTasks.stream().collect(Collectors.groupingBy(
+        Map<Integer, Set<String>> idxTasksByCache = durableTasks.stream().collect(Collectors.groupingBy(
             state -> CU.cacheId(((DurableBackgroundCleanupIndexTreeTaskV2)state.task()).cacheName()),
             Collectors.mapping(state -> ((DurableBackgroundCleanupIndexTreeTaskV2)state.task()).idxName(), toSet())
         ));
 
-        checkCacheToCorruptedIndexMap(indexTasksByCache);
+        checkCacheToCorruptedIndexMap(idxTasksByCache);
 
         stopGrid(0);
 

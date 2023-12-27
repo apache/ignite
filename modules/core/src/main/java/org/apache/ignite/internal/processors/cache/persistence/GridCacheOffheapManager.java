@@ -185,13 +185,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         Metas metas = getOrAllocateCacheMetas();
 
         String reuseListName = grp.cacheOrGroupName() + "##ReuseList";
-        String indexStorageTreeName = grp.cacheOrGroupName() + "##IndexStorageTree";
+        String idxStorageTreeName = grp.cacheOrGroupName() + "##IndexStorageTree";
 
         RootPage reuseListRoot = metas.reuseListRoot;
 
-        GridCacheDatabaseSharedManager dbSharedManager = (GridCacheDatabaseSharedManager)ctx.database();
+        GridCacheDatabaseSharedManager dbSharedMgr = (GridCacheDatabaseSharedManager)ctx.database();
 
-        pageListCacheLimit = dbSharedManager.pageListCacheLimitHolder(grp.dataRegion());
+        pageListCacheLimit = dbSharedMgr.pageListCacheLimitHolder(grp.dataRegion());
 
         reuseList = new ReuseListImpl(
             grp.groupId(),
@@ -209,7 +209,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         RootPage metastoreRoot = metas.treeRoot;
 
         indexStorage = new IndexStorageImpl(
-            indexStorageTreeName,
+            idxStorageTreeName,
             grp.dataRegion().pageMemory(),
             ctx.wal(),
             globalRemoveId(),
@@ -224,7 +224,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ctx.diagnostic().pageLockTracker()
         );
 
-        dbSharedManager.addCheckpointListener(this, grp.dataRegion());
+        dbSharedMgr.addCheckpointListener(this, grp.dataRegion());
     }
 
     /**

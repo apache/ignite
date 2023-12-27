@@ -255,13 +255,13 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void executeP2PClassLoadingEnabledTest(boolean withClientNode) throws Exception {
-        ListeningTestLogger listeningLogger = new ListeningTestLogger();
+        ListeningTestLogger listeningLog = new ListeningTestLogger();
         LogListener clsDeployedMsgLsnr = LogListener.matches(
             "Class was deployed in SHARED or CONTINUOUS mode: " +
                 "class org.apache.ignite.tests.p2p.cache.ScanQueryTestTransformer")
             .build();
-        listeningLogger.registerListener(clsDeployedMsgLsnr);
-        logger = listeningLogger;
+        listeningLog.registerListener(clsDeployedMsgLsnr);
+        logger = listeningLog;
 
         IgniteEx ig0 = startGrid(0);
 
@@ -304,13 +304,13 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
      * @throws Exception If test scenario failed.
      */
     private void executeP2PClassLoadingDisabledTest(boolean withClientNode) throws Exception {
-        ListeningTestLogger listeningLogger = new ListeningTestLogger();
+        ListeningTestLogger listeningLog = new ListeningTestLogger();
         LogListener clsDeployedMsgLsnr = LogListener.matches(
             "Class was deployed in SHARED or CONTINUOUS mode: " +
                 "class org.apache.ignite.tests.p2p.cache.ScanQueryTestTransformerWrapper")
             .build();
-        listeningLogger.registerListener(clsDeployedMsgLsnr);
-        logger = listeningLogger;
+        listeningLog.registerListener(clsDeployedMsgLsnr);
+        logger = listeningLog;
 
         IgniteEx ig0 = startGrid(0);
 
