@@ -44,7 +44,7 @@ messages,msgs
 mutex,mux
 network,net
 object,obj
-#package,pkg
+package,pkg
 #parameter,param
 #password,pwd
 #policy,plc
