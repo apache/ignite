@@ -89,7 +89,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOptimisticTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -2730,20 +2729,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         }
 
         return false;
-    }
-
-    /** */
-    private byte toMvccState(TransactionState state) {
-        switch (state) {
-            case PREPARED:
-                return TxState.PREPARED;
-            case COMMITTED:
-                return TxState.COMMITTED;
-            case ROLLED_BACK:
-                return TxState.ABORTED;
-            default:
-                throw new IllegalStateException("Unexpected state: " + state);
-        }
     }
 
     /**

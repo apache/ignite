@@ -182,7 +182,7 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
      * @return {@code false} if need to remap.
      */
     private boolean onResponse0(@NotNull MvccSnapshot res, @NotNull MvccSnapshotResponseListener lsnr) {
-        boolean ackQueryDone = false, needRemap = false;
+        boolean needRemap = false;
 
         synchronized (this) {
             assert snapshot(state) == null : "[this=" + this + ", rcvdVer=" + res + "]";
@@ -193,9 +193,7 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
                 return true;
             }
 
-            if (crdVer != 0)
-                ackQueryDone = true;
-            else if (!done)
+            if (crdVer == 0 && !done)
                 needRemap = true;
         }
 
