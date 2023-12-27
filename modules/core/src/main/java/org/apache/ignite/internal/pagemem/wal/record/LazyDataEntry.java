@@ -47,11 +47,11 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
     /** Value value bytes. */
     private byte[] valBytes;
 
-    /** Previous state metadata bytes type code. See {@link CacheObject} for built-in value type codes */
-    private byte prevStateMetadataType;
+    /** Previous entry state metadata bytes type code. See {@link CacheObject} for built-in value type codes */
+    private byte prevStateMetaType;
 
-    /** Previous state metadata bytes. */
-    private byte[] prevStateMetadataBytes;
+    /** Previous entry state metadata bytes. */
+    private byte[] prevStateMetaBytes;
 
     /**
      * @param cctx Shared context.
@@ -66,8 +66,8 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
-     * @param prevStateMetadataType Object type code for previous state metadata.
-     * @param prevStateMetadataBytes Previous state metadata bytes.
+     * @param prevStateMetaType Object type code for previous entry state metadata.
+     * @param prevStateMetaBytes Previous entry state metadata bytes.
      * @param flags Flags.
      */
     public LazyDataEntry(
@@ -83,8 +83,8 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
         long expireTime,
         int partId,
         long partCnt,
-        byte prevStateMetadataType,
-        byte[] prevStateMetadataBytes,
+        byte prevStateMetaType,
+        byte[] prevStateMetaBytes,
         byte flags
     ) {
         super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt, null, flags);
@@ -94,8 +94,8 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
         this.keyBytes = keyBytes;
         this.valType = valType;
         this.valBytes = valBytes;
-        this.prevStateMetadataType = prevStateMetadataType;
-        this.prevStateMetadataBytes = prevStateMetadataBytes;
+        this.prevStateMetaType = prevStateMetaType;
+        this.prevStateMetaBytes = prevStateMetaBytes;
     }
 
     /** {@inheritDoc} */
@@ -140,7 +140,7 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
 
     /** {@inheritDoc} */
     @Override public CacheObject previousStateMetadata() {
-        if (prevStateMetadata == null && prevStateMetadataBytes != null) {
+        if (prevStateMeta == null && prevStateMetaBytes != null) {
             GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
             if (cacheCtx == null)
@@ -148,10 +148,10 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
 
             IgniteCacheObjectProcessor co = cctx.kernalContext().cacheObjects();
 
-            prevStateMetadata = co.toCacheObject(cacheCtx.cacheObjectContext(), prevStateMetadataType, prevStateMetadataBytes);
+            prevStateMeta = co.toCacheObject(cacheCtx.cacheObjectContext(), prevStateMetaType, prevStateMetaBytes);
         }
 
-        return prevStateMetadata;
+        return prevStateMeta;
     }
 
     /** {@inheritDoc} */

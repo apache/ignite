@@ -77,8 +77,8 @@ public class DataEntry {
     @GridToStringInclude
     protected long partCnt;
 
-    /** Previous state metadata (based on old value and/or version). */
-    protected CacheObject prevStateMetadata;
+    /** Previous entry state metadata. */
+    protected CacheObject prevStateMeta;
 
     /**
      * Bit flags.
@@ -106,7 +106,7 @@ public class DataEntry {
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
-     * @param prevStateMetadata Previous state metadata.
+     * @param prevStateMeta Previous entry state metadata.
      * @param flags Entry flags.
      */
     public DataEntry(
@@ -119,7 +119,7 @@ public class DataEntry {
         long expireTime,
         int partId,
         long partCnt,
-        CacheObject prevStateMetadata,
+        CacheObject prevStateMeta,
         byte flags
     ) {
         this.cacheId = cacheId;
@@ -131,10 +131,10 @@ public class DataEntry {
         this.expireTime = expireTime;
         this.partId = partId;
         this.partCnt = partCnt;
-        this.prevStateMetadata = prevStateMetadata;
+        this.prevStateMeta = prevStateMeta;
         this.flags = flags;
 
-        if (this.prevStateMetadata != null)
+        if (this.prevStateMeta != null)
             this.flags |= PREV_STATE_FLAG;
 
         // Only READ, CREATE, UPDATE and DELETE operations should be stored in WAL.
@@ -244,10 +244,10 @@ public class DataEntry {
     }
 
     /**
-     * Previous state metadata.
+     * Previous entry state metadata.
      */
     public CacheObject previousStateMetadata() {
-        return prevStateMetadata;
+        return prevStateMeta;
     }
 
     /**

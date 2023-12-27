@@ -1367,6 +1367,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param drTtl DR TTL (if any).
      * @param drExpireTime DR expire time (if any).
      * @param drVer DR version.
+     * @param prevStateMeta Previous entry state meta.
      * @param skipStore Skip store flag.
      * @return Transaction entry.
      */
@@ -1381,7 +1382,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         long drTtl,
         long drExpireTime,
         @Nullable GridCacheVersion drVer,
-        @Nullable CacheObject drMeta,
+        @Nullable CacheObject prevStateMeta,
         boolean skipStore,
         boolean keepBinary,
         boolean addReader
@@ -1453,7 +1454,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 entry,
                 filter,
                 drVer,
-                drMeta,
+                prevStateMeta,
                 skipStore,
                 keepBinary,
                 addReader);

@@ -30,6 +30,7 @@ public interface CacheVersionConflictResolver {
      *
      * @param oldEntry Old entry.
      * @param newEntry New entry.
+     * @param prevStateMeta Previous entry state metadata.
      * @param atomicVerComparator Whether to use atomic version comparator.
      * @return Conflict resolution context.
      * @throws IgniteCheckedException If failed.
@@ -43,7 +44,7 @@ public interface CacheVersionConflictResolver {
     ) throws IgniteCheckedException;
 
     /**
-     * Generates serialized previous state metadata.
+     * Generates serialized previous entry state metadata.
      *
      * @param entry Cache entry.
      * @return Serialized previous state metadata.

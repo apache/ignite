@@ -1631,6 +1631,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param oldEntry Old entry.
      * @param newEntry New entry.
+     * @param prevStateMeta Previous entry state metadata.
      * @param atomicVerComp Whether to use atomic version comparator.
      * @return Conflict resolution result.
      * @throws IgniteCheckedException In case of exception.

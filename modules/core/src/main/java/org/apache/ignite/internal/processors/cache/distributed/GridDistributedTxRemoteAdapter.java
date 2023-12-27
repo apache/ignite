@@ -601,7 +601,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                         if (dataEntries == null)
                                             dataEntries = new ArrayList<>(entries.size());
 
-                                        CacheObject prevStateMetadata =
+                                        CacheObject prevStateMeta =
                                             cacheCtx.toCacheObject(cacheCtx.conflictResolver().previousStateMetadata(cached));
 
                                         dataEntry = new DataEntry(
@@ -614,7 +614,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                             0,
                                             txEntry.key().partition(),
                                             txEntry.updateCounter(),
-                                            prevStateMetadata,
+                                            prevStateMeta,
                                             DataEntry.flags(CU.txOnPrimary(this))
                                         );
 

@@ -437,13 +437,14 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @param conflictTtl Conflict TTL (optional).
      * @param conflictExpireTime Conflict expire time (optional).
      * @param conflictVer Conflict version (optional).
+     * @param prevStateMeta Previous entry state metadata (optional).
      */
     abstract void addUpdateEntry(KeyCacheObject key,
         @Nullable Object val,
         long conflictTtl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer,
-        @Nullable Object conflictMeta);
+        @Nullable Object prevStateMeta);
 
     /**
      * @return Keys for this update request.
@@ -475,7 +476,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
     /**
      * @param idx Index to get.
-     * @return Previous state metadata.
+     * @return Previous entry state metadata.
      */
     public abstract CacheObject previousStateMetadata(int idx);
 

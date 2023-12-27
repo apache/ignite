@@ -43,8 +43,8 @@ public class GridCacheDrInfo implements Externalizable {
     /** DR version. */
     private GridCacheVersion ver;
 
-    /** Previous state metadata (based on old value and/or version). */
-    protected CacheObject prevStateMetadata;
+    /** Previous entry state metadata. */
+    protected CacheObject prevStateMeta;
 
     /**
      * {@link Externalizable} support.
@@ -71,14 +71,14 @@ public class GridCacheDrInfo implements Externalizable {
      *
      * @param val Value.
      * @param ver Version.
-     * @param prevStateMetadata Previous state metadata.
+     * @param prevStateMeta Previous entry state metadata.
      */
-    public GridCacheDrInfo(CacheObject val, GridCacheVersion ver, CacheObject prevStateMetadata) {
+    public GridCacheDrInfo(CacheObject val, GridCacheVersion ver, CacheObject prevStateMeta) {
         assert ver != null;
 
         this.val = val;
         this.ver = ver;
-        this.prevStateMetadata = prevStateMetadata;
+        this.prevStateMeta = prevStateMeta;
     }
 
     /**
@@ -133,10 +133,10 @@ public class GridCacheDrInfo implements Externalizable {
     }
 
     /**
-     * @return Previous state metadata.
+     * @return Previous entry state metadata.
      */
     public CacheObject previousStateMetadata() {
-        return prevStateMetadata;
+        return prevStateMeta;
     }
 
     /**

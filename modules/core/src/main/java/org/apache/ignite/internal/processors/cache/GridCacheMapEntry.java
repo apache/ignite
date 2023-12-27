@@ -3867,7 +3867,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param expireTime Expire time.
      * @param updCntr Update counter.
      * @param primary {@code True} if node is primary for entry in the moment of logging.
-     * @param prevStateMetadata Previous state metadata.
+     * @param prevStateMeta Previous state metadata.
      */
     protected void logUpdate(
         GridCacheOperation op,
@@ -3876,7 +3876,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         long expireTime,
         long updCntr,
         boolean primary,
-        CacheObject prevStateMetadata
+        CacheObject prevStateMeta
     ) throws IgniteCheckedException {
         // We log individual updates only in ATOMIC cache.
         assert cctx.atomic();
@@ -3893,7 +3893,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     expireTime,
                     partition(),
                     updCntr,
-                    prevStateMetadata,
+                    prevStateMeta,
                     DataEntry.flags(primary))));
         }
         catch (StorageException e) {
@@ -3908,7 +3908,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param writeVer New entry version.
      * @param expireTime Expire time (or 0 if not applicable).
      * @param updCntr Update counter.
-     * @param prevStateMetadata Previous state metadata.
+     * @param prevStateMeta Previous state metadata.
      * @throws IgniteCheckedException In case of log failure.
      */
     protected WALPointer logTxUpdate(
@@ -3917,7 +3917,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         GridCacheVersion writeVer,
         long expireTime,
         long updCntr,
-        CacheObject prevStateMetadata
+        CacheObject prevStateMeta
     ) throws IgniteCheckedException {
         assert cctx.transactional();
 
@@ -3938,7 +3938,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 expireTime,
                 key.partition(),
                 updCntr,
-                prevStateMetadata,
+                prevStateMeta,
                 DataEntry.flags(CU.txOnPrimary(tx)))));
         }
         else
@@ -6187,6 +6187,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         /**
          * @param newVal New entry value.
+         * @param prevStateMeta Previous entry state metadata.
          * @param invokeRes Entry processor result (for invoke operation).
          * @return Conflict context.
          * @throws IgniteCheckedException If failed.

@@ -926,14 +926,14 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             GridCacheVersion conflictVer;
             long conflictTtl;
             long conflictExpireTime;
-            Object conflictMeta;
+            Object prevStateMeta;
 
             if (vals != null) {
                 val = it.next();
                 conflictVer = null;
                 conflictTtl = CU.TTL_NOT_CHANGED;
                 conflictExpireTime = CU.EXPIRE_TIME_CALCULATE;
-                conflictMeta = null;
+                prevStateMeta = null;
 
                 if (val == null)
                     throw new NullPointerException("Null value.");
@@ -945,21 +945,21 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 conflictVer = conflictPutVal.version();
                 conflictTtl = conflictPutVal.ttl();
                 conflictExpireTime = conflictPutVal.expireTime();
-                conflictMeta = conflictPutVal.previousStateMetadata();
+                prevStateMeta = conflictPutVal.previousStateMetadata();
             }
             else if (conflictRmvVals != null) {
                 val = null;
                 conflictVer = conflictRmvValsIt.next();
                 conflictTtl = CU.TTL_NOT_CHANGED;
                 conflictExpireTime = CU.EXPIRE_TIME_CALCULATE;
-                conflictMeta = null;
+                prevStateMeta = null;
             }
             else {
                 val = null;
                 conflictVer = null;
                 conflictTtl = CU.TTL_NOT_CHANGED;
                 conflictExpireTime = CU.EXPIRE_TIME_CALCULATE;
-                conflictMeta = null;
+                prevStateMeta = null;
             }
 
             if (val == null && op != GridCacheOperation.DELETE)
@@ -1026,7 +1026,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             if (mapped.req.initMappingLocally())
                 mapped.addMapping(nodes);
 
-            mapped.req.addUpdateEntry(cacheKey, val, conflictTtl, conflictExpireTime, conflictVer, conflictMeta);
+            mapped.req.addUpdateEntry(cacheKey, val, conflictTtl, conflictExpireTime, conflictVer, prevStateMeta);
         }
 
         return pendingMappings;
@@ -1047,7 +1047,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         GridCacheVersion conflictVer;
         long conflictTtl;
         long conflictExpireTime;
-        Object conflictMeta;
+        Object prevStateMeta;
 
         if (vals != null) {
             // Regular PUT.
@@ -1055,7 +1055,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             conflictVer = null;
             conflictTtl = CU.TTL_NOT_CHANGED;
             conflictExpireTime = CU.EXPIRE_TIME_CALCULATE;
-            conflictMeta = null;
+            prevStateMeta = null;
         }
         else if (conflictPutVals != null) {
             // Conflict PUT.
@@ -1065,7 +1065,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             conflictVer = conflictPutVal.version();
             conflictTtl = conflictPutVal.ttl();
             conflictExpireTime = conflictPutVal.expireTime();
-            conflictMeta = conflictPutVal.previousStateMetadata();
+            prevStateMeta = conflictPutVal.previousStateMetadata();
         }
         else if (conflictRmvVals != null) {
             // Conflict REMOVE.
@@ -1073,7 +1073,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             conflictVer = F.first(conflictRmvVals);
             conflictTtl = CU.TTL_NOT_CHANGED;
             conflictExpireTime = CU.EXPIRE_TIME_CALCULATE;
-            conflictMeta = null;
+            prevStateMeta = null;
         }
         else {
             // Regular REMOVE.
@@ -1081,7 +1081,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             conflictVer = null;
             conflictTtl = CU.TTL_NOT_CHANGED;
             conflictExpireTime = CU.EXPIRE_TIME_CALCULATE;
-            conflictMeta = null;
+            prevStateMeta = null;
         }
 
         // We still can get here if user pass map with single element.
@@ -1138,7 +1138,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             conflictTtl,
             conflictExpireTime,
             conflictVer,
-            conflictMeta);
+            prevStateMeta);
 
         return new PrimaryRequestState(req, nodes, true);
     }

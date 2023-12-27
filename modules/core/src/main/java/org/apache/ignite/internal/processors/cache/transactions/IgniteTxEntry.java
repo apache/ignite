@@ -155,8 +155,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** Conflict version. */
     private GridCacheVersion conflictVer;
 
-    /** Conflict Metadata. */
-    private CacheObject conflictMeta;
+    /** Previous entry state Metadata. */
+    private CacheObject prevStateMeta;
 
     /** Explicit lock version if there is one. */
     @GridToStringInclude
@@ -293,6 +293,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param entry Cache entry.
      * @param filters Put filters.
      * @param conflictVer Data center replication version.
+     * @param prevStateMeta Previous entry state metadata.
      * @param skipStore Skip store flag.
      * @param addReader Add reader flag.
      */
@@ -306,7 +307,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         GridCacheEntryEx entry,
         CacheEntryPredicate[] filters,
         GridCacheVersion conflictVer,
-        CacheObject conflictMeta,
+        CacheObject prevStateMeta,
         boolean skipStore,
         boolean keepBinary,
         boolean addReader
@@ -323,7 +324,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         this.ttl = ttl;
         this.filters = filters;
         this.conflictVer = conflictVer;
-        this.conflictMeta = conflictMeta;
+        this.prevStateMeta = prevStateMeta;
 
         skipStore(skipStore);
         keepBinary(keepBinary);
@@ -873,10 +874,10 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
-     * @return Conflict metadata.
+     * @return Previous entry state metadata.
      */
-    public CacheObject conflictMetadata() {
-        return conflictMeta;
+    public CacheObject previousStateMetadata() {
+        return prevStateMeta;
     }
 
     /**
@@ -962,8 +963,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         if (oldVal != null)
             oldVal.marshal(context());
 
-        if (conflictMeta != null)
-            conflictMeta.prepareMarshal(context().cacheObjectContext());
+        if (prevStateMeta != null)
+            prevStateMeta.prepareMarshal(context().cacheObjectContext());
     }
 
     /**
@@ -1197,7 +1198,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeMessage("conflictMeta", conflictMeta))
+                if (!writer.writeMessage("conflictMeta", prevStateMeta))
                     return false;
 
                 writer.incrementState();
@@ -1319,7 +1320,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 13:
-                conflictMeta = reader.readMessage("conflictMeta");
+                prevStateMeta = reader.readMessage("conflictMeta");
 
                 if (!reader.isLastRead())
                     return false;

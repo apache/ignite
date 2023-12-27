@@ -180,7 +180,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         long conflictTtl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer,
-        @Nullable Object conflictMeta) {
+        @Nullable Object prevStateMeta) {
         EntryProcessor<Object, Object, Object> entryProcessor = null;
 
         if (op == TRANSFORM) {
@@ -220,7 +220,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         else if (conflictVers != null)
             conflictVers.add(null);
 
-        if (conflictMeta != null) {
+        if (prevStateMeta != null) {
             if (prevStateMetas == null) {
                 prevStateMetas = new ArrayList<>(initSize);
 
@@ -228,7 +228,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                     prevStateMetas.add(null);
             }
 
-            prevStateMetas.add((CacheObject)conflictMeta);
+            prevStateMetas.add((CacheObject)prevStateMeta);
         }
         else if (prevStateMetas != null)
             prevStateMetas.add(null);

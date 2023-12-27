@@ -113,7 +113,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         long conflictTtl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer,
-        @Nullable Object conflictMeta) {
+        @Nullable Object prevStateMeta) {
         assert op != TRANSFORM;
         assert val != null || op == DELETE;
         assert conflictTtl < 0 : conflictTtl;

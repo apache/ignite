@@ -2214,14 +2214,14 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         long expireTime = in.readLong();
         byte flags = type == DATA_RECORD_V2 || type == CDC_DATA_RECORD ? in.readByte() : (byte)0;
 
-        byte[] prevStateBytes = null;
-        byte prevStateType = 0;
+        byte[] prevStateMetaBytes = null;
+        byte prevStateMetaType = 0;
 
         if ((flags & PREV_STATE_FLAG) == PREV_STATE_FLAG) {
-            int prevStateSize = in.readByte();
-            prevStateType = in.readByte();
-            prevStateBytes = new byte[prevStateSize];
-            in.readFully(prevStateBytes);
+            int prevStateMetaSize = in.readByte();
+            prevStateMetaType = in.readByte();
+            prevStateMetaBytes = new byte[prevStateMetaSize];
+            in.readFully(prevStateMetaBytes);
         }
 
         GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
@@ -2235,7 +2235,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 key.partition(partId);
 
             CacheObject val = valBytes != null ? co.toCacheObject(coCtx, valType, valBytes) : null;
-            CacheObject prevState = prevStateBytes != null ? co.toCacheObject(coCtx, prevStateType, prevStateBytes) : null;
+            CacheObject prevStateMeta = prevStateMetaBytes != null ? co.toCacheObject(coCtx, prevStateMetaType, prevStateMetaBytes) : null;
 
             return new DataEntry(
                 cacheId,
@@ -2247,7 +2247,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 expireTime,
                 partId,
                 partCntr,
-                prevState,
+                prevStateMeta,
                 flags
             );
         }
@@ -2265,8 +2265,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 expireTime,
                 partId,
                 partCntr,
-                prevStateType,
-                prevStateBytes,
+                prevStateMetaType,
+                prevStateMetaBytes,
                 flags
             );
     }

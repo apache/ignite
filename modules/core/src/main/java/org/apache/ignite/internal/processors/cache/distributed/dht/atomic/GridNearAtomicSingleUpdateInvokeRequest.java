@@ -121,7 +121,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         long conflictTtl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer,
-        @Nullable Object conflictMeta) {
+        @Nullable Object prevStateMeta) {
         assert conflictTtl < 0 : conflictTtl;
         assert conflictExpireTime < 0 : conflictExpireTime;
         assert conflictVer == null : conflictVer;
