@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.util.Arrays;
@@ -50,7 +49,7 @@ public class BufferedFileIOTest extends GridCommonAbstractTest {
     @Test
     public void testOneSmallEntry() throws IOException {
         for (int bufSz = MIN_TEST_BUFFER_SIZE; bufSz <= MAX_TEST_BUFFER_SIZE; bufSz <<= 1)
-            check(bufSz, ByteBuffer.wrap(randBytes(10)));
+            check(bufSz, randBytes(10));
     }
 
     /** */
@@ -67,9 +66,9 @@ public class BufferedFileIOTest extends GridCommonAbstractTest {
     public void testAFewSmallEntries() throws IOException {
         for (int bufSz = MIN_TEST_BUFFER_SIZE; bufSz <= MAX_TEST_BUFFER_SIZE; bufSz <<= 1) {
             check(bufSz,
-                ByteBuffer.wrap(randBytes(10)),
-                ByteBuffer.wrap(randBytes(bufSz >> 1)),
-                ByteBuffer.wrap(randBytes(bufSz >> 1))
+                randBytes(10),
+                randBytes(bufSz >> 1),
+                randBytes(bufSz >> 1)
             );
         }
     }
@@ -78,26 +77,31 @@ public class BufferedFileIOTest extends GridCommonAbstractTest {
     @Test
     public void testLargeEntry() throws IOException {
         for (int bufSz = MIN_TEST_BUFFER_SIZE; bufSz <= MAX_TEST_BUFFER_SIZE >> 2; bufSz <<= 1)
-            check(bufSz, ByteBuffer.wrap(randBytes(bufSz << 2 + 1)));
+            check(bufSz, randBytes(bufSz << 2 + 1));
     }
 
     /** */
     @Test
     public void testBufferSizeEntry() throws IOException {
         for (int bufSz = MIN_TEST_BUFFER_SIZE; bufSz <= MAX_TEST_BUFFER_SIZE; bufSz <<= 1)
-            check(bufSz, ByteBuffer.wrap(randBytes(bufSz)));
+            check(bufSz, randBytes(bufSz));
     }
 
     /** */
     @Test
     public void testDoubleClose() throws IOException {
-        FileIO fileIO = check(TEST_BUFFER_SIZE, ByteBuffer.wrap(randBytes(10)));
+        checkClose(check(TEST_BUFFER_SIZE, false, randBytes(10)));
 
-        byte[] content1 = Files.readAllBytes(TEST_FILE.toPath());
+        checkClose(check(TEST_BUFFER_SIZE, true, randBytes(10)));
+    }
+
+    /** */
+    private static void checkClose(FileIO fileIO) throws IOException {
+        byte[] content = Files.readAllBytes(TEST_FILE.toPath());
 
         fileIO.close();
 
-        assertEqualsArraysAware(content1, Files.readAllBytes(TEST_FILE.toPath()));
+        assertEqualsArraysAware(content, Files.readAllBytes(TEST_FILE.toPath()));
     }
 
     /** */
@@ -126,7 +130,14 @@ public class BufferedFileIOTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private FileIO check(int bufSz, ByteBuffer... data) throws IOException {
+    private void check(int bufSz, byte[]... data) throws IOException {
+        check(bufSz, false, data);
+
+        check(bufSz, true, data);
+    }
+
+    /** */
+    private FileIO check(int bufSz, boolean arrMethod, byte[]... data) throws IOException {
         if (TEST_FILE.exists() && !TEST_FILE.delete())
             throw new IgniteException(" Unable to delete " + TEST_FILE.getAbsolutePath());
 
@@ -134,13 +145,16 @@ public class BufferedFileIOTest extends GridCommonAbstractTest {
 
         FileIO fileIO = new BufferedFileIO(factory.create(TEST_FILE), bufSz);
 
-        ByteBuffer expectedData = ByteBuffer.allocate(Arrays.stream(data).mapToInt(Buffer::remaining).sum());
+        ByteBuffer expectedData = ByteBuffer.allocate(Arrays.stream(data).mapToInt(x -> x.length).sum());
 
-        Arrays.stream(data).forEach(bb -> expectedData.put(bb.duplicate()));
+        Arrays.stream(data).forEach(expectedData::put);
 
         Arrays.stream(data).forEach(bb -> {
             try {
-                fileIO.writeFully(bb);
+                if (arrMethod)
+                    fileIO.writeFully(bb, 0, bb.length);
+                else
+                    fileIO.writeFully(ByteBuffer.wrap(bb));
             }
             catch (IOException e) {
                 throw new RuntimeException(e);

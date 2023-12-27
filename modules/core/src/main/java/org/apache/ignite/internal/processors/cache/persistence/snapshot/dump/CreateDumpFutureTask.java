@@ -94,9 +94,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     /** Dump files name. */
     public static final String DUMP_FILE_EXT = ".dump";
 
-    /** */
-    public static final int DEFAULT_BUFFER_SIZE = 512 * 1024;
-
     /** Root dump directory. */
     private final File dumpDir;
 
@@ -175,7 +172,11 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         );
 
         this.dumpDir = dumpDir;
-        this.ioFactory = compress ? new WriteOnlyZipFileIOFactory() : new BufferedFileIOFactory(ioFactory, DEFAULT_BUFFER_SIZE);
+
+        this.ioFactory = compress
+            ? new WriteOnlyZipFileIOFactory(new BufferedFileIOFactory(ioFactory))
+            : new BufferedFileIOFactory(ioFactory);
+
         this.compress = compress;
         this.rateLimiter = rateLimiter;
         this.encKey = encrypt ? cctx.gridConfig().getEncryptionSpi().create() : null;

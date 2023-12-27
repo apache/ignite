@@ -528,8 +528,10 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         assertEquals("Different set of partitions", rawSizes.keySet(), zipSizes.keySet());
 
+        zipSizes.keySet().forEach( p -> assertTrue("Compressed partition " + p + " file size should not be zero", zipSizes.get(p) > 0));
+
         rawSizes.keySet().forEach( p ->
-            assertTrue("Compressed size " + rawSizes.get(p) + " should be smaller than compressed " + zipSizes.get(p),
+            assertTrue("Compressed size " + zipSizes.get(p) + " should be smaller than raw size " + rawSizes.get(p),
                 rawSizes.get(p) > zipSizes.get(p)
             )
         );

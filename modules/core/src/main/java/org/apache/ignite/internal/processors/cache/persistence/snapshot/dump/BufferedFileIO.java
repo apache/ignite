@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.util.Objects;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -60,13 +62,8 @@ public class BufferedFileIO extends FileIODecorator {
 
             buf.put(srcBuf);
 
-            if (!buf.hasRemaining()) {
-                buf.flip();
-
-                delegate.writeFully(buf);
-
-                buf.limit(buf.capacity()).position(0);
-            }
+            if (!buf.hasRemaining())
+                flush();
 
             srcBuf.limit(limit);
         }
@@ -77,20 +74,104 @@ public class BufferedFileIO extends FileIODecorator {
     }
 
     /** {@inheritDoc} */
+    @Override public int write(byte[] srcBuf, int off, int len) throws IOException {
+        if (buf.limit() == 0)
+            throw new IOException("FileIO closed");
+
+        Objects.checkFromIndexSize(off, len, srcBuf.length);
+
+        int p = off;
+
+        while (p < off + len) {
+            int bytesCnt = Math.min(buf.remaining(), off + len - p);
+
+            buf.put(srcBuf, p, bytesCnt);
+
+            if (!buf.hasRemaining())
+                flush();
+
+            p += bytesCnt;
+        }
+
+        pos += len;
+
+        return len;
+    }
+
+    /** */
+    private void flush() throws IOException {
+        buf.flip();
+
+        if (buf.hasRemaining()) {
+            if (delegate.writeFully(buf) < 0)
+                throw new IOException("Couldn't write data");
+        }
+
+        buf.limit(buf.capacity()).position(0);
+    }
+
+    /** {@inheritDoc} */
     @Override public long position() throws IOException {
         return pos;
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
-        buf.flip();
+        flush();
 
-        if (buf.hasRemaining())
-            delegate.writeFully(buf);
-
-        buf.position(0).limit(0);
+        buf.limit(0);
 
         delegate.close();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void position(long newPosition) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int read(ByteBuffer destBuf) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int read(ByteBuffer destBuf, long position) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int read(byte[] buf, int off, int len) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void force(boolean withMetadata) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void force() throws IOException {
+        force(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long size() throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clear() throws IOException {
+        throw new UnsupportedOperationException();
     }
 
 }

@@ -21,6 +21,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.util.typedef.internal.A;
+
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 
 /**
  * File I/O factory which provides {@link WriteOnlyZipFileIO} implementation of FileIO.
@@ -29,8 +32,20 @@ public class WriteOnlyZipFileIOFactory implements FileIOFactory {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private final FileIOFactory factory;
+
+    /** */
+    public WriteOnlyZipFileIOFactory(FileIOFactory factory) {
+        this.factory = factory;
+    }
+
     /** {@inheritDoc} */
     @Override public WriteOnlyZipFileIO create(File file, OpenOption... modes) throws IOException {
-        return new WriteOnlyZipFileIO(file);
+        A.ensure(file.getName().endsWith(ZIP_SUFFIX), "File name should end with " + ZIP_SUFFIX);
+
+        String entryName = file.getName().substring(0, file.getName().length() - ZIP_SUFFIX.length());
+
+        return new WriteOnlyZipFileIO(factory.create(file, modes), entryName);
     }
 }

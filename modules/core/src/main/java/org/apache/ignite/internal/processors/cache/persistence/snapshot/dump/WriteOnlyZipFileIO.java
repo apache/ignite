@@ -18,29 +18,25 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.BufferedOutputStream;
-import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import org.apache.ignite.internal.processors.cache.persistence.file.AbstractFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 
 import static java.util.zip.Deflater.BEST_COMPRESSION;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 
 /**
  * {@link FileIO} that allows to write ZIP compressed file.
  * It doesn't support reading or random access.
  * It is not designed for writing concurrently from several threads.
  */
-public class WriteOnlyZipFileIO extends AbstractFileIO {
+public class WriteOnlyZipFileIO extends FileIODecorator {
     /** */
     private final ZipOutputStream zos;
 
@@ -51,12 +47,19 @@ public class WriteOnlyZipFileIO extends AbstractFileIO {
     private long pos;
 
     /** */
-    public WriteOnlyZipFileIO(File file) throws IOException {
-        A.ensure(file.getName().endsWith(ZIP_SUFFIX), "File name should end with " + ZIP_SUFFIX);
+    public WriteOnlyZipFileIO(FileIO fileIO, String entryName) throws IOException {
+        super(fileIO);
 
-        String entryName = file.getName().substring(0, file.getName().length() - ZIP_SUFFIX.length());
+        zos = new ZipOutputStream(new BufferedOutputStream(new OutputStream() {
+            @Override public void write(byte[] b, int off, int len) throws IOException {
+                if (len > 0 && fileIO.writeFully(b, off, len) < 0)
+                    throw new IOException("Unable to write data");
+            }
 
-        zos = new ZipOutputStream(new BufferedOutputStream(Files.newOutputStream(Paths.get(file.getPath()))));
+            @Override public void write(int b) throws IOException {
+                throw new UnsupportedOperationException();
+            }
+        }));
 
         zos.setLevel(BEST_COMPRESSION);
 
@@ -139,6 +142,8 @@ public class WriteOnlyZipFileIO extends AbstractFileIO {
         zos.closeEntry();
 
         ch.close();
+
+        super.close();
     }
 
     /** {@inheritDoc} */
