@@ -147,6 +147,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
         /// Tests service topology is updated when service is forcibly redeployed.
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         [TestCase(TestUtils.JavaServiceName)]
         [TestCase(PlatformSvcName)]
         public void TestServiceRedeploy(string serviceName)
