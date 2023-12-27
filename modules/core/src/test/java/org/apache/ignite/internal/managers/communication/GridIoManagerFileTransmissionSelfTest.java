@@ -535,7 +535,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     @Test
     public void testFileHandlerNextWriterOpened() throws Exception {
         final int fileSizeBytes = 5 * 1024 * 1024;
-        final AtomicBoolean networkExThrown = new AtomicBoolean();
+        final AtomicBoolean netkExThrown = new AtomicBoolean();
 
         snd = startGrid(0);
         rcv = startGrid(1);
@@ -549,7 +549,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             }
 
             @Override public String filePath(UUID nodeId, TransmissionMeta fileMeta) {
-                if (networkExThrown.compareAndSet(false, true))
+                if (netkExThrown.compareAndSet(false, true))
                     return null;
 
                 return rcvFile.getAbsolutePath();
