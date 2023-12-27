@@ -276,9 +276,9 @@ SELECT /*+ FORCE_INDEX('TBL2_idx1') */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 WHERE 
 ----
 
 === Hint scope
-Hints are defined for a relation operator, usually for SELECT. Most of the hints are "visible" to their relation
-operators, for the following operators, queries and subqueries. The hints defined in the subquery are "visible" only for
-this subquery and its subqueries. Hint is not "visible" to the previous relation operator if it is defined after it.
+Hints are defined for SELECT relation operator and are "visible" for the following operators, queries and subqueries.
+The hints defined in the subquery are "visible" only for this subquery and its subqueries. Hint is not "visible" to
+the previous relation operator if it is defined after it.
 
 Example:
 [source, SQL]
@@ -308,6 +308,18 @@ The optimizer tries to apply every hint and its parameters, if possible. But it 
 * The hint parameters have been passed, but the hint does not support any parameter.
 * The hint parameter is incorrect or refers to a nonexistent object, such as a nonexistent index or table.
 * The current hints or current parameters are incompatible with the previous ones, such as forcing the use and disabling of the same index.
+
+=== Hint limitations
+Currently, SQL hints do not recognize the aliases. You can't refer to an alias like this:
+[source, SQL]
+----
+SELECT /*+ MERGE_JOIN(T2) */ T2.V1 FROM TBL1 T1 JOIN TBL2 T2 ON T1.V3=T2.V1 WHERE T1.V2=? AND T2.V2=?
+----
+Instead, a table name have to be used:
+[source, SQL]
+----
+SELECT /*+ MERGE_JOIN(TBL2) */ T2.V1 FROM TBL1 T1 JOIN TBL2 T2 ON T1.V3=T2.V1 WHERE T1.V2=? AND T2.V2=?
+----
 
 === Supportted hints
 
