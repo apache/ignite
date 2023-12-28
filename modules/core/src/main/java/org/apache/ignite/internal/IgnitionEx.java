@@ -976,6 +976,12 @@ public class IgnitionEx {
                 if (cfg.getIgniteInstanceName() == null && !F.isEmpty(igniteInstanceName))
                     cfg.setIgniteInstanceName(igniteInstanceName);
 
+                if (!F.isEmpty(igniteInstanceName)) {
+                    cfg.setConsistentId(igniteInstanceName);
+
+                    cfg.setIgniteInstanceName(igniteInstanceName);
+                }
+
                 if (ldr != null && cfg.getClassLoader() == null)
                     cfg.setClassLoader(ldr);
 
