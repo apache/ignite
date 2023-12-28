@@ -57,7 +57,7 @@
                         </bean>
                         <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
                             <property name="typeName" value="org.apache.ignite.platform.PlatformComputeEnum" />
-                            <property name="enum" value="true" />
+                            <property name="enum" value="true"/>
                         </bean>
                     </list>
                 </property>

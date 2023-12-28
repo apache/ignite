@@ -982,6 +982,9 @@ public class IgnitionEx {
                     cfg.setIgniteInstanceName(igniteInstanceName);
                 }
 
+                if (F.isEmpty(cfg.getIgniteInstanceName()))
+                    cfg.setIgniteInstanceName("PlatrormTaskInstance_" + UUID.randomUUID());
+
                 if (ldr != null && cfg.getClassLoader() == null)
                     cfg.setClassLoader(ldr);
 

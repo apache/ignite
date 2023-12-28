@@ -140,8 +140,9 @@ namespace Apache.Ignite.Core.Tests
             {
                 var cfg = GetConfiguration(x);
 
-                cfg.ConsistentId = this.GetType().FullName + Guid.NewGuid();
-                
+                cfg.IgniteInstanceName = this.GetType().FullName + Guid.NewGuid();
+                cfg.ConsistentId = cfg.IgniteInstanceName;
+
                 return Ignition.Start(cfg);
             }).ToArray();
         }
