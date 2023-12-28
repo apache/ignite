@@ -76,6 +76,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAda
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateResult;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.ResultType;
+import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -4631,7 +4632,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** */
     private CacheObject previousStateMetadata() {
-        return cctx.toCacheObject(cctx.conflictResolver().previousStateMetadata(this));
+        CacheVersionConflictResolver resolver = cctx.conflictResolver();
+
+        if (resolver == null)
+            return null;
+
+        return cctx.toCacheObject(resolver.previousStateMetadata(this));
     }
 
     /** {@inheritDoc} */
@@ -6182,7 +6188,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private CacheObject previousStateMetadata() {
             GridCacheContext ctx = entry.context();
 
-            return ctx.toCacheObject(ctx.conflictResolver().previousStateMetadata(entry));
+            CacheVersionConflictResolver resolver = ctx.conflictResolver();
+
+            if (resolver == null)
+                return null;
+
+            return ctx.toCacheObject(resolver.previousStateMetadata(entry));
         }
 
         /**

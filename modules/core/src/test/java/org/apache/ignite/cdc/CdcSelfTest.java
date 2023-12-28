@@ -220,7 +220,7 @@ public class CdcSelfTest extends AbstractCdcTest {
             @Override public void checkEvent(CdcEvent evt) {
                 super.checkEvent(evt);
 
-                Integer key = (Integer)evt.key();
+                Integer key = (Integer)evt.unwrappedKey();
 
                 if (evt.value() == null || key % 2 != 0) {
                     assertEquals("Expire time must not be set [key=" + key + ']', CU.EXPIRE_TIME_ETERNAL, evt.expireTime());
@@ -363,7 +363,7 @@ public class CdcSelfTest extends AbstractCdcTest {
                     if (!firstEvt.get())
                         throw new RuntimeException("Expected fail.");
 
-                    data.add((Integer)evts.next().key());
+                    data.add((Integer)evts.next().unwrappedKey());
 
                     firstEvt.set(false);
 
@@ -455,7 +455,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
                     CdcEvent evt = evts.next();
 
-                    assertEquals(expKey.get(), evt.key());
+                    assertEquals(expKey.get(), evt.unwrappedKey());
 
                     expKey.incrementAndGet();
 
@@ -748,7 +748,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
                     data.computeIfAbsent(
                         F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
-                        k -> new ArrayList<>()).add((Integer)evt.key()
+                        k -> new ArrayList<>()).add((Integer)evt.unwrappedKey()
                     );
 
                     if (consumeHalf.get())

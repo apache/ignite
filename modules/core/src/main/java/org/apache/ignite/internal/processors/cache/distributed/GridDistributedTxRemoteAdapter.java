@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteEx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
+import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -601,8 +602,10 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                         if (dataEntries == null)
                                             dataEntries = new ArrayList<>(entries.size());
 
-                                        CacheObject prevStateMeta =
-                                            cacheCtx.toCacheObject(cacheCtx.conflictResolver().previousStateMetadata(cached));
+                                        CacheVersionConflictResolver resolver = cacheCtx.conflictResolver();
+
+                                        CacheObject prevStateMeta = resolver == null ? null :
+                                            cacheCtx.toCacheObject(resolver.previousStateMetadata(cached));
 
                                         dataEntry = new DataEntry(
                                             cacheCtx.cacheId(),

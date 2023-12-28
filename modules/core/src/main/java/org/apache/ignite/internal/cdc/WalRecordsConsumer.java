@@ -32,7 +32,6 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TimeStampRecord;
-import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -90,19 +89,7 @@ public class WalRecordsConsumer<K, V> {
     };
 
     /** Event transformer. */
-    static final IgniteClosure<DataEntry, CdcEvent> CDC_EVENT_TRANSFORMER = e -> {
-        UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
-
-        return new CdcEventImpl(
-            ue.unwrappedKey(),
-            ue.unwrappedValue(),
-            (e.flags() & DataEntry.PRIMARY_FLAG) != 0,
-            e.partitionId(),
-            e.writeVersion(),
-            e.cacheId(),
-            e.expireTime()
-        );
-    };
+    static final IgniteClosure<DataEntry, CdcEvent> CDC_EVENT_TRANSFORMER = CdcEventImpl::new;
 
     /**
      * @param consumer User provided CDC consumer.

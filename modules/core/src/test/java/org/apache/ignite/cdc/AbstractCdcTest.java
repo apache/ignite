@@ -376,7 +376,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
             if (evt.value() == null)
                 return;
 
-            User user = (User)evt.value();
+            User user = (User)evt.unwrappedValue();
 
             assertTrue(user.getName().startsWith(JOHN));
             assertTrue(user.getAge() >= 42);
@@ -384,7 +384,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Integer extract(CdcEvent evt) {
-            return (Integer)evt.key();
+            return (Integer)evt.unwrappedKey();
         }
 
         /** {@inheritDoc} */
