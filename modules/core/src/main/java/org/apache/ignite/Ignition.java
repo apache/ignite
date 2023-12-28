@@ -321,8 +321,29 @@ public class Ignition {
      *      been started or Spring XML configuration file is invalid.
      */
     public static Ignite start(String springCfgPath) throws IgniteException {
+        return start(springCfgPath, null);
+    }
+
+    /**
+     * Starts all grids specified within given Spring XML configuration file. If grid with given name
+     * is already started, then exception is thrown. In this case all instances that may
+     * have been started so far will be stopped too.
+     * <p>
+     * Usually Spring XML configuration file will contain only one Grid definition. Note that
+     * Grid configuration bean(s) is retrieved form configuration file by type, so the name of
+     * the Grid configuration bean is ignored.
+     *
+     * @param springCfgPath Spring XML configuration file path or URL.
+     * @param name Instance name.
+     * @return Started grid. If Spring configuration contains multiple grid instances,
+     *      then the 1st found instance is returned.
+     * @throws IgniteException If grid could not be started or configuration
+     *      read. This exception will be thrown also if grid with given name has already
+     *      been started or Spring XML configuration file is invalid.
+     */
+    public static Ignite start(String springCfgPath, String name) throws IgniteException {
         try {
-            return wrapToProxyIfNeeded(IgnitionEx.start(springCfgPath));
+            return wrapToProxyIfNeeded(IgnitionEx.start(springCfgPath, name));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

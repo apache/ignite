@@ -20,6 +20,7 @@ package org.apache.ignite.platform;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -70,7 +71,7 @@ public class PlatformStartIgniteTask extends ComputeTaskAdapter<String, String> 
 
         /** {@inheritDoc} */
         @Override public Object execute() throws IgniteException {
-            Ignite ignite = Ignition.start(springConfig);
+            Ignite ignite = Ignition.start(springConfig, "IgniteFromPlatformStartIgniteTask" + UUID.randomUUID());
 
             return ignite.name();
         }
