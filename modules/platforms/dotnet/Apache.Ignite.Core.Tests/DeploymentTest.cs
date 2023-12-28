@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.Tests
             DeployTo(dllFolder, jarFolder);
 
             // Copy config
-            var springPath = Path.GetFullPath("Config/Compute/compute-grid2.xml");
+            var springPath = Path.GetFullPath("Config/Compute/compute-grid1.xml");
             var springFile = Path.GetFileName(springPath);
             File.Copy(springPath, Path.Combine(dllFolder, springFile));
 

@@ -136,7 +136,14 @@ namespace Apache.Ignite.Core.Tests
             if (Grid != null)
                 return;
 
-            _grids = _springUrls.Select(x => Ignition.Start(GetConfiguration(x))).ToArray();
+            _grids = _springUrls.Select(x =>
+            {
+                var cfg = GetConfiguration(x);
+
+                cfg.ConsistentId = this.GetType().FullName + Guid.NewGuid();
+                
+                return Ignition.Start(cfg);
+            }).ToArray();
         }
 
         /// <summary>
