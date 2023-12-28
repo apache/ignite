@@ -154,9 +154,7 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
 
         AtomicInteger metric = new AtomicInteger();
 
-        metrics.customRegistry("admin").register("intMetric", metric::get, null);
-
-        IntMetric read = metrics.customRegistry("admin").findMetric("intMetric");
+        IntMetric read = metrics.customRegistry("admin").register("intMetric", metric::get, null);
 
         metric.set(1);
         assertEquals(1, read.value());
