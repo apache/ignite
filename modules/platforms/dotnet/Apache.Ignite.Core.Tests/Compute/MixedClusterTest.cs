@@ -50,11 +50,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
-            {
-                SpringConfigUrl = SpringConfig,
-                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
-            };
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration()) {SpringConfigUrl = SpringConfig};
 
             _ignite = Ignition.Start(cfg);
 

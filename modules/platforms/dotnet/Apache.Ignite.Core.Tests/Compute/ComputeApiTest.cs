@@ -1017,8 +1017,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                     },
                     NameMapper = new BinaryBasicNameMapper { IsSimpleName = true }
                 },
-                SpringConfigUrl = path,
-                IgniteInstanceName = "ComputeApiTest"
+                SpringConfigUrl = path
             };
         }
     }

@@ -18,7 +18,6 @@
 #pragma warning disable 642
 namespace Apache.Ignite.Core.Tests.Ssl 
 {
-    using System;
     using System.Linq;
     using Apache.Ignite.Core.Ssl;
     using Apache.Ignite.Core.Common;
@@ -134,7 +133,6 @@ namespace Apache.Ignite.Core.Tests.Ssl
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = @"Config/ssl.xml",
-                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
             };
 
             using var grid = Ignition.Start(cfg);
@@ -162,8 +160,7 @@ namespace Apache.Ignite.Core.Tests.Ssl
         {
             var cfg1 = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = @"Config/ssl.xml",
-                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
+                SpringConfigUrl = @"Config/ssl.xml"
             };
 
             var cfg2 = new IgniteConfiguration(TestUtils.GetTestConfiguration(name: "grid2"))

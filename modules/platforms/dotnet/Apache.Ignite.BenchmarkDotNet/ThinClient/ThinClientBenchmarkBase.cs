@@ -48,9 +48,21 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
         [GlobalCleanup]
         public virtual void GlobalCleanup()
         {
-            Client.Dispose();
-            Ignite.Dispose();
-            Ignition.StopAll(true);
+            try
+            {
+                Client?.Dispose();
+            }
+            finally
+            {
+                try
+                {
+                    Ignite?.Dispose();
+                }
+                finally
+                {
+                    Ignition.StopAll(true);
+                }
+            }
         }
     }
 }

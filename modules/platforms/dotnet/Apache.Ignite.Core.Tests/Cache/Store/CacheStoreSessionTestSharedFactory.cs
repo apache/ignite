@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Store
 {
-    using System;
     using NUnit.Framework;
 
     /// <summary>
@@ -32,8 +31,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = @"Config/Cache/Store/cache-store-session-shared-factory.xml",
-                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
+                SpringConfigUrl = @"Config/Cache/Store/cache-store-session-shared-factory.xml"
             };
         }
 

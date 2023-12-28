@@ -124,8 +124,6 @@ namespace Apache.Ignite.Core.Tests
                 // Restart grids to cleanup
                 StopGrids();
             }
-            
-            Console.WriteLine("TEST | passed without an error.");
         }
 
         /// <summary>
@@ -144,13 +142,9 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         protected virtual IgniteConfiguration GetConfiguration(string springConfigUrl)
         {
-            var name = GetType().FullName + Guid.NewGuid();
-            
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = springConfigUrl,
-                IgniteInstanceName = name,
-                ConsistentId = name
+                SpringConfigUrl = springConfigUrl
             };
         }
 

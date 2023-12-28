@@ -291,8 +291,7 @@ namespace Apache.Ignite.Core.Tests
                 SpringConfigUrl = Path.Combine("Config", "spring-test.xml"),
                 NetworkSendRetryDelay = TimeSpan.FromSeconds(45),
                 MetricsHistorySize = 57,
-                JavaPeerClassLoadingEnabled = false,
-                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
+                JavaPeerClassLoadingEnabled = false
             };
 
             using (var ignite = Ignition.Start(cfg))

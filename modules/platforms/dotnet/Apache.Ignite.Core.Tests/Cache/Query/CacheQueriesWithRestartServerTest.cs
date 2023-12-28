@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
+    using System;
     using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
@@ -53,9 +54,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
-            _server?.Dispose();
-            _client?.Dispose();
-            Ignition.StopAll(true);
+            try
+            {
+                _server?.Dispose();
+            }
+            finally
+            {
+                try
+                {
+                    _client?.Dispose();
+                }
+                finally
+                {
+                    Ignition.StopAll(true);
+                }
+            }
         }
 
         /// <summary>

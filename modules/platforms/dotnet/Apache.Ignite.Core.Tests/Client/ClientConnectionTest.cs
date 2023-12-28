@@ -680,7 +680,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 }
                 finally
                 {
-                    restartTask.Result.Dispose();
+                    restartTask.Result?.Dispose();
                 }
             }
         }

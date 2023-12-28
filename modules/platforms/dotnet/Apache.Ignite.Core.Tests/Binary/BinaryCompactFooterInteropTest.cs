@@ -55,9 +55,21 @@ namespace Apache.Ignite.Core.Tests.Binary
         [TearDown]
         public void TestTearDown()
         {
-            _grid.Dispose();
-            _clientGrid.Dispose();
-            Ignition.StopAll(true);
+            try
+            {
+                _grid?.Dispose();
+            }
+            finally
+            {
+                try
+                {
+                    _clientGrid?.Dispose();
+                }
+                finally
+                {
+                    Ignition.StopAll(true);
+                }
+            }
         }
 
         /// <summary>
@@ -122,7 +134,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = springUrl,
-                IgniteInstanceName = "BinaryCompactFooterInter"+ Guid.NewGuid(),
                 BinaryConfiguration = new BinaryConfiguration(
                     typeof (PlatformComputeBinarizable),
                     typeof (PlatformComputeNetBinarizable))

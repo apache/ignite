@@ -47,7 +47,6 @@ namespace Apache.Ignite.Core.Tests.Compute
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = @"Config/Compute/compute-security.xml",
-                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
             };
 
             _grid = Ignition.Start(cfg);

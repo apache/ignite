@@ -55,8 +55,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = @"Config/Cache/Store/cache-store-session.xml",
-                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
+                SpringConfigUrl = @"Config/Cache/Store/cache-store-session.xml"
             };
         }
 

@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cluster
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
@@ -75,9 +76,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             finally
             {
                 foreach (var node in nodes)
-                {
                     node.Dispose();
-                }
             }
         }
 

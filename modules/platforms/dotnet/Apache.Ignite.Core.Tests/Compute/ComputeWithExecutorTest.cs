@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Compute
 {
-    using System;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
@@ -44,8 +43,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             var cfg1 = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = @"Config\Compute\compute-grid-custom-executor.xml",
-                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
+                SpringConfigUrl = @"Config\Compute\compute-grid-custom-executor.xml"
             };
 
             _springConfigGrid = Ignition.Start(cfg1);

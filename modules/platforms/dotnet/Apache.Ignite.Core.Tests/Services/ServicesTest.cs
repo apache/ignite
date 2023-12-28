@@ -1785,8 +1785,7 @@ namespace Apache.Ignite.Core.Tests.Services
             {
                 SpringConfigUrl = springConfigUrl,
                 BinaryConfiguration = BinaryConfiguration(),
-                LifecycleHandlers = _useBinaryArray ? new[] { new SetUseBinaryArray() } : null,
-                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
+                LifecycleHandlers = _useBinaryArray ? new[] { new SetUseBinaryArray() } : null
             };
         }
 

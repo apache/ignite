@@ -56,11 +56,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         [TearDown]
         public void TearDown()
         {
-            Ignition.StopAll(true);
-
-            foreach (var ignite in _ignite)
+            try
             {
-                ignite.Dispose();
+                foreach (var ignite in _ignite)
+                {
+                    ignite.Dispose();
+                }
+            }
+            finally
+            {
+                Ignition.StopAll(true);
             }
 
             _ignite = null;
@@ -253,7 +258,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             InitNodes(2);
             
             using var client = InitClient();
-            var clientCache = client.GetCache<int, Foo>(CacheName);
+            client.GetCache<int, Foo>(CacheName);
 
             TestUtils.WaitForTrueCondition(() => TestUtils.GetPrimaryKey(_ignite[1], CacheName) == 1, 3000);
 

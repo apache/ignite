@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests
 {
-    using System;
     using Apache.Ignite.Core.Common;
     using NUnit.Framework;
 
@@ -79,8 +78,7 @@ namespace Apache.Ignite.Core.Tests
         {
             return Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = xml,
-                IgniteInstanceName = "MarshallerTest" + Guid.NewGuid()
+                SpringConfigUrl = xml
             });
         }
     }
