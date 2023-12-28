@@ -9,7 +9,7 @@ systems, it should be run slightly differently:
 * On Windows (in cmd shell), it's `.\mvnw <arguments>` or `mvnw <arguments>` (in older versions)
 
 Further in our documentation, we always use the ./mvnw form. Please adapt it to your system if needed.
-
+§
 Apache Ignite Maven Build Instructions
 ======================================
 1) Compile and install:
