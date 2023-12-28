@@ -46,8 +46,8 @@ network,net
 object,obj
 package,pkg
 parameter,param
-#password,pwd
-#policy,plc
+password,pwd
+policy,plc
 #property,prop
 #properties,props
 #process,proc
