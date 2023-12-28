@@ -497,6 +497,35 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     }
 
     /**
+     * Creates table with nullabale/not nullable columns and checks nullability.
+     */
+    @Test
+    public void createTableWithNullability() {
+        List<String> dataTypes = F.asList("INT", "FLOAT", "DOUBLE", "DECIMAL", "DECIMAL(10,2)", "VARCHAR",
+            "VARCHAR(10)", "CHAR", "CHAR(10)", "DATE", "TIME", "TIMESTAMP", "BINARY", "BINARY(10)", "VARBINARY",
+            "VARBINARY(10)", "UUID", "OTHER");
+
+        for (String dataType : dataTypes) {
+            try {
+                sql("CREATE TABLE my_table (id INT PRIMARY KEY, val " + dataType + ')');
+                sql("INSERT INTO my_table(id, val) VALUES (0, NULL)");
+            }
+            finally {
+                sql("DROP TABLE my_table");
+            }
+
+            try {
+                sql("CREATE TABLE my_table (id INT PRIMARY KEY, val " + dataType + " NOT NULL)");
+                assertThrows("INSERT INTO my_table(id, val) VALUES (0, NULL)", IgniteSQLException.class,
+                    "does not allow NULLs");
+            }
+            finally {
+                sql("DROP TABLE my_table");
+            }
+        }
+    }
+
+    /**
      * Drops a table created in a default schema.
      */
     @Test
@@ -741,7 +770,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         sql("alter table my_table add column val2 varchar not null");
 
         assertThrows("insert into my_table (id, val, val2) values (0, '1', null)", IgniteSQLException.class,
-            "Null value is not allowed");
+            "does not allow NULLs");
 
         sql("insert into my_table (id, val, val2) values (0, '1', '2')");
 
@@ -850,7 +879,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         assertEquals("2", res.get(0).get(2));
 
         assertThrows("insert into my_table (id, val, val2) values (1, '2', null)", IgniteSQLException.class,
-            "Null value is not allowed");
+            "does not allow NULLs");
 
         sql("insert into my_table (id, val, val2) values (1, '2', '3')");
 
