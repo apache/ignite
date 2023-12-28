@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.metric.impl;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -59,7 +58,7 @@ public class MetricUtils {
     public static String metricName(String... names) {
         assert names != null;
 
-        triamAllAndEnsureNotEmpty(names);
+        ensureNotEmptyAndHasNoSpaces(names);
 
         if (names.length == 1)
             return names[0];
@@ -156,10 +155,10 @@ public class MetricUtils {
      *
      * @param names Names.
      */
-    private static void triamAllAndEnsureNotEmpty(String... names) {
+    private static void ensureNotEmptyAndHasNoSpaces(String... names) {
         for (int i = 0; i < names.length; i++) {
             if (names[i] == null || names[i].isEmpty() || SPACES_PATTERN.matcher(names[i]).matches())
-                throw new IgniteException("Metric name element " + i + " is empty or contains spaces.");
+                throw new IllegalArgumentException("Metric name element " + (i + 1) + " is empty or contains spaces.");
         }
     }
 

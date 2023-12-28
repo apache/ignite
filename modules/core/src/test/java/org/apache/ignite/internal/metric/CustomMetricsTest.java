@@ -287,28 +287,28 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
         assertThrows(
             null,
             () -> metrics.customRegistry("").register("intMetric1", value::get, "intMetric1Desc"),
-            IgniteException.class,
+            IllegalArgumentException.class,
             "is empty or contains spaces"
         );
 
         assertThrows(
             null,
             () -> metrics.customRegistry(CUSTOM_METRICS + ' ').register("intMetric1", value::get, "intMetric1Desc"),
-            IgniteException.class,
+            IllegalArgumentException.class,
             "is empty or contains spaces"
         );
 
         assertThrows(
             null,
             () -> metrics.customRegistry(" \t ").register("intMetric1", value::get, "intMetric1Desc"),
-            IgniteException.class,
+            IllegalArgumentException.class,
             "is empty or contains spaces"
         );
 
         assertThrows(
             null,
             () -> metrics.customRegistry(null).register("intMetric1", value::get, "intMetric1Desc"),
-            IgniteException.class,
+            IllegalArgumentException.class,
             "is empty or contains spaces"
         );
 
@@ -349,13 +349,13 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
         assertThrows(
             null,
             () -> metrics.customRegistry("a.b").register(" \t  c . \t d \t .  \t intMetric", value::get, null),
-            IgniteException.class,
+            IllegalArgumentException.class,
             "is empty or contains spaces"
         );
 
         assertNotNull(metrics.findRegistry(CUSTOM_METRICS + ".a.b"));
 
-        metrics.customRegistry(CUSTOM_METRICS).register("intMetric300", value::get, null);
+        metrics.customRegistry("CuStOm").register("intMetric300", value::get, null);
 
         assertEquals(CUSTOM_METRICS + ".CuStOm.intMetric300",
             metrics.findRegistry(CUSTOM_METRICS + ".CuStOm").findMetric("intMetric300").name());
