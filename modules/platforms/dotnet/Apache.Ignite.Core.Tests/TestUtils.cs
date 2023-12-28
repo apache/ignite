@@ -68,6 +68,9 @@ namespace Apache.Ignite.Core.Tests
         /** System cache name. */
         public const string UtilityCacheName = "ignite-sys-cache";
 
+        /** */
+        public const string JavaServiceName = "TestJavaService";
+        
         /** Work dir. */
         private static readonly string WorkDir =
             // ReSharper disable once AssignNullToNotNullAttribute
@@ -670,20 +673,16 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Deploys the Java service.
+        /// Deploys the Java service on all or specified nodes.
         /// </summary>
-        public static string DeployJavaService(IIgnite ignite)
+        public static void DeployJavaService(IIgnite ignite, IEnumerable<object> nodes = null)
         {
-            const string serviceName = "javaService";
-
             ignite.GetCompute()
-                .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", serviceName);
+                .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", nodes?.ToArray());
 
             var services = ignite.GetServices();
 
-            WaitForCondition(() => services.GetServiceDescriptors().Any(x => x.Name == serviceName), 1000);
-
-            return serviceName;
+            WaitForCondition(() => services.GetServiceDescriptors().Any(x => x.Name == TestUtils.JavaServiceName), 1000);
         }
 
         /// <summary>
