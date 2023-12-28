@@ -1971,19 +1971,19 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         }
                     }
 
-                        // Remove obsolete mappings.
-                        if (cur != null) {
-                            for (Integer p : F.view(cur.keySet(), F0.notIn(parts.keySet()))) {
-                                Set<UUID> ids = diffFromAffinity.get(p);
+                    // Remove obsolete mappings.
+                    if (cur != null) {
+                        for (Integer p : F.view(cur.keySet(), F0.notIn(parts.keySet()))) {
+                            Set<UUID> ids = diffFromAffinity.get(p);
 
-                                if (ids != null && ids.remove(parts.nodeId())) {
-                                    changed = true;
+                            if (ids != null && ids.remove(parts.nodeId())) {
+                                changed = true;
 
-                                    if (ids.isEmpty())
-                                        diffFromAffinity.remove(p);
-                                }
+                                if (ids.isEmpty())
+                                    diffFromAffinity.remove(p);
                             }
                         }
+                    }
 
                     diffFromAffinityVer = readyTopVer;
                 }

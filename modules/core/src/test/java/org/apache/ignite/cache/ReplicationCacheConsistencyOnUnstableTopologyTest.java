@@ -1,11 +1,12 @@
 /*
- * Copyright 2023 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -63,6 +64,9 @@ public class ReplicationCacheConsistencyOnUnstableTopologyTest extends GridCommo
      */
     private boolean readFromBackup;
 
+    /**
+     * {@inheritDoc}
+     */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setConsistentId(igniteInstanceName)
@@ -80,12 +84,18 @@ public class ReplicationCacheConsistencyOnUnstableTopologyTest extends GridCommo
                 .setReadFromBackup(readFromBackup));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
         cleanPersistenceDir();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
@@ -94,61 +104,97 @@ public class ReplicationCacheConsistencyOnUnstableTopologyTest extends GridCommo
         super.afterTest();
     }
 
+    /**
+     * @throws Exception If fail.
+     */
     @Test
     public void testReplicatedFullSync() throws Exception {
         process(CacheMode.REPLICATED, CacheWriteSynchronizationMode.FULL_SYNC, false);
     }
 
+    /**
+     * @throws Exception If fail.
+     */
     @Test
     public void testReplicatedFullSyncReadFromBackup() throws Exception {
         process(CacheMode.REPLICATED, CacheWriteSynchronizationMode.FULL_SYNC, true);
     }
 
+    /**
+     * @throws Exception If fail.
+     */
     @Test
     public void testReplicatedPrimarySync() throws Exception {
         process(CacheMode.REPLICATED, CacheWriteSynchronizationMode.PRIMARY_SYNC, false);
     }
 
+    /**
+     * @throws Exception If fail.
+     */
     @Test
     public void testReplicatedPrimarySyncReadFromBackup() throws Exception {
         process(CacheMode.REPLICATED, CacheWriteSynchronizationMode.PRIMARY_SYNC, true);
     }
 
+    /**
+     * @throws Exception If fail.
+     */
     @Test
     public void testReplicatedFullAsync() throws Exception {
         process(CacheMode.REPLICATED, CacheWriteSynchronizationMode.FULL_ASYNC, false);
     }
 
+    /**
+     * @throws Exception If fail.
+     */
     @Test
     public void testReplicatedFullAsyncReadFromBackup() throws Exception {
         process(CacheMode.REPLICATED, CacheWriteSynchronizationMode.FULL_ASYNC, true);
     }
 
+    /**
+     * @throws Exception If fail.
+     */
     @Test
     public void testPartitionedFullSync() throws Exception {
         process(CacheMode.PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, false);
     }
 
+    /**
+     * @throws Exception If fail.
+     */
     @Test
     public void testPartitionedFullSyncReadFromBackup() throws Exception {
         process(CacheMode.PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, true);
     }
 
+    /**
+     * @throws Exception If fail.
+     */
     @Test
     public void testPartitionedPrimarySync() throws Exception {
         process(CacheMode.PARTITIONED, CacheWriteSynchronizationMode.PRIMARY_SYNC, false);
     }
 
+    /**
+     * @throws Exception If fail.
+     */
     @Test
     public void testPartitionedPrimarySyncReadFromBackup() throws Exception {
         process(CacheMode.PARTITIONED, CacheWriteSynchronizationMode.PRIMARY_SYNC, true);
     }
 
+    /**
+     * @throws Exception If fail.
+     */
     @Test
     public void testPartitionedFullAsync() throws Exception {
         process(CacheMode.PARTITIONED, CacheWriteSynchronizationMode.FULL_ASYNC, false);
     }
 
+    /**
+     * @throws Exception If fail.
+     */
     @Test
     public void testPartitionedFullAsyncReadFromBackup() throws Exception {
         process(CacheMode.PARTITIONED, CacheWriteSynchronizationMode.FULL_ASYNC, true);
