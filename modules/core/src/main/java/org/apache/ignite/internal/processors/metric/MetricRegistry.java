@@ -25,6 +25,7 @@ import java.util.function.Function;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.BooleanGauge;
@@ -42,8 +43,11 @@ import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
 import org.apache.ignite.metric.IgniteMetricRegistry;
 import org.apache.ignite.spi.metric.BooleanMetric;
+import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.metric.ObjectMetric;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -134,88 +138,30 @@ public class MetricRegistry implements IgniteMetricRegistry {
         metrics.remove(name);
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean gauge(String name, DoubleSupplier supplier, @Nullable String desc) {
-        return tryAddMetric(name, new DoubleGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
-    }
 
     /** {@inheritDoc} */
-    @Override public boolean gauge(String name, IntSupplier supplier, @Nullable String desc) {
-        return tryAddMetric(name, new IntGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
+    @Override public BooleanMetric register(String name, BooleanSupplier supplier, @Nullable String desc) {
+        return addMetric(name, new BooleanGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /** {@inheritDoc} */
-    @Override public boolean gauge(String name, LongSupplier supplier, @Nullable String desc) {
-        return tryAddMetric(name, new LongGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
+    @Override public DoubleMetric register(String name, DoubleSupplier supplier, @Nullable String desc) {
+        return addMetric(name, new DoubleGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /** {@inheritDoc} */
-    @Override public boolean gauge(String name, BooleanSupplier supplier, @Nullable String desc) {
-        return tryAddMetric(name, new BooleanGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
+    @Override public IntMetric register(String name, IntSupplier supplier, @Nullable String desc) {
+        return addMetric(name, new IntGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /** {@inheritDoc} */
-    @Override public <T> boolean gauge(String name, Supplier<T> supplier, Class<T> type, @Nullable String desc) {
-        return tryAddMetric(name, new ObjectGauge<>(metricName(regName, name), desc,
-            nonThrowableSupplier(supplier, log), type));
-    }
-
-    /**
-     * Registers {@link BooleanMetric} which value will be queried from the specified supplier.
-     *
-     * @param name Name.
-     * @param supplier Supplier.
-     * @param desc Description.
-     */
-    public void register(String name, BooleanSupplier supplier, @Nullable String desc) {
-        addMetric(name, new BooleanGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
-    }
-
-    /**
-     * Registers {@link DoubleSupplier} which value will be queried from the specified supplier.
-     *
-     * @param name Name.
-     * @param supplier Supplier.
-     * @param desc Description.
-     */
-    public void register(String name, DoubleSupplier supplier, @Nullable String desc) {
-        gauge(name, supplier, desc);
-    }
-
-    /**
-     * Registers {@link IntMetric} which value will be queried from the specified supplier.
-     *
-     * @param name Name.
-     * @param supplier Supplier.
-     * @param desc Description.
-     */
-    public void register(String name, IntSupplier supplier, @Nullable String desc) {
-        gauge(name, supplier, desc);
-    }
-
-    /**
-     * Registers {@link LongGauge} which value will be queried from the specified supplier.
-     *
-     * @param name Name.
-     * @param supplier Supplier.
-     * @param desc Description.
-     * @return Metric of type {@link LongGauge}.
-     */
-    public LongGauge register(String name, LongSupplier supplier, @Nullable String desc) {
+    @Override public LongMetric register(String name, LongSupplier supplier, @Nullable String desc) {
         return addMetric(name, new LongGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
-    /**
-     * Registers {@link ObjectGauge} which value will be queried from the specified {@link Supplier}.
-     *
-     * @param name Name.
-     * @param supplier Supplier.
-     * @param type Type.
-     * @param desc Description.
-     */
-    public <T> void register(String name, Supplier<T> supplier, Class<T> type, @Nullable String desc) {
-        addMetric(name, new ObjectGauge<>(metricName(regName, name), desc,
-            nonThrowableSupplier(supplier, log), type));
+    /** {@inheritDoc} */
+    @Override public <T> ObjectMetric register(String name, Supplier<T> supplier, Class<T> type, @Nullable String desc) {
+        return addMetric(name, new ObjectGauge<>(metricName(regName, name), desc, nonThrowableSupplier(supplier, log), type));
     }
 
     /** {@inheritDoc} */
@@ -304,32 +250,25 @@ public class MetricRegistry implements IgniteMetricRegistry {
      * @param metric Metric
      * @param <T> Type of metric.
      * @return {@code metric} if there were no other metric with the same name. Previous metric if can be cast to
-     * {@code metric}. {@code Null} otherwise.
+     * {@code metric}.
+     * @throws IgniteException if a metric of incompatible type is already registered.
      */
-    private @Nullable <T extends Metric> T addMetric(String name, T metric) {
+    private <T extends Metric> T addMetric(String name, T metric) throws IgniteException {
         if (metric == null)
             throw new IllegalArgumentException("Null metric passed with name '" + name + "'.");
 
-        Metric old = metrics.putIfAbsent(name, metric);
+        Metric old = metrics.putIfAbsent(metricName(name), metric);
 
-        if (old != null)
-            return metric.getClass().isAssignableFrom(old.getClass()) ? (T)old : null;
+        if (old != null) {
+            if (!metric.getClass().isAssignableFrom(old.getClass()))
+                throw new IgniteException("Other metric with name '" + name + "' is already registered.");
+
+            return (T)old;
+        }
 
         configureMetrics(metric);
 
         return metric;
-    }
-
-    /**
-     * Adds custom metrics if not exists. Checks
-     *
-     * @param name Name.
-     * @param metric Metric
-     * @param <T> Type of metric.
-     * @return {@code True} if new metric was added. {@code False} is other metric already exists with the same name.
-     */
-    private <T extends Metric> boolean tryAddMetric(String name, T metric) {
-        return metric == addMetric(metricName(name), metric);
     }
 
     /**

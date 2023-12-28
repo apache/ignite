@@ -48,7 +48,7 @@ public class MetricUtils {
     public static final char HISTOGRAM_NAME_DIVIDER = '_';
 
     /** Metric name part separator. */
-    private static final Pattern SPACES_APTTERN = Pattern.compile("\\s*");
+    private static final Pattern SPACES_PATTERN = Pattern.compile(".*[\\s]+.*");
 
     /**
      * Builds metric name. Each parameter will separated by '.' char.
@@ -152,17 +152,14 @@ public class MetricUtils {
     }
 
     /**
-     * Asserts all arguments are not empty.
+     * Asserts all arguments are not empty and contains no spaces.
      *
      * @param names Names.
      */
     private static void triamAllAndEnsureNotEmpty(String... names) {
         for (int i = 0; i < names.length; i++) {
-            if (names[i] != null && !names[i].isEmpty())
-                names[i] = SPACES_APTTERN.matcher(names[i]).replaceAll("");
-
-            if (names[i] == null || names[i].isEmpty())
-                throw new IgniteException("Metric name element " + i + " is completely empty. Any spaces are not allowed.");
+            if (names[i] == null || names[i].isEmpty() || SPACES_PATTERN.matcher(names[i]).matches())
+                throw new IgniteException("Metric name element " + i + " is empty or contains spaces.");
         }
     }
 

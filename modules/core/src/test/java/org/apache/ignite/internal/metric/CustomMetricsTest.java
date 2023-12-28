@@ -51,11 +51,14 @@ import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.ObjectMetric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CUSTOM_METRICS;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** */
 public class CustomMetricsTest extends GridCommonAbstractTest {
@@ -78,7 +81,7 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
         List<String> customRegs = new ArrayList<>();
 
         grid(0).metrics().forEach(r -> {
-            if (r.name().startsWith(GridMetricManager.CUSTOM_REGISTRY_NAME))
+            if (r.name().startsWith(CUSTOM_METRICS))
                 customRegs.add(r.name());
         });
 
@@ -151,7 +154,7 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
 
         AtomicInteger metric = new AtomicInteger();
 
-        metrics.customRegistry("admin").gauge("intMetric", metric::get, null);
+        metrics.customRegistry("admin").register("intMetric", metric::get, null);
 
         IntMetric read = metrics.customRegistry("admin").findMetric("intMetric");
 
@@ -187,23 +190,23 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
 
         AtomicInteger value = new AtomicInteger();
 
-        customMetrics.customRegistry(GridMetricManager.SYS_METRICS).gauge(name, value::get, null);
+        customMetrics.customRegistry(GridMetricManager.SYS_METRICS).register(name, value::get, null);
 
-        customMetrics.customRegistry(GridMetricManager.CUSTOM_REGISTRY_NAME).gauge(fullName, value::get, null);
-        customMetrics.customRegistry().gauge(fullName, value::get, null);
-        customMetrics.customRegistry(null).gauge(fullName, value::get, null);
-        customMetrics.customRegistry(" \t ").gauge(fullName, value::get, null);
-        customMetrics.customRegistry("").gauge(fullName, value::get, null);
+        customMetrics.customRegistry(CUSTOM_METRICS).register(fullName, value::get, null);
 
         assertNull(systemMetrics.registry(GridMetricManager.SYS_METRICS).findMetric(name));
 
-        String fullCustomName = MetricUtils.metricName(GridMetricManager.CUSTOM_REGISTRY_NAME, fullName);
+        String fullCustomName = MetricUtils.metricName(CUSTOM_METRICS, fullName);
 
         assertEquals(fullCustomName, customMetrics.customRegistry(GridMetricManager.SYS_METRICS).findMetric(name).name());
 
-        assertEquals(fullCustomName, customMetrics.customRegistry("custom").findMetric(fullName).name());
-        assertEquals(fullCustomName, customMetrics.customRegistry("").findMetric(fullName).name());
-        assertEquals(fullCustomName, customMetrics.customRegistry(" \t ").findMetric(fullName).name());
+        assertEquals(fullCustomName, customMetrics.customRegistry(CUSTOM_METRICS).findMetric(fullName).name());
+
+        for (ReadOnlyMetricRegistry r : customMetrics)
+            assertTrue(r.name().startsWith(CUSTOM_METRICS));
+
+        assertNotNull(systemMetrics.find(MetricUtils.metricName(CUSTOM_METRICS, GridMetricManager.SYS_METRICS, name),
+            IntMetric.class));
     }
 
     /** */
@@ -211,9 +214,9 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
     public void testMetricInComputation() {
         IgniteMetrics metrics = grid(0).metrics();
 
-        String customRegName = MetricUtils.metricName(GridMetricManager.CUSTOM_REGISTRY_NAME, TestCustomMetricsComputeTask.METRIC_REGISTRY);
+        String customRegName = MetricUtils.metricName(CUSTOM_METRICS, TestCustomMetricsComputeTask.METRIC_REGISTRY);
 
-        assertNull(metrics.findRegistry(GridMetricManager.CUSTOM_REGISTRY_NAME));
+        assertNull(metrics.findRegistry(CUSTOM_METRICS));
         assertNull(metrics.findRegistry(customRegName));
 
         long computeResult = grid(0).compute().execute(new TestCustomMetricsComputeTask(), null);
@@ -221,7 +224,7 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
         assertNotNull(computeResult);
         assertTrue(computeResult > 0);
 
-        assertNull(metrics.findRegistry(GridMetricManager.CUSTOM_REGISTRY_NAME));
+        assertNull(metrics.findRegistry(CUSTOM_METRICS));
 
         LongMetric curMetric = metrics.findRegistry(customRegName).findMetric(TestCustomMetricsComputeTask.METRIC_CURRENT);
         LongMetric totalMetric = metrics.findRegistry(customRegName).findMetric(TestCustomMetricsComputeTask.METRIC_TOTAL);
@@ -248,13 +251,30 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
         AtomicInteger intGauge = new AtomicInteger();
         LongAdder longGauge = new LongAdder();
 
-        assertTrue(metrics.customRegistry().gauge("intMetric", intGauge::get, null));
-        assertFalse(metrics.customRegistry().gauge("intMetric", longGauge::sum, null));
+        assertNotNull(metrics.customRegistry("test").register("intMetric", intGauge::get, null));
 
-        assertNull(metrics.customRegistry().intMetric("intMetric", null));
+        assertThrows(
+            null,
+            () -> metrics.customRegistry("test").register("intMetric", longGauge::sum, null),
+            IgniteException.class,
+            "Other metric with name 'intMetric' is already registered"
+        );
 
-        assertNotNull(metrics.customRegistry().intMetric("intMetric2", null));
-        assertFalse(metrics.customRegistry().gauge("intMetric2", intGauge::get, null));
+        assertThrows(
+            null,
+            () -> metrics.customRegistry("test").intMetric("intMetric", null),
+            IgniteException.class,
+            "Other metric with name 'intMetric' is already registered"
+        );
+
+        assertNotNull(metrics.customRegistry("test").intMetric("intMetric2", null));
+
+        assertThrows(
+            null,
+            () -> metrics.customRegistry("test").register("intMetric2", intGauge::get, null),
+            IgniteException.class,
+            "Other metric with name 'intMetric2' is already registered"
+        );
     }
 
     /** Tests custom metric names. */
@@ -264,67 +284,81 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
 
         AtomicInteger value = new AtomicInteger();
 
-        metrics.customRegistry().gauge("intMetric1", value::get, "intMetric1Desc");
-        checkMetricNamingsRootCustomReg("intMetric1", "custom.intMetric1", "intMetric1Desc");
+        assertThrows(
+            null,
+            () -> metrics.customRegistry("").register("intMetric1", value::get, "intMetric1Desc"),
+            IgniteException.class,
+            "is empty or contains spaces"
+        );
 
-        metrics.customRegistry("abc").gauge("intMetric1", value::get, null);
-        metrics.customRegistry("custom.abc").gauge("intMetric1", value::get, null);
-        metrics.customRegistry("abc").gauge("intMetric2", value::get, null);
-        metrics.customRegistry("custom.abc").gauge("intMetric2", value::get, null);
+        assertThrows(
+            null,
+            () -> metrics.customRegistry(CUSTOM_METRICS + ' ').register("intMetric1", value::get, "intMetric1Desc"),
+            IgniteException.class,
+            "is empty or contains spaces"
+        );
 
-        Assert.assertEquals("custom.abc.intMetric2",
-            metrics.findRegistry("custom.abc").findMetric("intMetric2").name());
-        Assert.assertEquals("custom.abc.intMetric1",
-            metrics.findRegistry("custom.abc").findMetric("intMetric1").name());
+        assertThrows(
+            null,
+            () -> metrics.customRegistry(" \t ").register("intMetric1", value::get, "intMetric1Desc"),
+            IgniteException.class,
+            "is empty or contains spaces"
+        );
 
-        assertNull(metrics.findRegistry("custom.custom.abc"));
+        assertThrows(
+            null,
+            () -> metrics.customRegistry(null).register("intMetric1", value::get, "intMetric1Desc"),
+            IgniteException.class,
+            "is empty or contains spaces"
+        );
 
-        metrics.customRegistry("custom.custom").gauge("intMetric10", value::get, null);
-        Assert.assertEquals("custom.custom.intMetric10",
-            metrics.findRegistry("custom.custom").findMetric("intMetric10").name());
+        metrics.customRegistry(CUSTOM_METRICS).register("intMetric1", value::get, "intMetric1Desc");
 
-        metrics.customRegistry("abc").gauge("cde.intMetric1", value::get, null);
+        assertEquals(CUSTOM_METRICS + ".intMetric1",
+            metrics.findRegistry(CUSTOM_METRICS).findMetric("intMetric1").name());
+        assertEquals("intMetric1Desc", metrics.findRegistry(CUSTOM_METRICS).findMetric("intMetric1").description());
 
-        Assert.assertEquals("custom.abc.cde.intMetric1",
-            metrics.findRegistry("custom.abc").findMetric("cde.intMetric1").name());
+        metrics.customRegistry("abc").register("intMetric1", value::get, null);
+        metrics.customRegistry(CUSTOM_METRICS + ".abc").register("intMetric1", value::get, null);
+        metrics.customRegistry("abc").register("intMetric2", value::get, null);
+        metrics.customRegistry(CUSTOM_METRICS + ".abc").register("intMetric2", value::get, null);
 
-        metrics.customRegistry("abc.cde").gauge("intMetric1", value::get, null);
+        assertEquals(CUSTOM_METRICS + ".abc.intMetric2",
+            metrics.findRegistry(CUSTOM_METRICS + ".abc").findMetric("intMetric2").name());
+        assertEquals(CUSTOM_METRICS + ".abc.intMetric1",
+            metrics.findRegistry(CUSTOM_METRICS + ".abc").findMetric("intMetric1").name());
 
-        Assert.assertEquals("custom.abc.cde.intMetric1",
-            metrics.findRegistry("custom.abc").findMetric("cde.intMetric1").name());
+        assertNull(metrics.findRegistry(CUSTOM_METRICS + ".custom.abc"));
 
-        // Test spaces and upper cases.
-        metrics.customRegistry("a  . \t b  \t ").gauge(" \t  c . \t d \t .  \t intMetric", value::get, null);
+        metrics.customRegistry(CUSTOM_METRICS + ".custom").register("intMetric10", value::get, null);
+        assertEquals(CUSTOM_METRICS + ".custom.intMetric10",
+            metrics.findRegistry(CUSTOM_METRICS + ".custom").findMetric("intMetric10").name());
 
-        Assert.assertEquals("custom.a.b.c.d.intMetric",
-            metrics.findRegistry("custom.a.b").findMetric("c.d.intMetric").name());
+        metrics.customRegistry("abc").register("cde.intMetric1", value::get, null);
 
-        metrics.customRegistry("  . \t   \t ").gauge("c.d.intMetric", value::get, null);
+        assertEquals(CUSTOM_METRICS + ".abc.cde.intMetric1",
+            metrics.findRegistry(CUSTOM_METRICS + ".abc").findMetric("cde.intMetric1").name());
 
-        metrics.customRegistry(" custom ").gauge("intMetric200", value::get, null);
-        metrics.customRegistry("CuStOm").gauge("intMetric300", value::get, null);
-        metrics.customRegistry(" CuS tOm ").gauge("intMetric400", value::get, null);
+        metrics.customRegistry("abc.cde").register("intMetric1", value::get, null);
 
-        Assert.assertEquals("custom.intMetric200",
-            metrics.findRegistry("custom").findMetric("intMetric200").name());
-        Assert.assertEquals("custom.intMetric300",
-            metrics.findRegistry("custom").findMetric("intMetric300").name());
-        Assert.assertEquals("custom.intMetric400",
-            metrics.findRegistry("custom").findMetric("intMetric400").name());
-    }
+        assertEquals(CUSTOM_METRICS + ".abc.cde.intMetric1",
+            metrics.findRegistry(CUSTOM_METRICS + ".abc").findMetric("cde.intMetric1").name());
 
-    /** Tests double registration of metric with the same name. */
-    @Test
-    public void testDoubleRegistration() {
-        IgniteMetrics metrics = grid(0).metrics();
+        assertNull(metrics.findRegistry(CUSTOM_METRICS + ".a.b"));
 
-        AtomicInteger value1 = new AtomicInteger();
+        assertThrows(
+            null,
+            () -> metrics.customRegistry("a.b").register(" \t  c . \t d \t .  \t intMetric", value::get, null),
+            IgniteException.class,
+            "is empty or contains spaces"
+        );
 
-        AtomicInteger value2 = new AtomicInteger();
+        assertNotNull(metrics.findRegistry(CUSTOM_METRICS + ".a.b"));
 
-        assertTrue(metrics.customRegistry().gauge("intMetric1", value1::get, "intMetric1Desc"));
+        metrics.customRegistry(CUSTOM_METRICS).register("intMetric300", value::get, null);
 
-        assertFalse(metrics.customRegistry().gauge("intMetric1", value2::get, "intMetric2Desc"));
+        assertEquals(CUSTOM_METRICS + ".CuStOm.intMetric300",
+            metrics.findRegistry(CUSTOM_METRICS + ".CuStOm").findMetric("intMetric300").name());
     }
 
     /** Tests null supplier metric. */
@@ -332,34 +366,11 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
     public void testNullSupplier() {
         IgniteMetrics metrics = grid(0).metrics();
 
-        assertTrue(metrics.customRegistry().gauge("intMetric", (IntSupplier)null, "intMetric1Desc"));
+        assertNotNull(metrics.customRegistry("test").register("intMetric", (IntSupplier)null, "intMetric1Desc"));
 
-        IntMetric read = metrics.customRegistry().findMetric("intMetric");
+        IntMetric read = metrics.customRegistry("test").findMetric("intMetric");
 
         assertEquals(0, read.value());
-    }
-
-    /** */
-    private void checkMetricNamingsRootCustomReg(String shortMetricName, String fullMetricName, String metricDesc) {
-        IgniteMetrics metrics = grid(0).metrics();
-
-        Assert.assertEquals(fullMetricName, metrics.findRegistry("custom").findMetric(shortMetricName).name());
-        Assert.assertEquals(metricDesc, metrics.findRegistry("custom").findMetric(shortMetricName).description());
-
-        Assert.assertEquals(fullMetricName, metrics.customRegistry().findMetric(shortMetricName).name());
-        Assert.assertEquals(metricDesc, metrics.customRegistry().findMetric(shortMetricName).description());
-
-        Assert.assertEquals(fullMetricName, metrics.customRegistry(null).findMetric(shortMetricName).name());
-        Assert.assertEquals(metricDesc, metrics.customRegistry(null).findMetric(shortMetricName).description());
-
-        Assert.assertEquals(fullMetricName, metrics.customRegistry("").findMetric(shortMetricName).name());
-        Assert.assertEquals(metricDesc, metrics.customRegistry("").findMetric(shortMetricName).description());
-
-        Assert.assertEquals(fullMetricName, metrics.customRegistry(" ").findMetric(shortMetricName).name());
-        Assert.assertEquals(metricDesc, metrics.customRegistry(" ").findMetric(shortMetricName).description());
-
-        Assert.assertEquals(fullMetricName, metrics.customRegistry("\t").findMetric(shortMetricName).name());
-        Assert.assertEquals(metricDesc, metrics.customRegistry("\t").findMetric(shortMetricName).description());
     }
 
     /**
@@ -465,13 +476,13 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
         @Override public void init() throws Exception {
             remoteId = new AtomicReference<>();
 
-            ignite.metrics().customRegistry(regName(ctx.name())).gauge(COUNTER_METRIC_NAME,
+            ignite.metrics().customRegistry(regName(ctx.name())).register(COUNTER_METRIC_NAME,
                 metricValue::get, "Counter of speceific service invocation.");
 
-            ignite.metrics().customRegistry(regName(ctx.name())).gauge(LOAD_THRESHOLD_METRIC_NAME,
+            ignite.metrics().customRegistry(regName(ctx.name())).register(LOAD_THRESHOLD_METRIC_NAME,
                 () -> metricValue.get() >= 100, "Load flag.");
 
-            ignite.metrics().customRegistry(regName(ctx.name())).gauge(LOAD_REMOTE_SYSTEM_CLASS_ID,
+            ignite.metrics().customRegistry(regName(ctx.name())).register(LOAD_REMOTE_SYSTEM_CLASS_ID,
                 () -> remoteId.get(), UUID.class, "Remote system class id.");
         }
 

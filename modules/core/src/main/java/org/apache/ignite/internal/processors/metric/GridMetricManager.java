@@ -139,10 +139,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     public static final String REBALANCED = "Rebalanced";
 
     /** Custom metrics registry name. */
-    public static final String CUSTOM_REGISTRY_NAME = "custom";
+    public static final String CUSTOM_METRICS = "custom";
 
     /** */
-    public static final Pattern SEPARATOR_PATTERN = Pattern.compile("\\" + SEPARATOR);
+    private static final Pattern SEPARATOR_PATTERN = Pattern.compile("\\" + SEPARATOR);
 
     /** JVM interface to memory consumption info */
     private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
@@ -332,7 +332,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param custom Custom metrics flag.
      * @return Group of metrics.
      */
-    public MetricRegistry registry(String name, boolean custom) {
+    private MetricRegistry registry(String name, boolean custom) {
         return (MetricRegistry)registries.computeIfAbsent(name, n -> {
             MetricRegistry mreg = new MetricRegistry(name,
                 custom,
@@ -532,7 +532,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param type Metric type.
      * @return Metric.
      */
-    private <T extends Metric> T find(String name, Class<T> type) {
+    public <T extends Metric> T find(String name, Class<T> type) {
         A.notNull(name, "name");
 
         T2<String, String> splitted = fromFullName(name);
@@ -782,7 +782,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     private class IgniteMetricsImpl implements IgniteMetrics {
         /** {@inheritDoc} */
         @Override public @Nullable ReadOnlyMetricRegistry findRegistry(String registryName) {
-            return registries.get(registryName);
+            return registries.get(customName(registryName));
         }
 
         /** {@inheritDoc} */
@@ -797,34 +797,21 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         /** {@inheritDoc} */
         @NotNull @Override public Iterator<ReadOnlyMetricRegistry> iterator() {
-            return GridMetricManager.this.iterator();
+            return registries.values().stream().filter(r -> r.name().startsWith(CUSTOM_METRICS)).iterator();
         }
 
-        /** Ensures that {@code name} starts with {@link #CUSTOM_REGISTRY_NAME}. */
+        /** Ensures that {@code name} starts with {@link #CUSTOM_METRICS}. */
         private String customName(String name) {
-            if (name == null)
-                return CUSTOM_REGISTRY_NAME;
-
-            name = name.trim();
-
-            if (name.isEmpty())
-                return CUSTOM_REGISTRY_NAME;
+            metricName(name);
 
             String[] splited = SEPARATOR_PATTERN.split(name);
 
-            if (splited.length == 0 || (splited.length == 1 && F.isEmpty(splited[0])))
-                return CUSTOM_REGISTRY_NAME;
+            assert splited.length > 0;
 
             boolean addPrefix = true;
 
-            for (int i = 0; i < splited.length; ++i)
-                splited[i] = metricName(splited[i]);
-
-            if (splited[0].equalsIgnoreCase(CUSTOM_REGISTRY_NAME)) {
-                splited[0] = splited[0].toLowerCase();
-
+            if (splited[0].equals(CUSTOM_METRICS))
                 addPrefix = false;
-            }
 
             String[] prefixed = splited;
 
@@ -833,7 +820,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
                 System.arraycopy(splited, 0, prefixed, 1, splited.length);
 
-                prefixed[0] = CUSTOM_REGISTRY_NAME;
+                prefixed[0] = CUSTOM_METRICS;
             }
 
             return metricName(prefixed);
