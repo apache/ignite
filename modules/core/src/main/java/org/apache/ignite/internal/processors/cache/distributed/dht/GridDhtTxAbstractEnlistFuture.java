@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxAbstractEnlistFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
@@ -320,8 +319,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             cctx.time().addTimeoutObject(timeoutObj);
 
         try {
-            checkCoordinatorVersion();
-
             UpdateSourceIterator<?> it = createIterator();
 
             if (!it.hasNext()) {
@@ -908,21 +905,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         assert !nodes.isEmpty() && nodes.get(0).isLocal();
 
         return nodes.subList(1, nodes.size());
-    }
-
-    /**
-     * Checks whether new coordinator was initialized after the snapshot is acquired.
-     * <p>
-     * Need to fit invariant that all updates are finished before a new coordinator is initialized.
-     *
-     * @throws ClusterTopologyCheckedException If failed.
-     */
-    private void checkCoordinatorVersion() throws ClusterTopologyCheckedException {
-        MvccCoordinator crd = cctx.shared().coordinators().currentCoordinator();
-
-        if (!crd.initialized() || crd.version() != mvccSnapshot.coordinatorVersion())
-            throw new ClusterTopologyCheckedException("Cannot perform update, coordinator was changed: " +
-                "[currentCoordinator=" + crd + ", mvccSnapshot=" + mvccSnapshot + "].");
     }
 
     /**
