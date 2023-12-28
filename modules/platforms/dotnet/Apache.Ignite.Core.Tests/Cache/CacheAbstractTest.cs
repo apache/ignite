@@ -56,7 +56,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                     typeof(TestReferenceObject),
                     typeof(BinarizableAddArgCacheEntryProcessor),
                     typeof(BinarizableTestException)),
-                SpringConfigUrl = "Config\\native-client-test-cache.xml"
+                SpringConfigUrl = "Config\\native-client-test-cache.xml",
+                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
             };
 
             for (int i = 0; i < GridCount(); i++)

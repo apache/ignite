@@ -229,7 +229,8 @@ namespace Apache.Ignite.Core.Tests.Client
                     : new TestUtils.TestContextLogger(),
                 SpringConfigUrl = _enableSsl ? Path.Combine("Config", "Client", "server-with-ssl.xml") : null,
                 RedirectJavaConsoleOutput = false,
-                LifecycleHandlers = UseBinaryArray ? new[] { new SetUseBinaryArray() } : null
+                LifecycleHandlers = UseBinaryArray ? new[] { new SetUseBinaryArray() } : null,
+                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
             };
         }
 

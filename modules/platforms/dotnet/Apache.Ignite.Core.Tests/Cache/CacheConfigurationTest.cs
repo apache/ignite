@@ -93,7 +93,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 },
 #pragma warning restore 618
                 DataStorageConfiguration = null,
-                SpringConfigUrl = Path.Combine("Config", "cache-default.xml")
+                SpringConfigUrl = Path.Combine("Config", "cache-default.xml"),
             };
 
             _ignite = Ignition.Start(cfg);

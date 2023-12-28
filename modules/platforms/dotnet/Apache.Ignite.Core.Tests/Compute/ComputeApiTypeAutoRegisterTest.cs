@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Compute
 {
+    using System;
     using System.IO;
     using Apache.Ignite.Core.Binary;
     using NUnit.Framework;
@@ -48,7 +49,8 @@ namespace Apache.Ignite.Core.Tests.Compute
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     NameMapper = new BinaryBasicNameMapper {NamespacePrefix = "org.", NamespaceToLower = true}
-                }
+                },
+                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
             });
         }
 

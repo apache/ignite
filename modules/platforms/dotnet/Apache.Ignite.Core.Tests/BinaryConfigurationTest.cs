@@ -72,7 +72,8 @@ namespace Apache.Ignite.Core.Tests
             var grid = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = "Config\\cache-binarizables.xml",
-                BinaryConfiguration = binaryConfiguration
+                BinaryConfiguration = binaryConfiguration,
+                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
             });
 
             _cache = grid.GetCache<int, TestGenericBinarizableBase>("default");

@@ -189,6 +189,7 @@ namespace Apache.Ignite.Core.Tests
             return Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = cfgPath,
+                IgniteInstanceName = "LifeCycleTest",
                 LifecycleHandlers = new List<ILifecycleHandler> {new Bean(), new Bean()}
             });
         }

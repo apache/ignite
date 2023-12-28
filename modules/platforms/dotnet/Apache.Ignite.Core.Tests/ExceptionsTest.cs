@@ -307,7 +307,8 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = "z:\\invalid.xml"
+                SpringConfigUrl = "z:\\invalid.xml",
+                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
             };
 
             var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));

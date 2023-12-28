@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Binary
 {
+    using System;
     using System.Collections;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
@@ -119,6 +120,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = springUrl,
+                IgniteInstanceName = "BinaryCompactFooterInter"+ Guid.NewGuid(),
                 BinaryConfiguration = new BinaryConfiguration(
                     typeof (PlatformComputeBinarizable),
                     typeof (PlatformComputeNetBinarizable))

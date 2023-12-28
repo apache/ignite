@@ -221,7 +221,8 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
 
             var serverCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = Path.Combine("Config", "binary-custom-name-mapper.xml")
+                SpringConfigUrl = Path.Combine("Config", "binary-custom-name-mapper.xml"),
+                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
             };
 
             Ignition.Start(serverCfg);
@@ -246,7 +247,8 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
 
             var serverCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = Path.Combine("Config", "binary-custom-name-mapper2.xml")
+                SpringConfigUrl = Path.Combine("Config", "binary-custom-name-mapper2.xml"),
+                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
             };
 
             Ignition.Start(serverCfg);
@@ -274,7 +276,8 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
 
             var serverCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = Path.Combine("Config", "binary-custom-name-mapper.xml")
+                SpringConfigUrl = Path.Combine("Config", "binary-custom-name-mapper.xml"),
+                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
             };
 
             Ignition.Start(serverCfg);

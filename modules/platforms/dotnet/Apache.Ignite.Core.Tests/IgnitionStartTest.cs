@@ -93,7 +93,8 @@ namespace Apache.Ignite.Core.Tests
                 DataStorageConfiguration = null,
                 SpringConfigUrl = @"Config\spring-test.xml",
                 NetworkSendRetryDelay = TimeSpan.FromSeconds(45),
-                MetricsHistorySize = 57
+                MetricsHistorySize = 57,
+                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
             };
 
             using (var ignite = Ignition.Start(cfg))

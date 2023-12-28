@@ -136,15 +136,7 @@ namespace Apache.Ignite.Core.Tests
             if (Grid != null)
                 return;
 
-            _grids = _springUrls.Select(x =>
-            {
-                var cfg = GetConfiguration(x);
-
-                cfg.IgniteInstanceName = this.GetType().FullName + Guid.NewGuid();
-                cfg.ConsistentId = cfg.IgniteInstanceName;
-
-                return Ignition.Start(cfg);
-            }).ToArray();
+            _grids = _springUrls.Select(x => Ignition.Start(GetConfiguration(x))).ToArray();
         }
 
         /// <summary>
@@ -152,9 +144,13 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         protected virtual IgniteConfiguration GetConfiguration(string springConfigUrl)
         {
+            var name = GetType().FullName + Guid.NewGuid();
+            
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = springConfigUrl
+                SpringConfigUrl = springConfigUrl,
+                IgniteInstanceName = name,
+                ConsistentId = name
             };
         }
 

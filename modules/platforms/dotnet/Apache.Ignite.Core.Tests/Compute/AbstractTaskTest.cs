@@ -82,7 +82,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             if (_fork)
             {
-                Grid1 = Ignition.Start(GetConfiguration("Config/Compute/compute-standalone.xml"));
+                Grid1 = Ignition.Start(GetConfiguration("Config/Compute/compute-standalone.xml",
+                    GetType().FullName + Guid.NewGuid()));
 
                 _proc2 = Fork("Config/Compute/compute-standalone.xml");
 
@@ -112,15 +113,16 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
             else
             {
-                var cfg = GetConfiguration("Config/Compute/compute-grid2.xml");
-                cfg.IgniteInstanceName = this.GetType().FullName + Guid.NewGuid();
-                cfg.ConsistentId = cfg.IgniteInstanceName;
+                var cfg = GetConfiguration("Config/Compute/compute-grid2.xml", 
+                    GetType().FullName + Guid.NewGuid());
                 
-                Grid1 = Ignition.Start(GetConfiguration("Config/Compute/compute-grid1.xml"));
+                Grid1 = Ignition.Start(GetConfiguration("Config/Compute/compute-grid1.xml", 
+                    GetType().FullName + Guid.NewGuid()));
                 
                 _grid2 = Ignition.Start(cfg);
                 
-                _grid3 = Ignition.Start(GetConfiguration("Config/Compute/compute-grid3.xml"));
+                _grid3 = Ignition.Start(GetConfiguration("Config/Compute/compute-grid3.xml", 
+                    GetType().FullName + Guid.NewGuid()));
             }
         }
 
@@ -146,11 +148,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// </summary>
         /// <param name="path">Path to Java XML configuration.</param>
         /// <returns>Node configuration.</returns>
-        private static IgniteConfiguration GetConfiguration(string path)
+        private static IgniteConfiguration GetConfiguration(string path, string name)
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = path,
+                IgniteInstanceName = name
             };
         }
 

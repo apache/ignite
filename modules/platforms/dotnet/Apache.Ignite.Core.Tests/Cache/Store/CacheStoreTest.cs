@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             
             Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                IgniteInstanceName = GridName,
+                IgniteInstanceName = GetType().FullName + Guid.NewGuid(),
                 SpringConfigUrl = Path.Combine("Config", "native-client-test-cache-store.xml"),
             });
         }

@@ -36,7 +36,8 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = Path.Combine("Config", "Client", "server-with-ssl.xml")
+                SpringConfigUrl = Path.Combine("Config", "Client", "server-with-ssl.xml"),
+                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
             };
 
             Ignition.Start(cfg);
@@ -44,6 +45,7 @@ namespace Apache.Ignite.Core.Tests.Client
             var cfgNoClientAuth = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = Path.Combine("Config", "Client", "server-with-ssl-no-client-auth.xml"),
+                IgniteInstanceName = GetType().FullName + Guid.NewGuid(),
                 AutoGenerateIgniteInstanceName = true
             };
 
