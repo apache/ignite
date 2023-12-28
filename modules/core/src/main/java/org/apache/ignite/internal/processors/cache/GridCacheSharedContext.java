@@ -50,7 +50,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Part
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
@@ -858,13 +857,6 @@ public class GridCacheSharedContext<K, V> {
      */
     public GridTimeoutProcessor time() {
         return kernalCtx.timeout();
-    }
-
-    /**
-     * @return Cache mvcc coordinator manager.
-     */
-    public MvccProcessor coordinators() {
-        return kernalCtx.coordinators();
     }
 
     /**

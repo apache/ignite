@@ -2476,9 +2476,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 grpValidRes = m;
             }
 
-            if (err == null)
-                cctx.coordinators().onExchangeDone(events().discoveryCache());
-
             for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
                 comp.onDoneBeforeTopologyUnlock(this);
 

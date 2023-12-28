@@ -2588,8 +2588,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     affDumpCnt++;
             }
         }
-
-        cctx.kernalContext().coordinators().dumpDebugInfo(diagnosticLog, diagCtx);
     }
 
     /**
