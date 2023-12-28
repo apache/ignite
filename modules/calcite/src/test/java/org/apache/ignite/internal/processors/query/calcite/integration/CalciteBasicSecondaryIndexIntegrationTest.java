@@ -901,8 +901,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
     @Test
     public void testOrCondition4() {
         assertQuery("SELECT * FROM Developer WHERE depId=1 OR (name='Mozart' AND depId=3)")
-            .matches(containsUnion(true))
-            .matches(containsIndexScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
+            .matches(containsIndexScan("PUBLIC", "DEVELOPER", DEPID_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .returns(3, "Bach", 1, "Leipzig", 55)
             .check();
