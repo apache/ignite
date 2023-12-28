@@ -81,10 +81,10 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
     @Test
     public void testDisableCNLJoin() throws Exception {
         for (HintDefinition hint : Arrays.asList(NO_CNL_JOIN, NL_JOIN, MERGE_JOIN)) {
-            doTestDisableJoinTypeWith("TBL2", "TBL1", "INNER", IgniteCorrelatedNestedLoopJoin.class,
+            doTestDisableJoinTypeWith("TBL1", "TBL5", "INNER", IgniteCorrelatedNestedLoopJoin.class,
                 hint);
 
-            doTestDisableJoinTypeWith("TBL1", "TBL2", "LEFT", IgniteCorrelatedNestedLoopJoin.class,
+            doTestDisableJoinTypeWith("TBL1", "TBL5", "LEFT", IgniteCorrelatedNestedLoopJoin.class,
                 hint);
         }
     }
@@ -198,15 +198,15 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
     @Test
     public void testDisableMergeJoin() throws Exception {
         for (HintDefinition hint : Arrays.asList(NO_MERGE_JOIN, NL_JOIN, CNL_JOIN)) {
-            doTestDisableJoinTypeWith("TBL3", "TBL5", "INNER", IgniteMergeJoin.class, hint);
+            doTestDisableJoinTypeWith("TBL4", "TBL2", "INNER", IgniteMergeJoin.class, hint);
 
-            doTestDisableJoinTypeWith("TBL3", "TBL5", "LEFT", IgniteMergeJoin.class, hint);
+            doTestDisableJoinTypeWith("TBL4", "TBL2", "LEFT", IgniteMergeJoin.class, hint);
 
             // Correlated nested loop join supports only INNER and LEFT join types.
             if (hint != CNL_JOIN) {
-                doTestDisableJoinTypeWith("TBL3", "TBL5", "RIGHT", IgniteMergeJoin.class, hint);
+                doTestDisableJoinTypeWith("TBL4", "TBL2", "RIGHT", IgniteMergeJoin.class, hint);
 
-                doTestDisableJoinTypeWith("TBL3", "TBL5", "FULL", IgniteMergeJoin.class, hint);
+                doTestDisableJoinTypeWith("TBL4", "TBL2", "FULL", IgniteMergeJoin.class, hint);
             }
         }
     }
@@ -331,7 +331,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
         HintDefinition hint,
         String... disabledRules
     ) throws Exception {
-        String sqlTpl = String.format("SELECT t1.v1, t2.v2 FROM %s t1 %s JOIN %s %%s t2 on t1.v3=t2.v3", tbl1,
+        String sqlTpl = String.format("SELECT %%s t1.v1, t2.v2 FROM %s t1 %s JOIN %s t2 on t1.v3=t2.v3", tbl1,
             sqlJoinType, tbl2);
 
         String hintPref = "/*+ " + hint.name();
