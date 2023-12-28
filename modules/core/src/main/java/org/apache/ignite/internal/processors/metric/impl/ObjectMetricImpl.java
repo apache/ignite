@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.processors.metric.impl;
 
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
-import org.apache.ignite.metric.AnyValueMetric;
+import org.apache.ignite.metric.ObjectValueMetric;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of {@link ObjectMetric}.
  */
-public class ObjectMetricImpl<T> extends AbstractMetric implements AnyValueMetric<T> {
+public class ObjectMetricImpl<T> extends AbstractMetric implements ObjectValueMetric<T> {
     /** Value. */
     private volatile T val;
 

@@ -134,9 +134,9 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
      * @param type Metric value type.
      * @param desc Metric description.
      * @param <T> Metric value type.
-     * @return New {@link AnyValueMetric} or previous one with the same name.
+     * @return New {@link ObjectValueMetric} or previous one with the same name.
      */
-    <T> AnyValueMetric<T> objectMetric(String name, Class<T> type, @Nullable String desc);
+    <T> ObjectValueMetric<T> objectMetric(String name, Class<T> type, @Nullable String desc);
 
     /**
      * Removes metrics with the {@code name}.

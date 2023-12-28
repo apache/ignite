@@ -22,7 +22,7 @@ import org.apache.ignite.spi.metric.ObjectMetric;
 
 /** Updatable object value metric. */
 @IgniteExperimental
-public interface AnyValueMetric<T> extends ObjectMetric<T> {
+public interface ObjectValueMetric<T> extends ObjectMetric<T> {
     /**
      * Sets object metric value.
      *
