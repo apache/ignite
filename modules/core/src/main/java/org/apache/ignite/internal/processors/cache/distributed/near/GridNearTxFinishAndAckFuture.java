@@ -64,14 +64,8 @@ public class GridNearTxFinishAndAckFuture extends GridFutureAdapter<IgniteIntern
     private void onFinishFutureDone(IgniteInternalFuture<IgniteInternalTx> fut) {
         GridNearTxLocal tx = tx(); Throwable err = fut.error();
 
-        if (tx.state() == TransactionState.COMMITTED)
-            tx.context().coordinators().ackTxCommit(tx.mvccSnapshot())
-                .listen(fut0 -> onDone(tx, addSuppressed(err, fut0.error())));
-        else {
-            tx.context().coordinators().ackTxRollback(tx.mvccSnapshot());
-
+        if (tx.state() != TransactionState.COMMITTED)
             onDone(tx, err);
-        }
     }
 
     /** */
