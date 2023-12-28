@@ -53,11 +53,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         {
             var nodes = new Stack<IIgnite>();
 
-            using (var client = GetClient())
+            try
             {
+                using var client = GetClient();
                 AssertClientConnectionCount(client, 3);
 
-                for (int i = 0; i < 20; i++)
+                for (var i = 0; i < 20; i++)
                 {
                     if (nodes.Count == 0 || TestUtils.Random.Next(2) == 0)
                     {
@@ -71,10 +72,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                     AssertClientConnectionCount(client, 3 + nodes.Count);
                 }
             }
-
-            foreach (var node in nodes)
+            finally
             {
-                node.Dispose();
+                foreach (var node in nodes)
+                {
+                    node.Dispose();
+                }
             }
         }
 
@@ -86,7 +89,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             [Values(true, false)] bool enablePartitionAwareness)
         {
             // Client knows about single server node initially.
-            var ignite = Ignition.Start(GetIgniteConfiguration());
+            using var ignite = Ignition.Start(GetIgniteConfiguration());
             var cfg = GetClientConfiguration();
             cfg.Endpoints = new[] {IPAddress.Loopback + ":10803"};
             cfg.EnablePartitionAwareness = enablePartitionAwareness;

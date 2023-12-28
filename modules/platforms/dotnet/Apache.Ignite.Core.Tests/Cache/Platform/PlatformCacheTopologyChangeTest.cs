@@ -57,6 +57,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         public void TearDown()
         {
             Ignition.StopAll(true);
+
+            foreach (var ignite in _ignite)
+            {
+                ignite.Dispose();
+            }
+
+            _ignite = null;
         }
 
         /// <summary>
@@ -66,7 +73,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         public void TestPrimaryNodeLeaveClearsPlatformCache()
         {
             InitNodes(3);
-            var clientCache = InitClientAndCache();
+
+            using var client = InitClient();
+            var clientCache = client.GetCache<int, Foo>(CacheName);
 
             _cache[0][Key3] = new Foo(Key3);
 
@@ -155,7 +164,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             PlatformCheckMode checkMode)
         {
             InitNodes(2);
-            var clientCache = InitClientAndCache();
+            
+            using var client = InitClient();
+            var clientCache = client.GetCache<int, Foo>(CacheName);
 
             _cache[0][Key3] = new Foo(-1);
 
@@ -211,7 +222,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         {
             var key = 0;
             InitNodes(2);
-            var clientCache = InitClientAndCache();
+            
+            using var client = InitClient();
+            var clientCache = client.GetCache<int, Foo>(CacheName);
+            
             var serverCache = _cache[0];
 
             serverCache[key] = new Foo(-1);
@@ -237,7 +251,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         public void TestClientNodeJoinOrLeaveDoesNotAffectPlatformCacheDataOnOtherNodes()
         {
             InitNodes(2);
-            _cache[2] = InitClientAndCache();
+            
+            using var client = InitClient();
+            var clientCache = client.GetCache<int, Foo>(CacheName);
 
             TestUtils.WaitForTrueCondition(() => TestUtils.GetPrimaryKey(_ignite[1], CacheName) == 1, 3000);
 
@@ -288,7 +304,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             // Server 0 and client node always run
             // Other servers start and stop periodically.
             InitNodes(5, backups: backups);
-            var clientCache = InitClientAndCache();
+            using var client = InitClient();
+            var clientCache = client.GetCache<int, Foo>(CacheName);;
             var serverCache = _cache[0];
             var rnd = new Random();
             var val = 1;
@@ -346,8 +363,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         public void TestClientNodeReconnectWithClusterRestartKeepsPlatformCache()
         {
             InitNodes(1);
-            var clientCache = InitClientAndCache();
-            var client = Ignition.GetAll().Single(c => c.GetConfiguration().ClientMode);
+            using var client = InitClient();
+            var clientCache = client.GetCache<int, Foo>(CacheName);
 
             var keys = Enumerable.Range(1, 100).ToList();
             keys.ForEach(k => clientCache[k] = new Foo(k));
@@ -396,7 +413,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 ClientFailureDetectionTimeout = TimeSpan.FromSeconds(2),
                 IgniteInstanceName = "srv"
             };
-            var server = Ignition.Start(cfg);
+            using var server = Ignition.Start(cfg);
             var serverCache = server.CreateCache<int, Foo>(new CacheConfiguration(CacheName)
                 {PlatformCacheConfiguration = new PlatformCacheConfiguration()});
 
@@ -405,7 +422,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 ClientMode = true,
                 IgniteInstanceName = "client"
             };
-            var client = Ignition.Start(clientCfg);
+            using var client = Ignition.Start(clientCfg);
 
             var clientCache = client.GetOrCreateNearCache<int, Foo>(CacheName, new NearCacheConfiguration());
             clientCache[1] = new Foo(2);
@@ -430,7 +447,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         public void TestPlatformCacheTopologyVersionValidationPerformance()
         {
             InitNodes(1);
-            var cache = InitClientAndCache();
+            
+            using var client = InitClient();
+            var cache = client.GetCache<int, Foo>(CacheName);
 
             cache[1] = new Foo(1);
 
@@ -526,16 +545,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 // ReSharper disable once AccessToDisposedClosure
                 TestUtils.WaitForTrueCondition(() => TestUtils.GetPrimaryKey(_ignite[2], CacheName) == Key3, 300000);
             }
-        }
-
-        /// <summary>
-        /// Inits a client node and a near cache on it.
-        /// </summary>
-        private static ICache<int, Foo> InitClientAndCache()
-        {
-            var client = InitClient();
-
-            return client.GetCache<int, Foo>(CacheName);
         }
 
         /// <summary>

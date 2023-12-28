@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestMemoryMetrics()
         {
-            var ignite = StartIgniteWithTwoPolicies();
+            using var ignite = StartIgniteWithTwoPolicies();
 
             // Verify metrics.
             var metrics = ignite.GetMemoryMetrics().OrderBy(x => x.Name).ToArray();

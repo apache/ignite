@@ -138,7 +138,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 }
             };
 
-            var ignite = Ignition.Start(cfg);
+            using var ignite = Ignition.Start(cfg);
 
             var dt = DateTime.UtcNow;
             var expected = dt.AddYears(2);
@@ -195,7 +195,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 }
             };
 
-            var ignite = Ignition.Start(cfg);
+            using var ignite = Ignition.Start(cfg);
             var binary = ignite.GetBinary();
  
             // Check config.

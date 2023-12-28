@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestDisposeDoesNotThrow()
         {
-            var ignite = Ignition.Start(new IgniteConfiguration(GetConfig())
+            using var ignite = Ignition.Start(new IgniteConfiguration(GetConfig())
             {
                 IgniteInstanceName = TestUtils.TestName
             });

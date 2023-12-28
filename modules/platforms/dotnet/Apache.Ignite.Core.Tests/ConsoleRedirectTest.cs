@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestConsoleWriteSpecialStrings()
         {
-            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+            using var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
 
             foreach (var val in BinarySelfTest.SpecialStrings)
             {

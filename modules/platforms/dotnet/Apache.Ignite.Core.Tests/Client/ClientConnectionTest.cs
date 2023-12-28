@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 642
 namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
@@ -357,7 +358,7 @@ namespace Apache.Ignite.Core.Tests.Client
         public void TestServerConnectionAborted()
         {
             var evt = new ManualResetEventSlim();
-            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+            using var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
 
             var putGetTask = TaskRunner.Run(() =>
             {
@@ -401,7 +402,7 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             var data = Enumerable.Range(1, 500000).ToDictionary(x => x, x => x.ToString());
 
-            Ignition.Start(TestUtils.GetTestConfiguration());
+            using (Ignition.Start(TestUtils.GetTestConfiguration()));
 
             var cfg = GetClientConfiguration();
             cfg.SocketTimeout = TimeSpan.FromMilliseconds(500);
@@ -417,7 +418,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
             // Sync (reconnect for clean state).
             Ignition.StopAll(true);
-            Ignition.Start(TestUtils.GetTestConfiguration());
+            using (Ignition.Start(TestUtils.GetTestConfiguration()));
             client = Ignition.StartClient(cfg);
             cache = client.CreateCache<int, string>("s");
             ex = Assert.Catch(() => cache.PutAll(data));
@@ -431,7 +432,7 @@ namespace Apache.Ignite.Core.Tests.Client
         [Category(TestUtils.CategoryIntensive)]
         public void TestClientDisposeWhileOperationsAreInProgress()
         {
-            Ignition.Start(TestUtils.GetTestConfiguration());
+            using (Ignition.Start(TestUtils.GetTestConfiguration()));
 
             const int count = 10000;
             var ops = new Task[count];
@@ -478,8 +479,9 @@ namespace Apache.Ignite.Core.Tests.Client
                 }
             };
 
-            var ignite = Ignition.Start(cfg);
-            Assert.AreEqual(100, ignite.GetConfiguration().ClientConnectorConfiguration.IdleTimeout.TotalMilliseconds);
+            using var ignite = Ignition.Start(cfg);
+            Assert.AreEqual(100,
+                ignite.GetConfiguration().ClientConnectorConfiguration.IdleTimeout.TotalMilliseconds);
 
             using (var client = StartClient())
             {
@@ -519,7 +521,7 @@ namespace Apache.Ignite.Core.Tests.Client
         public void TestReconnect()
         {
             // Connect client and check.
-            Ignition.Start(TestUtils.GetTestConfiguration());
+            using (Ignition.Start(TestUtils.GetTestConfiguration()));
             var client = Ignition.StartClient(new IgniteClientConfiguration("127.0.0.1"));
             Assert.AreEqual(0, client.GetCacheNames().Count);
 
@@ -544,7 +546,7 @@ namespace Apache.Ignite.Core.Tests.Client
             Assert.Catch(() => client.GetCacheNames());
 
             // Start server, next operation succeeds.
-            Ignition.Start(TestUtils.GetTestConfiguration());
+            using (Ignition.Start(TestUtils.GetTestConfiguration()));
             Assert.AreEqual(0, client.GetCacheNames().Count);
         }
 
@@ -555,7 +557,7 @@ namespace Apache.Ignite.Core.Tests.Client
         public void TestReconnectDisabled()
         {
             // Connect client and check.
-            Ignition.Start(TestUtils.GetTestConfiguration());
+            using (Ignition.Start(TestUtils.GetTestConfiguration()));
             using (var client = Ignition.StartClient(new IgniteClientConfiguration("127.0.0.1")
             {
                 ReconnectDisabled = true
@@ -571,7 +573,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 Assert.IsNotNull(GetSocketException(ex));
 
                 // Restart server, client does not reconnect.
-                Ignition.Start(TestUtils.GetTestConfiguration());
+                using(Ignition.Start(TestUtils.GetTestConfiguration()));
                 ex = Assert.Catch(() => client.GetCacheNames());
                 Assert.IsNotNull(GetSocketException(ex));
             }
@@ -584,9 +586,9 @@ namespace Apache.Ignite.Core.Tests.Client
         public void TestFailover()
         {
             // Start 3 nodes.
-            Ignition.Start(TestUtils.GetTestConfiguration(name: "0"));
-            Ignition.Start(TestUtils.GetTestConfiguration(name: "1"));
-            Ignition.Start(TestUtils.GetTestConfiguration(name: "2"));
+            using (Ignition.Start(TestUtils.GetTestConfiguration(name: "0"))) ;
+            using (Ignition.Start(TestUtils.GetTestConfiguration(name: "1"))) ;
+            using (Ignition.Start(TestUtils.GetTestConfiguration(name: "2"))) ;
 
             // Connect client.
             var port = IgniteClientConfiguration.DefaultPort;
@@ -651,7 +653,7 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestFailoverWithRetryPolicyReconnectsToNewNode()
         {
-            Ignition.Start(TestUtils.GetTestConfiguration());
+            using (Ignition.Start(TestUtils.GetTestConfiguration())) ;
 
             var cfg = new IgniteClientConfiguration
             {
@@ -665,13 +667,20 @@ namespace Apache.Ignite.Core.Tests.Client
                 {
                     Ignition.StopAll(true);
                     Thread.Sleep(100);
-                    Ignition.Start(TestUtils.GetTestConfiguration());
+                    return Ignition.Start(TestUtils.GetTestConfiguration());
                 });
 
-                while (!restartTask.IsCompleted)
+                try
                 {
-                    // Operations do not fail while the only node is being restarted.
-                    Assert.AreEqual(0, client.GetCacheNames().Count);
+                    while (!restartTask.IsCompleted)
+                    {
+                        // Operations do not fail while the only node is being restarted.
+                        Assert.AreEqual(0, client.GetCacheNames().Count);
+                    }
+                }
+                finally
+                {
+                    restartTask.Result.Dispose();
                 }
             }
         }
@@ -682,7 +691,7 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestFailoverWithRetryPolicyThrowsOnRetryCountExceeded()
         {
-            Ignition.Start(TestUtils.GetTestConfiguration());
+            using (Ignition.Start(TestUtils.GetTestConfiguration())) ;
 
             var retryLimit = 4;
 
@@ -714,7 +723,7 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestFailoverWithRetryPolicyDoesNotRetryUnrelatedErrors()
         {
-            Ignition.Start(TestUtils.GetTestConfiguration());
+            using( Ignition.Start(TestUtils.GetTestConfiguration()));
 
             var cfg = new IgniteClientConfiguration
             {
@@ -753,9 +762,9 @@ namespace Apache.Ignite.Core.Tests.Client
                     }
                 };
 
-            Ignition.Start(getConfig("0"));
-            Ignition.Start(getConfig("1"));
-            Ignition.Start(getConfig("2"));
+            using( Ignition.Start(getConfig("0")));
+            using( Ignition.Start(getConfig("1")));
+            using( Ignition.Start(getConfig("2")));
 
             // Connect client.
             var port = IgniteClientConfiguration.DefaultPort;
@@ -814,7 +823,7 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestCustomRetryPolicyIsInvokedWithCorrectContext()
         {
-            Ignition.Start(TestUtils.GetTestConfiguration());
+            using( Ignition.Start(TestUtils.GetTestConfiguration()));
 
             var retryPolicy = new TestRetryPolicy(ClientOperationType.CacheGetNames);
 
@@ -861,7 +870,7 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestExceptionInRetryPolicyPropagatesToCaller([Values(true, false)] bool async)
         {
-            Ignition.Start(TestUtils.GetTestConfiguration());
+            using( Ignition.Start(TestUtils.GetTestConfiguration()));
 
             var cfg = new IgniteClientConfiguration
             {
@@ -890,7 +899,7 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestClientDisposalStopsReceiverThread([Values(true, false)] bool async)
         {
-            Ignition.Start(TestUtils.GetTestConfiguration());
+            using( Ignition.Start(TestUtils.GetTestConfiguration()));
 
             var logger = new ListLogger {EnabledLevels = new[] {LogLevel.Trace}};
 
@@ -929,11 +938,11 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestSslConnectionWithClientAuth()
         {
-            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
-            {
-                SpringConfigUrl = Path.Combine("Config", "Client", "server-with-ssl.xml"),
-                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
-            });
+            using (Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                   {
+                       SpringConfigUrl = Path.Combine("Config", "Client", "server-with-ssl.xml"),
+                       IgniteInstanceName = GetType().FullName + Guid.NewGuid()
+                   })) ;
 
             var cfg = new IgniteClientConfiguration
             {
@@ -964,11 +973,11 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestSslConnectionWithoutClientAuth()
         {
-            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
-            {
-                SpringConfigUrl = Path.Combine("Config", "Client", "server-with-ssl-no-client-auth.xml"),
-                IgniteInstanceName = GetType().FullName + Guid.NewGuid()
-            });
+            using (Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                   {
+                       SpringConfigUrl = Path.Combine("Config", "Client", "server-with-ssl-no-client-auth.xml"),
+                       IgniteInstanceName = GetType().FullName + Guid.NewGuid()
+                   }));
 
             var cfg = new IgniteClientConfiguration
             {
@@ -993,7 +1002,7 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestSendServerServiceExceptionStackTraceToClient()
         {
-            var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            using var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 ClientConnectorConfiguration = new ClientConnectorConfiguration
                 {
@@ -1023,7 +1032,7 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestSendServerExceptionStackTraceToClient()
         {
-            var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            using var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 ClientConnectorConfiguration = new ClientConnectorConfiguration
                 {

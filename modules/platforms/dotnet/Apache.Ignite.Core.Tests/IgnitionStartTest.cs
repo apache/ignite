@@ -46,12 +46,12 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestIgniteStartsWithDefaultConfig()
         {
-            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+            using var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
             Assert.IsNotNull(ignite);
             Assert.AreEqual(ignite, Ignition.GetIgnite());
 
             // Second node.
-            var ignite2 = Ignition.Start(TestUtils.GetTestConfiguration(name: "ignite-2"));
+            using var ignite2 = Ignition.Start(TestUtils.GetTestConfiguration(name: "ignite-2"));
             Assert.AreEqual(2, Ignition.GetAll().Count);
 
             // Stop node.

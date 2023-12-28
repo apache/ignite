@@ -248,7 +248,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestGenericQueryTypes()
         {
-            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+            using var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
 
             var cfg = new CacheConfiguration(TestUtils.TestName)
             {
@@ -282,7 +282,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestNestedGenericQueryTypes()
         {
-            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+            using var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
 
             var cfg = new CacheConfiguration(TestUtils.TestName)
             {

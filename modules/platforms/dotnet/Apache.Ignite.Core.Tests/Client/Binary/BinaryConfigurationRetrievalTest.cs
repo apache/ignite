@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 642
 namespace Apache.Ignite.Core.Tests.Client.Binary
 {
     using System;
@@ -57,7 +58,7 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
                 }
             };
 
-            Ignition.Start(serverCfg);
+            using( Ignition.Start(serverCfg));
 
             var logger = GetLogger();
 
@@ -90,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
         [Test]
         public void TestCompactFooterEnabledOnServerDisabledOnClientProducesWarning()
         {
-            Ignition.Start(TestUtils.GetTestConfiguration());
+            using( Ignition.Start(TestUtils.GetTestConfiguration()));
 
             var logger = GetLogger();
 
@@ -133,7 +134,7 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
         {
             var logger = GetLogger();
 
-            Ignition.Start(TestUtils.GetTestConfiguration());
+            using( Ignition.Start(TestUtils.GetTestConfiguration()));
 
             using (var client = Ignition.StartClient(GetClientConfiguration(logger)))
             {
@@ -168,7 +169,7 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
                 }
             };
 
-            Ignition.Start(TestUtils.GetTestConfiguration());
+            using( Ignition.Start(TestUtils.GetTestConfiguration()));
 
             using (var client = Ignition.StartClient(clientCfg))
             {
@@ -198,7 +199,7 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
                 }
             };
 
-            Ignition.Start(TestUtils.GetTestConfiguration());
+            using( Ignition.Start(TestUtils.GetTestConfiguration()));
 
             using (var client = Ignition.StartClient(clientCfg))
             {
@@ -225,7 +226,7 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
                 IgniteInstanceName = GetType().FullName + Guid.NewGuid()
             };
 
-            Ignition.Start(serverCfg);
+            using( Ignition.Start(serverCfg));
 
             using (var client = Ignition.StartClient(GetClientConfiguration(logger)))
             {
@@ -251,7 +252,7 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
                 IgniteInstanceName = GetType().FullName + Guid.NewGuid()
             };
 
-            Ignition.Start(serverCfg);
+            using( Ignition.Start(serverCfg));
 
             using (var client = Ignition.StartClient(GetClientConfiguration(logger)))
             {
@@ -280,7 +281,7 @@ namespace Apache.Ignite.Core.Tests.Client.Binary
                 IgniteInstanceName = GetType().FullName + Guid.NewGuid()
             };
 
-            Ignition.Start(serverCfg);
+            using( Ignition.Start(serverCfg));
 
             using (var client = Ignition.StartClient(clientCfg))
             {

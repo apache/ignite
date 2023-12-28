@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 642
 namespace Apache.Ignite.Core.Tests.Ssl 
 {
     using System;
@@ -69,7 +70,7 @@ namespace Apache.Ignite.Core.Tests.Ssl
                 SslContextFactory = factory
             };
 
-            var grid = Ignition.Start(cfg);
+            using var grid = Ignition.Start(cfg);
 
             Assert.IsNotNull(grid);
 
@@ -136,7 +137,7 @@ namespace Apache.Ignite.Core.Tests.Ssl
                 IgniteInstanceName = GetType().FullName + Guid.NewGuid()
             };
 
-            var grid = Ignition.Start(cfg);
+            using var grid = Ignition.Start(cfg);
 
             Assert.IsNotNull(grid);
 
@@ -170,13 +171,13 @@ namespace Apache.Ignite.Core.Tests.Ssl
                 SslContextFactory = GetSslContextFactory()
             };
 
-            var grid1 = Ignition.Start(cfg1);
+            using var grid1 = Ignition.Start(cfg1);
 
             Assert.AreEqual("grid1", grid1.Name);
             Assert.AreSame(grid1, Ignition.GetIgnite());
             Assert.AreSame(grid1, Ignition.GetAll().Single());
 
-            var grid2 = Ignition.Start(cfg2);
+            using var grid2 = Ignition.Start(cfg2);
 
             Assert.AreEqual("grid2", grid2.Name);
             Assert.Throws<IgniteException>(() => Ignition.GetIgnite());
@@ -206,7 +207,7 @@ namespace Apache.Ignite.Core.Tests.Ssl
                 SslContextFactory = GetSslContextFactory()
             };
 
-            Ignition.Start(cfg);
+            using( Ignition.Start(cfg));
 
             var ex = Assert.Throws<IgniteException>(() => Ignition.Start(sslCfg));
             Assert.True(ex.Message.StartsWith(@"Unable to establish secure connection. " + 
@@ -214,7 +215,7 @@ namespace Apache.Ignite.Core.Tests.Ssl
 
             Ignition.StopAll(true);
 
-            Ignition.Start(sslCfg);
+            using (Ignition.Start(sslCfg));
 
             ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
             Assert.True(ex.Message.StartsWith(@"Unable to establish secure connection. " +

@@ -96,8 +96,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
-            _ignite.GetCompute().ExecuteJavaTask<object>(StopTask, _javaNodeName);
-            Ignition.StopAll(true);
+            try
+            {
+                _ignite.GetCompute().ExecuteJavaTask<object>(StopTask, _javaNodeName);
+            }
+            finally
+            {
+
+                Ignition.StopAll(true);
+            }
         }
 
         /// <summary>

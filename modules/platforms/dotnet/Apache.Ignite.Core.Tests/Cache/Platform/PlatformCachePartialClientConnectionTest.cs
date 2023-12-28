@@ -51,40 +51,53 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         public static void TestPutFromOneClientGetFromAnother()
         {
             // Start 3 servers.
-            var servers = Enumerable.Range(0, 3)
-                .Select(i => Ignition.Start(GetConfiguration(false, i, 0)))
-                .ToArray();
+            var servers = Array.Empty<IIgnite>();
 
-            CreateCache(servers[0]);
+            try
+            {
+                servers = Enumerable.Range(0, 3)
+                    .Select(i => Ignition.Start(GetConfiguration(false, i, 0)))
+                    .ToArray();
 
-            // Start 2 thick clients, connect to different backup nodes only (not entire cluster).
-            var primaryAndBackups = servers[0].GetAffinity(CacheName).MapKeyToPrimaryAndBackups(Key);
-            var backupServer1Mac = GetMac(primaryAndBackups[1]);
-            var backupServer2Mac = GetMac(primaryAndBackups[2]);
+                CreateCache(servers[0]);
 
-            var client1 = Ignition.Start(GetConfiguration(true, backupServer1Mac, backupServer1Mac));
-            var client2 = Ignition.Start(GetConfiguration(true, backupServer2Mac, backupServer2Mac));
+                // Start 2 thick clients, connect to different backup nodes only (not entire cluster).
+                var primaryAndBackups = servers[0].GetAffinity(CacheName).MapKeyToPrimaryAndBackups(Key);
+                var backupServer1Mac = GetMac(primaryAndBackups[1]);
+                var backupServer2Mac = GetMac(primaryAndBackups[2]);
 
-            // Check initial value.
-            var client1Cache = client1.GetOrCreateNearCache<int, int>(CacheName, new NearCacheConfiguration());
-            var client2Cache = client2.GetOrCreateNearCache<int, int>(CacheName, new NearCacheConfiguration());
+                using var client1 = Ignition.Start(GetConfiguration(true, backupServer1Mac, backupServer1Mac));
+                using var client2 = Ignition.Start(GetConfiguration(true, backupServer2Mac, backupServer2Mac));
 
-            var client1Value = client1Cache.Get(Key);
-            var client2Value = client2Cache.Get(Key);
+                // Check initial value.
+                var client1Cache = client1.GetOrCreateNearCache<int, int>(CacheName, new NearCacheConfiguration());
+                var client2Cache = client2.GetOrCreateNearCache<int, int>(CacheName, new NearCacheConfiguration());
 
-            Assert.AreEqual(InitialValue, client1Value);
-            Assert.AreEqual(InitialValue, client2Value);
+                var client1Value = client1Cache.Get(Key);
+                var client2Value = client2Cache.Get(Key);
 
-            // Update value from client 1.
-            const int newValue = 1;
-            client1Cache.Put(Key, newValue);
+                Assert.AreEqual(InitialValue, client1Value);
+                Assert.AreEqual(InitialValue, client2Value);
 
-            // Read value from client 1 and 2.
-            client1Value = client1Cache.Get(Key);
-            client2Value = client2Cache.Get(Key);
+                // Update value from client 1.
+                const int newValue = 1;
+                client1Cache.Put(Key, newValue);
 
-            Assert.AreEqual(newValue, client1Value);
-            Assert.AreEqual(newValue, client2Value);
+                // Read value from client 1 and 2.
+                client1Value = client1Cache.Get(Key);
+                client2Value = client2Cache.Get(Key);
+
+                Assert.AreEqual(newValue, client1Value);
+                Assert.AreEqual(newValue, client2Value);
+            }
+            finally
+            {
+                foreach (var ignite in servers)
+                {
+                    if (ignite != null)
+                        ignite.Dispose();
+                }
+            }
         }
 
         private static int GetMac(IClusterNode node) => Convert.ToInt32(node.Attributes[AttrMacs]);

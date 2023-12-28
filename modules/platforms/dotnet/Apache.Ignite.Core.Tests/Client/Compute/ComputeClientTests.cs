@@ -123,7 +123,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                 AutoGenerateIgniteInstanceName = true
             };
 
-            var ignite = Ignition.Start(cfg);
+            using var ignite = Ignition.Start(cfg);
 
             var port = ignite.GetCluster().GetLocalNode().GetAttribute<int>("clientListenerPort");
 

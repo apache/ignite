@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             cache.Put(1, 1);
 
             // Start new node.
-            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+            using var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
 
             AssertClientConnectionCount(Client, 4);
             cache.Put(2, 2);

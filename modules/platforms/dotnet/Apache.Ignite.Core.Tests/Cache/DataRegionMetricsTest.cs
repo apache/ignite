@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestMemoryMetrics()
         {
-            var ignite = StartIgniteWithThreeDataRegions();
+            using var ignite = StartIgniteWithThreeDataRegions();
             
             // Verify metrics.
             var metrics = ignite.GetDataRegionMetrics()

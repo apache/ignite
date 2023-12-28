@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 642
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -65,7 +66,7 @@ namespace Apache.Ignite.Core.Tests
         /// Starts the grid with provided config.
         /// </summary>
         /// <param name="binaryConfiguration">The binary configuration.</param>
-        private void StartGrid(BinaryConfiguration binaryConfiguration)
+        private IDisposable StartGrid(BinaryConfiguration binaryConfiguration)
         {
             Ignition.StopAll(true);
 
@@ -77,6 +78,8 @@ namespace Apache.Ignite.Core.Tests
             });
 
             _cache = grid.GetCache<int, TestGenericBinarizableBase>("default");
+
+            return grid;
         }
 
         /// <summary>
@@ -99,7 +102,7 @@ namespace Apache.Ignite.Core.Tests
                 TypeConfigurations = TestTypes.Select(x => new BinaryTypeConfiguration(x)).ToList()
             };
 
-            StartGrid(new BinaryConfiguration(cfg));
+            using( StartGrid(new BinaryConfiguration(cfg)));
 
             CheckBinarizableTypes(TestTypes);
         }
@@ -110,7 +113,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestXmlConfiguration()
         {
-            StartGrid(null);
+            using( StartGrid(null));
 
             CheckBinarizableTypes(TestTypesXml);
         }

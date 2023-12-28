@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 642
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -47,7 +48,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new IgniteConfiguration {JvmClasspath = TestUtils.CreateTestClasspath()};
 
-            var grid = Ignition.Start(cfg);
+            using var grid = Ignition.Start(cfg);
 
             Assert.IsNotNull(grid);
 
@@ -67,7 +68,7 @@ namespace Apache.Ignite.Core.Tests
                 IgniteInstanceName = GetType().FullName + Guid.NewGuid()
             };
 
-            var grid = Ignition.Start(cfg);
+            using var grid = Ignition.Start(cfg);
 
             Assert.IsNotNull(grid);
 
@@ -80,18 +81,18 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestStartGetStop()
         {
-            var grid1 = Ignition.Start(TestUtils.GetTestConfiguration(name: "grid1"));
+            using var grid1 = Ignition.Start(TestUtils.GetTestConfiguration(name: "grid1"));
 
             Assert.AreEqual("grid1", grid1.Name);
             Assert.AreSame(grid1, Ignition.GetIgnite());
             Assert.AreSame(grid1, Ignition.GetAll().Single());
 
-            var grid2 = Ignition.Start(TestUtils.GetTestConfiguration(name: "grid2"));
+            using var grid2 = Ignition.Start(TestUtils.GetTestConfiguration(name: "grid2"));
 
             Assert.AreEqual("grid2", grid2.Name);
             Assert.Throws<IgniteException>(() => Ignition.GetIgnite());
 
-            var grid3 = Ignition.Start(TestUtils.GetTestConfiguration());
+            using var grid3 = Ignition.Start(TestUtils.GetTestConfiguration());
 
             Assert.IsNull(grid3.Name);
 
@@ -122,9 +123,9 @@ namespace Apache.Ignite.Core.Tests
             Assert.Throws<IgniteException>(() => Ignition.GetIgnite("grid3"));
 
             // Restart.
-            Ignition.Start(TestUtils.GetTestConfiguration(name: "grid1"));
-            Ignition.Start(TestUtils.GetTestConfiguration(name: "grid2"));
-            Ignition.Start(TestUtils.GetTestConfiguration());
+            using (Ignition.Start(TestUtils.GetTestConfiguration(name: "grid1")));
+            using (Ignition.Start(TestUtils.GetTestConfiguration(name: "grid2")));
+            using (Ignition.Start(TestUtils.GetTestConfiguration()));
 
             foreach (var gridName in new [] { "grid1", "grid2", null })
                 Assert.IsNotNull(Ignition.GetIgnite(gridName));
@@ -142,7 +143,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestStartTheSameName()
         {
             var cfg = TestUtils.GetTestConfiguration(name: "grid1");
-            var grid1 = Ignition.Start(cfg);
+            using var grid1 = Ignition.Start(cfg);
             Assert.AreEqual("grid1", grid1.Name);
 
             var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
@@ -158,11 +159,11 @@ namespace Apache.Ignite.Core.Tests
             var cfg = TestUtils.GetTestConfiguration();
             cfg.AutoGenerateIgniteInstanceName = true;
 
-            Ignition.Start(cfg);
+            using (Ignition.Start(cfg));
             Assert.IsNotNull(Ignition.GetIgnite());
             Assert.IsNotNull(Ignition.TryGetIgnite());
 
-            Ignition.Start(cfg);
+            using (Ignition.Start(cfg));
             Assert.Throws<IgniteException>(() => Ignition.GetIgnite());
             Assert.IsNull(Ignition.TryGetIgnite());
             Assert.AreEqual(2, Ignition.GetAll().Count);
@@ -174,7 +175,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestUsageAfterStop()
         {
-            var grid = Ignition.Start(TestUtils.GetTestConfiguration());
+            using var grid = Ignition.Start(TestUtils.GetTestConfiguration());
 
             Assert.IsNotNull(grid.GetOrCreateCache<int, int>("cache1"));
 
@@ -200,15 +201,20 @@ namespace Apache.Ignite.Core.Tests
 
                 var grid = Ignition.Start(cfg);
 
-                UseIgnite(grid);
-
-                if (i % 2 == 0) // Try to stop ignite from another thread.
+                try
                 {
-                    TaskRunner.Run(() => grid.Dispose()).Wait();
+                    UseIgnite(grid);
                 }
-                else
+                finally
                 {
-                    grid.Dispose();
+                    if (i % 2 == 0) // Try to stop ignite from another thread.
+                    {
+                        TaskRunner.Run(() => grid.Dispose()).Wait();
+                    }
+                    else
+                    {
+                        grid.Dispose();
+                    }
                 }
 
                 GC.Collect(); // At the time of writing java references are cleaned from finalizer, so GC is needed.

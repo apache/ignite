@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestFullFooterOnline()
         {
-            var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            using var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration
                 {
@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestCompactFooterOnline()
         {
-            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+            using var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
 
             TestOffsets(() => ((Ignite) ignite).Marshaller);
         }

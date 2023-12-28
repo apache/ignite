@@ -53,6 +53,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
+            _server?.Dispose();
+            _client?.Dispose();
             Ignition.StopAll(true);
         }
 

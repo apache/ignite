@@ -119,13 +119,13 @@ namespace Apache.Ignite.Core.Tests
             {
                 TestUtils.AssertHandleRegistryHasItems(1000, _expectedHandleRegistryEntries, _grids);
             }
-            catch (Exception)
+            finally
             {
                 // Restart grids to cleanup
                 StopGrids();
-
-                throw;
             }
+            
+            Console.WriteLine("TEST | passed without an error.");
         }
 
         /// <summary>

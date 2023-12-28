@@ -70,8 +70,8 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestStreamerDoesNotLoseDataOnFlushWhenNewNodeEntersAndOriginalNodeLeaves()
         {
-            var server = StartServer();
-            var client = StartClient();
+            using var server = StartServer();
+            using var client = StartClient();
 
             var cache = CreateCache(client);
 

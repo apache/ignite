@@ -55,6 +55,8 @@ namespace Apache.Ignite.Core.Tests.Binary
         [TearDown]
         public void TestTearDown()
         {
+            _grid.Dispose();
+            _clientGrid.Dispose();
             Ignition.StopAll(true);
         }
 

@@ -85,7 +85,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestWithoutBeans()
         {
             // 1. Test start events.
-            IIgnite grid = Start(CfgNoBeans);
+            using IIgnite grid = Start(CfgNoBeans);
             Assert.AreEqual(2, grid.GetConfiguration().LifecycleHandlers.Count);
 
             Assert.AreEqual(2, BeforeStartEvts.Count);
@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestWithBeans()
         {
             // 1. Test .NET start events.
-            IIgnite grid = Start(CfgBeans);
+            using IIgnite grid = Start(CfgBeans);
             Assert.AreEqual(2, grid.GetConfiguration().LifecycleHandlers.Count);
 
             Assert.AreEqual(4, BeforeStartEvts.Count);

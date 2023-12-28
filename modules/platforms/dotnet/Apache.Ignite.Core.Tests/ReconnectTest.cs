@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 642
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -56,11 +57,11 @@ namespace Apache.Ignite.Core.Tests
                 ClientMode = true
             };
 
-            var server = Ignition.Start(serverCfg);
+            using var server = Ignition.Start(serverCfg);
 
             Assert.AreEqual(1, server.GetCluster().GetNodes().Count);
 
-            var client = Ignition.Start(clientCfg);
+            using var client = Ignition.Start(clientCfg);
 
             Assert.AreEqual(2, client.GetCluster().GetNodes().Count);
 
@@ -83,7 +84,7 @@ namespace Apache.Ignite.Core.Tests
             Thread.Sleep(1000);
 
             // Start the server and wait for reconnect.
-            Ignition.Start(serverCfg);
+            using (Ignition.Start(serverCfg)) ;
 
             // Check reconnect task.
             Assert.IsTrue(ex.ClientReconnectTask.Result);
@@ -199,8 +200,8 @@ namespace Apache.Ignite.Core.Tests
                 ClientMode = true
             };
 
-            var server = Ignition.Start(serverCfg);
-            var client = Ignition.Start(clientCfg);
+            using var server = Ignition.Start(serverCfg);
+            using var client = Ignition.Start(clientCfg);
 
             Assert.AreEqual(2, client.GetCluster().GetNodes().Count);
             var localNode = client.GetCluster().GetLocalNode();
@@ -228,7 +229,7 @@ namespace Apache.Ignite.Core.Tests
             });
 
             Ignition.Stop(server.Name, true);
-            var server2 = Ignition.Start(serverCfg);
+            using var server2 = Ignition.Start(serverCfg);
             evt.Wait();
 
             // Verify that we can deserialize on server (meta is resent properly).

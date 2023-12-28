@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 642
 namespace Apache.Ignite.Core.Tests.Cache
 {
     using System;
@@ -231,7 +232,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 using (var ignite = Ignition.Start(cfg1))
                 {
                     // Start and stop to bump topology version.
-                    Ignition.Start(cfg2);
+                    using (Ignition.Start(cfg2));
                     Ignition.Stop(cfg2.IgniteInstanceName, true);
 
                     var cluster = ignite.GetCluster();

@@ -64,6 +64,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
+            _ignite.Dispose();
             Ignition.StopAll(true);
         }
 
