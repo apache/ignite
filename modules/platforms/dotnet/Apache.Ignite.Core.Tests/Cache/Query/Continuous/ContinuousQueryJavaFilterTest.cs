@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             _ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = SpringConfig,
-                ConsistentId = "ContinousQueryTest1"
+                ConsistentId = "ContinuousQueryTest1"
             });
 
             // Second .NET node
@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             {
                 SpringConfigUrl = SpringConfig2,
                 IgniteInstanceName = "dotNet2",
-                ConsistentId = "ContinousQueryTest2"
+                ConsistentId = "ContinuousQueryTest2"
             });
 
             // Java-only node

@@ -25,7 +25,6 @@ namespace Apache.Ignite.Core
     using System.Linq;
     using System.Reflection;
     using System.Runtime;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
@@ -267,8 +266,6 @@ namespace Apache.Ignite.Core
                 {
                     gridName = (gridName ?? "ignite-instance-") + Guid.NewGuid();
                 }
-                
-                cfg.ConsistentId = 
 
                 // 3. Create startup object which will guide us through the rest of the process.
                 _startup = new Startup(cfg, cbs);
