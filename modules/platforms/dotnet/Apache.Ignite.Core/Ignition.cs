@@ -50,6 +50,7 @@ namespace Apache.Ignite.Core
     /// <summary>
     /// This class defines a factory for the main Ignite API.
     /// <p/>
+    /// Use <see cref="Start()"/> method to start Ignite with default configuration.
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
     /// </summary>
@@ -111,42 +112,42 @@ namespace Apache.Ignite.Core
             set { _clientMode = value; }
         }
 
-        // /// <summary>
-        // /// Starts Ignite with default configuration. By default this method will
-        // /// use Ignite configuration defined in <c>{IGNITE_HOME}/config/default-config.xml</c>
-        // /// configuration file. If such file is not found, then all system defaults will be used.
-        // /// </summary>
-        // /// <returns>Started Ignite.</returns>
-        // public static IIgnite Start()
-        // {
-        //     return Start(new IgniteConfiguration());
-        // }
-        //
-        // /// <summary>
-        // /// Starts all grids specified within given Spring XML configuration file. If Ignite with given name
-        // /// is already started, then exception is thrown. In this case all instances that may
-        // /// have been started so far will be stopped too.
-        // /// </summary>
-        // /// <param name="springCfgPath">Spring XML configuration file path or URL. Note, that the path can be
-        // /// absolute or relative to IGNITE_HOME.</param>
-        // /// <returns>Started Ignite. If Spring configuration contains multiple Ignite instances, then the 1st
-        // /// found instance is returned.</returns>
-        // public static IIgnite Start(string springCfgPath)
-        // {
-        //     return Start(new IgniteConfiguration {SpringConfigUrl = springCfgPath});
-        // }
-        //
-        // /// <summary>
-        // /// Reads <see cref="IgniteConfiguration"/> from application configuration
-        // /// <see cref="IgniteConfigurationSection"/> with <see cref="ConfigurationSectionName"/>
-        // /// name and starts Ignite.
-        // /// </summary>
-        // /// <returns>Started Ignite.</returns>
-        // public static IIgnite StartFromApplicationConfiguration()
-        // {
-        //     // ReSharper disable once IntroduceOptionalParameters.Global
-        //     return StartFromApplicationConfiguration(ConfigurationSectionName);
-        // }
+        /// <summary>
+        /// Starts Ignite with default configuration. By default this method will
+        /// use Ignite configuration defined in <c>{IGNITE_HOME}/config/default-config.xml</c>
+        /// configuration file. If such file is not found, then all system defaults will be used.
+        /// </summary>
+        /// <returns>Started Ignite.</returns>
+        public static IIgnite Start()
+        {
+            return Start(new IgniteConfiguration());
+        }
+
+        /// <summary>
+        /// Starts all grids specified within given Spring XML configuration file. If Ignite with given name
+        /// is already started, then exception is thrown. In this case all instances that may
+        /// have been started so far will be stopped too.
+        /// </summary>
+        /// <param name="springCfgPath">Spring XML configuration file path or URL. Note, that the path can be
+        /// absolute or relative to IGNITE_HOME.</param>
+        /// <returns>Started Ignite. If Spring configuration contains multiple Ignite instances, then the 1st
+        /// found instance is returned.</returns>
+        public static IIgnite Start(string springCfgPath)
+        {
+            return Start(new IgniteConfiguration {SpringConfigUrl = springCfgPath});
+        }
+
+        /// <summary>
+        /// Reads <see cref="IgniteConfiguration"/> from application configuration
+        /// <see cref="IgniteConfigurationSection"/> with <see cref="ConfigurationSectionName"/>
+        /// name and starts Ignite.
+        /// </summary>
+        /// <returns>Started Ignite.</returns>
+        public static IIgnite StartFromApplicationConfiguration()
+        {
+            // ReSharper disable once IntroduceOptionalParameters.Global
+            return StartFromApplicationConfiguration(ConfigurationSectionName);
+        }
 
         /// <summary>
         /// Reads <see cref="IgniteConfiguration"/> from application configuration 
