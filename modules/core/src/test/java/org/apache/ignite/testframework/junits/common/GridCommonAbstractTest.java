@@ -2815,11 +2815,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Distributed property: {@code GridJobProcessor#computeJobWorkerInterruptTimeout}.
      */
     protected DistributedChangeableProperty<Serializable> computeJobWorkerInterruptTimeout(Ignite n) {
-        DistributedChangeableProperty<Serializable> timeoutProperty = ((IgniteEx)n).context().distributedConfiguration()
+        DistributedChangeableProperty<Serializable> timeoutProp = ((IgniteEx)n).context().distributedConfiguration()
             .property(GridJobProcessor.COMPUTE_JOB_WORKER_INTERRUPT_TIMEOUT);
 
-        assertThat(timeoutProperty, notNullValue());
+        assertThat(timeoutProp, notNullValue());
 
-        return timeoutProperty;
+        return timeoutProp;
     }
 }

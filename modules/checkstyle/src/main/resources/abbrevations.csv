@@ -48,8 +48,8 @@ package,pkg
 parameter,param
 password,pwd
 policy,plc
-#property,prop
-#properties,props
+property,prop
+properties,props
 #process,proc
 #processor,proc
 #query,qry
