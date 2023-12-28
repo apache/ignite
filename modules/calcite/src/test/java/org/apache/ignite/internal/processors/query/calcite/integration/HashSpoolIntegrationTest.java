@@ -89,8 +89,7 @@ public class HashSpoolIntegrationTest extends AbstractBasicIntegrationTest {
         executeSql("CREATE TABLE t2(i3 INTEGER, i4 INTEGER)");
         executeSql("INSERT INTO t2 VALUES (1, 1), (2, 2), (null, 3), (4, null)");
 
-        String sql = "SELECT /*+ CNL_JOIN */ i1, i4 " +
-            "FROM t1 JOIN t2 ON i1 IS NOT DISTINCT FROM i3";
+        String sql = "SELECT /*+ CNL_JOIN */ i1, i4 FROM t1 JOIN t2 ON i1 IS NOT DISTINCT FROM i3";
 
         assertQuery(sql)
             .matches(QueryChecker.containsSubPlan("IgniteHashIndexSpool"))
@@ -99,8 +98,7 @@ public class HashSpoolIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(null, 3)
             .check();
 
-        sql = "SELECT /*+ CNL_JOIN */ i1, i4 " +
-            "FROM t1 JOIN t2 ON i1 IS NOT DISTINCT FROM i3 AND i2 = i4";
+        sql = "SELECT /*+ CNL_JOIN */ i1, i4 FROM t1 JOIN t2 ON i1 IS NOT DISTINCT FROM i3 AND i2 = i4";
 
         assertQuery(sql)
             .matches(QueryChecker.containsSubPlan("IgniteHashIndexSpool"))

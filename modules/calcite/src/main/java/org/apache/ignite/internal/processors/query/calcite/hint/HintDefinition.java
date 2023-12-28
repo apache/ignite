@@ -25,6 +25,7 @@ import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintPredicates;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 
 /**
  * Holds supported SQL hints and their settings.
@@ -75,7 +76,7 @@ public enum HintDefinition {
     NO_INDEX {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {
-            return HintPredicates.TABLE_SCAN;
+            return (hint, rel) -> rel instanceof IgniteLogicalTableScan;
         }
 
         /** {@inheritDoc} */

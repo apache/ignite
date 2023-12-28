@@ -240,8 +240,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
         for (int i = 0; i < 800; i++)
             sql("INSERT INTO tbl2 VALUES (?, ?)", i, new byte[1000]);
 
-        assertQuery("SELECT /*+ NO_MERGE_JOIN, NO_CNL_JOIN */ " +
-            "tbl.id, tbl.b, tbl2.id, tbl2.b FROM tbl JOIN tbl2 USING (id)")
+        assertQuery("SELECT /*+ NL_JOIN */ tbl.id, tbl.b, tbl2.id, tbl2.b FROM tbl JOIN tbl2 USING (id)")
             .matches(QueryChecker.containsSubPlan("IgniteNestedLoopJoin"))
             .resultSize(800)
             .check();
@@ -249,8 +248,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
         for (int i = 800; i < 1000; i++)
             sql("INSERT INTO tbl2 VALUES (?, ?)", i, new byte[1000]);
 
-        assertThrows("SELECT /*+ NO_MERGE_JOIN, NO_CNL_JOIN */" +
-                "tbl.id, tbl.b, tbl2.id, tbl2.b FROM tbl JOIN tbl2 USING (id)",
+        assertThrows("SELECT /*+ NL_JOIN */ tbl.id, tbl.b, tbl2.id, tbl2.b FROM tbl JOIN tbl2 USING (id)",
             IgniteException.class, "Query quota exceeded");
     }
 

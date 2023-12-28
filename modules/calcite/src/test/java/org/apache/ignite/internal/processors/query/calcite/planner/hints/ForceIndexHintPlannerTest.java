@@ -109,18 +109,6 @@ public class ForceIndexHintPlannerTest extends AbstractPlannerTest {
                 "t2 on t1.val3=t2.val23 and t1.val1=t2.val22", schema,
             nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
 
-        assertPlan("SELECT t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 /*+ FORCE_INDEX(IDX2_3) */ " +
-                "t2 on t1.val3=t2.val23 and t1.val1=t2.val22", schema,
-            nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
-
-        assertPlan("SELECT t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 /*+ FORCE_INDEX(IDX2_2) */ " +
-                "t2 on t1.val3=t2.val23 and t1.val1=t2.val22", schema,
-            nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2")));
-
-        assertPlan("SELECT t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 /*+ NO_INDEX */ " +
-                "t2 on t1.val3=t2.val23 and t1.val1=t2.val22", schema,
-            nodeOrAnyChild(isTableScan("TBL2")));
-
         assertPlan("SELECT /*+ FORCE_INDEX(IDX2_2,IDX2_3) */ t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 " +
                 "t2 on t1.val3=t2.val23 and t1.val1=t2.val22", schema,
             nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2"))
@@ -199,26 +187,6 @@ public class ForceIndexHintPlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testSubquery() throws Exception {
-        assertPlan("SELECT /*+ FORCE_INDEX(IDX1_2,IDX2_3) */ t1.val1 FROM TBL1 t1 where t1.val2 = " +
-                "(SELECT t2.val23 from TBL2 t2 where t2.val21=10  and t2.val23=10 and t2.val21=10)", schema,
-            nodeOrAnyChild(isIndexScan("TBL1", "IDX1_2"))
-                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3"))));
-
-        assertPlan("SELECT /*+ FORCE_INDEX(IDX1_2) */ t1.val1 FROM TBL1 t1 /*+ FORCE_INDEX(IDX2_3) */ where t1.val2 = " +
-                "(SELECT t2.val23 from TBL2 t2 where t2.val21=10  and t2.val23=10 and t2.val21=10)", schema,
-            nodeOrAnyChild(isIndexScan("TBL1", "IDX1_2"))
-                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3"))));
-
-        assertPlan("SELECT /*+ FORCE_INDEX(IDX1_2) */ t1.val1 FROM TBL1 t1 /*+ FORCE_INDEX(IDX2_2) */ where t1.val2 = " +
-                "(SELECT t2.val23 from TBL2 t2 where t2.val21=10  and t2.val23=10 and t2.val21=10)", schema,
-            nodeOrAnyChild(isIndexScan("TBL1", "IDX1_2"))
-                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2"))));
-
-        assertPlan("SELECT /*+ FORCE_INDEX(IDX1_2) */ t1.val1 FROM TBL1 t1 /*+ NO_INDEX */ where t1.val2 = " +
-                "(SELECT t2.val23 from TBL2 t2 where t2.val21=10  and t2.val23=10 and t2.val21=10)", schema,
-            nodeOrAnyChild(isIndexScan("TBL1", "IDX1_2"))
-                .and(nodeOrAnyChild(isTableScan("TBL2"))));
-
         assertPlan("SELECT /*+ FORCE_INDEX(IDX1_2,IDX2_3) */ t1.val1 FROM TBL1 t1 where t1.val2 = " +
                 "(SELECT t2.val23 from TBL2 t2 where t2.val21=10  and t2.val23=10 and t2.val21=10)", schema,
             nodeOrAnyChild(isIndexScan("TBL1", "IDX1_2"))
