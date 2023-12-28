@@ -49,12 +49,12 @@ public interface CdcEvent extends Serializable {
     @Nullable public CacheObject value();
 
     /**
-     * Key which was placed into cache. Or null if failed to convert.
+     * @return Key which was placed into cache. Or null if failed to convert.
      */
     public Object unwrappedKey();
 
     /**
-     * Value which was placed into cache. Or null for delete operation or for failure.
+     * @return Value which was placed into cache. Or null for delete operation or for failure.
      */
     public Object unwrappedValue();
 
