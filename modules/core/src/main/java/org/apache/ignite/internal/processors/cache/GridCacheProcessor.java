@@ -1082,8 +1082,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             ctx.kernalContext().continuous().onCacheStop(ctx);
 
-            ctx.kernalContext().coordinators().onCacheStop(ctx);
-
             ctx.group().stopCache(ctx, clearCache);
 
             U.stopLifecycleAware(log, lifecycleAwares(ctx.group(), cache.configuration(), ctx.store().configuredStore()));
@@ -5463,8 +5461,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             onKernalStopCaches(true);
 
             stopCaches(true);
-
-            sharedCtx.coordinators().stopTxLog();
 
             sharedCtx.database().cleanupRestoredCaches();
         }

@@ -95,14 +95,14 @@ public class ScheduleIndexRebuildTask
             Set<String> notFoundCaches = new HashSet<>();
             Set<String> notFoundGroups = new HashSet<>();
 
-            GridCacheProcessor cacheProcessor = ignite.context().cache();
+            GridCacheProcessor cacheProc = ignite.context().cache();
 
             Map<String, Set<String>> cacheToIndexes = new HashMap<>();
             Map<String, Set<String>> cacheToMissedIndexes = new HashMap<>();
 
             if (argCacheGroups != null) {
                 argCacheGroups.forEach(groupName -> {
-                    CacheGroupContext grpCtx = cacheProcessor.cacheGroup(CU.cacheId(groupName));
+                    CacheGroupContext grpCtx = cacheProc.cacheGroup(CU.cacheId(groupName));
 
                     if (grpCtx == null) {
                         notFoundGroups.add(groupName);
@@ -120,7 +120,7 @@ public class ScheduleIndexRebuildTask
                 Set<String> indexesArg = indexesByCache.getValue();
                 int cacheId = CU.cacheId(cache);
 
-                GridCacheContext<?, ?> cacheCtx = cacheProcessor.context().cacheContext(cacheId);
+                GridCacheContext<?, ?> cacheCtx = cacheProc.context().cacheContext(cacheId);
 
                 if (cacheCtx == null) {
                     notFoundCaches.add(cache);

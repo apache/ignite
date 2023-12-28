@@ -404,7 +404,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
         // so that EqualsBuilder.reflectionEquals returns false.
         // As a result in case of BigDecimal data type Objects.equals is used.
         // Same is about BigInteger.
-        BiFunction<Object, Object, Boolean> equalsProcessor =
+        BiFunction<Object, Object, Boolean> equalsProc =
             originalValItem instanceof BigDecimal || originalValItem instanceof BigInteger ?
                 Objects::equals :
                 (lhs, rhs) -> EqualsBuilder.reflectionEquals(
@@ -463,7 +463,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
 
             // Check SELECT query.
             try (PreparedStatement stmt = prepareStatement(cacheName, "SELECT * FROM " + tblName)) {
-                checkQuery(converterToSqlExpVal, equalsProcessor, originalVal.getClass(), originalKey, originalVal, stmt);
+                checkQuery(converterToSqlExpVal, equalsProc, originalVal.getClass(), originalKey, originalVal, stmt);
             }
 
             // Check SELECT query with where clause.
@@ -474,13 +474,13 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
                     else
                         stmt.setObject(1, originalKey);
 
-                    checkQuery(converterToSqlExpVal, equalsProcessor, originalVal.getClass(), originalKey, originalVal, stmt);
+                    checkQuery(converterToSqlExpVal, equalsProc, originalVal.getClass(), originalKey, originalVal, stmt);
                 }
             }
             else {
                 try (PreparedStatement stmt = prepareStatement(cacheName, "SELECT * FROM " + tblName
                     + " WHERE _key = " + sqlStrKey)) {
-                    checkQuery(converterToSqlExpVal, equalsProcessor, originalVal.getClass(), originalKey, originalVal, stmt);
+                    checkQuery(converterToSqlExpVal, equalsProc, originalVal.getClass(), originalKey, originalVal, stmt);
                 }
             }
 

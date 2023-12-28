@@ -33,6 +33,7 @@ namespace Apache.Ignite.Core.Impl.Client
         QueryPartitionsBatchSize = 7,
         BinaryConfiguration = 8,
         ServiceInvokeCtx = 10,
-        Heartbeat = 11
+        Heartbeat = 11,
+        ServiceTopology = 16,
     }
 }

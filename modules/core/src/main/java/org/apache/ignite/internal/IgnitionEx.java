@@ -2263,17 +2263,17 @@ public class IgnitionEx {
                         safeToStop = false;
 
                     if (safeToStop && !proposedSuppliers.isEmpty()) {
-                        Set<UUID> supportedPolicyNodes = proposedSuppliers.keySet().stream()
+                        Set<UUID> supportedPlcNodes = proposedSuppliers.keySet().stream()
                             .filter(nodeId ->
                                 IgniteFeatures.nodeSupports(grid0.cluster().node(nodeId), IgniteFeatures.SHUTDOWN_POLICY))
                             .collect(Collectors.toSet());
 
-                        if (!supportedPolicyNodes.isEmpty()) {
+                        if (!supportedPlcNodes.isEmpty()) {
                             try {
                                 safeToStop = grid0.context().task().execute(
                                     CheckCpHistTask.class,
                                     proposedSuppliers,
-                                    options(grid0.cluster().forNodeIds(supportedPolicyNodes).nodes())
+                                    options(grid0.cluster().forNodeIds(supportedPlcNodes).nodes())
                                 ).get();
                             }
                             catch (IgniteCheckedException e) {

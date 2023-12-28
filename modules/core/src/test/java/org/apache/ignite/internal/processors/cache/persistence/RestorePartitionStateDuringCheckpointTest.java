@@ -86,13 +86,13 @@ public class RestorePartitionStateDuringCheckpointTest extends GridCommonAbstrac
 
         cache.put(key, key);
 
-        GridCacheProcessor cacheProcessor = ignite0.context().cache();
+        GridCacheProcessor cacheProc = ignite0.context().cache();
 
-        cacheProcessor.dynamicDestroyCaches(Collections.singleton(DEFAULT_CACHE_NAME), false, false).get();
+        cacheProc.dynamicDestroyCaches(Collections.singleton(DEFAULT_CACHE_NAME), false, false).get();
 
         assertNull(ignite0.cache(DEFAULT_CACHE_NAME));
 
-        DataRegion region = cacheProcessor.context().database().dataRegion(DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME);
+        DataRegion region = cacheProc.context().database().dataRegion(DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME);
 
         PageMemoryEx pageMemorySpy = spy((PageMemoryEx)region.pageMemory());
 
@@ -102,7 +102,7 @@ public class RestorePartitionStateDuringCheckpointTest extends GridCommonAbstrac
         AtomicBoolean checkpointTriggered = new AtomicBoolean(false);
 
         doAnswer(invocation -> {
-            IgniteCacheOffheapManager.CacheDataStore partDataStore = cacheProcessor.cacheGroup(grpId).topology()
+            IgniteCacheOffheapManager.CacheDataStore partDataStore = cacheProc.cacheGroup(grpId).topology()
                 .localPartition(partId).dataStore();
 
             assertNotNull(partDataStore);
@@ -135,6 +135,6 @@ public class RestorePartitionStateDuringCheckpointTest extends GridCommonAbstrac
 
         assertTrue(checkpointTriggered.get());
 
-        assertSame(GridDhtPartitionState.OWNING, cacheProcessor.cacheGroup(grpId).topology().localPartition(partId).state());
+        assertSame(GridDhtPartitionState.OWNING, cacheProc.cacheGroup(grpId).topology().localPartition(partId).state());
     }
 }

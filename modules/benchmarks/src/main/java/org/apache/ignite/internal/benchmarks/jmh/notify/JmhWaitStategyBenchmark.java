@@ -224,7 +224,7 @@ public class JmhWaitStategyBenchmark extends JmhCacheAbstractBenchmark {
 
         List<RunResult> results = new ArrayList<>();
 
-        for (String policy : policies) {
+        for (String plc : policies) {
             for (int thread : threads) {
                 ChainedOptionsBuilder builder = new OptionsBuilder()
                     .jvmArgs()
@@ -233,7 +233,7 @@ public class JmhWaitStategyBenchmark extends JmhCacheAbstractBenchmark {
                     .measurementTime(TimeValue.seconds(20))
                     .warmupIterations(5)
                     .warmupTime(TimeValue.seconds(10))
-                    .jvmArgs("-Dbench.exp.policy=" + policy)
+                    .jvmArgs("-Dbench.exp.policy=" + plc)
                     .forks(1)
                     .threads(thread)
                     .mode(Mode.Throughput)

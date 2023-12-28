@@ -115,11 +115,6 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         clientLogLsnr = new ListeningTestLogger(log);
     }
 
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 45_000L;
-    }
-
     /** */
     private static ServiceConfiguration serviceCfg() {
         // Service is deployed on nodes with the name index equal to 1, 2 or >= GRIDS.
@@ -305,7 +300,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      * Tests the service topology update with a gap of service invocation during forced service redeployment.
      */
     @Test
-    public void testForcedServiceRedeployWhileClientIsIdle() {
+    public void testForcedServiceRedeployWhileClientIsIdle() throws Exception {
         try (IgniteClient client = startClient()) {
             ServicesTest.TestServiceInterface svc = client.services().serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
 
@@ -315,8 +310,11 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
             ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
-            while (srvcTopOnClient.isEmpty())
+            assertTrue(waitForCondition(() -> {
                 svc.testMethod();
+
+                return !srvcTopOnClient.isEmpty();
+            }, ClientServicesImpl.SRV_TOP_UPDATE_PERIOD));
 
             ((GridTestLog4jLogger)log).setLevel(Level.INFO);
 
@@ -328,18 +326,23 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
             grid(1).services().cancel(SRV_NAME);
 
+            waitForCondition(() -> grid(0).services().serviceDescriptors().isEmpty(), getTestTimeout());
+
             srvcTopOnClient.clear();
 
             grid(1).services().deploy(serviceCfg().setNodeFilter(null));
+
+            waitForCondition(() -> !grid(0).services().serviceDescriptors().isEmpty(), getTestTimeout());
 
             assertEquals(prevTopVersion, grid(0).context().discovery().topologyVersion());
 
             ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
-            while (srvcTopOnClient.isEmpty())
+            waitForCondition(() -> {
                 svc.testMethod();
 
-            assertEquals(GRIDS, srvcTopOnClient.size());
+                return srvcTopOnClient.size() == GRIDS;
+            }, getTestTimeout());
 
             for (Ignite ig : G.allGrids())
                 assertTrue(srvcTopOnClient.contains(ig.cluster().localNode().id()));

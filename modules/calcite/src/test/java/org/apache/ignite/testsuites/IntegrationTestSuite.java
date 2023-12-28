@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.ExpiredEn
 import org.apache.ignite.internal.processors.query.calcite.integration.FunctionsTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.HashSpoolIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexDdlIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.IndexMultiRangeScanIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexRebuildIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexScanlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexSpoolIntegrationTest;
@@ -52,7 +53,6 @@ import org.apache.ignite.internal.processors.query.calcite.integration.QueryEngi
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryMetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryWithPartitionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.RunningQueriesIntegrationTest;
-import org.apache.ignite.internal.processors.query.calcite.integration.SearchSargOnIndexIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ServerStatisticsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SetOpIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SortAggregateIntegrationTest;
@@ -118,7 +118,7 @@ import org.junit.runners.Suite;
     SystemViewsIntegrationTest.class,
     IndexRebuildIntegrationTest.class,
     QueryEngineConfigurationIntegrationTest.class,
-    SearchSargOnIndexIntegrationTest.class,
+    IndexMultiRangeScanIntegrationTest.class,
     KeepBinaryIntegrationTest.class,
     LocalQueryIntegrationTest.class,
     QueryWithPartitionsIntegrationTest.class,

@@ -1174,9 +1174,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * Start client caches if absent.
      */
     private void ensureClientCachesStarted() {
-        GridCacheProcessor cacheProcessor = cctx.cache();
+        GridCacheProcessor cacheProc = cctx.cache();
 
-        Set<String> cacheNames = new HashSet<>(cacheProcessor.cacheNames());
+        Set<String> cacheNames = new HashSet<>(cacheProc.cacheNames());
 
         List<CacheConfiguration> notStartedCacheConfigs = new ArrayList<>();
 
@@ -1186,7 +1186,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         if (!notStartedCacheConfigs.isEmpty())
-            cacheProcessor.dynamicStartCaches(notStartedCacheConfigs, false, false, false);
+            cacheProc.dynamicStartCaches(notStartedCacheConfigs, false, false, false);
     }
 
     /**
@@ -2476,9 +2476,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 grpValidRes = m;
             }
 
-            if (err == null)
-                cctx.coordinators().onExchangeDone(events().discoveryCache());
-
             for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
                 comp.onDoneBeforeTopologyUnlock(this);
 
@@ -2928,7 +2925,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 finishState0 = finishState;
             }
             else {
-                boolean process = mergedJoinExchMsgs != null &&
+                boolean proc = mergedJoinExchMsgs != null &&
                     mergedJoinExchMsgs.containsKey(node.id()) &&
                     mergedJoinExchMsgs.get(node.id()) == null;
 
@@ -2936,11 +2933,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     log.info("Merge server join exchange, received message [curFut=" + initialVersion() +
                         ", node=" + node.id() +
                         ", msgVer=" + msg.exchangeId().topologyVersion() +
-                        ", process=" + process +
+                        ", process=" + proc +
                         ", awaited=" + awaitMergedMsgs + ']');
                 }
 
-                if (process) {
+                if (proc) {
                     mergedJoinExchMsgs.put(node.id(), msg);
 
                     assert awaitMergedMsgs > 0 : awaitMergedMsgs;

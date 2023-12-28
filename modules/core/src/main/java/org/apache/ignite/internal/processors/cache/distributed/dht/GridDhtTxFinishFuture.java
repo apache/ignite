@@ -253,8 +253,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 Throwable finishErr = e != null ? e : err;
 
                 if (super.onDone(tx, finishErr)) {
-                    cctx.tm().mvccFinish(this.tx);
-
                     if (finishErr == null)
                         finishErr = this.tx.commitError();
 

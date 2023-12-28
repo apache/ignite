@@ -1859,11 +1859,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++)
             assertNull(jcache(i).localPeek("k1", ONHEAP));
 
-        final EntryProcessor<String, Integer, Integer> errProcessor = new FailedEntryProcessor();
+        final EntryProcessor<String, Integer, Integer> errProc = new FailedEntryProcessor();
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                cache.invoke("k1", errProcessor);
+                cache.invoke("k1", errProc);
 
                 return null;
             }

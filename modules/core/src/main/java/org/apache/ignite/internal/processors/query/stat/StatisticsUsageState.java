@@ -50,8 +50,8 @@ public enum StatisticsUsageState {
 
         VALS = new StatisticsUsageState[maxIdx + 1];
 
-        for (StatisticsUsageState policyType : statisticsUsageStates)
-            VALS[policyType.idx] = policyType;
+        for (StatisticsUsageState plcType : statisticsUsageStates)
+            VALS[plcType.idx] = plcType;
     }
 
     /**

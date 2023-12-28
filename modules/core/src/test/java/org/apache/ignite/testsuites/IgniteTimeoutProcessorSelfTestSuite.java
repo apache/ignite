@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessorSelfTest;
+import org.apache.ignite.internal.processors.timeout.TimeoutObjectsIntersectionTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -26,6 +27,6 @@ import org.junit.runners.Suite;
  * Suite for {@link GridTimeoutProcessor} tests.
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({GridTimeoutProcessorSelfTest.class})
+@Suite.SuiteClasses({GridTimeoutProcessorSelfTest.class, TimeoutObjectsIntersectionTest.class})
 public class IgniteTimeoutProcessorSelfTestSuite {
 }

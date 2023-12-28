@@ -57,7 +57,6 @@ import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
@@ -236,10 +235,10 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         final GridKernalContext ctx,
         final File binaryMetadataFileStoreDir) {
 
-        final CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
-        processor.setBinaryMetadataFileStoreDir(binaryMetadataFileStoreDir);
+        final CacheObjectBinaryProcessorImpl proc = new CacheObjectBinaryProcessorImpl(ctx);
+        proc.setBinaryMetadataFileStoreDir(binaryMetadataFileStoreDir);
 
-        return processor;
+        return proc;
     }
 
     /**
@@ -552,11 +551,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public DataStructuresProcessor dataStructures() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public MvccProcessor coordinators() {
         return null;
     }
 

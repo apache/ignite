@@ -1425,7 +1425,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        ShutdownPolicy policy = ignite.cluster().shutdownPolicy();
+        ShutdownPolicy plc = ignite.cluster().shutdownPolicy();
 
         injectTestSystemOut();
 
@@ -1433,7 +1433,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String out = testOut.toString();
 
-        assertContains(log, out, "Cluster shutdown policy is " + policy);
+        assertContains(log, out, "Cluster shutdown policy is " + plc);
     }
 
     /**
@@ -1449,24 +1449,24 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        ShutdownPolicy policyToChange = null;
+        ShutdownPolicy plcToChange = null;
 
-        for (ShutdownPolicy policy : ShutdownPolicy.values()) {
-            if (policy != ignite.cluster().shutdownPolicy())
-                policyToChange = policy;
+        for (ShutdownPolicy plc : ShutdownPolicy.values()) {
+            if (plc != ignite.cluster().shutdownPolicy())
+                plcToChange = plc;
         }
 
-        assertNotNull(policyToChange);
+        assertNotNull(plcToChange);
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--shutdown-policy", policyToChange.name()));
+        assertEquals(EXIT_CODE_OK, execute("--shutdown-policy", plcToChange.name()));
 
-        assertSame(policyToChange, ignite.cluster().shutdownPolicy());
+        assertSame(plcToChange, ignite.cluster().shutdownPolicy());
 
         String out = testOut.toString();
 
-        assertContains(log, out, "Cluster shutdown policy is " + policyToChange);
+        assertContains(log, out, "Cluster shutdown policy is " + plcToChange);
     }
 
     /**

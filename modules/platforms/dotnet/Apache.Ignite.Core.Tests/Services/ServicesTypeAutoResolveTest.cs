@@ -42,9 +42,6 @@ namespace Apache.Ignite.Core.Tests.Services
         /** Platform service name. */
         const string PlatformSvcName = "PlatformTestService";
 
-        /** Java service name. */
-        private string _javaSvcName;
-
         /** */
         protected internal static readonly Employee[] Emps = new[]
         {
@@ -97,7 +94,7 @@ namespace Apache.Ignite.Core.Tests.Services
             StartGrids();
 
             _grid1.GetServices().DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
-            _javaSvcName = TestUtils.DeployJavaService(_grid1);
+            TestUtils.DeployJavaService(_grid1);
         }
 
         /// <summary>
@@ -109,7 +106,7 @@ namespace Apache.Ignite.Core.Tests.Services
             try
             {
                 _grid1.GetServices().Cancel(PlatformSvcName);
-                _grid1.GetServices().Cancel(_javaSvcName);
+                _grid1.GetServices().Cancel(TestUtils.JavaServiceName);
 
                 _grid1.GetServices();
 
@@ -154,7 +151,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestJavaServiceDynamicProxy()
         {
-            DoTestService(new JavaServiceDynamicProxy(_grid1.GetServices().GetDynamicServiceProxy(_javaSvcName, true)));
+            DoTestService(new JavaServiceDynamicProxy(_grid1.GetServices().GetDynamicServiceProxy(TestUtils.JavaServiceName, true)));
         }
 
         /// <summary>
@@ -164,7 +161,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestJavaServiceLocal()
         {
-            DoTestService(_grid1.GetServices().GetServiceProxy<IJavaService>(_javaSvcName, false));
+            DoTestService(_grid1.GetServices().GetServiceProxy<IJavaService>(TestUtils.JavaServiceName, false));
         }
 
         /// <summary>
@@ -174,7 +171,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestJavaServiceRemote()
         {
-            DoTestService(_client.GetServices().GetServiceProxy<IJavaService>(_javaSvcName, false));
+            DoTestService(_client.GetServices().GetServiceProxy<IJavaService>(TestUtils.JavaServiceName, false));
         }
 
         /// <summary>
@@ -184,7 +181,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestJavaServiceThinClient()
         {
-            DoTestService(_thinClient.GetServices().GetServiceProxy<IJavaService>(_javaSvcName));
+            DoTestService(_thinClient.GetServices().GetServiceProxy<IJavaService>(TestUtils.JavaServiceName));
         }
 
         /// <summary>

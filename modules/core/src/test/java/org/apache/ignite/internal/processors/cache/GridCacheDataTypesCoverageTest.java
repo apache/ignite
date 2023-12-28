@@ -403,7 +403,7 @@ public class GridCacheDataTypesCoverageTest extends AbstractDataTypesCoverageTes
         // so that EqualsBuilder.reflectionEquals returns false.
         // As a result in case of BigDecimal data type Objects.equals is used.
         // Same is about BigInteger.
-        BiFunction<Object, Object, Boolean> equalsProcessor =
+        BiFunction<Object, Object, Boolean> equalsProc =
             valsToCheck[0] instanceof BigDecimal || valsToCheck[0] instanceof BigInteger ?
                 Objects::equals :
                 (lhs, rhs) -> EqualsBuilder.reflectionEquals(
@@ -439,7 +439,7 @@ public class GridCacheDataTypesCoverageTest extends AbstractDataTypesCoverageTes
                 fail("Unable to retrieve value for key = [" + clonedKey + "].");
 
             // Check Put/Get.
-            assertTrue(equalsProcessor.apply(keyValEntry.getValue(), cache.get(clonedKey)));
+            assertTrue(equalsProc.apply(keyValEntry.getValue(), cache.get(clonedKey)));
 
             // Remove.
             cache.remove(clonedKey);
@@ -463,7 +463,7 @@ public class GridCacheDataTypesCoverageTest extends AbstractDataTypesCoverageTes
                 !waitForCondition(() -> cache.get(clonedKey) != null, TIMEOUT_FOR_KEY_RETRIEVAL_IN_FULL_ASYNC_MODE))
                 fail("Unable to retrieve value for key = [" + clonedKey + "].");
 
-            assertTrue(equalsProcessor.apply(keyValEntry.getValue(), cache.get(clonedKey)));
+            assertTrue(equalsProc.apply(keyValEntry.getValue(), cache.get(clonedKey)));
         }
 
         Set<Serializable> clonedKeySet =
@@ -481,10 +481,10 @@ public class GridCacheDataTypesCoverageTest extends AbstractDataTypesCoverageTes
         for (Map.Entry<Serializable, Serializable> keyValEntry : keyValMap.entrySet()) {
             boolean keyFound = false;
             for (Map.Entry<Object, Object> keyValEntryToCheck : mapToCheck.entrySet()) {
-                if (equalsProcessor.apply(keyValEntry.getKey(), keyValEntryToCheck.getKey())) {
+                if (equalsProc.apply(keyValEntry.getKey(), keyValEntryToCheck.getKey())) {
                     keyFound = true;
 
-                    assertTrue(equalsProcessor.apply(keyValEntry.getValue(), keyValEntryToCheck.getValue()));
+                    assertTrue(equalsProc.apply(keyValEntry.getValue(), keyValEntryToCheck.getValue()));
 
                     break;
                 }

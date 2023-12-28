@@ -425,12 +425,12 @@ public class CommandHandlerParsingTest {
 
         assertNull(((ShutdownPolicyCommandArg)args.commandArg()).shutdownPolicy());
 
-        for (ShutdownPolicy policy : ShutdownPolicy.values()) {
-            args = parseArgs(asList(SHUTDOWN_POLICY, String.valueOf(policy)));
+        for (ShutdownPolicy plc : ShutdownPolicy.values()) {
+            args = parseArgs(asList(SHUTDOWN_POLICY, String.valueOf(plc)));
 
             assertEquals(ShutdownPolicyCommand.class, args.command().getClass());
 
-            assertSame(policy, ((ShutdownPolicyCommandArg)args.commandArg()).shutdownPolicy());
+            assertSame(plc, ((ShutdownPolicyCommandArg)args.commandArg()).shutdownPolicy());
         }
     }
 

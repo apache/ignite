@@ -1696,7 +1696,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
             boolean filtered = false;
 
-            boolean processorPut = false;
+            boolean procPut = false;
 
             while (System.currentTimeMillis() < stopTime) {
                 Integer key = rnd.nextInt(PARTS);
@@ -1751,7 +1751,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 boolean updated = false;
 
                 while (!updated) {
-                    if (processorPut && prevVal != null) {
+                    if (procPut && prevVal != null) {
                         qryClnCache.invoke(key, new CacheEntryProcessor<Object, Object, Void>() {
                             @Override public Void process(MutableEntry<Object, Object> entry,
                                 Object... arguments) throws EntryProcessorException {
@@ -1767,7 +1767,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                     updated = true;
                 }
 
-                processorPut = !processorPut;
+                procPut = !procPut;
 
                 vals.put(key, val);
 

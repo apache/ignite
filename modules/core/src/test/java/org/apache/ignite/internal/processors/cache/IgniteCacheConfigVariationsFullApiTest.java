@@ -1787,11 +1787,11 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 for (int i = 0; i < gridCount(); i++)
                     assertNull(jcache(i).localPeek(k1, ONHEAP));
 
-                final EntryProcessor<Object, Object, Object> errProcessor = new FailedEntryProcessor();
+                final EntryProcessor<Object, Object, Object> errProc = new FailedEntryProcessor();
 
                 GridTestUtils.assertThrows(log, new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        cache.invoke(k1, errProcessor);
+                        cache.invoke(k1, errProc);
 
                         return null;
                     }

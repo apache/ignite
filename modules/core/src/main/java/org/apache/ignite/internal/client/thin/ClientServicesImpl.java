@@ -53,8 +53,8 @@ import org.jetbrains.annotations.Nullable;
  * Implementation of {@link ClientServices}.
  */
 class ClientServicesImpl implements ClientServices {
-    /** Max service topology update period in mills. */
-    static final int SRV_TOP_UPDATE_PERIOD = 10_000;
+    /** Max service topology update period in millis. */
+    static final int SRV_TOP_UPDATE_PERIOD = 60_000;
 
     /** Channel. */
     private final ReliableChannel ch;
