@@ -580,7 +580,7 @@ public class RexUtils {
         Map<Integer, List<RexCall>> res = new HashMap<>(conjunctions.size());
 
         for (RexNode rexNode : conjunctions) {
-            Pair<Integer, RexCall> refPred = null;
+            Pair<Integer, RexCall> refPredicate = null;
 
             if (rexNode instanceof RexCall && rexNode.getKind() == OR) {
                 List<RexNode> operands = ((RexCall)rexNode).getOperands();
@@ -589,42 +589,42 @@ public class RexUtils {
                 List<RexCall> preds = new ArrayList<>(operands.size());
 
                 for (RexNode operand : operands) {
-                    Pair<Integer, RexCall> refPredOp = extractRefPredicate(operand, cluster);
+                    Pair<Integer, RexCall> operandRefPredicate = extractRefPredicate(operand, cluster);
 
-                    // Skip the whole OR condition if any operand is not support tree comparison or not on reference.
-                    if (refPredOp == null) {
+                    // Skip the whole OR condition if any operand does not support tree comparison or not on reference.
+                    if (operandRefPredicate == null) {
                         ref = null;
                         break;
                     }
 
                     // Ensure that we have the same field reference in all operands.
                     if (ref == null)
-                        ref = refPredOp.getKey();
-                    else if (!ref.equals(refPredOp.getKey())) {
+                        ref = operandRefPredicate.getKey();
+                    else if (!ref.equals(operandRefPredicate.getKey())) {
                         ref = null;
                         break;
                     }
 
                     // For correlated variables it's required to resort and merge ranges on each nested loop,
                     // don't support it now.
-                    if (containsFieldAccess(refPredOp.getValue())) {
+                    if (containsFieldAccess(operandRefPredicate.getValue())) {
                         ref = null;
                         break;
                     }
 
-                    preds.add(refPredOp.getValue());
+                    preds.add(operandRefPredicate.getValue());
                 }
 
                 if (ref != null)
-                    refPred = Pair.of(ref, (RexCall)builder(cluster).makeCall(((RexCall)rexNode).getOperator(), preds));
+                    refPredicate = Pair.of(ref, (RexCall)builder(cluster).makeCall(((RexCall)rexNode).getOperator(), preds));
             }
             else
-                refPred = extractRefPredicate(rexNode, cluster);
+                refPredicate = extractRefPredicate(rexNode, cluster);
 
-            if (refPred != null) {
-                List<RexCall> fldPreds = res.computeIfAbsent(refPred.getKey(), k -> new ArrayList<>(conjunctions.size()));
+            if (refPredicate != null) {
+                List<RexCall> fldPreds = res.computeIfAbsent(refPredicate.getKey(), k -> new ArrayList<>(conjunctions.size()));
 
-                fldPreds.add(refPred.getValue());
+                fldPreds.add(refPredicate.getValue());
             }
         }
         return res;
