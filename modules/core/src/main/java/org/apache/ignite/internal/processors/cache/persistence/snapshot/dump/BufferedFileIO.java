@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import java.util.Objects;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -78,7 +77,8 @@ public class BufferedFileIO extends FileIODecorator {
         if (buf.limit() == 0)
             throw new IOException("FileIO closed");
 
-        Objects.checkFromIndexSize(off, len, srcBuf.length);
+        if ((len | off) < 0 || len > srcBuf.length - off)
+            throw new IndexOutOfBoundsException("Range [" + off + ", " + off + " + " + len + ") out of bounds for length " + srcBuf.length);
 
         int p = off;
 
