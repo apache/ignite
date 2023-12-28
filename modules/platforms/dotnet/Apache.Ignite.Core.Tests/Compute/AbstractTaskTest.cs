@@ -113,7 +113,8 @@ namespace Apache.Ignite.Core.Tests.Compute
             else
             {
                 var cfg = GetConfiguration("Config/Compute/compute-grid2.xml");
-                cfg.ConsistentId = this.GetType().FullName + Guid.NewGuid();
+                cfg.IgniteInstanceName = this.GetType().FullName + Guid.NewGuid();
+                cfg.ConsistentId = cfg.IgniteInstanceName;
                 
                 Grid1 = Ignition.Start(GetConfiguration("Config/Compute/compute-grid1.xml"));
                 
