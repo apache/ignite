@@ -755,12 +755,12 @@ public class KillQueryTest extends GridCommonAbstractTest {
     public void testCancelQueryPartitionPruning() throws Exception {
         IgniteInternalFuture cancelRes = cancel(1, asyncCancel);
 
-        final int ROWS_ALLOWED_TO_PROCESS_AFTER_CANCEL = 400;
+        final int ROWS_ALLOWED_TO_PROC_AFTER_CANCEL = 400;
 
         GridTestUtils.assertThrows(log, () -> {
             stmt.executeQuery("select * from Integer where _key between 1000 and 2000 " +
                 "and awaitLatchCancelled() = 0 " +
-                "and shouldNotBeCalledMoreThan(" + ROWS_ALLOWED_TO_PROCESS_AFTER_CANCEL + ")");
+                "and shouldNotBeCalledMoreThan(" + ROWS_ALLOWED_TO_PROC_AFTER_CANCEL + ")");
 
             return null;
         }, SQLException.class, "The query was cancelled while executing.");
@@ -822,14 +822,14 @@ public class KillQueryTest extends GridCommonAbstractTest {
     public void testCancelDistributeJoin() throws Exception {
         IgniteInternalFuture cancelRes = cancel(1, asyncCancel);
 
-        final int ROWS_ALLOWED_TO_PROCESS_AFTER_CANCEL = MAX_ROWS - 1;
+        final int ROWS_ALLOWED_TO_PROC_AFTER_CANCEL = MAX_ROWS - 1;
 
         GridTestUtils.assertThrows(log, () -> {
             ignite.cache(DEFAULT_CACHE_NAME).query(
                 new SqlFieldsQuery("SELECT p1.rec_id, p1.id, p2.rec_id " +
                     "FROM PERS1.Person p1 JOIN PERS2.Person p2 " +
                     "ON p1.id = p2.id " +
-                    "AND shouldNotBeCalledMoreThan(" + ROWS_ALLOWED_TO_PROCESS_AFTER_CANCEL + ")" +
+                    "AND shouldNotBeCalledMoreThan(" + ROWS_ALLOWED_TO_PROC_AFTER_CANCEL + ")" +
                     "AND awaitLatchCancelled() = 0")
                     .setDistributedJoins(true)
             ).getAll();

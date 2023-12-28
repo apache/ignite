@@ -662,11 +662,11 @@ public class CommandProcessor extends SqlCommandProcessor {
 
         BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
 
-        BulkLoadProcessor processor = new BulkLoadProcessor(inputParser, dataConverter, outputWriter,
+        BulkLoadProcessor proc = new BulkLoadProcessor(inputParser, dataConverter, outputWriter,
             idx.runningQueryManager(), qryId, ctx.tracing());
 
         BulkLoadAckClientParameters params = new BulkLoadAckClientParameters(cmd.localFileName(), cmd.packetSize());
 
-        return new BulkLoadContextCursor(processor, params);
+        return new BulkLoadContextCursor(proc, params);
     }
 }
