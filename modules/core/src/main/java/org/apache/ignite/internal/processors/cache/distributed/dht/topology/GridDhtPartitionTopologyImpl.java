@@ -2039,7 +2039,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (!grp.isReplicated() && isRebuildDiffAssignmentRequired(fut)) {
                 if (assignment.topologyVersion().compareTo(diffFromAffinityVer) >= 0)
                     rebuildDiff(assignment);
-            } else
+            }
+            else
                 diffFromAffinityVer = readyTopVer;
 
             if (!grp.isReplicated() || updateRebalanceVer)

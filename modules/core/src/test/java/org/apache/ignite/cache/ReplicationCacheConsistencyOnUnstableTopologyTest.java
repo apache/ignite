@@ -253,9 +253,9 @@ public class ReplicationCacheConsistencyOnUnstableTopologyTest extends GridCommo
 
         spi(ignite).blockMessages((node, message) -> {
             if (message instanceof GridDhtPartitionSupplyMessage && testNodeName(2).equals(node.consistentId())) {
-                GridDhtPartitionSupplyMessage supplyMessage = ((GridDhtPartitionSupplyMessage)message);
+                GridDhtPartitionSupplyMessage supplyMsg = ((GridDhtPartitionSupplyMessage)message);
 
-                return supplyMessage.groupId() == CU.cacheId(DEFAULT_CACHE_NAME);
+                return supplyMsg.groupId() == CU.cacheId(DEFAULT_CACHE_NAME);
             }
 
             return false;
@@ -349,15 +349,25 @@ public class ReplicationCacheConsistencyOnUnstableTopologyTest extends GridCommo
      * The entry processor is intended to update a value when the previous one exists.
      */
     private static class TestEntryProcessor implements EntryProcessor<Integer, Integer, Void> {
+        /** Ignite instance. */
         @IgniteInstanceResource
         Ignite ignite;
 
+        /** Value to update. */
         private final Integer val;
 
+        /**
+         * The constructor.
+         *
+         * @param val Value to update.
+         */
         public TestEntryProcessor(Integer val) {
             this.val = val;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override public Void process(
             MutableEntry<Integer, Integer> mutableEntry,
             Object... objects
