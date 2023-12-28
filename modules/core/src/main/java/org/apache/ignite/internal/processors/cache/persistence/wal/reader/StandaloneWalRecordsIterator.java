@@ -347,14 +347,14 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     /** {@inheritDoc} */
     @Override protected @NotNull WALRecord postProcessRecord(@NotNull final WALRecord rec) {
         GridKernalContext kernalCtx = sharedCtx.kernalContext();
-        IgniteCacheObjectProcessor processor = kernalCtx.cacheObjects();
+        IgniteCacheObjectProcessor proc = kernalCtx.cacheObjects();
 
-        if (processor != null && (rec.type() == RecordType.DATA_RECORD
+        if (proc != null && (rec.type() == RecordType.DATA_RECORD
             || rec.type() == RecordType.DATA_RECORD_V2
             || rec.type() == RecordType.CDC_DATA_RECORD
             || rec.type() == RecordType.MVCC_DATA_RECORD)) {
             try {
-                return postProcessDataRecord((DataRecord)rec, kernalCtx, processor);
+                return postProcessDataRecord((DataRecord)rec, kernalCtx, proc);
             }
             catch (Exception e) {
                 log.error("Failed to perform post processing for data record ", e);

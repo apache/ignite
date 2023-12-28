@@ -1902,7 +1902,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         CacheObject evtVal;
 
                         if (op == GridCacheOperation.TRANSFORM) {
-                            EntryProcessor<Object, Object, ?> entryProcessor =
+                            EntryProcessor<Object, Object, ?> entryProc =
                                 (EntryProcessor<Object, Object, ?>)writeObj;
 
                             CacheInvokeEntry<Object, Object> entry =
@@ -1911,7 +1911,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             IgniteThread.onEntryProcessorEntered(true);
 
                             try {
-                                entryProcessor.process(entry, invokeArgs);
+                                entryProc.process(entry, invokeArgs);
 
                                 evtVal = entry.modified() ?
                                     cctx.toCacheObject(cctx.unwrapTemporary(entry.getValue())) : prevVal;
@@ -5731,19 +5731,19 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
          * @return Entry processor return value.
          */
         private IgniteBiTuple<Object, Exception> runEntryProcessor(CacheInvokeEntry<Object, Object> invokeEntry) {
-            EntryProcessor<Object, Object, ?> entryProcessor = SecurityUtils.sandboxedProxy(
+            EntryProcessor<Object, Object, ?> entryProc = SecurityUtils.sandboxedProxy(
                 entry.context().kernalContext(), EntryProcessor.class, (EntryProcessor<Object, Object, ?>)writeObj);
 
             IgniteThread.onEntryProcessorEntered(true);
 
             if (invokeEntry.cctx.kernalContext().deploy().enabled() &&
-                invokeEntry.cctx.kernalContext().deploy().isGlobalLoader(entryProcessor.getClass().getClassLoader())) {
+                invokeEntry.cctx.kernalContext().deploy().isGlobalLoader(entryProc.getClass().getClassLoader())) {
                 U.restoreDeploymentContext(invokeEntry.cctx.kernalContext(), invokeEntry.cctx.kernalContext()
-                    .deploy().getClassLoaderId(entryProcessor.getClass().getClassLoader()));
+                    .deploy().getClassLoaderId(entryProc.getClass().getClassLoader()));
             }
 
             try {
-                Object computed = entryProcessor.process(invokeEntry, invokeArgs);
+                Object computed = entryProc.process(invokeEntry, invokeArgs);
 
                 if (invokeEntry.modified()) {
                     GridCacheContext cctx = entry.context();

@@ -50,8 +50,8 @@ password,pwd
 policy,plc
 property,prop
 properties,props
-#process,proc
-#processor,proc
+process,proc
+processor,proc
 #query,qry
 #receive,rcv
 #reference,ref

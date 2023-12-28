@@ -1026,11 +1026,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             startProcessor(new PdsConsistentIdProcessor(ctx));
 
-            MaintenanceProcessor mntcProcessor = new MaintenanceProcessor(ctx);
+            MaintenanceProcessor mntcProc = new MaintenanceProcessor(ctx);
 
-            startProcessor(mntcProcessor);
+            startProcessor(mntcProc);
 
-            if (mntcProcessor.isMaintenanceMode()) {
+            if (mntcProc.isMaintenanceMode()) {
                 if (log.isInfoEnabled()) {
                     log.info(
                         "Node is being started in maintenance mode. " +
@@ -1148,7 +1148,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             }
 
             // All components exept Discovery are started, time to check if maintenance is still needed.
-            mntcProcessor.prepareAndExecuteMaintenance();
+            mntcProc.prepareAndExecuteMaintenance();
 
             gw.writeLock();
 
