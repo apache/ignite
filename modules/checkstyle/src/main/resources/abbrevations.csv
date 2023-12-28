@@ -45,7 +45,7 @@ mutex,mux
 network,net
 object,obj
 package,pkg
-#parameter,param
+parameter,param
 #password,pwd
 #policy,plc
 #property,prop
