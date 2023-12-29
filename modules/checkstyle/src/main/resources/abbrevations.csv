@@ -58,7 +58,7 @@ reference,ref
 #regularexpression,regex
 repository,repo
 #request,req
-#resource,rsrc
+resource,rsrc
 #response,res
 #returnValue,retVal
 #sender,snd
