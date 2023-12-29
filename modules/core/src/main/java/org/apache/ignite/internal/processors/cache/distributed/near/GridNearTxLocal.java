@@ -1239,6 +1239,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         prevStateMeta = null;
                     }
 
+                    if (drPutMap == null /*null values allowed at dr*/ && !rmv && val == null && entryProc == null) {
+                        setRollbackOnly();
+
+                        throw new NullPointerException("Null value.");
+                    }
+
                     KeyCacheObject cacheKey = cacheCtx.toCacheKeyObject(key);
 
                     boolean loadMissed = enlistWriteEntry(cacheCtx,
