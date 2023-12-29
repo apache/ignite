@@ -54,7 +54,7 @@ process,proc
 processor,proc
 #query,qry
 receive,rcv
-#reference,ref
+reference,ref
 #regularexpression,regex
 #repository,repo
 #request,req
