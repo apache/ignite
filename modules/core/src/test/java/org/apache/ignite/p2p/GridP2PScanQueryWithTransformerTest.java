@@ -320,16 +320,16 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
 
         populateCache(cache);
 
-        IgniteEx requestNode;
+        IgniteEx reqNode;
 
         if (withClientNode)
-            requestNode = startClientGrid(1);
+            reqNode = startClientGrid(1);
         else {
             clsLoader = TEST_CLASS_LOADER;
-            requestNode = startGrid(1);
+            reqNode = startGrid(1);
         }
 
-        IgniteCache<Object, Object> reqNodeCache = requestNode.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> reqNodeCache = reqNode.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         QueryCursor<Integer> query = reqNodeCache.query(new ScanQuery<Integer, Integer>(), loadTransformerClosure());
 
