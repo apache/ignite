@@ -81,6 +81,8 @@ namespace Apache.Ignite.Core.Tests.Client.Compatibility
             {
                 _server.Dispose();
             }
+            
+            Thread.Sleep(3000);
         }
 
         /// <summary>
