@@ -1529,12 +1529,12 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             System.out.println(repeatRule);
         };
 
-        Runnable methodReference = this::testIsLambdaOnLambdas;
+        Runnable methodRef = this::testIsLambdaOnLambdas;
 
         assertTrue(IgniteUtils.isLambda(someLambda.getClass()));
         assertTrue(IgniteUtils.isLambda(capturingLocalLambda.getClass()));
         assertTrue(IgniteUtils.isLambda(capturingOuterClsLambda.getClass()));
-        assertTrue(IgniteUtils.isLambda(methodReference.getClass()));
+        assertTrue(IgniteUtils.isLambda(methodRef.getClass()));
     }
 
     /** Test nested class. */

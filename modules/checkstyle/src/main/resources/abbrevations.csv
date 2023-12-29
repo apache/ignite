@@ -53,10 +53,10 @@ properties,props
 process,proc
 processor,proc
 #query,qry
-#receive,rcv
-#reference,ref
+receive,rcv
+reference,ref
 #regularexpression,regex
-#repository,repo
+repository,repo
 #request,req
 #resource,rsrc
 #response,res
