@@ -598,10 +598,10 @@ public class RunningQueryManager {
 
                 cancellationRuns.put(reqId, fut);
 
-                final GridQueryKillRequest request = new GridQueryKillRequest(reqId, queryId, async);
+                final GridQueryKillRequest req = new GridQueryKillRequest(reqId, queryId, async);
 
                 if (node.isLocal() && !async)
-                    locNodeMsgHnd.apply(node, request);
+                    locNodeMsgHnd.apply(node, req);
                 else {
                     try {
                         if (node.isLocal()) {
@@ -611,7 +611,7 @@ public class RunningQueryManager {
                                         return;
 
                                     try {
-                                        locNodeMsgHnd.apply(node, request);
+                                        locNodeMsgHnd.apply(node, req);
                                     }
                                     finally {
                                         busyLock.leaveBusy();
@@ -620,7 +620,7 @@ public class RunningQueryManager {
                             }, GridIoPolicy.MANAGEMENT_POOL);
                         }
                         else {
-                            ctx.io().sendGeneric(node, GridTopic.TOPIC_QUERY, GridTopic.TOPIC_QUERY.ordinal(), request,
+                            ctx.io().sendGeneric(node, GridTopic.TOPIC_QUERY, GridTopic.TOPIC_QUERY.ordinal(), req,
                                 GridIoPolicy.MANAGEMENT_POOL);
                         }
                     }
@@ -755,20 +755,20 @@ public class RunningQueryManager {
      * @param err Error message
      */
     private void sendKillResponse(GridQueryKillRequest request, ClusterNode node, @Nullable String err) {
-        GridQueryKillResponse response = new GridQueryKillResponse(request.requestId(), err);
+        GridQueryKillResponse res = new GridQueryKillResponse(request.requestId(), err);
 
         if (node.isLocal()) {
-            locNodeMsgHnd.apply(node, response);
+            locNodeMsgHnd.apply(node, res);
 
             return;
         }
 
         try {
-            ctx.io().sendGeneric(node, GridTopic.TOPIC_QUERY, GridTopic.TOPIC_QUERY.ordinal(), response,
+            ctx.io().sendGeneric(node, GridTopic.TOPIC_QUERY, GridTopic.TOPIC_QUERY.ordinal(), res,
                 GridIoPolicy.MANAGEMENT_POOL);
         }
         catch (IgniteCheckedException e) {
-            U.warn(log, "Failed to send message [node=" + node + ", msg=" + response +
+            U.warn(log, "Failed to send message [node=" + node + ", msg=" + res +
                 ", errMsg=" + e.getMessage() + "]");
 
             U.warn(log, "Response on query cancellation wasn't send back: [qryId=" + request.nodeQryId() + "]");

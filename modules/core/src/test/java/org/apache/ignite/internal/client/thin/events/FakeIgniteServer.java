@@ -164,7 +164,7 @@ public class FakeIgniteServer extends JUnitAssertAware implements GridNioServerL
 
                 ProtocolVersion clientVer = new ProtocolVersion(reader.readShort(), reader.readShort(), reader.readShort());
 
-                ByteBuffer response = createMessage(writer -> {
+                ByteBuffer msgRes = createMessage(writer -> {
                     if (errorTypes.contains(ErrorType.HANDSHAKE_ERROR) || errorTypes.contains(ErrorType.AUTHENTICATION_ERROR)
                         || protoVer.compareTo(clientVer) != 0) {
                         writer.writeBoolean(false);
@@ -195,7 +195,7 @@ public class FakeIgniteServer extends JUnitAssertAware implements GridNioServerL
                     }
                 });
 
-                ses.send(response);
+                ses.send(msgRes);
             }
             catch (IOException e) {
                 throw new RuntimeException(e);

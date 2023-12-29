@@ -154,7 +154,7 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
     private void doTestMarshallingBinaryMappingsLoadedFromClient(boolean receiveMetadataOnClientJoin) throws Exception {
         CountDownLatch delayMappingLatch = new CountDownLatch(1);
         AtomicInteger loadKeys = new AtomicInteger(100);
-        CountDownLatch evtReceiveLatch = new CountDownLatch(1);
+        CountDownLatch evtRcvLatch = new CountDownLatch(1);
         int initKeys = receiveMetadataOnClientJoin ? 10 : 0;
 
         IgniteEx srv1 = startGrid(0);
@@ -210,7 +210,7 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
             (IgniteBiPredicate<UUID, Event>)(uuid, evt) -> {
                 info("Event [" + evt.shortDisplay() + ']');
 
-                evtReceiveLatch.countDown();
+                evtRcvLatch.countDown();
 
                 return true;
             },
@@ -232,7 +232,7 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
 
         delayMappingLatch.countDown();
 
-        assertTrue(U.await(evtReceiveLatch, AWAIT_PROCESSING_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertTrue(U.await(evtRcvLatch, AWAIT_PROCESSING_TIMEOUT_MS, TimeUnit.MILLISECONDS));
     }
 
     /**

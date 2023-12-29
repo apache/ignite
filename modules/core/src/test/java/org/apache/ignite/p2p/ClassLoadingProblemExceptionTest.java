@@ -196,14 +196,14 @@ public class ClassLoadingProblemExceptionTest extends GridCommonAbstractTest imp
                 Message m = ioMsg.message();
 
                 if (m instanceof GridCacheQueryRequest) {
-                    GridCacheQueryRequest queryRequest = (GridCacheQueryRequest)m;
+                    GridCacheQueryRequest queryReq = (GridCacheQueryRequest)m;
 
-                    if (queryRequest.deployInfo() != null) {
-                        queryRequest.prepare(
+                    if (queryReq.deployInfo() != null) {
+                        queryReq.prepare(
                             new GridDeploymentInfoBean(
                                 IgniteUuid.fromUuid(UUID.randomUUID()),
-                                queryRequest.deployInfo().userVersion(),
-                                queryRequest.deployInfo().deployMode(),
+                                queryReq.deployInfo().userVersion(),
+                                queryReq.deployInfo().deployMode(),
                                 null
                             )
                         );
