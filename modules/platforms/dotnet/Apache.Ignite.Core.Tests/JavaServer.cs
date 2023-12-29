@@ -83,18 +83,12 @@ namespace Apache.Ignite.Core.Tests
                 waitForOutput: "Ignite node started OK");
 
             // Java can not end process tree on Windows - detect the process manually and use taskkill.
-            var serverProc = Os.IsWindows
-                ? System.Diagnostics.Process
-                    .GetProcesses()
-                    .Single(p => p.ProcessName == "java" && p.StartTime > time)
-                : null;
+            var serverProc = System.Diagnostics.Process.GetProcesses()
+                .Single(p => p.ProcessName == "java" && p.StartTime > time);
 
             return new DisposeAction(() =>
             {
-                if (serverProc != null)
-                {
-                    serverProc.KillProcessTree();
-                }
+                serverProc.KillProcessTree();
 
                 TestUtilsJni.DestroyProcess();
                 pomWrapper.Dispose();
