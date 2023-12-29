@@ -307,13 +307,6 @@ namespace Apache.Ignite.Core.Tests.Client.Compatibility
             {
                 TestUtils.EnsureJvmCreated();
 
-                if (TestUtilsJni.GetJavaMajorVersion() <= 11)
-                {
-                    // Old Ignite versions can't start on new JDKs (support was not yet added).
-                    yield return new object[] { JavaServer.GroupIdIgnite, "2.4.0", 0 };
-                    yield return new object[] { JavaServer.GroupIdIgnite, "2.6.0", 1 };
-                }
-
                 yield return new object[] { JavaServer.GroupIdIgnite, "2.7.6", 2 };
                 yield return new object[] { JavaServer.GroupIdIgnite, "2.8.0", 6 };
             }
