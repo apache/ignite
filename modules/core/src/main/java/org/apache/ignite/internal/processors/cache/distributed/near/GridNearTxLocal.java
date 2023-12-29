@@ -1239,7 +1239,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         prevStateMeta = null;
                     }
 
-                    if (drPutMap == null /*null values allowed at dr*/ && !rmv && val == null && entryProc == null) {
+                    if (!rmv && val == null && entryProc == null && drPutMap == null /*null values allowed at dr*/) {
                         setRollbackOnly();
 
                         throw new NullPointerException("Null value.");

@@ -1088,6 +1088,9 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         if (key == null)
             throw new NullPointerException("Null key.");
 
+        if (val == null && op != GridCacheOperation.DELETE && conflictPutVals == null /*null values allowed at dr*/)
+            throw new NullPointerException("Null value.");
+
         KeyCacheObject cacheKey = cctx.toCacheKeyObject(key);
 
         if (op != TRANSFORM) {
