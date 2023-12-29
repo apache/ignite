@@ -56,7 +56,7 @@ processor,proc
 receive,rcv
 reference,ref
 #regularexpression,regex
-#repository,repo
+repository,repo
 #request,req
 #resource,rsrc
 #response,res
