@@ -74,10 +74,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     @GridToStringInclude
     private Boolean recovery;
 
-    /** */
-    @GridToStringInclude
-    private Boolean mvccEnabled;
-
     /** Cache ids used for mvcc caching. */
     private final GridIntList mvccCachingCacheIds = new GridIntList();
 
@@ -220,8 +216,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
                 "(cannot transact between recovery and non-recovery caches).");
 
         this.recovery = recovery;
-
-        mvccEnabled = false;
 
         // Check if we can enlist new cache to transaction.
         if (!activeCacheIds.contains(cacheId)) {
