@@ -48,7 +48,7 @@ public class MergeJoinConverterRule extends AbstractIgniteJoinConverterRule {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean matchesCall(RelOptRuleCall call) {
+    @Override public boolean matchesJoin(RelOptRuleCall call) {
         LogicalJoin logicalJoin = call.rel(0);
 
         return !F.isEmpty(logicalJoin.analyzeCondition().pairs()) && logicalJoin.analyzeCondition().isEqui();

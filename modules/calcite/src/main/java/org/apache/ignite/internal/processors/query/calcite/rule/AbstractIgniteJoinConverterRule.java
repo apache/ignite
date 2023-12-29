@@ -29,7 +29,6 @@ import java.util.stream.Stream;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalJoin;
@@ -63,7 +62,7 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
         HINTS.put(CNL_JOIN, NO_CNL_JOIN);
         HINTS.put(MERGE_JOIN, NO_MERGE_JOIN);
 
-        ALL_HINTS = Stream.concat(HINTS.keySet().stream(), HINTS.values().stream()).toArray(a -> new HintDefinition[a]);
+        ALL_HINTS = Stream.concat(HINTS.keySet().stream(), HINTS.values().stream()).toArray(HintDefinition[]::new);
     }
 
     /** */
@@ -71,7 +70,6 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
         super(LogicalJoin.class, descriptionPrefix);
 
         assert HINTS.containsKey(forceHint);
-        assert !HINTS.containsValue(forceHint);
 
         knownDisableHint = HINTS.get(forceHint);
         knownForceHint = forceHint;
@@ -79,7 +77,7 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
 
     /** {@inheritDoc} */
     @Override public final boolean matches(RelOptRuleCall call) {
-        return super.matches(call) && matchesCall(call) && !disabledByHints(call.rel(0));
+        return super.matches(call) && matchesJoin(call) && !disabledByHints(call.rel(0));
     }
 
     /** */
@@ -114,17 +112,22 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
                 if (prevTblHints == null)
                     continue;
 
-                int disableCnt = 0;
+                Set<HintDefinition> disabled = null;
 
                 for (HintDefinition prevTblHint : prevTblHints) {
                     boolean prevHintIsDisable = !HINTS.containsKey(prevTblHint);
 
-                    if (prevHintIsDisable)
-                        ++disableCnt;
+                    if (prevHintIsDisable) {
+                        if (disabled == null)
+                            disabled = new HashSet<>();
+
+                        disabled.add(prevTblHint);
+                    }
 
                     // Prohibited: disabling all join types, combinations of forcing and disabling same join type,
                     // forcing of different join types.
-                    if (curHintIsDisable && disableCnt == HINTS.size() - 1 || isOpposite(curHintDef, prevTblHint))
+                    if (curHintIsDisable && (disabled != null && disabled.size() == HINTS.size() - 1)
+                        || isMutuallyExclusive(curHintDef, prevTblHint))
                         unableToProcess = true;
                 }
             }
@@ -150,17 +153,14 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
     /**
      * @return {@code True} if {@code curHint} and {@code prevHint} cannot be applied both. {@code False} otherwise.
      */
-    private static boolean isOpposite(HintDefinition curHint, HintDefinition prevHint) {
+    private static boolean isMutuallyExclusive(HintDefinition curHint, HintDefinition prevHint) {
         if (curHint == prevHint)
             return false;
 
-        HintDefinition curOpposite = HINTS.get(curHint);
-        HintDefinition prevOpposite = HINTS.get(prevHint);
+        HintDefinition curDisable = HINTS.get(curHint);
+        HintDefinition prevDisable = HINTS.get(prevHint);
 
-        if (curOpposite != null)
-            return prevOpposite != null || curOpposite == prevHint;
-        else
-            return curHint == prevOpposite;
+        return curDisable != null && prevDisable != null || curDisable == prevHint || curHint == prevDisable;
     }
 
     /** */
@@ -179,9 +179,9 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
     }
 
     /**
-     * The seme as {@link ConverterRule#matches(RelOptRuleCall)}
+     * @return {@code True} if {@code call} is supported by current join rule. {@code False} otherwise.
      */
-    protected boolean matchesCall(RelOptRuleCall call) {
+    protected boolean matchesJoin(RelOptRuleCall call) {
         return true;
     }
 }
