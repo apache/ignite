@@ -77,12 +77,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compatibility
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
-            if (_server != null)
-            {
-                _server.Dispose();
-
-                 Thread.Sleep(3000);
-            }
+            _server?.Dispose();
         }
 
         /// <summary>
