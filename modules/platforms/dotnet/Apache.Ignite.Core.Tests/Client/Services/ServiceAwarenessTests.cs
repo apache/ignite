@@ -393,7 +393,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
                 return Client.GetConnections().Count() == cnt;
             }, 20_000);
         }
-
+        
         private static object GetConsistentId(IIgnite ignite) => ignite.GetCluster().GetLocalNode().ConsistentId;
         
         private static object GetConsistentId(int? idx) => GetConsistentId(GetIgnite(idx));
