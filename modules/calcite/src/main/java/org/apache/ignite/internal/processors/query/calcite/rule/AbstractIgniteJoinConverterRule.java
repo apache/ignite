@@ -104,7 +104,7 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
 
             HintDefinition curHintDef = HintDefinition.valueOf(hint.hintName);
             boolean curHintIsDisable = !HINTS.containsKey(curHintDef);
-            boolean unableToProcess = false;
+            boolean unableToProc = false;
 
             for (String tbl : joinTbls) {
                 Collection<HintDefinition> prevTblHints = hintedTables.get(tbl);
@@ -128,11 +128,11 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
                     // forcing of different join types.
                     if (curHintIsDisable && (disabled != null && disabled.size() == HINTS.size() - 1)
                         || isMutuallyExclusive(curHintDef, prevTblHint))
-                        unableToProcess = true;
+                        unableToProc = true;
                 }
             }
 
-            if (unableToProcess) {
+            if (unableToProc) {
                 HintUtils.skippedHint(join, hint, "This join type is already disabled or forced to use before " +
                     "by previous hints");
 
