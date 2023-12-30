@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compatibility
 
                     Assert.IsNotNull(log);
                     Assert.AreEqual("Partition awareness has been disabled: " +
-                                    "server protocol version 1.2.0 is lower than required 1.4.0", log.Message);
+                                    "server protocol version 1.0.0 is lower than required 1.4.0", log.Message);
                 }
             }
             finally
@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compatibility
         /// </summary>
         private static IDisposable StartOldServer()
         {
-            return JavaServer.Start(JavaServer.GroupIdIgnite, "2.7.6");
+            return JavaServer.Start(JavaServer.GroupIdIgnite, "2.4.0");
         }
     }
 }
