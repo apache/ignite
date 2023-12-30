@@ -23,7 +23,9 @@ namespace Apache.Ignite.Core.Impl.Client
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
+    using System.Linq;
     using System.Net;
+    using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
@@ -435,8 +437,10 @@ namespace Apache.Ignite.Core.Impl.Client
             IClientClusterNode result;
             if (!_nodes.TryGetValue(id, out result))
             {
-                throw new ArgumentException(string.Format(
-                    CultureInfo.InvariantCulture, "Unable to find node with id='{0}'", id));
+                var knownNodesStr = string.Join(", ", _nodes.Keys.Select(k => k.ToString()));
+
+                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, 
+                    "Unable to find node with id='{0}'. Knows nodes: {1}.", id, knownNodesStr));
             }
             return result;
         }
@@ -484,6 +488,8 @@ namespace Apache.Ignite.Core.Impl.Client
         public void SaveClientClusterNode(IBinaryRawReader reader)
         {
             var node = new ClientClusterNode(reader);
+            Thread.Sleep(1000);
+            
             _nodes[node.Id] = node;
         }
 
