@@ -167,7 +167,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
             PlatformType platformType, IDictionary callAttrs)
         {
             var nodes = _clusterGroup?.GetNodes();
-            
+
             return _ignite.Socket.DoOutInOpOnNode(ClientOp.ServiceInvoke,
                 ctx =>
                 {
@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Impl.Client.Services
 
                     if (_clusterGroup != null)
                     {
-                        if (nodes==null || nodes.Count == 0)
+                        if (nodes == null || nodes.Count == 0)
                             throw new IgniteClientException("Cluster group is empty");
 
                         w.WriteInt(nodes.Count);
