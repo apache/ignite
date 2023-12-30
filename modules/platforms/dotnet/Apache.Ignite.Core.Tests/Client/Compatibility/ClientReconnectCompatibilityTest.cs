@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compatibility
 {
     using System;
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Log;
@@ -78,6 +79,8 @@ namespace Apache.Ignite.Core.Tests.Client.Compatibility
                 {
                     client.Dispose();
                 }
+                
+                Thread.Sleep(3000);
             }
         }
 
