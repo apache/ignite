@@ -80,11 +80,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compatibility
             if (_server != null)
             {
                 _server.Dispose();
-
-                 Thread.Sleep(3000);
             }
-            else
-                Console.Error.WriteLine("Unable to stop the server node. The process might be alive.");
         }
 
         /// <summary>
