@@ -488,6 +488,8 @@ namespace Apache.Ignite.Core.Impl.Client
         public void SaveClientClusterNode(IBinaryRawReader reader)
         {
             var node = new ClientClusterNode(reader);
+            Thread.Sleep(1000);
+            
             _nodes[node.Id] = node;
         }
 
