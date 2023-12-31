@@ -129,15 +129,19 @@ namespace Apache.Ignite.Core.Tests.Client.Services
                 IgniteInstanceName = newNodeConsistentId
             };
 
-            using (Ignition.Start(newNodeCfg))
+            using (var ignite = Ignition.Start(newNodeCfg))
             {
                 WaitForClientConnectionsNumber(4);
+
+                WaitForServerServiceInstances(ignite, serviceName, _topConsistentIds.Count);
 
                 // Additional node is started. Service topology must include the new node.
                 DoTestServiceAwareness(serviceName, FilterGridsNodes());
             }
 
             WaitForClientConnectionsNumber(3);
+
+            WaitForServerServiceInstances(GetIgnite(2), serviceName, prevServiceNodes.Count);
 
             // Additional node stopped. Service topology must be as at the beginning.
             DoTestServiceAwareness(serviceName, FilterGridsNodes(prevServiceNodes));
@@ -391,6 +395,20 @@ namespace Apache.Ignite.Core.Tests.Client.Services
                 Client.GetCacheNames();
                 
                 return Client.GetConnections().Count() == cnt;
+            }, 20_000);
+        }
+
+        /// <summary>
+        /// Waits until certain number of client connections.
+        /// </summary>
+        private static void WaitForServerServiceInstances(IIgnite ignite, string serviceName, int serviceNodesCnt)
+        {
+            TestUtils.WaitForTrueCondition(() =>
+            {
+                var descriptor = ignite.GetServices().GetServiceDescriptors()
+                    .Single(svc => svc.Name.Equals(serviceName));
+
+                return descriptor.TopologySnapshot.Count == serviceNodesCnt;
             }, 20_000);
         }
         
