@@ -1507,7 +1507,7 @@ public abstract class IgniteUtils {
      * @return Rounded heap size.
      */
     private static double roundedHeapSize(double heap, int precision) {
-        double rounded = new BigDecimal(heap / (1024 * 1024 * 1024d)).round(new MathContext(precision)).doubleValue();
+        double rounded = BigDecimal.valueOf(heap / (1024 * 1024 * 1024d)).round(new MathContext(precision)).doubleValue();
 
         return rounded < 0.1 ? 0.1 : rounded;
     }
