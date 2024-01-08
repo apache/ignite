@@ -3973,6 +3973,30 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /**
+     * Test to make sure that the '--baseline' command shows correct cluster state
+     *
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testClusterStateInBaselineCommand() throws Exception {
+        Ignite ignite = startGrids(1);
+
+        injectTestSystemOut();
+
+        ignite.cluster().state(ACTIVE);
+        execute("--baseline");
+        assertContains(log, testOut.toString(), "Cluster state: ACTIVE\n");
+
+        ignite.cluster().state(ACTIVE_READ_ONLY);
+        execute("--baseline");
+        assertContains(log, testOut.toString(), "Cluster state: ACTIVE_READ_ONLY");
+
+        ignite.cluster().state(INACTIVE);
+        execute("--baseline");
+        assertContains(log, testOut.toString(), "Cluster state: INACTIVE");
+    }
+
+    /**
      * @param ignite Ignite to execute task on.
      * @param delFoundGarbage If clearing mode should be used.
      * @return Result of task run.
