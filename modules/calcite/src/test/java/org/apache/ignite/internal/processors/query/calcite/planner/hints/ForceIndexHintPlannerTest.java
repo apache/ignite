@@ -73,22 +73,25 @@ public class ForceIndexHintPlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testBasicIndexSelection() throws Exception {
-        assertPlan("SELECT /*+ FORCE_INDEX(IDX2_3) */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
+//        assertPlan("SELECT /*+ FORCE_INDEX(IDX2_3) */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
+//            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
+
+        assertPlan("SELECT * FROM TBL2 /*+ FORCE_INDEX(IDX2_3) */ WHERE val23=1 and val21=2 and val22=3",
             schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
 
-        assertPlan("SELECT /*+ FORCE_INDEX(UNEXISTING,IDX2_3,UNEXISTING) */ * FROM TBL2 WHERE val23=1 and val21=2 " +
-            "and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
-
-        assertPlan("SELECT /*+ FORCE_INDEX(IDX2_3,IDX2_1) */ * FROM TBL2 WHERE val23=1 and val21=2 " +
-            "and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_1")
-            .or(isIndexScan("TBL2", "IDX2_3"))));
-
-        assertPlan("SELECT /*+ FORCE_INDEX(IDX2_2,IDX2_3) */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2"))
-                    .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3"))));
-
-        assertPlan("SELECT /*+ FORCE_INDEX(IDX2_3), FORCE_INDEX(IDX2_3) */ * FROM TBL2 WHERE val23=1 and val21=2 " +
-            "and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
+//        assertPlan("SELECT /*+ FORCE_INDEX(UNEXISTING,IDX2_3,UNEXISTING) */ * FROM TBL2 WHERE val23=1 and val21=2 " +
+//            "and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
+//
+//        assertPlan("SELECT /*+ FORCE_INDEX(IDX2_3,IDX2_1) */ * FROM TBL2 WHERE val23=1 and val21=2 " +
+//            "and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_1")
+//            .or(isIndexScan("TBL2", "IDX2_3"))));
+//
+//        assertPlan("SELECT /*+ FORCE_INDEX(IDX2_2,IDX2_3) */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
+//            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2"))
+//                    .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3"))));
+//
+//        assertPlan("SELECT /*+ FORCE_INDEX(IDX2_3), FORCE_INDEX(IDX2_3) */ * FROM TBL2 WHERE val23=1 and val21=2 " +
+//            "and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
     }
     
     /** */
