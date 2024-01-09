@@ -188,11 +188,4 @@ public interface IgniteTxState {
      * @return {@code True} if transaction is empty.
      */
     public boolean empty();
-
-    /**
-     * @param cacheId Cache id.
-     * @return {@code True} if it is need to store in the heap updates made by the current TX for the given cache.
-     * These updates will be used for CQ and DR.
-     */
-    public boolean useMvccCaching(int cacheId);
 }

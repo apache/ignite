@@ -74,9 +74,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     @GridToStringInclude
     private Boolean recovery;
 
-    /** Cache ids used for mvcc caching. */
-    private final GridIntList mvccCachingCacheIds = new GridIntList();
-
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
         return false;
@@ -473,11 +470,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public IgniteTxEntry singleWrite() {
         return writeView != null && writeView.size() == 1 ? F.firstValue(writeView) : null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean useMvccCaching(int cacheId) {
-        return mvccCachingCacheIds.contains(cacheId);
     }
 
     /** {@inheritDoc} */
