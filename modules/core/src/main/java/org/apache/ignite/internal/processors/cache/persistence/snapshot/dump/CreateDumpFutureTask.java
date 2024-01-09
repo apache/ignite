@@ -143,11 +143,12 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      * @param reqId Snapshot operation request ID.
      * @param dumpName Dump name.
      * @param ioFactory IO factory.
-     * @param snpSndr Snapshot sender.
      * @param rateLimiter Dump transfer rate limiter.
+     * @param snpSndr Snapshot sender.
      * @param parts Parts to dump.
      * @param compress If {@code true} then compress partition files.
      * @param encrypt If {@code true} then content of dump encrypted.
+     * @param dumpBufSize Dump write buffer size.
      */
     public CreateDumpFutureTask(
         GridCacheSharedContext<?, ?> cctx,
@@ -160,7 +161,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts,
         boolean compress,
-        boolean encrypt
+        boolean encrypt,
+        int dumpBufSize
     ) {
         super(
             cctx,
@@ -174,8 +176,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         this.dumpDir = dumpDir;
 
         this.ioFactory = compress
-            ? new WriteOnlyZipFileIOFactory(new BufferedFileIOFactory(ioFactory))
-            : new BufferedFileIOFactory(ioFactory);
+            ? new WriteOnlyZipFileIOFactory(new BufferedFileIOFactory(ioFactory, dumpBufSize))
+            : new BufferedFileIOFactory(ioFactory, dumpBufSize);
 
         this.compress = compress;
         this.rateLimiter = rateLimiter;

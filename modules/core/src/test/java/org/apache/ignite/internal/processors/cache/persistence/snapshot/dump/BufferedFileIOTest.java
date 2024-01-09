@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.util.Arrays;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -56,7 +56,7 @@ public class BufferedFileIOTest extends GridCommonAbstractTest {
     private static byte[] randBytes(int cnt) {
         byte[] bytes = new byte[cnt];
 
-        new Random().nextBytes(bytes);
+        ThreadLocalRandom.current().nextBytes(bytes);
 
         return bytes;
     }

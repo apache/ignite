@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -62,6 +63,8 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.TestDumpConsumer;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
@@ -100,6 +103,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TMP_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_BUFFER_SIZE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.CACHE_0;
@@ -791,6 +795,63 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
             assertTrue("Expected sorted values: " + processedVals,
                 F.isSorted(processedVals.stream().mapToLong(v -> v).toArray()));
+        }
+    }
+
+    /** */
+    @Test
+    public void testBufferSize() throws Exception {
+        int nodes = 3;
+        int parts = 5;
+
+        List<IgniteEx> igns = new ArrayList<>();
+
+        for (int i = 0; i < nodes; i++)
+            igns.add(startGrid(i));
+
+        checkTopology(nodes);
+
+        IgniteEx ign = igns.get(0);
+
+        ign.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Integer, Integer> cache = ign.createCache(new CacheConfiguration<Integer, Integer>()
+            .setName(DEFAULT_CACHE_NAME)
+            .setAffinity(new RendezvousAffinityFunction().setPartitions(parts))
+        );
+
+        IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, ThreadLocalRandom.current().nextInt()));
+
+        RandomAccessFileIOFactory ioFactory = new RandomAccessFileIOFactory();
+
+        List<Integer> writeSizes = Collections.synchronizedList(new ArrayList<>());
+
+        for (int i = 0; i < nodes; i++) {
+            igns.get(i).context().cache().context().snapshotMgr()
+                .ioFactory((file, modes) -> new FileIODecorator(ioFactory.create(file, modes)) {
+                    @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
+                        writeSizes.add(srcBuf.remaining());
+
+                        return delegate.writeFully(srcBuf);
+                    }
+                });
+        }
+
+        for (boolean compress : new boolean[]{false, true}) {
+            for (int bufSz = 1024; bufSz >= 256; bufSz >>= 1) {
+                ign.context().distributedConfiguration()
+                    .property(DUMP_BUFFER_SIZE_DMS_KEY)
+                    .propagate(bufSz);
+
+                writeSizes.clear();
+
+                ign.context().cache().context().snapshotMgr()
+                    .createSnapshot(DMP_NAME, null, null, false, false, true, compress, false).get();
+
+                assertEquals(bufSz, Collections.max(writeSizes).intValue());
+
+                U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false));
+            }
         }
     }
 

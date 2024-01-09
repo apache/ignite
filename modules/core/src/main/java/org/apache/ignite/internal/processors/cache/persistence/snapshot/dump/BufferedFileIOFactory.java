@@ -30,18 +30,10 @@ public class BufferedFileIOFactory implements FileIOFactory {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final int DEFAULT_BUFFER_SIZE = 512 * 1024;
-
-    /** */
     private final FileIOFactory factory;
 
     /** */
     private final int bufSz;
-
-    /** */
-    public BufferedFileIOFactory(FileIOFactory fileIOFactory) {
-        this(fileIOFactory, DEFAULT_BUFFER_SIZE);
-    }
 
     /** */
     public BufferedFileIOFactory(FileIOFactory factory, int bufSz) {
