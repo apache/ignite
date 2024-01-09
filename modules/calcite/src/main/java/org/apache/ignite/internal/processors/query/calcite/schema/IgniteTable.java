@@ -69,7 +69,7 @@ public interface IgniteTable extends TranslatableTable {
      * @param proj List of required projections.
      * @param cond Conditions to filter rows.
      * @param requiredColumns Set of columns to extract from original row.
-     * @param hints Hints.
+     * @param hints Table hints.
      * @return Table relational expression.
      */
     IgniteLogicalTableScan toRel(
