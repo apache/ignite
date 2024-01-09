@@ -380,10 +380,10 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
             boolean force,
             IndexRebuildCancelToken cancelTok
         ) {
-            IgniteInternalFuture<?> future = super.rebuild(cctx, force, cancelTok);
-            rebuiltIndexes = future != null;
+            IgniteInternalFuture<?> fut = super.rebuild(cctx, force, cancelTok);
+            rebuiltIndexes = fut != null;
 
-            return future;
+            return fut;
         }
 
         /**

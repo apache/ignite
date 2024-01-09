@@ -1404,11 +1404,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         Map<String, List<SnapshotHandlerResult<?>>> clusterHndResults = new HashMap<>();
 
-        for (SnapshotOperationResponse response : res) {
-            if (response == null || response.handlerResults() == null)
+        for (SnapshotOperationResponse snpRes : res) {
+            if (snpRes == null || snpRes.handlerResults() == null)
                 continue;
 
-            for (Map.Entry<String, SnapshotHandlerResult<Object>> entry : response.handlerResults().entrySet())
+            for (Map.Entry<String, SnapshotHandlerResult<Object>> entry : snpRes.handlerResults().entrySet())
                 clusterHndResults.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
         }
 
@@ -3814,9 +3814,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            RemoteSnapshotFilesRecevier future = (RemoteSnapshotFilesRecevier)o;
+            RemoteSnapshotFilesRecevier fut = (RemoteSnapshotFilesRecevier)o;
 
-            return Objects.equals(reqId, future.reqId);
+            return Objects.equals(reqId, fut.reqId);
         }
 
         /** {@inheritDoc} */

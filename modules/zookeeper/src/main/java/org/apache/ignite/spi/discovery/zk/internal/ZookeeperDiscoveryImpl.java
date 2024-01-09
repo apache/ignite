@@ -2588,7 +2588,7 @@ public class ZookeeperDiscoveryImpl {
         if (log.isDebugEnabled())
             log.debug("Generated CUSTOM event [evt=" + evtData + ", msg=" + msg + ']');
 
-        boolean fastStopProcess = false;
+        boolean fastStopProc = false;
 
         if (msg instanceof ZkInternalMessage)
             processInternalMessage(evtData, (ZkInternalMessage)msg);
@@ -2599,7 +2599,7 @@ public class ZookeeperDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Fast stop process custom event [evt=" + evtData + ", msg=" + msg + ']');
 
-                fastStopProcess = true;
+                fastStopProc = true;
 
                 // No need to process this event on others nodes, skip this event.
                 evtsData.evts.remove(evtData.eventId());
@@ -2628,7 +2628,7 @@ public class ZookeeperDiscoveryImpl {
 
             saveAndProcessNewEvents();
 
-            if (fastStopProcess)
+            if (fastStopProc)
                 deleteCustomEventDataAsync(zkClient, evtPath);
 
             if (failedNode != null) {
@@ -3356,9 +3356,9 @@ public class ZookeeperDiscoveryImpl {
 
         String futPath = zkPaths.distributedFutureBasePath(futId);
 
-        List<ClusterNode> initialNodes = rtState.commErrProcNodes;
+        List<ClusterNode> initNodes = rtState.commErrProcNodes;
 
-        assert initialNodes != null;
+        assert initNodes != null;
 
         rtState.commErrProcNodes = null;
 
@@ -3396,7 +3396,7 @@ public class ZookeeperDiscoveryImpl {
             boolean fullyConnected = true;
 
             for (Map.Entry<UUID, BitSet> e : nodesRes.entrySet()) {
-                if (!checkFullyConnected(e.getValue(), initialNodes, rtState.top)) {
+                if (!checkFullyConnected(e.getValue(), initNodes, rtState.top)) {
                     fullyConnected = false;
 
                     break;
@@ -3421,7 +3421,7 @@ public class ZookeeperDiscoveryImpl {
                     ZkCommunicationFailureContext ctx = new ZkCommunicationFailureContext(
                         ((IgniteKernal)spi.ignite()).context().cache().context(),
                         topSnapshot,
-                        initialNodes,
+                        initNodes,
                         nodesRes);
 
                     try {

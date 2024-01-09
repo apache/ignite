@@ -143,11 +143,11 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
 
         List<RelFieldCollation> inFieldCollations = new ArrayList<>();
         for (RelFieldCollation inFieldCollation : fieldCollations) {
-            Integer newIndex = targets.get(inFieldCollation.getFieldIndex());
-            if (newIndex == null)
+            Integer newIdx = targets.get(inFieldCollation.getFieldIndex());
+            if (newIdx == null)
                 break;
             else
-                inFieldCollations.add(inFieldCollation.withFieldIndex(newIndex));
+                inFieldCollations.add(inFieldCollation.withFieldIndex(newIdx));
         }
 
         if (inFieldCollations.size() == fieldCollations.size())

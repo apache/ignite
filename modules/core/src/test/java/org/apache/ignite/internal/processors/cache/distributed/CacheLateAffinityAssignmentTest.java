@@ -1748,7 +1748,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             blockSupplySend(commSpi0, CACHE_NAME1);
 
-            final IgniteInternalFuture<?> startedFuture = multithreadedAsync(new Callable<Void>() {
+            final IgniteInternalFuture<?> startedFut = multithreadedAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
                     startServer(3, 5);
 
@@ -1762,12 +1762,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             boolean started = waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return startedFuture.isDone();
+                    return startedFut.isDone();
                 }
             }, 10_000);
 
             if (!started)
-                startedFuture.cancel();
+                startedFut.cancel();
 
             assertTrue(started);
 

@@ -105,8 +105,8 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         assertNotNull(inlineSize);
 
-        for (QueryIndex index : indexes)
-            index.setInlineSize(inlineSize);
+        for (QueryIndex idx : indexes)
+            idx.setInlineSize(inlineSize);
 
         IgniteConfiguration igniteCfg = super.getConfiguration(igniteInstanceName);
 
@@ -1775,11 +1775,11 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         IgniteCache<Key, Val> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (String col : cols) {
-            String indexName = col + "_idx";
+            String idxName = col + "_idx";
             String schemaName = DEFAULT_CACHE_NAME;
 
             cache.query(new SqlFieldsQuery(
-                String.format("create index %s on \"%s\".Val(%s) INLINE_SIZE %s;", indexName, schemaName, col, inlineSize)
+                String.format("create index %s on \"%s\".Val(%s) INLINE_SIZE %s;", idxName, schemaName, col, inlineSize)
             )).getAll();
         }
 
@@ -1791,10 +1791,10 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         IgniteCache<Key, Val> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (String col : cols) {
-            String indexName = col + "_idx";
+            String idxName = col + "_idx";
 
             cache.query(new SqlFieldsQuery(
-                String.format("drop index %s;", indexName)
+                String.format("drop index %s;", idxName)
             )).getAll();
         }
 

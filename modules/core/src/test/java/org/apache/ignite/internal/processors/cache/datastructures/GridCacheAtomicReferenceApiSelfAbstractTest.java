@@ -164,29 +164,29 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
 
             String initValue = "qazwsx";
 
-            IgniteAtomicReference<String> atomicReference = ignite.atomicReference(atomicName, initValue, true);
+            IgniteAtomicReference<String> atomicRef = ignite.atomicReference(atomicName, initValue, true);
 
             try (Transaction tx = ignite.transactions().txStart()) {
                 cache.put(1, 1);
 
-                assertEquals(initValue, atomicReference.get());
+                assertEquals(initValue, atomicRef.get());
 
-                assertTrue(atomicReference.compareAndSet(initValue, "aaa"));
+                assertTrue(atomicRef.compareAndSet(initValue, "aaa"));
 
-                assertEquals("aaa", atomicReference.get());
+                assertEquals("aaa", atomicRef.get());
 
                 tx.rollback();
 
                 assertEquals(0, cache.size());
             }
 
-            assertTrue(atomicReference.compareAndSet("aaa", null));
+            assertTrue(atomicRef.compareAndSet("aaa", null));
 
-            assertNull(atomicReference.get());
+            assertNull(atomicRef.get());
 
-            atomicReference.close();
+            atomicRef.close();
 
-            assertTrue(atomicReference.removed());
+            assertTrue(atomicRef.removed());
         }
         finally {
             ignite.destroyCache(cfg.getName());

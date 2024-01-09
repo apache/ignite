@@ -116,9 +116,9 @@ public class GridCacheFullTextQueryPagesTest extends GridCacheFullTextQueryAbstr
 
     /** */
     private void checkPages(int expInitCnt, int expLoadCnt, int expCancelCnt) {
-        List<Object> messages = spi.recordedMessages(true);
+        List<Object> msgs = spi.recordedMessages(true);
 
-        for (Object msg: messages) {
+        for (Object msg: msgs) {
             GridCacheQueryRequest req = (GridCacheQueryRequest)msg;
 
             if (req.cancel())
