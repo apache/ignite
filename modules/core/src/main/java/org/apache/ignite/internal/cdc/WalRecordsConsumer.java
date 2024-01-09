@@ -31,12 +31,14 @@ import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.TimeStampRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -232,6 +234,9 @@ public class WalRecordsConsumer<K, V> {
         /** WAL iterator. */
         private final WALIterator walIter;
 
+        /** Events capture time metric. */
+        private final HistogramMetricImpl evtCaptureTime;
+
         /** Current preloaded WAL record. */
         private IgniteBiTuple<WALPointer, WALRecord> curRec;
 
@@ -241,9 +246,13 @@ public class WalRecordsConsumer<K, V> {
         /** Index of {@link #next} inside WAL record. */
         private int entryIdx;
 
-        /** @param walIter WAL iterator. */
-        public DataEntryIterator(WALIterator walIter) {
+        /**
+         * @param walIter WAL iterator.
+         * @param evtCaptureTime Event capture time metric.
+         */
+        public DataEntryIterator(WALIterator walIter, HistogramMetricImpl evtCaptureTime) {
             this.walIter = walIter;
+            this.evtCaptureTime = evtCaptureTime;
 
             advance();
         }
@@ -280,6 +289,8 @@ public class WalRecordsConsumer<K, V> {
             DataEntry e = next;
 
             next = null;
+
+            evtCaptureTime.value(System.currentTimeMillis() - ((TimeStampRecord)curRec.get2()).timestamp());
 
             advance();
 

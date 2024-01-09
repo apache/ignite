@@ -1855,9 +1855,9 @@ public class GridDhtPartitionDemander {
             for (Set<Integer> partitions : rebalancingParts.values())
                 p0.addAll(partitions);
 
-            for (GridDhtPartitionDemandMessage message : newAssignments.values()) {
-                p1.addAll(message.partitions().fullSet());
-                p1.addAll(message.partitions().historicalSet());
+            for (GridDhtPartitionDemandMessage msg : newAssignments.values()) {
+                p1.addAll(msg.partitions().fullSet());
+                p1.addAll(msg.partitions().historicalSet());
             }
 
             // Not compatible if not a subset.

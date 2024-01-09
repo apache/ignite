@@ -1538,11 +1538,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 ", nodeId=" + nodeId + "]");
         }
 
-        UUID requestId = msg.getRequestId();
+        UUID reqId = msg.getRequestId();
 
         final GridChangeGlobalStateFuture fut = stateChangeFut.get();
 
-        if (fut != null && requestId.equals(fut.requestId)) {
+        if (fut != null && reqId.equals(fut.requestId)) {
             if (fut.initFut.isDone())
                 fut.onResponse(nodeId, msg);
             else {

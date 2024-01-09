@@ -50,7 +50,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Part
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
@@ -861,13 +860,6 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * @return Cache mvcc coordinator manager.
-     */
-    public MvccProcessor coordinators() {
-        return kernalCtx.coordinators();
-    }
-
-    /**
      * @return Partition evict manager.
      */
     public PartitionsEvictManager evict() {
@@ -966,10 +958,10 @@ public class GridCacheSharedContext<K, V> {
         f.add(mvcc().finishAtomicUpdates(topVer));
         f.add(mvcc().finishDataStreamerUpdates(topVer));
 
-        IgniteInternalFuture<?> finishLocalTxsFuture = tm().finishLocalTxs(topVer);
+        IgniteInternalFuture<?> finishLocalTxsFut = tm().finishLocalTxs(topVer);
         // To properly track progress of finishing local tx updates we explicitly add this future to compound set.
-        f.add(finishLocalTxsFuture);
-        f.add(tm().finishAllTxs(finishLocalTxsFuture, topVer));
+        f.add(finishLocalTxsFut);
+        f.add(tm().finishAllTxs(finishLocalTxsFut, topVer));
 
         f.markInitialized();
 

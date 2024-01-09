@@ -183,9 +183,9 @@ public class P2PClassLoadingFailureHandlingTest extends GridCommonAbstractTest {
         IgniteCache<Integer, String> cache = client.createCache(CACHE_NAME);
         cache.put(1, "1");
 
-        EntryProcessor<Integer, String, String> processor = instantiateCacheEntryProcessorCausingP2PClassLoadProblem();
+        EntryProcessor<Integer, String, String> proc = instantiateCacheEntryProcessorCausingP2PClassLoadProblem();
 
-        assertThrows(log, () -> cache.invoke(1, processor), CacheException.class,
+        assertThrows(log, () -> cache.invoke(1, proc), CacheException.class,
             "Failed to unmarshal object");
 
         assertThatFailureHandlerIsNotCalled();
@@ -205,9 +205,9 @@ public class P2PClassLoadingFailureHandlingTest extends GridCommonAbstractTest {
         IgniteCache<Integer, String> cache = client.createCache(CACHE_NAME);
         cache.put(1, "1");
 
-        CacheEntryProcessor<Integer, String, String> processor = instantiateCacheEntryProcessorCausingP2PClassLoadProblem();
+        CacheEntryProcessor<Integer, String, String> proc = instantiateCacheEntryProcessorCausingP2PClassLoadProblem();
 
-        assertThrows(log, () -> cache.invoke(1, processor), CacheException.class,
+        assertThrows(log, () -> cache.invoke(1, proc), CacheException.class,
             "Failed to unmarshal object");
 
         assertThatFailureHandlerIsNotCalled();

@@ -73,11 +73,11 @@ public class IndexForceRebuildTask extends VisorMultiNodeTask<CacheIndexesForceR
             Set<GridCacheContext> cachesToRebuild = new HashSet<>();
             Set<String> notFound = new HashSet<>();
 
-            final GridCacheProcessor cacheProcessor = ignite.context().cache();
+            final GridCacheProcessor cacheProc = ignite.context().cache();
 
             if (arg.cacheNames() != null) {
                 for (String cacheName : arg.cacheNames()) {
-                    IgniteInternalCache cache = cacheProcessor.cache(cacheName);
+                    IgniteInternalCache cache = cacheProc.cache(cacheName);
 
                     if (cache != null)
                         cachesToRebuild.add(cache.context());
@@ -87,7 +87,7 @@ public class IndexForceRebuildTask extends VisorMultiNodeTask<CacheIndexesForceR
             }
             else {
                 for (String cacheGrpName : arg.groupNames()) {
-                    CacheGroupContext grpCtx = cacheProcessor.cacheGroup(CU.cacheId(cacheGrpName));
+                    CacheGroupContext grpCtx = cacheProc.cacheGroup(CU.cacheId(cacheGrpName));
 
                     if (grpCtx != null)
                         cachesToRebuild.addAll(grpCtx.caches());

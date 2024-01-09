@@ -251,15 +251,15 @@ public class NotOptimizedRebalanceTest extends GridCommonAbstractTest {
 
         communicationSpi.blockMessages((node, msg) -> {
             if (msg instanceof GridDhtPartitionDemandMessage) {
-                GridDhtPartitionDemandMessage demandMessage = (GridDhtPartitionDemandMessage)msg;
+                GridDhtPartitionDemandMessage demandMsg = (GridDhtPartitionDemandMessage)msg;
 
-                if (CU.cacheId(DEFAULT_CACHE_NAME) != demandMessage.groupId())
+                if (CU.cacheId(DEFAULT_CACHE_NAME) != demandMsg.groupId())
                     return false;
 
                 info("Message was caught: " + msg.getClass().getSimpleName()
-                    + " rebalanceId = " + U.field(demandMessage, "rebalanceId")
+                    + " rebalanceId = " + U.field(demandMsg, "rebalanceId")
                     + " to: " + node.consistentId()
-                    + " by cache id: " + demandMessage.groupId());
+                    + " by cache id: " + demandMsg.groupId());
 
                 return true;
             }

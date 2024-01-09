@@ -276,9 +276,9 @@ SELECT /*+ FORCE_INDEX('TBL2_idx1') */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 WHERE 
 ----
 
 === Hint scope
-Hints are defined for a relation operator, usually for SELECT. Most of the hints are "visible" to their relation
-operators, for the following operators, queries and subqueries. The hints defined in the subquery are "visible" only for
-this subquery and its subqueries. Hint is not "visible" to the previous relation operator if it is defined after it.
+Hints are defined for SELECT relation operator and are "visible" for the following operators, queries and subqueries.
+The hints defined in the subquery are "visible" only for this subquery and its subqueries. Hint is not "visible" to
+the previous relation operator if it is defined after it.
 
 Example:
 [source, SQL]
@@ -308,6 +308,18 @@ The optimizer tries to apply every hint and its parameters, if possible. But it 
 * The hint parameters have been passed, but the hint does not support any parameter.
 * The hint parameter is incorrect or refers to a nonexistent object, such as a nonexistent index or table.
 * The current hints or current parameters are incompatible with the previous ones, such as forcing the use and disabling of the same index.
+
+=== Hint limitations
+Currently, SQL hints do not recognize the aliases. You can't refer to an alias like this:
+[source, SQL]
+----
+SELECT /*+ MERGE_JOIN(T2) */ T2.V1 FROM TBL1 T1 JOIN TBL2 T2 ON T1.V3=T2.V1 WHERE T1.V2=? AND T2.V2=?
+----
+Instead, a table name have to be used:
+[source, SQL]
+----
+SELECT /*+ MERGE_JOIN(TBL2) */ T2.V1 FROM TBL1 T1 JOIN TBL2 T2 ON T1.V3=T2.V1 WHERE T1.V2=? AND T2.V2=?
+----
 
 === Supportted hints
 
@@ -340,6 +352,25 @@ Forces join order as appears in a query. Fastens building of joins plan.
 SELECT /*+ ENFORCE_JOIN_ORDER */ T1.V1, T2.V1, T2.V2, T3.V1, T3.V2, T3.V3 FROM TBL1 T1 JOIN TBL2 T2 ON T1.V3=T2.V1 JOIN TBL3 T3 ON T2.V3=T3.V1 AND T2.V2=T3.V2
 
 SELECT t1.v1, t3.v2 FROM TBL1 t1 JOIN TBL3 t3 on t1.v3=t3.v3 WHERE t1.v2 in (SELECT /*+ ENFORCE_JOIN_ORDER */ t2.v2 FROM TBL2 t2 JOIN TBL3 t3 ON t2.v1=t3.v1)
+----
+
+==== MERGE_JOIN, NL_JOIN, CNL_JOIN
+Forces certain join type: Merge, Nested Loop and Correlated Nested Loop respectively.
+
+Every of those has the negation like 'NO_INDEX': CNL_JOIN, NO_CNL_JOIN. The negation hint disables certain join type.
+
+===== Parameters:
+* Empty. To force or disable certain join type for every join.
+* Single or several tables names force or disable certain join type only for joining of these tables.
+
+===== Example:
+[source, SQL]
+----
+SELECT /*+ MERGE_JOIN */ t1.v1, t2.v2 FROM TBL1 t1, TBL2 t2 WHERE t1.v3=t2.v3
+
+SELECT /*+ NL_JOIN(TBL3,TBL1) */ t4.v1, t2.v2 FROM TBL1 t4 JOIN TBL2 t2 on t1.v3=t2.v3 WHERE t2.v1 in (SELECT t3.v3 FROM TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)
+
+SELECT t1.v1, t2.v2 FROM TBL2 t1 JOIN TBL1 t2 on t1.v3=t2.v3 WHERE t2.v3 in (SELECT /*+ NO_CNL_JOIN(TBL4) */ t3.v3 FROM TBL3 t3 JOIN TBL4 t4 on t3.v1=t4.v1)
 ----
 
 ==== EXPAND_DISTINCT_AGG

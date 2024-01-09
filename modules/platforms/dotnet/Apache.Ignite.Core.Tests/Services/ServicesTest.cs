@@ -77,9 +77,6 @@ namespace Apache.Ignite.Core.Tests.Services
         /** */
         protected IIgnite[] Grids;
 
-        /* Deploy Java service name. */
-        private string _javaSvcName;
-
         /** */
         private readonly bool _useBinaryArray;
 
@@ -123,14 +120,14 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Services.Deploy(cfg);
 
-            _javaSvcName = TestUtils.DeployJavaService(Grid1);
+            TestUtils.DeployJavaService(Grid1);
 
             // Verify descriptor
-            var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == _javaSvcName);
-            Assert.AreEqual(_javaSvcName, descriptor.Name);
+            var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == TestUtils.JavaServiceName);
+            Assert.AreEqual(TestUtils.JavaServiceName, descriptor.Name);
 
-            descriptor = _client.GetServices().GetServiceDescriptors().Single(x => x.Name == _javaSvcName);
-            Assert.AreEqual(_javaSvcName, descriptor.Name);
+            descriptor = _client.GetServices().GetServiceDescriptors().Single(x => x.Name == TestUtils.JavaServiceName);
+            Assert.AreEqual(TestUtils.JavaServiceName, descriptor.Name);
         }
 
         /// <summary>
@@ -646,14 +643,14 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestJavaServiceStatistics()
         {
             // Java service itself.
-            var helperSvc = Grid1.GetServices().GetServiceProxy<IJavaOnlyService>(_javaSvcName, false);
+            var helperSvc = Grid1.GetServices().GetServiceProxy<IJavaOnlyService>(TestUtils.JavaServiceName, false);
             
             // Check metrics of pure java service. There were no invocations yet.
-            Assert.AreEqual(0, helperSvc.testNumberOfInvocations(_javaSvcName));
+            Assert.AreEqual(0, helperSvc.testNumberOfInvocations(TestUtils.JavaServiceName));
             // Now we did 1 invocation of pure Java service just before.
-            Assert.AreEqual(1, helperSvc.testNumberOfInvocations(_javaSvcName));
+            Assert.AreEqual(1, helperSvc.testNumberOfInvocations(TestUtils.JavaServiceName));
             // In total we did 2 calls by now.
-            Assert.AreEqual(2, helperSvc.testNumberOfInvocations(_javaSvcName));
+            Assert.AreEqual(2, helperSvc.testNumberOfInvocations(TestUtils.JavaServiceName));
         }
 
         /// <summary>
@@ -1219,9 +1216,9 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceRemote()
         {
-            var svc = _client.GetServices().GetServiceProxy<IJavaService>(_javaSvcName, false, callContext());
+            var svc = _client.GetServices().GetServiceProxy<IJavaService>(TestUtils.JavaServiceName, false, callContext());
             var binSvc = _client.GetServices().WithKeepBinary().WithServerKeepBinary()
-                .GetServiceProxy<IJavaService>(_javaSvcName, false);
+                .GetServiceProxy<IJavaService>(TestUtils.JavaServiceName, false);
 
             DoAllServiceTests(svc, binSvc, true, false);
         }
@@ -1232,9 +1229,9 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceLocal()
         {
-            var svc = Services.GetServiceProxy<IJavaService>(_javaSvcName, false, callContext());
+            var svc = Services.GetServiceProxy<IJavaService>(TestUtils.JavaServiceName, false, callContext());
             var binSvc = Services.WithKeepBinary().WithServerKeepBinary()
-                .GetServiceProxy<IJavaService>(_javaSvcName, false);
+                .GetServiceProxy<IJavaService>(TestUtils.JavaServiceName, false);
 
             DoAllServiceTests(svc, binSvc, false, false);
         }
@@ -1284,9 +1281,9 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceThinClient()
         {
-            var svc = _thinClient.GetServices().GetServiceProxy<IJavaService>(_javaSvcName, callContext());
+            var svc = _thinClient.GetServices().GetServiceProxy<IJavaService>(TestUtils.JavaServiceName, callContext());
             var binSvc = _thinClient.GetServices().WithKeepBinary().WithServerKeepBinary()
-                .GetServiceProxy<IJavaService>(_javaSvcName, callContext());
+                .GetServiceProxy<IJavaService>(TestUtils.JavaServiceName, callContext());
 
             DoAllServiceTests(svc, binSvc, false, false, false);
         }
@@ -1297,7 +1294,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceDynamicProxy()
         {
-            var svc = new JavaServiceDynamicProxy(Services.GetDynamicServiceProxy(_javaSvcName, true, callContext()));
+            var svc = new JavaServiceDynamicProxy(Services.GetDynamicServiceProxy(TestUtils.JavaServiceName, true, callContext()));
 
             DoTestService(svc);
 
@@ -1602,7 +1599,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var svc = dyn ? null : consumer.GetServiceProxy<IJavaService>(cfg.Name, false, callCtx);
 
             // Subject service, calculates invocations.
-            var helperSvc = producer.GetServiceProxy<IJavaOnlyService>(_javaSvcName, false);
+            var helperSvc = producer.GetServiceProxy<IJavaOnlyService>(TestUtils.JavaServiceName, false);
             
             // Do 4 invocations.
             Assert.AreEqual(3, dyn ? dynSvc.testOverload(1, 2) : svc.testOverload(1, 2));

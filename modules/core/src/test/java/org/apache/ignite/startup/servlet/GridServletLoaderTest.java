@@ -108,13 +108,13 @@ public class GridServletLoaderTest extends GridCommonAbstractTest {
                 Set<ObjectName> names = jmx.getMBeanServerConnection().queryNames(queryName, null);
 
                 if (!names.isEmpty()) {
-                    for (ObjectName objectName : names) {
-                        info("Found MBean for node: " + objectName);
+                    for (ObjectName objName : names) {
+                        info("Found MBean for node: " + objName);
 
-                        String kernalName = objectName.getKeyProperty("name");
+                        String kernalName = objName.getKeyProperty("name");
 
                         if ("GridKernal".equals(kernalName)) {
-                            kernal = objectName;
+                            kernal = objName;
 
                             found = true;
                         }

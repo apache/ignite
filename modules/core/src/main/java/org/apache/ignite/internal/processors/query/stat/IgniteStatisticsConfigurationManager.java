@@ -373,18 +373,18 @@ public class IgniteStatisticsConfigurationManager {
      */
     public void updateAllLocalStatistics() {
         try {
-            GridCompoundFuture<Boolean, Boolean> compoundFuture = new GridCompoundFuture<>(CU.boolReducer());
+            GridCompoundFuture<Boolean, Boolean> compoundFut = new GridCompoundFuture<>(CU.boolReducer());
 
             distrMetaStorage.iterate(STAT_OBJ_PREFIX, (k, v) -> {
                 StatisticsObjectConfiguration cfg = (StatisticsObjectConfiguration)v;
 
-                compoundFuture.add(updateLocalStatisticsAsync(cfg));
+                compoundFut.add(updateLocalStatisticsAsync(cfg));
             });
 
-            compoundFuture.markInitialized();
+            compoundFut.markInitialized();
 
-            compoundFuture.listen(() -> {
-                if (compoundFuture.error() == null && !compoundFuture.result())
+            compoundFut.listen(() -> {
+                if (compoundFut.error() == null && !compoundFut.result())
                     mgmtBusyExecutor.execute(this::updateAllLocalStatistics);
             });
         }
@@ -486,11 +486,11 @@ public class IgniteStatisticsConfigurationManager {
         if (log.isDebugEnabled())
             log.debug("Drop statistics [targets=" + targets + ']');
 
-        GridFutureAdapter<Boolean> resultFuture = new GridFutureAdapter<>();
-        IgniteInternalFuture<Boolean> chainFuture = new GridFinishedFuture<>(true);
+        GridFutureAdapter<Boolean> resultFut = new GridFutureAdapter<>();
+        IgniteInternalFuture<Boolean> chainFut = new GridFinishedFuture<>(true);
 
         for (StatisticsTarget target : targets) {
-            chainFuture = chainFuture.chainCompose(f -> {
+            chainFut = chainFut.chainCompose(f -> {
                 if (f.error() == null && f.result() == Boolean.TRUE)
                     return removeFromMetastore(target, validate);
 
@@ -498,14 +498,14 @@ public class IgniteStatisticsConfigurationManager {
             });
         }
 
-        chainFuture.listen(f -> {
+        chainFut.listen(f -> {
             if (f.error() != null)
-                resultFuture.onDone(f.error());
+                resultFut.onDone(f.error());
             else
-                resultFuture.onDone(f.result() == null || f.result().booleanValue());
+                resultFut.onDone(f.result() == null || f.result().booleanValue());
         });
 
-        return resultFuture;
+        return resultFut;
     }
 
     /**

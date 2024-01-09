@@ -937,11 +937,11 @@ public class SnapshotRestoreProcess {
         // Try to copy everything right from the single snapshot part.
         for (SnapshotMetadata meta : metas) {
             Set<Integer> grpParts = meta.partitions().get(grpId);
-            Set<Integer> grpWoIndex = grpParts == null ? Collections.emptySet() : new HashSet<>(grpParts);
+            Set<Integer> grpWoIdx = grpParts == null ? Collections.emptySet() : new HashSet<>(grpParts);
 
-            grpWoIndex.remove(INDEX_PARTITION);
+            grpWoIdx.remove(INDEX_PARTITION);
 
-            if (grpWoIndex.equals(parts))
+            if (grpWoIdx.equals(parts))
                 return meta;
         }
 
@@ -2037,9 +2037,9 @@ public class SnapshotRestoreProcess {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            PartitionRestoreFuture future = (PartitionRestoreFuture)o;
+            PartitionRestoreFuture fut = (PartitionRestoreFuture)o;
 
-            return partId == future.partId;
+            return partId == fut.partId;
         }
 
         /** {@inheritDoc} */
