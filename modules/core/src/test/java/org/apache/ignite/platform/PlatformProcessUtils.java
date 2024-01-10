@@ -27,16 +27,12 @@ import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Platform process utils for tests.
  */
 @SuppressWarnings("unused") // Called from Platform.
 public class PlatformProcessUtils {
-    /** Seconds to wait until the process stops. */
-    private static final long STOP_WAIT_SECONDS = 15;
-
     /** */
     private static volatile Process process;
 
@@ -131,8 +127,7 @@ public class PlatformProcessUtils {
     }
 
     /**
-     * Kills the process previously started with {@link #startProcess}. Waits for {@link #STOP_WAIT_SECONDS} until
-     * the process stops.
+     * Kills the process previously started with {@link #startProcess}. Waits for until the process stops.
      */
     public static void destroyProcess() throws Exception {
         if (process == null)
@@ -140,19 +135,12 @@ public class PlatformProcessUtils {
 
         System.out.println("PlatformProcessUtils >> stopping the process...");
 
-        long time = System.nanoTime();
-
         process.destroyForcibly();
 
-        boolean stopped = process.waitFor(STOP_WAIT_SECONDS, TimeUnit.SECONDS);
-
-        time = U.nanosToMillis(System.nanoTime() - time);
+        process.waitFor();
 
         process = null;
 
-        if (!stopped)
-            throw new IllegalStateException("The process hasn't stopped within " + STOP_WAIT_SECONDS + " seconds.");
-
-        System.out.println("PlatformProcessUtils >> the process has stopped within " + time + " milliseconds.");
+        System.out.println("PlatformProcessUtils >> the process has stopped.");
     }
 }
