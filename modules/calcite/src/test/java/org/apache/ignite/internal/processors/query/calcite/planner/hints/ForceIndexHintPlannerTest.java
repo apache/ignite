@@ -112,38 +112,34 @@ public class ForceIndexHintPlannerTest extends AbstractPlannerTest {
 
     /** */
     private void doTestJoins(String jt) throws Exception {
-//        assertPlan("SELECT /*+ FORCE_INDEX(IDX2_2) */ t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 " +
-//                "t2 on t1.val3=t2.val23 and t1.val1=t2.val22", schema,
-//            nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2")));
-//
-//        assertPlan("SELECT t1.val1, t2.val22 FROM TBL1 /*+ FORCE_INDEX(IDX1_3) */ t1 " + jt
-//                + " JOIN TBL2 /*+ FORCE_INDEX(IDX2_2) */ t2 on t1.val3=t2.val23 and t1.val1=t2.val22", schema,
-//            nodeOrAnyChild(isIndexScan("TBL1", "IDX1_3"))
-//                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2"))));
-//
-//        assertPlan("SELECT t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 /*+ FORCE_INDEX */ t2 on " +
-//                "t1.val3=t2.val23 and t1.val1=t2.val22", schema,
-//            nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2"))
-//                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3"))));
-//
-//        assertPlan("SELECT /*+ FORCE_INDEX(IDX2_3) */ t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 " +
-//                "t2 on t1.val3=t2.val23 and t1.val1=t2.val22", schema,
-//            nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
-//
-//        assertPlan("SELECT /*+ FORCE_INDEX(IDX2_2,IDX2_3) */ t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 " +
-//                "t2 on t1.val3=t2.val23 and t1.val1=t2.val22", schema,
-//            nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2"))
-//                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3"))));
-//
-//        // With additional filter.
-//        assertPlan("SELECT /*+ FORCE_INDEX(IDX2_2,IDX2_3) */ t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 " +
-//                "t2 on t1.val3=t2.val23 and t1.val1=t2.val22 where t2.val22=2 and t1.val3=3 and t2.val21=1", schema,
-//            nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2"))
-//                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3"))));
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX2_2) */ t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 " +
+                "t2 on t1.val3=t2.val23 and t1.val1=t2.val22", schema,
+            nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2")));
 
-        assertPlan("SELECT t1.val1, t2.val22, t3.val2 from TBL1 /*+ FORCE_INDEX(IDX1_1) */ t1 join TBL2 t2 on " +
-            "t1.val1=t2.val22 join TBL1 t3 on t3.val2=t2.val23", schema,
-            nodeOrAnyChild(isIndexScan("TBL1", "IDX1_1")));
+        assertPlan("SELECT t1.val1, t2.val22 FROM TBL1 /*+ FORCE_INDEX(IDX1_3) */ t1 " + jt
+                + " JOIN TBL2 /*+ FORCE_INDEX(IDX2_2) */ t2 on t1.val3=t2.val23 and t1.val1=t2.val22", schema,
+            nodeOrAnyChild(isIndexScan("TBL1", "IDX1_3"))
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2"))));
+
+        assertPlan("SELECT t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 /*+ FORCE_INDEX */ t2 on " +
+                "t1.val3=t2.val23 and t1.val1=t2.val22", schema,
+            nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2"))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3"))));
+
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX2_3) */ t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 " +
+                "t2 on t1.val3=t2.val23 and t1.val1=t2.val22", schema,
+            nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
+
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX2_2,IDX2_3) */ t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 " +
+                "t2 on t1.val3=t2.val23 and t1.val1=t2.val22", schema,
+            nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2"))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3"))));
+
+        // With additional filter.
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX2_2,IDX2_3) */ t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 " +
+                "t2 on t1.val3=t2.val23 and t1.val1=t2.val22 where t2.val22=2 and t1.val3=3 and t2.val21=1", schema,
+            nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2"))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3"))));
     }
 
     /** */

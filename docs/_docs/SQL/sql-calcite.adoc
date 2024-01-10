@@ -243,8 +243,8 @@ SQL hints are optional to apply and might be skipped in some cases.
 
 === Hints format
 SQL hints are defined by a special comment +++/*+ HINT */+++ reffered as a _hint block_. Spaces before and after the
-hint name are required. The hint block is placed right after _SELECT_ or after a table name if hint is suitable for
-a table. Several hint blocks for one _SELECT_ or one table *are not allowed*.
+hint name are required. The hint block is placed right after _SELECT_ or after a table name. Several hint blocks for
+one _SELECT_ or one table *are not allowed*.
 
 Example:
 [source, SQL]
@@ -277,10 +277,10 @@ SELECT /*+ FORCE_INDEX(TBL1_IDX2,TBL2_IDX1) */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T
 SELECT /*+ FORCE_INDEX('TBL2_idx1') */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 WHERE T1.V1 = T2.V1 AND T1.V2 > ? AND T2.V2 > ?;
 ----
 
-=== Hints scope
-Hints are defined for _SELECT_ relation operator and are "visible" for the following operators, queries and subqueries.
-The hints defined in the subquery are "visible" only for this subquery and its subqueries. Hint is not "visible" to
-the previous relation operator if it is defined after it.
+=== Hint scope
+Hints of _SELECT_ are "visible" for this operation and the following relation operators, queries and subqueries.
+Hints in a subquery have effective scope only for this subquery, its subqueries. Hint, defined for a table, is effective
+only for this table.
 
 Example:
 [source, SQL]
@@ -288,6 +288,8 @@ Example:
 SELECT /*+ NO_INDEX(TBL1_IDX2), FORCE_INDEX(TBL2_IDX2) */ T1.V1 FROM TBL1 T1 WHERE T1.V2 IN (SELECT T2.V2 FROM TBL2 T2 WHERE T2.V1=? AND T2.V2=?);
 
 SELECT T1.V1 FROM TBL1 T1 WHERE T1.V2 IN (SELECT /*+ FORCE_INDEX(TBL2_IDX2) */ T2.V2 FROM TBL2 T2 WHERE T2.V1=? AND T2.V2=?);
+
+SELECT T1.V1 FROM TBL1 T1 JOIN TBL2 /*+ FORCE_INDEX(TBL2_IDX3) */ T2 ON T1.V2=T2.V2 and T1.V3=T2.V3 and T2.V3=?;
 ----
 Note that only the first query has a hint in such a case as:
 [source, SQL]
@@ -387,6 +389,8 @@ SELECT /*+ MERGE_JOIN */ t1.v1, t2.v2 FROM TBL1 t1, TBL2 t2 WHERE t1.v3=t2.v3
 SELECT /*+ NL_JOIN(TBL3,TBL1) */ t4.v1, t2.v2 FROM TBL1 t4 JOIN TBL2 t2 on t1.v3=t2.v3 WHERE t2.v1 in (SELECT t3.v3 FROM TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)
 
 SELECT t1.v1, t2.v2 FROM TBL2 t1 JOIN TBL1 t2 on t1.v3=t2.v3 WHERE t2.v3 in (SELECT /*+ NO_CNL_JOIN(TBL4) */ t3.v3 FROM TBL3 t3 JOIN TBL4 t4 on t3.v1=t4.v1)
+
+SELECT t4.v1, t2.v2 FROM TBL1 t4 JOIN TBL2 t2 on t1.v3=t2.v3 WHERE t2.v1 in (SELECT t3.v3 FROM TBL3 t3 JOIN TBL1 /*+ NL_JOIN */ t4 on t3.v2=t4.v2)
 ----
 
 ==== EXPAND_DISTINCT_AGG
