@@ -76,8 +76,8 @@ public class ExecutionPlan {
         if (fragment.rootFragment())
             return null;
 
-        IgniteSender sender = (IgniteSender)fragment.root();
-        return mapping(sender.targetFragmentId()).findGroup(sender.exchangeId());
+        IgniteSender snd = (IgniteSender)fragment.root();
+        return mapping(snd.targetFragmentId()).findGroup(snd.exchangeId());
     }
 
     /** */
