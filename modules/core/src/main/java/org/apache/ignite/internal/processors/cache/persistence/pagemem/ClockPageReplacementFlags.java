@@ -40,7 +40,7 @@ public class ClockPageReplacementFlags {
      * @param totalPagesCnt Total pages count.
      * @param memPtr Pointer to memory region.
      */
-    public ClockPageReplacementFlags(int totalPagesCnt, long memPtr) {
+    ClockPageReplacementFlags(int totalPagesCnt, long memPtr) {
         pagesCnt = totalPagesCnt;
         flagsPtr = memPtr;
 
