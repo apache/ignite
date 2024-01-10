@@ -27,12 +27,16 @@ import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Platform process utils for tests.
  */
 @SuppressWarnings("unused") // Called from Platform.
 public class PlatformProcessUtils {
+    /** Seconds to wait until the process stops. */
+    private static final long STOP_WAIT_SECONDS = 15;
+
     /** */
     private static volatile Process process;
 
@@ -135,12 +139,16 @@ public class PlatformProcessUtils {
 
         System.out.println("PlatformProcessUtils >> stopping the process...");
 
+        long time = System.nanoTime();
+
         process.destroyForcibly();
 
         process.waitFor();
 
+        time = U.nanosToMillis(System.nanoTime() - time);
+
         process = null;
 
-        System.out.println("PlatformProcessUtils >> the process has stopped.");
+        System.out.println("PlatformProcessUtils >> the process has stopped within " + time + " milliseconds.");
     }
 }
