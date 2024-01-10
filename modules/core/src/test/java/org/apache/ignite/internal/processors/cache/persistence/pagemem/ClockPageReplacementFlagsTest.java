@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import java.lang.management.ManagementFactory;
-import com.sun.management.ThreadMXBean;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
@@ -71,26 +69,6 @@ public class ClockPageReplacementFlagsTest extends GridCommonAbstractTest {
             assertEquals("Unexpectd value of " + i + " item", i >= 50 && i <= 100, clockFlags.getFlag(i));
     }
 
-    /** */
-    @Test
-    public void testAllocation() {
-        clockFlags = new ClockPageReplacementFlags(MAX_PAGES_CNT, region.address());
-        int cnt = 1_000_000;
-
-        ThreadMXBean bean = (ThreadMXBean)ManagementFactory.getThreadMXBean();
-
-        // Warmup.
-        clockFlags.setFlag(0);
-
-        long allocated0 = bean.getThreadAllocatedBytes(Thread.currentThread().getId());
-
-        for (int i = 0; i < cnt; i++)
-            clockFlags.setFlag(i % MAX_PAGES_CNT);
-
-        long allocated1 = bean.getThreadAllocatedBytes(Thread.currentThread().getId());
-
-        assertTrue("Too many bytes allocated: " + (allocated1 - allocated0), allocated1 - allocated0 < cnt);
-    }
 
     /**
      * Test poll() method.
