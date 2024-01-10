@@ -22,18 +22,20 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.util.Util.last;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.CNL_JOIN;
@@ -82,57 +84,56 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
 
     /** */
     private boolean disabledByHints(LogicalJoin join) {
-        if (HintUtils.allRelHints(join).isEmpty())
+        Collection<TableScan> joinTables = joinTables(join);
+
+        Collection<RelHint> hints = Stream.concat(
+            F.flatCollections(joinTables.stream().map(TableScan::getHints).collect(Collectors.toList())).stream(),
+            HintUtils.allRelHints(join).stream()).collect(Collectors.toList());
+
+        if (hints.isEmpty())
             return false;
 
         boolean ruleDisabled = false;
 
         Map<String, Collection<HintDefinition>> hintedTables = new HashMap<>();
 
-        Set<String> joinTbls = joinTblNames(join);
+        Set<String> joinTblNames = joinTables.stream().map(t -> last(t.getTable().getQualifiedName())).collect(Collectors.toSet());
 
-        assert joinTbls.size() < 3;
-
-        for (RelHint hint : HintUtils.hints(join, ALL_HINTS)) {
-            Set<String> matchedTbls = hint.listOptions.isEmpty() ? joinTbls : new HashSet<>(hint.listOptions);
+        for (RelHint hint : HintUtils.hints(join, hints, ALL_HINTS)) {
+            Set<String> matchedTbls = hint.listOptions.isEmpty() ? joinTblNames : new HashSet<>(hint.listOptions);
 
             if (!hint.listOptions.isEmpty())
-                matchedTbls.retainAll(joinTbls);
+                matchedTbls.retainAll(joinTblNames);
 
             if (matchedTbls.isEmpty())
                 continue;
 
             HintDefinition curHintDef = HintDefinition.valueOf(hint.hintName);
             boolean curHintIsDisable = !HINTS.containsKey(curHintDef);
-            boolean unableToProc = false;
+            boolean skipHint = false;
 
-            for (String tbl : joinTbls) {
+            for (String tbl : joinTblNames) {
                 Collection<HintDefinition> prevTblHints = hintedTables.get(tbl);
 
                 if (prevTblHints == null)
                     continue;
 
-                Set<HintDefinition> disabled = null;
+                int disableCnt = 0;
 
                 for (HintDefinition prevTblHint : prevTblHints) {
                     boolean prevHintIsDisable = !HINTS.containsKey(prevTblHint);
 
-                    if (prevHintIsDisable) {
-                        if (disabled == null)
-                            disabled = new HashSet<>();
-
-                        disabled.add(prevTblHint);
-                    }
+                    if (prevHintIsDisable)
+                        ++disableCnt;
 
                     // Prohibited: disabling all join types, combinations of forcing and disabling same join type,
                     // forcing of different join types.
-                    if (curHintIsDisable && (disabled != null && disabled.size() == HINTS.size() - 1)
-                        || isMutuallyExclusive(curHintDef, prevTblHint))
-                        unableToProc = true;
+                    if (curHintIsDisable && disableCnt == HINTS.size() - 1 || isMutuallyExclusive(curHintDef, prevTblHint))
+                        skipHint = true;
                 }
             }
 
-            if (unableToProc) {
+            if (skipHint) {
                 HintUtils.skippedHint(join, hint, "This join type is already disabled or forced to use before " +
                     "by previous hints");
 
@@ -164,15 +165,15 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
     }
 
     /** */
-    protected static Set<String> joinTblNames(Join join) {
-        Set<String> res = new LinkedHashSet<>();
+    protected static Collection<TableScan> joinTables(Join join) {
+        Collection<TableScan> res = new ArrayList<>(2);
 
         for (RelNode in : join.getInputs()) {
             if (in instanceof RelSubset)
                 in = ((RelSubset)in).getOriginal();
 
-            if (in.getTable() != null)
-                res.add(last(in.getTable().getQualifiedName()));
+            if (in instanceof TableScan)
+                res.add((TableScan)in);
         }
 
         return res;

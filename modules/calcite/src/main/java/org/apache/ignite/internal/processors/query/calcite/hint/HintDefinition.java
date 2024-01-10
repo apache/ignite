@@ -21,8 +21,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintPredicates;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 
@@ -101,7 +103,7 @@ public enum HintDefinition {
     MERGE_JOIN {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {
-            return HintPredicates.JOIN;
+            return joinHintPredicate();
         }
 
         /** {@inheritDoc} */
@@ -127,7 +129,7 @@ public enum HintDefinition {
     NL_JOIN {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {
-            return HintPredicates.JOIN;
+            return HintDefinition.joinHintPredicate();
         }
 
         /** {@inheritDoc} */
@@ -153,7 +155,7 @@ public enum HintDefinition {
     CNL_JOIN {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {
-            return HintPredicates.JOIN;
+            return HintDefinition.joinHintPredicate();
         }
 
         /** {@inheritDoc} */
@@ -174,6 +176,17 @@ public enum HintDefinition {
             return CNL_JOIN.optionsChecker();
         }
     };
+
+    /**
+     * @return Hint predicate for join hints.
+     */
+    private static HintPredicate joinHintPredicate() {
+        return new HintPredicate() {
+            @Override public boolean apply(RelHint hint, RelNode rel) {
+                return true;
+            }
+        };
+    }
 
     /**
      * @return Hint predicate which limits redundant hint copying and reduces mem/cpu consumption.

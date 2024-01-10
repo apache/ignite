@@ -242,16 +242,16 @@ SQL hints are optional to apply and might be skipped in some cases.
 ====
 
 === Hints format
-SQL hints are defined by a special comment +++/*+ HINT */+++ reffered as a _hint block_. Spaces before and after the
+SQL hints are defined by a special comment +++/*+ HINT */+++ reffered as _hint block_. Spaces before and after the
 hint name are required. The hint block is placed right after _SELECT_ or after a table name. Several hint blocks for
 one _SELECT_ or one table *are not allowed*.
 
 Example:
 [source, SQL]
 ----
-SELECT /*+ NO_INDEX */ T1.* FROM TBL1 where T1.V1=? and T1.V2=?
+SELECT /*+ FORCE_INDEX(IDX_TBL1_V2) */ T1.* FROM TBL1 where T1.V1=? and T1.V2=?
 
-SELECT T1.* FROM TBL1 /*+ NO_INDEX */ where T1.V1=? and T1.V2=?
+SELECT T1.* FROM TBL1 /*+ FORCE_INDEX(IDX_TBL1_V2) */ where T1.V1=? and T1.V2=?
 ----
 
 It is allowed to define several hints for the same relation operator. To use several hints, separate them by comma
@@ -278,9 +278,9 @@ SELECT /*+ FORCE_INDEX('TBL2_idx1') */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 WHERE 
 ----
 
 === Hint scope
-Hints of _SELECT_ are "visible" for this operation and the following relation operators, queries and subqueries.
-Hints in a subquery have effective scope only for this subquery, its subqueries. Hint, defined for a table, is effective
-only for this table.
+Hints of a _SELECT_ are "visible" for this operation and the following relation operators, queries and subqueries.
+Hints in a subquery have effective scope only for this subquery and its subqueries. Hint, defined for a table, is
+effective only for this table.
 
 Example:
 [source, SQL]
@@ -300,13 +300,13 @@ SELECT V1 FROM TBL1 WHERE V3>?
 ----
 
 === Hints priority
-Hints, defined in subqueries or in following _SELECTs_ has priority over the preceding ones. In the following example
+Hints, defined in subqueries or in following _SELECTs_, have priority over the preceding ones. In the following example
 an index for _TBL2_ is actually applied.
 [source, SQL]
 ----
-SELECT /*+ NO_INDEX */ * FROM TBL1 T1 WHERE T1.V1 = (SELECT /*+ FORCE_INDEX(IDX_TBL2_V3) */ T2.V1 FROM TBL2 T2 where T2.V2=? and T2.V3=?)
+SELECT /*+ NO_INDEX */ * FROM TBL1 T1 WHERE T1.V1 = (SELECT /*+ FORCE_INDEX */ T2.V1 FROM TBL2 T2 where T2.V2=? and T2.V3=?)
 ----
-Table hints have priority over _SELECT_ hints. In the following example an index for _TBL1_ is actually applied.
+Table hints have a bigger priority. In the following example an index for _TBL1_ is actually applied.
 [source, SQL]
 ----
 SELECT /*+ NO_INDEX */ * FROM TBL1 /*+ FORCE_INDEX(IDX_TBL1_V2) */ T1 where T1.V1=? and T1.V2=? and T1.V3=?;
