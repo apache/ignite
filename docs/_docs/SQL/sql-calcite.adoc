@@ -249,9 +249,9 @@ one _SELECT_ or one table *are not allowed*. Several hints in one hint block are
 Example:
 [source, SQL]
 ----
-SELECT /*+ FORCE_INDEX(IDX_TBL1_V2), EXPAND_DISTINCT_AGG */ T1.V2, AVG(DISTINCT T1.V3) FROM TBL1 WHERE T1.V1=? and T1.V2=? GROUP BY T1.V2
+SELECT /*+ FORCE_INDEX(IDX_TBL1_V2), EXPAND_DISTINCT_AGG */ V2, AVG(DISTINCT V3) FROM TBL1 WHERE V1=? and V2=? GROUP BY V2
 
-SELECT T1.* FROM TBL1 /*+ FORCE_INDEX(IDX_TBL1_V2) */ where T1.V1=? and T1.V2=?
+SELECT * FROM TBL1 /*+ FORCE_INDEX(IDX_TBL1_V2) */ where V1=? and V2=?
 ----
 
 It is allowed to define several hints for the same relation operator. To use several hints, separate them by comma
@@ -309,7 +309,7 @@ SELECT /*+ NO_INDEX */ * FROM TBL1 T1 WHERE T1.V1 = (SELECT /*+ FORCE_INDEX */ T
 Table hints usually have a bigger priority. In the following example, an index for _TBL1_ is actually applied.
 [source, SQL]
 ----
-SELECT /*+ NO_INDEX */ * FROM TBL1 /*+ FORCE_INDEX(IDX_TBL1_V2) */ T1 where T1.V1=? and T1.V2=? and T1.V3=?;
+SELECT /*+ NO_INDEX */ * FROM TBL /*+ FORCE_INDEX(IDX_TBL1_V2) */ where V1=? and V2=? and V3=?;
 ----
 
 But *there are exceptions*: hints of engine or optimizer level, such as link:#hint_disable_rule[_DISABLE_RULE_] or
@@ -377,15 +377,15 @@ Forces certain join type: Merge, Nested Loop and Correlated Nested Loop respecti
 
 Every of those has the negation like 'NO_INDEX': CNL_JOIN, NO_CNL_JOIN. The negation hint disables certain join type.
 
-===== Parameters:
-* Empty. To force or disable certain join type for every join.
-* Single or several tables names force or disable certain join type only for joining of these tables.
-
 [NOTE]
 ====
 The optimizer may modify order of the joins or join inputs. Such cnahges can make a join type hint irrelevant.
 See link:[ENFORCE_JOIN_ORDER]
 ====
+
+===== Parameters:
+* Empty. To force or disable certain join type for every join.
+* Single or several tables names force or disable certain join type only for joining of these tables.
 
 ===== Example:
 [source, SQL]

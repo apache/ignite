@@ -179,7 +179,7 @@ public enum HintDefinition {
      * @return Hint predicate for join hints.
      */
     private static HintPredicate joinHintPredicate() {
-        // HintPredicates.VALUES might be set too. But RelShuttleImpl#visit(LogicalValues) does nothing and ignores
+        // HintPredicates.VALUES might be mentioned too. But RelShuttleImpl#visit(LogicalValues) does nothing and ignores
         // setting any hints.
         return HintPredicates.or(HintPredicates.JOIN, HintPredicates.TABLE_SCAN);
     }

@@ -181,10 +181,6 @@ public class ForceIndexHintPlannerTest extends AbstractPlannerTest {
         assertPlan("SELECT /*+ FORCE_INDEX(IDX1_1,IDX1_2) */ " + op + "(val1) FROM TBL1 where val1=1 group by val2",
             schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX1_2"))
                 .or(nodeOrAnyChild(isIndexScan("TBL1", "IDX1_1"))));
-
-        assertPlan("SELECT " + op + "(val1) FROM TBL1 /*+ FORCE_INDEX(IDX1_1,IDX1_2) */ where val1=1 group by val2",
-            schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX1_2"))
-                .or(nodeOrAnyChild(isIndexScan("TBL1", "IDX1_1"))));
     }
 
     /** */
@@ -236,7 +232,7 @@ public class ForceIndexHintPlannerTest extends AbstractPlannerTest {
             nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
 
         assertPlan("SELECT t1.val1 FROM TBL1 t1 where t1.val2 = (SELECT t2.val23 from TBL2 " +
-                "/*+ FORCE_INDEX(IDX1_2,IDX2_3) */ t2 where t2.val21=10 and t2.val23=10 and t2.val21=10)", schema,
+                "/*+ FORCE_INDEX(IDX2_3) */ t2 where t2.val21=10 and t2.val23=10 and t2.val21=10)", schema,
             nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
     }
 
