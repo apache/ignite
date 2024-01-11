@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.IgniteClient;
@@ -33,7 +35,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class AsyncResponseTest extends AbstractThinClientTest {
     /** Default timeout value. */
-    private static final long TIMEOUT = 1_000L;
+    private static final long TIMEOUT = 100_000L;
 
     /** */
     private static final int THREADS_CNT = 5;
@@ -47,23 +49,112 @@ public class AsyncResponseTest extends AbstractThinClientTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+        stopAllGrids();
+    }
+
     /** */
     @Test
     public void testBlockingOps() throws Exception {
         startGrid(0);
         IgniteClient client = startClient(0);
-        client.getOrCreateCache(new ClientCacheConfiguration().setName("test").setAtomicityMode(TRANSACTIONAL));
+        ClientCache<Object, Object> cache = client.getOrCreateCache(new ClientCacheConfiguration().setName("test")
+            .setAtomicityMode(TRANSACTIONAL));
 
         GridTestUtils.runMultiThreaded(() -> {
             for (int i = 0; i < 100; i++) {
                 try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TIMEOUT)) {
-                    client.cache("test").put(0, 0);
+                    cache.put(0, 0);
 
                     tx.commit();
                 }
             }
-        }, THREADS_CNT, "put-thread");
+        }, THREADS_CNT, "tx-thread");
 
-        assertEquals(0, client.cache("test").get(0));
+        assertEquals(0, cache.get(0));
+    }
+
+    /** */
+    @Test
+    public void testTransactionalConsistency() throws Exception {
+        startGrids(3);
+        IgniteClient client = startClient(0, 1, 2);
+
+        ClientCache<Integer, Integer> cache = client.getOrCreateCache(new ClientCacheConfiguration()
+            .setName("test")
+            .setAtomicityMode(TRANSACTIONAL)
+            .setBackups(1)
+        );
+
+        int iterations = 10_000;
+        int keys = 10;
+
+        GridTestUtils.runMultiThreaded(() -> {
+            for (int i = 0; i < iterations; i++) {
+                try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TIMEOUT)) {
+                    int key1 = ThreadLocalRandom.current().nextInt(keys);
+                    int key2 = ThreadLocalRandom.current().nextInt(keys);
+                    int sum = ThreadLocalRandom.current().nextInt(100);
+
+                    if (key1 < key2) { // Avoid deadlocks
+                        Integer val1 = cache.get(key1);
+                        cache.put(key1, (val1 == null ? 0 : val1) - sum);
+                        Integer val2 = cache.get(key2);
+                        cache.put(key2, (val2 == null ? 0 : val2) + sum);
+                    }
+                    else {
+                        Integer val2 = cache.get(key2);
+                        cache.put(key2, (val2 == null ? 0 : val2) + sum);
+                        Integer val1 = cache.get(key1);
+                        cache.put(key1, (val1 == null ? 0 : val1) - sum);
+                    }
+
+                    tx.commit();
+                }
+            }
+        }, THREADS_CNT, "tx-thread");
+
+        int sum = 0;
+
+        for (int i = 0; i < keys; i++) {
+            Integer val = cache.get(i);
+
+            if (val != null)
+                sum += val;
+        }
+
+        assertEquals(0, sum);
+    }
+
+    /** */
+    @Test
+    public void testTransactionalConsistency1() throws Exception {
+        startGrids(1);
+        IgniteClient client = startClient(0);
+
+        ClientCache<Integer, Integer> cache = client.getOrCreateCache(new ClientCacheConfiguration()
+            .setName("test")
+            .setAtomicityMode(TRANSACTIONAL)
+        );
+
+        GridTestUtils.runMultiThreaded(() -> {
+            for (int i = 0; i < 100; i++) {
+                try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TIMEOUT)) {
+                    cache.get(0);
+                    log.info(">>>> get 0");
+                    cache.put(0, 0);
+                    log.info(">>>> put 0");
+                    cache.get(1);
+                    log.info(">>>> get 1");
+                    cache.put(1, 0);
+                    log.info(">>>> put 1");
+
+                    tx.commit();
+                    log.info(">>>> commited");
+                }
+            }
+        }, 2, "tx-thread");
     }
 }

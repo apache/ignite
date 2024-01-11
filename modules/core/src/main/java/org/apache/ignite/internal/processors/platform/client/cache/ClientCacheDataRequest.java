@@ -60,6 +60,8 @@ class ClientCacheDataRequest extends ClientCacheRequest {
         IgniteFuture<T> fut,
         IgniteClosure<T, ClientResponse> clo
     ) {
+        // IgniteFuture for cache operations executes chaining/listening block via task to external executor,
+        // we don't need this additional step here, so use internal future.
         IgniteInternalFuture<T> fut0 = ((IgniteFutureImpl<T>)fut).internalFuture();
 
         return fut0.chain(f -> {
