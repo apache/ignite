@@ -75,21 +75,22 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
      *
      */
     ClientClusterGroupImpl(ReliableChannel ch, ClientBinaryMarshaller marsh) {
-        this.ch = ch;
-
-        utils = new ClientUtils(marsh);
-
-        projectionFilters = ProjectionFilters.FULL_PROJECTION;
+        this(ch, new ClientUtils(marsh), ProjectionFilters.FULL_PROJECTION);
     }
 
     /**
      *
      */
-    private ClientClusterGroupImpl(ReliableChannel ch, ClientUtils utils,
-        ProjectionFilters projectionFilters) {
+    private ClientClusterGroupImpl(
+        ReliableChannel ch,
+        ClientUtils utils,
+        ProjectionFilters projectionFilters
+    ) {
         this.ch = ch;
         this.utils = utils;
         this.projectionFilters = projectionFilters;
+
+        ch.addChannelFailListener(this::invalidateCachedData);
     }
 
     /** {@inheritDoc} */
@@ -463,6 +464,13 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
             reader.readLong(), // Revision timestamp.
             reader.readByteArray() // Revision hash.
         );
+    }
+
+    /** */
+    private synchronized void invalidateCachedData() {
+        cachedTopVer = 0;
+        cachedNodeIds = null;
+        cachedNodes.clear();
     }
 
     /**
