@@ -21,10 +21,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintPredicates;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 
@@ -129,7 +127,7 @@ public enum HintDefinition {
     NL_JOIN {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {
-            return HintDefinition.joinHintPredicate();
+            return joinHintPredicate();
         }
 
         /** {@inheritDoc} */
@@ -155,7 +153,7 @@ public enum HintDefinition {
     CNL_JOIN {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {
-            return HintDefinition.joinHintPredicate();
+            return joinHintPredicate();
         }
 
         /** {@inheritDoc} */

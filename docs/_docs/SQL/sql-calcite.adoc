@@ -300,13 +300,13 @@ SELECT V1 FROM TBL1 WHERE V3>?
 ----
 
 === Hints priority
-Hints, defined in subqueries or in following _SELECTs_, have priority over the preceding ones. In the following example
+Hints, defined in subqueries or in the following _SELECTs_, have priority over the preceding ones. In the following example,
 an index for _TBL2_ is actually applied.
 [source, SQL]
 ----
 SELECT /*+ NO_INDEX */ * FROM TBL1 T1 WHERE T1.V1 = (SELECT /*+ FORCE_INDEX */ T2.V1 FROM TBL2 T2 where T2.V2=? and T2.V3=?)
 ----
-Table hints have a bigger priority. In the following example an index for _TBL1_ is actually applied.
+Table hints usually have a bigger priority. In the following example, an index for _TBL1_ is actually applied.
 [source, SQL]
 ----
 SELECT /*+ NO_INDEX */ * FROM TBL1 /*+ FORCE_INDEX(IDX_TBL1_V2) */ T1 where T1.V1=? and T1.V2=? and T1.V3=?;
@@ -380,6 +380,12 @@ Every of those has the negation like 'NO_INDEX': CNL_JOIN, NO_CNL_JOIN. The nega
 ===== Parameters:
 * Empty. To force or disable certain join type for every join.
 * Single or several tables names force or disable certain join type only for joining of these tables.
+
+[NOTE]
+====
+The optimizer may modify order of the joins or join inputs. Such cnahges can make a join type hint irrelevant.
+See link:[ENFORCE_JOIN_ORDER]
+====
 
 ===== Example:
 [source, SQL]
