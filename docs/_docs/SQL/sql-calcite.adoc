@@ -377,12 +377,6 @@ Forces certain join type: Merge, Nested Loop and Correlated Nested Loop respecti
 
 Every of those has the negation like 'NO_INDEX': CNL_JOIN, NO_CNL_JOIN. The negation hint disables certain join type.
 
-[NOTE]
-====
-The optimizer may modify order of the joins or join inputs. Such cnahges can make a join type hint irrelevant.
-See link:[ENFORCE_JOIN_ORDER]
-====
-
 ===== Parameters:
 * Empty. To force or disable certain join type for every join.
 * Single or several tables names force or disable certain join type only for joining of these tables.
