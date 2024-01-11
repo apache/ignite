@@ -94,6 +94,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     /** Dump files name. */
     public static final String DUMP_FILE_EXT = ".dump";
 
+    /** Buffer size for saving user changes. */
+    private static final int USER_CHANGE_WRITE_BUFFER_SIZE = 1024;
+
     /** Root dump directory. */
     private final File dumpDir;
 
@@ -137,6 +140,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      */
     private final @Nullable ConcurrentMap<Long, ByteBuffer> encThLocBufs;
 
+    /** Dump buffer size when iterator running. */
+    private final int iterBufSize;
+
     /**
      * @param cctx Cache context.
      * @param srcNodeId Node id which cause snapshot task creation.
@@ -176,13 +182,14 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         this.dumpDir = dumpDir;
 
         this.ioFactory = compress
-            ? new WriteOnlyZipFileIOFactory(new BufferedFileIOFactory(ioFactory, dumpBufSize))
-            : new BufferedFileIOFactory(ioFactory, dumpBufSize);
+            ? new WriteOnlyZipFileIOFactory(new BufferedFileIOFactory(ioFactory, USER_CHANGE_WRITE_BUFFER_SIZE))
+            : new BufferedFileIOFactory(ioFactory, USER_CHANGE_WRITE_BUFFER_SIZE);
 
         this.compress = compress;
         this.rateLimiter = rateLimiter;
         this.encKey = encrypt ? cctx.gridConfig().getEncryptionSpi().create() : null;
         this.encThLocBufs = encrypt ? new ConcurrentHashMap<>() : null;
+        this.iterBufSize = dumpBufSize;
     }
 
     /** {@inheritDoc} */
@@ -283,6 +290,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 try (GridCloseableIterator<CacheDataRow> rows = gctx.offheap().reservedIterator(part, dumpCtx.topVer)) {
                     if (rows == null)
                         throw new IgniteCheckedException("Partition missing [part=" + part + ']');
+
+                    dumpCtx.onStartIteration();
 
                     while (rows.hasNext()) {
                         CacheDataRow row = rows.next();
@@ -718,6 +727,14 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             }
             catch (IOException e) {
                 throw new IgniteException(e);
+            }
+        }
+
+        /** */
+        private void onStartIteration() {
+            synchronized (serializer) {
+                ((BufferedFileIO)(compress ? ((WriteOnlyZipFileIO)file).delegate() : file))
+                    .extendBuffer(iterBufSize);
             }
         }
     }

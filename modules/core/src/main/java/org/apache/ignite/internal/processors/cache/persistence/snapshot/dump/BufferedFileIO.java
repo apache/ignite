@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  */
 public class BufferedFileIO extends FileIODecorator {
     /** */
-    private final ByteBuffer buf;
+    private ByteBuffer buf;
 
     /** */
     private long pos;
@@ -46,9 +46,23 @@ public class BufferedFileIO extends FileIODecorator {
         buf = ByteBuffer.allocateDirect(bufSz);
     }
 
+    /** */
+    void extendBuffer(int newSz) {
+        if (newSz <= buf.capacity())
+            return;
+
+        ByteBuffer newBuf = ByteBuffer.allocateDirect(newSz);
+
+        buf.flip();
+
+        newBuf.put(buf);
+
+        buf = newBuf;
+    }
+
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf) throws IOException {
-        if (buf.limit() == 0)
+        if (buf == null)
             throw new IOException("FileIO closed");
 
         int bytesCnt = srcBuf.remaining();
@@ -74,7 +88,7 @@ public class BufferedFileIO extends FileIODecorator {
 
     /** {@inheritDoc} */
     @Override public int write(byte[] srcBuf, int off, int len) throws IOException {
-        if (buf.limit() == 0)
+        if (buf == null)
             throw new IOException("FileIO closed");
 
         if ((len | off) < 0 || len > srcBuf.length - off)
@@ -100,6 +114,9 @@ public class BufferedFileIO extends FileIODecorator {
 
     /** */
     private void flush() throws IOException {
+        if (buf == null)
+            return;
+
         buf.flip();
 
         if (buf.hasRemaining()) {
@@ -119,7 +136,7 @@ public class BufferedFileIO extends FileIODecorator {
     @Override public void close() throws IOException {
         flush();
 
-        buf.limit(0);
+        buf = null;
 
         delegate.close();
     }

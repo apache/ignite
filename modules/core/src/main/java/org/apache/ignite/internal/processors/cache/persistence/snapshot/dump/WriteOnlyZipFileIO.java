@@ -73,6 +73,11 @@ public class WriteOnlyZipFileIO extends FileIODecorator {
         return pos;
     }
 
+    /** */
+    FileIO delegate() {
+        return delegate;
+    }
+
     /** {@inheritDoc} */
     @Override public void position(long newPosition) throws IOException {
         throw new UnsupportedOperationException();

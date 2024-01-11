@@ -820,7 +820,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             .setAffinity(new RendezvousAffinityFunction().setPartitions(parts))
         );
 
-        IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, ThreadLocalRandom.current().nextInt()));
+        IntStream.range(0, KEYS_CNT * 2).forEach(i -> cache.put(i, ThreadLocalRandom.current().nextInt()));
 
         RandomAccessFileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
@@ -838,7 +838,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         }
 
         for (boolean compress : new boolean[]{false, true}) {
-            for (int bufSz = 1024; bufSz >= 256; bufSz >>= 1) {
+            for (int bufSz = 4096; bufSz >= 1024; bufSz >>= 1) {
                 ign.context().distributedConfiguration()
                     .property(DUMP_BUFFER_SIZE_DMS_KEY)
                     .propagate(bufSz);
