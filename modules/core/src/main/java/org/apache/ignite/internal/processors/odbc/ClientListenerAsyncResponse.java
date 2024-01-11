@@ -17,33 +17,38 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Client listener async response.
  */
 public class ClientListenerAsyncResponse extends ClientResponse {
     /** Future for response. */
-    private final IgniteFuture<? extends ClientListenerResponse> fut;
+    private final IgniteInternalFuture<? extends ClientListenerResponse> fut;
 
     /**
      * Constructs async response.
      */
-    public ClientListenerAsyncResponse(IgniteFuture<? extends ClientListenerResponse> fut) {
+    public ClientListenerAsyncResponse(IgniteInternalFuture<? extends ClientListenerResponse> fut) {
         super(STATUS_SUCCESS, null);
 
         this.fut = fut;
     }
 
     /** Future for response. */
-    public IgniteFuture<? extends ClientListenerResponse> future() {
+    public IgniteInternalFuture<? extends ClientListenerResponse> future() {
         return fut;
     }
 
     /** {@inheritDoc} */
     @Override public int status() {
-        return fut.get().status();
+        try {
+            return fut.get().status();
+        }
+        catch (Exception e) {
+            return STATUS_FAILED;
+        }
     }
 
     /** {@inheritDoc} */
@@ -53,7 +58,12 @@ public class ClientListenerAsyncResponse extends ClientResponse {
 
     /** {@inheritDoc} */
     @Override public String error() {
-        return fut.get().error();
+        try {
+            return fut.get().error();
+        }
+        catch (Exception e) {
+            return e.getMessage();
+        }
     }
 
     /** {@inheritDoc} */
@@ -63,6 +73,11 @@ public class ClientListenerAsyncResponse extends ClientResponse {
 
     /** {@inheritDoc} */
     @Override public void onSent() {
-        fut.get().onSent();
+        try {
+            fut.get().onSent();
+        }
+        catch (Exception e) {
+            // Ignore.
+        }
     }
 }

@@ -18,6 +18,12 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Cache data manipulation request.
@@ -47,5 +53,22 @@ class ClientCacheDataRequest extends ClientCacheRequest {
     /** {@inheritDoc} */
     @Override public boolean isTransactional() {
         return super.isTransactional();
+    }
+
+    /** Chain cache operation future to return response when operation is completed. */
+    protected <T> IgniteInternalFuture<ClientResponse> chainFuture(
+        IgniteFuture<T> fut,
+        IgniteClosure<T, ClientResponse> clo
+    ) {
+        IgniteInternalFuture<T> fut0 = ((IgniteFutureImpl<T>)fut).internalFuture();
+
+        return fut0.chain(f -> {
+            try {
+                return clo.apply(f.get());
+            }
+            catch (Exception e) {
+                throw new GridClosureException(e);
+            }
+        });
     }
 }

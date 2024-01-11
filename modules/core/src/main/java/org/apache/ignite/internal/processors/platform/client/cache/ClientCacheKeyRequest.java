@@ -21,14 +21,14 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
-import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Cache request involving key.
@@ -57,7 +57,7 @@ public abstract class ClientCacheKeyRequest extends ClientCacheDataRequest imple
     }
 
     /** {@inheritDoc} */
-    @Override public final IgniteFuture<ClientResponse> processAsync(ClientConnectionContext ctx) {
+    @Override public final IgniteInternalFuture<ClientResponse> processAsync(ClientConnectionContext ctx) {
         updateMetrics(ctx);
 
         // Process request in overriden method.
@@ -99,8 +99,8 @@ public abstract class ClientCacheKeyRequest extends ClientCacheDataRequest imple
     protected abstract ClientResponse process0(ClientConnectionContext ctx);
 
     /** */
-    protected IgniteFuture<ClientResponse> processAsync0(ClientConnectionContext ctx) {
-        return new IgniteFinishedFutureImpl<>(process0(ctx));
+    protected IgniteInternalFuture<ClientResponse> processAsync0(ClientConnectionContext ctx) {
+        return new GridFinishedFuture<>(process0(ctx));
     }
 
     /**

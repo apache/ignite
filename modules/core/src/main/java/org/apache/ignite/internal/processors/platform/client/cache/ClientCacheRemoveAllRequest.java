@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Cache removeAll request.
@@ -50,9 +50,7 @@ public class ClientCacheRemoveAllRequest extends ClientCacheDataRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<ClientResponse> processAsync(ClientConnectionContext ctx) {
-        IgniteFuture<Void> fut = cache(ctx).removeAllAsync();
-
-        return fut.chain(v -> new ClientResponse(requestId()));
+    @Override public IgniteInternalFuture<ClientResponse> processAsync(ClientConnectionContext ctx) {
+        return chainFuture(cache(ctx).removeAllAsync(), v -> new ClientResponse(requestId()));
     }
 }

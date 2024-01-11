@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
-import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
-import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 
 /**
  * Thin client request.
@@ -66,8 +66,8 @@ public class ClientRequest implements ClientListenerRequest {
      *
      * @return Future for response.
      */
-    public IgniteFuture<ClientResponse> processAsync(ClientConnectionContext ctx) {
-        return new IgniteFinishedFutureImpl<>(process(ctx));
+    public IgniteInternalFuture<ClientResponse> processAsync(ClientConnectionContext ctx) {
+        return new GridFinishedFuture<>(process(ctx));
     }
 
     /**

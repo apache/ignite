@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Cache get and put if absent request.
@@ -44,9 +44,8 @@ public class ClientCacheGetAndPutIfAbsentRequest extends ClientCacheKeyValueRequ
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<ClientResponse> processAsync0(ClientConnectionContext ctx) {
-        IgniteFuture<Object> fut = cache(ctx).getAndPutIfAbsentAsync(key(), val());
-
-        return fut.chain(v -> new ClientObjectResponse(requestId(), v.get()));
+    @Override public IgniteInternalFuture<ClientResponse> processAsync0(ClientConnectionContext ctx) {
+        return chainFuture(cache(ctx).getAndPutIfAbsentAsync(key(), val()),
+            v -> new ClientObjectResponse(requestId(), v));
     }
 }

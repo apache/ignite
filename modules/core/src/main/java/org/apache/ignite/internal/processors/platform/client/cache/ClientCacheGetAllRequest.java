@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import java.util.Map;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * GetAll request.
@@ -44,9 +44,7 @@ public class ClientCacheGetAllRequest extends ClientCacheKeysRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<ClientResponse> processAsync(ClientConnectionContext ctx) {
-        IgniteFuture<Map<Object, Object>> fut = cache(ctx).getAllAsync(keys());
-
-        return fut.chain(v -> new ClientCacheGetAllResponse(requestId(), v.get()));
+    @Override public IgniteInternalFuture<ClientResponse> processAsync(ClientConnectionContext ctx) {
+        return chainFuture(cache(ctx).getAllAsync(keys()), v -> new ClientCacheGetAllResponse(requestId(), v));
     }
 }

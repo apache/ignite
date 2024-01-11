@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
-import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * PutAll request.
@@ -63,9 +63,7 @@ public class ClientCachePutAllRequest extends ClientCacheDataRequest implements 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<ClientResponse> processAsync(ClientConnectionContext ctx) {
-        IgniteFuture<Void> fut = cache(ctx).putAllAsync(map);
-
-        return fut.chain(v -> new ClientResponse(requestId()));
+    @Override public IgniteInternalFuture<ClientResponse> processAsync(ClientConnectionContext ctx) {
+        return chainFuture(cache(ctx).putAllAsync(map), v -> new ClientResponse(requestId()));
     }
 }
