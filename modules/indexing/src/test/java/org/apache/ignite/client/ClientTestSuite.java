@@ -18,6 +18,7 @@
 package org.apache.ignite.client;
 
 import org.apache.ignite.internal.client.thin.AffinityMetricsTest;
+import org.apache.ignite.internal.client.thin.AsyncResponseTest;
 import org.apache.ignite.internal.client.thin.AtomicLongTest;
 import org.apache.ignite.internal.client.thin.CacheAsyncTest;
 import org.apache.ignite.internal.client.thin.CacheEntryListenersTest;
@@ -90,6 +91,7 @@ import org.junit.runners.Suite;
     ThinClientEnpointsDiscoveryTest.class,
     InactiveClusterCacheRequestTest.class,
     AffinityMetricsTest.class,
+    AsyncResponseTest.class,
 })
 public class ClientTestSuite {
     // No-op.

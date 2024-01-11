@@ -21,6 +21,7 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * ContainsKeys request.
@@ -36,10 +37,16 @@ public class ClientCacheContainsKeysRequest extends ClientCacheKeysRequest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         boolean val = cache(ctx).containsKeys(keys());
 
         return new ClientBooleanResponse(requestId(), val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<ClientResponse> processAsync(ClientConnectionContext ctx) {
+        IgniteFuture<Boolean> fut = cache(ctx).containsKeysAsync(keys());
+
+        return fut.chain(v -> new ClientBooleanResponse(requestId(), v.get()));
     }
 }

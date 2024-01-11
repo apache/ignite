@@ -919,8 +919,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return {@code True} if transaction is not in completed set.
      */
     public boolean onStarted(IgniteInternalTx tx) {
-        assert tx.state() == ACTIVE || tx.isRollbackOnly() : "Invalid transaction state [locId=" + cctx.localNodeId() +
-            ", tx=" + tx + ']';
+        // TODO check if SUSPENDED state is always valid and add comment here. Also check activeUserTx method.
+        assert tx.state() == ACTIVE || tx.state() == SUSPENDED || tx.isRollbackOnly() :
+            "Invalid transaction state [locId=" + cctx.localNodeId() + ", tx=" + tx + ']';
 
         if (isCompleted(tx)) {
             ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);

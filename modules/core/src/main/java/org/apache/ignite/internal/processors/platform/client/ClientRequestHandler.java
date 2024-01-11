@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.ClientListenerAsyncResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
@@ -81,7 +82,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
                         try {
                             txCtx.acquire(true);
 
-                            return ((ClientRequest)req).process(ctx);
+                            return handle0(req);
                         }
                         catch (IgniteCheckedException e) {
                             throw new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
@@ -98,7 +99,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
                 }
             }
 
-            return ((ClientRequest)req).process(ctx);
+            return handle0(req);
         }
         catch (SecurityException ex) {
             throw new IgniteClientException(
@@ -107,6 +108,16 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
                 ex
             );
         }
+    }
+
+    /** */
+    private ClientListenerResponse handle0(ClientListenerRequest req) {
+        ClientRequest req0 = (ClientRequest)req;
+
+        if (req0.isAsync(ctx))
+            return new ClientListenerAsyncResponse(req0.processAsync(ctx));
+        else
+            return req0.process(ctx);
     }
 
     /** {@inheritDoc} */

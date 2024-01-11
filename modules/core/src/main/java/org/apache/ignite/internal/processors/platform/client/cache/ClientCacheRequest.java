@@ -73,7 +73,7 @@ public class ClientCacheRequest extends ClientRequest {
      * @param ctx Kernal context.
      * @return Cache.
      */
-    protected IgniteCache cache(ClientConnectionContext ctx) {
+    protected IgniteCache<Object, Object> cache(ClientConnectionContext ctx) {
         return rawCache(ctx).withKeepBinary();
     }
 
@@ -83,7 +83,7 @@ public class ClientCacheRequest extends ClientRequest {
      * @param ctx Kernal context.
      * @return Cache.
      */
-    protected IgniteInternalCache<?, ?> cachex(ClientConnectionContext ctx) {
+    protected IgniteInternalCache<Object, Object> cachex(ClientConnectionContext ctx) {
         String cacheName = cacheDescriptor(ctx).cacheName();
 
         return ctx.kernalContext().grid().cachex(cacheName).keepBinary();
@@ -122,7 +122,7 @@ public class ClientCacheRequest extends ClientRequest {
      * @param ctx Kernal context.
      * @return Cache.
      */
-    protected IgniteCache rawCache(ClientConnectionContext ctx) {
+    protected IgniteCache<Object, Object> rawCache(ClientConnectionContext ctx) {
         DynamicCacheDescriptor cacheDesc = cacheDescriptor(ctx);
 
         String cacheName = cacheDesc.cacheName();

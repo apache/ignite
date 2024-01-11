@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -25,7 +26,9 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Cache request involving key.
@@ -47,6 +50,28 @@ public abstract class ClientCacheKeyRequest extends ClientCacheDataRequest imple
 
     /** {@inheritDoc} */
     @Override public final ClientResponse process(ClientConnectionContext ctx) {
+        updateMetrics(ctx);
+
+        // Process request in overriden method.
+        return process0(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public final IgniteFuture<ClientResponse> processAsync(ClientConnectionContext ctx) {
+        updateMetrics(ctx);
+
+        // Process request in overriden method.
+        return processAsync0(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isAsync(ClientConnectionContext ctx) {
+        // Every cache data request on the transactional cache can lock the thread, even with implicit transaction.
+        return cacheDescriptor(ctx).cacheConfiguration().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL;
+    }
+
+    /** */
+    private void updateMetrics(ClientConnectionContext ctx) {
         if (!isTransactional()) {
             // Calculate affinity metrics.
             DynamicCacheDescriptor desc = cacheDescriptor(ctx);
@@ -68,13 +93,15 @@ public abstract class ClientCacheKeyRequest extends ClientCacheDataRequest imple
                 }
             }
         }
-
-        // Process request in overriden method.
-        return process0(ctx);
     }
 
     /** */
     protected abstract ClientResponse process0(ClientConnectionContext ctx);
+
+    /** */
+    protected IgniteFuture<ClientResponse> processAsync0(ClientConnectionContext ctx) {
+        return new IgniteFinishedFutureImpl<>(process0(ctx));
+    }
 
     /**
      * Gets the key.

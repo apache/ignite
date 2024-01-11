@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Clear keys request.
@@ -35,10 +36,16 @@ public class ClientCacheClearKeysRequest extends ClientCacheKeysRequest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         cache(ctx).clearAll(keys());
 
         return super.process(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<ClientResponse> processAsync(ClientConnectionContext ctx) {
+        IgniteFuture<Void> fut = cache(ctx).clearAllAsync(keys());
+
+        return fut.chain(v -> new ClientResponse(requestId()));
     }
 }

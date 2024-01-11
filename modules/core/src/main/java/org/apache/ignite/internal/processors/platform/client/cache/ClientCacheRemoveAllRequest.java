@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Cache removeAll request.
@@ -39,5 +41,18 @@ public class ClientCacheRemoveAllRequest extends ClientCacheDataRequest {
         cache(ctx).removeAll();
 
         return super.process(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isAsync(ClientConnectionContext ctx) {
+        // Every cache data request on the transactional cache can lock the thread, even with implicit transaction.
+        return cacheDescriptor(ctx).cacheConfiguration().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<ClientResponse> processAsync(ClientConnectionContext ctx) {
+        IgniteFuture<Void> fut = cache(ctx).removeAllAsync();
+
+        return fut.chain(v -> new ClientResponse(requestId()));
     }
 }

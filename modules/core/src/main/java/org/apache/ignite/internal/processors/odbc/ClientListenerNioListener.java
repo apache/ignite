@@ -207,11 +207,30 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
             ClientListenerResponse resp;
 
-            try (OperationSecurityContext s = ctx.security().withContext(connCtx.securityContext())) {
+            try (OperationSecurityContext ignored = ctx.security().withContext(connCtx.securityContext())) {
                 resp = hnd.handle(req);
             }
 
             if (resp != null) {
+                // TODO refactor.
+                if (resp instanceof ClientListenerAsyncResponse) {
+                    ((ClientListenerAsyncResponse)resp).future().listen(fut -> {
+                        try {
+                            GridNioFuture<?> sendFut = ses.send(parser.encode(fut.get()));
+
+                            sendFut.listen(() -> {
+                                if (sendFut.error() == null)
+                                    resp.onSent();
+                            });
+                        }
+                        catch (Exception e) {
+                            ses.send(parser.encode(hnd.handleException(e, req)));
+                        }
+                    });
+
+                    return;
+                }
+
                 if (log.isTraceEnabled()) {
                     long dur = (System.nanoTime() - startTime) / 1000;
 

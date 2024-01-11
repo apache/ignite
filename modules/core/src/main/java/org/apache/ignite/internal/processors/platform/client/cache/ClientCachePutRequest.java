@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Cache put request.
@@ -35,11 +36,26 @@ public class ClientCachePutRequest extends ClientCacheKeyValueRequest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public ClientResponse process0(ClientConnectionContext ctx) {
         cache(ctx).put(key(), val());
 
         return new ClientResponse(requestId());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<ClientResponse> processAsync0(ClientConnectionContext ctx) {
+        IgniteFuture<Void> fut = cache(ctx).putAsync(key(), val());
+
+        // TODO change chaining.
+        return fut.chain(v -> {
+            v.get();
+            return new ClientResponse(requestId());
+        });
+/*
+        IgniteInternalFuture<Boolean> fut = cachex(ctx).putAsync(key(), val());
+
+        return new IgniteFutureImpl<>(fut).chain(v -> {v.get(); return new ClientResponse(requestId());});
+*/
     }
 }
 

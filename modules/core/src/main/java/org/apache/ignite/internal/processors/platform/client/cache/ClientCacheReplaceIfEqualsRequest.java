@@ -21,6 +21,7 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Cache replace request.
@@ -41,10 +42,16 @@ public class ClientCacheReplaceIfEqualsRequest extends ClientCacheKeyValueReques
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public ClientResponse process0(ClientConnectionContext ctx) {
         boolean res = cache(ctx).replace(key(), val(), newVal);
 
         return new ClientBooleanResponse(requestId(), res);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<ClientResponse> processAsync0(ClientConnectionContext ctx) {
+        IgniteFuture<Boolean> fut = cache(ctx).replaceAsync(key(), val(), newVal);
+
+        return fut.chain(v -> new ClientBooleanResponse(requestId(), v.get()));
     }
 }
