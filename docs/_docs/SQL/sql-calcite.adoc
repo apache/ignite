@@ -244,12 +244,12 @@ SQL hints are optional to apply and might be skipped in some cases.
 === Hints format
 SQL hints are defined by a special comment +++/*+ HINT */+++ reffered as _hint block_. Spaces before and after the
 hint name are required. The hint block is placed right after _SELECT_ or after a table name. Several hint blocks for
-one _SELECT_ or one table *are not allowed*.
+one _SELECT_ or one table *are not allowed*. Several hints in one hint block are separated with comma.
 
 Example:
 [source, SQL]
 ----
-SELECT /*+ FORCE_INDEX(IDX_TBL1_V2) */ T1.* FROM TBL1 where T1.V1=? and T1.V2=?
+SELECT /*+ FORCE_INDEX(IDX_TBL1_V2), EXPAND_DISTINCT_AGG */ T1.V2, AVG(DISTINCT T1.V3) FROM TBL1 WHERE T1.V1=? and T1.V2=? GROUP BY T1.V2
 
 SELECT T1.* FROM TBL1 /*+ FORCE_INDEX(IDX_TBL1_V2) */ where T1.V1=? and T1.V2=?
 ----
@@ -260,7 +260,7 @@ It is allowed to define several hints for the same relation operator. To use sev
 Example:
 [source, SQL]
 ----
-SELECT /*+ NO_INDEX, EXPAND_DISTINCT_AGG */ SUM(DISTINCT V1), AVG(DISTINCT V2) FROM TBL1 GROUP BY V3 WHERE V3=?
+SELECT /*+ NO_INDEX, EXPAND_DISTINCT_AGG */ SUM(DISTINCT V1), AVG(DISTINCT V2) FROM TBL1 WHERE V3=? GROUP BY V3
 ----
 
 ==== Hint parameters

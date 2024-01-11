@@ -118,7 +118,7 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
                 if (prevTblHints == null)
                     continue;
 
-                int disableCnt = 0;
+                int disableCnt = curHintIsDisable ? 1 : 0;
 
                 for (HintDefinition prevTblHint : prevTblHints) {
                     boolean prevHintIsDisable = !HINTS.containsKey(prevTblHint);
@@ -128,7 +128,7 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
 
                     // Prohibited: disabling all join types, combinations of forcing and disabling same join type,
                     // forcing of different join types.
-                    if (curHintIsDisable && disableCnt == HINTS.size() - 1 || isMutuallyExclusive(curHintDef, prevTblHint))
+                    if (curHintIsDisable && disableCnt == HINTS.size() || isMutuallyExclusive(curHintDef, prevTblHint))
                         skipHint = true;
                 }
             }
