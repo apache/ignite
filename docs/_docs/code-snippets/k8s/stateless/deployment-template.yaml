@@ -15,8 +15,8 @@
 
 #tag::config-block[]
 # An example of a Kubernetes configuration for pod deployment.
-apiVersion: apps/v1 
-kind: Deployment
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   # Cluster name.
   name: ignite-cluster
@@ -27,34 +27,64 @@ spec:
   selector:
     matchLabels:
       app: ignite
+  serviceName: ignite
   template:
     metadata:
       labels:
-        app: ignite 
+        app: ignite
     spec:
-      serviceAccountName: ignite 
-      terminationGracePeriodSeconds: 60000 
+      serviceAccountName: ignite
+      terminationGracePeriodSeconds: 60000
       containers:
         # Custom pod name.
-      - name: ignite-node
-        image: apacheignite/ignite:{version}
-        env:
-        - name: OPTION_LIBS
-          value: ignite-kubernetes,ignite-rest-http
-        - name: CONFIG_URI
-          value: file:///ignite/config/node-configuration.xml
-        ports:
-        # Ports to open.
-        - containerPort: 47100 # communication SPI port
-        - containerPort: 47500 # discovery SPI port
-        - containerPort: 49112 # dafault JMX port
-        - containerPort: 10800 # thin clients/JDBC driver port
-        - containerPort: 8080 # REST API
-        volumeMounts:
-        - mountPath: /ignite/config
-          name: config-vol
+        - name: ignite-node
+          image: apacheignite/ignite:{version}
+          env:
+            - name: OPTION_LIBS
+              value: ignite-kubernetes,ignite-rest-http
+            - name: CONFIG_URI
+              value: file:///opt/ignite/config/node-configuration.xml
+            - name: JVM_OPTS
+              value: "-DIGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN=true"
+          ports:
+            # Ports to open.
+            - containerPort: 47100 # communication SPI port
+            - containerPort: 47500 # discovery SPI port
+            - containerPort: 49112 # JMX port
+            - containerPort: 10800 # thin clients/JDBC driver port
+            - containerPort: 8080 # REST API
+          volumeMounts:
+            - mountPath: /opt/ignite/config
+              name: config-vol
+            - mountPath: /opt/ignite/work/db/binary_meta
+              name: internal-metadata-vol
+              readinessProbe:
+                httpGet:
+                  path: /ignite?cmd=probe
+                  port: 8080
+                initialDelaySeconds: 5
+                failureThreshold: 3
+                periodSeconds: 10
+                timeoutSeconds: 10
+              livenessProbe:
+                httpGet:
+                  path: /ignite?cmd=version
+                  port: 8080
+                  initialDelaySeconds: 5
+                  failureThreshold: 3
+                  periodSeconds: 10
+                  timeoutSeconds: 10
       volumes:
-      - name: config-vol
-        configMap:
-          name: ignite-config
+        - name: config-vol
+          configMap:
+            name: ignite-config
+  volumeClaimTemplates:
+    - metadata:
+        name: internal-metadata-vol
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: "1Gi" # make sure to provide enough space for your application data
+
 #end::config-block[]
