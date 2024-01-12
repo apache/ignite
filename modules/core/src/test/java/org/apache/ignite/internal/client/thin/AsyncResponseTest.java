@@ -18,12 +18,17 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -38,7 +43,7 @@ public class AsyncResponseTest extends AbstractThinClientTest {
     private static final long TIMEOUT = 100_000L;
 
     /** */
-    private static final int THREADS_CNT = 5;
+    private static final int THREADS_CNT = 2;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -143,13 +148,9 @@ public class AsyncResponseTest extends AbstractThinClientTest {
             for (int i = 0; i < 100; i++) {
                 try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TIMEOUT)) {
                     cache.get(0);
-                    log.info(">>>> get 0");
                     cache.put(0, 0);
-                    log.info(">>>> put 0");
                     cache.get(1);
-                    log.info(">>>> get 1");
                     cache.put(1, 0);
-                    log.info(">>>> put 1");
 
                     tx.commit();
                     log.info(">>>> commited");
@@ -157,4 +158,106 @@ public class AsyncResponseTest extends AbstractThinClientTest {
             }
         }, 2, "tx-thread");
     }
+
+    /** */
+    @Test
+    public void testTransactionalConsistency2() throws Exception {
+        Ignite ignite = startGrids(1);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
+            .setName("test")
+            .setAtomicityMode(TRANSACTIONAL)
+        );
+
+        GridTestUtils.runMultiThreaded(() -> {
+            for (int i = 0; i < 100; i++) {
+                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TIMEOUT, 0)) {
+                    IgniteFuture<?> fut = cache.getAsync(0);
+                    tx.suspend();
+                    fut.get();
+                    log.info(">>>> get 0");
+                    tx.resume();
+                    fut = cache.putAsync(0, 0);
+                    tx.suspend();
+                    fut.get();
+                    log.info(">>>> put 0");
+                    tx.resume();
+                    fut = cache.getAsync(1);
+                    tx.suspend();
+                    fut.get();
+                    log.info(">>>> get 1");
+                    tx.resume();
+                    fut = cache.putAsync(1, 0);
+                    tx.suspend();
+                    fut.get();
+                    log.info(">>>> put 1");
+                    tx.resume();
+
+                    tx.commit();
+                    log.info(">>>> commited");
+                }
+            }
+        }, 2, "tx-thread");
+    }
+
+    /** */
+    @Test
+    public void testTransactionalConsistency3() throws Exception {
+        Ignite ignite = startGrids(1);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
+            .setName("test")
+            .setAtomicityMode(TRANSACTIONAL)
+        );
+
+        Transaction tx0 = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TIMEOUT, 0);
+        tx0.suspend();
+
+        Transaction tx1 = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TIMEOUT, 0);
+        tx1.suspend();
+
+        IgniteFuture<?> fut;
+
+        tx0.resume();
+        fut = cache.getAsync(0);
+        tx0.suspend();
+        fut.get();
+        log.info(">>>> get 0");
+
+        tx1.resume();
+        fut = cache.getAsync(0);
+        tx1.suspend();
+        //fut.get();
+        log.info(">>>> get 0");
+
+        tx0.resume();
+        fut = cache.putAsync(0, 0);
+        tx0.suspend();
+        fut.get();
+        log.info(">>>> put 0");
+
+        tx0.resume();
+        tx0.commit();
+
+        tx1.resume();
+        tx1.commit();
+        log.info(">>>> commited");
+    }
+
+    /** */
+    @Test
+    public void testTransactionalConsistency4() throws Exception {
+        Ignite ignite = startGrids(1);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
+            .setName("test")
+            .setAtomicityMode(TRANSACTIONAL)
+        );
+
+        IgniteFuture<?> fut;
+
+        Transaction tx0 = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TIMEOUT, 0);
+        fut = cache.getAsync(0);
+    }
+
 }

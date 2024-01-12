@@ -80,6 +80,8 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
 
                     if (txCtx != null) {
                         try {
+                            log.info(">>>> resuming tx=" + txCtx.tx().xidVersion());
+
                             txCtx.acquire(true);
 
                             return handle0(req);
@@ -90,6 +92,8 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
                         finally {
                             try {
                                 txCtx.release(true);
+
+                                log.info(">>>> suspended tx=" + txCtx.tx().xidVersion());
                             }
                             catch (Exception e) {
                                 log.warning("Failed to release client transaction context", e);

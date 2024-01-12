@@ -22,6 +22,7 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Cache get request.
@@ -45,6 +46,11 @@ public class ClientCacheGetRequest extends ClientCacheKeyRequest {
 
     /** {@inheritDoc} */
     @Override protected IgniteInternalFuture<ClientResponse> processAsync0(ClientConnectionContext ctx) {
-        return chainFuture(cache(ctx).getAsync(key()), v -> new ClientObjectResponse(requestId(), v));
+        ctx.kernalContext().log(getClass()).info(">>>> get request key=" + key());
+        IgniteFuture<Object> fut = cache(ctx).getAsync(key());
+
+        fut.listen(f -> ctx.kernalContext().log(getClass()).info(">>>> get response key=" + key()));
+
+        return chainFuture(fut, v -> new ClientObjectResponse(requestId(), v));
     }
 }

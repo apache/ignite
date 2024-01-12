@@ -21,6 +21,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Cache put request.
@@ -44,7 +45,12 @@ public class ClientCachePutRequest extends ClientCacheKeyValueRequest {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<ClientResponse> processAsync0(ClientConnectionContext ctx) {
-        return chainFuture(cache(ctx).putAsync(key(), val()), v -> new ClientResponse(requestId()));
+        ctx.kernalContext().log(getClass()).info(">>>> put request key=" + key());
+        IgniteFuture<Void> fut = cache(ctx).putAsync(key(), val());
+
+        fut.listen(f -> ctx.kernalContext().log(getClass()).info(">>>> put response key=" + key()));
+
+        return chainFuture(fut, v -> new ClientResponse(requestId()));
     }
 }
 
