@@ -62,7 +62,6 @@ public class ClientTxEndRequest extends ClientRequest {
             txCtx.acquire(committed);
 
             try (GridNearTxLocal tx = txCtx.tx()) {
-                ctx.kernalContext().log(getClass()).info(">>>> commited txId=" + txId + ", tx=" + tx.xidVersion());
                 if (committed)
                     tx.commit();
                 else

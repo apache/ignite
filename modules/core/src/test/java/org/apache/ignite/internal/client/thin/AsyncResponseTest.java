@@ -18,17 +18,12 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -40,16 +35,19 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class AsyncResponseTest extends AbstractThinClientTest {
     /** Default timeout value. */
-    private static final long TIMEOUT = 100_000L;
+    private static final long TIMEOUT = 1_000L;
 
     /** */
-    private static final int THREADS_CNT = 2;
+    private static final int THREADS_CNT = 5;
+
+    /** */
+    private int poolSize;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.getClientConnectorConfiguration().setThreadPoolSize(THREADS_CNT - 1);
+        cfg.getClientConnectorConfiguration().setThreadPoolSize(poolSize);
 
         return cfg;
     }
@@ -63,6 +61,7 @@ public class AsyncResponseTest extends AbstractThinClientTest {
     /** */
     @Test
     public void testBlockingOps() throws Exception {
+        poolSize = 1;
         startGrid(0);
         IgniteClient client = startClient(0);
         ClientCache<Object, Object> cache = client.getOrCreateCache(new ClientCacheConfiguration().setName("test")
@@ -84,6 +83,8 @@ public class AsyncResponseTest extends AbstractThinClientTest {
     /** */
     @Test
     public void testTransactionalConsistency() throws Exception {
+        poolSize = THREADS_CNT;
+
         startGrids(3);
         IgniteClient client = startClient(0, 1, 2);
 
@@ -93,7 +94,7 @@ public class AsyncResponseTest extends AbstractThinClientTest {
             .setBackups(1)
         );
 
-        int iterations = 10_000;
+        int iterations = 1_000;
         int keys = 10;
 
         GridTestUtils.runMultiThreaded(() -> {
@@ -116,7 +117,10 @@ public class AsyncResponseTest extends AbstractThinClientTest {
                         cache.put(key1, (val1 == null ? 0 : val1) - sum);
                     }
 
-                    tx.commit();
+                    if (ThreadLocalRandom.current().nextBoolean())
+                        tx.commit();
+                    else
+                        tx.rollback();
                 }
             }
         }, THREADS_CNT, "tx-thread");
@@ -132,132 +136,4 @@ public class AsyncResponseTest extends AbstractThinClientTest {
 
         assertEquals(0, sum);
     }
-
-    /** */
-    @Test
-    public void testTransactionalConsistency1() throws Exception {
-        startGrids(1);
-        IgniteClient client = startClient(0);
-
-        ClientCache<Integer, Integer> cache = client.getOrCreateCache(new ClientCacheConfiguration()
-            .setName("test")
-            .setAtomicityMode(TRANSACTIONAL)
-        );
-
-        GridTestUtils.runMultiThreaded(() -> {
-            for (int i = 0; i < 100; i++) {
-                try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TIMEOUT)) {
-                    cache.get(0);
-                    cache.put(0, 0);
-                    cache.get(1);
-                    cache.put(1, 0);
-
-                    tx.commit();
-                    log.info(">>>> commited");
-                }
-            }
-        }, 2, "tx-thread");
-    }
-
-    /** */
-    @Test
-    public void testTransactionalConsistency2() throws Exception {
-        Ignite ignite = startGrids(1);
-
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
-            .setName("test")
-            .setAtomicityMode(TRANSACTIONAL)
-        );
-
-        GridTestUtils.runMultiThreaded(() -> {
-            for (int i = 0; i < 100; i++) {
-                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TIMEOUT, 0)) {
-                    IgniteFuture<?> fut = cache.getAsync(0);
-                    tx.suspend();
-                    fut.get();
-                    log.info(">>>> get 0");
-                    tx.resume();
-                    fut = cache.putAsync(0, 0);
-                    tx.suspend();
-                    fut.get();
-                    log.info(">>>> put 0");
-                    tx.resume();
-                    fut = cache.getAsync(1);
-                    tx.suspend();
-                    fut.get();
-                    log.info(">>>> get 1");
-                    tx.resume();
-                    fut = cache.putAsync(1, 0);
-                    tx.suspend();
-                    fut.get();
-                    log.info(">>>> put 1");
-                    tx.resume();
-
-                    tx.commit();
-                    log.info(">>>> commited");
-                }
-            }
-        }, 2, "tx-thread");
-    }
-
-    /** */
-    @Test
-    public void testTransactionalConsistency3() throws Exception {
-        Ignite ignite = startGrids(1);
-
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
-            .setName("test")
-            .setAtomicityMode(TRANSACTIONAL)
-        );
-
-        Transaction tx0 = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TIMEOUT, 0);
-        tx0.suspend();
-
-        Transaction tx1 = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TIMEOUT, 0);
-        tx1.suspend();
-
-        IgniteFuture<?> fut;
-
-        tx0.resume();
-        fut = cache.getAsync(0);
-        tx0.suspend();
-        fut.get();
-        log.info(">>>> get 0");
-
-        tx1.resume();
-        fut = cache.getAsync(0);
-        tx1.suspend();
-        //fut.get();
-        log.info(">>>> get 0");
-
-        tx0.resume();
-        fut = cache.putAsync(0, 0);
-        tx0.suspend();
-        fut.get();
-        log.info(">>>> put 0");
-
-        tx0.resume();
-        tx0.commit();
-
-        tx1.resume();
-        tx1.commit();
-        log.info(">>>> commited");
-    }
-
-    /** */
-    @Test
-    public void testTransactionalConsistency4() throws Exception {
-        Ignite ignite = startGrids(1);
-
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
-            .setName("test")
-            .setAtomicityMode(TRANSACTIONAL)
-        );
-
-        IgniteFuture<?> fut;
-
-        Transaction tx0 = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TIMEOUT, 0);
-        fut = cache.getAsync(0);
-    }
-
 }

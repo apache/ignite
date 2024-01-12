@@ -87,8 +87,6 @@ public class ClientTxStartRequest extends ClientRequest {
 
             int txId = ctx.nextTxId();
 
-            ctx.kernalContext().log(getClass()).info(">>>> started txId=" + txId + ", tx=" + tx.xidVersion());
-
             ctx.addTxContext(new ClientTxContext(txId, tx));
 
             return new ClientIntResponse(requestId(), txId);
