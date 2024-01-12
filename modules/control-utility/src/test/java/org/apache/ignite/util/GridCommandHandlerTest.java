@@ -903,7 +903,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertContains(log, testOut.toString(), "Cluster is inactive");
+        assertContains(log, testOut.toString(), "Cluster state: INACTIVE");
 
         String out = testOut.toString();
 
@@ -919,7 +919,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertContains(log, testOut.toString(), "Cluster is active");
+        assertContains(log, testOut.toString().replaceAll("\r", ""), "Cluster state: ACTIVE\n");
 
         ignite.cluster().state(ACTIVE_READ_ONLY);
 
@@ -929,7 +929,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertContains(log, testOut.toString(), "Cluster is active (read-only)");
+        assertContains(log, testOut.toString(), "Cluster state: ACTIVE_READ_ONLY");
 
         boolean tagUpdated = GridTestUtils.waitForCondition(() -> {
             try {
@@ -3984,15 +3984,18 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         injectTestSystemOut();
 
         ignite.cluster().state(ACTIVE);
-        execute("--baseline");
-        assertContains(log, testOut.toString(), "Cluster state: ACTIVE\n");
+        assertEquals(EXIT_CODE_OK, execute("--baseline"));
+        assertEquals(ACTIVE, ignite.cluster().state());
+        assertContains(log, testOut.toString().replaceAll("\r", ""), "Cluster state: ACTIVE\n");
 
         ignite.cluster().state(ACTIVE_READ_ONLY);
-        execute("--baseline");
+        assertEquals(EXIT_CODE_OK, execute("--baseline"));
+        assertEquals(ACTIVE_READ_ONLY, ignite.cluster().state());
         assertContains(log, testOut.toString(), "Cluster state: ACTIVE_READ_ONLY");
 
         ignite.cluster().state(INACTIVE);
-        execute("--baseline");
+        assertEquals(EXIT_CODE_OK, execute("--baseline"));
+        assertEquals(INACTIVE, ignite.cluster().state());
         assertContains(log, testOut.toString(), "Cluster state: INACTIVE");
     }
 
