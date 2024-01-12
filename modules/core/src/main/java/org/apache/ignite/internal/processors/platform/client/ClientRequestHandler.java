@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.client;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAsyncResponse;
@@ -48,7 +49,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     private final ClientConnectionContext ctx;
 
     /** Protocol context. */
-    private ClientProtocolContext protocolCtx;
+    private final ClientProtocolContext protocolCtx;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -114,8 +115,21 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     private ClientListenerResponse handle0(ClientListenerRequest req) {
         ClientRequest req0 = (ClientRequest)req;
 
-        if (req0.isAsync(ctx))
-            return new ClientListenerAsyncResponse(req0.processAsync(ctx));
+        if (req0.isAsync(ctx)) {
+            IgniteInternalFuture<ClientResponse> fut = req0.processAsync(ctx);
+
+            if (fut.isDone()) {
+                try {
+                    // Some async operations can be already finished after processAsync. Shortcut for this case.
+                    return fut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
+                }
+            }
+
+            return new ClientListenerAsyncResponse(fut);
+        }
         else
             return req0.process(ctx);
     }
