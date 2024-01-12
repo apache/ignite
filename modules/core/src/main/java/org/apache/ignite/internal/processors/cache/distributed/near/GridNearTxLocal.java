@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -213,6 +214,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** Stores commit or rollback step duration, or <code>0</code> if it has not finished yet. */
     private final AtomicLong commitOrRollbackTime = new AtomicLong(0);
+
+    /** Last asynchronous operation future. */
+    private final GridCacheAdapter.FutureHolder lastAsyncFut = new GridCacheAdapter.FutureHolder();
 
     /** */
     @GridToStringExclude
@@ -3780,7 +3784,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      */
     public final void prepare(boolean awaitLastFut) throws IgniteCheckedException {
         if (awaitLastFut)
-            txState().awaitLastFuture(cctx);
+            awaitLastFuture();
 
         prepareNearTxLocal().get();
     }
@@ -4798,6 +4802,30 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         if (sysStartTime0 > 0)
             sysTime.addAndGet(System.nanoTime() - sysStartTime0);
+    }
+
+    /**
+     * Last asynchronous operation future.
+     */
+    public GridCacheAdapter.FutureHolder lastAsyncFuture() {
+        return lastAsyncFut;
+    }
+
+    /**
+     * Awaits for previous async operation to be completed.
+     */
+    public void awaitLastFuture() {
+        IgniteInternalFuture<?> fut = lastAsyncFut.future();
+
+        if (fut != null && !fut.isDone()) {
+            try {
+                // Ignore any exception from previous async operation as it should be handled by user.
+                fut.get();
+            }
+            catch (IgniteCheckedException ignored) {
+                // No-op.
+            }
+        }
     }
 
     /**
