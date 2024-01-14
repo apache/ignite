@@ -374,11 +374,6 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
                 .and(nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
                     .and(input(1, nodeOrAnyChild(isTableScan("TBL1")))))), CORE_JOIN_REORDER_RULES);
 
-        // Table hint with wrong table name is ignored.
-        assertPlan(String.format(sqlTpl, "", "/*+ " + NL_JOIN + "(TBL1), " + CNL_JOIN + " */", ""), schema,
-            nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
-                .and(input(1, isTableScan("TBL3")))), CORE_JOIN_REORDER_RULES);
-
         // Table hint has a bigger priority. Leading CNL_JOIN is ignored.
         assertPlan(String.format(sqlTpl, "/*+ " + CNL_JOIN + " */", "/*+ " + NL_JOIN + " */", "/*+ " + MERGE_JOIN + " */"),
             schema, nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class).and(input(1, isTableScan("TBL3"))))
@@ -390,6 +385,11 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
             nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class).and(input(1, isTableScan("TBL3"))))
                 .and(nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
                     .and(input(1, nodeOrAnyChild(isTableScan("TBL1")))))), CORE_JOIN_REORDER_RULES);
+
+        // Table hint with wrong table name is ignored.
+        assertPlan(String.format(sqlTpl, "", "/*+ " + NL_JOIN + "(TBL1), " + CNL_JOIN + " */", ""), schema,
+            nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+                .and(input(1, isTableScan("TBL3")))), CORE_JOIN_REORDER_RULES);
     }
 
     /**

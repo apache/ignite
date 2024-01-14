@@ -289,7 +289,7 @@ SELECT /*+ NO_INDEX(TBL1_IDX2), FORCE_INDEX(TBL2_IDX2) */ T1.V1 FROM TBL1 T1 WHE
 
 SELECT T1.V1 FROM TBL1 T1 WHERE T1.V2 IN (SELECT /*+ FORCE_INDEX(TBL2_IDX2) */ T2.V2 FROM TBL2 T2 WHERE T2.V1=? AND T2.V2=?);
 
-SELECT T1.V1 FROM TBL1 T1 JOIN TBL2 /*+ FORCE_INDEX(TBL2_IDX3) */ T2 ON T1.V2=T2.V2 and T1.V3=T2.V3 and T2.V3=?;
+SELECT T1.V1 FROM TBL1 T1 JOIN TBL2 /*+ MERGE_JOIN */ T2 ON T1.V2=T2.V2 and T1.V3=T2.V3 and T2.V3=?;
 ----
 Note that only the first query has a hint in such a case as:
 [source, SQL]
@@ -298,6 +298,9 @@ SELECT /*+ FORCE_INDEX */ V1 FROM TBL1 WHERE V1=? AND V2=?
 UNION ALL
 SELECT V1 FROM TBL1 WHERE V3>?
 ----
+But *there are exceptions*: hints of engine or optimizer level, such as link:#hint_disable_rule[_DISABLE_RULE_] or
+link:#hint_query_engine[_QUERY_ENGINE_]. Such hints should be defined at the beginning of the query and are related to
+the whole query.
 
 === Hints priority
 Hints, defined in subqueries or in the following _SELECTs_, have priority over the preceding ones. In the following example,
@@ -311,10 +314,6 @@ Table hints usually have a bigger priority. In the following example, an index f
 ----
 SELECT /*+ NO_INDEX */ * FROM TBL /*+ FORCE_INDEX(IDX_TBL1_V2) */ where V1=? and V2=? and V3=?;
 ----
-
-But *there are exceptions*: hints of engine or optimizer level, such as link:#hint_disable_rule[_DISABLE_RULE_] or
-link:#hint_query_engine[_QUERY_ENGINE_]. Such hints should be defined at the beginning of the query and are related to
-the whole query.
 
 === Hints errors
 The optimizer tries to apply every hint and its parameters, if possible. But it skips the hint or hint parameter if:

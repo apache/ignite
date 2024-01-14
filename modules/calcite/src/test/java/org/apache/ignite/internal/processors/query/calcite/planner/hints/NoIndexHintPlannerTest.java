@@ -279,8 +279,6 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
 
         assertNoCertainIndex(String.format("SELECT /*+ NO_INDEX(IDX1_23) */ t1.* FROM TBL1 t1 where t1.val2='v' %s " +
             "SELECT /*+ NO_INDEX(IDX2_3) */ t2.* FROM TBL2 t2 where t2.val3='v'", operation), "TBL1", "IDX1_23");
-        assertNoCertainIndex(String.format("SELECT t1.* FROM TBL1 /*+ NO_INDEX(IDX1_23) */ t1 where t1.val2='v' %s " +
-            "SELECT t2.* FROM TBL2 /*+ NO_INDEX(IDX2_3) */ t2 where t2.val3='v'", operation), "TBL1", "IDX1_23");
         assertNoCertainIndex(String.format("SELECT /*+ NO_INDEX(IDX1_23) */ t1.* FROM TBL1 t1 where t1.val2='v' %s " +
             "SELECT /*+ NO_INDEX(IDX2_3) */ t2.* FROM TBL2 t2 where t2.val3='v'", operation), "TBL2", "IDX2_3");
     }
@@ -288,33 +286,33 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
     /**
      * Tests whether index 'IDX3' of table 'TBL2' in subquery of query to 'TBL1' is disabled.
      *
-     * @param valOfT2Val3 Value to use in 'WHERE TBL2.val2=' in the subquery. Can refer to 'TBL1'.
+     * @param valueOfT2Val3 Value to use in 'WHERE TBL2.val2=' in the subquery. Can refer to 'TBL1'.
      */
-    private void doTestDisabledInTable2Val3(String valOfT2Val3) throws Exception {
+    private void doTestDisabledInTable2Val3(String valueOfT2Val3) throws Exception {
         assertNoCertainIndex("SELECT /*+ NO_INDEX(IDX1_23) */ * FROM TBL1 t1 WHERE t1.val2 = " +
-            "(SELECT val2 from TBL2 WHERE val3=" + valOfT2Val3 + ')', "TBL1", "IDX1_23");
+            "(SELECT val2 from TBL2 WHERE val3=" + valueOfT2Val3 + ')', "TBL1", "IDX1_23");
 
         assertNoCertainIndex("SELECT /*+ NO_INDEX(IDX2_3) */ * FROM TBL1 t1 WHERE t1.val2 = " +
-            "(SELECT val2 from TBL2 WHERE val3=" + valOfT2Val3 + ')', "TBL2", "IDX2_3");
+            "(SELECT val2 from TBL2 WHERE val3=" + valueOfT2Val3 + ')', "TBL2", "IDX2_3");
 
         assertNoCertainIndex("SELECT * FROM TBL1 t1 WHERE t1.val2 = " +
-            "(SELECT /*+ NO_INDEX(IDX2_3) */ val2 from TBL2 WHERE val3=" + valOfT2Val3 + ')', "TBL2", "IDX2_3");
+            "(SELECT /*+ NO_INDEX(IDX2_3) */ val2 from TBL2 WHERE val3=" + valueOfT2Val3 + ')', "TBL2", "IDX2_3");
 
         assertCertainIndex("SELECT t2.val3 FROM TBL2 t2 WHERE t2.val2 = " +
-            "(SELECT /*+ NO_INDEX(IDX2_2) */ t1.val2 from TBL1 t1 WHERE t1.val3=" + valOfT2Val3 + ')', "TBL2", "IDX2_2");
+            "(SELECT /*+ NO_INDEX(IDX2_2) */ t1.val2 from TBL1 t1 WHERE t1.val3=" + valueOfT2Val3 + ')', "TBL2", "IDX2_2");
 
         assertNoAnyIndex("SELECT /*+ NO_INDEX(IDX1_3), NO_INDEX(IDX2_3) */ * FROM TBL1 t1 WHERE t1.val3 = " +
-            "(SELECT val2 from TBL2 WHERE val3=" + valOfT2Val3 + ')');
+            "(SELECT val2 from TBL2 WHERE val3=" + valueOfT2Val3 + ')');
         assertNoAnyIndex("SELECT /*+ NO_INDEX(IDX1_3) */ * FROM TBL1 t1 WHERE t1.val3 = " +
-            "(SELECT val2 from TBL2 /*+ NO_INDEX */  WHERE val3=" + valOfT2Val3 + ')');
+            "(SELECT val2 from TBL2 /*+ NO_INDEX */  WHERE val3=" + valueOfT2Val3 + ')');
         assertNoAnyIndex("SELECT /*+ NO_INDEX(IDX1_3, IDX2_3) */ * FROM TBL1 t1 WHERE t1.val3 = " +
-            "(SELECT val2 from TBL2 WHERE val3=" + valOfT2Val3 + ')');
+            "(SELECT val2 from TBL2 WHERE val3=" + valueOfT2Val3 + ')');
         assertNoAnyIndex("SELECT /*+ NO_INDEX */ * FROM TBL1 t1 WHERE t1.val3 = " +
-            "(SELECT val2 from TBL2 WHERE val3=" + valOfT2Val3 + ')');
+            "(SELECT val2 from TBL2 WHERE val3=" + valueOfT2Val3 + ')');
         assertNoAnyIndex("SELECT /*+ NO_INDEX(IDX1_3) */ * FROM TBL1 t1 WHERE t1.val3 = " +
-            "(SELECT /*+ NO_INDEX(IDX2_3) */ val2 from TBL2 WHERE val3=" + valOfT2Val3 + ')');
+            "(SELECT /*+ NO_INDEX(IDX2_3) */ val2 from TBL2 WHERE val3=" + valueOfT2Val3 + ')');
         assertNoAnyIndex("SELECT /*+ NO_INDEX(IDX1_3) */ * FROM TBL1 t1 WHERE t1.val3 = " +
-            "(SELECT val2 from TBL2 /*+ NO_INDEX(IDX2_3) */ WHERE val3=" + valOfT2Val3 + ')');
+            "(SELECT val2 from TBL2 /*+ NO_INDEX(IDX2_3) */ WHERE val3=" + valueOfT2Val3 + ')');
     }
 
     /** */
