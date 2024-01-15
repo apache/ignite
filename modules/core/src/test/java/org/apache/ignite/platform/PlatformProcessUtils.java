@@ -127,13 +127,20 @@ public class PlatformProcessUtils {
     }
 
     /**
-     * Kills the process previously started with {@link #startProcess}.
+     * Kills the process previously started with {@link #startProcess}. Waits for until the process stops.
      */
     public static void destroyProcess() throws Exception {
         if (process == null)
             throw new Exception("Process has not been started");
 
+        System.out.println("PlatformProcessUtils >> stopping the process...");
+
         process.destroyForcibly();
+
+        process.waitFor();
+
         process = null;
+
+        System.out.println("PlatformProcessUtils >> the process has stopped.");
     }
 }
