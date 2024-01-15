@@ -2268,6 +2268,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.ensure(!(cacheGroupNames != null && !dump), "Cache group names filter supported only for dump");
         A.ensure(!compress || dump, "Compression is supported only for dumps");
 
+        if (dump)
+            compress = true;
+
         try {
             cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
