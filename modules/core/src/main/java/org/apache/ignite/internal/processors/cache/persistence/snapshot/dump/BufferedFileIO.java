@@ -75,7 +75,7 @@ public class BufferedFileIO extends FileIODecorator {
 
             buf.put(srcBuf);
 
-            if (!buf.hasRemaining())
+//            if (!buf.hasRemaining())
                 flush();
 
             srcBuf.limit(limit);
@@ -101,7 +101,7 @@ public class BufferedFileIO extends FileIODecorator {
 
             buf.put(srcBuf, p, bytesCnt);
 
-            if (!buf.hasRemaining())
+//            if (!buf.hasRemaining())
                 flush();
 
             p += bytesCnt;
