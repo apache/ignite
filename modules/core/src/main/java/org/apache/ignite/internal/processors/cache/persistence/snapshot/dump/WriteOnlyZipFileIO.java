@@ -29,7 +29,7 @@ import java.util.zip.ZipOutputStream;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 
-import static java.util.zip.Deflater.BEST_COMPRESSION;
+import static java.util.zip.Deflater.BEST_SPEED;
 
 /**
  * {@link FileIO} that allows to write ZIP compressed file.
@@ -61,7 +61,7 @@ public class WriteOnlyZipFileIO extends FileIODecorator {
             }
         }));
 
-        zos.setLevel(BEST_COMPRESSION);
+        zos.setLevel(BEST_SPEED);
 
         zos.putNextEntry(new ZipEntry(entryName));
 
