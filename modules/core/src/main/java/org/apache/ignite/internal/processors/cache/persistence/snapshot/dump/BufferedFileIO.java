@@ -51,9 +51,6 @@ public class BufferedFileIO extends FileIODecorator {
         if (newSz <= buf.capacity())
             return;
 
-        if (true)
-            return;
-
         ByteBuffer newBuf = ByteBuffer.allocateDirect(newSz);
 
         buf.flip();
