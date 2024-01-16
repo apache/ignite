@@ -62,13 +62,20 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
     /** Projection filters. */
     private final ProjectionFilters projectionFilters;
 
+    /** Client channel from which the cluster group nodes data was previously received. */
+    private volatile ClientChannel topDataSrc;
+
     /** Cached topology version. */
     private long cachedTopVer;
 
     /** Cached node IDs. Should be changed atomically with cachedTopVer under lock on ClientClusterGroupImpl instance. */
     private Collection<UUID> cachedNodeIds;
 
-    /** Cached nodes. */
+    /**
+     * Cached nodes.
+     *
+     * @see #findCachedNode(UUID)
+     */
     private final Map<UUID, ClusterNode> cachedNodes = new ConcurrentHashMap<>();
 
     /**
@@ -96,12 +103,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
     @Override public ClientClusterGroup forNodes(Collection<? extends ClusterNode> nodes) {
         A.notNull(nodes, "nodes");
 
-        ClientClusterGroupImpl grp = forProjectionFilters(projectionFilters.forNodeIds(new HashSet<>(F.nodeIds(nodes))));
-
-        for (ClusterNode node : nodes)
-            grp.cachedNodes.put(node.id(), node);
-
-        return grp;
+        return forProjectionFilters(projectionFilters.forNodeIds(new HashSet<>(F.nodeIds(nodes))));
     }
 
     /** {@inheritDoc} */
@@ -244,9 +246,9 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
      * {@inheritDoc}
      */
     @Override public ClusterNode node(UUID nid) {
-        ClusterNode node = cachedNodes.get(nid);
-
         if (projectionFilters.resultFilter == null) {
+            ClusterNode node = findCachedNode(nid);
+
             if (node == null)
                 node = F.first(nodesByIds(Collections.singleton(nid)));
 
@@ -304,7 +306,9 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
                         throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.CLUSTER_GROUPS);
 
                     try (BinaryRawWriterEx writer = utils.createBinaryWriter(req.out())) {
-                        writer.writeLong(cachedTopVer);
+                        ClientChannel topDataSrc = this.topDataSrc;
+
+                        writer.writeLong(topDataSrc == null || topDataSrc.closed() ? 0 : cachedTopVer);
 
                         projectionFilters.write(writer);
                     }
@@ -328,6 +332,8 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
 
                     cachedNodeIds = nodeIds;
 
+                    topDataSrc = res.clientChannel();
+
                     return new ArrayList<>(nodeIds);
                 });
         }
@@ -346,8 +352,10 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
         List<ClusterNode> nodes = new ArrayList<>();
         Collection<UUID> nodesToReq = null;
 
+        ClientChannel topDataSrc = this.topDataSrc;
+
         for (UUID nodeId : nodeIds) {
-            ClusterNode node = cachedNodes.get(nodeId);
+            ClusterNode node = findCachedNode(nodeId);
 
             if (node != null) {
                 if (projectionFilters.testClientSidePredicates(node))
@@ -361,8 +369,16 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
             }
         }
 
-        if (!F.isEmpty(nodesToReq))
-            nodes.addAll(requestNodesByIds(nodesToReq));
+        if (!F.isEmpty(nodesToReq)) {
+            Collection<ClusterNode> requestedNodes = requestNodesByIds(nodesToReq);
+
+            if (!nodes.isEmpty() && topDataSrc != null && topDataSrc.closed()) {
+                // In this case we can't trust nodes that were previously got from the cache.
+                nodes = new ArrayList<>(requestNodesByIds(nodeIds));
+            }
+            else
+                nodes.addAll(requestedNodes);
+        }
 
         return projectionFilters.applyResultFilter(nodes);
     }
@@ -387,6 +403,8 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
                     }
                 },
                 res -> {
+                    updateTopologyDataSource(res.clientChannel());
+
                     try (BinaryReaderExImpl reader = utils.createBinaryReader(res.in())) {
                         int nodesCnt = reader.readInt();
 
@@ -411,6 +429,29 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
         catch (ClientError e) {
             throw new ClientException(e);
         }
+    }
+
+    /** */
+    private synchronized void updateTopologyDataSource(ClientChannel channel) {
+        ClientChannel topDataSrc = this.topDataSrc;
+
+        if (topDataSrc != null && topDataSrc.closed())
+            cachedNodes.clear();
+
+        this.topDataSrc = channel;
+    }
+
+    /**
+     * Cluster group nodes cache is invalidated whenever the channel from which it was received is closed.
+     * This guarantees that outdated cache data will not be used if the entire cluster is restarted but its final topology
+     * version remains the same.
+     *
+     * @return Cluster node instance if the node with specified ID is present in the cache and the cache itself is valid.
+     */
+    private ClusterNode findCachedNode(UUID nodeId) {
+        ClientChannel topDataSrc = this.topDataSrc;
+
+        return topDataSrc == null || topDataSrc.closed() ? null : cachedNodes.get(nodeId);
     }
 
     /**
