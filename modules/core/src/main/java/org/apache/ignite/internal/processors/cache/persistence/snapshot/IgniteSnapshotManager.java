@@ -372,7 +372,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public static final String DUMP_BUFFER_SIZE_DMS_KEY = "dumpBufferSize";
 
     /** Default dump write buffer size. */
-    public static final int DFLT_DUMP_BUFFER_SIZE = 512 * 1024;
+    public static final int DFLT_DUMP_BUFFER_SIZE = 128 * 1024;
 
     /**
      * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
