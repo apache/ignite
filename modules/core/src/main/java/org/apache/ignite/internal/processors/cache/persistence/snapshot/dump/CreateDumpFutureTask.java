@@ -95,7 +95,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     public static final String DUMP_FILE_EXT = ".dump";
 
     /** Buffer size for saving user changes. */
-    private static final int USER_CHANGE_WRITE_BUFFER_SIZE = 1024;
+    private static final int USER_CHANGE_WRITE_BUFFER_SIZE = 128 * 1024;
 
     /** Root dump directory. */
     private final File dumpDir;
