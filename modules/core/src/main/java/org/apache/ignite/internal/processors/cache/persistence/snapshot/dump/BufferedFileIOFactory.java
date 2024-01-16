@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 
 /**
@@ -43,6 +44,8 @@ public class BufferedFileIOFactory implements FileIOFactory {
 
     /** {@inheritDoc} */
     @Override public BufferedFileIO create(File file, OpenOption... modes) throws IOException {
-        return new BufferedFileIO(factory.create(file, modes), bufSz);
+        FileIO io = factory.create(file, modes);
+        
+        return new BufferedFileIO(io, io.getFileSystemBlockSize());
     }
 }
