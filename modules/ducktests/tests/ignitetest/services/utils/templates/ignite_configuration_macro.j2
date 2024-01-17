@@ -44,6 +44,9 @@
         {% if config.rebalance_thread_pool_size %}
             <property name="rebalanceThreadPoolSize" value="{{ config.rebalance_thread_pool_size }}"/>
         {% endif %}
+        {% if config.snapshot_thread_pool_size %}
+            <property name="snapshotThreadPoolSize" value="{{ config.snapshot_thread_pool_size }}"/>
+        {% endif %}
         {% if config.rebalance_batch_size %}
             <property name="rebalanceBatchSize" value="{{ config.rebalance_batch_size }}"/>
         {% endif %}
