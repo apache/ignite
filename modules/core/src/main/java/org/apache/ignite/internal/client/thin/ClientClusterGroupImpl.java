@@ -63,7 +63,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
     private final ProjectionFilters projectionFilters;
 
     /** Client channel from which the cluster group nodes data was previously received. */
-    private volatile ClientChannel topDataSrc;
+    private ClientChannel topDataSrc;
 
     /** Cached topology version. */
     private long cachedTopVer;
@@ -307,8 +307,6 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
                         throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.CLUSTER_GROUPS);
 
                     try (BinaryRawWriterEx writer = utils.createBinaryWriter(req.out())) {
-                        ClientChannel topDataSrc = this.topDataSrc;
-
                         writer.writeLong(topDataSrc == null || topDataSrc.closed() ? 0 : cachedTopVer);
 
                         projectionFilters.write(writer);

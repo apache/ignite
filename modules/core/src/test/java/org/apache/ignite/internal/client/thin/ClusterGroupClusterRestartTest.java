@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Collectors;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.Test;
 
@@ -70,15 +68,6 @@ public class ClusterGroupClusterRestartTest extends AbstractThinClientTest {
 
         for (int idx : nodeIdxs)
             assertNotNull(grp.node(grid(idx).localNode().id()));
-    }
-
-    /** */
-    private void assertNotContainsNodes(ClientClusterGroup grp, Collection<ClusterNode> nodes) {
-        for (ClusterNode node : grp.nodes())
-            assertFalse(nodes.contains(node));
-
-        for (ClusterNode node : nodes)
-            assertNull(grp.node(node.id()));
     }
 
     /** */
