@@ -25,8 +25,6 @@ import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction.IDX_ATTR;
@@ -45,28 +43,20 @@ public class ClusterGroupClusterRestartTest extends AbstractThinClientTest {
         prepareCluster();
 
         try (IgniteClient client = startClient(0, 1)) {
-            Collection<ClusterNode> clusterNodes = G.allGrids().stream().map(g -> g.cluster().localNode()).collect(Collectors.toList());
-
             ClientClusterGroup dfltGrp = client.cluster();
             ClientClusterGroup srvGrp = client.cluster().forServers();
             ClientClusterGroup cliGrp = client.cluster().forClients();
             ClientClusterGroup attrGrp = client.cluster().forAttribute(IDX_ATTR, 0);
-            ClientClusterGroup idGrp = client.cluster().forNodeIds(F.nodeIds(clusterNodes));
-            ClientClusterGroup nodeGrp = client.cluster().forNodes(clusterNodes);
 
             assertContainsNodes(dfltGrp, 0, 1, 2);
             assertContainsNodes(srvGrp, 0, 1);
             assertContainsNodes(cliGrp, 2);
             assertContainsNodes(attrGrp, 0);
-            assertContainsNodes(idGrp, 0, 1, 2);
-            assertContainsNodes(nodeGrp, 0, 1, 2);
 
             stopAllGrids();
 
             prepareCluster();
 
-            assertNotContainsNodes(idGrp, clusterNodes);
-            assertNotContainsNodes(nodeGrp, clusterNodes);
             assertContainsNodes(dfltGrp, 0, 1, 2);
             assertContainsNodes(srvGrp, 0, 1);
             assertContainsNodes(cliGrp, 2);

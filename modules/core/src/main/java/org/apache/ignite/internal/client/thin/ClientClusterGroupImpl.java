@@ -71,11 +71,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
     /** Cached node IDs. Should be changed atomically with cachedTopVer under lock on ClientClusterGroupImpl instance. */
     private Collection<UUID> cachedNodeIds;
 
-    /**
-     * Cached nodes.
-     *
-     * @see #findCachedNode(UUID)
-     */
+    /** Cached nodes. */
     private final Map<UUID, ClusterNode> cachedNodes = new ConcurrentHashMap<>();
 
     /**
@@ -103,7 +99,12 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
     @Override public ClientClusterGroup forNodes(Collection<? extends ClusterNode> nodes) {
         A.notNull(nodes, "nodes");
 
-        return forProjectionFilters(projectionFilters.forNodeIds(new HashSet<>(F.nodeIds(nodes))));
+        ClientClusterGroupImpl grp = forProjectionFilters(projectionFilters.forNodeIds(new HashSet<>(F.nodeIds(nodes))));
+
+        for (ClusterNode node : nodes)
+            grp.cachedNodes.put(node.id(), node);
+
+        return grp;
     }
 
     /** {@inheritDoc} */
@@ -246,9 +247,9 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
      * {@inheritDoc}
      */
     @Override public ClusterNode node(UUID nid) {
-        if (projectionFilters.resultFilter == null) {
-            ClusterNode node = findCachedNode(nid);
+        ClusterNode node = cachedNodes.get(nid);
 
+        if (projectionFilters.resultFilter == null) {
             if (node == null)
                 node = F.first(nodesByIds(Collections.singleton(nid)));
 
@@ -352,10 +353,8 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
         List<ClusterNode> nodes = new ArrayList<>();
         Collection<UUID> nodesToReq = null;
 
-        ClientChannel topDataSrc = this.topDataSrc;
-
         for (UUID nodeId : nodeIds) {
-            ClusterNode node = findCachedNode(nodeId);
+            ClusterNode node = cachedNodes.get(nodeId);
 
             if (node != null) {
                 if (projectionFilters.testClientSidePredicates(node))
@@ -369,16 +368,8 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
             }
         }
 
-        if (!F.isEmpty(nodesToReq)) {
-            Collection<ClusterNode> requestedNodes = requestNodesByIds(nodesToReq);
-
-            if (!nodes.isEmpty() && topDataSrc != null && topDataSrc.closed()) {
-                // In this case we can't trust nodes that were previously got from the cache.
-                nodes = new ArrayList<>(requestNodesByIds(nodeIds));
-            }
-            else
-                nodes.addAll(requestedNodes);
-        }
+        if (!F.isEmpty(nodesToReq))
+            nodes.addAll(requestNodesByIds(nodesToReq));
 
         return projectionFilters.applyResultFilter(nodes);
     }
@@ -403,8 +394,6 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
                     }
                 },
                 res -> {
-                    updateTopologyDataSource(res.clientChannel());
-
                     try (BinaryReaderExImpl reader = utils.createBinaryReader(res.in())) {
                         int nodesCnt = reader.readInt();
 
@@ -429,29 +418,6 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
         catch (ClientError e) {
             throw new ClientException(e);
         }
-    }
-
-    /** */
-    private synchronized void updateTopologyDataSource(ClientChannel channel) {
-        ClientChannel topDataSrc = this.topDataSrc;
-
-        if (topDataSrc != null && topDataSrc.closed())
-            cachedNodes.clear();
-
-        this.topDataSrc = channel;
-    }
-
-    /**
-     * Cluster group nodes cache is invalidated whenever the channel from which it was received is closed.
-     * This guarantees that outdated cache data will not be used if the entire cluster is restarted but its final topology
-     * version remains the same.
-     *
-     * @return Cluster node instance if the node with specified ID is present in the cache and the cache itself is valid.
-     */
-    private ClusterNode findCachedNode(UUID nodeId) {
-        ClientChannel topDataSrc = this.topDataSrc;
-
-        return topDataSrc == null || topDataSrc.closed() ? null : cachedNodes.get(nodeId);
     }
 
     /**
