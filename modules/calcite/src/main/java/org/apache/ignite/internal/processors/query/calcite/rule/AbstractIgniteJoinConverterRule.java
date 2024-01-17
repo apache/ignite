@@ -118,17 +118,21 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
                 if (prevTblHints == null)
                     continue;
 
-                int disableCnt = curHintIsDisable ? 1 : 0;
+                Set<HintDefinition> allDisables = new HashSet<>();
+
+                if (curHintIsDisable)
+                    allDisables.add(curHintDef);
 
                 for (HintDefinition prevTblHint : prevTblHints) {
                     boolean prevHintIsDisable = !HINTS.containsKey(prevTblHint);
 
                     if (prevHintIsDisable)
-                        ++disableCnt;
+                        allDisables.add(prevTblHint);
 
                     // Prohibited: disabling all join types, combinations of forcing and disabling same join type,
                     // forcing of different join types.
-                    if (curHintIsDisable && disableCnt == HINTS.size() || isMutuallyExclusive(curHintDef, prevTblHint))
+                    if (curHintIsDisable && (allDisables != null && allDisables.size() == HINTS.size())
+                        || isMutuallyExclusive(curHintDef, prevTblHint))
                         skipHint = true;
                 }
             }

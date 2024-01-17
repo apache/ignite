@@ -491,14 +491,13 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
                     .and(hasNestedTableScan("TBL2")))), CORE_JOIN_REORDER_RULES);
 
         // Check many duplicated disables doesn't erase other disables.
-        sqlTpl = "SELECT %s t1.v1, t2.v2, t3.v3, t4.v1 FROM TBL1 t1, TBL2 t2, TBL3 t3, TBL4 t4 where " +
-            "t1.v1=t2.v1 and t1.v2=t2.v2 and t1.v3=t3.v3 and t1.v1=t4.v1";
+        sqlTpl = "SELECT %s t1.v1, t2.v2 FROM TBL1 t1, TBL2 t2 where t1.v1=t2.v1";
 
-        String hints = "/*+ " + NO_CNL_JOIN + ',' + NO_CNL_JOIN + "(TBL1), " + NO_CNL_JOIN + "(TBL1,TBL2), " + NO_CNL_JOIN
-            + "(TBL1,TBL4), " + NO_MERGE_JOIN + "(TBL1) */";
+        String hints = "/*+ " + NO_CNL_JOIN + ',' + NO_CNL_JOIN + "(TBL1), " + NO_CNL_JOIN + "(TBL1,TBL2), "
+            + NO_NL_JOIN + "(TBL1) */";
 
         assertPlan(String.format(sqlTpl, hints), schema,
-            nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class).and(hasChildThat(isTableScan("TBL1")))).negate()
+            nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class).and(hasChildThat(isTableScan("TBL1")))).negate()
                 .and(nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
                     .and(hasChildThat(isTableScan("TBL1")))).negate()),
             CORE_JOIN_REORDER_RULES);
