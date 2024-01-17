@@ -434,16 +434,31 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testNestedHintOverrides() throws Exception {
-        assertPlan("SELECT /*+ " + MERGE_JOIN + "(TBL1) */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
+        assertPlan("SELECT /*+ " + MERGE_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
                 "where t2.v1 in (SELECT t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)", schema,
-            nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class).negate().and(hasNestedTableScan("TBL1"))), CORE_JOIN_REORDER_RULES);
+            nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class)).negate()
+                .and(nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)).negate()), CORE_JOIN_REORDER_RULES);
 
-        assertPlan("SELECT /*+ " + MERGE_JOIN + "(TBL1) */ t1.v1, t2.v2 FROM TBL1 " +
-            "t1 JOIN TBL2 t2 on t1.v3=t2.v3 where t2.v1 in " +
-            "(SELECT /*+ " + CNL_JOIN + "(TBL1) */ t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)", schema,
-            nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class).and(hasNestedTableScan("TBL1")))
+        assertPlan("SELECT /*+ " + MERGE_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
+                "where t2.v1 in (SELECT /*+ " + CNL_JOIN + "(TBL1) */ t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)",
+            schema, nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class).and(hasNestedTableScan("TBL1")))
                 .and(nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
-                    .and(hasNestedTableScan("TBL3")).and(hasNestedTableScan("TBL1")))), CORE_JOIN_REORDER_RULES);
+                    .and(hasNestedTableScan("TBL3")).and(hasNestedTableScan("TBL1"))))
+                .and(nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class).negate())), CORE_JOIN_REORDER_RULES);
+
+        assertPlan("SELECT /*+ " + MERGE_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
+                "where t2.v1 in (SELECT t3.v3 from TBL3 /*+ " + CNL_JOIN + " */ t3 JOIN TBL1 t4 on t3.v2=t4.v2)",
+            schema, nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class).and(hasNestedTableScan("TBL1")))
+                .and(nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+                    .and(hasNestedTableScan("TBL3")).and(hasNestedTableScan("TBL1"))))
+                .and(nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class).negate())), CORE_JOIN_REORDER_RULES);
+
+        assertPlan("SELECT /*+ " + MERGE_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
+                "where t2.v1 in (SELECT t3.v3 from TBL3 t3 JOIN TBL1 /*+ " + CNL_JOIN + " */ t4 on t3.v2=t4.v2)",
+            schema, nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class).and(hasNestedTableScan("TBL1")))
+                .and(nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+                    .and(hasNestedTableScan("TBL3")).and(hasNestedTableScan("TBL1"))))
+                .and(nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class).negate())), CORE_JOIN_REORDER_RULES);
     }
 
     /**

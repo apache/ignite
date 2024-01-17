@@ -87,6 +87,17 @@ public final class HintUtils {
     }
 
     /**
+     * @return Only noninherited hints of {@code rel} if it is a {@code Hintable}. If is not or has no hints, empty
+     * collection.
+     * @see Hintable#getHints()
+     */
+    public static List<RelHint> nonInheritedRelHints(RelNode rel) {
+        return rel instanceof Hintable
+            ? ((Hintable)rel).getHints().stream().filter(hint->hint.inheritPath.isEmpty()).collect(Collectors.toList())
+            : Collections.emptyList();
+    }
+
+    /**
      * @return Distinct hints within {@code hints} filtered with {@code hintDefs}, {@link HintOptionsChecker} and
      * removed inherit pathes.
      * @see HintOptionsChecker

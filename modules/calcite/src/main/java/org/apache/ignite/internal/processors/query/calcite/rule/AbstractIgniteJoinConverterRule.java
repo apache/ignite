@@ -35,7 +35,6 @@ import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
-import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.util.Util.last;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.CNL_JOIN;
@@ -86,9 +85,9 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
     private boolean disabledByHints(LogicalJoin join) {
         Collection<TableScan> joinTables = joinTables(join);
 
-        Collection<RelHint> hints = Stream.concat(
-            F.flatCollections(joinTables.stream().map(TableScan::getHints).collect(Collectors.toList())).stream(),
-            HintUtils.allRelHints(join).stream()).collect(Collectors.toList());
+        Collection<RelHint> hints = new ArrayList<>();
+        joinTables.forEach(t -> hints.addAll(HintUtils.nonInheritedRelHints(t)));
+        hints.addAll(HintUtils.allRelHints(join));
 
         if (hints.isEmpty())
             return false;
@@ -105,7 +104,7 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
             if (!hint.listOptions.isEmpty())
                 matchedTbls.retainAll(joinTblNames);
 
-            if (matchedTbls.isEmpty())
+            if (matchedTbls.isEmpty() && !hint.listOptions.isEmpty())
                 continue;
 
             HintDefinition curHintDef = HintDefinition.valueOf(hint.hintName);
