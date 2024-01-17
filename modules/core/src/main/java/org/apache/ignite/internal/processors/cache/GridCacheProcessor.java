@@ -110,7 +110,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Part
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -3104,7 +3103,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             .setTtlCleanupManager(new GridCacheSharedTtlCleanupManager())
             .setPartitionsEvictManager(new PartitionsEvictManager())
             .setJtaManager(JTA.createOptional())
-            .setMvccCachingManager(new MvccCachingManager())
             .setDiagnosticManager(new CacheDiagnosticManager())
             .setCdcManager(cdcMgr)
             .build(kernalCtx, storeSesLsnrs);
