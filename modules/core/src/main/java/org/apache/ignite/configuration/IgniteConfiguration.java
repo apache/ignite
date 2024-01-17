@@ -229,7 +229,7 @@ public class IgniteConfiguration {
     public static final String DFLT_SNAPSHOT_DIRECTORY = "snapshots";
 
     /** Default number of threads to perform snapshot operations. The default value is <tt>4</tt>. */
-    public static final int DFLT_SNAPSHOT_THREAD_POOL_SIZE = 4;
+    public static final int DFLT_SNAPSHOT_THREAD_POOL_SIZE = -1;
 
     /** Default value for late affinity assignment flag. */
     @Deprecated
