@@ -506,12 +506,6 @@ http://host:port/ignite?cmd=incr&cacheName={cacheName}&key={incrKey}&init={initi
 |Example
 
 
-|`cacheName`
-| string
-| Yes
-| Cache name. If not provided, default cache is used.
-| partitionedCache
-
 |`key`
 | string
 |
@@ -564,11 +558,6 @@ http://host:port/ignite?cmd=decr&cacheName={cacheName}&key={key}&init={init_valu
 |Description
 |Example
 
-|`cacheName`
-| string
-|Yes
-|Cache name. If not provided, the default cache ("default") is used.
-|partitionedCache
 
 |`key`
 |string
