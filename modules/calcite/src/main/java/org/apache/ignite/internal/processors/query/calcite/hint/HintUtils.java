@@ -93,7 +93,7 @@ public final class HintUtils {
      */
     public static List<RelHint> nonInheritedRelHints(RelNode rel) {
         return rel instanceof Hintable
-            ? ((Hintable)rel).getHints().stream().filter(hint->hint.inheritPath.isEmpty()).collect(Collectors.toList())
+            ? ((Hintable)rel).getHints().stream().filter(hint -> hint.inheritPath.isEmpty()).collect(Collectors.toList())
             : Collections.emptyList();
     }
 

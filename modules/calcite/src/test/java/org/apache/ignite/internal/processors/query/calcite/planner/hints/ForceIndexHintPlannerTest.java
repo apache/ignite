@@ -83,6 +83,10 @@ public class ForceIndexHintPlannerTest extends AbstractPlannerTest {
         assertPlan("SELECT /*+ FORCE_INDEX(IDX2_3) */ * FROM TBL2 /*+ FORCE_INDEX(IDX2_2) */ WHERE val23=1 and " +
             "val21=2 and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2")));
 
+        // First table hint has a bigger priority.
+        assertPlan("SELECT * FROM TBL2 /*+ FORCE_INDEX(IDX2_2), FORCE_INDEX(IDX2_3) */ WHERE val23=1 and " +
+            "val21=2 and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2")));
+
         assertPlan("SELECT /*+ FORCE_INDEX(UNEXISTING,IDX2_3,UNEXISTING) */ * FROM TBL2 WHERE val23=1 and val21=2 " +
             "and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
 

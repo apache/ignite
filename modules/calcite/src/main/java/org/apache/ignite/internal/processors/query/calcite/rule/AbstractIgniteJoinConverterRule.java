@@ -52,6 +52,9 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
     /** Known join type hints as flat array. */
     private static final HintDefinition[] ALL_HINTS;
 
+    /** Special join table name for the case when the current join has no any table scan input. */
+    private static final String UNALLOWED_TABLE_NAME = " <>+-!?=\t";
+
     /** Hint disabing this join type. */
     private final HintDefinition knownDisableHint;
 
@@ -83,35 +86,39 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
 
     /** */
     private boolean disabledByHints(LogicalJoin join) {
-        Collection<TableScan> joinTables = joinTables(join);
+        Collection<TableScan> tables = joinTables(join);
 
-        Collection<RelHint> hints = new ArrayList<>();
-        joinTables.forEach(t -> hints.addAll(HintUtils.nonInheritedRelHints(t)));
-        hints.addAll(HintUtils.allRelHints(join));
+        Collection<RelHint> rawHints = new ArrayList<>();
 
-        if (hints.isEmpty())
+        // Table hints have a bigger priority and go first.
+        tables.forEach(t -> rawHints.addAll(HintUtils.nonInheritedRelHints(t)));
+
+        rawHints.addAll(HintUtils.allRelHints(join));
+
+        if (rawHints.isEmpty())
             return false;
 
         boolean ruleDisabled = false;
 
         Map<String, Collection<HintDefinition>> hintedTables = new HashMap<>();
 
-        Set<String> joinTblNames = joinTables.stream().map(t -> last(t.getTable().getQualifiedName())).collect(Collectors.toSet());
+        Set<String> tblNames = extractTblNames(tables);
 
-        for (RelHint hint : HintUtils.hints(join, hints, ALL_HINTS)) {
-            Set<String> matchedTbls = hint.listOptions.isEmpty() ? joinTblNames : new HashSet<>(hint.listOptions);
+        for (RelHint hint : HintUtils.hints(join, rawHints, ALL_HINTS)) {
+            Set<String> matchedTbls = hint.listOptions.isEmpty() ? tblNames : new HashSet<>(hint.listOptions);
 
             if (!hint.listOptions.isEmpty())
-                matchedTbls.retainAll(joinTblNames);
+                matchedTbls.retainAll(tblNames);
 
-            if (matchedTbls.isEmpty() && !hint.listOptions.isEmpty())
+            // Do not skip if the hint has no option. It can be a 'global', request-level hint.
+            if (matchedTbls.isEmpty())
                 continue;
 
             HintDefinition curHintDef = HintDefinition.valueOf(hint.hintName);
             boolean curHintIsDisable = !HINTS.containsKey(curHintDef);
             boolean skipHint = false;
 
-            for (String tbl : joinTblNames) {
+            for (String tbl : tblNames) {
                 Collection<HintDefinition> prevTblHints = hintedTables.get(tbl);
 
                 if (prevTblHints == null)
@@ -152,6 +159,15 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
         }
 
         return ruleDisabled;
+    }
+
+    /**
+     * @return Names of the joining tables or {@link #UNALLOWED_TABLE_NAME} if the join has no any table scan input.
+     */
+    private static Set<String> extractTblNames(Collection<TableScan> tables) {
+        return tables.isEmpty()
+            ? Stream.of(UNALLOWED_TABLE_NAME).collect(Collectors.toSet())
+            : tables.stream().map(t -> last(t.getTable().getQualifiedName())).collect(Collectors.toSet());
     }
 
     /**
