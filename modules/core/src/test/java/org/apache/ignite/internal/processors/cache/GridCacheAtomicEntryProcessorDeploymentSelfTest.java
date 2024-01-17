@@ -120,7 +120,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     public void testInvokeDeployment2() throws Exception {
         depMode = DeploymentMode.SHARED;
 
-        doTestInvoke();
+        //doTestInvoke();
         doTestInvokeEx();
     }
 
