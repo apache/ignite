@@ -26,6 +26,7 @@ import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -193,8 +194,11 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (entryProcessorBytes != null && entryProcessor == null)
+        if (entryProcessorBytes != null && entryProcessor == null) {
+            GridBinaryMarshaller.USE_CACHE.set(Boolean.FALSE);
             entryProcessor = U.unmarshal(ctx, entryProcessorBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            GridBinaryMarshaller.USE_CACHE.set(Boolean.TRUE);
+        }
 
         if (invokeArgs == null)
             invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
