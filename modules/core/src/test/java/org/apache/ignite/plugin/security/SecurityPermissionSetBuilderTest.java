@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_VIEW;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
@@ -70,18 +69,9 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
 
         exp.setServicePermissions(permSrvc);
 
-        exp.setSystemPermissions(permissions(ADMIN_VIEW, EVENTS_ENABLE, JOIN_AS_SERVER, CACHE_CREATE, CACHE_DESTROY));
+        exp.setSystemPermissions(permissions(EVENTS_ENABLE, JOIN_AS_SERVER, CACHE_CREATE, CACHE_DESTROY));
 
         final SecurityPermissionSetBuilder permsBuilder = new SecurityPermissionSetBuilder();
-
-        assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    permsBuilder.appendCachePermissions("cache", ADMIN_VIEW);
-                    return null;
-                }
-            }, IgniteException.class,
-            "you can assign permission only start with [CACHE_], but you try ADMIN_VIEW"
-        );
 
         assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -123,8 +113,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
             .appendServicePermissions("service1", SERVICE_DEPLOY)
             .appendServicePermissions("service2", SERVICE_INVOKE)
             .appendServicePermissions("service2", SERVICE_INVOKE)
-            .appendSystemPermissions(ADMIN_VIEW)
-            .appendSystemPermissions(ADMIN_VIEW, EVENTS_ENABLE)
+            .appendSystemPermissions(EVENTS_ENABLE)
             .appendSystemPermissions(JOIN_AS_SERVER)
             .appendSystemPermissions(CACHE_CREATE, CACHE_DESTROY);
 
