@@ -130,6 +130,11 @@ public class RandomAccessFileIO extends AbstractFileIO {
         return ch.size();
     }
 
+    /** */
+    public void size(long size) throws IOException {
+        ch.truncate(size);
+    }
+
     /** {@inheritDoc} */
     @Override public void clear() throws IOException {
         ch.truncate(0);

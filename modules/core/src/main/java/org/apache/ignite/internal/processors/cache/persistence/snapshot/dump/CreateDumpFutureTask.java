@@ -182,8 +182,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         this.dumpDir = dumpDir;
 
         this.ioFactory = compress
-            ? new WriteOnlyZipFileIOFactory(new BufferedFileIOFactory(ioFactory, USER_CHANGE_WRITE_BUFFER_SIZE))
-            : new BufferedFileIOFactory(ioFactory, USER_CHANGE_WRITE_BUFFER_SIZE);
+            ? new WriteOnlyZipFileIOFactory(new DirectBufferedFileIOFactory(ioFactory, USER_CHANGE_WRITE_BUFFER_SIZE))
+            : new DirectBufferedFileIOFactory(ioFactory, USER_CHANGE_WRITE_BUFFER_SIZE);
 
         this.compress = compress;
         this.rateLimiter = rateLimiter;
@@ -291,7 +291,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                     if (rows == null)
                         throw new IgniteCheckedException("Partition missing [part=" + part + ']');
 
-                    dumpCtx.onStartIteration();
+//                    dumpCtx.onStartIteration();
 
                     while (rows.hasNext()) {
                         CacheDataRow row = rows.next();
