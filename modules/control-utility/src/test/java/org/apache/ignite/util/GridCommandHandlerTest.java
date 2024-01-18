@@ -219,6 +219,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** */
     protected static File customDiagnosticDir;
 
+    /** */
+    public static Function<String, Pattern> patternBuilder =
+        (state) -> Pattern.compile("Cluster state: " + state + "\\s+");
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -904,11 +908,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        Pattern patternInactive = Pattern.compile("Cluster state: INACTIVE");
-
-        Matcher matcherInactive = patternInactive.matcher(testOut.toString());
-
-        assertTrue(matcherInactive.find());
+        assertTrue(patternBuilder.apply(ignite.cluster().state().toString()).matcher(testOut.toString()).find());
 
         String out = testOut.toString();
 
@@ -924,11 +924,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        Pattern patternActive = Pattern.compile("Cluster state: ACTIVE(\r\n|\n)");
-
-        Matcher matcherActive = patternActive.matcher(testOut.toString());
-
-        assertTrue(matcherActive.find());
+        assertTrue(patternBuilder.apply(ignite.cluster().state().toString()).matcher(testOut.toString()).find());
 
         ignite.cluster().state(ACTIVE_READ_ONLY);
 
@@ -938,11 +934,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        Pattern patternActiveReadOnly = Pattern.compile("Cluster state: ACTIVE_READ_ONLY");
-
-        Matcher matcherActiveReadOnly = patternActiveReadOnly.matcher(testOut.toString());
-
-        assertTrue(matcherActiveReadOnly.find());
+        assertTrue(patternBuilder.apply(ignite.cluster().state().toString()).matcher(testOut.toString()).find());
 
         boolean tagUpdated = GridTestUtils.waitForCondition(() -> {
             try {
@@ -3996,23 +3988,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         injectTestSystemOut();
 
-        Map<ClusterState, String> map = new HashMap<>();
-        map.put(ACTIVE, "Cluster state: ACTIVE(\r\n|\n)");
-        map.put(ACTIVE_READ_ONLY, "Cluster state: ACTIVE_READ_ONLY");
-        map.put(INACTIVE, "Cluster state: INACTIVE");
-
-        Iterator<Map.Entry<ClusterState, String>> iterator = map.entrySet().iterator();
-
-        while (iterator.hasNext()) {
-            Map.Entry<ClusterState, String> entry = iterator.next();
-
-            ignite.cluster().state(entry.getKey());
+        for (ClusterState state : ClusterState.values()) {
+            ignite.cluster().state(state);
             assertEquals(EXIT_CODE_OK, execute("--baseline"));
-            assertEquals(entry.getKey(), ignite.cluster().state());
-
-            Pattern pattern = Pattern.compile(entry.getValue());
-            Matcher matcher = pattern.matcher(testOut.toString());
-            assertTrue(matcher.find());
+            assertEquals(state, ignite.cluster().state());
+            assertTrue(patternBuilder.apply(state.toString()).matcher(testOut.toString()).find());
         }
     }
 
