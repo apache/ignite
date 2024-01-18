@@ -673,7 +673,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                                         op = conflictRes.get1();
                                         val = txEntry.context().toCacheObject(conflictCtx.mergeValue());
-                                        explicitVer = writeVersion();
+//                                        explicitVer = writeVersion();  // tx ver
 
                                         txEntry.ttl(conflictCtx.ttl());
                                         txEntry.conflictExpireTime(conflictCtx.expireTime());
