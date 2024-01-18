@@ -32,6 +32,7 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -903,7 +904,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertContains(log, testOut.toString(), "Cluster state: INACTIVE");
+        Pattern patternInactive = Pattern.compile("Cluster state: INACTIVE");
+
+        Matcher matcherInactive = patternInactive.matcher(testOut.toString());
+
+        assertTrue(matcherInactive.find());
 
         String out = testOut.toString();
 
@@ -919,7 +924,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertContains(log, testOut.toString().replaceAll("\r", ""), "Cluster state: ACTIVE\n");
+        Pattern patternActive = Pattern.compile("Cluster state: ACTIVE(\r\n|\n)");
+
+        Matcher matcherActive = patternActive.matcher(testOut.toString());
+
+        assertTrue(matcherActive.find());
 
         ignite.cluster().state(ACTIVE_READ_ONLY);
 
@@ -929,7 +938,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertContains(log, testOut.toString(), "Cluster state: ACTIVE_READ_ONLY");
+        Pattern patternActiveReadOnly = Pattern.compile("Cluster state: ACTIVE_READ_ONLY");
+
+        Matcher matcherActiveReadOnly = patternActiveReadOnly.matcher(testOut.toString());
+
+        assertTrue(matcherActiveReadOnly.find());
 
         boolean tagUpdated = GridTestUtils.waitForCondition(() -> {
             try {
@@ -3983,20 +3996,24 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         injectTestSystemOut();
 
-        ignite.cluster().state(ACTIVE);
-        assertEquals(EXIT_CODE_OK, execute("--baseline"));
-        assertEquals(ACTIVE, ignite.cluster().state());
-        assertContains(log, testOut.toString().replaceAll("\r", ""), "Cluster state: ACTIVE\n");
+        Map<ClusterState, String> map = new HashMap<>();
+        map.put(ACTIVE, "Cluster state: ACTIVE(\r\n|\n)");
+        map.put(ACTIVE_READ_ONLY, "Cluster state: ACTIVE_READ_ONLY");
+        map.put(INACTIVE, "Cluster state: INACTIVE");
 
-        ignite.cluster().state(ACTIVE_READ_ONLY);
-        assertEquals(EXIT_CODE_OK, execute("--baseline"));
-        assertEquals(ACTIVE_READ_ONLY, ignite.cluster().state());
-        assertContains(log, testOut.toString(), "Cluster state: ACTIVE_READ_ONLY");
+        Iterator<Map.Entry<ClusterState, String>> iterator = map.entrySet().iterator();
 
-        ignite.cluster().state(INACTIVE);
-        assertEquals(EXIT_CODE_OK, execute("--baseline"));
-        assertEquals(INACTIVE, ignite.cluster().state());
-        assertContains(log, testOut.toString(), "Cluster state: INACTIVE");
+        while (iterator.hasNext()) {
+            Map.Entry<ClusterState, String> entry = iterator.next();
+
+            ignite.cluster().state(entry.getKey());
+            assertEquals(EXIT_CODE_OK, execute("--baseline"));
+            assertEquals(entry.getKey(), ignite.cluster().state());
+
+            Pattern pattern = Pattern.compile(entry.getValue());
+            Matcher matcher = pattern.matcher(testOut.toString());
+            assertTrue(matcher.find());
+        }
     }
 
     /**
