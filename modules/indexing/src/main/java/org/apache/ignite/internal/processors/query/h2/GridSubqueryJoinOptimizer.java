@@ -401,7 +401,7 @@ public class GridSubqueryJoinOptimizer {
             return false;
         }
         //muti subquery from(*from()) end
-        GridSqlAlias subTbl = new GridSqlAlias(alias, GridSqlAlias.unwrap(subSel.from()));
+        GridSqlAlias subTbl = (GridSqlAlias)subSel.from();
         if (target == null)
             // it's true only when the subquery is only table in the table list
             // so we can safely replace entire FROM expression of the parent
@@ -422,11 +422,11 @@ public class GridSubqueryJoinOptimizer {
         }
 
         remapColumns(
-            parent,
-            subSel,
-            // reference equality used intentionally here
-            col -> wrappedSubQry == col.expressionInFrom(),
-            subTbl
+                parent,
+                subSel,
+                // reference equality used intentionally here
+                col -> wrappedSubQry == col.expressionInFrom() ,
+                subTbl
         );
 
         return true;
