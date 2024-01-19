@@ -440,9 +440,10 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
             // @see io.opencensus.implcore.trace.export.ExportComponentImpl.
             for (int i = 0; i < SPAN_BUFFER_COUNT; i++)
                 Tracing.getTracer().spanBuilder("test-" + i).setSampler(Samplers.alwaysSample()).startSpan().end();
-            assertTrue(waitForCondition(() -> allSpans()
-                    .anyMatch(span -> span.getName().equals("test-" + (SPAN_BUFFER_COUNT - 1))),
-                    2 * EXPORTER_SCHEDULE_DELAY));
+
+            assertTrue(waitForCondition(
+                () -> allSpans().anyMatch(span -> span.getName().equals("test-" + (SPAN_BUFFER_COUNT - 1))),
+                2 * EXPORTER_SCHEDULE_DELAY));
         }
 
         /** Clears collected spans. */
