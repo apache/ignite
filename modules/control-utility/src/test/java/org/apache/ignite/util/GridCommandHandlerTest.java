@@ -32,7 +32,6 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -220,7 +219,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     protected static File customDiagnosticDir;
 
     /** */
-    public static Function<String, Pattern> patternBuilder =
+    public static Function<String, Pattern> clusterStatePatternBuilder =
         (state) -> Pattern.compile("Cluster state: " + state + "\\s+");
 
     /** {@inheritDoc} */
@@ -908,7 +907,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertTrue(patternBuilder.apply(ignite.cluster().state().toString()).matcher(testOut.toString()).find());
+        assertTrue(clusterStatePatternBuilder.apply("INACTIVE").matcher(testOut.toString()).find());
 
         String out = testOut.toString();
 
@@ -924,7 +923,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertTrue(patternBuilder.apply(ignite.cluster().state().toString()).matcher(testOut.toString()).find());
+        assertTrue(clusterStatePatternBuilder.apply("ACTIVE").matcher(testOut.toString()).find());
 
         ignite.cluster().state(ACTIVE_READ_ONLY);
 
@@ -934,7 +933,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertTrue(patternBuilder.apply(ignite.cluster().state().toString()).matcher(testOut.toString()).find());
+        assertTrue(clusterStatePatternBuilder.apply("ACTIVE_READ_ONLY").matcher(testOut.toString()).find());
 
         boolean tagUpdated = GridTestUtils.waitForCondition(() -> {
             try {
@@ -3992,7 +3991,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             ignite.cluster().state(state);
             assertEquals(EXIT_CODE_OK, execute("--baseline"));
             assertEquals(state, ignite.cluster().state());
-            assertTrue(patternBuilder.apply(state.toString()).matcher(testOut.toString()).find());
+            assertTrue(clusterStatePatternBuilder.apply(state.toString()).matcher(testOut.toString()).find());
         }
     }
 
