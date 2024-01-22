@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -40,7 +39,7 @@ public class CacheObjectTransformerUtils {
      * @return Transformed bytes.
      */
     public static byte[] transformIfNecessary(byte[] bytes, CacheObjectValueContext ctx) {
-        return transformIfNecessary(bytes, 0, bytes.length, ctx.kernalContext());
+        return transformIfNecessary(bytes, 0, bytes.length, ctx);
     }
 
     /**
@@ -49,13 +48,13 @@ public class CacheObjectTransformerUtils {
      * @param ctx Context.
      * @return Transformed bytes.
      */
-    public static byte[] transformIfNecessary(byte[] bytes, int offset, int length, GridKernalContext ctx) {
+    public static byte[] transformIfNecessary(byte[] bytes, int offset, int length, CacheObjectValueContext ctx) {
         if (ctx == null)
             return bytes;
 
         assert bytes[offset] != TRANSFORMED;
 
-        CacheObjectTransformerProcessor transformer = ctx.transformer();
+        CacheObjectTransformerProcessor transformer = transformer(ctx);
 
         if (transformer == null)
             return bytes;
@@ -68,9 +67,9 @@ public class CacheObjectTransformerUtils {
 
             byte[] res = toArray(transformed);
 
-            if (ctx.event() != null && ctx.event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
-                ctx.event().record(
-                    new CacheObjectTransformedEvent(ctx.discovery().localNode(),
+            if (recordable(ctx, EVT_CACHE_OBJECT_TRANSFORMED)) {
+                ctx.kernalContext().event().record(
+                    new CacheObjectTransformedEvent(ctx.kernalContext().discovery().localNode(),
                         "Object transformed",
                         EVT_CACHE_OBJECT_TRANSFORMED,
                         detachIfNecessary(bytes, offset, length),
@@ -83,9 +82,9 @@ public class CacheObjectTransformerUtils {
         else {
             byte[] res = detachIfNecessary(bytes, offset, length);
 
-            if (ctx.event() != null && ctx.event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
-                ctx.event().record(
-                    new CacheObjectTransformedEvent(ctx.discovery().localNode(),
+            if (recordable(ctx, EVT_CACHE_OBJECT_TRANSFORMED)) {
+                ctx.kernalContext().event().record(
+                    new CacheObjectTransformedEvent(ctx.kernalContext().discovery().localNode(),
                         "Object transformation was cancelled.",
                         EVT_CACHE_OBJECT_TRANSFORMED,
                         res,
@@ -117,20 +116,20 @@ public class CacheObjectTransformerUtils {
      * @param ctx Context.
      * @return Restored bytes.
      */
-    public static byte[] restoreIfNecessary(byte[] bytes, GridKernalContext ctx) {
+    public static byte[] restoreIfNecessary(byte[] bytes, CacheObjectValueContext ctx) {
         if (bytes[0] != TRANSFORMED)
             return bytes;
 
-        CacheObjectTransformerProcessor transformer = ctx.transformer();
+        CacheObjectTransformerProcessor transformer = transformer(ctx);
 
         ByteBuffer src = ByteBuffer.wrap(bytes, 1, bytes.length - 1); // Skipping TRANSFORMED.
         ByteBuffer restored = transformer.restore(src);
 
         byte[] res = toArray(restored);
 
-        if (ctx.event() != null && ctx.event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
-            ctx.event().record(
-                new CacheObjectTransformedEvent(ctx.discovery().localNode(),
+        if (recordable(ctx, EVT_CACHE_OBJECT_TRANSFORMED)) {
+            ctx.kernalContext().event().record(
+                new CacheObjectTransformedEvent(ctx.kernalContext().discovery().localNode(),
                     "Object restored",
                     EVT_CACHE_OBJECT_TRANSFORMED,
                     res,

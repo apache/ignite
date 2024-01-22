@@ -212,7 +212,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         if (arr != null)
             return arr;
 
-        return CacheObjectTransformerUtils.restoreIfNecessary(valBytes, ctx.kernalContext());
+        return CacheObjectTransformerUtils.restoreIfNecessary(valBytes, ctx);
     }
 
     /** {@inheritDoc} */
@@ -270,7 +270,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @return Array.
      */
     private byte[] arrayFromValueBytes(CacheObjectValueContext ctx) {
-        return CacheObjectTransformerUtils.restoreIfNecessary(valBytes, ctx.kernalContext());
+        return CacheObjectTransformerUtils.restoreIfNecessary(valBytes, ctx);
     }
 
     /**
@@ -279,7 +279,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     private byte[] valueBytesFromArray(CacheObjectValueContext ctx) {
         assert part == -1; // Keys should never be transformed.
 
-        return CacheObjectTransformerUtils.transformIfNecessary(arr, start, length(), ctx.kernalContext());
+        return CacheObjectTransformerUtils.transformIfNecessary(arr, start, length(), ctx);
     }
 
     /** {@inheritDoc} */

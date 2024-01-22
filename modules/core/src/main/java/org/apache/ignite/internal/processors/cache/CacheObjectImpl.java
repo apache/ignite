@@ -112,7 +112,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
 
     /** {@inheritDoc} */
     @Override public byte[] rawBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
-        return CacheObjectTransformerUtils.restoreIfNecessary(valueBytes(ctx), ctx.kernalContext());
+        return CacheObjectTransformerUtils.restoreIfNecessary(valueBytes(ctx), ctx);
     }
 
     /** {@inheritDoc} */

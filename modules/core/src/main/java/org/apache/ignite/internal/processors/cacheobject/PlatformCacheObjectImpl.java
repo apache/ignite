@@ -69,7 +69,7 @@ public class PlatformCacheObjectImpl extends CacheObjectImpl {
 
         assert valBytes != null;
 
-        return CacheObjectTransformerUtils.restoreIfNecessary(arr, ctx.kernalContext());
+        return CacheObjectTransformerUtils.restoreIfNecessary(arr, ctx);
     }
 
     /** {@inheritDoc} */
@@ -86,7 +86,7 @@ public class PlatformCacheObjectImpl extends CacheObjectImpl {
     private byte[] valueBytesFromArray(CacheObjectValueContext ctx) {
         assert arr != null;
 
-        return CacheObjectTransformerUtils.transformIfNecessary(arr, 0, arr.length, ctx.kernalContext());
+        return CacheObjectTransformerUtils.transformIfNecessary(arr, 0, arr.length, ctx);
     }
 
     /** {@inheritDoc} */
