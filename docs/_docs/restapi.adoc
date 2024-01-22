@@ -494,7 +494,7 @@ Adds and gets current value of given atomic long.
 +
 [source,shell]
 ----
-http://host:port/ignite?cmd=incr&cacheName={cacheName}&key={incrKey}&init={initialValue}&delta={delta}
+http://host:port/ignite?cmd=incr&key={incrKey}&init={initialValue}&delta={delta}
 ----
 +
 [{request_table_props}]
@@ -547,7 +547,7 @@ Subtracts and gets current value of given atomic long.
 +
 [source,shell]
 ----
-http://host:port/ignite?cmd=decr&cacheName={cacheName}&key={key}&init={init_value}&delta={delta}
+http://host:port/ignite?cmd=decr&key={key}&init={init_value}&delta={delta}
 ----
 +
 [{request_table_props}]
