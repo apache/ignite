@@ -670,7 +670,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),
-            readRepairStrategy,
             forcePrimary,
             null,
             skipVals,
@@ -697,7 +696,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         final String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
-        final ReadRepairStrategy readRepairStrategy,
         final boolean forcePrimary,
         @Nullable IgniteCacheExpiryPolicy expiry,
         final boolean skipVals,
@@ -716,7 +714,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             skipVals,
             /*keep cache objects*/false,
             recovery,
-            readRepairStrategy,
             needVer,
             null,
             null); // TODO IGNITE-7371
@@ -746,7 +743,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         final boolean skipVals,
         final boolean keepCacheObjects,
         final boolean recovery,
-        final ReadRepairStrategy readRepairStrategy,
         final boolean needVer,
         @Nullable String txLbl,
         MvccSnapshot mvccSnapshot
@@ -1147,7 +1143,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             skipVals,
             /*keep cache objects*/true,
             recovery,
-            null,
             /*need version*/true,
             txLbl,
             mvccSnapshot);
