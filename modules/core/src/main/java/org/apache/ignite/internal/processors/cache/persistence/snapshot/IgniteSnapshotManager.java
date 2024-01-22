@@ -365,12 +365,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Lock file for dump directory. */
     public static final String DUMP_LOCK = "dump.lock";
 
-    /** Dump write buffers size distributed configuration key */
-    public static final String DUMP_BUFFER_SIZE_DMS_KEY = "dumpBufferSize";
-
-    /** Default dump write buffer size. */
-    public static final int DFLT_DUMP_BUFFER_SIZE = 128 * 1024;
-
     /**
      * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
      * It is important to have only one buffer per thread (instead of creating each buffer per
