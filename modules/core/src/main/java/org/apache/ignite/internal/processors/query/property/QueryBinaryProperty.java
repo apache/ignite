@@ -28,7 +28,6 @@ import org.apache.ignite.internal.binary.BinaryObjectExImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.cacheobject.PlatformCacheObjectImpl;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -132,11 +131,6 @@ public class QueryBinaryProperty implements GridQueryProperty {
             KeyCacheObjectImpl obj0 = (KeyCacheObjectImpl)obj;
 
             return obj0.value(null, false);
-        }
-        else if (obj instanceof PlatformCacheObjectImpl) {
-            PlatformCacheObjectImpl obj0 = (PlatformCacheObjectImpl)obj;
-
-            return fieldValue(obj0.value(coctx, false));
         }
         else if (obj instanceof CacheObjectImpl) {
             CacheObjectImpl obj0 = (CacheObjectImpl)obj;
