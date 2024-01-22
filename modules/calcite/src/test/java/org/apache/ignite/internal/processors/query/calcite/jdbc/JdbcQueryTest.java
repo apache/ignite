@@ -247,7 +247,7 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
             assertTrue(plan.contains("joinType=[left]"));
         }
 
-        try (ResultSet rs = stmt.executeQuery("EXPLAIN PLAN FOR SELECT /*+ DISABLE_RULE('NestedLoopJoinConverter') */ " +
+        try (ResultSet rs = stmt.executeQuery("EXPLAIN PLAN FOR SELECT /*+ NO_NL_JOIN */ " +
             "p2.Name from Person2 p2 RIGHT JOIN Person1 p1 on p2.NAME=p1.NAME")) {
             assertTrue(rs.next());
 

@@ -75,17 +75,14 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testDisabledJoinPushThroughJoinLeft() throws Exception {
-        // Disabling some join rules simplifies exposing of commuted and/or re-ordered joins.
-        String disabledRules = "DISABLE_RULE('MergeJoinConverter', 'CorrelatedNestedLoopJoin')";
-
         // Tests swapping of joins is disabled and the order appears in the query, 'TBL3 -> TBL2 -> TBL1':
         // Join
         //   Join
         //     TableScan(TBL3)
         //     TableScan(TBL2)
         //   TableScan(TBL1)
-        String sql = String.format("select /*+ %s, %s */ t3.* from TBL3 t3, TBL2 t2, TBL1 t1 where t1.v1=t3.v1 and " +
-            "t1.v2=t2.v2", HintDefinition.ENFORCE_JOIN_ORDER.name(), disabledRules);
+        String sql = String.format("select /*+ %s, NL_JOIN */ t3.* from TBL3 t3, TBL2 t2, TBL1 t1 where t1.v1=t3.v1 " +
+            "and t1.v2=t2.v2", HintDefinition.ENFORCE_JOIN_ORDER.name());
 
         assertPlan(sql, schema, hasChildThat(isInstanceOf(Join.class)
             .and(input(0, isInstanceOf(Join.class)
@@ -116,12 +113,9 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
      * @param joinType LEFT or RIGHT JOIN type to test in upper case.
      */
     private void doTestDisabledJoinTypeCommuting(String joinType) throws Exception {
-        // Disabling some join rules simplifies exposing of commuted and/or re-ordered joins.
-        String disabledRules = "DISABLE_RULE('MergeJoinConverter', 'CorrelatedNestedLoopJoin')";
-
         // Tests commuting of the join type is disabled.
-        String sql = String.format("select /*+ %s, %s */ t3.* from TBL2 t2 %s JOIN TBL1 t1 on t2.v2=t1.v1 %s JOIN " +
-            "TBL3 t3 on t2.v1=t3.v3", HintDefinition.ENFORCE_JOIN_ORDER.name(), disabledRules, joinType, joinType);
+        String sql = String.format("select /*+ %s, NL_JOIN */ t3.* from TBL2 t2 %s JOIN TBL1 t1 on t2.v2=t1.v1 %s JOIN " +
+            "TBL3 t3 on t2.v1=t3.v3", HintDefinition.ENFORCE_JOIN_ORDER.name(), joinType, joinType);
 
         assertPlan(sql, schema, hasChildThat(isInstanceOf(Join.class)
             .and(j -> j.getJoinType() != JoinRelType.valueOf(joinType))).negate());
@@ -132,17 +126,14 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testDisabledJoinPushThroughJoinRight() throws Exception {
-        // Disabling some join rules simplifies exposing of commuted and/or re-ordered joins.
-        String disabledRules = "DISABLE_RULE('MergeJoinConverter', 'CorrelatedNestedLoopJoin')";
-
         // Tests the swapping of joins is disabled and the order appears as in the query, 'TBL1->TBL2->TBL3':
         // Join
         //   Join
         //     TableScan(TBL1)
         //     TableScan(TBL2)
         //   TableScan(TBL3)
-        String sql = String.format("select /*+ %s, %s */ t3.* from TBL1 t1, TBL2 t2, TBL3 t3 where t1.v1=t3.v1 and " +
-            "t1.v2=t2.v2", HintDefinition.ENFORCE_JOIN_ORDER.name(), disabledRules);
+        String sql = String.format("select /*+ %s, NL_JOIN */ t3.* from TBL1 t1, TBL2 t2, TBL3 t3 where t1.v1=t3.v1 " +
+            "and t1.v2=t2.v2", HintDefinition.ENFORCE_JOIN_ORDER.name());
 
         assertPlan(sql, schema, hasChildThat(isInstanceOf(Join.class)
             .and(input(0, isInstanceOf(Join.class)
@@ -156,11 +147,8 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testDisabledCommutingOfJoinInputs() throws Exception {
-        // Disabling some join rules simplifies exposing of commuted and/or re-ordered joins.
-        String disabledRules = "DISABLE_RULE('MergeJoinConverter', 'CorrelatedNestedLoopJoin')";
-
-        String sql = String.format("select /*+ %s, %s */ t3.* from TBL1 t1 JOIN TBL3 t3 on t1.v1=t3.v3 JOIN TBL2 t2 on " +
-            "t2.v2=t1.v1", HintDefinition.ENFORCE_JOIN_ORDER.name(), disabledRules);
+        String sql = String.format("select /*+ %s, NL_JOIN */ t3.* from TBL1 t1 JOIN TBL3 t3 on t1.v1=t3.v3 JOIN TBL2 t2 on " +
+            "t2.v2=t1.v1", HintDefinition.ENFORCE_JOIN_ORDER.name());
 
         // Tests the plan has no commuted join inputs.
         assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(Join.class)

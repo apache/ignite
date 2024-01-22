@@ -25,13 +25,14 @@ import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 
 /**
  * Ignite Join converter.
  */
-public class NestedLoopJoinConverterRule extends AbstractIgniteConverterRule<LogicalJoin> {
+public class NestedLoopJoinConverterRule extends AbstractIgniteJoinConverterRule {
     /** */
     public static final RelOptRule INSTANCE = new NestedLoopJoinConverterRule();
 
@@ -39,7 +40,7 @@ public class NestedLoopJoinConverterRule extends AbstractIgniteConverterRule<Log
      * Creates a converter.
      */
     public NestedLoopJoinConverterRule() {
-        super(LogicalJoin.class, "NestedLoopJoinConverter");
+        super("NestedLoopJoinConverter", HintDefinition.NL_JOIN);
     }
 
     /** {@inheritDoc} */

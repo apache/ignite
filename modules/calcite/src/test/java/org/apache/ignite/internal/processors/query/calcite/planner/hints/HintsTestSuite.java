@@ -29,6 +29,7 @@ import org.junit.runners.Suite;
     NoIndexHintPlannerTest.class,
     ForceIndexHintPlannerTest.class,
     JoinOrderHintsPlannerTest.class,
+    JoinTypeHintPlannerTest.class,
 })
 public class HintsTestSuite {
 }

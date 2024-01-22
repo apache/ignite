@@ -159,9 +159,7 @@ include::{script}[tags=create-configmap]
 
 === Creating Pod Configuration
 
-Now we will create a configuration for pods.
-In the case of stateless deployment, we will use a link:https://kubernetes.io/docs/concepts/workloads/controllers/deployment/[Deployment,window=_blank].
-For a stateful deployment, we will use a link:https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/[StatefulSet,window=_blank].
+Now we create a configuration for pods that use a link:https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/[StatefulSet,window=_blank].
 
 
 [tabs]
@@ -181,7 +179,7 @@ In the container's configuration, we will:
 ** 10800 — thin client/JDBC/ODBC port
 ** 8080 — REST API port
 
-The deployment configuration file might look like as follows:
+The configuration file might look like as follows:
 
 .deployment.yaml
 [source, yaml,subs="attributes,specialchars"]

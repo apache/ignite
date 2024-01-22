@@ -10527,7 +10527,7 @@ public abstract class IgniteUtils {
      * @param cls Class.
      * @return Package name.
      */
-    private static String packageName(Class<?> cls) {
+    public static String packageName(Class<?> cls) {
         Package pkg = cls.getPackage();
 
         return pkg == null ? "" : pkg.getName();

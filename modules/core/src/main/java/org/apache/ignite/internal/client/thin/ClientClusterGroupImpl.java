@@ -62,6 +62,9 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
     /** Projection filters. */
     private final ProjectionFilters projectionFilters;
 
+    /** Client channel from which the cluster group nodes data was previously received. */
+    private ClientChannel topDataSrc;
+
     /** Cached topology version. */
     private long cachedTopVer;
 
@@ -304,7 +307,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
                         throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.CLUSTER_GROUPS);
 
                     try (BinaryRawWriterEx writer = utils.createBinaryWriter(req.out())) {
-                        writer.writeLong(cachedTopVer);
+                        writer.writeLong(topDataSrc == null || topDataSrc.closed() ? 0 : cachedTopVer);
 
                         projectionFilters.write(writer);
                     }
@@ -327,6 +330,8 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
                     cachedTopVer = topVer;
 
                     cachedNodeIds = nodeIds;
+
+                    topDataSrc = res.clientChannel();
 
                     return new ArrayList<>(nodeIds);
                 });

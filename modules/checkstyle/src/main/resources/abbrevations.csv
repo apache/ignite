@@ -61,7 +61,7 @@ request,req
 resource,rsrc
 response,res
 #returnValue,retVal
-#sender,snd
+sender,snd
 #service,srvc
 #session,ses
 #sequence,seq

@@ -417,8 +417,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
                     assert entryProc != null || !op.isInvoke();
 
-                    boolean needOldVal = tx.txState().useMvccCaching(cctx.cacheId());
-
                     GridCacheUpdateTxResult res;
 
                     while (true) {
@@ -433,7 +431,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                                         topVer,
                                         mvccSnapshot,
                                         isMoving(key.partition(), backups),
-                                        needOldVal,
+                                        false,
                                         filter,
                                         needResult());
 
@@ -455,7 +453,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                                         op.cacheOperation(),
                                         isMoving(key.partition(), backups),
                                         op.noCreate(),
-                                        needOldVal,
+                                        false,
                                         filter,
                                         needResult(),
                                         keepBinary);
@@ -631,9 +629,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             || updRes.filtered()
             || op == EnlistOperation.LOCK)
             return;
-
-        cctx.shared().mvccCaching().addEnlisted(entry.key(), updRes.newValue(), 0, 0, lockVer,
-            updRes.oldValue(), tx.local(), tx.topologyVersion(), mvccSnapshot, cctx.cacheId(), tx, null, -1);
 
         addToBatch(entry.key(), val, updRes.mvccHistory(), entry.context().cacheId(), backups);
     }

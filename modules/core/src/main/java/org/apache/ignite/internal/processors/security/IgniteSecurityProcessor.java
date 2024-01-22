@@ -463,8 +463,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
         );
 
         try {
-            if (!secCtx.systemOperationAllowed(JOIN_AS_SERVER))
-                secPrc.authorize(null, JOIN_AS_SERVER, secCtx);
+            secPrc.authorize(null, JOIN_AS_SERVER, secCtx);
 
             return null;
         }

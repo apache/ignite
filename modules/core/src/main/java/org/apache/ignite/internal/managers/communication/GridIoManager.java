@@ -93,7 +93,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
@@ -147,7 +146,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_SYSTEM;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IO_TEST;
@@ -1440,17 +1438,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 c.run();
             else
                 ctx.pools().getStripedExecutorService().execute(-1, c);
-
-            return;
-        }
-        if (msg.topicOrdinal() == TOPIC_CACHE_COORDINATOR.ordinal()) {
-            MvccMessage msg0 = (MvccMessage)msg.message();
-
-            // see IGNITE-8609
-            /*if (msg0.processedFromNioThread())
-                c.run();
-            else*/
-            ctx.pools().getStripedExecutorService().execute(-1, c);
 
             return;
         }

@@ -114,7 +114,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -182,7 +181,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_CO
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
@@ -2158,28 +2156,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             !(msg instanceof TcpDiscoveryStatusCheckMessage) &&
             !(msg instanceof TcpDiscoveryDiscardMessage) &&
             !(msg instanceof TcpDiscoveryConnectionCheckMessage);
-    }
-
-    /**
-     * Checks if two given {@link SecurityPermissionSet} objects contain the same permissions.
-     * Each permission belongs to one of three groups : cache, task or system.
-     *
-     * @param locPerms The first set of permissions.
-     * @param rmtPerms The second set of permissions.
-     * @return {@code True} if given parameters contain the same permissions, {@code False} otherwise.
-     */
-    private boolean permissionsEqual(@Nullable SecurityPermissionSet locPerms,
-        @Nullable SecurityPermissionSet rmtPerms) {
-        if (locPerms == null || rmtPerms == null)
-            return false;
-
-        boolean dfltAllowMatch = locPerms.defaultAllowAll() == rmtPerms.defaultAllowAll();
-
-        boolean bothHaveSamePerms = F.eqNotOrdered(rmtPerms.systemPermissions(), locPerms.systemPermissions()) &&
-            F.eqNotOrdered(rmtPerms.cachePermissions(), locPerms.cachePermissions()) &&
-            F.eqNotOrdered(rmtPerms.taskPermissions(), locPerms.taskPermissions());
-
-        return dfltAllowMatch && bothHaveSamePerms;
     }
 
     /**
@@ -4993,11 +4969,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else {
                             SecurityContext subj = spi.nodeAuth.authenticateNode(node, cred);
 
-                            SecurityContext coordSubj = nodeSecurityContext(
-                                spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()), node
-                            );
-
-                            if (!permissionsEqual(getPermissions(coordSubj), getPermissions(subj))) {
+                            if (subj == null) {
                                 // Node has not pass authentication.
                                 LT.warn(log, "Authentication failed [nodeId=" + node.id() +
                                     ", addrs=" + U.addressesAsString(node) + ']');
@@ -5082,50 +5054,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (top != null && !top.isEmpty()) {
                             spi.gridStartTime = msg.gridStartTime();
 
-                            if (spi.nodeAuth != null && spi.nodeAuth.isGlobalNodeAuthentication()) {
-                                TcpDiscoveryAbstractMessage authFail =
-                                    new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost, node.id());
-
-                                try {
-                                    ClassLoader ldr = U.resolveClassLoader(spi.ignite().configuration());
-
-                                    SecurityContext rmCrd = nodeSecurityContext(
-                                        spi.marshaller(), ldr, node
-                                    );
-
-                                    SecurityContext locCrd = nodeSecurityContext(
-                                        spi.marshaller(), ldr, locNode
-                                    );
-
-                                    if (!permissionsEqual(getPermissions(locCrd), getPermissions(rmCrd))) {
-                                        // Node has not pass authentication.
-                                        LT.warn(log,
-                                            "Failed to authenticate local node " +
-                                                "(local authentication result is different from rest of topology) " +
-                                                "[nodeId=" + node.id() + ", addrs=" + U.addressesAsString(node) + ']');
-
-                                        joinRes.set(authFail);
-
-                                        spiState = AUTH_FAILED;
-
-                                        mux.notifyAll();
-
-                                        return;
-                                    }
-                                }
-                                catch (IgniteException e) {
-                                    U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
-
-                                    joinRes.set(authFail);
-
-                                    spiState = AUTH_FAILED;
-
-                                    mux.notifyAll();
-
-                                    return;
-                                }
-                            }
-
                             for (TcpDiscoveryNode n : top) {
                                 assert n.internalOrder() < node.internalOrder() :
                                     "Invalid node [topNode=" + n + ", added=" + node + ']';
@@ -5203,17 +5131,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (sendMessageToRemotes(msg))
                 sendMessageAcrossRing(msg);
-        }
-
-        /**
-         * @param secCtx Security context.
-         * @return Security permission set.
-         */
-        private @Nullable SecurityPermissionSet getPermissions(SecurityContext secCtx) {
-            if (secCtx == null || secCtx.subject() == null)
-                return null;
-
-            return secCtx.subject().permissions();
         }
 
         /**

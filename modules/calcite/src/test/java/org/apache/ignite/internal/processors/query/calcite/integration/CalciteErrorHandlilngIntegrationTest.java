@@ -101,7 +101,7 @@ public class CalciteErrorHandlilngIntegrationTest extends GridCommonAbstractTest
 
         sql(client, "create table test (id int primary key, val varchar)");
 
-        String sql = "select /*+ DISABLE_RULE('NestedLoopJoinConverter', 'MergeJoinConverter') */ t1.id " +
+        String sql = "select /*+ CNL_JOIN */ t1.id " +
             "from test t1, test t2 where t1.id = t2.id";
 
         Throwable t = GridTestUtils.assertThrowsWithCause(() -> sql(client, sql), AssertionError.class);

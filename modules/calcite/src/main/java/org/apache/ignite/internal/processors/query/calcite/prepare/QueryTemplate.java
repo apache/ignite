@@ -124,14 +124,14 @@ public class QueryTemplate {
             if (fragment0 == fragment)
                 fragment0 = F.first(replacement);
             else if (!fragment0.rootFragment()) {
-                IgniteSender sender = (IgniteSender)fragment0.root();
-                Long newTargetId = newTargets.get(sender.exchangeId());
+                IgniteSender snd = (IgniteSender)fragment0.root();
+                Long newTargetId = newTargets.get(snd.exchangeId());
 
                 if (newTargetId != null) {
-                    sender = new IgniteSender(sender.getCluster(), sender.getTraitSet(),
-                        sender.getInput(), sender.exchangeId(), newTargetId, sender.distribution());
+                    snd = new IgniteSender(snd.getCluster(), snd.getTraitSet(),
+                        snd.getInput(), snd.exchangeId(), newTargetId, snd.distribution());
 
-                    fragment0 = new Fragment(fragment0.fragmentId(), sender, fragment0.remotes());
+                    fragment0 = new Fragment(fragment0.fragmentId(), snd, fragment0.remotes());
                 }
             }
 

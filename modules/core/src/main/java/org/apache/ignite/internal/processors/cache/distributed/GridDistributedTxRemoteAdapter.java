@@ -785,8 +785,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                         if (txCntrs != null)
                             cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCntrs.updateCounters());
 
-                        cctx.mvccCaching().onTxFinished(this, true);
-
                         if (!near() && !F.isEmpty(dataEntries) && cctx.wal(true) != null)
                             ptr = cctx.wal(true).log(new DataRecord(dataEntries));
 
@@ -932,8 +930,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                     cctx.tm().txHandler().applyPartitionsUpdatesCounters(counters.updateCounters(), true, false);
 
                 state(ROLLED_BACK);
-
-                cctx.mvccCaching().onTxFinished(this, false);
             }
         }
         catch (IgniteCheckedException | RuntimeException | Error e) {

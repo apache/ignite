@@ -27,6 +27,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -246,7 +247,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
     @Test
     public void testIndexLoopJoin() {
         assertQuery("" +
-            "SELECT /*+ DISABLE_RULE('MergeJoinConverter', 'NestedLoopJoinConverter') */ d1.name, d2.name " +
+            "SELECT /*+ " + HintDefinition.CNL_JOIN + " */ d1.name, d2.name " +
             "FROM Developer d1, Developer d2 WHERE d1.id = d2.id")
             .matches(containsSubPlan("IgniteCorrelatedNestedLoopJoin"))
             .returns("Bach", "Bach")
@@ -279,7 +280,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
     @Test
     public void testMergeJoin() {
         assertQuery("" +
-            "SELECT /*+ DISABLE_RULE('CorrelatedNestedLoopJoin') */ d1.name, d2.name FROM Developer d1, Developer d2 " +
+            "SELECT /*+ " + HintDefinition.MERGE_JOIN + " */ d1.name, d2.name FROM Developer d1, Developer d2 " +
             "WHERE d1.depId = d2.depId")
             .matches(containsSubPlan("IgniteMergeJoin"))
             .returns("Bach", "Bach")
