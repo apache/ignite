@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 
@@ -33,16 +34,12 @@ public class BufferedFileIOFactory implements FileIOFactory {
     private final FileIOFactory factory;
 
     /** */
-    private final int bufSz;
-
-    /** */
-    public BufferedFileIOFactory(FileIOFactory factory, int bufSz) {
+    public BufferedFileIOFactory(FileIOFactory factory) {
         this.factory = factory;
-        this.bufSz = bufSz;
     }
 
     /** {@inheritDoc} */
     @Override public BufferedFileIO create(File file, OpenOption... modes) throws IOException {
-        return new BufferedFileIO(factory.create(file, modes), bufSz);
+        return new BufferedFileIO(factory.create(file, modes), (int)Files.getFileStore(file.toPath()).getBlockSize());
     }
 }

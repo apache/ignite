@@ -94,9 +94,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     /** Dump files name. */
     public static final String DUMP_FILE_EXT = ".dump";
 
-    /** Buffer size for saving user changes. */
-    private static final int USER_CHANGE_WRITE_BUFFER_SIZE = 1024;
-
     /** Root dump directory. */
     private final File dumpDir;
 
@@ -140,21 +137,17 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      */
     private final @Nullable ConcurrentMap<Long, ByteBuffer> encThLocBufs;
 
-    /** Dump buffer size when iterator running. */
-    private final int iterBufSize;
-
     /**
      * @param cctx Cache context.
      * @param srcNodeId Node id which cause snapshot task creation.
      * @param reqId Snapshot operation request ID.
      * @param dumpName Dump name.
      * @param ioFactory IO factory.
-     * @param rateLimiter Dump transfer rate limiter.
      * @param snpSndr Snapshot sender.
+     * @param rateLimiter Dump transfer rate limiter.
      * @param parts Parts to dump.
      * @param compress If {@code true} then compress partition files.
      * @param encrypt If {@code true} then content of dump encrypted.
-     * @param dumpBufSize Dump write buffer size.
      */
     public CreateDumpFutureTask(
         GridCacheSharedContext<?, ?> cctx,
@@ -167,8 +160,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts,
         boolean compress,
-        boolean encrypt,
-        int dumpBufSize
+        boolean encrypt
     ) {
         super(
             cctx,
@@ -182,14 +174,13 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         this.dumpDir = dumpDir;
 
         this.ioFactory = compress
-            ? new WriteOnlyZipFileIOFactory(new BufferedFileIOFactory(ioFactory, USER_CHANGE_WRITE_BUFFER_SIZE))
-            : new BufferedFileIOFactory(ioFactory, USER_CHANGE_WRITE_BUFFER_SIZE);
+            ? new WriteOnlyZipFileIOFactory(new BufferedFileIOFactory(ioFactory))
+            : new BufferedFileIOFactory(ioFactory);
 
         this.compress = compress;
         this.rateLimiter = rateLimiter;
         this.encKey = encrypt ? cctx.gridConfig().getEncryptionSpi().create() : null;
         this.encThLocBufs = encrypt ? new ConcurrentHashMap<>() : null;
-        this.iterBufSize = dumpBufSize;
     }
 
     /** {@inheritDoc} */
@@ -290,8 +281,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 try (GridCloseableIterator<CacheDataRow> rows = gctx.offheap().reservedIterator(part, dumpCtx.topVer)) {
                     if (rows == null)
                         throw new IgniteCheckedException("Partition missing [part=" + part + ']');
-
-                    dumpCtx.onStartIteration();
 
                     while (rows.hasNext()) {
                         CacheDataRow row = rows.next();
@@ -727,14 +716,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             }
             catch (IOException e) {
                 throw new IgniteException(e);
-            }
-        }
-
-        /** */
-        private void onStartIteration() {
-            synchronized (serializer) {
-                ((BufferedFileIO)(compress ? ((WriteOnlyZipFileIO)file).delegate() : file))
-                    .extendBuffer(iterBufSize);
             }
         }
     }

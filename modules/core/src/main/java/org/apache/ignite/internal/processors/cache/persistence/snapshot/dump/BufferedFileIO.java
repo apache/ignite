@@ -37,27 +37,13 @@ public class BufferedFileIO extends FileIODecorator {
     private long pos;
 
     /** */
-    public BufferedFileIO(FileIO fileIO, int bufSz) throws IOException {
+    public BufferedFileIO(FileIO fileIO, int bufSz) {
         super(fileIO);
 
         A.ensure(fileIO != null, "fileIO must not be null");
         A.ensure(bufSz > 0, "bufSz must be positive");
 
         buf = ByteBuffer.allocateDirect(bufSz);
-    }
-
-    /** */
-    void extendBuffer(int newSz) {
-        if (newSz <= buf.capacity())
-            return;
-
-        ByteBuffer newBuf = ByteBuffer.allocateDirect(newSz);
-
-        buf.flip();
-
-        newBuf.put(buf);
-
-        buf = newBuf;
     }
 
     /** {@inheritDoc} */

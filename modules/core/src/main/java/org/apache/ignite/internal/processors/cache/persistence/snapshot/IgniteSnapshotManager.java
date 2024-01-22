@@ -154,7 +154,6 @@ import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedIntegerProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
@@ -211,7 +210,6 @@ import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.MarshallerContextImpl.resolveMappingFileStoreWorkDir;
 import static org.apache.ignite.internal.MarshallerContextImpl.saveMappings;
-import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.makeUpdateListener;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
@@ -240,7 +238,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageIO;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getVersion;
-import static org.apache.ignite.internal.processors.configuration.distributed.DistributedIntegerProperty.detachedIntegerProperty;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty.detachedLongProperty;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
@@ -478,10 +475,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         "Snapshot transfer rate in bytes per second at which snapshot files are created. " +
             "0 means there is no limit.");
 
-    /** Size of buffers used for writing data to disk when creating dump. */
-    private final DistributedIntegerProperty dumpBufSize = detachedIntegerProperty(DUMP_BUFFER_SIZE_DMS_KEY,
-        "Size of buffers used for writing data to disk when creating dump.");
-
     /** Value of {@link IgniteSystemProperties#IGNITE_SNAPSHOT_SEQUENTIAL_WRITE}. */
     private final boolean sequentialWrite =
         IgniteSystemProperties.getBoolean(IGNITE_SNAPSHOT_SEQUENTIAL_WRITE, DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE);
@@ -591,21 +584,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
             }
         );
-
-        ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(new DistributedConfigurationLifecycleListener() {
-            @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
-                dumpBufSize.addListener(makeUpdateListener(
-                    "Parameter '%s' was changed from '%s' to '%s'",
-                    log
-                ));
-
-                dispatcher.registerProperty(dumpBufSize);
-            }
-
-            @Override public void onReadyToWrite() {
-                DistributedConfigurationUtils.setDefaultValue(dumpBufSize, DFLT_DUMP_BUFFER_SIZE, log);
-            }
-        });
 
         handlers.initialize(ctx, ctx.pools().getSnapshotExecutorService());
 
@@ -2808,8 +2786,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 snpSndr,
                 parts,
                 compress,
-                encrypt,
-                dumpBufSize.get()
+                encrypt
             )
             : new SnapshotFutureTask(cctx, srcNodeId, requestId, snpName, tmpWorkDir, ioFactory, snpSndr, parts, withMetaStorage, locBuff));
 
