@@ -10858,9 +10858,7 @@ public abstract class IgniteUtils {
         assert arr != null;
 
         try {
-            //synchronized (mux) {
-                return U.unmarshal(ctx.marshaller(), arr, clsLdr);
-            //}
+            return U.unmarshal(ctx.marshaller(), arr, clsLdr);
         }
         catch (IgniteCheckedException e) {
             throw e;
