@@ -39,6 +39,7 @@ public class RateLimitingFileIOFactory implements FileIOFactory {
     /** */
     public RateLimitingFileIOFactory(FileIOFactory factory, BasicRateLimiter rateLimiter) {
         this.factory = factory;
+        
         this.rateLimiter = rateLimiter;
     }
 

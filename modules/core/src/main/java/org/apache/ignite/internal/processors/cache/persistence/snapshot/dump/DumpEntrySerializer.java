@@ -117,7 +117,7 @@ public class DumpEntrySerializer {
      * @param key Key.
      * @param val Value.
      * @param coCtx Cache object context.
-     * @param fileIO File IO.
+     * @return Buffer with serialized entry.
      * @throws IgniteCheckedException If failed.
      */
     public ByteBuffer writeToBuffer(
