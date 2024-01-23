@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -120,7 +121,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     public void testInvokeDeployment2() throws Exception {
         depMode = DeploymentMode.SHARED;
 
-        //doTestInvoke();
+        doTestInvoke();
         doTestInvokeEx();
     }
 
