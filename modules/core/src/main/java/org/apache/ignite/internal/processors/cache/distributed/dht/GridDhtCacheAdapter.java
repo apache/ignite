@@ -76,7 +76,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSing
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
@@ -108,7 +107,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
-import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /**
  * DHT cache adapter.
@@ -664,56 +662,20 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     ) {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        return getAllAsync(keys,
-            null,
-            opCtx == null || !opCtx.skipStore(),
-            taskName,
-            deserializeBinary,
-            opCtx != null && opCtx.recovery(),
-            forcePrimary,
-            null,
-            skipVals,
-            needVer);
-    }
-
-    /**
-     * @param keys Keys.
-     * @param readerArgs Near cache reader will be added if not null.
-     * @param readThrough Read through.
-     * @param taskName Task name.
-     * @param deserializeBinary Deserialize binary.
-     * @param recovery Recovery flag.
-     * @param forcePrimary Froce primary.
-     * @param expiry Expiry policy.
-     * @param skipVals Skip values.
-     * @param needVer Need version.
-     * @return Future for the get operation.
-     * @see GridCacheAdapter#getAllAsync(Collection)
-     */
-    private IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys,
-        @Nullable final ReaderArguments readerArgs,
-        boolean readThrough,
-        final String taskName,
-        final boolean deserializeBinary,
-        final boolean recovery,
-        final boolean forcePrimary,
-        @Nullable IgniteCacheExpiryPolicy expiry,
-        final boolean skipVals,
-        final boolean needVer
-    ) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         warnIfUnordered(keys, BulkOperation.GET);
 
-        return getAllAsync0(ctx.cacheKeysView(keys),
-            readerArgs,
-            readThrough,
+        return getAllAsync0(
+            ctx.cacheKeysView(keys),
+            null,
+            opCtx == null || !opCtx.skipStore(),
             taskName,
             deserializeBinary,
-            expiry,
+            null,
             skipVals,
             /*keep cache objects*/false,
-            recovery,
+            opCtx != null && opCtx.recovery(),
             needVer,
             null,
             null); // TODO IGNITE-7371
@@ -755,8 +717,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         Map<KeyCacheObject, EntryGetResult> misses = null;
 
         Set<GridCacheEntryEx> newLocalEntries = null;
-
-        final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         ctx.shared().database().checkpointReadLock();
 
@@ -1008,7 +968,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                 }
                             });
 
-                            clearReservationsIfNeeded(topVer, loadKeys, loaded, null);
+                            clearReservationsIfNeeded(loadKeys, loaded);
 
                             return map;
                         }
@@ -1016,7 +976,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     new C2<Map<K, V>, Exception, IgniteInternalFuture<Map<K, V>>>() {
                         @Override public IgniteInternalFuture<Map<K, V>> apply(Map<K, V> map, Exception e) {
                             if (e != null) {
-                                clearReservationsIfNeeded(topVer, loadKeys, loaded, null);
+                                clearReservationsIfNeeded(loadKeys, loaded);
 
                                 return new GridFinishedFuture<>(e);
                             }
@@ -1078,35 +1038,22 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /**
-     * @param topVer Affinity topology version for which load was performed.
      * @param loadKeys Keys to load.
      * @param loaded Actually loaded keys.
-     * @param tx0 Transaction within which the load was run, if any.
      */
-    private void clearReservationsIfNeeded(
-        AffinityTopologyVersion topVer,
-        Map<KeyCacheObject, EntryGetResult> loadKeys,
-        Collection<KeyCacheObject> loaded,
-        IgniteTxLocalAdapter tx0
-    ) {
+    private void clearReservationsIfNeeded(Map<KeyCacheObject, EntryGetResult> loadKeys, Collection<KeyCacheObject> loaded) {
         if (loaded.size() != loadKeys.size()) {
-            boolean needTouch =
-                tx0 == null || (!tx0.implicit() && tx0.isolation() == READ_COMMITTED);
-
             for (Map.Entry<KeyCacheObject, EntryGetResult> e : loadKeys.entrySet()) {
                 if (loaded.contains(e.getKey()))
                     continue;
 
-                if (needTouch || e.getValue().reserved()) {
-                    GridCacheEntryEx entry = peekEx(e.getKey());
+                GridCacheEntryEx entry = peekEx(e.getKey());
 
-                    if (entry != null) {
-                        if (e.getValue().reserved())
-                            entry.clearReserveForLoad(e.getValue().version());
+                if (entry != null) {
+                    if (e.getValue().reserved())
+                        entry.clearReserveForLoad(e.getValue().version());
 
-                        if (needTouch)
-                            entry.touch();
-                    }
+                    entry.touch();
                 }
             }
         }
