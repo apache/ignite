@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -116,7 +117,7 @@ public class DumpEntrySerializer {
      * @param key Key.
      * @param val Value.
      * @param coCtx Cache object context.
-     * @return Buffer with serialized entry.
+     * @param fileIO File IO.
      * @throws IgniteCheckedException If failed.
      */
     public ByteBuffer writeToBuffer(
@@ -131,6 +132,9 @@ public class DumpEntrySerializer {
 
         if (encKey == null)
             return plainBuf;
+
+        if (encKey != null)
+            throw new IgniteCheckedException("NYI");
 
         int encDataSz = Integer.BYTES + encSpi.encryptedSize(plainBuf.limit());
 
@@ -152,11 +156,11 @@ public class DumpEntrySerializer {
     /**
      * Dump entry structure:
      * <pre>
-     * +-----------+---------+----------+-----------------+-----+-----+-------+
-     * | 4 bytes   | 4 bytes | 4 bytes  | 8 bytes         |     |     |       |
-     * +-----------+---------+----------+-----------------+-----+-----+-------+
-     * | Data size | CRC     | cache ID | expiration time | ver | key | value |
-     * +-----------+---------+----------+-----------------+-----+-----+-------+
+     * +-----------+---------+----------+-----------------+----------------+-----+-------+
+     * | 4 bytes   | 4 bytes | 4 bytes  | 8 bytes         | 16 or 32 bytes |     |       |
+     * +-----------+---------+----------+-----------------+----------------+-----+-------+
+     * | Data size | CRC     | cache ID | expiration time |      ver       | key | value |
+     * +-----------+---------+----------+-----------------+----------------+-----+-------+
      * </pre>
      *
      * @param cache Cache id.
@@ -167,6 +171,86 @@ public class DumpEntrySerializer {
      * @return Buffer with serialized entry.
      * @throws IgniteCheckedException If failed.
      */
+    public int writeNew(
+        int cache,
+        long expireTime,
+        KeyCacheObject key,
+        CacheObject val,
+        GridCacheVersion ver,
+        CacheObjectContext coCtx,
+        FileIO fileIO
+    ) throws IgniteCheckedException, IOException {
+        int dataSz = plainDataSize(key, val, ver, coCtx);
+        int hdrSz = plainHeaderSize(ver);
+        int bufSz = hdrSz + Integer.BYTES;
+
+        ByteBuffer buf = ByteBuffer.allocate(bufSz);
+
+        buf.putInt(dataSz);
+        buf.putInt(-1); // CRC value.
+        buf.putInt(cache);
+        buf.putLong(expireTime);
+
+        boolean hasConflictVer = ver.otherClusterVersion() != null;
+
+        buf.put((byte)(hasConflictVer ? 1 : 0));
+        buf.putInt(ver.topologyVersion());
+        buf.putLong(ver.order());
+        buf.putInt(ver.nodeOrderAndDrIdRaw());
+
+        if (hasConflictVer) {
+            GridCacheVersion ver0 = (GridCacheVersion)ver.otherClusterVersion();
+
+            buf.putInt(ver0.topologyVersion());
+            buf.putLong(ver0.order());
+            buf.putInt(ver0.nodeOrderAndDrIdRaw());
+        }
+
+        assert buf.position() == bufSz;
+
+        buf.position(HEADER_SZ);
+
+        crc.reset();
+        crc.update(buf, hdrSz - Integer.BYTES);
+
+        ByteBuffer keyHdrBuf = updateCrc(key, coCtx);
+
+        ByteBuffer valHdrBuf = updateCrc(val, coCtx);
+
+        buf.position(Integer.BYTES);
+        buf.putInt(crc.getValue());
+
+        buf.position(0);
+
+        fileIO.writeFully(buf);
+        fileIO.writeFully(keyHdrBuf);
+        fileIO.writeFully(ByteBuffer.wrap(key.valueBytes(coCtx)));
+        fileIO.writeFully(valHdrBuf);
+        fileIO.writeFully(ByteBuffer.wrap(val.valueBytes(coCtx)));
+
+        return crc.getValue();
+    }
+
+    /** */
+    @NotNull private ByteBuffer updateCrc(CacheObject obj, CacheObjectContext coCtx) throws IgniteCheckedException {
+        int hdrSz = obj.valueBytesLength(coCtx) - obj.valueBytes(coCtx).length;
+
+        ByteBuffer buf = ByteBuffer.allocate(hdrSz);
+
+        obj.putValue(buf, 0, hdrSz);
+
+        buf.position(0);
+
+        crc.update(buf, buf.limit());
+
+        buf.position(0);
+
+        crc.update(obj.valueBytes(coCtx));
+
+        return buf;
+    }
+
+    /** Method to be dropped before merge to master*/
     private ByteBuffer writeToBufferPlain(
         int cache,
         long expireTime,
@@ -227,12 +311,7 @@ public class DumpEntrySerializer {
     }
 
     /** */
-    private static int plainDataSize(
-        KeyCacheObject key,
-        CacheObject val,
-        GridCacheVersion ver,
-        CacheObjectContext coCtx
-    ) throws IgniteCheckedException {
+    private static int plainHeaderSize(GridCacheVersion ver) {
         int verSz = Integer.BYTES/*topVer*/ + Long.BYTES/*order*/ + Integer.BYTES/*nodeOrderDrId*/;
 
         boolean hasConflictVer = ver.otherClusterVersion() != null;
@@ -242,11 +321,25 @@ public class DumpEntrySerializer {
 
         assert ver.fieldsCount() == (hasConflictVer ? 4 : 3);
 
+        return /* CRC */Integer.BYTES + /*cache ID*/Integer.BYTES + /*expire time*/Long.BYTES
+            + /* hasConflictVersion */1 + /*version*/verSz;
+    }
+
+    /** */
+    private static int plainDataSize(
+        KeyCacheObject key,
+        CacheObject val,
+        GridCacheVersion ver,
+        CacheObjectContext coCtx
+    ) throws IgniteCheckedException {
+        int sz = plainHeaderSize(ver);
+
         int keySz = key.valueBytesLength(coCtx);
         int valSz = val.valueBytesLength(coCtx);
 
-        return /* CRC */Integer.BYTES + /*cache ID*/Integer.BYTES + /*expire time*/Long.BYTES
-            + /* hasConflictVersion */1 + /*version*/verSz + /*key*/keySz + /*value*/valSz;
+        sz = sz + /*key*/keySz + /*value*/valSz;
+
+        return sz;
     }
 
     /**

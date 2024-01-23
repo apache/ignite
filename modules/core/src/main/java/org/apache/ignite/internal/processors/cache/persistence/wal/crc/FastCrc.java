@@ -70,6 +70,13 @@ public final class FastCrc {
     }
 
     /**
+     * @param b byte array.
+     */
+    public void update(byte[] b) {
+        val = calcCrc(crc, b);
+    }
+
+    /**
      * @param buf Input buffer.
      * @param len Data length.
      *
@@ -120,6 +127,17 @@ public final class FastCrc {
         crcAlgo.update(buf);
 
         buf.limit(initLimit);
+
+        return ~(int)crcAlgo.getValue();
+    }
+
+    /**
+     * @param crcAlgo CRC algorithm.
+     * @param b byte array.
+     * @return Crc checksum.
+     */
+    private static int calcCrc(CRC32 crcAlgo, byte[] b) {
+        crcAlgo.update(b, 0, b.length);
 
         return ~(int)crcAlgo.getValue();
     }
