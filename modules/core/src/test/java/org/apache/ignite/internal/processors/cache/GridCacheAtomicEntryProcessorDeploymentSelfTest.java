@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -182,20 +181,20 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     private void doTestInvokeEx() throws Exception {
         String testCacheName = "dynamic_params";
 
-        String processorClassName = "org.apache.ignite.tests.p2p.CacheDeploymentEntryProcessorMultipleEnts";
+        String prcClassName = "org.apache.ignite.tests.p2p.CacheDeploymentEntryProcessorMultipleEnts";
 
-        String containerClassName = "org.apache.ignite.tests.p2p.cache.Container";
+        String contClassName = "org.apache.ignite.tests.p2p.cache.Container";
 
         try {
             startGrid(0);
             IgniteEx cli1 = startClientGrid(1);
             IgniteEx cli2 = startClientGrid(2);
 
-            Class procCls1 = cli1.configuration().getClassLoader().loadClass(processorClassName);
-            Class procCls2 = cli2.configuration().getClassLoader().loadClass(processorClassName);
+            Class procCls1 = cli1.configuration().getClassLoader().loadClass(prcClassName);
+            Class procCls2 = cli2.configuration().getClassLoader().loadClass(prcClassName);
 
-            Class contCls1 = cli1.configuration().getClassLoader().loadClass(containerClassName);
-            Class contCls2 = cli2.configuration().getClassLoader().loadClass(containerClassName);
+            Class contCls1 = cli1.configuration().getClassLoader().loadClass(contClassName);
+            Class contCls2 = cli2.configuration().getClassLoader().loadClass(contClassName);
 
             // just one more additional class unavailability check.
             try {
