@@ -249,12 +249,6 @@ public abstract class PageIO {
     public static final short T_H2_MVCC_REF_INNER = 29;
 
     /** */
-    public static final short T_TX_LOG_LEAF = 30;
-
-    /** */
-    public static final short T_TX_LOG_INNER = 31;
-
-    /** */
     public static final short T_DATA_PART = 32;
 
     /** */
