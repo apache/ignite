@@ -218,10 +218,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** */
     protected static File customDiagnosticDir;
 
-    /** */
-    public static Function<String, Pattern> clusterStatePatternBuilder =
-        (state) -> Pattern.compile("Cluster state: " + state + "\\s+");
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -907,7 +903,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertTrue(clusterStatePatternBuilder.apply("INACTIVE").matcher(testOut.toString()).find());
+        assertClusterState(INACTIVE, testOut.toString());
 
         String out = testOut.toString();
 
@@ -923,7 +919,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertTrue(clusterStatePatternBuilder.apply("ACTIVE").matcher(testOut.toString()).find());
+        assertClusterState(ACTIVE, testOut.toString());
 
         ignite.cluster().state(ACTIVE_READ_ONLY);
 
@@ -933,7 +929,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertTrue(clusterStatePatternBuilder.apply("ACTIVE_READ_ONLY").matcher(testOut.toString()).find());
+        assertClusterState(ACTIVE_READ_ONLY, testOut.toString());
 
         boolean tagUpdated = GridTestUtils.waitForCondition(() -> {
             try {
@@ -3991,7 +3987,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             ignite.cluster().state(state);
             assertEquals(EXIT_CODE_OK, execute("--baseline"));
             assertEquals(state, ignite.cluster().state());
-            assertTrue(clusterStatePatternBuilder.apply(state.toString()).matcher(testOut.toString()).find());
+            assertClusterState(state, testOut.toString());
         }
     }
 
@@ -4082,5 +4078,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    /**
+     * @param state Current state of the cluster.
+     * @param loggerOutput Logger output where current cluster state is supposed to be specified.
+     */
+    public static void assertClusterState(ClusterState state, String loggerOutput) {
+        assertTrue(Pattern.compile("Cluster state: " + state + "\\s+").matcher(loggerOutput).find());
     }
 }
