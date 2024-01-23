@@ -128,21 +128,6 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
                             dep.removeParticipant(discoEvt.eventNode().id());
 
-                            if (dep.deployMode() == SHARED) {
-                                //dep.undeploy();
-
-                                // Undeploy.
-                                //i2.remove(); // !!! только это важно для теста testDeploymentFromSecondAndThird, кто дергает  cache ??
-
-                                //assert !dep.isRemoved();
-
-                                //dep.onRemoved();
-
-                                //undeployed.add(dep);
-
-                                continue;
-                            }
-
                             if (!dep.hasParticipants()) {
                                 if (dep.deployMode() == SHARED) {
                                     if (!dep.undeployed()) {
@@ -347,7 +332,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 Collection<GridDeployment> created = getDeployments();
 
                 // Check already exist deployment.
-/*                if (meta.deploymentMode() == SHARED && !ctx.security().sandbox().enabled()) {
+                if (meta.deploymentMode() == SHARED && !ctx.security().sandbox().enabled()) {
                     for (GridDeployment dep0 : created) {
                         // hot redeploy from same node
                         if (dep0.participants().containsKey(meta.senderNodeId()) || dep0.undeployed())
@@ -357,10 +342,11 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
                         if (cls.getKey() != null && cls.getValue() == null) {
                             if (dep0.participants().keySet().contains(meta.senderNodeId()))
-                                return dep0;
+                                //return dep0;
+                                addParticipant((SharedDeployment)dep0, meta);
                         }
                     }
-                }*/
+                }
 
                 if (!F.isEmpty(meta.participants())) {
                     Map<UUID, IgniteUuid> participants = new LinkedHashMap<>();

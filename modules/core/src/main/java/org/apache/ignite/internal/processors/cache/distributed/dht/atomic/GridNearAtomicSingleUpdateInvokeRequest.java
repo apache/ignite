@@ -195,9 +195,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         super.finishUnmarshal(ctx, ldr);
 
         if (entryProcessorBytes != null && entryProcessor == null) {
-            GridBinaryMarshaller.USE_CACHE.set(Boolean.FALSE);
             entryProcessor = U.unmarshal(ctx, entryProcessorBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-            GridBinaryMarshaller.USE_CACHE.set(Boolean.TRUE);
         }
 
         if (invokeArgs == null)
