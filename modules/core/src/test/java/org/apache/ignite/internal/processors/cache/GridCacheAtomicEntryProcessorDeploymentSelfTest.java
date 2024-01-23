@@ -181,20 +181,20 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     private void doTestInvokeEx() throws Exception {
         String testCacheName = "dynamic_params";
 
-        String prcClassName = "org.apache.ignite.tests.p2p.CacheDeploymentEntryProcessorMultipleEnts";
+        String prcClsName = "org.apache.ignite.tests.p2p.CacheDeploymentEntryProcessorMultipleEnts";
 
-        String contClassName = "org.apache.ignite.tests.p2p.cache.Container";
+        String contClsName = "org.apache.ignite.tests.p2p.cache.Container";
 
         try {
             startGrid(0);
             IgniteEx cli1 = startClientGrid(1);
             IgniteEx cli2 = startClientGrid(2);
 
-            Class procCls1 = cli1.configuration().getClassLoader().loadClass(prcClassName);
-            Class procCls2 = cli2.configuration().getClassLoader().loadClass(prcClassName);
+            Class procCls1 = cli1.configuration().getClassLoader().loadClass(prcClsName);
+            Class procCls2 = cli2.configuration().getClassLoader().loadClass(prcClsName);
 
-            Class contCls1 = cli1.configuration().getClassLoader().loadClass(contClassName);
-            Class contCls2 = cli2.configuration().getClassLoader().loadClass(contClassName);
+            Class contCls1 = cli1.configuration().getClassLoader().loadClass(contClsName);
+            Class contCls2 = cli2.configuration().getClassLoader().loadClass(contClsName);
 
             // just one more additional class unavailability check.
             try {
