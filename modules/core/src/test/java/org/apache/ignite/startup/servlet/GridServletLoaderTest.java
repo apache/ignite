@@ -160,15 +160,15 @@ public class GridServletLoaderTest extends GridCommonAbstractTest {
         assert host != null;
         assert port > 0;
 
-        JMXServiceURL serviceURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://" + host + ':' + port + "/jmxrmi");
+        JMXServiceURL srvcURL = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://" + host + ':' + port + "/jmxrmi");
 
         Map<String, Object> props = new HashMap<>();
 
         props.put(JMXConnectorFactory.PROTOCOL_PROVIDER_PACKAGES, "com.sun.jmx.remote.protocol");
 
-        System.out.println("Try to connect to JMX server [props=" + props + ", url=" + serviceURL + ']');
+        System.out.println("Try to connect to JMX server [props=" + props + ", url=" + srvcURL + ']');
 
-        return JMXConnectorFactory.connect(serviceURL, props);
+        return JMXConnectorFactory.connect(srvcURL, props);
     }
 
     /** {@inheritDoc} */

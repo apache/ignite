@@ -1014,14 +1014,14 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
         WebAppContext ctx = getWebContext(cfg, igniteInstanceName, keepBinary(), servlet);
 
-        HashLoginService hashLoginService = new HashLoginService();
-        hashLoginService.setName("Test Realm");
+        HashLoginService hashLoginSrvc = new HashLoginService();
+        hashLoginSrvc.setName("Test Realm");
         createRealm();
-        hashLoginService.setConfig("/tmp/realm.properties");
+        hashLoginSrvc.setConfig("/tmp/realm.properties");
         SecurityHandler securityHnd = ctx.getSecurityHandler();
         // DefaultAuthenticatorFactory doesn't default to basic auth anymore.
         securityHnd.setAuthMethod(Constraint.__BASIC_AUTH);
-        securityHnd.setLoginService(hashLoginService);
+        securityHnd.setLoginService(hashLoginSrvc);
 
         srv.setHandler(ctx);
 
