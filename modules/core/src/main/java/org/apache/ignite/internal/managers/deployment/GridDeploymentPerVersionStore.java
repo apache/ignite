@@ -334,10 +334,14 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 // Check already exist deployment.
                 if (meta.deploymentMode() == SHARED) {
                     for (GridDeployment dep0 : created) {
+                        // hot redeploy from same node
+                        if (dep0.participants().containsKey(meta.senderNodeId()) || dep0.undeployed())
+                            continue;
+
                         IgniteBiTuple<Class<?>, Throwable> cls = dep0.deployedClass(meta.className(), meta.alias());
 
                         if (cls.getKey() != null && cls.getValue() == null)
-                                addParticipant((SharedDeployment)dep0, meta);
+                            addParticipant((SharedDeployment)dep0, meta);
                     }
                 }
 
