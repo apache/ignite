@@ -121,6 +121,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CLUSTER_SNAPSHOT;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CONSISTENT_CUT;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_PAGE_FRAGMENTED_UPDATE_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_PAGE_INSERT_FRAGMENT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_PAGE_INSERT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_PAGE_REMOVE_RECORD;
@@ -274,7 +275,7 @@ public class RecordUtils {
         put(INCREMENTAL_SNAPSHOT_FINISH_RECORD, RecordUtils::buildIncrementalSnapshotFinishRecord);
         put(CDC_MANAGER_RECORD, RecordUtils::buildCdcManagerStopRecord);
         put(CDC_MANAGER_STOP_RECORD, RecordUtils::buildCdcManagerStopRecord);
-
+        put(DATA_PAGE_FRAGMENTED_UPDATE_RECORD, buildUpsupportedWalRecord(DATA_PAGE_FRAGMENTED_UPDATE_RECORD));
     }
 
     /** */
