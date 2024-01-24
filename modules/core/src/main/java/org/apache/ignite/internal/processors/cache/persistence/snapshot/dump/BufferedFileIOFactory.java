@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 
 /**
@@ -29,6 +30,9 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 public class BufferedFileIOFactory implements FileIOFactory {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final int DEFAULT_BLOCK_SIZE = 4096;
 
     /** */
     private final FileIOFactory factory;
@@ -40,6 +44,13 @@ public class BufferedFileIOFactory implements FileIOFactory {
 
     /** {@inheritDoc} */
     @Override public BufferedFileIO create(File file, OpenOption... modes) throws IOException {
-        return new BufferedFileIO(factory.create(file, modes), (int)Files.getFileStore(file.toPath()).getBlockSize());
+        FileIO io = factory.create(file, modes);
+
+        int blockSize = io.getFileSystemBlockSize();
+
+        if (blockSize == -1)
+            blockSize = DEFAULT_BLOCK_SIZE;
+
+        return new BufferedFileIO(io, blockSize);
     }
 }
