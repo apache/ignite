@@ -103,6 +103,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     /** If {@code true} then compress partition files. */
     private final boolean compress;
 
+    /** Dump transfer rate limiter. */
+    private final BasicRateLimiter rateLimiter;
+
     /** Processed dump size in bytes. */
     private final AtomicLong processedSize = new AtomicLong();
 
@@ -170,8 +173,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         this.dumpDir = dumpDir;
 
-        ioFactory = new RateLimitingFileIOFactory(ioFactory, rateLimiter);
-
         ioFactory = new BufferedFileIOFactory(ioFactory);
 
         if (compress)
@@ -180,6 +181,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         this.ioFactory = ioFactory;
 
         this.compress = compress;
+        this.rateLimiter = rateLimiter;
         this.encKey = encrypt ? cctx.gridConfig().getEncryptionSpi().create() : null;
         this.encThLocBufs = encrypt ? new ConcurrentHashMap<>() : null;
     }
@@ -645,6 +647,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             CacheObjectContext coCtx
         ) throws IgniteCheckedException, IOException {
             ByteBuffer buf = serializer.writeToBuffer(cache, expireTime, key, val, ver, coCtx);
+
+            rateLimiter.acquire(buf.limit());
 
             if (file.writeFully(buf) != buf.limit())
                 throw new IgniteException("Can't write row");
