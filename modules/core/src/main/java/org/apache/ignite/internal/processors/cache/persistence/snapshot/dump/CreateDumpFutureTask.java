@@ -646,12 +646,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         ) throws IgniteCheckedException, IOException {
             ByteBuffer buf = serializer.writeToBuffer(cache, expireTime, key, val, ver, coCtx);
 
-            int crc = serializer.writeNew(cache, expireTime, key, val, ver, coCtx, file);
-
-            buf.position(Integer.BYTES);
-            int expCrc = buf.getInt();
-
-            assert crc == expCrc;
+            if (file.writeFully(buf) != buf.limit())
+                throw new IgniteException("Can't write row");
 
             processedSize.addAndGet(buf.limit());
         }
