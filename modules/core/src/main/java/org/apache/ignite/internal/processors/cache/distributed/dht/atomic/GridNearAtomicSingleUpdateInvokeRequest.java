@@ -193,9 +193,8 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (entryProcessorBytes != null && entryProcessor == null) {
+        if (entryProcessorBytes != null && entryProcessor == null)
             entryProcessor = U.unmarshal(ctx, entryProcessorBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-        }
 
         if (invokeArgs == null)
             invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);

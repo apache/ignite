@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -245,8 +246,10 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
                     };
                 });
 
-                f1.get();
-                f2.get();
+                long duration = TimeUnit.SECONDS.toMillis(30);
+
+                f1.get(duration);
+                f2.get(duration);
 
                 stopAllClients(true);
 
