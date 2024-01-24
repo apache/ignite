@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -32,9 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 public class BufferedFileIO extends FileIODecorator {
     /** */
     private ByteBuffer buf;
-
-    /** */
-    private long pos;
 
     /** */
     public BufferedFileIO(FileIO fileIO, int bufSz) {
@@ -67,8 +63,6 @@ public class BufferedFileIO extends FileIODecorator {
             srcBuf.limit(limit);
         }
 
-        pos += bytesCnt;
-
         return bytesCnt;
     }
 
@@ -93,9 +87,21 @@ public class BufferedFileIO extends FileIODecorator {
             p += bytesCnt;
         }
 
-        pos += len;
-
         return len;
+    }
+
+    /**
+     * Writes one byte.
+     * @throws IOException If some I/O error occurs.
+     */
+    public void write(byte b) throws IOException {
+        if (buf == null)
+            throw new IOException("FileIO closed");
+
+        buf.put(b);
+
+        if (!buf.hasRemaining())
+            flush();
     }
 
     /** */
@@ -114,67 +120,11 @@ public class BufferedFileIO extends FileIODecorator {
     }
 
     /** {@inheritDoc} */
-    @Override public long position() throws IOException {
-        return pos;
-    }
-
-    /** {@inheritDoc} */
     @Override public void close() throws IOException {
         flush();
 
         buf = null;
 
-        delegate.close();
+        super.close();
     }
-
-    /** {@inheritDoc} */
-    @Override public void position(long newPosition) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destBuf) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destBuf, long position) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int read(byte[] buf, int off, int len) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void force(boolean withMetadata) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void force() throws IOException {
-        force(false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long size() throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clear() throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
 }

@@ -33,10 +33,10 @@ public class WriteOnlyZipFileIOFactory implements FileIOFactory {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final FileIOFactory factory;
+    private final BufferedFileIOFactory factory;
 
     /** */
-    public WriteOnlyZipFileIOFactory(FileIOFactory factory) {
+    public WriteOnlyZipFileIOFactory(BufferedFileIOFactory factory) {
         this.factory = factory;
     }
 

@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -41,128 +37,37 @@ public class WriteOnlyZipFileIO extends FileIODecorator {
     private final ZipOutputStream zos;
 
     /** */
-    private final WritableByteChannel ch;
-
-    /** */
-    private long pos;
-
-    /** */
-    public WriteOnlyZipFileIO(FileIO fileIO, String entryName) throws IOException {
+    public WriteOnlyZipFileIO(BufferedFileIO fileIO, String entryName) throws IOException {
         super(fileIO);
 
-        zos = new ZipOutputStream(new BufferedOutputStream(new OutputStream() {
+        zos = new ZipOutputStream(new OutputStream() {
             @Override public void write(byte[] b, int off, int len) throws IOException {
-                if (len > 0 && fileIO.writeFully(b, off, len) < 0)
-                    throw new IOException("Unable to write data");
+                fileIO.write(b, off, len);
             }
 
             @Override public void write(int b) throws IOException {
-                throw new UnsupportedOperationException();
+                fileIO.write((byte)b);
             }
-        }));
+        });
 
         zos.setLevel(BEST_COMPRESSION);
 
         zos.putNextEntry(new ZipEntry(entryName));
-
-        ch = Channels.newChannel(zos);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long position() throws IOException {
-        return pos;
-    }
-
-    /** */
-    FileIO delegate() {
-        return delegate;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void position(long newPosition) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destBuf) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destBuf, long position) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int read(byte[] buf, int off, int len) throws IOException {
-        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf) throws IOException {
-        int written = ch.write(srcBuf);
+        int len = srcBuf.remaining();
 
-        pos += written;
+        zos.write(srcBuf.array(), srcBuf.position(), len);
 
-        return written;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int write(byte[] buf, int off, int len) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void force(boolean withMetadata) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void force() throws IOException {
-        force(false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long size() throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clear() throws IOException {
-        throw new UnsupportedOperationException();
+        return len;
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
-        zos.closeEntry();
-
-        ch.close();
+        zos.close();
 
         super.close();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getFileSystemBlockSize() {
-        return -1;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int punchHole(long position, int len) {
-        return -1;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSparseSize() {
-        return -1;
     }
 }
