@@ -58,6 +58,13 @@ public class DynamicIndexCreateAfterClusterRestartTest extends GridCommonAbstrac
         cleanPersistenceDir();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        cleanPersistenceDir();
+    }
+
     /** */
     @Test
     public void testNodeJoinOnCreateIndex() throws Exception {
