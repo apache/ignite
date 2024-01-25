@@ -37,7 +37,7 @@ public class WriteOnlyZipFileIO extends FileIODecorator {
     private final ZipOutputStream zos;
 
     /** */
-    public WriteOnlyZipFileIO(BufferedFileIO fileIO, String entryName) throws IOException {
+    public WriteOnlyZipFileIO(FileIO fileIO, String entryName) throws IOException {
         super(fileIO);
 
         zos = new ZipOutputStream(new OutputStream() {
@@ -46,7 +46,7 @@ public class WriteOnlyZipFileIO extends FileIODecorator {
             }
 
             @Override public void write(int b) throws IOException {
-                fileIO.write((byte)b);
+                ((BufferedFileIO)fileIO).write((byte)b);
             }
         });
 

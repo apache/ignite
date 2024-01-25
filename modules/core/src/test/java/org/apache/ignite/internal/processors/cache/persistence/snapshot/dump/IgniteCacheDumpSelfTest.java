@@ -52,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.Key;
+import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -463,6 +464,12 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
         checkDumpCleared(ign);
 
         ign.cache(DEFAULT_CACHE_NAME).put(KEYS_CNT, KEYS_CNT);
+
+        IntStream.range(0, KEYS_CNT).forEach(i -> {
+            assertEquals(i, ign.cache(DEFAULT_CACHE_NAME).get(i));
+            assertEquals(USER_FACTORY.apply(i), ign.cache(CACHE_0).get(i));
+            assertEquals(new Value(String.valueOf(i)), ign.cache(CACHE_1).get(new Key(i)));
+        });
     }
 
     /** */

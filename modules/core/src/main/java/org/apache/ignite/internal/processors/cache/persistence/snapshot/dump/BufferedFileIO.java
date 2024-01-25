@@ -111,12 +111,10 @@ public class BufferedFileIO extends FileIODecorator {
 
         buf.flip();
 
-        if (buf.hasRemaining()) {
-            if (delegate.writeFully(buf) < 0)
-                throw new IOException("Couldn't write data");
-        }
+        if (delegate.writeFully(buf) < 0)
+            throw new IOException("Couldn't write data");
 
-        buf.limit(buf.capacity()).position(0);
+        buf.clear();
     }
 
     /** {@inheritDoc} */
