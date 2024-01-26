@@ -142,7 +142,7 @@ public class SortedIndexDescriptorFactory extends AbstractIndexDescriptorFactory
     /** Split key into simple components and add to columns list. */
     private static void addUnwrappedKeyColumns(LinkedHashMap<String, IndexKeyDefinition> cols, TableDescriptor tbl) {
         // Key unwrapping possible only for SQL created tables.
-        if (!tbl.isSql() || QueryUtils.isSqlType(tbl.type().keyClass())) {
+        if (QueryUtils.isSqlType(tbl.type().keyClass())) {
             addKeyColumn(cols, tbl);
 
             return;
