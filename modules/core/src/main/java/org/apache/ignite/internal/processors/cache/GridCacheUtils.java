@@ -73,7 +73,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheA
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -185,7 +184,6 @@ public class GridCacheUtils {
     public static final String[] RESERVED_NAMES = new String[] {
         UTILITY_CACHE_NAME,
         MetaStorage.METASTORAGE_CACHE_NAME,
-        TxLog.TX_LOG_CACHE_NAME,
     };
 
     /** */
