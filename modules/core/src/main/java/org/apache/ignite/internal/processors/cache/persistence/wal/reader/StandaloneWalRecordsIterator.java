@@ -29,10 +29,7 @@ import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.MvccDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.UnwrapMvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -351,8 +348,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         if (proc != null && (rec.type() == RecordType.DATA_RECORD
             || rec.type() == RecordType.DATA_RECORD_V2
-            || rec.type() == RecordType.CDC_DATA_RECORD
-            || rec.type() == RecordType.MVCC_DATA_RECORD)) {
+            || rec.type() == RecordType.CDC_DATA_RECORD)) {
             try {
                 return postProcessDataRecord((DataRecord)rec, kernalCtx, proc);
             }
@@ -407,9 +403,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             postProcessedEntries.add(postProcessedEntry);
         }
 
-        DataRecord res = dataRec instanceof MvccDataRecord ?
-            new MvccDataRecord(postProcessedEntries, dataRec.timestamp()) :
-            new DataRecord(postProcessedEntries, dataRec.timestamp());
+        DataRecord res = new DataRecord(postProcessedEntries, dataRec.timestamp());
 
         res.size(dataRec.size());
         res.position(dataRec.position());
@@ -470,34 +464,19 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      */
     private DataEntry unwrapDataEntry(CacheObjectContext coCtx, DataEntry dataEntry,
         KeyCacheObject key, CacheObject val, boolean keepBinary) {
-        if (dataEntry instanceof MvccDataEntry)
-            return new UnwrapMvccDataEntry(
-                dataEntry.cacheId(),
-                key,
-                val,
-                dataEntry.op(),
-                dataEntry.nearXidVersion(),
-                dataEntry.writeVersion(),
-                dataEntry.expireTime(),
-                dataEntry.partitionId(),
-                dataEntry.partitionCounter(),
-                ((MvccDataEntry)dataEntry).mvccVer(),
-                coCtx,
-                keepBinary);
-        else
-            return new UnwrapDataEntry(
-                dataEntry.cacheId(),
-                key,
-                val,
-                dataEntry.op(),
-                dataEntry.nearXidVersion(),
-                dataEntry.writeVersion(),
-                dataEntry.expireTime(),
-                dataEntry.partitionId(),
-                dataEntry.partitionCounter(),
-                coCtx,
-                keepBinary,
-                dataEntry.flags());
+        return new UnwrapDataEntry(
+            dataEntry.cacheId(),
+            key,
+            val,
+            dataEntry.op(),
+            dataEntry.nearXidVersion(),
+            dataEntry.writeVersion(),
+            dataEntry.expireTime(),
+            dataEntry.partitionId(),
+            dataEntry.partitionCounter(),
+            coCtx,
+            keepBinary,
+            dataEntry.flags());
     }
 
     /** {@inheritDoc} */
