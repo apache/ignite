@@ -50,7 +50,6 @@ import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.PartitionClearingStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
@@ -2102,8 +2101,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         buf.putLong(entry.partitionCounter());
         buf.putLong(entry.expireTime());
 
-        if (!(entry instanceof MvccDataEntry))
-            buf.put(entry.flags());
+        buf.put(entry.flags());
     }
 
     /**
@@ -2412,7 +2410,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             /*part ID*/4 +
             /*expire Time*/8 +
             /*part cnt*/8 +
-            /*flags*/(entry instanceof MvccDataEntry ? 0 : 1);
+            /*flags*/1;
     }
 
     /**
