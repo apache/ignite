@@ -32,7 +32,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -213,9 +212,6 @@ public class LightweightCheckpointTest extends GridCommonAbstractTest {
     ) throws IgniteCheckedException {
         if (grpId == MetaStorage.METASTORAGE_CACHE_ID)
             return (PageMemoryEx)db.dataRegion(METASTORE_DATA_REGION_NAME).pageMemory();
-
-        if (grpId == TxLog.TX_LOG_CACHE_ID)
-            return (PageMemoryEx)db.dataRegion(TxLog.TX_LOG_CACHE_NAME).pageMemory();
 
         CacheGroupDescriptor desc = context.cache().cacheGroupDescriptors().get(grpId);
 
