@@ -593,10 +593,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     "(it is recommended that you change deployment mode and restart): " + depMode);
         }
 
-        Collection<CacheStoreSessionListener> sesisteners =
+        Collection<CacheStoreSessionListener> sesListeners =
             CU.startStoreSessionListeners(ctx, ctx.config().getCacheStoreSessionListenerFactories());
 
-        sharedCtx = createSharedContext(ctx, sesisteners);
+        sharedCtx = createSharedContext(ctx, sesListeners);
 
         locCfgMgr = new GridLocalConfigManager(this, ctx);
 
