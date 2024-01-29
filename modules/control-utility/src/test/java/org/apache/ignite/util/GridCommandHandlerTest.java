@@ -4082,9 +4082,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /**
      * @param state Current state of the cluster.
-     * @param loggerOutput Logger output where current cluster state is supposed to be specified.
+     * @param logOutput Logger output where current cluster state is supposed to be specified.
      */
-    public static void assertClusterState(ClusterState state, String loggerOutput) {
-        assertTrue(Pattern.compile("Cluster state: " + state + "\\s+").matcher(loggerOutput).find());
+    public static void assertClusterState(ClusterState state, String logOutput) {
+        assertTrue(Pattern.compile("Cluster state: " + state + "\\s+").matcher(logOutput).find());
     }
 }
