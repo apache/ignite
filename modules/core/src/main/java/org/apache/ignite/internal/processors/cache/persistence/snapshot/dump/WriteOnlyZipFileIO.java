@@ -38,10 +38,13 @@ public class WriteOnlyZipFileIO extends FileIODecorator {
     private final ZipOutputStream zos;
 
     /** */
+    private final BufferedOutputStream bos;
+
+    /** */
     public WriteOnlyZipFileIO(FileIO fileIO, String entryName) throws IOException {
         super(fileIO);
 
-        zos = new ZipOutputStream(new BufferedOutputStream(new OutputStream() {
+        zos = new ZipOutputStream(new OutputStream() {
             @Override public void write(byte[] b, int off, int len) throws IOException {
                 fileIO.write(b, off, len);
             }
@@ -49,25 +52,27 @@ public class WriteOnlyZipFileIO extends FileIODecorator {
             @Override public void write(int b) throws IOException {
                 ((BufferedFileIO)fileIO).write((byte)b);
             }
-        }));
+        });
 
         zos.setLevel(BEST_COMPRESSION);
 
         zos.putNextEntry(new ZipEntry(entryName));
+
+        bos = new BufferedOutputStream(zos);
     }
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf) throws IOException {
         int len = srcBuf.remaining();
 
-        zos.write(srcBuf.array(), srcBuf.position(), len);
+        bos.write(srcBuf.array(), srcBuf.position(), len);
 
         return len;
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
-        zos.close();
+        bos.close();
 
         super.close();
     }
