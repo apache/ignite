@@ -166,12 +166,12 @@ public class P2PClassLoadingFailureHandlingTest extends GridCommonAbstractTest {
         Service svc = instantiateClassLoadedWithExternalClassLoader(
             "org.apache.ignite.tests.p2p.classloadproblem.ServiceCausingP2PClassLoadProblem"
         );
-        ServiceConfiguration serviceCfg = new ServiceConfiguration()
+        ServiceConfiguration srvcCfg = new ServiceConfiguration()
             .setName("p2p-classloading-failure")
             .setTotalCount(1)
             .setService(svc);
 
-        assertThrows(log, () -> client.services().deploy(serviceCfg), IgniteException.class,
+        assertThrows(log, () -> client.services().deploy(srvcCfg), IgniteException.class,
             "Failed to deploy some services");
 
         assertThatFailureHandlerIsNotCalled();

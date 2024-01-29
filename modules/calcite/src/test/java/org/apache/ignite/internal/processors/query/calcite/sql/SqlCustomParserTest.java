@@ -713,11 +713,11 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
      */
     @Test
     public void killService() throws Exception {
-        IgniteSqlKill killService;
+        IgniteSqlKill killSrvc;
 
-        killService = parse("kill service 'my-service'");
-        assertTrue(killService instanceof IgniteSqlKillService);
-        assertEquals("my-service", stringValue(((IgniteSqlKillService)killService).serviceName()));
+        killSrvc = parse("kill service 'my-service'");
+        assertTrue(killSrvc instanceof IgniteSqlKillService);
+        assertEquals("my-service", stringValue(((IgniteSqlKillService)killSrvc).serviceName()));
 
         assertParserThrows("kill service 'my-service' 'test'", SqlParseException.class);
         assertParserThrows("kill service 10000", SqlParseException.class);

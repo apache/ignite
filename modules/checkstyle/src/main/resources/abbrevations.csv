@@ -62,7 +62,7 @@ resource,rsrc
 response,res
 #returnValue,retVal
 sender,snd
-#service,srvc
+service,srvc
 #session,ses
 #sequence,seq
 #socket,sock
