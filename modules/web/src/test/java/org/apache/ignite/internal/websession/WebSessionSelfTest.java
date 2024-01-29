@@ -458,13 +458,13 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                 if (!keepBinary()) {
                     IgniteCache<String, HttpSession> cache = G.ignite().cache(getCacheName());
 
-                    HttpSession session = cache.get(sesId3);
+                    HttpSession ses = cache.get(sesId3);
 
-                    assertNotNull(session);
+                    assertNotNull(ses);
 
                     assertNotNull(cache);
 
-                    HttpSession ses = cache.get(sesId3);
+                    ses = cache.get(sesId3);
 
                     assertNotNull(ses);
 
@@ -1071,7 +1071,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      * @return sesId
      */
     private String getSessionIdFromCookie(URLConnection conn) {
-        String sessionCookieValue = null;
+        String sessCookieValue = null;
         String sesId = null;
         Map<String, List<String>> hdrFields = conn.getHeaderFields();
         Set<String> hdrFieldsSet = hdrFields.keySet();
@@ -1085,9 +1085,9 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
                 for (String hdrValue : hdrFieldValue) {
                     String[] fields = hdrValue.split(";");
-                    sessionCookieValue = fields[0];
-                    sesId = sessionCookieValue.substring(sessionCookieValue.indexOf("=") + 1,
-                            sessionCookieValue.length());
+                    sessCookieValue = fields[0];
+                    sesId = sessCookieValue.substring(sessCookieValue.indexOf("=") + 1,
+                            sessCookieValue.length());
                 }
             }
         }
