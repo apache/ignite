@@ -93,12 +93,12 @@ public class CacheDistributedGetLongRunningFutureDumpTest extends GridCommonAbst
 
         String longRunningOps = longRunningOpsLoggedFut.get(getTestTimeout(), MILLISECONDS);
 
-        Pattern pattern = Pattern.compile("rdc=Map Reducer \\[reducedEntries=ConcurrentHashMap \\{(.+)\\}");
-        Matcher matcher = pattern.matcher(longRunningOps);
+        Matcher reducedEntriesMatcher = Pattern.compile("rdc=Map Reducer \\[reducedEntries=ConcurrentHashMap \\{(.+)\\}")
+            .matcher(longRunningOps);
 
-        assertTrue(matcher.find());
+        assertTrue(reducedEntriesMatcher.find());
 
-        assertEquals(logColElementsLimit, matcher.group(1).split(", ").length);
+        assertEquals(logColElementsLimit, reducedEntriesMatcher.group(1).split(", ").length);
 
         spi(grid(1)).stopBlock();
 
