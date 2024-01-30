@@ -21,7 +21,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.compute.ComputeTask;
 
 /**
  * Annotation to specify task classes related to a command.
@@ -30,5 +30,5 @@ import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 @Target(ElementType.TYPE)
 public @interface RequireTask {
     /** @return Task classes related to a command. */
-    public Class<? extends VisorMultiNodeTask<?, ?, ?>>[] value();
+    public Class<? extends ComputeTask<?, ?>>[] value();
 }
