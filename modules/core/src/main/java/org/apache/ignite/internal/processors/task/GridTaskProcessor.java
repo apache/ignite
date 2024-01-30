@@ -713,7 +713,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
                 assert taskWorker0 == null : "Session ID is not unique: " + sesId;
 
-                if (ctx.event().isRecordable(EVT_MANAGEMENT_TASK_STARTED) && dep.visorManagementTask(task, taskCls)) {
+                if (ctx.event().isRecordable(EVT_MANAGEMENT_TASK_STARTED)
+                    && ctx.grid().commandsRegistry().isCommandTask(taskCls)) {
                     VisorTaskArgument visorTaskArg = (VisorTaskArgument)arg;
 
                     Event evt = new TaskEvent(

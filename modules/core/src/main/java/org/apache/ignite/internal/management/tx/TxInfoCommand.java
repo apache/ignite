@@ -31,6 +31,7 @@ import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.management.api.RequireTask;
 import org.apache.ignite.internal.management.tx.TxCommand.AbstractTxCommandArg;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
@@ -41,6 +42,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDE
 import static org.apache.ignite.internal.management.tx.TxCommand.nodeDescription;
 
 /** */
+@RequireTask({FetchNearXidVersionTask.class, TxTask.class})
 public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<ClusterNode, TxTaskResult>> {
     /** {@inheritDoc} */
     @Override public String description() {

@@ -32,6 +32,7 @@ import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.management.api.RequireTask;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,6 +43,7 @@ import static org.apache.ignite.internal.management.cache.ViewCacheCmd.GROUPS;
 import static org.apache.ignite.internal.management.cache.ViewCacheCmd.SEQ;
 
 /** Prints info regarding caches, groups or sequences. */
+@RequireTask({ViewCacheTask.class, CacheConfigurationCollectorTask.class})
 public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewCacheTaskResult> {
     /** */
     Function<CacheListCommandArg, Predicate<GridClientNode>> FILTER = arg -> node ->

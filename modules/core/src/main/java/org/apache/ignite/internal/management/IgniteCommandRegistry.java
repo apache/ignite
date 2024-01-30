@@ -17,9 +17,16 @@
 
 package org.apache.ignite.internal.management;
 
+import java.util.HashSet;
+import java.util.Set;
+import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import org.apache.ignite.internal.management.api.CommandsRegistry;
+import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.management.api.RequireTask;
 import org.apache.ignite.internal.management.baseline.BaselineCommand;
 import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.management.cdc.CdcCommand;
@@ -37,6 +44,8 @@ import org.apache.ignite.internal.management.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand;
 import org.apache.ignite.internal.management.tx.TxCommand;
 import org.apache.ignite.internal.management.wal.WalCommand;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Ignite command registry containing all commands known by Ignite node.
@@ -44,6 +53,9 @@ import org.apache.ignite.internal.management.wal.WalCommand;
  * @see Command
  */
 public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
+    /** Commands task classes. */
+    private final Set<Class<? extends ComputeTask<?, ?>>> taskClasses = new HashSet<>();
+
     /** */
     public IgniteCommandRegistry() {
         super(
@@ -73,10 +85,32 @@ public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
             new ConsistencyCommand(),
             new CdcCommand()
         );
+
+        registerTaskClass(this);
     }
 
     /** {@inheritDoc} */
     @Override public void register(Command<?, ?> cmd) {
         super.register(cmd);
+    }
+
+    /** @return {@code True} if the task related to a command. */
+    public boolean isCommandTask(Class<?> taskCls) {
+        return taskClasses.contains(taskCls);
+    }
+
+    /** */
+    private void registerTaskClass(Command<?, ?> cmd) {
+        if (cmd instanceof CommandsRegistry)
+            ((CommandsRegistry<?, ?>)cmd).commands().forEachRemaining(e -> registerTaskClass(e.getValue()));
+
+        if (cmd instanceof ComputeCommand)
+            taskClasses.add(((ComputeCommand<?, ?>)cmd).taskClass());
+        else if (cmd instanceof LocalCommand) {
+            RequireTask ann = U.getAnnotation(cmd.getClass(), RequireTask.class);
+
+            if (ann != null)
+                taskClasses.addAll(F.asList(ann.value()));
+        }
     }
 }

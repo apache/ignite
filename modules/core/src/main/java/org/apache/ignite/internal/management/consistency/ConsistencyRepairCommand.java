@@ -28,6 +28,7 @@ import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.management.api.RequireTask;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,6 +37,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.nodes;
 
 /** */
 @IgniteExperimental
+@RequireTask(ConsistencyRepairTask.class)
 public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairCommandArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
