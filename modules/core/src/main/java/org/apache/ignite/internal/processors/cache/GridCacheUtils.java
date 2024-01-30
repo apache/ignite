@@ -646,7 +646,7 @@ public class GridCacheUtils {
 
             /** {@inheritDoc} */
             @Override public synchronized String toString() {
-                return "Collection reducer: " + ret;
+                return S.toString("Collection Reducer", "reducedElements", ret);
             }
         };
     }
