@@ -64,9 +64,9 @@ response,res
 sender,snd
 service,srvc
 session,ses
-#sequence,seq
-#socket,sock
-#source,src
+sequence,seq
+socket,sock
+source,src
 #string,s,str
 #subject,subj
 #system,sys

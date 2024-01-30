@@ -231,7 +231,7 @@ public class IgniteSqlToRelConvertor extends SqlToRelConverter {
 
         // first, convert the merge's source select to construct the columns
         // from the target table and the set expressions in the update call
-        RelNode mergeSourceRel = convertSelect(
+        RelNode mergeSrcRel = convertSelect(
             requireNonNull(call.getSourceSelect(), () -> "sourceSelect for " + call), false);
 
         // then, convert the insert statement so we can get the insert
@@ -260,7 +260,7 @@ public class IgniteSqlToRelConvertor extends SqlToRelConverter {
             nLevel1Exprs = level1InsertExprs.size();
         }
 
-        LogicalJoin join = (LogicalJoin)mergeSourceRel.getInput(0);
+        LogicalJoin join = (LogicalJoin)mergeSrcRel.getInput(0);
 
         final List<RexNode> projects = new ArrayList<>();
 
@@ -276,7 +276,7 @@ public class IgniteSqlToRelConvertor extends SqlToRelConverter {
                 projects.add(level1InsertExprs.get(level1Idx));
         }
         if (updateCall != null) {
-            final LogicalProject project = (LogicalProject)mergeSourceRel;
+            final LogicalProject project = (LogicalProject)mergeSrcRel;
             projects.addAll(project.getProjects());
         }
         else {
