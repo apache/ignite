@@ -86,7 +86,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
     public void testManagementTask() throws Exception {
         ignite.commandsRegistry().register(new TestComputeCommand());
 
-        doTestVisorTask(TestManagementTask.class, false);
+        doTestManagementTask(TestManagementTask.class, false);
     }
 
     /** */
@@ -94,13 +94,13 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
     public void testManagementTaskLocalCommand() throws Exception {
         ignite.commandsRegistry().register(new TestLocalCommand());
 
-        doTestVisorTask(TestManagementTask.class, false);
+        doTestManagementTask(TestManagementTask.class, false);
     }
 
     /** */
     @Test
     public void testNotManagementTask() throws Exception {
-        doTestVisorTask(TestTask.class, false);
+        doTestManagementTask(TestTask.class, false);
     }
 
     /**
@@ -108,7 +108,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    private void doTestVisorTask(Class<? extends ComputeTask<?, ?>> cls, boolean expEvt) throws Exception {
+    private void doTestManagementTask(Class<? extends ComputeTask<?, ?>> cls, boolean expEvt) throws Exception {
         final AtomicReference<TaskEvent> evt = new AtomicReference<>();
 
         final CountDownLatch evtLatch = new CountDownLatch(1);
