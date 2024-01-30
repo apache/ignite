@@ -152,9 +152,20 @@ public class BufferedFileIOTest extends GridCommonAbstractTest {
         Arrays.stream(data).forEach(bb -> {
             try {
                 if (arrMethod)
-                    fileIO.writeFully(bb, 0, bb.length);
-                else
-                    fileIO.writeFully(ByteBuffer.wrap(bb));
+                    fileIO.write(bb, 0, bb.length);
+                else {
+                    int offset = ThreadLocalRandom.current().nextInt(4);
+
+                    if (offset == 0)
+                        fileIO.write(ByteBuffer.wrap(bb));
+                    else {
+                        byte[] dataCopy = randBytes(bb.length + 10);
+
+                        System.arraycopy(bb, 0, dataCopy, offset, bb.length);
+
+                        fileIO.write(ByteBuffer.wrap(dataCopy, offset, bb.length));
+                    }
+                }
             }
             catch (IOException e) {
                 throw new RuntimeException(e);

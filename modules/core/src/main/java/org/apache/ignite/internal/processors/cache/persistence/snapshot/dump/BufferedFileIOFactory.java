@@ -47,7 +47,7 @@ public class BufferedFileIOFactory implements FileIOFactory {
 
         int blockSize = io.getFileSystemBlockSize();
 
-        if (blockSize == -1)
+        if (blockSize < 0)
             blockSize = DEFAULT_BLOCK_SIZE;
 
         return new BufferedFileIO(io, blockSize);

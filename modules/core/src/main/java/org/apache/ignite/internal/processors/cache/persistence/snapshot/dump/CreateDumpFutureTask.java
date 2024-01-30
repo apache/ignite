@@ -176,7 +176,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         ioFactory = new BufferedFileIOFactory(ioFactory);
 
         if (compress)
-            ioFactory = new WriteOnlyZipFileIOFactory((BufferedFileIOFactory)ioFactory);
+            ioFactory = new WriteOnlyZipFileIOFactory(ioFactory);
 
         this.ioFactory = ioFactory;
 

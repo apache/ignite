@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 /**
  * The class implements a {@link FileIO} that allows to write bytes to the underlying {@link FileIO} without necessarily
  * causing a call to the underlying system for each byte written.
+ * This IO writes to underlying storage whole buffer thus reduces number of system calls.
  * It doesn't support reading or random access. It is not designed for writing concurrently from several threads.
  */
 public class BufferedFileIO extends FileIODecorator {
@@ -47,23 +48,11 @@ public class BufferedFileIO extends FileIODecorator {
         if (buf == null)
             throw new IOException("FileIO closed");
 
-        int bytesCnt = srcBuf.remaining();
+        int len = write(srcBuf.array(), srcBuf.arrayOffset() + srcBuf.position(), srcBuf.remaining());
 
-        int limit = srcBuf.limit();
+        srcBuf.position(srcBuf.position() + len);
 
-        while (srcBuf.hasRemaining()) {
-            if (srcBuf.remaining() > buf.remaining())
-                srcBuf.limit(srcBuf.position() + buf.remaining());
-
-            buf.put(srcBuf);
-
-            if (!buf.hasRemaining())
-                flush();
-
-            srcBuf.limit(limit);
-        }
-
-        return bytesCnt;
+        return len;
     }
 
     /** {@inheritDoc} */
@@ -106,9 +95,6 @@ public class BufferedFileIO extends FileIODecorator {
 
     /** */
     private void flush() throws IOException {
-        if (buf == null)
-            return;
-
         buf.flip();
 
         if (delegate.writeFully(buf) < 0)
@@ -119,6 +105,9 @@ public class BufferedFileIO extends FileIODecorator {
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
+        if (buf == null)
+            return;
+
         flush();
 
         buf = null;
