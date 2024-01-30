@@ -2390,9 +2390,9 @@ public class ClusterCachesInfo {
         Collection<ClusterNode> nodes = discoCache.allNodes();
 
         for (ClusterNode node : nodes) {
-            IgniteProductVersion version = node.version();
+            IgniteProductVersion ver = node.version();
 
-            if (version.compareToIgnoreTimestamp(V_MERGE_CONFIG_SINCE) < 0)
+            if (ver.compareToIgnoreTimestamp(V_MERGE_CONFIG_SINCE) < 0)
                 return false;
         }
 

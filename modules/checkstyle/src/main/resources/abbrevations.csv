@@ -68,9 +68,9 @@ sequence,seq
 socket,sock
 source,src
 #string,s,str
-#subject,subj
+subject,subj
 #system,sys
 #topology,top
 #topologyversion,topVer
 #value,val
-#version,ver
+version,ver
