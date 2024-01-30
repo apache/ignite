@@ -245,9 +245,9 @@ public class CachingProvider implements javax.cache.spi.CachingProvider {
 
             if (fut != null && fut.isDone() && !fut.isFailed()) {
                 try {
-                    CacheManager cachedManager = fut.get();
+                    CacheManager cachedMgr = fut.get();
 
-                    if (cachedManager == mgr)
+                    if (cachedMgr == mgr)
                         uriMap.remove(mgr.getURI());
                 }
                 catch (IgniteCheckedException e) {

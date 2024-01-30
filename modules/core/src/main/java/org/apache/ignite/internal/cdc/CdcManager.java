@@ -25,13 +25,11 @@ import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
-import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
@@ -65,7 +63,7 @@ import org.apache.ignite.plugin.PluginProvider;
  * @see CdcConsumerState#saveCdcMode(CdcMode)
  */
 @IgniteExperimental
-public interface CdcManager extends GridCacheSharedManager, DatabaseLifecycleListener {
+public interface CdcManager extends GridCacheSharedManager {
     /**
      * If this manager isn't enabled then Ignite skips notifying the manager with following methods.
      *
@@ -78,16 +76,12 @@ public interface CdcManager extends GridCacheSharedManager, DatabaseLifecycleLis
      * It's executed before the first call of {@link #collect(ByteBuffer)}.
      * <p> Implementation suggestions:
      * <ul>
-     *     <li>
-     *         Implementation must subscribe to the database events to get notified with this callback via
-     *         {@link GridInternalSubscriptionProcessor#registerDatabaseListener(DatabaseLifecycleListener)}
-     *     </li>
      *     <li>Callback can be used for restoring CDC state on Ignite node start, collecting missed events from WAL segments.</li>
      *     <li>Be aware, this method runs in the Ignite system thread and might get longer the Ignite start procedure.</li>
      *     <li>Ignite node will fail in case the method throws an exception.</li>
      * </ul>
      */
-    @Override public default void afterBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr,
+    public default void afterBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr,
         GridCacheDatabaseSharedManager.RestoreBinaryState restoreState) throws IgniteCheckedException {
         // No-op.
     }

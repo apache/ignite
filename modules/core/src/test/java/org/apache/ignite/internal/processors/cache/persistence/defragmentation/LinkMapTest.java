@@ -72,11 +72,11 @@ public class LinkMapTest extends GridCommonAbstractTest {
 
         FullPageId pageId = new FullPageId(pageMem.allocatePage(cacheGroupId, 0, PageIdAllocator.FLAG_DATA), cacheGroupId);
 
-        PageLockTrackerManager pageLockTrackerManager = mock(PageLockTrackerManager.class);
+        PageLockTrackerManager pageLockTrackerMgr = mock(PageLockTrackerManager.class);
 
-        when(pageLockTrackerManager.createPageLockTracker(anyString())).thenReturn(PageLockTrackerManager.NOOP_LSNR);
+        when(pageLockTrackerMgr.createPageLockTracker(anyString())).thenReturn(PageLockTrackerManager.NOOP_LSNR);
 
-        LinkMap map = new LinkMap(cacheGroupId, groupName, pageMem, pageId.pageId(), true, pageLockTrackerManager);
+        LinkMap map = new LinkMap(cacheGroupId, groupName, pageMem, pageId.pageId(), true, pageLockTrackerMgr);
 
         for (int i = 0; i < 10_000; i++)
             map.put(i, i + 1);

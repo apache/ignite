@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -134,8 +133,7 @@ public class MvccUtils {
 
         byte state;
 
-        return cctx.kernalContext().coordinators().hasLocalTransaction(mvccCrd, mvccCntr) ||
-            (state = state(cctx, mvccCrd, mvccCntr, 0)) != TxState.COMMITTED && state != TxState.ABORTED;
+        return (state = state(cctx, mvccCrd, mvccCntr, 0)) != TxState.COMMITTED && state != TxState.ABORTED;
     }
 
     /**
@@ -147,7 +145,7 @@ public class MvccUtils {
      * @see TxState
      */
     public static byte state(GridCacheContext cctx, long mvccCrd, long mvccCntr, int mvccOpCntr) {
-        return state(cctx.kernalContext().coordinators(), mvccCrd, mvccCntr, mvccOpCntr);
+        return TxState.NA;
     }
 
     /**
@@ -159,33 +157,7 @@ public class MvccUtils {
      * @see TxState
      */
     public static byte state(CacheGroupContext grp, long mvccCrd, long mvccCntr, int mvccOpCntr) {
-        return state(grp.shared().coordinators(), mvccCrd, mvccCntr, mvccOpCntr);
-    }
-
-    /**
-     * @param proc Mvcc processor.
-     * @param mvccCrd Mvcc coordinator version.
-     * @param mvccCntr Mvcc counter.
-     * @return TxState
-     * @see TxState
-     */
-    public static byte state(MvccProcessor proc, long mvccCrd, long mvccCntr, int mvccOpCntr) {
-        if (compare(INITIAL_VERSION, mvccCrd, mvccCntr, mvccOpCntr) == 0)
-            return TxState.COMMITTED; // Initial version is always committed;
-
-        if ((mvccOpCntr & MVCC_HINTS_MASK) != 0)
-            return (byte)(mvccOpCntr >>> MVCC_HINTS_BIT_OFF);
-
-        MvccCoordinator crd = proc.currentCoordinator();
-
-        byte state = proc.state(mvccCrd, mvccCntr);
-
-        if ((state == TxState.NA || state == TxState.PREPARED)
-            && (crd.unassigned() // Recovery from WAL.
-            || (crd.initialized() && mvccCrd < crd.version()))) // Stale row.
-            state = TxState.ABORTED;
-
-        return state;
+        return TxState.NA;
     }
 
     /**
@@ -547,13 +519,6 @@ public class MvccUtils {
      */
     public static boolean mvccVersionIsValid(long crdVer, long cntr) {
         return crdVer > MVCC_CRD_COUNTER_NA && cntr > MVCC_COUNTER_NA;
-    }
-
-    /**
-     * @return Error.
-     */
-    public static ClusterTopologyServerNotFoundException noCoordinatorError() {
-        return new ClusterTopologyServerNotFoundException("Mvcc coordinator is not assigned.");
     }
 
     /**
