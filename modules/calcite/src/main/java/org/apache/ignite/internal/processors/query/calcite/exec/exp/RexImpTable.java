@@ -1531,11 +1531,11 @@ public class RexImpTable {
         @Override Expression implementSafe(final RexToLixTranslator translator,
             final RexCall call, final List<Expression> argValueList) {
             assert call.getOperands().size() == 1;
-            final RelDataType sourceType = call.getOperands().get(0).getType();
+            final RelDataType srcType = call.getOperands().get(0).getType();
 
             // Short-circuit if no cast is required
             RexNode arg = call.getOperands().get(0);
-            if (call.getType().equals(sourceType)) {
+            if (call.getType().equals(srcType)) {
                 // No cast required, omit cast
                 return argValueList.get(0);
             }
@@ -1548,7 +1548,7 @@ public class RexImpTable {
             }
             final RelDataType targetType =
                 nullifyType(translator.typeFactory, call.getType(), false);
-            return translator.translateCast(sourceType,
+            return translator.translateCast(srcType,
                 targetType, argValueList.get(0));
         }
 

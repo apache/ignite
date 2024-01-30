@@ -1589,8 +1589,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             boolean ignoreLocalHostname = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME);
             String userDefinedHost = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_LOCAL_HOST);
 
-            InetSocketAddress inetSocketAddr = new InetSocketAddress(userDefinedHost, 0);
-            InetAddress addr = inetSocketAddr.getAddress();
+            InetSocketAddress inetSockAddr = new InetSocketAddress(userDefinedHost, 0);
+            InetAddress addr = inetSockAddr.getAddress();
             IgniteBiTuple<Collection<String>, Collection<String>> localAddrs = IgniteUtils.resolveLocalAddresses(addr);
 
             if (ignoreLocalHostname) {

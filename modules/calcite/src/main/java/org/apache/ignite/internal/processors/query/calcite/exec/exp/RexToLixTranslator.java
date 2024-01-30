@@ -577,12 +577,12 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                         case BINARY:
                         case VARBINARY:
                             // If this is a widening cast, no need to truncate.
-                            final int sourcePrecision = sourceType.getPrecision();
-                            if (SqlTypeUtil.comparePrecision(sourcePrecision, targetPrecision) <= 0)
+                            final int srcPrecision = sourceType.getPrecision();
+                            if (SqlTypeUtil.comparePrecision(srcPrecision, targetPrecision) <= 0)
                                 truncate = false;
 
                             // If this is a widening cast, no need to pad.
-                            if (SqlTypeUtil.comparePrecision(sourcePrecision, targetPrecision) >= 0)
+                            if (SqlTypeUtil.comparePrecision(srcPrecision, targetPrecision) >= 0)
                                 pad = false;
 
                             // fall through
