@@ -63,7 +63,7 @@ response,res
 #returnValue,retVal
 sender,snd
 service,srvc
-#session,ses
+session,ses
 #sequence,seq
 #socket,sock
 #source,src
