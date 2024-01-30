@@ -135,7 +135,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static class TestManagementTask extends VisorOneNodeTask<TestCommandArg, Object> {
+    private static class TestManagementTask extends VisorOneNodeTask<TestCommandArg, Object> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -190,6 +190,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     private static class TestComputeCommand implements ComputeCommand<TestCommandArg, Object> {
         /** {@inheritDoc} */
         @Override public String description() {
@@ -201,13 +202,14 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
             return TestCommandArg.class;
         }
 
+        /** {@inheritDoc} */
         @Override public Class<? extends ComputeTask<VisorTaskArgument<TestCommandArg>, Object>> taskClass() {
             return TestManagementTask.class;
         }
     }
 
     /** */
-    public static class TestCommandArg extends IgniteDataTransferObject {
+    private static class TestCommandArg extends IgniteDataTransferObject {
         /** */
         private static final long serialVersionUID = 0;
 
