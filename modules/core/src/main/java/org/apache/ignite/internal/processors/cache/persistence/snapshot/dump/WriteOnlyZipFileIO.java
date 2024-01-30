@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -38,9 +37,6 @@ public class WriteOnlyZipFileIO extends FileIODecorator {
     private final ZipOutputStream zos;
 
     /** */
-    private final BufferedOutputStream bos;
-
-    /** */
     public WriteOnlyZipFileIO(FileIO fileIO, String entryName) throws IOException {
         super(fileIO);
 
@@ -57,22 +53,20 @@ public class WriteOnlyZipFileIO extends FileIODecorator {
         zos.setLevel(BEST_COMPRESSION);
 
         zos.putNextEntry(new ZipEntry(entryName));
-
-        bos = new BufferedOutputStream(zos);
     }
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf) throws IOException {
         int len = srcBuf.remaining();
 
-        bos.write(srcBuf.array(), srcBuf.position(), len);
+        zos.write(srcBuf.array(), srcBuf.position(), len);
 
         return len;
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
-        bos.close();
+        zos.close();
 
         super.close();
     }
