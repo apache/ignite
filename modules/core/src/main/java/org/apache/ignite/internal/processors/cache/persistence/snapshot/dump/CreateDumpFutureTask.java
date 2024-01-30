@@ -650,7 +650,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
             rateLimiter.acquire(buf.limit());
 
-            if (file.writeFully(buf) != buf.limit())
+            if (file.write(buf) != buf.limit())
                 throw new IgniteException("Can't write row");
 
             processedSize.addAndGet(buf.limit());
