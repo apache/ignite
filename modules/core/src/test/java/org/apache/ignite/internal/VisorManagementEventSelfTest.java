@@ -124,7 +124,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
         }, EventType.EVT_MANAGEMENT_TASK_STARTED);
 
         for (ClusterNode node : ignite.cluster().forServers().nodes())
-            ignite.compute().executeAsync(cls.getName(), new VisorTaskArgument<>(node.id(), new VisorTaskArgument(), true));
+            ignite.compute().executeAsync(cls.getName(), new VisorTaskArgument<>(node.id(), new TestCommandArg(), true));
 
         if (expEvt) {
             assertTrue(evtLatch.await(10000, TimeUnit.MILLISECONDS));
