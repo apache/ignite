@@ -98,6 +98,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteClosure;
@@ -643,7 +644,7 @@ public class GridCacheUtils {
 
             /** {@inheritDoc} */
             @Override public String toString() {
-                return "Map reducer: " + ret;
+                return S.toString("Map Reducer", "reducedEntries", ret);
             }
         };
     }
@@ -676,7 +677,7 @@ public class GridCacheUtils {
 
             /** {@inheritDoc} */
             @Override public synchronized String toString() {
-                return "Collection reducer: " + ret;
+                return S.toString("Collection Reducer", "reducedElements", ret);
             }
         };
     }
