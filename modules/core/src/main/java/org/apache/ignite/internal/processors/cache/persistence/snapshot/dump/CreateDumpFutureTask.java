@@ -173,12 +173,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         this.dumpDir = dumpDir;
 
-        ioFactory = new BufferedFileIOFactory(ioFactory);
-
-        if (compress)
-            ioFactory = new WriteOnlyZipFileIOFactory(ioFactory);
-
-        this.ioFactory = ioFactory;
+        this.ioFactory = compress ? new WriteOnlyZipFileIOFactory(ioFactory) : new BufferedFileIOFactory(ioFactory);
 
         this.compress = compress;
         this.rateLimiter = rateLimiter;
@@ -650,7 +645,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
             rateLimiter.acquire(buf.limit());
 
-            if (file.write(buf) != buf.limit())
+            if (file.writeFully(buf) != buf.limit())
                 throw new IgniteException("Can't write row");
 
             processedSize.addAndGet(buf.limit());

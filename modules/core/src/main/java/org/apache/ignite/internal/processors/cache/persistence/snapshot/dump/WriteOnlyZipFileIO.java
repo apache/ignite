@@ -19,11 +19,9 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 
 import static java.util.zip.Deflater.BEST_COMPRESSION;
 
@@ -32,7 +30,7 @@ import static java.util.zip.Deflater.BEST_COMPRESSION;
  * It doesn't support reading or random access.
  * It is not designed for writing concurrently from several threads.
  */
-public class WriteOnlyZipFileIO extends FileIODecorator {
+public class WriteOnlyZipFileIO extends BufferedFileIO {
     /** */
     private final ZipOutputStream zos;
 
@@ -42,11 +40,11 @@ public class WriteOnlyZipFileIO extends FileIODecorator {
 
         zos = new ZipOutputStream(new OutputStream() {
             @Override public void write(byte[] b, int off, int len) throws IOException {
-                fileIO.write(b, off, len);
+                WriteOnlyZipFileIO.super.writeBytes(b, off, len);
             }
 
             @Override public void write(int b) throws IOException {
-                ((BufferedFileIO)fileIO).write((byte)b);
+                writeByte((byte)b);
             }
         });
 
@@ -56,12 +54,8 @@ public class WriteOnlyZipFileIO extends FileIODecorator {
     }
 
     /** {@inheritDoc} */
-    @Override public int write(ByteBuffer srcBuf) throws IOException {
-        int len = srcBuf.remaining();
-
-        zos.write(srcBuf.array(), srcBuf.position(), len);
-
-        return len;
+    @Override protected void writeBytes(byte[] srcBuf, int off, int len) throws IOException {
+        zos.write(srcBuf, off, len);
     }
 
     /** {@inheritDoc} */

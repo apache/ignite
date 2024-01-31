@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 
 /**
@@ -31,10 +30,7 @@ public class BufferedFileIOFactory implements FileIOFactory {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final int DEFAULT_BLOCK_SIZE = 4096;
-
-    /** */
-    private final FileIOFactory factory;
+    protected final FileIOFactory factory;
 
     /** */
     public BufferedFileIOFactory(FileIOFactory factory) {
@@ -43,13 +39,6 @@ public class BufferedFileIOFactory implements FileIOFactory {
 
     /** {@inheritDoc} */
     @Override public BufferedFileIO create(File file, OpenOption... modes) throws IOException {
-        FileIO io = factory.create(file, modes);
-
-        int blockSize = io.getFileSystemBlockSize();
-
-        if (blockSize < 0)
-            blockSize = DEFAULT_BLOCK_SIZE;
-
-        return new BufferedFileIO(io, blockSize);
+        return new BufferedFileIO(factory.create(file, modes));
     }
 }

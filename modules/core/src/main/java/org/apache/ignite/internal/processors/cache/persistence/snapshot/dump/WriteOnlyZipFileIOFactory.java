@@ -28,16 +28,13 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  * File I/O factory which provides {@link WriteOnlyZipFileIO} implementation of FileIO.
  */
-public class WriteOnlyZipFileIOFactory implements FileIOFactory {
+public class WriteOnlyZipFileIOFactory extends BufferedFileIOFactory {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final FileIOFactory factory;
-
-    /** */
     public WriteOnlyZipFileIOFactory(FileIOFactory factory) {
-        this.factory = factory;
+        super(factory);
     }
 
     /** {@inheritDoc} */

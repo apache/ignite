@@ -31,10 +31,28 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  */
 public class BufferedFileIO extends FileIODecorator {
     /** */
+    private static final int DEFAULT_BLOCK_SIZE = 4096;
+
+    /** */
     private ByteBuffer buf;
 
     /** */
-    public BufferedFileIO(FileIO fileIO, int bufSz) {
+    private static int bufSize(FileIO io) {
+        int blockSize = io.getFileSystemBlockSize();
+
+        if (blockSize < 0)
+            blockSize = DEFAULT_BLOCK_SIZE;
+
+        return blockSize;
+    }
+
+    /** */
+    public BufferedFileIO(FileIO io) {
+        this(io, bufSize(io));
+    }
+
+    /** */
+    BufferedFileIO(FileIO fileIO, int bufSz) {
         super(fileIO);
 
         A.ensure(fileIO != null, "fileIO must not be null");
@@ -44,19 +62,24 @@ public class BufferedFileIO extends FileIODecorator {
     }
 
     /** {@inheritDoc} */
-    @Override public int write(ByteBuffer srcBuf) throws IOException {
+    @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
         if (buf == null)
             throw new IOException("FileIO closed");
 
-        int len = write(srcBuf.array(), srcBuf.arrayOffset() + srcBuf.position(), srcBuf.remaining());
+        int len = srcBuf.remaining();
+
+        writeBytes(srcBuf.array(), srcBuf.arrayOffset() + srcBuf.position(), len);
 
         srcBuf.position(srcBuf.position() + len);
 
         return len;
     }
 
-    /** {@inheritDoc} */
-    @Override public int write(byte[] srcBuf, int off, int len) throws IOException {
+    /**
+     * Writes byte array.
+     * @throws IOException If some I/O error occurs.
+     */
+    protected void writeBytes(byte[] srcBuf, int off, int len) throws IOException {
         if (buf == null)
             throw new IOException("FileIO closed");
 
@@ -75,15 +98,13 @@ public class BufferedFileIO extends FileIODecorator {
 
             p += bytesCnt;
         }
-
-        return len;
     }
 
     /**
      * Writes one byte.
      * @throws IOException If some I/O error occurs.
      */
-    public void write(byte b) throws IOException {
+    protected void writeByte(byte b) throws IOException {
         if (buf == null)
             throw new IOException("FileIO closed");
 
