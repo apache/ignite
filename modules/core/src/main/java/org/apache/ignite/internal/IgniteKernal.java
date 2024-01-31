@@ -128,7 +128,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -1033,11 +1032,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             startProcessor(new PdsConsistentIdProcessor(ctx));
 
-            MaintenanceProcessor mntcProcessor = new MaintenanceProcessor(ctx);
+            MaintenanceProcessor mntcProc = new MaintenanceProcessor(ctx);
 
-            startProcessor(mntcProcessor);
+            startProcessor(mntcProc);
 
-            if (mntcProcessor.isMaintenanceMode()) {
+            if (mntcProc.isMaintenanceMode()) {
                 if (log.isInfoEnabled()) {
                     log.info(
                         "Node is being started in maintenance mode. " +
@@ -1065,7 +1064,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             try {
                 startProcessor(COMPRESSION.createOptional(ctx));
                 startProcessor(new GridMarshallerMappingProcessor(ctx));
-                startProcessor(new MvccProcessorImpl(ctx));
                 startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
                 startProcessor(new GridAffinityProcessor(ctx));
                 startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
@@ -1156,7 +1154,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             }
 
             // All components exept Discovery are started, time to check if maintenance is still needed.
-            mntcProcessor.prepareAndExecuteMaintenance();
+            mntcProc.prepareAndExecuteMaintenance();
 
             gw.writeLock();
 

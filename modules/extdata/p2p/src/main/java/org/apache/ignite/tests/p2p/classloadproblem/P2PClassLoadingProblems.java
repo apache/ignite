@@ -82,7 +82,7 @@ class P2PClassLoadingProblems {
     /***/
     private static void triggerP2PClassLoad() {
         @SuppressWarnings("unused")
-        Object object = new SomeP2PClass();
+        Object obj = new SomeP2PClass();
     }
 
     /***/

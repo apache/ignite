@@ -284,11 +284,11 @@ public class CommandHandlerParsingTest {
         List<List<T>> res = new ArrayList<>();
 
         for (int i = 0; i < source.size(); i++) {
-            List<T> sourceCopy = new ArrayList<>(source);
+            List<T> srcCopy = new ArrayList<>(source);
 
-            T removed = sourceCopy.remove(i);
+            T removed = srcCopy.remove(i);
 
-            generateAllCombinations(singletonList(removed), sourceCopy, stopFunc, res);
+            generateAllCombinations(singletonList(removed), srcCopy, stopFunc, res);
         }
 
         return res;
@@ -314,13 +314,13 @@ public class CommandHandlerParsingTest {
         for (int i = 0; i < source.size(); i++) {
             ArrayList<T> res0 = new ArrayList<>(res);
 
-            List<T> sourceCopy = new ArrayList<>(source);
+            List<T> srcCopy = new ArrayList<>(source);
 
-            T removed = sourceCopy.remove(i);
+            T removed = srcCopy.remove(i);
 
             res0.add(removed);
 
-            generateAllCombinations(res0, sourceCopy, stopFunc, acc);
+            generateAllCombinations(res0, srcCopy, stopFunc, acc);
         }
     }
 
@@ -425,12 +425,12 @@ public class CommandHandlerParsingTest {
 
         assertNull(((ShutdownPolicyCommandArg)args.commandArg()).shutdownPolicy());
 
-        for (ShutdownPolicy policy : ShutdownPolicy.values()) {
-            args = parseArgs(asList(SHUTDOWN_POLICY, String.valueOf(policy)));
+        for (ShutdownPolicy plc : ShutdownPolicy.values()) {
+            args = parseArgs(asList(SHUTDOWN_POLICY, String.valueOf(plc)));
 
             assertEquals(ShutdownPolicyCommand.class, args.command().getClass());
 
-            assertSame(policy, ((ShutdownPolicyCommandArg)args.commandArg()).shutdownPolicy());
+            assertSame(plc, ((ShutdownPolicyCommandArg)args.commandArg()).shutdownPolicy());
         }
     }
 

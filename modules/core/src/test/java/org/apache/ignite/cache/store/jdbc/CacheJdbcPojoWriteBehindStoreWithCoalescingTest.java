@@ -102,15 +102,15 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
     /** */
     public TestJdbcPojoDataSourceFactory getDataSourceFactory() {
-        TestJdbcPojoDataSourceFactory testJdbcPojoDataSourceFactory = new TestJdbcPojoDataSourceFactory();
+        TestJdbcPojoDataSourceFactory testJdbcPojoDataSrcFactory = new TestJdbcPojoDataSourceFactory();
 
-        testJdbcPojoDataSourceFactory.setURL("jdbc:h2:mem:TestDatabase;DB_CLOSE_DELAY=-1");
+        testJdbcPojoDataSrcFactory.setURL("jdbc:h2:mem:TestDatabase;DB_CLOSE_DELAY=-1");
 
-        testJdbcPojoDataSourceFactory.setUserName("sa");
+        testJdbcPojoDataSrcFactory.setUserName("sa");
 
-        testJdbcPojoDataSourceFactory.setPassword("");
+        testJdbcPojoDataSrcFactory.setPassword("");
 
-        return testJdbcPojoDataSourceFactory;
+        return testJdbcPojoDataSrcFactory;
     }
 
     /** */

@@ -661,7 +661,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
             // Test bounds hiding in index scans.
             sql(grid(0), "CREATE TABLE test_sens (id int, val varchar)");
-            sql(grid(0), "CREATE INDEX test_sens_idx ON test_sens(val)");
+            sql(grid(0), "CREATE INDEX test_sens_idx ON test_sens(val) INLINE_SIZE 10");
             sql(grid(0), "INSERT INTO test_sens (id, val) VALUES (0, 'sensitive0'), (1, 'sensitive1'), " +
                 "(2, 'sensitive2'), (3, 'sensitive3'), (4, 'sensitive4'), (5, 'sensitive5'), (6, 'sensitive6')");
             sql(grid(0), "SELECT * FROM test_sens WHERE val IN ('sensitive0', 'sensitive1')");

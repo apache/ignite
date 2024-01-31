@@ -266,7 +266,7 @@ public class GridCommandHandlerIndexingUtils {
         GridDhtLocalPartition locPart = cacheCtx.topology().localPartitions().get(partId);
         GridIterator<CacheDataRow> cacheDataGridIter = cacheCtx.group().offheap().partitionIterator(locPart.id());
 
-        GridQueryProcessor qryProcessor = internalCache.context().kernalContext().query();
+        GridQueryProcessor qryProc = internalCache.context().kernalContext().query();
 
         while (cacheDataGridIter.hasNextX()) {
             CacheDataRow cacheDataRow = cacheDataGridIter.nextX();
@@ -277,7 +277,7 @@ public class GridCommandHandlerIndexingUtils {
             cacheCtx.shared().database().checkpointReadLock();
 
             try {
-                qryProcessor.remove(cacheCtx, cacheDataRow);
+                qryProc.remove(cacheCtx, cacheDataRow);
             }
             finally {
                 cacheCtx.shared().database().checkpointReadUnlock();

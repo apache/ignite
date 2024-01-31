@@ -2588,7 +2588,7 @@ public class ZookeeperDiscoveryImpl {
         if (log.isDebugEnabled())
             log.debug("Generated CUSTOM event [evt=" + evtData + ", msg=" + msg + ']');
 
-        boolean fastStopProcess = false;
+        boolean fastStopProc = false;
 
         if (msg instanceof ZkInternalMessage)
             processInternalMessage(evtData, (ZkInternalMessage)msg);
@@ -2599,7 +2599,7 @@ public class ZookeeperDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Fast stop process custom event [evt=" + evtData + ", msg=" + msg + ']');
 
-                fastStopProcess = true;
+                fastStopProc = true;
 
                 // No need to process this event on others nodes, skip this event.
                 evtsData.evts.remove(evtData.eventId());
@@ -2628,7 +2628,7 @@ public class ZookeeperDiscoveryImpl {
 
             saveAndProcessNewEvents();
 
-            if (fastStopProcess)
+            if (fastStopProc)
                 deleteCustomEventDataAsync(zkClient, evtPath);
 
             if (failedNode != null) {

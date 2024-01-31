@@ -221,12 +221,12 @@ public class IgniteProcessProxy implements IgniteEx {
      * @throws InterruptedException If we get interrupted.
      */
     private static void validateRemoteJre(@Nullable String javaHome) throws IOException, InterruptedException {
-        int remoteMajorVersion = new JavaVersionCommand().majorVersion(javaHome);
-        int localMajorVersion = U.majorJavaVersion(System.getProperty("java.version"));
+        int remoteMajorVer = new JavaVersionCommand().majorVersion(javaHome);
+        int localMajorVer = U.majorJavaVersion(System.getProperty("java.version"));
 
-        if (localMajorVersion != remoteMajorVersion) {
-            fail("Version of remote java with home at '" + javaHome + "' (" + remoteMajorVersion +
-                ") is different from local java version (" + localMajorVersion + "). " +
+        if (localMajorVer != remoteMajorVer) {
+            fail("Version of remote java with home at '" + javaHome + "' (" + remoteMajorVer +
+                ") is different from local java version (" + localMajorVer + "). " +
                 "Make sure test.multijvm.java.home property specifies a path to a correct Java installation");
         }
     }

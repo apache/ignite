@@ -1484,12 +1484,12 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @return Deployment.
      */
     public GridDeployment currentDeployment() {
-        GridJobSessionImpl session = currSess.get();
+        GridJobSessionImpl ses = currSess.get();
 
-        if (session == null || session.deployment() == null)
+        if (ses == null || ses.deployment() == null)
             return null;
 
-        return session.deployment();
+        return ses.deployment();
     }
 
     /**

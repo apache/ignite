@@ -49,8 +49,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
@@ -140,9 +138,6 @@ public class GridCacheSharedContext<K, V> {
     /** Partitons evict manager. */
     private PartitionsEvictManager evictMgr;
 
-    /** Mvcc caching manager. */
-    private MvccCachingManager mvccCachingMgr;
-
     /** Cache contexts map. */
     private final ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;
 
@@ -213,7 +208,6 @@ public class GridCacheSharedContext<K, V> {
      * @param evictMgr Partitons evict manager.
      * @param jtaMgr JTA manager.
      * @param storeSesLsnrs Store session listeners.
-     * @param mvccCachingMgr Mvcc caching manager.
      */
     private GridCacheSharedContext(
         GridKernalContext kernalCtx,
@@ -233,7 +227,6 @@ public class GridCacheSharedContext<K, V> {
         PartitionsEvictManager evictMgr,
         CacheJtaManagerAdapter jtaMgr,
         Collection<CacheStoreSessionListener> storeSesLsnrs,
-        MvccCachingManager mvccCachingMgr,
         CacheDiagnosticManager diagnosticMgr,
         CdcManager cdcMgr
     ) {
@@ -257,7 +250,6 @@ public class GridCacheSharedContext<K, V> {
             ioMgr,
             ttlMgr,
             evictMgr,
-            mvccCachingMgr,
             diagnosticMgr,
             cdcMgr
         );
@@ -436,7 +428,6 @@ public class GridCacheSharedContext<K, V> {
             ioMgr,
             ttlMgr,
             evictMgr,
-            mvccCachingMgr,
             diagnosticMgr,
             cdcMgr
         );
@@ -486,7 +477,6 @@ public class GridCacheSharedContext<K, V> {
         GridCacheIoManager ioMgr,
         GridCacheSharedTtlCleanupManager ttlMgr,
         PartitionsEvictManager evictMgr,
-        MvccCachingManager mvccCachingMgr,
         CacheDiagnosticManager diagnosticMgr,
         CdcManager cdcMgr
     ) {
@@ -511,7 +501,6 @@ public class GridCacheSharedContext<K, V> {
         this.ioMgr = add(mgrs, ioMgr);
         this.ttlMgr = add(mgrs, ttlMgr);
         this.evictMgr = add(mgrs, evictMgr);
-        this.mvccCachingMgr = add(mgrs, mvccCachingMgr);
     }
 
     /**
@@ -861,24 +850,10 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * @return Cache mvcc coordinator manager.
-     */
-    public MvccProcessor coordinators() {
-        return kernalCtx.coordinators();
-    }
-
-    /**
      * @return Partition evict manager.
      */
     public PartitionsEvictManager evict() {
         return evictMgr;
-    }
-
-    /**
-     * @return Mvcc transaction enlist caching manager.
-     */
-    public MvccCachingManager mvccCaching() {
-        return mvccCachingMgr;
     }
 
     /**
@@ -1277,9 +1252,6 @@ public class GridCacheSharedContext<K, V> {
         private PartitionsEvictManager evictMgr;
 
         /** */
-        private MvccCachingManager mvccCachingMgr;
-
-        /** */
         private CacheDiagnosticManager diagnosticMgr;
 
         /** */
@@ -1313,7 +1285,6 @@ public class GridCacheSharedContext<K, V> {
                 evictMgr,
                 jtaMgr,
                 storeSesLsnrs,
-                mvccCachingMgr,
                 diagnosticMgr,
                 cdcMgr
             );
@@ -1420,13 +1391,6 @@ public class GridCacheSharedContext<K, V> {
         /** */
         public Builder setPartitionsEvictManager(PartitionsEvictManager evictMgr) {
             this.evictMgr = evictMgr;
-
-            return this;
-        }
-
-        /** */
-        public Builder setMvccCachingManager(MvccCachingManager mvccCachingMgr) {
-            this.mvccCachingMgr = mvccCachingMgr;
 
             return this;
         }

@@ -110,7 +110,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Part
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -594,10 +593,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     "(it is recommended that you change deployment mode and restart): " + depMode);
         }
 
-        Collection<CacheStoreSessionListener> sessionListeners =
+        Collection<CacheStoreSessionListener> sesListeners =
             CU.startStoreSessionListeners(ctx, ctx.config().getCacheStoreSessionListenerFactories());
 
-        sharedCtx = createSharedContext(ctx, sessionListeners);
+        sharedCtx = createSharedContext(ctx, sesListeners);
 
         locCfgMgr = new GridLocalConfigManager(this, ctx);
 
@@ -1081,8 +1080,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             ctx.kernalContext().continuous().onCacheStop(ctx);
-
-            ctx.kernalContext().coordinators().onCacheStop(ctx);
 
             ctx.group().stopCache(ctx, clearCache);
 
@@ -3106,7 +3103,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             .setTtlCleanupManager(new GridCacheSharedTtlCleanupManager())
             .setPartitionsEvictManager(new PartitionsEvictManager())
             .setJtaManager(JTA.createOptional())
-            .setMvccCachingManager(new MvccCachingManager())
             .setDiagnosticManager(new CacheDiagnosticManager())
             .setCdcManager(cdcMgr)
             .build(kernalCtx, storeSesLsnrs);
@@ -5463,8 +5459,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             onKernalStopCaches(true);
 
             stopCaches(true);
-
-            sharedCtx.coordinators().stopTxLog();
 
             sharedCtx.database().cleanupRestoredCaches();
         }

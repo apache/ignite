@@ -724,16 +724,16 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
 
         ClusterNode locNode = ctx.discovery().localNode();
 
-        String networkDetails = "";
+        String netDetails = "";
 
         if (!F.isEmpty(cfg.getLocalHost()))
-            networkDetails += ", localHost=" + cfg.getLocalHost();
+            netDetails += ", localHost=" + cfg.getLocalHost();
 
         if (locNode instanceof TcpDiscoveryNode)
-            networkDetails += ", discoPort=" + ((TcpDiscoveryNode)locNode).discoveryPort();
+            netDetails += ", discoPort=" + ((TcpDiscoveryNode)locNode).discoveryPort();
 
         if (cfg.getCommunicationSpi() instanceof TcpCommunicationSpi)
-            networkDetails += ", commPort=" + ((TcpCommunicationSpi)cfg.getCommunicationSpi()).boundPort();
+            netDetails += ", commPort=" + ((TcpCommunicationSpi)cfg.getCommunicationSpi()).boundPort();
 
         SB msg = new SB();
 
@@ -744,7 +744,7 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
             .a("    ^-- Cluster [hosts=").a(hosts).a(", CPUs=").a(cpus).a(", servers=").a(servers)
             .a(", clients=").a(clients).a(", topVer=").a(topVer.topologyVersion())
             .a(", minorTopVer=").a(topVer.minorTopologyVersion()).a("]").nl()
-            .a("    ^-- Network [addrs=").a(locNode.addresses()).a(networkDetails).a("]").nl()
+            .a("    ^-- Network [addrs=").a(locNode.addresses()).a(netDetails).a("]").nl()
             .a("    ^-- CPU [CPUs=").a(localCpus).a(", curLoad=").a(dblFmt.format(cpuLoadPct))
             .a("%, avgLoad=").a(dblFmt.format(avgCpuLoadPct)).a("%, GC=").a(dblFmt.format(gcPct)).a("%]").nl()
             .a("    ^-- Heap [used=").a(dblFmt.format(heapUsedInMBytes))

@@ -1920,8 +1920,6 @@ public class IgniteTxHandler {
                         EntryProcessor entryProc = null;
                         Object[] invokeArgs = null;
 
-                        boolean needOldVal = tx.txState().useMvccCaching(ctx.cacheId());
-
                         Message val0 = vals != null ? vals.get(i) : null;
 
                         CacheEntryInfoCollection entries =
@@ -1958,7 +1956,7 @@ public class IgniteTxHandler {
                                                 tx.topologyVersion(),
                                                 snapshot,
                                                 false,
-                                                needOldVal,
+                                                false,
                                                 null,
                                                 false);
 
@@ -1980,7 +1978,7 @@ public class IgniteTxHandler {
                                                 op.cacheOperation(),
                                                 false,
                                                 false,
-                                                needOldVal,
+                                                false,
                                                 null,
                                                 false,
                                                 false);
@@ -2013,10 +2011,6 @@ public class IgniteTxHandler {
                                 ctx.shared().database().checkpointReadUnlock();
                             }
                         }
-
-                        if (!updRes.filtered())
-                            ctx.shared().mvccCaching().addEnlisted(key, updRes.newValue(), 0, 0, tx.xidVersion(),
-                                updRes.oldValue(), tx.local(), tx.topologyVersion(), snapshot, ctx.cacheId(), tx, futId, batchNum);
 
                         assert updRes.updateFuture() == null : "Entry should not be locked on the backup";
                     }

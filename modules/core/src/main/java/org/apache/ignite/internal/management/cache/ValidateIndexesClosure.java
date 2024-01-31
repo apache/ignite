@@ -578,7 +578,7 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
     ) throws IgniteCheckedException {
         boolean enoughIssues = false;
 
-        GridQueryProcessor qryProcessor = ignite.context().query();
+        GridQueryProcessor qryProc = ignite.context().query();
 
         final boolean skipConditions = checkFirst > 0 || checkThrough > 0;
         final boolean bothSkipConditions = checkFirst > 0 && checkThrough > 0;
@@ -634,7 +634,7 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
                 continue;
             }
 
-            QueryTypeDescriptorImpl res = qryProcessor.typeByValue(
+            QueryTypeDescriptorImpl res = qryProc.typeByValue(
                 cacheCtx.name(),
                 cacheCtx.cacheObjectContext(),
                 row.key(),
@@ -930,7 +930,7 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
 
                 GridIterator<CacheDataRow> partIter = grpCtx.offheap().partitionIterator(partId);
 
-                GridQueryProcessor qryProcessor = ignite.context().query();
+                GridQueryProcessor qryProc = ignite.context().query();
 
                 while (partIter.hasNextX() && !failCalcCacheSizeGrpIds.contains(grpId)) {
                     CacheDataRow cacheDataRow = partIter.nextX();
@@ -948,7 +948,7 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
 
                     String cacheName = cacheCtx.name();
 
-                    QueryTypeDescriptorImpl qryTypeDesc = qryProcessor.typeByValue(
+                    QueryTypeDescriptorImpl qryTypeDesc = qryProc.typeByValue(
                         cacheName,
                         cacheCtx.cacheObjectContext(),
                         cacheDataRow.key(),

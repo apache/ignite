@@ -476,20 +476,20 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
 
         StatisticsKey key = new StatisticsKey(req.key().schema(), req.key().obj());
 
-        ObjectStatisticsImpl objectStatistics = statMgr.getLocalStatistics(key, req.topVer());
+        ObjectStatisticsImpl objStatistics = statMgr.getLocalStatistics(key, req.topVer());
 
-        if (StatisticsUtils.compareVersions(objectStatistics, req.versions()) == 0)
-            sendResponse(nodeId, req.reqId(), key, StatisticsType.LOCAL, objectStatistics);
+        if (StatisticsUtils.compareVersions(objStatistics, req.versions()) == 0)
+            sendResponse(nodeId, req.reqId(), key, StatisticsType.LOCAL, objStatistics);
         else {
             addToRequests(inLocalRequests, key, new StatisticsAddressedRequest(req, nodeId));
 
-            objectStatistics = statMgr.getLocalStatistics(key, req.topVer());
+            objStatistics = statMgr.getLocalStatistics(key, req.topVer());
 
-            if (StatisticsUtils.compareVersions(objectStatistics, req.versions()) == 0) {
+            if (StatisticsUtils.compareVersions(objStatistics, req.versions()) == 0) {
                 StatisticsAddressedRequest removed = removeFromRequests(inLocalRequests, key, req.reqId());
 
                 if (removed != null)
-                    sendResponse(nodeId, req.reqId(), key, StatisticsType.LOCAL, objectStatistics);
+                    sendResponse(nodeId, req.reqId(), key, StatisticsType.LOCAL, objStatistics);
             }
         }
     }
@@ -504,10 +504,10 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
         if (cfg == null)
             return false;
 
-        for (Map.Entry<String, Long> version : versions.entrySet()) {
-            StatisticsColumnConfiguration colCfg = cfg.columns().get(version.getKey());
+        for (Map.Entry<String, Long> ver : versions.entrySet()) {
+            StatisticsColumnConfiguration colCfg = cfg.columns().get(ver.getKey());
 
-            if (colCfg == null || colCfg.version() < version.getValue())
+            if (colCfg == null || colCfg.version() < ver.getValue())
                 return false;
         }
 
