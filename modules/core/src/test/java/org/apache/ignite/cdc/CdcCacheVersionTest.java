@@ -235,6 +235,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
                 assertEquals(OTHER_CLUSTER_ID, newEntry.version().dataCenterId());
 
+                // Sets as value on addition with a conflict.
                 assertEquals(newEntry.value(ctx), prevStateMeta);
 
                 if (!oldEntry.isStartVersion())
@@ -372,6 +373,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
                     CacheObjectContext coCtx = context().cacheObjectContext(cacheId);
 
+                    // Provided as a key by conflict resolver.
                     assertEquals(key, coCtx.unwrapBinaryIfNeeded(dataRec.get(i).previousStateMetadata(), false, true, null));
 
                     prevOrder = dataRec.get(i).writeVersion().order();
@@ -458,7 +460,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
                 val.prepareMarshal(intCache.context().cacheObjectContext());
 
-                // Checking Previous state meta delivery to the resolver as well (setting val value).
+                // Checking Previous state meta delivery to the resolver as well (setting val).
                 drMap.put(key, new GridCacheDrInfo(val, new GridCacheVersion(1, i, 1, OTHER_CLUSTER_ID), val));
             }
 
