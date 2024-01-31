@@ -44,8 +44,11 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -226,8 +229,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                 Object prevStateMeta,
                 boolean atomicVerComparator
             ) {
-                GridCacheVersionConflictContext<K1, V1> res =
-                    new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
+                GridCacheVersionConflictContext<K1, V1> res = new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
 
                 res.useNew();
 
@@ -361,9 +363,16 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                 DataRecord dataRec = (DataRecord)rec;
 
                 for (int i = 0; i < dataRec.entryCount(); i++) {
-                    assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), dataRec.get(i).cacheId());
-                    assertEquals(KEY_TO_UPD, (int)dataRec.get(i).key().value(null, false));
+                    int cacheId = CU.cacheId(DEFAULT_CACHE_NAME);
+                    int key = dataRec.get(i).key().value(null, false);
+
+                    assertEquals(cacheId, dataRec.get(i).cacheId());
+                    assertEquals(KEY_TO_UPD, key);
                     assertTrue(dataRec.get(i).writeVersion().order() > prevOrder);
+
+                    CacheObjectContext coCtx = context().cacheObjectContext(cacheId);
+
+                    assertEquals(key, coCtx.unwrapBinaryIfNeeded(dataRec.get(i).previousStateMetadata(), false, true, null));
 
                     prevOrder = dataRec.get(i).writeVersion().order();
 
@@ -371,6 +380,34 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                 }
 
                 return super.log(rec);
+            }
+        };
+
+        conflictResolutionMgrSupplier = () -> new CacheVersionConflictResolver() {
+            @Override public <K1, V1> GridCacheVersionConflictContext<K1, V1> resolve(
+                CacheObjectValueContext ctx,
+                GridCacheVersionedEntryEx<K1, V1> oldEntry,
+                GridCacheVersionedEntryEx<K1, V1> newEntry,
+                Object prevStateMeta,
+                boolean atomicVerComparator
+            ) {
+                GridCacheVersionConflictContext<K1, V1> res = new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
+
+                res.useNew();
+
+                return res;
+            }
+
+            @Override public Object previousStateMetadata(GridCacheEntryEx entry) {
+                CacheObjectValueContext ctx = entry.context().cacheObjectContext();
+                CacheObject key = entry.key();
+
+                // Checking Previous state meta delivery to the log records as well (setting key);
+                return CacheObjectUtils.unwrapBinaryIfNeeded(ctx, key, true, true, null);
+            }
+
+            @Override public String toString() {
+                return "TestCacheConflictResolutionManager";
             }
         };
 
@@ -421,6 +458,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
                 val.prepareMarshal(intCache.context().cacheObjectContext());
 
+                // Checking Previous state meta delivery to the resolver as well (setting val value).
                 drMap.put(key, new GridCacheDrInfo(val, new GridCacheVersion(1, i, 1, OTHER_CLUSTER_ID), val));
             }
 

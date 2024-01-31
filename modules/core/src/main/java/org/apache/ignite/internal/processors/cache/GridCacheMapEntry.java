@@ -5610,7 +5610,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (resolver == null)
                 return null;
 
-            return ctx.toCacheObject(resolver.previousStateMetadata(entry));
+            CacheObject res = ctx.toCacheObject(resolver.previousStateMetadata(entry));
+
+            if (res != null)
+                res.prepareForCache(ctx.cacheObjectContext());
+
+            return res;
         }
 
         /**
