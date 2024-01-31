@@ -87,7 +87,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
      */
     public QueryBinaryProperty(GridKernalContext ctx, String propName, QueryBinaryProperty parent,
         Class<?> type, boolean key, String alias, boolean notNull, Object defaultValue,
-        int precision, int scale, CacheObjectContext coCtx) {
+        int precision, int scale) {
         this.ctx = ctx;
         this.propName = propName;
         this.alias = F.isEmpty(alias) ? propName : alias;

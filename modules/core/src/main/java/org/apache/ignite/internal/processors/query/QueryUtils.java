@@ -552,7 +552,7 @@ public class QueryUtils {
         int valTypeId = ctx.cacheObjects().typeId(qryEntity.findValueType());
 
         if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
-            processBinaryMeta(ctx, qryEntity, desc, coCtx);
+            processBinaryMeta(ctx, qryEntity, desc);
 
             typeId = new QueryTypeIdKey(cacheName, valTypeId);
 
@@ -636,7 +636,7 @@ public class QueryUtils {
      * @param d Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    public static void processBinaryMeta(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d, CacheObjectContext coCtx)
+    public static void processBinaryMeta(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d)
         throws IgniteCheckedException {
         LinkedHashMap<String, String> fields = qryEntity.getFields();
         Set<String> keyFields = qryEntity.getKeyFields();
@@ -682,8 +682,7 @@ public class QueryUtils {
                 U.classForName(fieldType, Object.class, true),
                 d.aliases(), isKeyField, notNull, dfltVal,
                 precision == null ? -1 : precision.getOrDefault(fieldName, -1),
-                scale == null ? -1 : scale.getOrDefault(fieldName, -1),
-                coCtx);
+                scale == null ? -1 : scale.getOrDefault(fieldName, -1));
 
             d.addProperty(prop, false);
         }
@@ -698,10 +697,10 @@ public class QueryUtils {
         // Also if fields are not set then _KEY and _VAL will be created as visible,
         // so we have to add binary properties for them
         if ((qryEntity.getKeyFieldName() == null && F.mapContainsKey(precision, KEY_FIELD_NAME)) || F.isEmpty(fields))
-            addKeyValueProperty(ctx, qryEntity, d, KEY_FIELD_NAME, true, coCtx);
+            addKeyValueProperty(ctx, qryEntity, d, KEY_FIELD_NAME, true);
 
         if ((qryEntity.getValueFieldName() == null && F.mapContainsKey(precision, VAL_FIELD_NAME)) || F.isEmpty(fields))
-            addKeyValueProperty(ctx, qryEntity, d, VAL_FIELD_NAME, false, coCtx);
+            addKeyValueProperty(ctx, qryEntity, d, VAL_FIELD_NAME, false);
 
         processIndexes(qryEntity, d);
     }
@@ -716,7 +715,7 @@ public class QueryUtils {
      * @throws IgniteCheckedException
      */
     private static void addKeyValueProperty(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d,
-        String name, boolean isKey, CacheObjectContext coCtx) throws IgniteCheckedException {
+        String name, boolean isKey) throws IgniteCheckedException {
 
         Map<String, Object> dfltVals = qryEntity.getDefaultFieldValues();
         Map<String, Integer> precision = qryEntity.getFieldsPrecision();
@@ -735,8 +734,7 @@ public class QueryUtils {
             true,
             dfltVal,
             precision == null ? -1 : precision.getOrDefault(name, -1),
-            scale == null ? -1 : scale.getOrDefault(name, -1),
-            coCtx
+            scale == null ? -1 : scale.getOrDefault(name, -1)
         );
 
         d.addProperty(prop, true, false);
@@ -891,8 +889,7 @@ public class QueryUtils {
         boolean notNull,
         Object dlftVal,
         int precision,
-        int scale,
-        CacheObjectContext coCtx
+        int scale
     ) {
         String[] path = pathStr.split("\\.");
 
@@ -910,7 +907,7 @@ public class QueryUtils {
 
             // The key flag that we've found out is valid for the whole path.
             res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull, dlftVal,
-                precision, scale, coCtx);
+                precision, scale);
         }
 
         return res;

@@ -1145,8 +1145,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                                         assert typeDesc != null;
 
-                                        processDynamicAddColumn(
-                                            typeDesc, opAddCol.columns(), cacheInfo.cacheContext().cacheObjectContext());
+                                        processDynamicAddColumn(typeDesc, opAddCol.columns());
                                     }
                                     else if (op0 instanceof SchemaAlterTableDropColumnOperation) {
                                         SchemaAlterTableDropColumnOperation opDropCol =
@@ -2139,7 +2138,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else if (op instanceof SchemaAlterTableAddColumnOperation) {
                 SchemaAlterTableAddColumnOperation op0 = (SchemaAlterTableAddColumnOperation)op;
 
-                processDynamicAddColumn(type, op0.columns(), cacheObjectContext(cacheName));
+                processDynamicAddColumn(type, op0.columns());
 
                 schemaMgr.addColumn(op0.schemaName(), op0.tableName(), op0.columns(), op0.ifTableExists(), op0.ifNotExists());
             }
@@ -3618,7 +3617,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cols Columns to add.
      * @throws IgniteCheckedException If failed to update type descriptor.
      */
-    private void processDynamicAddColumn(QueryTypeDescriptorImpl d, List<QueryField> cols, CacheObjectContext coCtx)
+    private void processDynamicAddColumn(QueryTypeDescriptorImpl d, List<QueryField> cols)
         throws IgniteCheckedException {
         List<GridQueryProperty> props = new ArrayList<>(cols.size());
 
@@ -3634,7 +3633,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     !col.isNullable(),
                     null,
                     col.precision(),
-                    col.scale(), coCtx)
+                    col.scale())
                 );
             }
             catch (ClassNotFoundException e) {
