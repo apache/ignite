@@ -80,11 +80,11 @@ public class SchemaVersionOne implements ISchemaVersion {
      * @see net.agkn.hll.serialization.ISchemaVersion#readMetadata(byte[])
      */
     @Override public IHLLMetadata readMetadata(final byte[] bytes) {
-        final byte versionByte = bytes[0];
+        final byte verByte = bytes[0];
         final byte parametersByte = bytes[1];
         final byte cutoffByte = bytes[2];
 
-        final int typeOrdinal = SerializationUtil.typeOrdinal(versionByte);
+        final int typeOrdinal = SerializationUtil.typeOrdinal(verByte);
         final int explicitCutoffValue = SerializationUtil.explicitCutoff(cutoffByte);
         final boolean explicitOff = (explicitCutoffValue == EXPLICIT_OFF);
         final boolean explicitAuto = (explicitCutoffValue == EXPLICIT_AUTO);

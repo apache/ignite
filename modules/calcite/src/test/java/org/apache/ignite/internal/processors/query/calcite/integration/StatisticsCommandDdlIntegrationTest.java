@@ -128,11 +128,11 @@ public class StatisticsCommandDdlIntegrationTest extends AbstractDdlIntegrationT
         assertFalse(res.isEmpty());
         assertFalse(res.get(0).isEmpty() || res.get(0).size() < 10);
 
-        long version = (Long)res.get(0).get(9);
+        long ver = (Long)res.get(0).get(9);
 
         assertThat(res, hasItems(
-            Lists.newArrayList(PUBLIC_SCHEMA, "TABLE", TABLE_NAME, ID_FIELD, (byte)2, 6L, 5L, 7L, 8, version),
-            Lists.newArrayList(PUBLIC_SCHEMA, "TABLE", TABLE_NAME, NAME_FIELD, (byte)2, 7L, 6L, 8L, null, version)
+            Lists.newArrayList(PUBLIC_SCHEMA, "TABLE", TABLE_NAME, ID_FIELD, (byte)2, 6L, 5L, 7L, 8, ver),
+            Lists.newArrayList(PUBLIC_SCHEMA, "TABLE", TABLE_NAME, NAME_FIELD, (byte)2, 7L, 6L, 8L, null, ver)
         ));
     }
 

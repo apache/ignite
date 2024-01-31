@@ -1015,8 +1015,8 @@ public class HLL implements Cloneable {
      * @see #toBytes(ISchemaVersion)
      */
     public static HLL fromBytes(final byte[] bytes) {
-        final ISchemaVersion schemaVersion = SerializationUtil.getSchemaVersion(bytes);
-        final IHLLMetadata metadata = schemaVersion.readMetadata(bytes);
+        final ISchemaVersion schemaVer = SerializationUtil.getSchemaVersion(bytes);
+        final IHLLMetadata metadata = schemaVer.readMetadata(bytes);
 
         final HLLType type = metadata.HLLType();
         final int regwidth = metadata.registerWidth();
@@ -1060,7 +1060,7 @@ public class HLL implements Cloneable {
                 throw new RuntimeException("Unsupported HLL type " + type);
         }
 
-        final IWordDeserializer deserializer = schemaVersion.getDeserializer(type, wordLength, bytes);
+        final IWordDeserializer deserializer = schemaVer.getDeserializer(type, wordLength, bytes);
 
         switch (type) {
             case EXPLICIT:
