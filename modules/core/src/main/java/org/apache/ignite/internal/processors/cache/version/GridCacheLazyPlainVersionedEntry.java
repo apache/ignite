@@ -89,11 +89,6 @@ public class GridCacheLazyPlainVersionedEntry<K, V> extends GridCachePlainVersio
     }
 
     /** {@inheritDoc} */
-    @Override public KeyCacheObject keyObject() {
-        return keyObj;
-    }
-
-    /** {@inheritDoc} */
     @Override public V value(CacheObjectValueContext ctx) {
         return value(keepBinary);
     }
@@ -110,12 +105,6 @@ public class GridCacheLazyPlainVersionedEntry<K, V> extends GridCachePlainVersio
 
         return val;
     }
-
-    /** {@inheritDoc} */
-    @Override public CacheObject valueObject() {
-        return valObj;
-    }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

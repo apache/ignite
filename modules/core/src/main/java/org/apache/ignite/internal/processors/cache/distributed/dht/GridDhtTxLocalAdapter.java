@@ -488,6 +488,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
                 existing.conflictExpireTime(e.conflictExpireTime());
                 existing.conflictVersion(e.conflictVersion());
+                existing.previousStateMetadata(e.previousStateMetadata());
             }
             else {
                 existing = e;

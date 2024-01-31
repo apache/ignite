@@ -42,7 +42,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -88,9 +87,6 @@ public class WalRecordsConsumer<K, V> {
         return OPERATIONS_TYPES.contains(e.op());
     };
 
-    /** Event transformer. */
-    static final IgniteClosure<DataEntry, CdcEvent> CDC_EVENT_TRANSFORMER = CdcEventImpl::new;
-
     /**
      * @param consumer User provided CDC consumer.
      * @param log Logger.
@@ -106,15 +102,10 @@ public class WalRecordsConsumer<K, V> {
      * {@link DataRecord} will be stored and WAL iteration will be started from it on CDC application fail/restart.
      *
      * @param entries Data entries iterator.
-     * @param transform Event transformer.
      * @param filter Optional event filter.
      * @return {@code True} if current offset in WAL should be commited.
      */
-    public boolean onRecords(
-        Iterator<DataEntry> entries,
-        IgniteClosure<DataEntry, CdcEvent> transform,
-        @Nullable IgnitePredicate<? super DataEntry> filter
-    ) {
+    public boolean onRecords(Iterator<DataEntry> entries, @Nullable IgnitePredicate<? super DataEntry> filter) {
         Iterator<CdcEvent> evts = F.iterator(new Iterator<DataEntry>() {
             @Override public boolean hasNext() {
                 return entries.hasNext();
@@ -129,7 +120,7 @@ public class WalRecordsConsumer<K, V> {
 
                 return next;
             }
-        }, transform, true, OPERATIONS_FILTER, filter);
+        }, CdcEventImpl::new, true, OPERATIONS_FILTER, filter);
 
         return consumer.onEvents(evts);
     }

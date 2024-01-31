@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.version;
 
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-
 /**
  * Extended versioned entry.
  */
@@ -29,18 +26,4 @@ public interface GridCacheVersionedEntryEx<K, V> extends GridCacheVersionedEntry
      * @return {@code True} if entry is new.
      */
     public boolean isStartVersion();
-
-    /**
-     * Gets entry's key object.
-     *
-     * @return Entry's key object.
-     */
-    public KeyCacheObject keyObject();
-
-    /**
-     * Gets entry's value object.
-     *
-     * @return Entry's value object.
-     */
-    public CacheObject valueObject();
 }

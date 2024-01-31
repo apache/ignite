@@ -874,6 +874,13 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
+     * @param prevStateMeta Previous state metadata.
+     */
+    public void previousStateMetadata(CacheObject prevStateMeta) {
+        this.prevStateMeta = prevStateMeta;
+    }
+
+    /**
      * @return Previous entry state metadata.
      */
     public CacheObject previousStateMetadata() {

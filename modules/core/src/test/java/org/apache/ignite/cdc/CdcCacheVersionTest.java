@@ -233,6 +233,8 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
                 assertEquals(OTHER_CLUSTER_ID, newEntry.version().dataCenterId());
 
+                assertEquals(newEntry.value(ctx), prevStateMeta);
+
                 if (!oldEntry.isStartVersion())
                     assertEquals(OTHER_CLUSTER_ID, oldEntry.version().dataCenterId());
 
@@ -419,7 +421,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
                 val.prepareMarshal(intCache.context().cacheObjectContext());
 
-                drMap.put(key, new GridCacheDrInfo(val, new GridCacheVersion(1, i, 1, OTHER_CLUSTER_ID)));
+                drMap.put(key, new GridCacheDrInfo(val, new GridCacheVersion(1, i, 1, OTHER_CLUSTER_ID), val));
             }
 
             if (concurrency != null) {
