@@ -24,7 +24,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -85,7 +85,7 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
             for (int i = 0; i < cnt; i++) {
                 IgniteEx grid = grid(i);
 
-                MetricRegistry discoReg = grid.context().metric().registry(DISCO_METRICS);
+                MetricRegistryImpl discoReg = grid.context().metric().registry(DISCO_METRICS);
 
                 TcpDiscoverySpiMBean bean = getMxBean(grid.context().igniteInstanceName(), "SPIs",
                     TcpDiscoverySpi.class, TcpDiscoverySpiMBean.class);
@@ -161,7 +161,7 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
             for (int i = 1; i < cnt; i++) {
                 IgniteEx grid = grid(i);
 
-                MetricRegistry discoReg = grid.context().metric().registry(DISCO_METRICS);
+                MetricRegistryImpl discoReg = grid.context().metric().registry(DISCO_METRICS);
 
                 TcpDiscoverySpiMBean bean = getMxBean(grid.context().igniteInstanceName(), "SPIs",
                     TcpDiscoverySpi.class, TcpDiscoverySpiMBean.class);

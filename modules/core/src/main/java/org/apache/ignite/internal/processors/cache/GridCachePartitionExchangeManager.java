@@ -117,7 +117,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
@@ -520,7 +520,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
         }
 
-        MetricRegistry mreg = cctx.kernalContext().metric().registry(PME_METRICS);
+        MetricRegistryImpl mreg = cctx.kernalContext().metric().registry(PME_METRICS);
 
         mreg.register(PME_DURATION,
             () -> currentPMEDuration(false),
@@ -533,7 +533,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         durationHistogram = mreg.findMetric(PME_DURATION_HISTOGRAM);
         blockingDurationHistogram = mreg.findMetric(PME_OPS_BLOCKED_DURATION_HISTOGRAM);
 
-        MetricRegistry clusterReg = cctx.kernalContext().metric().registry(CLUSTER_METRICS);
+        MetricRegistryImpl clusterReg = cctx.kernalContext().metric().registry(CLUSTER_METRICS);
 
         rebalanced = clusterReg.booleanMetric(REBALANCED,
             "True if the cluster has fully achieved rebalanced state. Note that an inactive cluster always has" +

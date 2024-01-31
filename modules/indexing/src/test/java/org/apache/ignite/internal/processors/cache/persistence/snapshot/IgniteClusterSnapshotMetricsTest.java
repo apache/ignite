@@ -49,7 +49,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -278,7 +278,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
 
         IgniteEx ignite = startGridsWithCache(DEDICATED_CNT, CACHE_KEYS_RANGE, key -> new Account(key, key), ccfg1);
 
-        MetricRegistry mreg = ignite.context().metric().registry(SNAPSHOT_METRICS);
+        MetricRegistryImpl mreg = ignite.context().metric().registry(SNAPSHOT_METRICS);
 
         LongMetric totalSize = mreg.findMetric("CurrentSnapshotTotalSize");
         LongMetric processedSize = mreg.findMetric("CurrentSnapshotProcessedSize");

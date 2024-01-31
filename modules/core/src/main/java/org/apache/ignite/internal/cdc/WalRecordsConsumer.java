@@ -36,7 +36,7 @@ import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.typedef.F;
@@ -188,7 +188,7 @@ public class WalRecordsConsumer<K, V> {
      * @param cdcConsumerReg CDC consumer metric registry.
      * @throws IgniteCheckedException If failed.
      */
-    public void start(MetricRegistry cdcReg, MetricRegistry cdcConsumerReg) throws IgniteCheckedException {
+    public void start(MetricRegistryImpl cdcReg, MetricRegistryImpl cdcConsumerReg) throws IgniteCheckedException {
         consumer.start(cdcConsumerReg);
 
         evtsCnt = cdcReg.longMetric(EVTS_CNT, "Count of events processed by the consumer");
@@ -200,7 +200,7 @@ public class WalRecordsConsumer<K, V> {
 
     /**
      * Stops the consumer.
-     * This methods can be invoked only after {@link #start(MetricRegistry, MetricRegistry)}.
+     * This methods can be invoked only after {@link #start(MetricRegistryImpl, MetricRegistryImpl)}.
      */
     public void stop() {
         consumer.stop();

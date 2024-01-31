@@ -41,7 +41,7 @@ import io.opencensus.tags.TagValue;
 import io.opencensus.tags.Tags;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -78,7 +78,7 @@ import static io.opencensus.tags.TagMetadata.TagTtl.UNLIMITED_PROPAGATION;
  * }
  * </pre>
  *
- * @see MetricRegistry
+ * @see MetricRegistryImpl
  * @see GridMetricManager
  * @see ReadOnlyMetricManager
  */

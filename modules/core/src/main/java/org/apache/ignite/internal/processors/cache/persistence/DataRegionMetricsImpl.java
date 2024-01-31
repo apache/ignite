@@ -28,7 +28,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetricsImpl;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
@@ -216,7 +216,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         subInts = dataRegionCfg.getMetricsSubIntervalCount();
 
-        MetricRegistry mreg = metricRegistry();
+        MetricRegistryImpl mreg = metricRegistry();
 
         allocRate = mreg.hitRateMetric("AllocationRate",
             "Allocation rate (pages per second) averaged across rateTimeInterval.",
@@ -312,9 +312,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     }
 
     /**
-     * Retrieves the {@link MetricRegistry} for this data region.
+     * Retrieves the {@link MetricRegistryImpl} for this data region.
      */
-    private MetricRegistry metricRegistry() {
+    private MetricRegistryImpl metricRegistry() {
         String registryName = MetricUtils.metricName(DATAREGION_METRICS_PREFIX, dataRegionCfg.getName());
         return kernalCtx.metric().registry(registryName);
     }
@@ -630,7 +630,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      */
     private PageMetrics createCacheGrpPageMetrics(String cacheGrpName) {
         String registryName = MetricUtils.cacheGroupMetricsRegistryName(cacheGrpName);
-        MetricRegistry registry = kernalCtx.metric().registry(registryName);
+        MetricRegistryImpl registry = kernalCtx.metric().registry(registryName);
 
         return PageMetricsImpl.builder(registry)
             .totalPagesCallback(delegate(dataRegionPageMetrics.totalPages()))
@@ -715,7 +715,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     public void pageMemory(PageMemory pageMem) {
         this.pageMem = pageMem;
 
-        MetricRegistry mreg = metricRegistry();
+        MetricRegistryImpl mreg = metricRegistry();
 
         mreg.register("PagesFillFactor",
             this::getPagesFillFactor,

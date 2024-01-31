@@ -46,7 +46,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
@@ -135,7 +135,7 @@ public class CdcIgniteNodeActiveModeTest extends AbstractCdcTest {
             }
         }
 
-        MetricRegistry mreg = GridTestUtils.<StandaloneGridKernalContext>getFieldValue(cdcMain, "kctx")
+        MetricRegistryImpl mreg = GridTestUtils.<StandaloneGridKernalContext>getFieldValue(cdcMain, "kctx")
             .metric().registry("cdc");
 
         assertTrue(GridTestUtils.waitForCondition(() ->

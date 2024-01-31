@@ -23,7 +23,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.SnapshotMXBean;
@@ -126,7 +126,7 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
         }
 
         if (mgr.isRestoring()) {
-            MetricRegistry mreg = metricMgr.registry(SNAPSHOT_RESTORE_METRICS);
+            MetricRegistryImpl mreg = metricMgr.registry(SNAPSHOT_RESTORE_METRICS);
 
             String name = mreg.findMetric("snapshotName").getAsString();
             int incIdx = mreg.<IntMetric>findMetric("incrementIndex").value();

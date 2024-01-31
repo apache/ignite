@@ -25,7 +25,7 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -73,7 +73,7 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
 
         this.cluster = cluster;
 
-        MetricRegistry clusterReg = ctx.metric().registry(CLUSTER_METRICS);
+        MetricRegistryImpl clusterReg = ctx.metric().registry(CLUSTER_METRICS);
 
         srvNodes = clusterReg.findMetric(TOTAL_SERVER_NODES);
         clientNodes = clusterReg.findMetric(TOTAL_CLIENT_NODES);

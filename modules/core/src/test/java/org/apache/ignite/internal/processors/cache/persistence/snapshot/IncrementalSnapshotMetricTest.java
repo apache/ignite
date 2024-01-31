@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.AbstractIncrementalSnapshotTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -74,7 +74,7 @@ public class IncrementalSnapshotMetricTest extends AbstractIncrementalSnapshotTe
         beforeFinRecLatch = new CountDownLatch(1);
         logFinRecLatch = new CountDownLatch(1);
 
-        MetricRegistry mreg0 = grid(0).context().metric().registry(INCREMENTAL_SNAPSHOT_METRICS);
+        MetricRegistryImpl mreg0 = grid(0).context().metric().registry(INCREMENTAL_SNAPSHOT_METRICS);
 
         LongMetric startTime = mreg0.findMetric("startTime");
         LongMetric endTime = mreg0.findMetric("endTime");
@@ -143,7 +143,7 @@ public class IncrementalSnapshotMetricTest extends AbstractIncrementalSnapshotTe
 
         restartWithCleanPersistence(nodes(), Collections.singletonList(CACHE));
 
-        MetricRegistry mreg0 = grid(0).context().metric().registry(SNAPSHOT_RESTORE_METRICS);
+        MetricRegistryImpl mreg0 = grid(0).context().metric().registry(SNAPSHOT_RESTORE_METRICS);
 
         IntMetric incIdx = mreg0.findMetric("incrementIndex");
         IntMetric totalWalSeg = mreg0.findMetric("totalWalSegments");
