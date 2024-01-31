@@ -92,53 +92,6 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
     BooleanMetric register(String name, BooleanSupplier supplier, @Nullable String desc);
 
     /**
-     * Registers an updatable int metric.
-     *
-     * @param name Metric name.
-     * @param desc Metric description.
-     * @return New {@link IntValueMetric} or previous one with the same name.
-     */
-    IntValueMetric intMetric(String name, @Nullable String desc);
-
-    /**
-     * Registers an updatable long metric.
-     *
-     * @param name Metric name.
-     * @param desc Metric description.
-     * @return New {@link LongValueMetric} or previous one with the same name.
-     */
-    LongValueMetric longMetric(String name, @Nullable String desc);
-
-    /**
-     * Registers an updatable long adder metric.
-     *
-     * @param name Metric name.
-     * @param desc Metric description.
-     * @return New {@link LongValueMetric} or previous one with the same name.
-     */
-    LongSumMetric longAdderMetric(String name, @Nullable String desc);
-
-    /**
-     * Registers an updatable double metric.
-     *
-     * @param name Metric name.
-     * @param desc Metric description.
-     * @return New {@link DoubleValueMetric} or previous one with the same name.
-     */
-    DoubleValueMetric doubleMetric(String name, @Nullable String desc);
-
-    /**
-     * Registers an updatable double metric.
-     *
-     * @param name Metric name.
-     * @param type Metric value type.
-     * @param desc Metric description.
-     * @param <T> Metric value type.
-     * @return New {@link ObjectValueMetric} or previous one with the same name.
-     */
-    <T> ObjectValueMetric<T> objectMetric(String name, Class<T> type, @Nullable String desc);
-
-    /**
      * Removes metrics with the {@code name}.
      *
      * @param name Metric name..

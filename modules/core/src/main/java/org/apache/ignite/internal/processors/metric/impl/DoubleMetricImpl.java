@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processors.metric.impl;
 
 import java.util.concurrent.atomic.DoubleAccumulator;
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
-import org.apache.ignite.metric.DoubleValueMetric;
+import org.apache.ignite.spi.metric.DoubleMetric;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Double metric.
  */
-public class DoubleMetricImpl extends AbstractMetric implements DoubleValueMetric {
+public class DoubleMetricImpl extends AbstractMetric implements DoubleMetric {
     /** Value. */
     private volatile DoubleAccumulator val;
 
@@ -39,13 +39,21 @@ public class DoubleMetricImpl extends AbstractMetric implements DoubleValueMetri
         this.val = new DoubleAccumulator(Double::sum, 0d);
     }
 
-    /** {@inheritDoc} */
-    @Override public void add(double x) {
+    /**
+     * Adds x to the metric.
+     *
+     * @param x Value to be added.
+     */
+    public void add(double x) {
         val.accumulate(x);
     }
 
-    /** {@inheritDoc} */
-    @Override public void value(double val) {
+    /**
+     * Sets value.
+     *
+     * @param val Value.
+     */
+    public void value(double val) {
         this.val = new DoubleAccumulator(Double::sum, val);
     }
 

@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processors.metric.impl;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
-import org.apache.ignite.metric.LongValueMetric;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Long metric implementation.
  */
-public class AtomicLongMetric extends AbstractMetric implements LongValueMetric {
+public class AtomicLongMetric extends AbstractMetric implements LongMetric {
     /** Field updater. */
     static final AtomicLongFieldUpdater<AtomicLongMetric> updater =
         AtomicLongFieldUpdater.newUpdater(AtomicLongMetric.class, "val");
@@ -41,18 +41,22 @@ public class AtomicLongMetric extends AbstractMetric implements LongValueMetric 
         super(name, desc);
     }
 
-    /** {@inheritDoc} */
-    @Override public void add(long x) {
+    /**
+     * Adds x to the metric.
+     *
+     * @param x Value to be added.
+     */
+    public void add(long x) {
         updater.getAndAdd(this, x);
     }
 
-    /** {@inheritDoc} */
-    @Override public void increment() {
+    /** Adds 1 to the metric. */
+    public void increment() {
         add(1);
     }
 
-    /** {@inheritDoc} */
-    @Override public void decrement() {
+    /** Adds -1 to the metric. */
+    public void decrement() {
         add(-1);
     }
 
@@ -66,8 +70,12 @@ public class AtomicLongMetric extends AbstractMetric implements LongValueMetric 
         return val;
     }
 
-    /** {@inheritDoc} */
-    @Override public void value(long val) {
+    /**
+     * Sets value.
+     *
+     * @param val Value.
+     */
+    public void value(long val) {
         this.val = val;
     }
 }

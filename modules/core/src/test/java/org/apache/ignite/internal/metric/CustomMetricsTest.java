@@ -19,42 +19,26 @@ package org.apache.ignite.internal.metric;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.Function;
 import java.util.function.IntSupplier;
-import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.compute.ComputeJobAdapter;
-import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.compute.ComputeTaskAdapter;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.metric.IgniteMetricRegistry;
 import org.apache.ignite.metric.IgniteMetrics;
-import org.apache.ignite.metric.LongSumMetric;
-import org.apache.ignite.metric.LongValueMetric;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.ServiceContextResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.IntMetric;
-import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CUSTOM_METRICS;
@@ -207,40 +191,6 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
             IntMetric.class));
     }
 
-    /** */
-    @Test
-    public void testMetricInComputation() {
-        IgniteMetrics metrics = grid(0).metrics();
-
-        String customRegName = MetricUtils.metricName(CUSTOM_METRICS, TestCustomMetricsComputeTask.METRIC_REGISTRY);
-
-        assertNull(metrics.findRegistry(CUSTOM_METRICS));
-        assertNull(metrics.findRegistry(customRegName));
-
-        long computeResult = grid(0).compute().execute(new TestCustomMetricsComputeTask(), null);
-
-        assertNotNull(computeResult);
-        assertTrue(computeResult > 0);
-
-        assertNull(metrics.findRegistry(CUSTOM_METRICS));
-
-        LongMetric curMetric = metrics.findRegistry(customRegName).findMetric(TestCustomMetricsComputeTask.METRIC_CURRENT);
-        LongMetric totalMetric = metrics.findRegistry(customRegName).findMetric(TestCustomMetricsComputeTask.METRIC_TOTAL);
-        LongMetric ticksMetric = metrics.findRegistry(customRegName).findMetric(TestCustomMetricsComputeTask.METRIC_TICKS);
-
-        assertEquals(computeResult, totalMetric.value());
-        assertTrue(ticksMetric.value() > 0L);
-        assertEquals(totalMetric.value(), curMetric.value());
-
-        long prevTicks = ticksMetric.value();
-
-        grid(0).compute().execute(new TestCustomMetricsComputeTask(), null);
-
-        assertTrue(totalMetric.value() > computeResult);
-        assertTrue(totalMetric.value() > curMetric.value());
-        assertTrue(ticksMetric.value() > prevTicks);
-    }
-
     /** Tests concurrent metric registration. */
     @Test
     public void testIncompatibleMetricTypes() {
@@ -256,22 +206,6 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
             () -> metrics.customRegistry("test").register("intMetric", longGauge::sum, null),
             IgniteException.class,
             "Other metric with name 'intMetric' is already registered"
-        );
-
-        assertThrows(
-            null,
-            () -> metrics.customRegistry("test").intMetric("intMetric", null),
-            IgniteException.class,
-            "Other metric with name 'intMetric' is already registered"
-        );
-
-        assertNotNull(metrics.customRegistry("test").intMetric("intMetric2", null));
-
-        assertThrows(
-            null,
-            () -> metrics.customRegistry("test").register("intMetric2", intGauge::get, null),
-            IgniteException.class,
-            "Other metric with name 'intMetric2' is already registered"
         );
     }
 
@@ -369,78 +303,6 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
         IntMetric read = metrics.customRegistry("test").findMetric("intMetric");
 
         assertEquals(0, read.value());
-    }
-
-    /**
-     * Test computation.
-     */
-    private static final class TestCustomMetricsComputeTask extends ComputeTaskAdapter<Void, Long> {
-        /** */
-        private static final String METRIC_REGISTRY = "task.test";
-
-        /** */
-        private static final String METRIC_CURRENT = "current";
-
-        /** */
-        private static final String METRIC_TOTAL = "total";
-
-        /** */
-        private static final String METRIC_TICKS = "ticks";
-
-        /**
-         * Test compute job.
-         */
-        private static final class TestComputeJob extends ComputeJobAdapter {
-            /** Ignite instance. */
-            @IgniteInstanceResource
-            private Ignite ignite;
-
-            /** {@inheritDoc} */
-            @Override public Long execute() throws IgniteException {
-                long val = 0;
-
-                // Some job limit.
-                long limit = 300 + ThreadLocalRandom.current().nextLong(700);
-
-                LongValueMetric metricCur = ignite.metrics().customRegistry(METRIC_REGISTRY).longMetric(METRIC_CURRENT, null);
-                LongSumMetric metricTotal = ignite.metrics().customRegistry(METRIC_REGISTRY).longAdderMetric(METRIC_TOTAL, null);
-                LongSumMetric metricTicks = ignite.metrics().customRegistry(METRIC_REGISTRY).longAdderMetric(METRIC_TICKS, null);
-
-                while (!isCancelled() && val < limit) {
-                    // Does some job.
-                    try {
-                        U.sleep(ThreadLocalRandom.current().nextInt(50));
-                    }
-                    catch (IgniteInterruptedCheckedException ignored) {
-                        //No op.
-                    }
-
-                    long increment = ThreadLocalRandom.current().nextLong(100);
-
-                    val += increment;
-
-                    metricTicks.increment();
-                }
-
-                metricCur.value(val);
-
-                metricTotal.add(val);
-
-                return isCancelled() ? 0 : val;
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Void arg) throws IgniteException {
-            return subgrid.stream().collect(Collectors.toMap(grid -> new TestComputeJob(), Function.identity()));
-        }
-
-        /** {@inheritDoc} */
-        @Override public @Nullable Long reduce(List<ComputeJobResult> results) throws IgniteException {
-            return results.stream().filter(r -> !r.isCancelled() && r.getException() == null).map(r -> (Long)r.getData())
-                .reduce(0L, Long::sum);
-        }
     }
 
     /**

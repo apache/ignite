@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.collection.ImmutableIntSet;
 import org.apache.ignite.internal.util.collection.IntSet;
@@ -44,7 +45,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -229,19 +229,19 @@ public class CacheMetricsImpl implements CacheMetrics {
         txKeyCollisionInfo;
 
     /** Offheap entries count. */
-    private final LongMetric offHeapEntriesCnt;
+    private final LongGauge offHeapEntriesCnt;
 
     /** Offheap primary entries count. */
-    private final LongMetric offHeapPrimaryEntriesCnt;
+    private final LongGauge offHeapPrimaryEntriesCnt;
 
     /** Offheap backup entries count. */
-    private final LongMetric offHeapBackupEntriesCnt;
+    private final LongGauge offHeapBackupEntriesCnt;
 
     /** Onheap entries count. */
-    private final LongMetric heapEntriesCnt;
+    private final LongGauge heapEntriesCnt;
 
     /** Cache size. */
-    private final LongMetric cacheSize;
+    private final LongGauge cacheSize;
 
     /** Number of keys processed during index rebuilding. */
     private final LongAdderMetric idxRebuildKeyProcessed;

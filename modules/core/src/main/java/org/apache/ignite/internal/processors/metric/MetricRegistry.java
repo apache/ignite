@@ -116,6 +116,19 @@ public class MetricRegistry implements IgniteMetricRegistry {
             m.reset();
     }
 
+    /**
+     * Creates and register named gauge.
+     * Returned instance are thread safe.
+     *
+     * @param name Name.
+     * @param type Type.
+     * @param desc Description.
+     * @return {@link ObjectMetricImpl}
+     */
+    public <T> ObjectMetricImpl<T> objectMetric(String name, Class<T> type, @Nullable String desc) {
+        return addMetric(name, new ObjectMetricImpl<>(metricName(regName, name), desc, type));
+    }
+
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<Metric> iterator() {
         return metrics.values().iterator();
@@ -164,28 +177,51 @@ public class MetricRegistry implements IgniteMetricRegistry {
         return addMetric(name, new ObjectGauge<>(metricName(regName, name), desc, nonThrowableSupplier(supplier, log), type));
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public DoubleMetricImpl doubleMetric(String name, @Nullable String desc) {
+    /**
+     * Creates and register named metric.
+     * Returned instance are thread safe.
+     *
+     * @param name Name.
+     * @param desc Description.
+     * @return {@link DoubleMetricImpl}.
+     */
+    public DoubleMetricImpl doubleMetric(String name, @Nullable String desc) {
         return addMetric(name, new DoubleMetricImpl(metricName(regName, name), desc));
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public IntMetricImpl intMetric(String name, @Nullable String desc) {
+    /**
+     * Creates and register named metric.
+     * Returned instance are thread safe.
+     *
+     * @param name Name.
+     * @param desc Description.
+     * @return {@link IntMetricImpl}.
+     */
+    public IntMetricImpl intMetric(String name, @Nullable String desc) {
         return addMetric(name, new IntMetricImpl(metricName(regName, name), desc));
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public AtomicLongMetric longMetric(String name, @Nullable String desc) {
+    /**
+     * Creates and register named metric.
+     * Returned instance are thread safe.
+     *
+     * @param name Name.
+     * @param desc Description.
+     * @return {@link AtomicLongMetric}.
+     */
+    public AtomicLongMetric longMetric(String name, @Nullable String desc) {
         return addMetric(name, new AtomicLongMetric(metricName(regName, name), desc));
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public <T> ObjectMetricImpl<T> objectMetric(String name, Class<T> type, @Nullable String desc) {
-        return addMetric(name, new ObjectMetricImpl<>(metricName(regName, name), desc, type));
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public LongAdderMetric longAdderMetric(String name, @Nullable String desc) {
+    /**
+     * Creates and register named metric.
+     * Returned instance are thread safe.
+     *
+     * @param name Name.
+     * @param desc Description.
+     * @return {@link LongAdderMetric}.
+     */
+    public LongAdderMetric longAdderMetric(String name, @Nullable String desc) {
         return addMetric(name, new LongAdderMetric(metricName(regName, name), desc));
     }
 
