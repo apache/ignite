@@ -37,28 +37,17 @@ public class BufferedFileIO extends FileIODecorator {
     private ByteBuffer buf;
 
     /** */
-    private static int bufSize(FileIO io) {
-        int blockSize = io.getFileSystemBlockSize();
-
-        if (blockSize < 0)
-            blockSize = DEFAULT_BLOCK_SIZE;
-
-        return blockSize;
-    }
-
-    /** */
-    public BufferedFileIO(FileIO io) {
-        this(io, bufSize(io));
-    }
-
-    /** */
-    BufferedFileIO(FileIO fileIO, int bufSz) {
+    public BufferedFileIO(FileIO fileIO) {
         super(fileIO);
 
         A.ensure(fileIO != null, "fileIO must not be null");
-        A.ensure(bufSz > 0, "bufSz must be positive");
 
-        buf = ByteBuffer.allocateDirect(bufSz);
+        int blockSize = getFileSystemBlockSize();
+
+        if (blockSize <= 0)
+            blockSize = DEFAULT_BLOCK_SIZE;
+
+        buf = ByteBuffer.allocateDirect(blockSize);
     }
 
     /** {@inheritDoc} */

@@ -25,10 +25,13 @@ import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /***/
@@ -109,24 +112,27 @@ public class BufferedFileIOTest extends GridCommonAbstractTest {
     public void testWrongArg() {
         assertThrows(
             null,
-            () -> new BufferedFileIO(null, 0),
+            () -> new BufferedFileIO(null),
             IllegalArgumentException.class,
             "fileIO must not be null"
         );
+    }
 
-        assertThrows(
-            null,
-            () -> new BufferedFileIO(new RandomAccessFileIOFactory().create(TEST_FILE), 0),
-            IllegalArgumentException.class,
-            "bufSz must be positive"
-        );
+    /** */
+    @Test
+    public void testUnknownFSBlockSize() throws IOException {
+        check(-1, randBytes(TEST_BUFFER_SIZE));
 
-        assertThrows(
-            null,
-            () -> new BufferedFileIO(new RandomAccessFileIOFactory().create(TEST_FILE), -1),
-            IllegalArgumentException.class,
-            "bufSz must be positive"
-        );
+        check(0, randBytes(TEST_BUFFER_SIZE));
+    }
+
+    /** */
+    private FileIO fileIOWithFSBlockSize(int blockSize) throws IOException {
+        return new RandomAccessFileIO(TEST_FILE, CREATE, READ, WRITE) {
+            @Override public int getFileSystemBlockSize() {
+                return blockSize;
+            }
+        };
     }
 
     /** */
@@ -141,9 +147,7 @@ public class BufferedFileIOTest extends GridCommonAbstractTest {
         if (TEST_FILE.exists() && !TEST_FILE.delete())
             throw new IgniteException(" Unable to delete " + TEST_FILE.getAbsolutePath());
 
-        RandomAccessFileIOFactory factory = new RandomAccessFileIOFactory();
-
-        FileIO fileIO = new BufferedFileIO(factory.create(TEST_FILE), bufSz);
+        FileIO fileIO = new BufferedFileIO(fileIOWithFSBlockSize(bufSz));
 
         ByteBuffer expectedData = ByteBuffer.allocate(Arrays.stream(data).mapToInt(x -> x.length).sum());
 
