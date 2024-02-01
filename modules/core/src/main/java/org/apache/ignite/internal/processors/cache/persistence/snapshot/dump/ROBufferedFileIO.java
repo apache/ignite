@@ -45,7 +45,9 @@ public class ROBufferedFileIO extends FileIODecorator {
         if (blockSize <= 0)
             blockSize = DEFAULT_BLOCK_SIZE;
 
-        buf = ByteBuffer.allocateDirect(blockSize).position(blockSize);
+        buf = ByteBuffer.allocateDirect(blockSize);
+
+        buf.position(blockSize);
     }
 
     /** {@inheritDoc} */
