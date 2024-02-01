@@ -137,12 +137,12 @@ public class P2PClassLoadingFailureHandlingTest extends GridCommonAbstractTest {
     private void assertThatFailureHandlerIsNotCalled() throws InterruptedException {
         letFailurePropagateToFailureHandler();
 
-        StringWriter stringWriter = new StringWriter();
+        StringWriter strWriter = new StringWriter();
         if (failure.get() != null) {
-            failure.get().printStackTrace(new PrintWriter(stringWriter));
+            failure.get().printStackTrace(new PrintWriter(strWriter));
         }
 
-        assertNull("Failure handler should not be called, but it was with " + stringWriter, failure.get());
+        assertNull("Failure handler should not be called, but it was with " + strWriter, failure.get());
     }
 
     /***/

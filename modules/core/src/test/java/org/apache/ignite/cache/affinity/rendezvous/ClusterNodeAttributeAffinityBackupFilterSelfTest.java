@@ -37,11 +37,11 @@ public class ClusterNodeAttributeAffinityBackupFilterSelfTest extends AffinityFu
     @Override protected AffinityFunction affinityFunctionWithAffinityBackupFilter(String attributeName) {
         RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false);
 
-        String[] stringArr = new String[1];
+        String[] strArr = new String[1];
 
-        stringArr[0] = attributeName;
+        strArr[0] = attributeName;
 
-        aff.setAffinityBackupFilter(new ClusterNodeAttributeAffinityBackupFilter(stringArr));
+        aff.setAffinityBackupFilter(new ClusterNodeAttributeAffinityBackupFilter(strArr));
 
         return aff;
     }
