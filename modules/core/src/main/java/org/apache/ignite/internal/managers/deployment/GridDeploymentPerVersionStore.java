@@ -331,6 +331,8 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
                 Collection<GridDeployment> created = getDeployments();
 
+                boolean skipSearchDeployment = false;
+
                 // Check already exist deployment.
                 if (meta.deploymentMode() == SHARED) {
                     for (GridDeployment dep0 : created) {
@@ -340,8 +342,10 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
                         IgniteBiTuple<Class<?>, Throwable> cls = dep0.deployedClass(meta.className(), meta.alias());
 
-                        if (cls.getKey() != null && cls.getValue() == null)
-                            addParticipant((SharedDeployment)dep0, meta);
+                        if (cls.getKey() != null && cls.getValue() == null) {
+                            addParticipant((SharedDeployment) dep0, meta);
+                            skipSearchDeployment = true;
+                        }
                     }
                 }
 
@@ -392,7 +396,10 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                     return null;
                 }
 
-                dep = (SharedDeployment)searchDeploymentCache(meta);
+                if (!skipSearchDeployment)
+                    dep = (SharedDeployment)searchDeploymentCache(meta);
+                else
+                    dep = null;
 
                 if (dep == null) {
                     List<SharedDeployment> deps = cache.get(meta.userVersion());
