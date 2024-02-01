@@ -1342,6 +1342,11 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     }
 
     /** {@inheritDoc} */
+    @Override public byte[] readRawObjectBytes() {
+        return BinaryUtils.readRawObjectBytes(in);
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public Object[] readObjectArray(String fieldName) throws BinaryObjectException {
         try {
             return findFieldByName(fieldName) ? this.readObjectArray() : null;

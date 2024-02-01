@@ -58,7 +58,6 @@ import org.apache.ignite.internal.binary.BinarySchemaRegistry;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.builder.BinaryBuilderReader;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
@@ -87,6 +86,7 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
+import static org.apache.ignite.internal.binary.BinaryUtils.isNull;
 
 /**
  * Platform utility methods.
@@ -1397,15 +1397,9 @@ public class PlatformUtils {
             return (T)new KeyCacheObjectImpl(obj, objBytes, -1);
         }
         else {
-            BinaryBuilderReader r = new BinaryBuilderReader(reader);
+            byte[] objBytes = reader.readRawObjectBytes();
 
-            r.skipValue();
-
-            int objEndPos = r.position();
-
-            byte[] objBytes = in.readByteArray(objEndPos - objStartPos);
-
-            if (objBytes.length == 1)
+            if (isNull(objBytes))
                 return null;
 
             return (T)new PlatformCacheObjectImpl(null, objBytes);

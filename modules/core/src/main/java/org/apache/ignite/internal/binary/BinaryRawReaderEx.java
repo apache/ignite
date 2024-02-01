@@ -31,6 +31,9 @@ public interface BinaryRawReaderEx extends BinaryRawReader {
      */
     public BinaryInputStream in();
 
+    /** */
+    public byte[] readRawObjectBytes();
+
     /**
      * @return Object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.

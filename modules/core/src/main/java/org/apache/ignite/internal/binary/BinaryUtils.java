@@ -61,7 +61,6 @@ import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryMapFactory;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
@@ -1889,6 +1888,13 @@ public class BinaryUtils {
         return unmarshal(in, ctx, ldr, handles, detach, false, false);
     }
 
+    /** */
+    public static byte[] readRawObjectBytes(BinaryInputStream in) {
+        RawBytesReader rawReader = new RawBytesReader(in);
+
+        return rawReader.readObject();
+    }
+
     /**
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
@@ -2383,7 +2389,7 @@ public class BinaryUtils {
      * @param in Reader.
      * @return Value.
      */
-    @Nullable public static IgniteUuid readIgniteUuid(BinaryRawReader in) {
+    @Nullable public static IgniteUuid readIgniteUuid(org.apache.ignite.binary.BinaryRawReader in) {
         if (in.readBoolean()) {
             UUID globalId = new UUID(in.readLong(), in.readLong());
 
@@ -2731,6 +2737,11 @@ public class BinaryUtils {
             // This can happen even in BinaryArray.USE_TYPED_ARRAY = true.
             // In case user pass special array type to arguments, String[], for example.
             return (Object[])obj;
+    }
+
+    /** */
+    public static boolean isNull(byte[] bytes) {
+        return bytes.length == 1 && bytes[0] == GridBinaryMarshaller.NULL;
     }
 
     /** */
