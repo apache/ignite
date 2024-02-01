@@ -27,7 +27,6 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryPositionReadable;
 import org.apache.ignite.internal.binary.BinaryPrimitives;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -93,20 +92,6 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             false);
 
         this.objMap = other.objMap;
-    }
-
-    /**
-     * Copying constructor.
-     *
-     */
-    public BinaryBuilderReader(BinaryRawReaderEx reader) {
-        ctx = null;
-        arr = reader.in().array();
-        pos = reader.in().position();
-
-        this.reader = null;
-
-        objMap = null;
     }
 
     /**
@@ -334,20 +319,10 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.DATE_ARR:
             case GridBinaryMarshaller.TIMESTAMP_ARR:
             case GridBinaryMarshaller.TIME_ARR:
+            case GridBinaryMarshaller.OBJ_ARR:
+            case GridBinaryMarshaller.ENUM_ARR:
             case GridBinaryMarshaller.UUID_ARR:
             case GridBinaryMarshaller.STRING_ARR: {
-                int size = readInt();
-
-                for (int i = 0; i < size; i++)
-                    skipValue();
-
-                return;
-            }
-
-            case GridBinaryMarshaller.ENUM_ARR:
-            case GridBinaryMarshaller.OBJ_ARR: {
-                pos += 4;
-
                 int size = readInt();
 
                 for (int i = 0; i < size; i++)
@@ -382,16 +357,6 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
             case GridBinaryMarshaller.BINARY_OBJ:
                 len = readInt() + 4;
-
-                break;
-
-            case GridBinaryMarshaller.OPTM_MARSH:
-                len = readInt();
-
-                break;
-
-            case GridBinaryMarshaller.BINARY_ENUM:
-                len = 4 + 4;
 
                 break;
 
