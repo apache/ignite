@@ -1402,7 +1402,7 @@ public class PlatformUtils {
             if (isNull(objBytes))
                 return null;
 
-            return (T)new PlatformCacheObjectImpl(null, objBytes);
+            return (T)new PlatformCacheObjectImpl(objBytes);
         }
     }
 

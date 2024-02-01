@@ -42,7 +42,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
      * @param valBytes Value bytes.
      */
     public CacheObjectImpl(Object val, byte[] valBytes) {
-//        assert val != null || valBytes != null;
+        assert val != null || valBytes != null;
 
         this.val = val;
         this.valBytes = valBytes;
@@ -86,8 +86,6 @@ public class CacheObjectImpl extends CacheObjectAdapter {
 
             if (val != null)
                 return (T)val;
-
-            assert valBytes != null;
 
             Object val = valueFromValueBytes(ctx, kernalCtx.config().isPeerClassLoadingEnabled() ?
                 kernalCtx.cache().context().deploy().globalLoader() : null);

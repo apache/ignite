@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectTransformerUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Wraps value provided by platform, must be transformed before stored in cache.
@@ -45,70 +44,33 @@ public class PlatformCacheObjectImpl extends CacheObjectImpl {
     }
 
     /**
-     * @param val Value.
      * @param arr Value bytes.
      */
-    public PlatformCacheObjectImpl(Object val, byte[] arr) {
-        super(val, null);
+    public PlatformCacheObjectImpl(byte[] arr) {
+        assert arr != null;
 
         this.arr = arr;
     }
 
     /** {@inheritDoc} */
-    @Override public <T> @Nullable T value(CacheObjectValueContext ctx, boolean cpy, ClassLoader ldr) {
-        if (valBytes == null)
-            valBytes = valueBytesFromArray(ctx);
-
-        return super.value(ctx, cpy, ldr);
+    @Override public byte[] rawBytes(CacheObjectValueContext ctx) {
+        return arr;
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] rawBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
-        if (arr != null)
-            return arr;
-
-        assert valBytes != null;
-
-        return CacheObjectTransformerUtils.restoreIfNecessary(arr, ctx);
+    @Override protected byte[] valueBytesFromValue(CacheObjectValueContext ctx) {
+        return CacheObjectTransformerUtils.transformIfNecessary(arr, ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
-        if (valBytes == null)
-            valBytes = valueBytesFromArray(ctx);
-
-        return valBytes;
-    }
-
-    /**
-     * @return Value bytes.
-     */
-    private byte[] valueBytesFromArray(CacheObjectValueContext ctx) {
-        assert arr != null;
-
-        return CacheObjectTransformerUtils.transformIfNecessary(arr, 0, arr.length, ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
-        if (valBytes == null)
-            valBytes = valueBytesFromArray(ctx);
-
-        super.prepareMarshal(ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        if (valBytes == null)
-            valBytes = valueBytesFromArray(ctx);
-
-        super.finishUnmarshal(ctx, ldr);
+    @Override protected Object valueFromValueBytes(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        return ctx.kernalContext().cacheObjects().unmarshal(ctx, arr, ldr);
     }
 
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
         if (valBytes == null)
-            valBytes = valueBytesFromArray(ctx);
+            valBytes = valueBytesFromValue(ctx);
 
         return this;
     }
