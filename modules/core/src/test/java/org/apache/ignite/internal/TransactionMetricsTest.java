@@ -107,6 +107,8 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
         //when: transaction is opening
         final Transaction tx1 = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
+        assertEquals(0, txMXBean.getTransactionsHoldingLockNumber());
+
         int localKeysNum = 0;
 
         for (int i = 0; i < keysNumber; i++) {
