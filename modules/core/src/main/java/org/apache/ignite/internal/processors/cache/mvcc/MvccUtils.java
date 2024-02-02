@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxUnexpectedStateCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.transactions.TransactionMixedModeException;
 import org.apache.ignite.transactions.TransactionState;
 import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException;
 import org.jetbrains.annotations.NotNull;
@@ -616,7 +615,6 @@ public class MvccUtils {
      * @param ctx Grid kernal context.
      * @return Currently started user transaction, or {@code null} if none started.
      * @throws TransactionUnsupportedConcurrencyException If transaction mode is not supported when MVCC is enabled.
-     * @throws TransactionMixedModeException If started transaction spans non MVCC caches.
      */
     @Nullable public static GridNearTxLocal tx(GridKernalContext ctx) {
         return tx(ctx, null);
@@ -627,7 +625,6 @@ public class MvccUtils {
      * @param txId Transaction ID.
      * @return Currently started user transaction, or {@code null} if none started.
      * @throws TransactionUnsupportedConcurrencyException If transaction mode is not supported when MVCC is enabled.
-     * @throws TransactionMixedModeException If started transaction spans non MVCC caches.
      */
     @Nullable public static GridNearTxLocal tx(GridKernalContext ctx, @Nullable GridCacheVersion txId) {
         IgniteTxManager tm = ctx.cache().context().tm();
@@ -641,14 +638,6 @@ public class MvccUtils {
                 tx.setRollbackOnly();
 
                 throw new TransactionUnsupportedConcurrencyException("Only pessimistic transactions are supported when MVCC is enabled.");
-            }
-
-            if (!tx.isOperationAllowed(true)) {
-                tx.setRollbackOnly();
-
-                throw new TransactionMixedModeException(
-                    "Operations on MVCC caches are not permitted in transactions spanning non MVCC caches."
-                );
             }
         }
 
@@ -695,7 +684,6 @@ public class MvccUtils {
             REPEATABLE_READ,
             timeout,
             cctx == null || !cctx.skipStore(),
-            true,
             0,
             null
         );
@@ -719,28 +707,13 @@ public class MvccUtils {
         if (tx == null)
             tracker = new MvccQueryTrackerImpl(cctx);
         else
-            tracker = new StaticMvccQueryTracker(cctx, requestSnapshot(tx));
+            tracker = new StaticMvccQueryTracker(cctx, null);
 
         if (tracker.snapshot() == null)
             // TODO IGNITE-7388
             tracker.requestSnapshot().get();
 
         return tracker;
-    }
-
-    /**
-     * @param tx Transaction.
-     * @throws IgniteCheckedException If failed.
-     * @return Mvcc snapshot.
-     */
-    public static MvccSnapshot requestSnapshot(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
-        MvccSnapshot snapshot = tx.mvccSnapshot();
-
-        if (snapshot == null)
-            // TODO IGNITE-7388
-            return tx.requestSnapshot().get();
-
-        return snapshot;
     }
 
     /** */
