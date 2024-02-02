@@ -1065,7 +1065,7 @@ public class GridH2Table extends TableBase {
      */
     private long cacheSize(CachePeekMode... modes) {
         try {
-            return cacheInfo.cacheContext().cache().localSize(modes);
+            return cacheInfo.cacheContext().cache().localSizeLong(modes);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
