@@ -79,8 +79,6 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      */
     private volatile int offset;
 
-    /** */
-    private volatile GridCacheVersion isolatedStreamerVer;
 
     /** */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
@@ -126,8 +124,6 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         last = new GridCacheVersion(offset + (int)topVer, order.get(), (int)cctx.localNode().order(), dataCenterId);
 
         lastDataVer.value(last.order());
-
-        isolatedStreamerVer = new GridCacheVersion(1 + offset, 0, 1, dataCenterId);
     }
 
     /**
@@ -208,16 +204,6 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         onReceived(nodeId, ver);
 
         return next(ver);
-    }
-
-    /**
-     * Version for entries loaded with isolated streamer, should be less than any version generated
-     * for entries update.
-     *
-     * @return Version for entries loaded with isolated streamer.
-     */
-    public GridCacheVersion isolatedStreamerVersion() {
-        return isolatedStreamerVer;
     }
 
     /**

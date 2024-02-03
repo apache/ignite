@@ -456,15 +456,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
          */
         @Nullable final GridCacheVersion startVer;
 
-        /**
-         * Unlike regular update, {@link IgniteDataStreamer} updates receive the same version for all entries.
-         * See {@code IsolatedUpdater.receive}.
-         * Note, using {@link IgniteDataStreamer} during cache dump creation can lead to dump inconsistency.
-         *
-         * @see GridCacheVersionManager#isolatedStreamerVersion()
-         */
-        final GridCacheVersion isolatedStreamerVer;
-
         /** Topology Version. */
         private final AffinityTopologyVersion topVer;
 
@@ -495,7 +486,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 topVer = gctx.topology().lastTopologyChangeVersion();
 
                 startVer = grpPrimaries.get(gctx.groupId()).contains(part) ? gctx.shared().versions().last() : null;
-                isolatedStreamerVer = cctx.versions().isolatedStreamerVersion();
 
                 serializer = new DumpEntrySerializer(
                     thLocBufs,
@@ -652,14 +642,14 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         /**
          * Note, usage of {@link IgniteDataStreamer} may lead to dump inconsistency.
-         * Because, streamer use the same {@link GridCacheVersion} for all entries.
+         * Because, streamer use the same {@link GridCacheVersion} for all entries in current batch received.
          * So, we can't efficiently filter out new entries and write them all to dump.
          *
          * @param ver Entry version.
          * @return {@code True} if {@code ver} appeared after dump started.
          */
         private boolean afterStart(GridCacheVersion ver) {
-            return (startVer != null && ver.isGreater(startVer)) && !isolatedStreamerVer.equals(ver);
+            return startVer != null && ver.isGreater(startVer);
         }
 
         /**
