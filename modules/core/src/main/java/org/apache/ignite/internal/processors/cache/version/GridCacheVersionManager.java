@@ -79,7 +79,6 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      */
     private volatile int offset;
 
-
     /** */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
         @Override public void onEvent(Event evt) {
