@@ -642,7 +642,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         /**
          * Note, usage of {@link IgniteDataStreamer} may lead to dump inconsistency.
-         * Because, streamer use the same {@link GridCacheVersion} for all entries in current batch received.
+         * Because, streamer use the same {@link GridCacheVersion} for all entries.
          * So, we can't efficiently filter out new entries and write them all to dump.
          *
          * @param ver Entry version.
