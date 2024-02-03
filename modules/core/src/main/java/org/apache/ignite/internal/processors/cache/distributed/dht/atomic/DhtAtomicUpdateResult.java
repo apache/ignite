@@ -51,26 +51,6 @@ class DhtAtomicUpdateResult {
     private int processedEntriesCount;
 
     /**
-     *
-     */
-    DhtAtomicUpdateResult() {
-        // No-op.
-    }
-
-    /**
-     * @param retVal Return value.
-     * @param deleted Deleted entries.
-     * @param dhtFut DHT update future.
-     */
-    DhtAtomicUpdateResult(GridCacheReturn retVal,
-        Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted,
-        GridDhtAtomicAbstractUpdateFuture dhtFut) {
-        this.retVal = retVal;
-        this.deleted = deleted;
-        this.dhtFut = dhtFut;
-    }
-
-    /**
      * @param expiry Expiry policy.
      */
     void expiryPolicy(@Nullable IgniteCacheExpiryPolicy expiry) {
