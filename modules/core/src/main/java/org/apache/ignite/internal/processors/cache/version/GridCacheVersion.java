@@ -70,8 +70,8 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     public GridCacheVersion(int topVer, long order, int nodeOrder, int dataCenterId) {
         assert topVer >= 0 : topVer;
         assert order >= 0 : order;
-        assert nodeOrder >= 0 : nodeOrder;
-        assert dataCenterId < 32 && dataCenterId >= 0 : dataCenterId;
+        assert (nodeOrderDrId >>> DR_ID_SHIFT) >= 0 : (nodeOrderDrId >>> DR_ID_SHIFT);
+        assert (nodeOrderDrId & DR_ID_MASK) >= 0 : nodeOrderDrId & DR_ID_MASK;
 
         if (nodeOrder > NODE_ORDER_MASK)
             throw new IllegalArgumentException("Node order overflow: " + nodeOrder);
