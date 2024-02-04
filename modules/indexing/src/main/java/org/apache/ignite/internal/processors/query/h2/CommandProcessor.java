@@ -771,7 +771,7 @@ public class CommandProcessor extends SqlCommandProcessor {
         IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter = new DmlBulkLoadDataConverter(plan);
 
         IgniteDataStreamer<Object, Object> streamer = ctx.grid().dataStreamer(tbl.cacheName());
-
+        streamer.allowOverwrite(true);
         BulkLoadCacheWriter outputWriter = new BulkLoadStreamerWriter(streamer);
 
         BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
