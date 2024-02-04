@@ -52,7 +52,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.metric.IgniteMetricRegistry;
+import org.apache.ignite.metric.IgniteMetric;
 import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -786,7 +786,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteMetricRegistry customRegistry(String registryName) {
+        @Override public IgniteMetric customRegistry(String registryName) {
             return registry(customName(registryName), true);
         }
 

@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  * Examples of custom metric registry names: "custom.admin", "custom.admin.sessions", "custom.processes", etc.
  *
  * @see ReadOnlyMetricRegistry
- * @see IgniteMetricRegistry
+ * @see IgniteMetric
  */
 @IgniteExperimental
 public interface IgniteMetrics extends Iterable<ReadOnlyMetricRegistry> {
@@ -44,9 +44,9 @@ public interface IgniteMetrics extends Iterable<ReadOnlyMetricRegistry> {
      * Gets or creates custom metric registry named "custom." + {@code registryName}.
      *
      * @param registryName name part to add to the prefix "custom.".
-     * @return {@link IgniteMetricRegistry} registry.
+     * @return {@link IgniteMetric} registry.
      */
-    IgniteMetricRegistry customRegistry(String registryName);
+    IgniteMetric customRegistry(String registryName);
 
 
     /**

@@ -27,12 +27,12 @@ import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMetric;
 import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
-import org.apache.ignite.metric.IgniteMetricRegistry;
+import org.apache.ignite.metric.IgniteMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.jetbrains.annotations.Nullable;
 
-/** Internal facade for metric registry. Supports API of {@link CdcConsumer}. Should be migrated to {@link IgniteMetricRegistry}. */
-public interface MetricRegistry extends IgniteMetricRegistry {
+/** Internal facade for metric registry. Supports API of {@link CdcConsumer}. Should be migrated to {@link IgniteMetric}. */
+public interface MetricRegistry extends IgniteMetric {
     /**
      * Creates and register named gauge.
      * Returned instance are thread safe.
