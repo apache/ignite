@@ -52,7 +52,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.metric.IgniteMetric;
 import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -537,7 +536,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         T2<String, String> splitted = fromFullName(name);
 
-        MetricRegistry mreg = (MetricRegistry)registries.get(splitted.get1());
+        ReadOnlyMetricRegistry mreg = registries.get(splitted.get1());
 
         if (mreg == null) {
             if (log.isInfoEnabled())
@@ -786,7 +785,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteMetric customRegistry(String registryName) {
+        @Override public MetricRegistry customRegistry(String registryName) {
             return registry(customName(registryName), true);
         }
 
