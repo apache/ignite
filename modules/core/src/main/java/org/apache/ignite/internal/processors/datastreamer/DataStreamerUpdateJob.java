@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
-import static org.apache.ignite.internal.managers.deployment.P2PClassLoadingIssues.wrapWithP2PFailure;
-
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteLogger;
@@ -33,6 +31,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.managers.deployment.P2PClassLoadingIssues.wrapWithP2PFailure;
 
 /**
  * Job to put entries to cache on affinity node.
