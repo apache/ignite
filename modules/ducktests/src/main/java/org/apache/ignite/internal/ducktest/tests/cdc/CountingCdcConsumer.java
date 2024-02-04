@@ -25,7 +25,7 @@ import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.TypeMapping;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.resources.LoggerResource;
 
 /**
@@ -42,7 +42,7 @@ public class CountingCdcConsumer implements CdcConsumer {
     private final AtomicLong objectsConsumed = new AtomicLong();
 
     /** {@inheritDoc} */
-    @Override public void start(MetricRegistryImpl mreg) {
+    @Override public void start(MetricRegistry mreg) {
         log.info("CountingCdcConsumer started");
     }
 

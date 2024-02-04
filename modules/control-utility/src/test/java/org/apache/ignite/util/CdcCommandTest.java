@@ -46,7 +46,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -193,7 +193,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         CdcConfiguration cfg = new CdcConfiguration();
 
         cfg.setConsumer(new UserCdcConsumer() {
-            @Override public void start(MetricRegistryImpl mreg) {
+            @Override public void start(MetricRegistry mreg) {
                 appStarted.countDown();
             }
         });

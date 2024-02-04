@@ -30,7 +30,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
@@ -99,7 +99,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
     public TransactionMetricsAdapter(GridKernalContext ctx) {
         gridKernalCtx = ctx;
 
-        MetricRegistryImpl mreg = gridKernalCtx.metric().registry(TX_METRICS);
+        MetricRegistry mreg = gridKernalCtx.metric().registry(TX_METRICS);
 
         txCommits = mreg.intMetric("txCommits", "Number of transaction commits.");
         txRollbacks = mreg.intMetric("txRollbacks", "Number of transaction rollbacks.");
@@ -123,7 +123,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
 
     /** Callback invoked when {@link IgniteTxManager} started. */
     public void onTxManagerStarted() {
-        MetricRegistryImpl mreg = gridKernalCtx.metric().registry(TX_METRICS);
+        MetricRegistry mreg = gridKernalCtx.metric().registry(TX_METRICS);
 
         mreg.register("AllOwnerTransactions",
             this::getAllOwnerTransactions,

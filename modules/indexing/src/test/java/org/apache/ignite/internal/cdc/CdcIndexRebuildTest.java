@@ -36,7 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.junit.Test;
 
@@ -110,7 +110,7 @@ public class CdcIndexRebuildTest extends AbstractCdcTest {
         assertTrue("Wal segments was not committed by CdcConsumer", waitForCondition(() -> {
             long lastArchivedSeg = srv.context().cache().context().wal().lastArchivedSegment();
 
-            MetricRegistryImpl mreg = getFieldValue(cdc, "mreg");
+            MetricRegistry mreg = getFieldValue(cdc, "mreg");
 
             long committedCdcSegIdx = mreg.<LongMetric>findMetric(COMMITTED_SEG_IDX).value();
             long curCdcSegIdx = mreg.<LongMetric>findMetric(CUR_SEG_IDX).value();
@@ -140,7 +140,7 @@ public class CdcIndexRebuildTest extends AbstractCdcTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void start(MetricRegistryImpl mreg) {
+        @Override public void start(MetricRegistry mreg) {
             // No-op.
         }
 

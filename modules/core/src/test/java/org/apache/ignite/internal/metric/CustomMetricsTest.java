@@ -28,8 +28,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
+import org.apache.ignite.metric.IgniteMetricRegistry;
 import org.apache.ignite.metric.IgniteMetrics;
-import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.ServiceContextResource;
 import org.apache.ignite.services.Service;
@@ -87,7 +87,7 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
 
         TestService svc = grid(0).services().serviceProxy("svc", TestService.class, true);
 
-        MetricRegistry svcReg = grid(0).metrics().customRegistry(TestCustomMetricsService.regName("svc"));
+        IgniteMetricRegistry svcReg = grid(0).metrics().customRegistry(TestCustomMetricsService.regName("svc"));
 
         IntMetric intMetric = svcReg.findMetric(TestCustomMetricsService.COUNTER_METRIC_NAME);
         BooleanMetric boolMetric = svcReg.findMetric(TestCustomMetricsService.LOAD_THRESHOLD_METRIC_NAME);

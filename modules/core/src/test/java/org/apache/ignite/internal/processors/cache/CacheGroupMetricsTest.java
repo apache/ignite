@@ -45,7 +45,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
@@ -203,7 +203,7 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
      * @param cacheOrGrpName Cache group name.
      * @return MetricRegistry for the specified group.
      */
-    protected MetricRegistryImpl cacheGroupMetrics(int nodeIdx, String cacheOrGrpName) {
+    protected MetricRegistry cacheGroupMetrics(int nodeIdx, String cacheOrGrpName) {
         return grid(nodeIdx).context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, cacheOrGrpName));
     }
 
@@ -264,11 +264,11 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
 
         awaitPartitionMapExchange(true, false, null);
 
-        MetricRegistryImpl mxBean0Grp1 = cacheGroupMetrics(0, "group1");
-        MetricRegistryImpl mxBean0Grp2 = cacheGroupMetrics(0, "group2");
-        MetricRegistryImpl mxBean0Grp3 = cacheGroupMetrics(0, "cache4");
-        MetricRegistryImpl mxBean1Grp1 = cacheGroupMetrics(1, "group1");
-        MetricRegistryImpl mxBean2Grp1 = cacheGroupMetrics(2, "group1");
+        MetricRegistry mxBean0Grp1 = cacheGroupMetrics(0, "group1");
+        MetricRegistry mxBean0Grp2 = cacheGroupMetrics(0, "group2");
+        MetricRegistry mxBean0Grp3 = cacheGroupMetrics(0, "cache4");
+        MetricRegistry mxBean1Grp1 = cacheGroupMetrics(1, "group1");
+        MetricRegistry mxBean2Grp1 = cacheGroupMetrics(2, "group1");
 
         assertEquals(1, mxBean0Grp1.<IntMetric>findMetric("MinimumNumberOfPartitionCopies").value());
         assertEquals(3, mxBean0Grp1.<IntMetric>findMetric("MaximumNumberOfPartitionCopies").value());
@@ -375,9 +375,9 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        MetricRegistryImpl mxBean0Grp1 = cacheGroupMetrics(0, "group1");
-        MetricRegistryImpl mxBean0Grp2 = cacheGroupMetrics(0, "group2");
-        MetricRegistryImpl mxBean0Grp3 = cacheGroupMetrics(0, "cache4");
+        MetricRegistry mxBean0Grp1 = cacheGroupMetrics(0, "group1");
+        MetricRegistry mxBean0Grp2 = cacheGroupMetrics(0, "group2");
+        MetricRegistry mxBean0Grp3 = cacheGroupMetrics(0, "cache4");
 
         GridMetricManager mmgr = ignite.context().metric();
 
@@ -445,7 +445,7 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
         String[] names = new String[] {"group1", "group2", "cache4"};
 
         for (String name : names) {
-            MetricRegistryImpl grp1 = cacheGroupMetrics(1, name);
+            MetricRegistry grp1 = cacheGroupMetrics(1, name);
 
             for (Metric metric : grp1)
                 metric.getAsString();
@@ -473,7 +473,7 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        MetricRegistryImpl group1Metrics = cacheGroupMetrics(0, "group1");
+        MetricRegistry group1Metrics = cacheGroupMetrics(0, "group1");
 
         AtomicLongMetric locPartsNum = group1Metrics.findMetric("InitializedLocalPartitionsNumber");
 

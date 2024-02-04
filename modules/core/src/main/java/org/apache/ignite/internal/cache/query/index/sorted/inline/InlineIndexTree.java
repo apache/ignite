@@ -57,7 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -689,7 +689,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             @Override public PageHandler<?, Result> wrap(BPlusTree<?, ?> tree, PageHandler<?, Result> hnd) {
                 GridCacheContext<?, ?> cctx = def.cacheInfo().cacheContext();
 
-                MetricRegistryImpl mreg = cctx.shared().kernalContext().metric().registry(
+                MetricRegistry mreg = cctx.shared().kernalContext().metric().registry(
                     metricName(INDEX_METRIC_PREFIX, def.idxName().fullName()));
 
                 LongAdderMetric cnt = mreg.longAdderMetric(hnd.getClass().getSimpleName() + "Count",

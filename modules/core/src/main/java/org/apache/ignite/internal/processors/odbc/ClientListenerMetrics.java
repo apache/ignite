@@ -16,7 +16,7 @@
  */
 package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
@@ -82,7 +82,7 @@ public class ClientListenerMetrics {
     /**
      * @param mreg Metrics registry.
      */
-    public ClientListenerMetrics(MetricRegistryImpl mreg) {
+    public ClientListenerMetrics(MetricRegistry mreg) {
         rejectedTimeout = mreg.intMetric(METRIC_REJECTED_TIMEOUT,
                 "TCP sessions count that were rejected due to handshake timeout.");
 

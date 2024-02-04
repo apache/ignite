@@ -33,7 +33,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -228,7 +228,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
      * @return Gets {@code IsIndexRebuildInProgress} metric for given cache.
      */
     private <M extends Metric> M indexRebuildMetric(IgniteEx ignite, String cacheName, String name) {
-        MetricRegistryImpl mreg = ignite.context().metric().registry(cacheMetricsRegistryName(cacheName, false));
+        MetricRegistry mreg = ignite.context().metric().registry(cacheMetricsRegistryName(cacheName, false));
 
         return mreg.findMetric(name);
     }

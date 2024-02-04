@@ -56,7 +56,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridTimerTask;
@@ -674,7 +674,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /**  Registers cluster metrics. */
     public void registerMetrics() {
-        MetricRegistryImpl reg = ctx.metric().registry(CLUSTER_METRICS);
+        MetricRegistry reg = ctx.metric().registry(CLUSTER_METRICS);
 
         reg.register(TOTAL_SERVER_NODES,
             () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.forServers().nodes().size(),

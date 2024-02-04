@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMe
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
-import org.apache.ignite.metric.MetricRegistry;
+import org.apache.ignite.metric.IgniteMetricRegistry;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -59,11 +59,11 @@ import static org.apache.ignite.internal.util.lang.GridFunc.nonThrowableSupplier
 /**
  * Metric registry.
  */
-public class MetricRegistryImpl implements MetricRegistry {
+public class MetricRegistry implements IgniteMetricRegistry {
     /** Registry name. */
     private String regName;
 
-    /** Registry name. */
+    /** Custom metrics flag. */
     private boolean custom;
 
     /** Logger. */
@@ -84,7 +84,7 @@ public class MetricRegistryImpl implements MetricRegistry {
      * @param histogramCfgProvider Histogram config provider.
      * @param log Logger.
      */
-    public MetricRegistryImpl(String regName, Function<String, Long> hitRateCfgProvider,
+    public MetricRegistry(String regName, Function<String, Long> hitRateCfgProvider,
         Function<String, long[]> histogramCfgProvider, IgniteLogger log) {
         this(regName, false, hitRateCfgProvider, histogramCfgProvider, log);
     }
@@ -96,7 +96,7 @@ public class MetricRegistryImpl implements MetricRegistry {
      * @param histogramCfgProvider Histogram config provider.
      * @param log Logger.
      */
-    public MetricRegistryImpl(String regName, boolean custom, Function<String, Long> hitRateCfgProvider,
+    public MetricRegistry(String regName, boolean custom, Function<String, Long> hitRateCfgProvider,
         Function<String, long[]> histogramCfgProvider, IgniteLogger log) {
         this.regName = regName;
         this.custom = custom;

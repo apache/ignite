@@ -31,7 +31,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -57,7 +57,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
     @Test
     public void testClientListenerMetricsAccept() throws Exception {
         try (IgniteEx ignite = startGrid(0)) {
-            MetricRegistryImpl mreg = ignite.context().metric().registry(CLIENT_CONNECTOR_METRICS);
+            MetricRegistry mreg = ignite.context().metric().registry(CLIENT_CONNECTOR_METRICS);
 
             checkConnectionsMetrics(mreg, 0, 0);
 
@@ -104,7 +104,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
 
         try (IgniteEx ignite = startGrid(nodeCfg)) {
             ignite.cluster().state(ClusterState.ACTIVE);
-            MetricRegistryImpl mreg = ignite.context().metric().registry(CLIENT_CONNECTOR_METRICS);
+            MetricRegistry mreg = ignite.context().metric().registry(CLIENT_CONNECTOR_METRICS);
 
             checkRejectMetrics(mreg, 0, 0, 0);
 
@@ -147,7 +147,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
             .setThinClientEnabled(false));
 
         try (IgniteEx ignite = startGrid(nodeCfg)) {
-            MetricRegistryImpl mreg = ignite.context().metric().registry(CLIENT_CONNECTOR_METRICS);
+            MetricRegistry mreg = ignite.context().metric().registry(CLIENT_CONNECTOR_METRICS);
 
             checkRejectMetrics(mreg, 0, 0, 0);
 
@@ -177,7 +177,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
      * @param value Metric value to wait for.
      * @param timeout Timeout.
      */
-    private void waitForMetricValue(MetricRegistryImpl mreg, String metric, long value, long timeout)
+    private void waitForMetricValue(MetricRegistry mreg, String metric, long value, long timeout)
         throws IgniteInterruptedCheckedException {
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -194,7 +194,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
      * @param rejectedAuth Expected number of connection attepmts rejected because of failed authentication.
      * @param rejectedTotal Expected number of connection attepmts rejected in total.
      */
-    private void checkRejectMetrics(MetricRegistryImpl mreg, int rejectedTimeout, int rejectedAuth, int rejectedTotal)
+    private void checkRejectMetrics(MetricRegistry mreg, int rejectedTimeout, int rejectedAuth, int rejectedTotal)
         throws IgniteInterruptedCheckedException {
         waitForMetricValue(mreg, METRIC_REJECTED_TOTAL, rejectedTotal, 10_000);
         assertEquals(rejectedTimeout, mreg.<IntMetric>findMetric(METRIC_REJECTED_TIMEOUT).value());
@@ -209,7 +209,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
      * @param accepted Expected number of accepted connections.
      * @param active Expected number of active connections.
      */
-    private void checkConnectionsMetrics(MetricRegistryImpl mreg, int accepted, int active)
+    private void checkConnectionsMetrics(MetricRegistry mreg, int accepted, int active)
         throws IgniteInterruptedCheckedException {
         waitForMetricValue(mreg, MetricUtils.metricName("thin", METRIC_ACTIVE), active, 10_000);
         assertEquals(accepted, mreg.<IntMetric>findMetric(MetricUtils.metricName("thin", METRIC_ACEPTED)).value());

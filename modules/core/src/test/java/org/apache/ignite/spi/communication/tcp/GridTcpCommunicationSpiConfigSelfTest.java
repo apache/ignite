@@ -30,7 +30,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -194,7 +194,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
                 // No-op.
             }
 
-            return new MetricRegistryImpl(name, null, null, new NullLogger());
+            return new MetricRegistry(name, null, null, new NullLogger());
         });
 
         TcpCommunicationSpi receiverSpi = initializeSpi(receiverCtx, receiverNode, listeningLog, true);

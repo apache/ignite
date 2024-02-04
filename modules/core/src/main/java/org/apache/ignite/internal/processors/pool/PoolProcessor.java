@@ -41,7 +41,7 @@ import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.systemview.walker.StripedExecutorTaskViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.thread.SecurityAwareIoPool;
@@ -924,7 +924,7 @@ public class PoolProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Creates a {@link MetricRegistryImpl} for an executor.
+     * Creates a {@link MetricRegistry} for an executor.
      *
      * @param name Name of the metric to register.
      * @param execSvc Executor to register a metric for.

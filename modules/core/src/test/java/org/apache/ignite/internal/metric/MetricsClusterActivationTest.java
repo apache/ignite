@@ -30,7 +30,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -149,7 +149,7 @@ public class MetricsClusterActivationTest extends GridCommonAbstractTest {
     private void checkDataRegionMetrics(IgniteEx ignite) throws IgniteCheckedException {
         DataRegion region = ignite.context().cache().context().database().dataRegion(DFLT_DATA_REG_DEFAULT_NAME);
 
-        MetricRegistryImpl mreg = ignite.context().metric().registry(metricName(DATAREGION_METRICS_PREFIX,
+        MetricRegistry mreg = ignite.context().metric().registry(metricName(DATAREGION_METRICS_PREFIX,
             DFLT_DATA_REG_DEFAULT_NAME));
 
         if (!ignite.cluster().state().active()) {
@@ -170,7 +170,7 @@ public class MetricsClusterActivationTest extends GridCommonAbstractTest {
 
     /** Checks cache groups metrics. */
     private void checkCacheGroupsMetrics(IgniteEx ignite) {
-        MetricRegistryImpl mreg = ignite.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX,
+        MetricRegistry mreg = ignite.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX,
             DEFAULT_CACHE_NAME));
 
         if (!ignite.cluster().state().active()) {
@@ -194,7 +194,7 @@ public class MetricsClusterActivationTest extends GridCommonAbstractTest {
 
     /** Checks cache metrics. */
     private void checkCacheMetrics(IgniteEx ignite, boolean expEntries) {
-        MetricRegistryImpl mreg = ignite.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false));
+        MetricRegistry mreg = ignite.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false));
 
         if (!ignite.cluster().state().active()) {
             assertEquals(0, F.size(mreg.iterator()));

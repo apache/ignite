@@ -30,7 +30,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -176,7 +176,7 @@ public class UserQueriesTestBase extends SqlStatisticsAbstractTest {
      * @param metricName short name of the metric from the "sql memory" metric registry.
      */
     protected long longMetricValue(int gridIdx, String metricName) {
-        MetricRegistryImpl sqlMemReg = grid(gridIdx).context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        MetricRegistry sqlMemReg = grid(gridIdx).context().metric().registry(SQL_USER_QUERIES_REG_NAME);
 
         Metric metric = sqlMemReg.findMetric(metricName);
 

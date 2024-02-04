@@ -21,7 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE
  * Utility class to build or parse metric name in dot notation.
  *
  * @see GridMetricManager
- * @see MetricRegistryImpl
+ * @see MetricRegistry
  */
 public class MetricUtils {
     /** Metric name part separator. */

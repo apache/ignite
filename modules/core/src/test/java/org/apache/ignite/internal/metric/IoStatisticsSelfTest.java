@@ -27,7 +27,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -94,7 +94,7 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
     /**
      * @param mreg Metric registry.
      */
-    private void checkEmptyStat(MetricRegistryImpl mreg, IoStatisticsType type) {
+    private void checkEmptyStat(MetricRegistry mreg, IoStatisticsType type) {
         assertNotNull(mreg);
 
         if (type == CACHE_GROUP) {
@@ -233,7 +233,7 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
     public Long physicalReads(GridMetricManager mmgr, IoStatisticsType statType, String name, String subName) {
         String fullName = subName == null ? name : metricName(name, subName);
 
-        MetricRegistryImpl mreg = mmgr.registry(metricName(statType.metricGroupName(), fullName));
+        MetricRegistry mreg = mmgr.registry(metricName(statType.metricGroupName(), fullName));
 
         if (mreg == null)
             return null;

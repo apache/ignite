@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMetric;
 import org.jetbrains.annotations.Nullable;
@@ -32,7 +32,7 @@ public class PageMetricsImpl implements PageMetrics {
 
     /** */
     private PageMetricsImpl(
-        MetricRegistryImpl metricRegistry,
+        MetricRegistry metricRegistry,
         @Nullable LongAdderWithDelegateMetric.Delegate totalPagesCb,
         @Nullable LongAdderWithDelegateMetric.Delegate idxPagesCb
     ) {
@@ -50,7 +50,7 @@ public class PageMetricsImpl implements PageMetrics {
      */
     public static final class Builder {
         /** Metric registry. */
-        private final MetricRegistryImpl metricRegistry;
+        private final MetricRegistry metricRegistry;
 
         /** Total pages callback. */
         private LongAdderWithDelegateMetric.Delegate totalPagesCb;
@@ -61,7 +61,7 @@ public class PageMetricsImpl implements PageMetrics {
         /**
          * @param metricRegistry Metric registry.
          */
-        Builder(MetricRegistryImpl metricRegistry) {
+        Builder(MetricRegistry metricRegistry) {
             this.metricRegistry = metricRegistry;
         }
 
@@ -94,7 +94,7 @@ public class PageMetricsImpl implements PageMetrics {
     /**
      * @param metricRegistry Metric registry.
      */
-    public static Builder builder(MetricRegistryImpl metricRegistry) {
+    public static Builder builder(MetricRegistry metricRegistry) {
         return new Builder(metricRegistry);
     }
 
@@ -105,7 +105,7 @@ public class PageMetricsImpl implements PageMetrics {
      * @param delegate Delegate.
      */
     private static LongAdderMetric createMetricWithOptionalDelegate(
-        MetricRegistryImpl metricRegistry,
+        MetricRegistry metricRegistry,
         String name,
         String desc,
         @Nullable LongAdderWithDelegateMetric.Delegate delegate

@@ -21,7 +21,7 @@ import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
@@ -178,7 +178,7 @@ public class DataStorageMetricsImpl {
     ) {
         this.metricsEnabled = metricsEnabled;
 
-        MetricRegistryImpl mreg = mmgr.registry(DATASTORAGE_METRIC_PREFIX);
+        MetricRegistry mreg = mmgr.registry(DATASTORAGE_METRIC_PREFIX);
 
         walLoggingRate = mreg.hitRateMetric("WalLoggingRate",
             "Average number of WAL records per second written during the last time interval.",
