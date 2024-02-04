@@ -39,7 +39,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -96,7 +96,7 @@ public class CacheGroupMetricsImpl {
 
         boolean persistenceEnabled = !kernalCtx.clientNode() && CU.isPersistentCache(cacheCfg, dsCfg);
 
-        MetricRegistryImpl mreg = kernalCtx.metric().registry(metricGroupName());
+        MetricRegistry mreg = kernalCtx.metric().registry(metricGroupName());
 
         mreg.register("Caches", this::getCaches, List.class, null);
 
@@ -125,7 +125,7 @@ public class CacheGroupMetricsImpl {
 
     /** Callback for initializing metrics after topology was initialized. */
     public void onTopologyInitialized() {
-        MetricRegistryImpl mreg = ctx.shared().kernalContext().metric().registry(metricGroupName());
+        MetricRegistry mreg = ctx.shared().kernalContext().metric().registry(metricGroupName());
 
         mreg.register("MinimumNumberOfPartitionCopies",
             this::getMinimumNumberOfPartitionCopies,

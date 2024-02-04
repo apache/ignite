@@ -28,7 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -227,7 +227,7 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
         for (int i = 0; i < 2; i++) {
             GridMetricManager mmgr = metricManager(i);
 
-            MetricRegistryImpl mreg = mmgr.registry(cachePrefix);
+            MetricRegistry mreg = mmgr.registry(cachePrefix);
 
             assertNotNull(mreg.findMetric(CACHE_GETS));
             assertNotNull(mreg.findMetric(CACHE_PUTS));

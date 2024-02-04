@@ -70,7 +70,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
@@ -825,7 +825,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         CountDownLatch deltaBlock = new CountDownLatch(1);
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        MetricRegistryImpl mreg0 = ignite.context().metric().registry(SNAPSHOT_METRICS);
+        MetricRegistry mreg0 = ignite.context().metric().registry(SNAPSHOT_METRICS);
 
         LongMetric startTime = mreg0.findMetric("LastSnapshotStartTime");
         LongMetric endTime = mreg0.findMetric("LastSnapshotEndTime");
@@ -865,7 +865,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         assertThrowsWithCause((Callable<Object>)fut1::get, IgniteException.class);
 
-        MetricRegistryImpl mreg1 = grid(1).context().metric().registry(SNAPSHOT_METRICS);
+        MetricRegistry mreg1 = grid(1).context().metric().registry(SNAPSHOT_METRICS);
 
         LongMetric startTime1 = mreg1.findMetric("LastSnapshotStartTime");
         LongMetric endTime1 = mreg1.findMetric("LastSnapshotEndTime");

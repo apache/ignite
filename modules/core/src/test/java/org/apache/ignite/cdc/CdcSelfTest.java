@@ -58,7 +58,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.RunnableX;
@@ -394,7 +394,7 @@ public class CdcSelfTest extends AbstractCdcTest {
                     // No-op.
                 }
 
-                @Override public void start(MetricRegistryImpl mreg) {
+                @Override public void start(MetricRegistry mreg) {
                     // No-op.
                 }
             };
@@ -488,7 +488,7 @@ public class CdcSelfTest extends AbstractCdcTest {
                     // No-op.
                 }
 
-                @Override public void start(MetricRegistryImpl mreg) {
+                @Override public void start(MetricRegistry mreg) {
                     // No-op.
                 }
             }, cfg));

@@ -47,7 +47,7 @@ import org.apache.ignite.internal.managers.systemview.walker.SqlQueryHistoryView
 import org.apache.ignite.internal.managers.systemview.walker.SqlQueryViewWalker;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -195,7 +195,7 @@ public class RunningQueryManager {
             qryHistTracker.queryHistory().values(),
             SqlQueryHistoryView::new);
 
-        MetricRegistryImpl userMetrics = ctx.metric().registry(SQL_USER_QUERIES_REG_NAME);
+        MetricRegistry userMetrics = ctx.metric().registry(SQL_USER_QUERIES_REG_NAME);
 
         successQrsCnt = userMetrics.longAdderMetric("success",
             "Number of successfully executed user queries that have been started on this node.");

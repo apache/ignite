@@ -37,7 +37,7 @@ import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.lang.RunnableX;
@@ -209,7 +209,7 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
         for (Map.Entry<String, Function<PoolProcessor, ExecutorService>> entry : THREAD_POOL_METRICS.entrySet()) {
             String metricsName = entry.getKey();
             ExecutorService execSvc = entry.getValue().apply(poolProc);
-            MetricRegistryImpl mreg = ignite.context().metric().registry(metricsName);
+            MetricRegistry mreg = ignite.context().metric().registry(metricsName);
             HistogramMetric execTimeMetric = mreg.findMetric(PoolProcessor.TASK_EXEC_TIME);
             boolean stripedExecutor = execSvc instanceof StripedExecutor;
 

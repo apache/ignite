@@ -51,7 +51,7 @@ import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableCon
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
@@ -235,7 +235,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
             assertTrue(waitForCondition(new PAX() {
                 @Override public boolean applyx() {
-                    MetricRegistryImpl pMetrics = ig.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
+                    MetricRegistry pMetrics = ig.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
 
                     assertNotNull(pMetrics);
 
@@ -244,7 +244,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
                 }
             }, 10_000));
 
-            Collection<MetricRegistryImpl> grpRegs = F.viewReadOnly(ig.context().cache().cacheGroups(),
+            Collection<MetricRegistry> grpRegs = F.viewReadOnly(ig.context().cache().cacheGroups(),
                 ctx -> ig.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, ctx.cacheOrGroupName())));
 
             ToLongFunction<String> sumByGroups = metric -> grpRegs.stream()
@@ -310,7 +310,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         try {
             waitForCondition(() -> cpCnt.get() > 0, getTestTimeout());
 
-            MetricRegistryImpl mreg = node.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
+            MetricRegistry mreg = node.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
 
             AtomicLongMetric lastCpBeforeLockDuration = mreg.findMetric("LastCheckpointBeforeLockDuration");
             AtomicLongMetric lastCpLockWaitDuration = mreg.findMetric("LastCheckpointLockWaitDuration");
@@ -610,7 +610,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
      * @param n Node.
      * @return Group of metrics.
      */
-    private MetricRegistryImpl dsMetricRegistry(IgniteEx n) {
+    private MetricRegistry dsMetricRegistry(IgniteEx n) {
         return n.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
     }
 

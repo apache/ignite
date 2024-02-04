@@ -41,7 +41,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.CdcConsumerState;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
@@ -236,7 +236,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         checkMetrics(expCnt, (Function<String, Long>)jmxVal, (Function<String, String>)jmxVal);
 
-        MetricRegistryImpl mreg = getFieldValue(cdc, "mreg");
+        MetricRegistry mreg = getFieldValue(cdc, "mreg");
 
         assertNotNull(mreg);
 
@@ -290,7 +290,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         private volatile boolean stopped;
 
         /** {@inheritDoc} */
-        @Override public void start(MetricRegistryImpl mreg) {
+        @Override public void start(MetricRegistry mreg) {
             stopped = false;
         }
 
@@ -444,7 +444,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void start(MetricRegistryImpl mreg) {
+        @Override public void start(MetricRegistry mreg) {
             // No-op.
         }
 

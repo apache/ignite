@@ -52,8 +52,8 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.metric.IgniteMetricRegistry;
 import org.apache.ignite.metric.IgniteMetrics;
-import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
@@ -72,7 +72,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
  * This manager should provide {@link ReadOnlyMetricManager} for each configured {@link MetricExporterSpi}.
  *
  * @see MetricExporterSpi
- * @see MetricRegistryImpl
+ * @see MetricRegistry
  */
 public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> implements ReadOnlyMetricManager {
     /** Metrics update frequency. */
@@ -231,7 +231,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         heap.update(mem.getHeapMemoryUsage());
         nonHeap.update(mem.getNonHeapMemoryUsage());
 
-        MetricRegistryImpl sysreg = registry(SYS_METRICS);
+        MetricRegistry sysreg = registry(SYS_METRICS);
 
         gcCpuLoad = sysreg.doubleMetric(GC_CPU_LOAD, GC_CPU_LOAD_DESCRIPTION);
         cpuLoad = sysreg.doubleMetric(CPU_LOAD, CPU_LOAD_DESCRIPTION);
@@ -245,7 +245,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         sysreg.register("CurrentThreadCpuTime", threads::getCurrentThreadCpuTime, null);
         sysreg.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime, null);
 
-        MetricRegistryImpl pmeReg = registry(PME_METRICS);
+        MetricRegistry pmeReg = registry(PME_METRICS);
 
         long[] pmeBounds = new long[] {500, 1000, 5000, 30000};
 
@@ -321,7 +321,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param name Group name.
      * @return Group of metrics.
      */
-    public MetricRegistryImpl registry(String name) {
+    public MetricRegistry registry(String name) {
         return registry(name, false);
     }
 
@@ -332,9 +332,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param custom Custom metrics flag.
      * @return Group of metrics.
      */
-    private MetricRegistryImpl registry(String name, boolean custom) {
-        return (MetricRegistryImpl)registries.computeIfAbsent(name, n -> {
-            MetricRegistryImpl mreg = new MetricRegistryImpl(name,
+    private MetricRegistry registry(String name, boolean custom) {
+        return (MetricRegistry)registries.computeIfAbsent(name, n -> {
+            MetricRegistry mreg = new MetricRegistryImpl(name,
                 custom,
                 custom ? null : mname -> readFromMetastorage(metricName(HITRATE_CFG_PREFIX, mname)),
                 custom ? null : mname -> readFromMetastorage(metricName(HISTOGRAM_CFG_PREFIX, mname)),
@@ -537,7 +537,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         T2<String, String> splitted = fromFullName(name);
 
-        MetricRegistryImpl mreg = (MetricRegistryImpl)registries.get(splitted.get1());
+        MetricRegistry mreg = (MetricRegistry)registries.get(splitted.get1());
 
         if (mreg == null) {
             if (log.isInfoEnabled())
@@ -752,7 +752,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
          * @param metricNamePrefix Metric name prefix.
          */
         public MemoryUsageMetrics(String group, String metricNamePrefix) {
-            MetricRegistryImpl mreg = registry(group);
+            MetricRegistry mreg = registry(group);
 
             this.init = mreg.longMetric(metricName(metricNamePrefix, "init"), null);
             this.used = mreg.longMetric(metricName(metricNamePrefix, "used"), null);
@@ -786,7 +786,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         }
 
         /** {@inheritDoc} */
-        @Override public MetricRegistry customRegistry(String registryName) {
+        @Override public IgniteMetricRegistry customRegistry(String registryName) {
             return registry(customName(registryName), true);
         }
 

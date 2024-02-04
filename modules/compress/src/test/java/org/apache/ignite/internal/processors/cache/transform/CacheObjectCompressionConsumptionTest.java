@@ -38,7 +38,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.TcpClientCache;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -347,7 +347,7 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
 
                 long clNet = 0;
 
-                MetricRegistryImpl reg = mreg(node, CLIENT_CONNECTOR_METRICS);
+                MetricRegistry reg = mreg(node, CLIENT_CONNECTOR_METRICS);
 
                 clNet += reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value();
                 clNet += reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value();
@@ -380,7 +380,7 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
     }
 
     /** Obtains the metric registry with the specified name from Ignite instance. */
-    private MetricRegistryImpl mreg(Ignite ignite, String name) {
+    private MetricRegistry mreg(Ignite ignite, String name) {
         return ((IgniteEx)ignite).context().metric().registry(name);
     }
 

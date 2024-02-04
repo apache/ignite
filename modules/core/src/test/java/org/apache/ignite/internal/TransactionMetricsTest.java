@@ -26,7 +26,7 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.mxbean.TransactionMetricsMxBean;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -93,7 +93,7 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
         TransactionMetricsMxBean txMXBean = getMxBean(getTestIgniteInstanceName(0), "TransactionMetrics",
             TransactionMetricsMxBeanImpl.class, TransactionMetricsMxBean.class);
 
-        MetricRegistryImpl mreg = grid(0).context().metric().registry(TX_METRICS);
+        MetricRegistry mreg = grid(0).context().metric().registry(TX_METRICS);
 
         final IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -173,7 +173,7 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
         IgniteEx primaryNode2 = startGrid(1);
         IgniteEx nearNode = startGrid(2);
 
-        MetricRegistryImpl mreg = grid(2).context().metric().registry(TX_METRICS);
+        MetricRegistry mreg = grid(2).context().metric().registry(TX_METRICS);
 
         awaitPartitionMapExchange();
 

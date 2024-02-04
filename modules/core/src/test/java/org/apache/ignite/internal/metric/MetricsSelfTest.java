@@ -26,6 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.stream.StreamSupport;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
@@ -65,12 +66,12 @@ import static org.junit.Assert.assertArrayEquals;
 /** */
 public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
-    private MetricRegistryImpl mreg;
+    private MetricRegistry mreg;
 
     /** */
     @Before
     public void setUp() throws Exception {
-        mreg = new MetricRegistryImpl("group", name -> null, name -> null, null);
+        mreg = new MetricRegistryImpl("group", false, name -> null, name -> null, null);
     }
 
     /** */
@@ -293,7 +294,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testGetMetrics() throws Exception {
-        MetricRegistryImpl mreg = new MetricRegistryImpl("group", name -> null, name -> null, null);
+        MetricRegistry mreg = new MetricRegistryImpl("group", false, name -> null, name -> null, null);
 
         mreg.longMetric("test1", "");
         mreg.longMetric("test2", "");
@@ -314,7 +315,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testRemove() throws Exception {
-        MetricRegistryImpl mreg = new MetricRegistryImpl("group", name -> null, name -> null, null);
+        MetricRegistry mreg = new MetricRegistryImpl("group", false, name -> null, name -> null, null);
 
         AtomicLongMetric cntr = mreg.longMetric("my.name", null);
         AtomicLongMetric cntr2 = mreg.longMetric("my.name.x", null);

@@ -41,11 +41,10 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMe
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
-import org.apache.ignite.metric.MetricRegistry;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
-import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.jetbrains.annotations.NotNull;
@@ -63,7 +62,7 @@ public class MetricRegistryImpl implements MetricRegistry {
     /** Registry name. */
     private String regName;
 
-    /** Registry name. */
+    /** Custom metrics flag. */
     private boolean custom;
 
     /** Logger. */
@@ -80,24 +79,18 @@ public class MetricRegistryImpl implements MetricRegistry {
 
     /**
      * @param regName Registry name.
-     * @param hitRateCfgProvider HitRate config provider.
-     * @param histogramCfgProvider Histogram config provider.
-     * @param log Logger.
-     */
-    public MetricRegistryImpl(String regName, Function<String, Long> hitRateCfgProvider,
-        Function<String, long[]> histogramCfgProvider, IgniteLogger log) {
-        this(regName, false, hitRateCfgProvider, histogramCfgProvider, log);
-    }
-
-    /**
-     * @param regName Registry name.
      * @param custom Custom metrics flag.
      * @param hitRateCfgProvider HitRate config provider.
      * @param histogramCfgProvider Histogram config provider.
      * @param log Logger.
      */
-    public MetricRegistryImpl(String regName, boolean custom, Function<String, Long> hitRateCfgProvider,
-        Function<String, long[]> histogramCfgProvider, IgniteLogger log) {
+    public MetricRegistryImpl(
+        String regName,
+        boolean custom,
+        Function<String, Long> hitRateCfgProvider,
+        Function<String, long[]> histogramCfgProvider,
+        IgniteLogger log
+    ) {
         this.regName = regName;
         this.custom = custom;
         this.log = log;
@@ -116,16 +109,8 @@ public class MetricRegistryImpl implements MetricRegistry {
             m.reset();
     }
 
-    /**
-     * Creates and register named gauge.
-     * Returned instance are thread safe.
-     *
-     * @param name Name.
-     * @param type Type.
-     * @param desc Description.
-     * @return {@link ObjectMetricImpl}
-     */
-    public <T> ObjectMetricImpl<T> objectMetric(String name, Class<T> type, @Nullable String desc) {
+    /** {@inheritDoc} */
+    @Override public <T> ObjectMetricImpl<T> objectMetric(String name, Class<T> type, @Nullable String desc) {
         return addMetric(name, new ObjectMetricImpl<>(metricName(regName, name), desc, type));
     }
 
@@ -134,13 +119,8 @@ public class MetricRegistryImpl implements MetricRegistry {
         return metrics.values().iterator();
     }
 
-    /**
-     * Register existing metrics in this group with the specified name. Note that the name of the metric must
-     * start with the name of the current registry it is registered into.
-     *
-     * @param metric Metric.
-     */
-    public void register(Metric metric) {
+    /** {@inheritDoc} */
+    @Override public void register(Metric metric) {
         assert fromFullName(metric.name()).get1().equals(regName);
 
         addMetric(fromFullName(metric.name()).get2(), metric);
@@ -151,8 +131,13 @@ public class MetricRegistryImpl implements MetricRegistry {
         metrics.remove(name);
     }
 
-
-    /** {@inheritDoc} */
+    /**
+     * Registers {@link BooleanMetric} which value will be queried from the specified supplier.
+     *
+     * @param name Name.
+     * @param supplier Supplier.
+     * @param desc Description.
+     */
     @Override public BooleanMetric register(String name, BooleanSupplier supplier, @Nullable String desc) {
         return addMetric(name, new BooleanGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
@@ -168,114 +153,54 @@ public class MetricRegistryImpl implements MetricRegistry {
     }
 
     /** {@inheritDoc} */
-    @Override public LongMetric register(String name, LongSupplier supplier, @Nullable String desc) {
+    @Override public LongGauge register(String name, LongSupplier supplier, @Nullable String desc) {
         return addMetric(name, new LongGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /** {@inheritDoc} */
-    @Override public <T> ObjectMetric register(String name, Supplier<T> supplier, Class<T> type, @Nullable String desc) {
+    @Override public <T> ObjectMetric<T> register(String name, Supplier<T> supplier, Class<T> type, @Nullable String desc) {
         return addMetric(name, new ObjectGauge<>(metricName(regName, name), desc, nonThrowableSupplier(supplier, log), type));
     }
 
-    /**
-     * Creates and register named metric.
-     * Returned instance are thread safe.
-     *
-     * @param name Name.
-     * @param desc Description.
-     * @return {@link DoubleMetricImpl}.
-     */
-    public DoubleMetricImpl doubleMetric(String name, @Nullable String desc) {
+    /** {@inheritDoc} */
+    @Override public DoubleMetricImpl doubleMetric(String name, @Nullable String desc) {
         return addMetric(name, new DoubleMetricImpl(metricName(regName, name), desc));
     }
 
-    /**
-     * Creates and register named metric.
-     * Returned instance are thread safe.
-     *
-     * @param name Name.
-     * @param desc Description.
-     * @return {@link IntMetricImpl}.
-     */
-    public IntMetricImpl intMetric(String name, @Nullable String desc) {
+    /** {@inheritDoc} */
+    @Override public IntMetricImpl intMetric(String name, @Nullable String desc) {
         return addMetric(name, new IntMetricImpl(metricName(regName, name), desc));
     }
 
-    /**
-     * Creates and register named metric.
-     * Returned instance are thread safe.
-     *
-     * @param name Name.
-     * @param desc Description.
-     * @return {@link AtomicLongMetric}.
-     */
-    public AtomicLongMetric longMetric(String name, @Nullable String desc) {
+    /** {@inheritDoc} */
+    @Override public AtomicLongMetric longMetric(String name, @Nullable String desc) {
         return addMetric(name, new AtomicLongMetric(metricName(regName, name), desc));
     }
 
-    /**
-     * Creates and register named metric.
-     * Returned instance are thread safe.
-     *
-     * @param name Name.
-     * @param desc Description.
-     * @return {@link LongAdderMetric}.
-     */
-    public LongAdderMetric longAdderMetric(String name, @Nullable String desc) {
+    /** {@inheritDoc} */
+    @Override public LongAdderMetric longAdderMetric(String name, @Nullable String desc) {
         return addMetric(name, new LongAdderMetric(metricName(regName, name), desc));
     }
 
-    /**
-     * Creates and register named metric.
-     * Returned instance are thread safe.
-     *
-     * @param name Name.
-     * @param delegate Delegate to which all updates from new metric will be delegated to.
-     * @param desc Description.
-     * @return {@link LongAdderWithDelegateMetric}.
-     */
-    public LongAdderWithDelegateMetric longAdderMetric(
+    /** {@inheritDoc} */
+    @Override public LongAdderWithDelegateMetric longAdderMetric(
         String name, LongAdderWithDelegateMetric.Delegate delegate, @Nullable String desc
     ) {
         return addMetric(name, new LongAdderWithDelegateMetric(metricName(regName, name), delegate, desc));
     }
 
-    /**
-     * Creates and register hit rate metric.
-     *
-     * It will accumulates approximate hit rate statistics.
-     * Calculates number of hits in last rateTimeInterval milliseconds.
-     *
-     * @param rateTimeInterval Rate time interval.
-     * @param size Array size for underlying calculations.
-     * @return {@link HitRateMetric}
-     * @see HitRateMetric
-     */
-    public HitRateMetric hitRateMetric(String name, @Nullable String desc, long rateTimeInterval, int size) {
+    /** {@inheritDoc} */
+    @Override public HitRateMetric hitRateMetric(String name, @Nullable String desc, long rateTimeInterval, int size) {
         return addMetric(name, new HitRateMetric(metricName(regName, name), desc, rateTimeInterval, size));
     }
 
-    /**
-     * Creates and register named gauge.
-     * Returned instance are thread safe.
-     *
-     * @param name Name.
-     * @param desc Description.
-     * @return {@link BooleanMetricImpl}
-     */
-    public BooleanMetricImpl booleanMetric(String name, @Nullable String desc) {
+    /** {@inheritDoc} */
+    @Override public BooleanMetricImpl booleanMetric(String name, @Nullable String desc) {
         return addMetric(name, new BooleanMetricImpl(metricName(regName, name), desc));
     }
 
-    /**
-     * Creates and registre named histogram gauge.
-     *
-     * @param name Name
-     * @param bounds Bounds of measurements.
-     * @param desc Description.
-     * @return {@link HistogramMetricImpl}
-     */
-    public HistogramMetricImpl histogram(String name, long[] bounds, @Nullable String desc) {
+    /** {@inheritDoc} */
+    @Override public HistogramMetricImpl histogram(String name, long[] bounds, @Nullable String desc) {
         return addMetric(name, new HistogramMetricImpl(metricName(regName, name), desc, bounds));
     }
 
@@ -285,9 +210,7 @@ public class MetricRegistryImpl implements MetricRegistry {
      * @param name Name.
      * @param metric Metric
      * @param <T> Type of metric.
-     * @return {@code metric} if there were no other metric with the same name. Previous metric if can be cast to
-     * {@code metric}.
-     * @throws IgniteException if a metric of incompatible type is already registered.
+     * @return Registered metric.
      */
     private <T extends Metric> T addMetric(String name, T metric) throws IgniteException {
         if (metric == null)

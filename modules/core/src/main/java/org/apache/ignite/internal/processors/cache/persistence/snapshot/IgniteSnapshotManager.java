@@ -158,7 +158,7 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridBusyLock;
@@ -581,7 +581,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         handlers.initialize(ctx, ctx.pools().getSnapshotExecutorService());
 
-        MetricRegistryImpl mreg = cctx.kernalContext().metric().registry(SNAPSHOT_METRICS);
+        MetricRegistry mreg = cctx.kernalContext().metric().registry(SNAPSHOT_METRICS);
 
         mreg.register("LastSnapshotStartTime", () -> lastSeenSnpFut.startTime,
             "The system time of the last cluster snapshot request start time on this node.");
@@ -612,7 +612,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return task == null ? -1 : task.processedSize();
         }, "Processed size of current cluster snapshot in bytes on this node.");
 
-        MetricRegistryImpl incSnpMReg = cctx.kernalContext().metric().registry(INCREMENTAL_SNAPSHOT_METRICS);
+        MetricRegistry incSnpMReg = cctx.kernalContext().metric().registry(INCREMENTAL_SNAPSHOT_METRICS);
 
         incSnpMReg.register("snapshotName",
             () -> Optional.ofNullable(lastSeenIncSnpFut).map(f -> f.name).orElse(""),

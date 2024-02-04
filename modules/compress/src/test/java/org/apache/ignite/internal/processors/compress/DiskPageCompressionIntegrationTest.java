@@ -42,7 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecora
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.LongMetric;
 
@@ -124,7 +124,7 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
 
         Thread.sleep(100); // Wait for metrics update.
 
-        MetricRegistryImpl pMetrics = ignite.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
+        MetricRegistry pMetrics = ignite.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
 
         long storeSize = pMetrics.<LongMetric>findMetric("StorageSize").value();
         long sparseStoreSize = pMetrics.<LongMetric>findMetric("SparseStorageSize").value();
@@ -145,7 +145,7 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
 
         assertEquals(cacheId, groupId);
 
-        MetricRegistryImpl mreg = ignite.context().metric().registry(
+        MetricRegistry mreg = ignite.context().metric().registry(
             metricName(CACHE_GROUP_METRICS_PREFIX, cctx.group().cacheOrGroupName()));
 
         storeSize = mreg.<LongMetric>findMetric("StorageSize").value();
@@ -205,7 +205,7 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
 
         IgniteInternalCache<Integer, TestVal> cache = ignite.cachex(cacheName);
 
-        MetricRegistryImpl mreg = ignite.context().metric().registry(
+        MetricRegistry mreg = ignite.context().metric().registry(
             metricName(CACHE_GROUP_METRICS_PREFIX, cacheName));
 
         GridCacheDatabaseSharedManager dbMgr = ((GridCacheDatabaseSharedManager)ignite.context()

@@ -36,7 +36,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -162,7 +162,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        MetricRegistryImpl metrics = cacheGroupMetrics(0, GROUP_NAME);
+        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME);
 
         LongMetric idxBuildCntPartitionsLeft = metrics.findMetric("IndexBuildCountPartitionsLeft");
 
@@ -202,7 +202,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
             cache1.put(id, o.build());
         }
 
-        MetricRegistryImpl metrics = cacheGroupMetrics(0, GROUP_NAME);
+        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME);
 
         GridTestUtils.runAsync(() -> {
             String createIdxSql = "CREATE INDEX " + INDEX_NAME + " ON " + TABLE + "(" + COLUMN3_NAME + ")";
@@ -275,7 +275,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         startGrid(0);
 
-        MetricRegistryImpl metrics = cacheGroupMetrics(0, GROUP_NAME);
+        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME);
 
         LongMetric idxBuildCntPartitionsLeft = metrics.findMetric("IndexBuildCountPartitionsLeft");
 
@@ -327,7 +327,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         stopGrid(1);
 
-        MetricRegistryImpl metrics = cacheGroupMetrics(0, GROUP_NAME);
+        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME);
 
         GridTestUtils.runAsync(() -> {
             String createIdxSql = "CREATE INDEX " + INDEX_NAME + " ON " + TABLE + "(" + COLUMN3_NAME + ")";

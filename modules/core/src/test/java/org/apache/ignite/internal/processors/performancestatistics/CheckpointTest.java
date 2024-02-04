@@ -29,7 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.db.SlowCheckpointMetadataFileIOFactory;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -95,7 +95,7 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
         srv.cluster().state(ClusterState.ACTIVE);
 
-        MetricRegistryImpl mreg = srv.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
+        MetricRegistry mreg = srv.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
 
         LongMetric lastStart = mreg.findMetric("LastCheckpointStart");
 
@@ -188,7 +188,7 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
         long start = U.currentTimeMillis();
 
-        MetricRegistryImpl mreg = srv.context().metric().registry(
+        MetricRegistry mreg = srv.context().metric().registry(
             metricName(DATAREGION_METRICS_PREFIX, DFLT_DATA_REG_DEFAULT_NAME));
 
         LongAdderMetric totalThrottlingTime = mreg.findMetric("TotalThrottlingTime");

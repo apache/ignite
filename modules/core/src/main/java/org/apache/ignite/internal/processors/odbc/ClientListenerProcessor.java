@@ -43,7 +43,7 @@ import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionAtt
 import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedThinClientConfiguration;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -167,7 +167,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 int selectorCnt = cliConnCfg.getSelectorCount();
 
-                MetricRegistryImpl mreg = ctx.metric().registry(CLIENT_CONNECTOR_METRICS);
+                MetricRegistry mreg = ctx.metric().registry(CLIENT_CONNECTOR_METRICS);
 
                 metrics = new ClientListenerMetrics(mreg);
 
@@ -278,7 +278,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     }
 
     /** @param mreg Metric registry. */
-    private void registerClientMetrics(MetricRegistryImpl mreg) {
+    private void registerClientMetrics(MetricRegistry mreg) {
         for (int i = 0; i < CLI_TYPES.length; i++) {
             byte cliType = CLI_TYPES[i];
 

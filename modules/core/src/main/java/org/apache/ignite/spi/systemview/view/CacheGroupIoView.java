@@ -19,7 +19,7 @@ package org.apache.ignite.spi.systemview.view;
 
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 
 import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.LOGICAL_READS;
@@ -33,13 +33,13 @@ public class CacheGroupIoView {
     private final CacheGroupContext grpCtx;
 
     /** Metric registry for current cache group IO statistics. */
-    private final MetricRegistryImpl mreg;
+    private final MetricRegistry mreg;
 
     /**
      * @param grpCtx Cache group context.
      * @param mreg Metric registry for current cache group IO statistics.
      */
-    public CacheGroupIoView(CacheGroupContext grpCtx, MetricRegistryImpl mreg) {
+    public CacheGroupIoView(CacheGroupContext grpCtx, MetricRegistry mreg) {
         this.grpCtx = grpCtx;
         this.mreg = mreg;
     }

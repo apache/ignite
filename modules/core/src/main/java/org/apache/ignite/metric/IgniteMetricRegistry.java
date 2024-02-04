@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * @see ReadOnlyMetricRegistry
  */
 @IgniteExperimental
-public interface MetricRegistry extends ReadOnlyMetricRegistry {
+public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
     /**
      * Registers an int metric which value will be queried from the specified supplier.
      *
@@ -98,6 +98,6 @@ public interface MetricRegistry extends ReadOnlyMetricRegistry {
      */
     void remove(String name);
 
-    /** Resets all metrics of this metric registry. */
+    /** Clears all metric of the registry. */
     void reset();
 }

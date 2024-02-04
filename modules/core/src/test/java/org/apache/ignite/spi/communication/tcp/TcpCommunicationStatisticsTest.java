@@ -28,7 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.lang.IgniteCallable;
@@ -189,8 +189,8 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
                 assertEquals(1, msgsSentByType0.get(GridTestMessage.class.getName()).longValue());
                 assertEquals(1, msgsReceivedByType1.get(GridTestMessage.class.getName()).longValue());
 
-                MetricRegistryImpl mreg0 = grid(0).context().metric().registry(node1regName);
-                MetricRegistryImpl mreg1 = grid(1).context().metric().registry(node0regName);
+                MetricRegistry mreg0 = grid(0).context().metric().registry(node1regName);
+                MetricRegistry mreg1 = grid(1).context().metric().registry(node0regName);
 
                 LongAdderMetric sentMetric = mreg0.findMetric(SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME);
                 assertNotNull(sentMetric);

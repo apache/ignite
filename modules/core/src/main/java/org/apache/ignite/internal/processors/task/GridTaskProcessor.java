@@ -68,7 +68,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.job.ComputeJobStatusEnum;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.task.monitor.ComputeGridMonitor;
 import org.apache.ignite.internal.processors.task.monitor.ComputeTaskStatus;
@@ -178,7 +178,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         discoLsnr = new TaskDiscoveryListener();
 
-        MetricRegistryImpl sysreg = ctx.metric().registry(SYS_METRICS);
+        MetricRegistry sysreg = ctx.metric().registry(SYS_METRICS);
 
         execTasks = sysreg.longAdderMetric(TOTAL_EXEC_TASKS, "Total executed tasks.");
 
