@@ -96,9 +96,9 @@ public interface MetricRegistry extends IgniteMetric {
      * Creates and register named metric.
      * Returned instance are thread safe.
      *
-     * @param name     Name.
+     * @param name Name.
      * @param delegate Delegate to which all updates from new metric will be delegated to.
-     * @param desc     Description.
+     * @param desc Description.
      * @return {@link LongAdderWithDelegateMetric}.
      */
     LongAdderWithDelegateMetric longAdderMetric(String name, LongAdderWithDelegateMetric.Delegate delegate, @Nullable String desc);
@@ -110,7 +110,7 @@ public interface MetricRegistry extends IgniteMetric {
      * Calculates number of hits in last rateTimeInterval milliseconds.
      *
      * @param rateTimeInterval Rate time interval.
-     * @param size             Array size for underlying calculations.
+     * @param size Array size for underlying calculations.
      * @return {@link HitRateMetric}
      * @see HitRateMetric
      */
@@ -129,9 +129,9 @@ public interface MetricRegistry extends IgniteMetric {
     /**
      * Creates and registre named histogram gauge.
      *
-     * @param name   Name
+     * @param name Name
      * @param bounds Bounds of measurements.
-     * @param desc   Description.
+     * @param desc Description.
      * @return {@link HistogramMetricImpl}
      */
     HistogramMetricImpl histogram(String name, long[] bounds, @Nullable String desc);
