@@ -67,14 +67,10 @@
 
         <!-- Dependency versions -->
         <activemq.version>5.12.0</activemq.version>
-        <aopalliance.bundle.version>1.0_6</aopalliance.bundle.version>
         <asm.version>4.2</asm.version>
         <aspectj.bundle.version>1.8.13_1</aspectj.bundle.version>
         <aspectj.version>1.8.13</aspectj.version>
         <netty.version>4.1.101.Final</netty.version>
-        <bouncycastle.version>1.69</bouncycastle.version>
-        <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
-        <commons.beanutils.version>1.9.4</commons.beanutils.version>
         <commons.codec.version>1.16.0</commons.codec.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.lang.version>2.6</commons.lang.version>
@@ -83,8 +79,6 @@
         <cron4j.version>2.2.5</cron4j.version>
         <curator.version>5.2.0</curator.version>
         <easymock.version>3.4</easymock.version>
-        <ezmorph.bundle.version>1.0.6_1</ezmorph.bundle.version>
-        <ezmorph.version>1.0.6</ezmorph.version>
         <guava.retrying.version>2.0.0</guava.retrying.version>
         <guava.version>32.1.2-jre</guava.version>
         <guava14.version>14.0.1</guava14.version>
@@ -94,7 +88,6 @@
         <hadoop.version>2.9.1</hadoop.version>
         <hamcrest.version>2.2</hamcrest.version>
         <httpclient.version>4.5.13</httpclient.version>
-        <httpcore.version>4.4.14</httpcore.version>
         <jackson.version>2.14.0</jackson.version>
         <jaxb.api.version>2.1</jaxb.api.version>
         <jaxb.impl.version>2.1.14</jaxb.impl.version>
@@ -128,7 +121,6 @@
         <checkstyle.puppycrawl.version>8.45</checkstyle.puppycrawl.version>
         <mockito.version>3.12.4</mockito.version>
         <mysql.connector.version>8.0.30</mysql.connector.version>
-        <netlibjava.version>1.1.2</netlibjava.version>
         <oro.bundle.version>2.0.8_6</oro.bundle.version>
         <paho.version>1.0.2</paho.version>
         <postgres.connector.version>42.6.0</postgres.connector.version>
