@@ -19,8 +19,12 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 
 /**
  * File I/O factory which provides {@link BufferedFileIO} implementation of FileIO.
@@ -34,7 +38,31 @@ public class BufferedFileIOFactory implements FileIOFactory {
 
     /** */
     public BufferedFileIOFactory(FileIOFactory factory) {
-        this.factory = factory;
+        this.factory = RandomAccessFileIOFactory.class.equals(factory.getClass())
+            ? new RandomAccessFileIOFactory() {
+                @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+                    return new RandomAccessFileIO(file, modes) {
+                        private long position;
+
+                        @Override public long position() {
+                            return position;
+                        }
+
+                        @Override public void position(long newPosition) {
+                            this.position = newPosition;
+                        }
+
+                        @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
+                            int len = super.writeFully(srcBuf);
+
+                            position += len;
+
+                            return len;
+                        }
+                    };
+                }
+            }
+            : factory;
     }
 
     /** {@inheritDoc} */
