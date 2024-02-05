@@ -1196,16 +1196,16 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             if (worker.endTime() < Long.MAX_VALUE)
                 ctx.timeout().addTimeoutObject(worker);
 
-            GridTaskSessionImpl session = worker.getSession();
+            GridTaskSessionImpl ses = worker.getSession();
 
-            notifyTaskStatusMonitors(ComputeTaskStatus.snapshot(session), false);
+            notifyTaskStatusMonitors(ComputeTaskStatus.snapshot(ses), false);
         }
 
         /** {@inheritDoc} */
         @Override public void onJobsMapped(GridTaskWorker<?, ?> worker) {
-            GridTaskSessionImpl session = worker.getSession();
+            GridTaskSessionImpl ses = worker.getSession();
 
-            notifyTaskStatusMonitors(ComputeTaskStatus.snapshot(session), false);
+            notifyTaskStatusMonitors(ComputeTaskStatus.snapshot(ses), false);
         }
 
         /** {@inheritDoc} */

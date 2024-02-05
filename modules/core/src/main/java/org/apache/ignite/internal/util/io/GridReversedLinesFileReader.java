@@ -351,14 +351,14 @@ public class GridReversedLinesFileReader implements Closeable {
          * @return length of newline sequence or 0 if none found
          */
         private int getNewLineMatchByteCount(byte[] data, int i) {
-            for (byte[] newLineSequence : newLineSequences) {
+            for (byte[] newLineSeq : newLineSequences) {
                 boolean match = true;
-                for (int j = newLineSequence.length - 1; j >= 0; j--) {
-                    int k = i + j - (newLineSequence.length - 1);
-                    match &= k >= 0 && data[k] == newLineSequence[j];
+                for (int j = newLineSeq.length - 1; j >= 0; j--) {
+                    int k = i + j - (newLineSeq.length - 1);
+                    match &= k >= 0 && data[k] == newLineSeq[j];
                 }
                 if (match) {
-                    return newLineSequence.length;
+                    return newLineSeq.length;
                 }
             }
             return 0;

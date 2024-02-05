@@ -104,13 +104,13 @@ public class MavenUtils {
 
         String groupId = names[0];
         String artifactId = names[1];
-        String version = names[2];
+        String ver = names[2];
         String packaging = names.length > 3 ? names[3] : null;
         String classifier = names.length > 4 ? names[4] : null;
 
         String jarFileName = String.format("%s-%s%s.%s",
             artifactId,
-            version,
+            ver,
             (classifier == null ? "" : "-" + classifier),
             (packaging == null ? "jar" : packaging)
         );
@@ -118,7 +118,7 @@ public class MavenUtils {
         String pathToArtifact = getMavenLocalRepositoryPath() + File.separator +
             groupId.replace(".", File.separator) + File.separator +
             artifactId.replace(".", File.separator) + File.separator +
-            version + File.separator + jarFileName;
+            ver + File.separator + jarFileName;
 
         if (Files.notExists(Paths.get(pathToArtifact)))
             downloadArtifact(artifact);

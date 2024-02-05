@@ -142,11 +142,11 @@ public class ColocationGroup implements MarshalableMessage {
      * being calculated fragment.
      */
     public ColocationGroup colocate(ColocationGroup other) throws ColocationMappingException {
-        long[] sourceIds;
+        long[] srcIds;
         if (this.sourceIds == null || other.sourceIds == null)
-            sourceIds = U.firstNotNull(this.sourceIds, other.sourceIds);
+            srcIds = U.firstNotNull(this.sourceIds, other.sourceIds);
         else
-            sourceIds = LongStream.concat(Arrays.stream(this.sourceIds), Arrays.stream(other.sourceIds)).distinct().toArray();
+            srcIds = LongStream.concat(Arrays.stream(this.sourceIds), Arrays.stream(other.sourceIds)).distinct().toArray();
 
         List<UUID> nodeIds;
         if (this.nodeIds == null || other.nodeIds == null)
@@ -198,7 +198,7 @@ public class ColocationGroup implements MarshalableMessage {
             }
         }
 
-        return new ColocationGroup(sourceIds, nodeIds, assignments);
+        return new ColocationGroup(srcIds, nodeIds, assignments);
     }
 
     /** */

@@ -73,7 +73,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheA
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -98,6 +97,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteClosure;
@@ -185,7 +185,6 @@ public class GridCacheUtils {
     public static final String[] RESERVED_NAMES = new String[] {
         UTILITY_CACHE_NAME,
         MetaStorage.METASTORAGE_CACHE_NAME,
-        TxLog.TX_LOG_CACHE_NAME,
     };
 
     /** */
@@ -614,7 +613,7 @@ public class GridCacheUtils {
 
             /** {@inheritDoc} */
             @Override public String toString() {
-                return "Map reducer: " + ret;
+                return S.toString("Map Reducer", "reducedEntries", ret);
             }
         };
     }
@@ -647,7 +646,7 @@ public class GridCacheUtils {
 
             /** {@inheritDoc} */
             @Override public synchronized String toString() {
-                return "Collection reducer: " + ret;
+                return S.toString("Collection Reducer", "reducedElements", ret);
             }
         };
     }

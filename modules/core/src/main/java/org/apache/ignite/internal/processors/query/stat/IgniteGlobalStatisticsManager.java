@@ -504,10 +504,10 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
         if (cfg == null)
             return false;
 
-        for (Map.Entry<String, Long> version : versions.entrySet()) {
-            StatisticsColumnConfiguration colCfg = cfg.columns().get(version.getKey());
+        for (Map.Entry<String, Long> ver : versions.entrySet()) {
+            StatisticsColumnConfiguration colCfg = cfg.columns().get(ver.getKey());
 
-            if (colCfg == null || colCfg.version() < version.getValue())
+            if (colCfg == null || colCfg.version() < ver.getValue())
                 return false;
         }
 

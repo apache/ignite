@@ -15,30 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc.txlog;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.OpenOption;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 
 /**
- *
+ * File I/O factory which provides {@link BufferedFileIO} implementation of FileIO.
  */
-public class TxRow extends TxKey {
+public class BufferedFileIOFactory implements FileIOFactory {
     /** */
-    private byte state;
+    private static final long serialVersionUID = 0L;
 
-    /**
-     * @param major Major version.
-     * @param minor Minor version.
-     * @param state Transaction state.
-     */
-    TxRow(long major, long minor, byte state) {
-        super(major, minor);
+    /** */
+    protected final FileIOFactory factory;
 
-        this.state = state;
+    /** */
+    public BufferedFileIOFactory(FileIOFactory factory) {
+        this.factory = factory;
     }
 
-    /**
-     * @return Transaction state.
-     */
-    public byte state() {
-        return state;
+    /** {@inheritDoc} */
+    @Override public BufferedFileIO create(File file, OpenOption... modes) throws IOException {
+        return new BufferedFileIO(factory.create(file, modes));
     }
 }
