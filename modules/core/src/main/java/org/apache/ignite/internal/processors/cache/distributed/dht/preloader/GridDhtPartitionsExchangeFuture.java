@@ -1193,9 +1193,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return {@code true} if local node is in baseline and {@code false} otherwise.
      */
     private boolean isLocalNodeInBaseline() {
-        BaselineTopology topology = cctx.discovery().discoCache().state().baselineTopology();
+        BaselineTopology top = cctx.discovery().discoCache().state().baselineTopology();
 
-        return topology != null && topology.consistentIds().contains(cctx.localNode().consistentId());
+        return top != null && top.consistentIds().contains(cctx.localNode().consistentId());
     }
 
     /**
