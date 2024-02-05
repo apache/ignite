@@ -37,7 +37,10 @@ public class BufferedFileIO extends FileIODecorator {
     private ByteBuffer buf;
 
     /** */
-    public BufferedFileIO(FileIO fileIO) {
+    private long position;
+
+    /** */
+    public BufferedFileIO(FileIO fileIO) throws IOException {
         super(fileIO);
 
         A.ensure(fileIO != null, "fileIO must not be null");
@@ -48,6 +51,10 @@ public class BufferedFileIO extends FileIODecorator {
             blockSize = DEFAULT_BLOCK_SIZE;
 
         buf = ByteBuffer.allocateDirect(blockSize);
+
+        position = fileIO.position();
+
+        assert position == 0;
     }
 
     /** {@inheritDoc} */
@@ -107,8 +114,12 @@ public class BufferedFileIO extends FileIODecorator {
     private void flush() throws IOException {
         buf.flip();
 
-        if (delegate.writeFully(buf) < 0)
+        int len = delegate.writeFully(buf, position);
+
+        if (len < 0)
             throw new IOException("Couldn't write data");
+
+        position = position + len;
 
         buf.clear();
     }
