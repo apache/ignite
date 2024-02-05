@@ -102,7 +102,7 @@ public class MavenUtils {
 
         assert names.length >= 3;
 
-        String groupId = names[0];
+        String grpId = names[0];
         String artifactId = names[1];
         String ver = names[2];
         String packaging = names.length > 3 ? names[3] : null;
@@ -116,7 +116,7 @@ public class MavenUtils {
         );
 
         String pathToArtifact = getMavenLocalRepositoryPath() + File.separator +
-            groupId.replace(".", File.separator) + File.separator +
+            grpId.replace(".", File.separator) + File.separator +
             artifactId.replace(".", File.separator) + File.separator +
             ver + File.separator + jarFileName;
 

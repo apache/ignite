@@ -132,17 +132,17 @@ public class CheckpointHistory {
 
                 UUID checkpointId = entry.checkpointId();
 
-                Map<Integer, GroupState> groupStateMap = snapshot.groupState(checkpointId);
+                Map<Integer, GroupState> grpStateMap = snapshot.groupState(checkpointId);
 
                 // Ignore checkpoint that was present at the time of the snapshot and whose group
                 // states map was not persisted (that means this checkpoint wasn't a part of earliestCp map)
-                if (snapshot.checkpointWasPresent(checkpointId) && groupStateMap == null)
+                if (snapshot.checkpointWasPresent(checkpointId) && grpStateMap == null)
                     continue;
 
-                if (groupStateMap != null)
-                    entry.fillStore(groupStateMap);
+                if (grpStateMap != null)
+                    entry.fillStore(grpStateMap);
 
-                updateEarliestCpMap(entry, groupStateMap);
+                updateEarliestCpMap(entry, grpStateMap);
             }
             catch (IgniteCheckedException e) {
                 U.warn(log, "Failed to process checkpoint, happened at " + U.format(timestamp) + '.', e);
@@ -786,17 +786,17 @@ public class CheckpointHistory {
                 Map<Integer, GroupState> map = cp.groupStates();
 
                 if (map != null) {
-                    Map<Integer, GroupStateSnapshot> groupStates = new HashMap<>();
+                    Map<Integer, GroupStateSnapshot> grpStates = new HashMap<>();
 
                     map.forEach((k, v) ->
-                        groupStates.put(k, new GroupStateSnapshot(
+                        grpStates.put(k, new GroupStateSnapshot(
                             v.partitionIds(),
                             v.partitionCounters(),
                             v.size()
                         ))
                     );
 
-                    data.put(checkpointId, groupStates);
+                    data.put(checkpointId, grpStates);
                 }
             }
         }

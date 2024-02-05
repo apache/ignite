@@ -929,9 +929,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             "Both current and merge full message must have exchangeId == null"
                 + other.exchangeId() + "," + exchangeId();
 
-        for (Map.Entry<Integer, GridDhtPartitionFullMap> groupAndMap : other.partitions().entrySet()) {
-            int grpId = groupAndMap.getKey();
-            GridDhtPartitionFullMap updMap = groupAndMap.getValue();
+        for (Map.Entry<Integer, GridDhtPartitionFullMap> grpAndMap : other.partitions().entrySet()) {
+            int grpId = grpAndMap.getKey();
+            GridDhtPartitionFullMap updMap = grpAndMap.getValue();
 
             GridDhtPartitionFullMap currMap = partitions().get(grpId);
 

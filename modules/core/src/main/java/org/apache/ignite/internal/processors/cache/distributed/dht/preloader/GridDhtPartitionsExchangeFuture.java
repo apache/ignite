@@ -3871,13 +3871,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         if (!F.isEmpty(caches))
                             resetLostPartitions(caches);
 
-                        Set<Integer> cacheGroupsToResetOwners = concat(exchActions.cacheGroupsToStart().stream()
+                        Set<Integer> cacheGrpsToResetOwners = concat(exchActions.cacheGroupsToStart().stream()
                                 .map(grp -> grp.descriptor().groupId()),
                             exchActions.cachesToResetLostPartitions().stream()
                                 .map(CU::cacheId))
                             .collect(Collectors.toSet());
 
-                        assignPartitionsStates(cacheGroupsToResetOwners);
+                        assignPartitionsStates(cacheGrpsToResetOwners);
 
                         if (exchActions.finalizePartitionCounters())
                             finalizePartitionCounters();
@@ -4673,11 +4673,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 exchCtx.events().processEvents(this);
 
                 if (localJoinExchange()) {
-                    Set<Integer> noAffGroups = cctx.affinity().onLocalJoin(this, msg.joinedNodeAffinity(), resTopVer);
+                    Set<Integer> noAffGrps = cctx.affinity().onLocalJoin(this, msg.joinedNodeAffinity(), resTopVer);
 
                     // Prevent cache usage by a user.
-                    if (!noAffGroups.isEmpty()) {
-                        List<GridCacheAdapter> closedCaches = cctx.cache().blockGateways(noAffGroups);
+                    if (!noAffGrps.isEmpty()) {
+                        List<GridCacheAdapter> closedCaches = cctx.cache().blockGateways(noAffGrps);
 
                         closedCaches.forEach(cache -> log.warning("Affinity for cache " + cache.context().name()
                             + " has not received from coordinator during local join. "
