@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,5 +50,10 @@ public interface ComputeCommand<A extends IgniteDataTransferObject, R> extends C
      */
     public default @Nullable Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, A arg) {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override @Nullable default Class<? extends ComputeTask<?, ?>>[] taskClasses() {
+        return F.asArray(taskClass());
     }
 }

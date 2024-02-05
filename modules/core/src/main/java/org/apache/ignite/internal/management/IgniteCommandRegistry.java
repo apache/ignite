@@ -23,10 +23,7 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
-import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
-import org.apache.ignite.internal.management.api.RequireTask;
 import org.apache.ignite.internal.management.baseline.BaselineCommand;
 import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.management.cdc.CdcCommand;
@@ -45,7 +42,6 @@ import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand
 import org.apache.ignite.internal.management.tx.TxCommand;
 import org.apache.ignite.internal.management.wal.WalCommand;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Ignite command registry containing all commands known by Ignite node.
@@ -86,12 +82,18 @@ public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
             new CdcCommand()
         );
 
-        registerTaskClass(this);
+        registerTaskClasses(this);
     }
 
-    /** {@inheritDoc} */
-    @Override public void register(Command<?, ?> cmd) {
-        super.register(cmd);
+    /**
+     * Register new command.
+     *
+     * @param cmd Command to register.
+     */
+    public void register(Command<?, ?> cmd) {
+        add(cmd);
+
+        registerTaskClasses(cmd);
     }
 
     /** @return {@code True} if the task related to a command. */
@@ -100,17 +102,10 @@ public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
     }
 
     /** */
-    private void registerTaskClass(Command<?, ?> cmd) {
+    private void registerTaskClasses(Command<?, ?> cmd) {
         if (cmd instanceof CommandsRegistry)
-            ((CommandsRegistry<?, ?>)cmd).commands().forEachRemaining(e -> registerTaskClass(e.getValue()));
+            ((CommandsRegistry<?, ?>)cmd).commands().forEachRemaining(e -> registerTaskClasses(e.getValue()));
 
-        if (cmd instanceof ComputeCommand)
-            taskClasses.add(((ComputeCommand<?, ?>)cmd).taskClass());
-        else if (cmd instanceof LocalCommand) {
-            RequireTask ann = U.getAnnotation(cmd.getClass(), RequireTask.class);
-
-            if (ann != null)
-                taskClasses.addAll(F.asList(ann.value()));
-        }
+        taskClasses.addAll(F.asList(cmd.taskClasses()));
     }
 }

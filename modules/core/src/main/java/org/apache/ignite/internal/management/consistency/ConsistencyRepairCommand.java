@@ -23,12 +23,13 @@ import java.util.Set;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.LocalCommand;
-import org.apache.ignite.internal.management.api.RequireTask;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,7 +38,6 @@ import static org.apache.ignite.internal.management.api.CommandUtils.nodes;
 
 /** */
 @IgniteExperimental
-@RequireTask(ConsistencyRepairTask.class)
 public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairCommandArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
@@ -47,6 +47,11 @@ public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairC
     /** {@inheritDoc} */
     @Override public Class<ConsistencyRepairCommandArg> argClass() {
         return ConsistencyRepairCommandArg.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable Class<? extends ComputeTask<?, ?>>[] taskClasses() {
+        return F.asArray(ConsistencyRepairTask.class);
     }
 
     /** {@inheritDoc} */

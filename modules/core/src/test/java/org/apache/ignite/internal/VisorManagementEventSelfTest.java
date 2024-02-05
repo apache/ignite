@@ -37,7 +37,7 @@ import org.apache.ignite.internal.client.thin.TestTask;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.LocalCommand;
-import org.apache.ignite.internal.management.api.RequireTask;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -86,7 +86,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
     public void testManagementTask() throws Exception {
         ignite.commandsRegistry().register(new TestComputeCommand());
 
-        doTestManagementTask(TestManagementTask.class, false);
+        doTestManagementTask(TestManagementTask.class, true);
     }
 
     /** */
@@ -94,7 +94,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
     public void testManagementTaskLocalCommand() throws Exception {
         ignite.commandsRegistry().register(new TestLocalCommand());
 
-        doTestManagementTask(TestManagementTask.class, false);
+        doTestManagementTask(TestManagementTask.class, true);
     }
 
     /** */
@@ -167,7 +167,6 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @RequireTask(TestManagementTask.class)
     private static class TestLocalCommand implements LocalCommand<IgniteDataTransferObject, Object> {
         /** {@inheritDoc} */
         @Override public String description() {
@@ -177,6 +176,11 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Class<IgniteDataTransferObject> argClass() {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable Class<? extends ComputeTask<?, ?>>[] taskClasses() {
+            return F.asArray(TestManagementTask.class);
         }
 
         /** {@inheritDoc} */
