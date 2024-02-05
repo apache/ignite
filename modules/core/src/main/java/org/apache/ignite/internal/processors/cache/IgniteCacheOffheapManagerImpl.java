@@ -80,21 +80,17 @@ import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingRow;
-import org.apache.ignite.internal.processors.cache.tree.RowLinkIO;
 import org.apache.ignite.internal.processors.cache.tree.SearchRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateDataRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateResult;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.ResultType;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccDataPageClosure;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccMaxSearchRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccMinSearchRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccSnapshotSearchRow;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccTreeClosure;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
-import org.apache.ignite.internal.transactions.IgniteTxUnexpectedStateCheckedException;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -112,7 +108,6 @@ import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -127,11 +122,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.INITIAL_VERSION;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_BIT_OFF;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isVisible;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccVersionIsValid;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.state;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.unexpectedStateException;
-import static org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.EMPTY_CURSOR;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.NOOP;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
@@ -440,155 +432,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean mvccInitialValue(
-        GridCacheMapEntry entry,
-        CacheObject val,
-        GridCacheVersion ver,
-        long expireTime,
-        MvccVersion mvccVer,
-        MvccVersion newMvccVer) throws IgniteCheckedException {
-        return dataStore(entry.localPartition()).mvccInitialValue(
-            entry.context(),
-            entry.key(),
-            val,
-            ver,
-            expireTime,
-            mvccVer,
-            newMvccVer);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean mvccApplyHistoryIfAbsent(GridCacheMapEntry entry, List<GridCacheMvccEntryInfo> hist)
-        throws IgniteCheckedException {
-        return dataStore(entry.localPartition()).mvccApplyHistoryIfAbsent(entry.cctx, entry.key(), hist);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean mvccUpdateRowWithPreloadInfo(
-        GridCacheMapEntry entry,
-        @Nullable CacheObject val,
-        GridCacheVersion ver,
-        long expireTime,
-        MvccVersion mvccVer,
-        MvccVersion newMvccVer,
-        byte mvccTxState,
-        byte newMvccTxState
-    ) throws IgniteCheckedException {
-        assert entry.lockedByCurrentThread();
-
-        return dataStore(entry.localPartition()).mvccUpdateRowWithPreloadInfo(
-            entry.context(),
-            entry.key(),
-            val,
-            ver,
-            expireTime,
-            mvccVer,
-            newMvccVer,
-            mvccTxState,
-            newMvccTxState
-        );
-    }
-
-    /** {@inheritDoc} */
-    @Override public MvccUpdateResult mvccUpdate(
-        GridCacheMapEntry entry,
-        CacheObject val,
-        GridCacheVersion ver,
-        long expireTime,
-        MvccSnapshot mvccSnapshot,
-        boolean primary,
-        boolean needHistory,
-        boolean noCreate,
-        boolean needOldVal,
-        @Nullable CacheEntryPredicate filter,
-        boolean retVal,
-        boolean keepBinary,
-        EntryProcessor entryProc,
-        Object[] invokeArgs) throws IgniteCheckedException {
-        if (entry.detached() || entry.isNear())
-            return null;
-
-        assert entry.lockedByCurrentThread();
-
-        return dataStore(entry.localPartition()).mvccUpdate(entry.context(),
-            entry.key(),
-            val,
-            ver,
-            expireTime,
-            mvccSnapshot,
-            filter,
-            entryProc,
-            invokeArgs,
-            primary,
-            needHistory,
-            noCreate,
-            needOldVal,
-            retVal,
-            keepBinary);
-    }
-
-    /** {@inheritDoc} */
-    @Override public MvccUpdateResult mvccRemove(
-        GridCacheMapEntry entry,
-        MvccSnapshot mvccSnapshot,
-        boolean primary,
-        boolean needHistory,
-        boolean needOldVal,
-        @Nullable CacheEntryPredicate filter,
-        boolean retVal) throws IgniteCheckedException {
-        if (entry.detached() || entry.isNear())
-            return null;
-
-        assert entry.lockedByCurrentThread();
-
-        return dataStore(entry.localPartition()).mvccRemove(entry.context(),
-            entry.key(),
-            mvccSnapshot,
-            filter,
-            primary,
-            needHistory,
-            needOldVal,
-            retVal);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void mvccRemoveAll(GridCacheMapEntry entry) throws IgniteCheckedException {
-        if (entry.detached() || entry.isNear())
-            return;
-
-        dataStore(entry.localPartition()).mvccRemoveAll(entry.context(), entry.key());
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public MvccUpdateResult mvccLock(GridCacheMapEntry entry,
-        MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
-        if (entry.detached() || entry.isNear())
-            return null;
-
-        assert entry.lockedByCurrentThread();
-
-        return dataStore(entry.localPartition()).mvccLock(entry.context(), entry.key(), mvccSnapshot);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void mvccApplyUpdate(
-        GridCacheContext cctx,
-        KeyCacheObject key,
-        CacheObject val,
-        GridCacheVersion ver,
-        long expireTime,
-        GridDhtLocalPartition part,
-        MvccVersion mvccVer) throws IgniteCheckedException {
-
-        dataStore(part).mvccApplyUpdate(cctx,
-            key,
-            val,
-            ver,
-            expireTime,
-            mvccVer);
-    }
-
-    /** {@inheritDoc} */
     @Override public void remove(
         GridCacheContext cctx,
         KeyCacheObject key,
@@ -618,28 +461,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         assert row == null || row.value() != null : row;
 
         return row;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot mvccSnapshot)
-        throws IgniteCheckedException {
-        assert mvccSnapshot != null;
-
-        CacheDataStore dataStore = dataStore(cctx, key);
-
-        CacheDataRow row = dataStore != null ? dataStore.mvccFind(cctx, key, mvccSnapshot) : null;
-
-        assert row == null || row.value() != null : row;
-
-        return row;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCursor<CacheDataRow> mvccAllVersionsCursor(GridCacheContext cctx,
-        KeyCacheObject key, Object x) throws IgniteCheckedException {
-        CacheDataStore dataStore = dataStore(cctx, key);
-
-        return dataStore != null ? dataStore.mvccAllVersionsCursor(cctx, key, x) : EMPTY_CURSOR;
     }
 
     /** {@inheritDoc} */
@@ -2976,57 +2797,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public PartitionMetaStorage<SimpleDataRow> partStorage() {
             return null;
-        }
-
-        /** */
-        private final class MvccFirstVisibleRowTreeClosure implements MvccTreeClosure, MvccDataPageClosure {
-            /** */
-            private final GridCacheContext cctx;
-
-            /** */
-            private final MvccSnapshot snapshot;
-
-            /**
-             *
-             * @param cctx Cache context.
-             * @param snapshot MVCC snapshot.
-             */
-            MvccFirstVisibleRowTreeClosure(GridCacheContext cctx, MvccSnapshot snapshot) {
-                this.cctx = cctx;
-                this.snapshot = snapshot;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean apply(BPlusTree<CacheSearchRow, CacheDataRow> tree, BPlusIO<CacheSearchRow> io,
-                long pageAddr, int idx) throws IgniteCheckedException {
-                RowLinkIO rowIo = (RowLinkIO)io;
-
-                long rowCrdVer = rowIo.getMvccCoordinatorVersion(pageAddr, idx);
-                long rowCntr = rowIo.getMvccCounter(pageAddr, idx);
-                int rowOpCntr = rowIo.getMvccOperationCounter(pageAddr, idx);
-
-                assert mvccVersionIsValid(rowCrdVer, rowCntr, rowOpCntr);
-
-                return isVisible(cctx, snapshot, rowCrdVer, rowCntr, rowOpCntr, rowIo.getLink(pageAddr, idx));
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean applyMvcc(DataPageIO io, long dataPageAddr, int itemId, int pageSize)
-                throws IgniteCheckedException {
-                try {
-                    return isVisible(cctx, snapshot, io, dataPageAddr, itemId, pageSize);
-                }
-                catch (IgniteTxUnexpectedStateCheckedException e) {
-                    // TODO this catch must not be needed if we switch Vacuum to data page scan
-                    // We expect the active tx state can be observed by read tx only in the cases when tx has been aborted
-                    // asynchronously and node hasn't received finish message yet but coordinator has already removed it from
-                    // the active txs map. Rows written by this tx are invisible to anyone and will be removed by the vacuum.
-                    if (log.isDebugEnabled())
-                        log.debug( "Unexpected tx state on index lookup. " + X.getFullStackTrace(e));
-
-                    return false;
-                }
-            }
         }
 
         /**
