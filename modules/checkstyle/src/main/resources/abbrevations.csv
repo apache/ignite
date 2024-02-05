@@ -33,7 +33,7 @@ implementation,impl
 index,idx
 initial,init
 initialize,init
-#iterator,iter
+iterator,iter
 label,lbl
 #local,loc
 logger,log
