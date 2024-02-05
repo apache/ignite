@@ -716,7 +716,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         Map<KeyCacheObject, EntryGetResult> misses = null;
 
-        Set<GridCacheEntryEx> newLocalEntries = null;
+        Set<GridCacheEntryEx> newLocEntries = null;
 
         ctx.shared().database().checkpointReadLock();
 
@@ -791,7 +791,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         }
 
                         if (!skipEntry) {
-                            boolean isNewLocalEntry = this.map.getEntry(ctx, key) == null;
+                            boolean isNewLocEntry = this.map.getEntry(ctx, key) == null;
 
                             entry = entryEx(key);
 
@@ -802,11 +802,11 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                 break;
                             }
 
-                            if (isNewLocalEntry) {
-                                if (newLocalEntries == null)
-                                    newLocalEntries = new HashSet<>();
+                            if (isNewLocEntry) {
+                                if (newLocEntries == null)
+                                    newLocEntries = new HashSet<>();
 
-                                newLocalEntries.add(entry);
+                                newLocEntries.add(entry);
                             }
 
                             if (storeEnabled) {
@@ -1022,8 +1022,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 }
             }
 
-            if (newLocalEntries != null) {
-                for (GridCacheEntryEx entry : newLocalEntries)
+            if (newLocEntries != null) {
+                for (GridCacheEntryEx entry : newLocEntries)
                     removeEntry(entry);
             }
 

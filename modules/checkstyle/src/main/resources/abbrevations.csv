@@ -35,7 +35,7 @@ initial,init
 initialize,init
 iterator,iter
 label,lbl
-#local,loc
+local,loc
 logger,log
 loader,ldr
 manager,mgr

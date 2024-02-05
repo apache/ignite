@@ -259,10 +259,10 @@ public class SqlStatisticsCommandTests extends StatisticsAbstractTest {
     private void testStatistics(String schema, String obj, boolean isNull) throws IgniteInterruptedCheckedException {
         assertTrue("Unable to wait statistics by " + schema + "." + obj + " if null=" + isNull, waitForCondition(() -> {
             for (Ignite node : G.allGrids()) {
-                ObjectStatistics localStat = ((IgniteEx)node).context().query().statsManager()
+                ObjectStatistics locStat = ((IgniteEx)node).context().query().statsManager()
                     .getLocalStatistics(new StatisticsKey(schema, obj));
 
-                if (!(isNull == (localStat == null)))
+                if (!(isNull == (locStat == null)))
                     return false;
             }
             return true;
@@ -278,10 +278,10 @@ public class SqlStatisticsCommandTests extends StatisticsAbstractTest {
     private void testStatisticsVersion(String schema, String obj, Predicate<Long> verChecker) throws IgniteInterruptedCheckedException {
         assertTrue(waitForCondition(() -> {
             for (Ignite node : G.allGrids()) {
-                ObjectStatisticsImpl localStat = (ObjectStatisticsImpl)((IgniteEx)node).context().query().statsManager()
+                ObjectStatisticsImpl locStat = (ObjectStatisticsImpl)((IgniteEx)node).context().query().statsManager()
                     .getLocalStatistics(new StatisticsKey(schema, obj));
 
-                long sumVer = localStat.columnsStatistics().values().stream()
+                long sumVer = locStat.columnsStatistics().values().stream()
                     .mapToLong(ColumnStatistics::version)
                     .sum();
 
@@ -297,13 +297,13 @@ public class SqlStatisticsCommandTests extends StatisticsAbstractTest {
      * Get average version of the column statistics for specified DB object.
      */
     long sumStatisticsVersion(String schema, String obj) {
-        ObjectStatisticsImpl localStat = (ObjectStatisticsImpl)statisticsMgr(0)
+        ObjectStatisticsImpl locStat = (ObjectStatisticsImpl)statisticsMgr(0)
             .getLocalStatistics(new StatisticsKey(schema, obj));
 
-        if (localStat == null)
+        if (locStat == null)
             return -1;
 
-        return localStat.columnsStatistics().values().stream()
+        return locStat.columnsStatistics().values().stream()
             .mapToLong(ColumnStatistics::version)
             .sum();
     }

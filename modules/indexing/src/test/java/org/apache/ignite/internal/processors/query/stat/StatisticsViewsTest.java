@@ -141,13 +141,13 @@ public abstract class StatisticsViewsTest extends StatisticsAbstractTest {
         Timestamp tsB = new Timestamp(smallStat.columnStatistics("B").createdAt());
         Timestamp tsC = new Timestamp(smallStat.columnStatistics("C").createdAt());
 
-        List<List<Object>> localData = Arrays.asList(
+        List<List<Object>> locData = Arrays.asList(
             Arrays.asList(SCHEMA, "TABLE", "SMALL", "A", size, size, 0L, size, 4, 1L, tsA.toString()),
             Arrays.asList(SCHEMA, "TABLE", "SMALL", "B", size, size, 0L, size, 4, 1L, tsB.toString()),
             Arrays.asList(SCHEMA, "TABLE", "SMALL", "C", size, 10L, 0L, size, 4, 1L, tsC.toString())
         );
 
-        checkSqlResult("select * from SYS.STATISTICS_LOCAL_DATA", null, localData::equals);
+        checkSqlResult("select * from SYS.STATISTICS_LOCAL_DATA", null, locData::equals);
     }
 
     /**
@@ -192,13 +192,13 @@ public abstract class StatisticsViewsTest extends StatisticsAbstractTest {
         long bVer = smallStat.columnStatistics("B").version();
         long cVer = smallStat.columnStatistics("C").version();
 
-        List<List<Object>> localData = Arrays.asList(
+        List<List<Object>> locData = Arrays.asList(
             Arrays.asList(SCHEMA, "TABLE", "SMALL", "A", 8L, 5L, 6L, 7L, 8, aVer, tsA.toString()),
             Arrays.asList(SCHEMA, "TABLE", "SMALL", "B", 8L, 6L, 7L, 8L, 4, bVer, tsB.toString()),
             Arrays.asList(SCHEMA, "TABLE", "SMALL", "C", 8L, 10L, 0L, size, 4, cVer, tsC.toString())
         );
 
         checkSqlResult("select * from SYS.STATISTICS_LOCAL_DATA where NAME = 'SMALL'", null,
-            localData::equals);
+            locData::equals);
     }
 }

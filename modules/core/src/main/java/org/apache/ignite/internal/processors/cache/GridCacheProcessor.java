@@ -1966,12 +1966,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             assert cctx.isRecoveryMode();
 
-            QuerySchema localSchema = recovery.querySchemas.get(desc.cacheId());
+            QuerySchema locSchema = recovery.querySchemas.get(desc.cacheId());
 
-            QuerySchemaPatch localSchemaPatch = localSchema.makePatch(desc.schema().entities());
+            QuerySchemaPatch locSchemaPatch = locSchema.makePatch(desc.schema().entities());
 
             // Cache schema is changed after restart, workaround is stop existing cache and start new.
-            if (!localSchemaPatch.isEmpty() || localSchemaPatch.hasConflicts())
+            if (!locSchemaPatch.isEmpty() || locSchemaPatch.hasConflicts())
                 stopCacheSafely(cctx);
             else
                 return existingCache.context();
