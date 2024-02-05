@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.MetricsMxBeanImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
@@ -239,7 +239,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
     @Test
     public void testConfigRemovedOnRegistryRemove() throws Exception {
         checkOnStartAndRestart((g0, g1) -> {
-            MetricRegistry mreg = g0.context().metric().registry(TEST_REG);
+            MetricRegistryImpl mreg = g0.context().metric().registry(TEST_REG);
 
             mreg.hitRateMetric(HITRATE_NAME, "test", 10000, 5);
             mreg.histogram(HISTOGRAM_NAME, new long[] {250, 500}, "test");
@@ -247,7 +247,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
             metricsBean(g0).configureHistogramMetric(metricName(TEST_REG, HISTOGRAM_NAME), BOUNDS);
             metricsBean(g0).configureHitRateMetric(metricName(TEST_REG, HITRATE_NAME), 1000);
         }, (g0, g1) -> {
-            MetricRegistry mreg = g0.context().metric().registry(TEST_REG);
+            MetricRegistryImpl mreg = g0.context().metric().registry(TEST_REG);
 
             HitRateMetric hitRate = mreg.hitRateMetric(HITRATE_NAME, "test", 10000, 5);
             HistogramMetricImpl histogram = mreg.histogram(HISTOGRAM_NAME, new long[] {250, 500}, "test");

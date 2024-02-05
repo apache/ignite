@@ -29,7 +29,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationRequest;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T5;
@@ -121,7 +121,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotTaskRe
                 if (req.incremental())
                     metrics = new T5<>(-1L, -1L, -1L, -1L, -1L);
                 else {
-                    MetricRegistry mreg = ignite.context().metric().registry(SNAPSHOT_METRICS);
+                    MetricRegistryImpl mreg = ignite.context().metric().registry(SNAPSHOT_METRICS);
 
                     metrics = new T5<>(
                         mreg.<LongMetric>findMetric("CurrentSnapshotProcessedSize").value(),
@@ -139,7 +139,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotTaskRe
                 );
             }
 
-            MetricRegistry mreg = ignite.context().metric().registry(SNAPSHOT_RESTORE_METRICS);
+            MetricRegistryImpl mreg = ignite.context().metric().registry(SNAPSHOT_RESTORE_METRICS);
 
             long startTime = mreg.<LongMetric>findMetric("startTime").value();
 

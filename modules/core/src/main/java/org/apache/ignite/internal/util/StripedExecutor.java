@@ -37,7 +37,7 @@ import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.pool.MetricsAwareExecutorService;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -487,7 +487,7 @@ public class StripedExecutor implements ExecutorService, MetricsAwareExecutorSer
     }
 
     /** {@inheritDoc} */
-    @Override public void registerMetrics(MetricRegistry mreg) {
+    @Override public void registerMetrics(MetricRegistryImpl mreg) {
         mreg.register("StripesCount", this::stripesCount, "Stripes count.");
         mreg.register("Shutdown", this::isShutdown, IS_SHUTDOWN_DESC);
         mreg.register("Terminated", this::isTerminated, IS_TERMINATED_DESC);

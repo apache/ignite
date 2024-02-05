@@ -114,7 +114,7 @@ import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvid
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -3228,7 +3228,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute(h, args));
 
-        MetricRegistry metrics = ig.context().metric().registry(SNAPSHOT_METRICS);
+        MetricRegistryImpl metrics = ig.context().metric().registry(SNAPSHOT_METRICS);
 
         LongMetric opEndTimeMetric = metrics.findMetric("LastSnapshotEndTime");
         BooleanSupplier endTimeMetricPredicate = () -> opEndTimeMetric.value() > 0;
@@ -3434,7 +3434,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
 
-        MetricRegistry metrics = ig.context().metric().registry(SNAPSHOT_RESTORE_METRICS);
+        MetricRegistryImpl metrics = ig.context().metric().registry(SNAPSHOT_RESTORE_METRICS);
         Metric operIdMetric = metrics.findMetric("requestId");
         assertNotNull(operIdMetric);
 

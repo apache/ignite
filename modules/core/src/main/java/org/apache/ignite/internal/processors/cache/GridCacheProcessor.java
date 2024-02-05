@@ -142,7 +142,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.compress.CompressionHandler;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheManager;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
@@ -640,7 +640,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             new CacheGroupIoViewWalker(),
             () -> F.view(cacheGrps.values(), grp -> !grp.systemCache()),
             grpCtx -> {
-                MetricRegistry mreg = ctx.metric().registry(metricName(IoStatisticsType.CACHE_GROUP.metricGroupName(),
+                MetricRegistryImpl mreg = ctx.metric().registry(metricName(IoStatisticsType.CACHE_GROUP.metricGroupName(),
                     grpCtx.cacheOrGroupName()));
 
                 return new CacheGroupIoView(grpCtx, mreg);

@@ -38,7 +38,7 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.query.DistributedSqlConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -102,7 +102,7 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
      */
     @Test
     public void testCancelAtPlanningPhase() throws IgniteCheckedException {
-        MetricRegistry mreg = client.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        MetricRegistryImpl mreg = client.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
         mreg.reset();
 
         CalciteQueryProcessor engine = queryProcessor(client);
@@ -147,7 +147,7 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
      */
     @Test
     public void testCancelAtExecutionPhase() throws Exception {
-        MetricRegistry mreg = client.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        MetricRegistryImpl mreg = client.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
         mreg.reset();
 
         CalciteQueryProcessor cliEngine = queryProcessor(client);
@@ -230,7 +230,7 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
      */
     @Test
     public void testCancelByRemoteFragment() throws IgniteCheckedException {
-        MetricRegistry mreg = client.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        MetricRegistryImpl mreg = client.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
         mreg.reset();
 
         CalciteQueryProcessor clientEngine = queryProcessor(client);
@@ -378,7 +378,7 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
     /** */
     @Test
     public void testErrorOnRemoteFragment() throws Exception {
-        MetricRegistry mreg = client.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        MetricRegistryImpl mreg = client.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
         mreg.reset();
 
         CalciteQueryProcessor clientEngine = queryProcessor(client);

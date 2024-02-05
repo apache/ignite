@@ -47,7 +47,7 @@ import org.apache.ignite.internal.managers.communication.GridIoUserMessage;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -620,7 +620,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
         if (metricsRegistryProducer != null)
             return metricsRegistryProducer.apply(name);
 
-        return new MetricRegistry(name, null, null, new NullLogger());
+        return new MetricRegistryImpl(name, null, null, new NullLogger());
     }
 
     /** {@inheritDoc} */

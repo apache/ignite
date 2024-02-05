@@ -24,7 +24,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -61,7 +61,7 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
         // Cluster metrics.
         ClusterMetricsMXBean mxBeanCluster = mxBean(0, ClusterMetricsMXBeanImpl.class);
 
-        MetricRegistry mreg = ignite0.context().metric().registry(CLUSTER_METRICS);
+        MetricRegistryImpl mreg = ignite0.context().metric().registry(CLUSTER_METRICS);
 
         ignite0.cluster().state(ClusterState.ACTIVE);
 

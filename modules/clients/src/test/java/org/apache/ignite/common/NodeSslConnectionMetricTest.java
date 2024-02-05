@@ -35,7 +35,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.HistogramMetric;
@@ -95,26 +95,26 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
     public void testSslDisabled() throws Exception {
         IgniteEx srv = startGrid();
 
-        MetricRegistry discoReg = mreg(srv, DISCO_METRICS);
+        MetricRegistryImpl discoReg = mreg(srv, DISCO_METRICS);
 
         assertFalse(discoReg.<BooleanMetric>findMetric("SslEnabled").value());
         assertEquals(0, discoReg.<IntMetric>findMetric("RejectedSslConnectionsCount").value());
 
-        MetricRegistry commReg = mreg(srv, COMMUNICATION_METRICS_GROUP_NAME);
+        MetricRegistryImpl commReg = mreg(srv, COMMUNICATION_METRICS_GROUP_NAME);
 
         assertFalse(commReg.<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
         assertNull(commReg.<IntMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
         assertNull(commReg.<HistogramMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME));
         assertEquals(0, commReg.<IntMetric>findMetric(SESSIONS_CNT_METRIC_NAME).value());
 
-        MetricRegistry cliConnReg = mreg(srv, CLIENT_CONNECTOR_METRICS);
+        MetricRegistryImpl cliConnReg = mreg(srv, CLIENT_CONNECTOR_METRICS);
 
         assertFalse(cliConnReg.<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
         assertNull(cliConnReg.<IntMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
         assertNull(cliConnReg.<HistogramMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME));
         assertEquals(0, cliConnReg.<IntMetric>findMetric(SESSIONS_CNT_METRIC_NAME).value());
 
-        MetricRegistry restConnReg = mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME);
+        MetricRegistryImpl restConnReg = mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME);
 
         assertNull(restConnReg.<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME));
         assertNull(restConnReg.<IntMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
@@ -134,7 +134,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
     /** Tests SSL metrics produced by JDBC connection. */
     @Test
     public void testJdbc() throws Exception {
-        MetricRegistry reg = mreg(startClusterNode(0), CLIENT_CONNECTOR_METRICS);
+        MetricRegistryImpl reg = mreg(startClusterNode(0), CLIENT_CONNECTOR_METRICS);
 
         assertEquals(0, reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value());
         assertEquals(0, reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value());
@@ -172,7 +172,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
     /** Tests SSL metrics produced by REST TCP client connection. */
     @Test
     public void testRestClientConnector() throws Exception {
-        MetricRegistry reg = mreg(startClusterNode(0), REST_CONNECTOR_METRIC_REGISTRY_NAME);
+        MetricRegistryImpl reg = mreg(startClusterNode(0), REST_CONNECTOR_METRIC_REGISTRY_NAME);
 
         assertEquals(0, reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value());
         assertEquals(0, reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value());
@@ -216,7 +216,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
     /** Tests SSL discovery metrics produced by node connection. */
     @Test
     public void testDiscovery() throws Exception {
-        MetricRegistry reg = mreg(startClusterNode(0), DISCO_METRICS);
+        MetricRegistryImpl reg = mreg(startClusterNode(0), DISCO_METRICS);
 
         startGrid(nodeConfiguration(1, true, "client", "trustone", CIPHER_SUITE, "TLSv1.2"));
 
@@ -243,7 +243,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
     /** Tests SSL communication metrics produced by node connection. */
     @Test
     public void testCommunication() throws Exception {
-        MetricRegistry reg = mreg(startClusterNode(0), COMMUNICATION_METRICS_GROUP_NAME);
+        MetricRegistryImpl reg = mreg(startClusterNode(0), COMMUNICATION_METRICS_GROUP_NAME);
 
         assertEquals(0, reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value());
         assertEquals(0, reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value());
@@ -256,14 +256,14 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
         ) {
             checkSslCommunicationMetrics(reg, 2, 2, 0);
 
-            MetricRegistry cliNodeReg = mreg(cliNode, COMMUNICATION_METRICS_GROUP_NAME);
+            MetricRegistryImpl cliNodeReg = mreg(cliNode, COMMUNICATION_METRICS_GROUP_NAME);
 
             checkSslCommunicationMetrics(cliNodeReg, 0, 1, 0);
 
             assertTrue(cliNodeReg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value() > 0);
             assertTrue(cliNodeReg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value() > 0);
 
-            MetricRegistry srvNodeReg = mreg(srvNode, COMMUNICATION_METRICS_GROUP_NAME);
+            MetricRegistryImpl srvNodeReg = mreg(srvNode, COMMUNICATION_METRICS_GROUP_NAME);
 
             checkSslCommunicationMetrics(srvNodeReg, 0, 1, 0);
 
@@ -280,7 +280,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
     /** Tests SSL metrics produced by thin client connection. */
     @Test
     public void testClientConnector() throws Exception {
-        MetricRegistry reg = mreg(startClusterNode(0), CLIENT_CONNECTOR_METRICS);
+        MetricRegistryImpl reg = mreg(startClusterNode(0), CLIENT_CONNECTOR_METRICS);
 
         assertEquals(0, reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value());
         assertEquals(0, reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value());
@@ -415,13 +415,13 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
     }
 
     /** Obtains the metric registry with the specified name from Ignite instance. */
-    private MetricRegistry mreg(IgniteEx ignite, String name) {
+    private MetricRegistryImpl mreg(IgniteEx ignite, String name) {
         return ignite.context().metric().registry(name);
     }
 
     /** Checks SSL communication metrics. */
     private void checkSslCommunicationMetrics(
-        MetricRegistry mreg,
+        MetricRegistryImpl mreg,
         int handshakeCnt,
         int sesCnt,
         int rejectedSesCnt

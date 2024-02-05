@@ -31,7 +31,7 @@ import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
@@ -76,7 +76,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             .setCollisionSpi(collisioinSpi);
 
         try (IgniteEx g = startGrid(cfg)) {
-            MetricRegistry mreg = g.context().metric().registry(JOBS_METRICS);
+            MetricRegistryImpl mreg = g.context().metric().registry(JOBS_METRICS);
 
             LongMetric started = mreg.findMetric(STARTED);
             LongMetric active = mreg.findMetric(ACTIVE);
@@ -164,7 +164,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
         latch = new CountDownLatch(1);
 
         try (IgniteEx g = startGrid(0)) {
-            MetricRegistry mreg = g.context().metric().registry(JOBS_METRICS);
+            MetricRegistryImpl mreg = g.context().metric().registry(JOBS_METRICS);
 
             LongMetric started = mreg.findMetric(STARTED);
             LongMetric active = mreg.findMetric(ACTIVE);

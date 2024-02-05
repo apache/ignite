@@ -33,7 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
@@ -289,7 +289,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
      * @return Logical reads count.
      */
     public static long logicalReads(GridMetricManager mmgr, IoStatisticsType type, String id) {
-        MetricRegistry mreg = mmgr.registry(metricName(type.metricGroupName(), id));
+        MetricRegistryImpl mreg = mmgr.registry(metricName(type.metricGroupName(), id));
 
         if (type == CACHE_GROUP)
             return mreg.<LongMetric>findMetric(LOGICAL_READS).value();

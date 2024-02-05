@@ -15,18 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.pool;
-
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-
 /**
- * Executor service that supports self-registration of metrics.
+ * <!-- Package description. -->
+ * Contains interfaces for updatable custom and read-only internal metrics.
  */
-public interface MetricsAwareExecutorService {
-    /**
-     * Register thread pool metrics.
-     *
-     * @param mreg Metrics registry.
-     */
-    public void registerMetrics(MetricRegistryImpl mreg);
-}
+
+package org.apache.ignite.metric;

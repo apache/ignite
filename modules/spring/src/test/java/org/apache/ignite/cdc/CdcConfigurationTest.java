@@ -28,7 +28,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.cdc.WalRecordsConsumer;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.resources.SpringResource;
@@ -123,7 +123,7 @@ public class CdcConfigurationTest extends GridCommonAbstractTest {
         public CountDownLatch startLatch = new CountDownLatch(1);
 
         /** {@inheritDoc} */
-        @Override public void start(MetricRegistry mreg) {
+        @Override public void start(MetricRegistryImpl mreg) {
             springString2 = ctx.getBean("springString2", String.class);
 
             startLatch.countDown();

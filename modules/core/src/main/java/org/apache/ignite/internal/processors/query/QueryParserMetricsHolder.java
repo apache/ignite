@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 
 /**
@@ -40,7 +40,7 @@ public class QueryParserMetricsHolder {
      * @param metricMgr Metric manager.
      */
     public QueryParserMetricsHolder(GridMetricManager metricMgr) {
-        MetricRegistry registry = metricMgr.registry(QUERY_PARSER_METRIC_GROUP_NAME);
+        MetricRegistryImpl registry = metricMgr.registry(QUERY_PARSER_METRIC_GROUP_NAME);
 
         qryCacheHits = registry.longAdderMetric("hits", "Count of hits for queries cache");
         qryCacheMisses = registry.longAdderMetric("misses", "Count of misses for queries cache");

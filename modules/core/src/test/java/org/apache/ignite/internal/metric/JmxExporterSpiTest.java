@@ -72,7 +72,7 @@ import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
@@ -607,7 +607,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testHistogramSearchByName() throws Exception {
-        MetricRegistry mreg = new MetricRegistry("test", name -> null, name -> null, null);
+        MetricRegistryImpl mreg = new MetricRegistryImpl("test", name -> null, name -> null, null);
 
         createTestHistogram(mreg);
 
@@ -642,7 +642,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testHistogramExport() throws Exception {
-        MetricRegistry mreg = ignite.context().metric().registry("histogramTest");
+        MetricRegistryImpl mreg = ignite.context().metric().registry("histogramTest");
 
         createTestHistogram(mreg);
 
@@ -664,7 +664,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testJmxHistogramNamesExport() throws Exception {
-        MetricRegistry reg = ignite.context().metric().registry(REGISTRY_NAME);
+        MetricRegistryImpl reg = ignite.context().metric().registry(REGISTRY_NAME);
 
         String simpleName = "testhist";
         String nameWithUnderscore = "test_hist";
@@ -1257,7 +1257,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     }
 
     /** */
-    private void createTestHistogram(MetricRegistry mreg) {
+    private void createTestHistogram(MetricRegistryImpl mreg) {
         long[] bounds = new long[] {50, 500};
 
         HistogramMetricImpl histogram = mreg.histogram("histogram", bounds, null);

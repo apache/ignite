@@ -19,8 +19,9 @@ package org.apache.ignite.internal.processors.metric.impl;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -33,7 +34,7 @@ import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE
  * Utility class to build or parse metric name in dot notation.
  *
  * @see GridMetricManager
- * @see MetricRegistry
+ * @see MetricRegistryImpl
  */
 public class MetricUtils {
     /** Metric name part separator. */
@@ -45,6 +46,9 @@ public class MetricUtils {
     /** Histogram name divider. */
     public static final char HISTOGRAM_NAME_DIVIDER = '_';
 
+    /** Metric name part separator. */
+    private static final Pattern SPACES_PATTERN = Pattern.compile(".*[\\s]+.*");
+
     /**
      * Builds metric name. Each parameter will separated by '.' char.
      *
@@ -53,7 +57,8 @@ public class MetricUtils {
      */
     public static String metricName(String... names) {
         assert names != null;
-        assert ensureAllNamesNotEmpty(names);
+
+        ensureNotEmptyAndHasNoSpaces(names);
 
         if (names.length == 1)
             return names[0];
@@ -146,16 +151,15 @@ public class MetricUtils {
     }
 
     /**
-     * Asserts all arguments are not empty.
+     * Asserts all arguments are not empty and contains no spaces.
      *
      * @param names Names.
-     * @return True.
      */
-    private static boolean ensureAllNamesNotEmpty(String... names) {
-        for (int i = 0; i < names.length; i++)
-            assert names[i] != null && !names[i].isEmpty() : i + " element is empty [" + String.join(".", names) + "]";
-
-        return true;
+    private static void ensureNotEmptyAndHasNoSpaces(String... names) {
+        for (int i = 0; i < names.length; i++) {
+            if (names[i] == null || names[i].isEmpty() || SPACES_PATTERN.matcher(names[i]).matches())
+                throw new IllegalArgumentException("Metric name element " + (i + 1) + " is empty or contains spaces.");
+        }
     }
 
     /**

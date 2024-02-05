@@ -147,7 +147,7 @@ import org.apache.ignite.internal.processors.localtask.DurableBackgroundTasksPro
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
@@ -205,6 +205,7 @@ import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
@@ -479,6 +480,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** {@inheritDoc} */
     @Override public IgniteCompute compute() {
         return ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteMetrics metrics() {
+        return ctx.metric().custom();
     }
 
     /** {@inheritDoc} */
@@ -3486,7 +3492,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         if (!ctx.metric().enabled())
             return;
 
-        MetricRegistry reg = ctx.metric().registry(GridMetricManager.IGNITE_METRICS);
+        MetricRegistryImpl reg = ctx.metric().registry(GridMetricManager.IGNITE_METRICS);
 
         reg.register("fullVersion", this::fullVersion, String.class, FULL_VER_DESC);
         reg.register("copyright", () -> COPYRIGHT, String.class, COPYRIGHT_DESC);

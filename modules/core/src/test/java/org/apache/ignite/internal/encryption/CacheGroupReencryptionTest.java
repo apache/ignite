@@ -52,7 +52,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -836,7 +836,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
      * @param finished Expected reencryption status.
      */
     private void validateMetrics(IgniteEx node, boolean finished) throws IgniteInterruptedCheckedException {
-        MetricRegistry registry =
+        MetricRegistryImpl registry =
             node.context().metric().registry(metricName(CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX, cacheName()));
 
         LongMetric bytesLeft = registry.findMetric("ReencryptionBytesLeft");

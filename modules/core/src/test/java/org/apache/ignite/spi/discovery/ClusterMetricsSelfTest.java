@@ -25,7 +25,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -77,7 +77,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
     private void checkPmeMetricsOnNodeJoin(boolean client) throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        MetricRegistry reg = ignite.context().metric().registry(PME_METRICS);
+        MetricRegistryImpl reg = ignite.context().metric().registry(PME_METRICS);
 
         LongMetric curPMEDuration = reg.findMetric(PME_DURATION);
         LongMetric curBlockingPMEDuration = reg.findMetric(PME_OPS_BLOCKED_DURATION);

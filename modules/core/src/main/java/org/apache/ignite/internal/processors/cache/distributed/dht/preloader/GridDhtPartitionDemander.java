@@ -67,7 +67,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.GridMutableLong;
@@ -163,7 +163,7 @@ public class GridDhtPartitionDemander {
 
         String metricGroupName = metricName(CACHE_GROUP_METRICS_PREFIX, grp.cacheOrGroupName());
 
-        MetricRegistry mreg = grp.shared().kernalContext().metric().registry(metricGroupName);
+        MetricRegistryImpl mreg = grp.shared().kernalContext().metric().registry(metricGroupName);
 
         mreg.register("RebalancingPartitionsLeft", () -> rebalanceFut.partitionsLeft.get(),
             "The number of cache group partitions left to be rebalanced.");

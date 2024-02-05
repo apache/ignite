@@ -44,7 +44,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -237,7 +237,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         TestRecordingCommunicationSpi.spi(ignite0).waitForBlocked();
 
-        MetricRegistry mreg = ignite1.context().metric()
+        MetricRegistryImpl mreg = ignite1.context().metric()
             .registry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP2));
 
         LongMetric startTime = mreg.findMetric("RebalancingStartTime");
@@ -356,7 +356,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         TestRecordingCommunicationSpi.spi(ignite0).waitForBlocked();
 
-        MetricRegistry mreg = ignite1.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP2));
+        MetricRegistryImpl mreg = ignite1.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP2));
 
         LongMetric startTime = mreg.findMetric("RebalancingStartTime");
         LongMetric lastCancelledTime = mreg.findMetric("RebalancingLastCancelledTime");

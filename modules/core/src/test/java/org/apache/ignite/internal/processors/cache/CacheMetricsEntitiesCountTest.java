@@ -29,7 +29,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -233,7 +233,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
         assertEquals(cacheInfo + " cacheSize", cacheSize, metrics.getCacheSize());
         assertEquals(cacheInfo + " isEmpty", isEmpty, metrics.isEmpty());
 
-        MetricRegistry mreg = cctx.kernalContext().metric().registry(cacheMetricsRegistryName(cctx.name(),
+        MetricRegistryImpl mreg = cctx.kernalContext().metric().registry(cacheMetricsRegistryName(cctx.name(),
             cache.isNear()));
 
         assertNotNull(mreg);

@@ -44,7 +44,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.IoStatisticsType;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
@@ -179,7 +179,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
         checkStat();
     }
 
-    /** Checks that {@link MetricRegistry} with the sorted index IO statistics removed on index drop. */
+    /** Checks that {@link MetricRegistryImpl} with the sorted index IO statistics removed on index drop. */
     @Test
     public void testMetricRegistryRemovedOnIndexDrop() throws Exception {
         indexes = Collections.emptyList();
@@ -192,7 +192,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
 
         execute(grid(), "CREATE INDEX MY_IDX ON t(name)");
 
-        MetricRegistry mreg =
+        MetricRegistryImpl mreg =
             grid().context().metric().registry(metricName(SORTED_INDEX.metricGroupName(), "SQL_PUBLIC_T", "MY_IDX"));
 
         assertTrue(mreg.iterator().hasNext());

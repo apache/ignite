@@ -24,7 +24,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -90,7 +90,7 @@ public class CdcNonDefaultWorkDirTest extends GridCommonAbstractTest {
         CdcConfiguration cdcCfg = new CdcConfiguration();
 
         cdcCfg.setConsumer(new AbstractCdcTest.UserCdcConsumer() {
-            @Override public void start(MetricRegistry mreg) {
+            @Override public void start(MetricRegistryImpl mreg) {
                 super.start(mreg);
 
                 started.countDown();

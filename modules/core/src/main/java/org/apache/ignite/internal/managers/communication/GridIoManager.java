@@ -97,7 +97,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
@@ -486,7 +486,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         startSpi();
 
-        MetricRegistry ioMetric = ctx.metric().registry(COMM_METRICS);
+        MetricRegistryImpl ioMetric = ctx.metric().registry(COMM_METRICS);
 
         ioMetric.register(OUTBOUND_MSG_QUEUE_CNT, spi::getOutboundMessagesQueueSize,
                 "Outbound messages queue size.");

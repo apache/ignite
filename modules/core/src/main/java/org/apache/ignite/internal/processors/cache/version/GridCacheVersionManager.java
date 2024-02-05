@@ -25,7 +25,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -98,7 +98,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        MetricRegistry sysreg = cctx.kernalContext().metric().registry(CACHE_METRICS);
+        MetricRegistryImpl sysreg = cctx.kernalContext().metric().registry(CACHE_METRICS);
 
         lastDataVer = sysreg.longMetric(LAST_DATA_VER, "The latest data version on the node.");
 

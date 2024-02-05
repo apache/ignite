@@ -33,7 +33,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.db.SlowCheckpointMetadataFileIOFactory;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -212,7 +212,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
      * @return {@code totalThrottlingTime} metric for the default region.
      */
     private LongAdderMetric totalThrottlingTime(IgniteEx ignite) {
-        MetricRegistry mreg = ignite.context().metric().registry(metricName(DATAREGION_METRICS_PREFIX,
+        MetricRegistryImpl mreg = ignite.context().metric().registry(metricName(DATAREGION_METRICS_PREFIX,
             ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName()));
 
         LongAdderMetric totalThrottlingTime = mreg.findMetric("TotalThrottlingTime");

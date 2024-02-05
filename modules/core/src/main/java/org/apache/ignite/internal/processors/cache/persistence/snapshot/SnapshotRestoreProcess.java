@@ -84,7 +84,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSn
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -225,7 +225,7 @@ public class SnapshotRestoreProcess {
     protected void registerMetrics() {
         assert !ctx.clientNode();
 
-        MetricRegistry mreg = ctx.metric().registry(SNAPSHOT_RESTORE_METRICS);
+        MetricRegistryImpl mreg = ctx.metric().registry(SNAPSHOT_RESTORE_METRICS);
 
         mreg.register("startTime", () -> lastOpCtx.startTime,
             "The system time of the start of the cluster snapshot restore operation on this node.");

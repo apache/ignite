@@ -27,7 +27,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -204,7 +204,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
         this.ctx = ctx;
         this.nodeStartTime = nodeStartTime;
 
-        MetricRegistry mreg = ctx.metric().registry(SYS_METRICS);
+        MetricRegistryImpl mreg = ctx.metric().registry(SYS_METRICS);
 
         gcCpuLoad = mreg.findMetric(GC_CPU_LOAD);
         cpuLoad = mreg.findMetric(CPU_LOAD);
@@ -228,13 +228,13 @@ public class ClusterMetricsImpl implements ClusterMetrics {
         nonHeapCommitted = mreg.findMetric(metricName("memory", "nonheap", "committed"));
         nonHeapMax = mreg.findMetric(metricName("memory", "nonheap", "max"));
 
-        MetricRegistry pmeReg = ctx.metric().registry(PME_METRICS);
+        MetricRegistryImpl pmeReg = ctx.metric().registry(PME_METRICS);
 
         pmeDuration = pmeReg.findMetric(PME_DURATION);
 
         lastDataVer = ctx.metric().registry(CACHE_METRICS).findMetric(LAST_DATA_VER);
 
-        MetricRegistry ioReg = ctx.metric().registry(COMM_METRICS);
+        MetricRegistryImpl ioReg = ctx.metric().registry(COMM_METRICS);
 
         sentMsgsCnt = ioReg.findMetric(SENT_MSG_CNT);
         sentBytesCnt = ioReg.findMetric(SENT_BYTES_CNT);
