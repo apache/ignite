@@ -323,9 +323,9 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         assert mapping.isEmpty() : mapping;
 
-        GridDhtPartitionTopology topology = ignite.cachex(CACHE_NAME).context().topology();
+        GridDhtPartitionTopology top = ignite.cachex(CACHE_NAME).context().topology();
 
-        assert topology.lostPartitions().contains(part);
+        assert top.lostPartitions().contains(part);
 
         for (String nodeName : stoppedNodeNames) {
             startGrid(nodeName);
