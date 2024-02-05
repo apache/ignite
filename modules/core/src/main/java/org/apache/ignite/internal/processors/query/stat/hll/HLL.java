@@ -616,10 +616,10 @@ public class HLL implements Cloneable {
         // 'j'th register value
         double sum = 0;
         int numberOfZeroes = 0/*"V" in the paper*/;
-        final LongIterator iterator = probabilisticStorage.registerIterator();
+        final LongIterator iter = probabilisticStorage.registerIterator();
 
-        while (iterator.hasNext()) {
-            final long register = iterator.next();
+        while (iter.hasNext()) {
+            final long register = iter.next();
 
             sum += 1.0 / (1L << register);
             if (register == 0L) numberOfZeroes++;

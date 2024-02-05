@@ -157,7 +157,7 @@ public class BitVector implements Cloneable {
      *         with index zero. This will never be <code>null</code>.
      */
     public LongIterator registerIterator() {
-        LongIterator longIterator = new LongIterator() {
+        LongIterator longIter = new LongIterator() {
             final int registerWidth = BitVector.this.registerWidth;
             final long[] words = BitVector.this.words;
             final long registerMask = BitVector.this.registerMask;
@@ -197,7 +197,7 @@ public class BitVector implements Cloneable {
             }
         };
 
-        return longIterator;
+        return longIter;
     }
 
     // ------------------------------------------------------------------------

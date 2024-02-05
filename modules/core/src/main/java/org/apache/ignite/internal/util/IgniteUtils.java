@@ -11675,7 +11675,7 @@ public abstract class IgniteUtils {
         // If executor cannot perform immediately, we will execute task in the current thread.
         Set<Batch<T, R>> sharedBatchesSet = new GridConcurrentHashSet<>(batchSizes.length);
 
-        Iterator<T> iterator = srcDatas.iterator();
+        Iterator<T> iter = srcDatas.iterator();
 
         for (int idx = 0; idx < batchSizes.length; idx++) {
             int batchSize = batchSizes[idx];
@@ -11683,7 +11683,7 @@ public abstract class IgniteUtils {
             Batch<T, R> batch = new Batch<>(batchSize, uninterruptible);
 
             for (int i = 0; i < batchSize; i++)
-                batch.addTask(iterator.next());
+                batch.addTask(iter.next());
 
             batches.add(batch);
         }
