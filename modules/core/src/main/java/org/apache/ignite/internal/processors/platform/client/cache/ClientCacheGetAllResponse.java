@@ -63,8 +63,8 @@ class ClientCacheGetAllResponse extends ClientResponse {
                 CacheObject key = (CacheObject)e.getKey();
                 CacheObject val = (CacheObject)e.getValue();
 
-                writer.out().writeByteArray(key.rawBytes(coctx));
-                writer.out().writeByteArray(val.rawBytes(coctx));
+                writer.out().writeByteArray(key.rawValueBytes(coctx));
+                writer.out().writeByteArray(val.rawValueBytes(coctx));
             }
             catch (IgniteCheckedException ex) {
                 throw new IgniteException(ex);

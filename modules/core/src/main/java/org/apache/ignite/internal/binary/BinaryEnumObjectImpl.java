@@ -339,7 +339,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] rawBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
+    @Override public byte[] rawValueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
         return valueBytes(ctx);
     }
 

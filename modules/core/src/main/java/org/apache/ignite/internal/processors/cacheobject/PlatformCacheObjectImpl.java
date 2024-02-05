@@ -53,24 +53,24 @@ public class PlatformCacheObjectImpl extends CacheObjectImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] rawBytes(CacheObjectValueContext ctx) {
+    @Override public byte[] rawValueBytes(CacheObjectValueContext ctx) {
         return arr;
     }
 
     /** {@inheritDoc} */
-    @Override protected byte[] valueBytesFromValue(CacheObjectValueContext ctx) {
+    @Override protected byte[] getValueBytes(CacheObjectValueContext ctx) {
         return CacheObjectTransformerUtils.transformIfNecessary(arr, ctx);
     }
 
     /** {@inheritDoc} */
-    @Override protected Object valueFromValueBytes(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override protected Object getValue(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         return ctx.kernalContext().cacheObjects().unmarshal(ctx, arr, ldr);
     }
 
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
         if (valBytes == null)
-            valBytes = valueBytesFromValue(ctx);
+            valBytes = getValueBytes(ctx);
 
         return this;
     }

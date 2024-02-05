@@ -71,7 +71,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
                 if (valBytes == null) {
                     assert val != null;
 
-                    valBytes = valueBytesFromValue(ctx);
+                    valBytes = getValueBytes(ctx);
                 }
 
                 if (ldr == null) {
@@ -87,7 +87,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
             if (val != null)
                 return (T)val;
 
-            Object val = valueFromValueBytes(ctx, kernalCtx.config().isPeerClassLoadingEnabled() ?
+            Object val = getValue(ctx, kernalCtx.config().isPeerClassLoadingEnabled() ?
                 kernalCtx.cache().context().deploy().globalLoader() : null);
 
             if (ctx.storeValue())
@@ -103,30 +103,26 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     /** {@inheritDoc} */
     @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
-            valBytes = valueBytesFromValue(ctx);
+            valBytes = getValueBytes(ctx);
 
         return valBytes;
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] rawBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
+    @Override public byte[] rawValueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
         return CacheObjectTransformerUtils.restoreIfNecessary(valueBytes(ctx), ctx);
     }
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
-        assert val != null || valBytes != null;
-
         if (valBytes == null)
-            valBytes = valueBytesFromValue(ctx);
+            valBytes = getValueBytes(ctx);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        assert val != null || valBytes != null;
-
         if (val == null && ctx.storeValue())
-            val = valueFromValueBytes(ctx, ldr);
+            val = getValue(ctx, ldr);
     }
 
     /** {@inheritDoc} */

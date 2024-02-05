@@ -471,7 +471,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] rawBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
+    @Override public byte[] rawValueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
 

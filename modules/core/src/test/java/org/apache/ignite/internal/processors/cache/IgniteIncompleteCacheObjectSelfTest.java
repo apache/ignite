@@ -118,7 +118,7 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] rawBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
+        @Override public byte[] rawValueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
             return new byte[0];
         }
 

@@ -80,7 +80,7 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] rawBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
+    @Override public byte[] rawValueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
         return val;
     }
 

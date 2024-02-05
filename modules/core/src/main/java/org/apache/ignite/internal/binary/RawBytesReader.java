@@ -63,7 +63,6 @@ public class RawBytesReader {
 
                 break;
 
-
             case GridBinaryMarshaller.BOOLEAN:
             case GridBinaryMarshaller.BYTE:
                 skipBytes(1);
@@ -102,9 +101,13 @@ public class RawBytesReader {
 
             case GridBinaryMarshaller.BYTE_ARR:
             case GridBinaryMarshaller.BOOLEAN_ARR:
-            case GridBinaryMarshaller.STRING:
             case GridBinaryMarshaller.OPTM_MARSH:
                 skipBytes(in.readInt());
+
+                break;
+
+            case GridBinaryMarshaller.STRING:
+                skipString();
 
                 break;
 
@@ -203,18 +206,8 @@ public class RawBytesReader {
     }
 
     /** */
-    private void skipBytes(int count) {
-        in.position(in.position() + count);
-    }
-
-    /** */
-    private void skipString() {
-        skipBytes(in.readInt());
-    }
-
-    /** */
     private void skipBinaryObject() {
-        skipBytes(in.readIntPositioned(in.position() + GridBinaryMarshaller.TOTAL_LEN_POS));
+        skipBytes(in.readIntPositioned(in.position() + GridBinaryMarshaller.TOTAL_LEN_POS - 1) - 1);
     }
 
     /** */
@@ -223,6 +216,16 @@ public class RawBytesReader {
 
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
             skipString();
+    }
+
+    /** */
+    private void skipBytes(int count) {
+        in.position(in.position() + count);
+    }
+
+    /** */
+    private void skipString() {
+        skipBytes(in.readInt());
     }
 
     /** */

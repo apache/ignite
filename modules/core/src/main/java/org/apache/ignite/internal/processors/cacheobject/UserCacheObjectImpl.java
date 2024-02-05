@@ -59,7 +59,7 @@ public class UserCacheObjectImpl extends CacheObjectImpl {
             IgniteCacheObjectProcessor proc = ctx.kernalContext().cacheObjects();
 
             if (valBytes == null)
-                valBytes = valueBytesFromValue(ctx);
+                valBytes = getValueBytes(ctx);
 
             if (ctx.storeValue()) {
                 boolean p2pEnabled = ctx.kernalContext().config().isPeerClassLoadingEnabled();
@@ -67,7 +67,7 @@ public class UserCacheObjectImpl extends CacheObjectImpl {
                 ClassLoader ldr = p2pEnabled ?
                     IgniteUtils.detectClass(val).getClassLoader() : val.getClass().getClassLoader();
 
-                Object val = this.val != null && proc.immutable(this.val) ? this.val : valueFromValueBytes(ctx, ldr);
+                Object val = this.val != null && proc.immutable(this.val) ? this.val : getValue(ctx, ldr);
 
                 return new CacheObjectImpl(val, valBytes);
             }

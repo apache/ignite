@@ -208,7 +208,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] rawBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
+    @Override public byte[] rawValueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
         if (arr != null)
             return arr;
 

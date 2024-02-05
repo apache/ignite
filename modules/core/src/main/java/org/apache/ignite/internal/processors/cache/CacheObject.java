@@ -67,7 +67,7 @@ public interface CacheObject extends Message {
      * @return Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    public byte[] rawBytes(CacheObjectValueContext ctx) throws IgniteCheckedException;
+    public byte[] rawValueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException;
 
     /**
      * @param ctx Cache object context.
