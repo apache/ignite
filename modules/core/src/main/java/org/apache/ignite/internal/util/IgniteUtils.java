@@ -2337,12 +2337,12 @@ public abstract class IgniteUtils {
 
         addrs.add(ipAddr);
 
-        boolean ignoreLocalHostName = getBoolean(IGNITE_IGNORE_LOCAL_HOST_NAME, true);
+        boolean ignoreLocHostName = getBoolean(IGNITE_IGNORE_LOCAL_HOST_NAME, true);
 
-        String userDefinedLocalHost = getString(IGNITE_LOCAL_HOST);
+        String userDefinedLocHost = getString(IGNITE_LOCAL_HOST);
 
         // If IGNITE_LOCAL_HOST is defined and IGNITE_IGNORE_LOCAL_HOST_NAME is not false, then ignore local address's hostname
-        if (!F.isEmpty(userDefinedLocalHost) && ignoreLocalHostName)
+        if (!F.isEmpty(userDefinedLocHost) && ignoreLocHostName)
             return;
 
         String hostName = addr.getHostName();

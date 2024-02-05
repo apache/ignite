@@ -188,17 +188,17 @@ public class MavenUtils {
         X.println("Downloading artifact... Identifier: " + artifact);
 
         // Default platform independ path for maven settings file.
-        Path localProxyMavenSettings = Paths.get(System.getProperty("user.home"), ".m2", "local-proxy.xml");
+        Path locProxyMavenSettings = Paths.get(System.getProperty("user.home"), ".m2", "local-proxy.xml");
 
-        String localProxyMavenSettingsFromEnv = System.getenv("LOCAL_PROXY_MAVEN_SETTINGS");
+        String locProxyMavenSettingsFromEnv = System.getenv("LOCAL_PROXY_MAVEN_SETTINGS");
 
         GridStringBuilder mavenCmdArgs = new SB(" ").a(MAVEN_DEPENDENCY_PLUGIN).a(":get -Dartifact=" + artifact);
 
-        if (!isEmpty(localProxyMavenSettingsFromEnv))
-            localProxyMavenSettings = Paths.get(localProxyMavenSettingsFromEnv);
+        if (!isEmpty(locProxyMavenSettingsFromEnv))
+            locProxyMavenSettings = Paths.get(locProxyMavenSettingsFromEnv);
 
-        if (Files.exists(localProxyMavenSettings))
-            mavenCmdArgs.a(" -s " + localProxyMavenSettings.toString());
+        if (Files.exists(locProxyMavenSettings))
+            mavenCmdArgs.a(" -s " + locProxyMavenSettings.toString());
         else {
             Collection<String> repos = new ArrayList<>();
 
