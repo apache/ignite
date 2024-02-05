@@ -1889,7 +1889,7 @@ public class BinaryUtils {
     }
 
     /** */
-    public static byte[] readRawObjectBytes(BinaryInputStream in) {
+    public static byte[] readObjectRawBytes(BinaryInputStream in) {
         RawBytesReader rawReader = new RawBytesReader(in);
 
         return rawReader.readObject();

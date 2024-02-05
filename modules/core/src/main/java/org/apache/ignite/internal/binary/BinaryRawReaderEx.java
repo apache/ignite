@@ -32,7 +32,7 @@ public interface BinaryRawReaderEx extends BinaryRawReader {
     public BinaryInputStream in();
 
     /** */
-    public byte[] readRawObjectBytes();
+    public byte[] readObjectRawBytes();
 
     /**
      * @return Object.

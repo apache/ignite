@@ -1342,8 +1342,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] readRawObjectBytes() {
-        return BinaryUtils.readRawObjectBytes(in);
+    @Override public byte[] readObjectRawBytes() {
+        return BinaryUtils.readObjectRawBytes(in);
     }
 
     /** {@inheritDoc} */

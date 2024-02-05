@@ -1397,7 +1397,7 @@ public class PlatformUtils {
             return (T)new KeyCacheObjectImpl(obj, objBytes, -1);
         }
         else {
-            byte[] objBytes = reader.readRawObjectBytes();
+            byte[] objBytes = reader.readObjectRawBytes();
 
             if (isNull(objBytes))
                 return null;
