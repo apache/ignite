@@ -122,7 +122,7 @@ public interface Ignite extends AutoCloseable {
     public IgniteCompute compute();
 
     /**
-     * Gets {@code customMetrics} facade over current node.
+     * Gets custom metrics facade over current node.
      *
      * @return {@link IgniteMetrics} instance over all cluster nodes started in server mode.
      */
