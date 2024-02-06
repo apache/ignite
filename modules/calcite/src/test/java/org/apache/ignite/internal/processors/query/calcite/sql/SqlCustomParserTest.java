@@ -78,9 +78,9 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
      */
     @Test
     public void createTableSimpleCase() throws SqlParseException {
-        String query = "create table my_table(id int, val varchar)";
+        String qry = "create table my_table(id int, val varchar)";
 
-        SqlNode node = parse(query);
+        SqlNode node = parse(qry);
 
         assertThat(node, instanceOf(IgniteSqlCreateTable.class));
 
@@ -97,9 +97,9 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
      */
     @Test
     public void createTableQuotedIdentifiers() throws SqlParseException {
-        String query = "create table \"My_Table\"(\"Id\" int, \"Val\" varchar)";
+        String qry = "create table \"My_Table\"(\"Id\" int, \"Val\" varchar)";
 
-        SqlNode node = parse(query);
+        SqlNode node = parse(qry);
 
         assertThat(node, instanceOf(IgniteSqlCreateTable.class));
 
@@ -116,9 +116,9 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
      */
     @Test
     public void createTableIfNotExists() throws SqlParseException {
-        String query = "create table if not exists my_table(id int, val varchar)";
+        String qry = "create table if not exists my_table(id int, val varchar)";
 
-        SqlNode node = parse(query);
+        SqlNode node = parse(qry);
 
         assertThat(node, instanceOf(IgniteSqlCreateTable.class));
 
@@ -136,9 +136,9 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
      */
     @Test
     public void createTableWithPkCase1() throws SqlParseException {
-        String query = "create table my_table(id int primary key, val varchar)";
+        String qry = "create table my_table(id int primary key, val varchar)";
 
-        SqlNode node = parse(query);
+        SqlNode node = parse(qry);
 
         assertThat(node, instanceOf(IgniteSqlCreateTable.class));
 
@@ -160,9 +160,9 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
      */
     @Test
     public void createTableWithPkCase2() throws SqlParseException {
-        String query = "create table my_table(id int, val varchar, primary key(id))";
+        String qry = "create table my_table(id int, val varchar, primary key(id))";
 
-        SqlNode node = parse(query);
+        SqlNode node = parse(qry);
 
         assertThat(node, instanceOf(IgniteSqlCreateTable.class));
 
@@ -184,9 +184,9 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
      */
     @Test
     public void createTableWithPkCase3() throws SqlParseException {
-        String query = "create table my_table(id int, val varchar, constraint pk_key primary key(id))";
+        String qry = "create table my_table(id int, val varchar, constraint pk_key primary key(id))";
 
-        SqlNode node = parse(query);
+        SqlNode node = parse(qry);
 
         assertThat(node, instanceOf(IgniteSqlCreateTable.class));
 
@@ -208,9 +208,9 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
      */
     @Test
     public void createTableWithPkCase4() throws SqlParseException {
-        String query = "create table my_table(id1 int, id2 int, val varchar, primary key(id1, id2))";
+        String qry = "create table my_table(id1 int, id2 int, val varchar, primary key(id1, id2))";
 
-        SqlNode node = parse(query);
+        SqlNode node = parse(qry);
 
         assertThat(node, instanceOf(IgniteSqlCreateTable.class));
 
@@ -233,7 +233,7 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
      */
     @Test
     public void createTableWithOptions() throws SqlParseException {
-        String query = "create table my_table(id int) with" +
+        String qry = "create table my_table(id int) with" +
             " template=\"my_template\"," +
             " backups=2," +
             " affinity_key=my_aff," +
@@ -246,7 +246,7 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
             " value_type=my_value_type," +
             " encrypted=true";
 
-        SqlNode node = parse(query);
+        SqlNode node = parse(qry);
 
         assertThat(node, instanceOf(IgniteSqlCreateTable.class));
 
@@ -270,7 +270,7 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
      */
     @Test
     public void createTableWithOptionsQuoted() throws SqlParseException {
-        String query = "create table my_table(id int) with \"" +
+        String qry = "create table my_table(id int) with \"" +
             " template=my_template," +
             " backups=2," +
             " affinity_key=My_Aff," +
@@ -284,7 +284,7 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
             " encrypted=true" +
             "\"";
 
-        SqlNode node = parse(query);
+        SqlNode node = parse(qry);
 
         assertThat(node, instanceOf(IgniteSqlCreateTable.class));
 
@@ -787,18 +787,18 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
         IgniteSqlKill killTask;
 
         UUID nodeId = UUID.randomUUID();
-        long queryId = ThreadLocalRandom.current().nextLong();
+        long qryId = ThreadLocalRandom.current().nextLong();
 
-        killTask = parse("kill query '" + nodeId + "_" + queryId + "'");
+        killTask = parse("kill query '" + nodeId + "_" + qryId + "'");
         assertTrue(killTask instanceof IgniteSqlKillQuery);
         assertEquals(nodeId, ((IgniteSqlKillQuery)killTask).nodeId());
-        assertEquals(queryId, ((IgniteSqlKillQuery)killTask).queryId());
+        assertEquals(qryId, ((IgniteSqlKillQuery)killTask).queryId());
         assertFalse(((IgniteSqlKillQuery)killTask).isAsync());
 
-        killTask = parse("kill query async '" + nodeId + "_" + queryId + "'");
+        killTask = parse("kill query async '" + nodeId + "_" + qryId + "'");
         assertTrue(killTask instanceof IgniteSqlKillQuery);
         assertEquals(nodeId, ((IgniteSqlKillQuery)killTask).nodeId());
-        assertEquals(queryId, ((IgniteSqlKillQuery)killTask).queryId());
+        assertEquals(qryId, ((IgniteSqlKillQuery)killTask).queryId());
         assertTrue(((IgniteSqlKillQuery)killTask).isAsync());
 
         assertParserThrows("kill query '1233415'", SqlParseException.class);

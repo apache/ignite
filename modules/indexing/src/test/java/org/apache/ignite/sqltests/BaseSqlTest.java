@@ -1275,16 +1275,16 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
                 "Schema name could not be an empty string"
         );
 
-        String sqlQuery = "SELECT * FROM Employee limit 1";
+        String sqlQry = "SELECT * FROM Employee limit 1";
 
         testAllNodes(node -> {
-            executeFrom(sqlQuery, node, "");
-            executeFrom(sqlQuery, node, " ");
+            executeFrom(sqlQry, node, "");
+            executeFrom(sqlQry, node, " ");
             assertTrue("Check valid schema",
-                    executeFrom(sqlQuery, node, "PUBLIC").values().stream().count() > 0
+                    executeFrom(sqlQry, node, "PUBLIC").values().stream().count() > 0
             );
             assertTrue("Check null schema",
-                    executeFrom(sqlQuery, node, null).values().stream().count() > 0
+                    executeFrom(sqlQry, node, null).values().stream().count() > 0
             );
         });
     }
