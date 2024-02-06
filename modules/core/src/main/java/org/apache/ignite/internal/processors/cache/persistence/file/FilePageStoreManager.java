@@ -353,7 +353,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         List<CacheConfiguration> cacheCfgs = findCacheGroupsWithDisabledWal();
 
         if (!cacheCfgs.isEmpty()) {
-            List<String> cacheGroupNames = cacheCfgs.stream()
+            List<String> cacheGrpNames = cacheCfgs.stream()
                 .map(ccfg -> ccfg.getGroupName() != null ? ccfg.getGroupName() : ccfg.getName())
                 .collect(Collectors.toList());
 
@@ -361,7 +361,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 "data files may be corrupted. Node will stop and enter the Maintenance Mode on next start. " +
                 "In the Maintenance Mode, use the Control Utility *persistence* command " +
                 "to clean and optionally back up corrupted files. When cleaning is done, restart the node manually. " +
-                "Possible corruption affects the following cache groups: " + cacheGroupNames;
+                "Possible corruption affects the following cache groups: " + cacheGrpNames;
 
             log.warning(errorMsg);
 
@@ -396,27 +396,27 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return List of cache groups' configurations that had WAL disabled before node stop.
      */
     private List<CacheConfiguration> findCacheGroupsWithDisabledWal() {
-        List<CacheConfiguration> corruptedCacheGroups = new ArrayList<>();
+        List<CacheConfiguration> corruptedCacheGrps = new ArrayList<>();
 
         for (Integer grpDescId : idxCacheStores.keySet()) {
             CacheGroupDescriptor desc = cctx.cache().cacheGroupDescriptor(grpDescId);
 
             if (desc != null && desc.persistenceEnabled()) {
-                boolean localEnabled = cctx.database().walEnabled(grpDescId, true);
+                boolean locEnabled = cctx.database().walEnabled(grpDescId, true);
                 boolean globalEnabled = cctx.database().walEnabled(grpDescId, false);
 
-                if (!localEnabled || !globalEnabled) {
+                if (!locEnabled || !globalEnabled) {
                     File dir = cacheWorkDir(desc.config());
 
                     if (Arrays.stream(
                         dir.listFiles()).anyMatch(f -> !f.getName().equals(CACHE_DATA_FILENAME))) {
-                        corruptedCacheGroups.add(desc.config());
+                        corruptedCacheGrps.add(desc.config());
                     }
                 }
             }
         }
 
-        return corruptedCacheGroups;
+        return corruptedCacheGrps;
     }
 
     /** {@inheritDoc} */

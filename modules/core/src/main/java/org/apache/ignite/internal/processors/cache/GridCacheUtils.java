@@ -1461,9 +1461,9 @@ public class GridCacheUtils {
 
         Map<UUID, Collection<ClusterNode>> neighbors = new HashMap<>(topSnapshot.size(), 1.0f);
 
-        for (Collection<ClusterNode> group : macMap.values())
-            for (ClusterNode node : group)
-                neighbors.put(node.id(), group);
+        for (Collection<ClusterNode> grp : macMap.values())
+            for (ClusterNode node : grp)
+                neighbors.put(node.id(), grp);
 
         return neighbors;
     }

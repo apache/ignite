@@ -322,9 +322,9 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
 
         /** */
         private Set<Integer> getGroupIds() {
-            Collection<CacheGroupContext> cacheGroups = ignite.context().cache().cacheGroups();
+            Collection<CacheGroupContext> cacheGrps = ignite.context().cache().cacheGroups();
 
-            Set<Integer> grpIds = new CachesFiltering(cacheGroups)
+            Set<Integer> grpIds = new CachesFiltering(cacheGrps)
                 .filter(this::filterByCacheNames)
                 .filter(this::filterByCacheFilter)
                 .filter(this::filterByExcludeCaches)

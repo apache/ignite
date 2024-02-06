@@ -109,17 +109,17 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
 
         assertEquals(0, txMXBean.getTransactionsHoldingLockNumber());
 
-        int localKeysNum = 0;
+        int locKeysNum = 0;
 
         for (int i = 0; i < keysNumber; i++) {
             cache.put(i, "");
 
             if (affinity(cache).isPrimary(ignite.localNode(), i))
-                localKeysNum++;
+                locKeysNum++;
         }
 
         //then:
-        assertEquals(localKeysNum, mreg.<LongMetric>findMetric("LockedKeysNumber").value());
+        assertEquals(locKeysNum, mreg.<LongMetric>findMetric("LockedKeysNumber").value());
         assertEquals(1, mreg.<LongMetric>findMetric("TransactionsHoldingLockNumber").value());
         assertEquals(1, mreg.<LongMetric>findMetric("OwnerTransactionsNumber").value());
 

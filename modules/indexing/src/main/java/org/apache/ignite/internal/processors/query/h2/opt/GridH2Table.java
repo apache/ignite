@@ -1043,16 +1043,16 @@ public class GridH2Table extends TableBase {
 
             // After restart of node with persistence and before affinity exchange - PRIMARY partitions are empty.
             // Try to predict local row count take into account ideal distribution.
-            long localOwnerRowCnt = cacheSize(CachePeekMode.PRIMARY, CachePeekMode.BACKUP) / (backups + 1);
+            long locOwnerRowCnt = cacheSize(CachePeekMode.PRIMARY, CachePeekMode.BACKUP) / (backups + 1);
 
             int owners = cacheContext().discovery().cacheNodes(cacheContext().name(), NONE).size();
 
-            long totalRowCnt = owners * localOwnerRowCnt;
+            long totalRowCnt = owners * locOwnerRowCnt;
 
             size.reset();
             size.add(totalRowCnt);
 
-            tblStats = new TableStatistics(totalRowCnt, localOwnerRowCnt);
+            tblStats = new TableStatistics(totalRowCnt, locOwnerRowCnt);
         }
     }
 

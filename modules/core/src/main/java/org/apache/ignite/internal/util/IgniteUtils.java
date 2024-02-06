@@ -2337,12 +2337,12 @@ public abstract class IgniteUtils {
 
         addrs.add(ipAddr);
 
-        boolean ignoreLocalHostName = getBoolean(IGNITE_IGNORE_LOCAL_HOST_NAME, true);
+        boolean ignoreLocHostName = getBoolean(IGNITE_IGNORE_LOCAL_HOST_NAME, true);
 
-        String userDefinedLocalHost = getString(IGNITE_LOCAL_HOST);
+        String userDefinedLocHost = getString(IGNITE_LOCAL_HOST);
 
         // If IGNITE_LOCAL_HOST is defined and IGNITE_IGNORE_LOCAL_HOST_NAME is not false, then ignore local address's hostname
-        if (!F.isEmpty(userDefinedLocalHost) && ignoreLocalHostName)
+        if (!F.isEmpty(userDefinedLocHost) && ignoreLocHostName)
             return;
 
         String hostName = addr.getHostName();
@@ -11675,7 +11675,7 @@ public abstract class IgniteUtils {
         // If executor cannot perform immediately, we will execute task in the current thread.
         Set<Batch<T, R>> sharedBatchesSet = new GridConcurrentHashSet<>(batchSizes.length);
 
-        Iterator<T> iterator = srcDatas.iterator();
+        Iterator<T> iter = srcDatas.iterator();
 
         for (int idx = 0; idx < batchSizes.length; idx++) {
             int batchSize = batchSizes[idx];
@@ -11683,7 +11683,7 @@ public abstract class IgniteUtils {
             Batch<T, R> batch = new Batch<>(batchSize, uninterruptible);
 
             for (int i = 0; i < batchSize; i++)
-                batch.addTask(iterator.next());
+                batch.addTask(iter.next());
 
             batches.add(batch);
         }
