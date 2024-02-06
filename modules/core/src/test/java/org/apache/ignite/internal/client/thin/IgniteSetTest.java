@@ -280,21 +280,21 @@ public class IgniteSetTest extends AbstractThinClientTest {
      */
     @Test
     public void testConfigPropagation() throws Exception {
-        String groupName = "grp-testConfigPropagation";
+        String grpName = "grp-testConfigPropagation";
 
         ClientCollectionConfiguration cfg = new ClientCollectionConfiguration()
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setBackups(7)
                 .setColocated(true)
-                .setGroupName(groupName);
+                .setGroupName(grpName);
 
         CollectionConfiguration serverCfg = new CollectionConfiguration()
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setBackups(7)
                 .setCollocated(true)
-                .setGroupName(groupName);
+                .setGroupName(grpName);
 
         ClientIgniteSet<UserObj> set = client.set("testConfigPropagation", cfg);
 
@@ -310,7 +310,7 @@ public class IgniteSetTest extends AbstractThinClientTest {
         assertEquals(7, cctx.config().getBackups());
         assertEquals(CacheMode.PARTITIONED, cctx.config().getCacheMode());
         assertEquals(CacheAtomicityMode.TRANSACTIONAL, cctx.config().getAtomicityMode());
-        assertEquals(groupName, cctx.config().getGroupName());
+        assertEquals(grpName, cctx.config().getGroupName());
     }
 
     /**

@@ -918,8 +918,8 @@ public class QueryEntity implements Serializable {
             }
 
             if (!F.isEmpty(sqlAnn.groups())) {
-                for (String group : sqlAnn.groups())
-                    desc.addFieldToIndex(group, prop.fullName(), 0, false);
+                for (String grp : sqlAnn.groups())
+                    desc.addFieldToIndex(grp, prop.fullName(), 0, false);
             }
 
             if (!F.isEmpty(sqlAnn.orderedGroups())) {

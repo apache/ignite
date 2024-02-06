@@ -492,9 +492,9 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rowType);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rowType);
 
-        ColocationGroup group = ctx.group(rel.sourceId());
+        ColocationGroup grp = ctx.group(rel.sourceId());
 
-        Iterable<Row> rowsIter = tbl.scan(ctx, group, requiredColunms);
+        Iterable<Row> rowsIter = tbl.scan(ctx, grp, requiredColunms);
 
         return new ScanStorageNode<>(tbl.name(), ctx, rowType, rowsIter, filters, prj);
     }

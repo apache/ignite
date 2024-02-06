@@ -835,17 +835,17 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
 
             List<List<Object>> all = select(node.cache(EMP_CACHE_NAME), null, "age");
 
-            Map<Integer, Long> cntGroups = new HashMap<>();
+            Map<Integer, Long> cntGrps = new HashMap<>();
 
             for (List<Object> entry : all) {
                 Integer age = (Integer)entry.get(0);
 
-                long cnt = cntGroups.getOrDefault(age, 0L);
+                long cnt = cntGrps.getOrDefault(age, 0L);
 
-                cntGroups.put(age, cnt + 1L);
+                cntGrps.put(age, cnt + 1L);
             }
 
-            List<List<Object>> expected = cntGroups.entrySet().stream()
+            List<List<Object>> expected = cntGrps.entrySet().stream()
                 .filter(ent -> ent.getValue() > avgAge)
                 .map(ent -> Arrays.<Object>asList(ent.getKey(), ent.getValue()))
                 .collect(Collectors.toList());
@@ -872,17 +872,17 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
 
             List<List<Object>> all = select(node.cache(EMP_CACHE_NAME), null, "depId");
 
-            Map<Long, Long> cntGroups = new HashMap<>();
+            Map<Long, Long> cntGrps = new HashMap<>();
 
             for (List<Object> entry : all) {
                 Long depId = (Long)entry.get(0);
 
-                long cnt = cntGroups.getOrDefault(depId, 0L);
+                long cnt = cntGrps.getOrDefault(depId, 0L);
 
-                cntGroups.put(depId, cnt + 1L);
+                cntGrps.put(depId, cnt + 1L);
             }
 
-            List<List<Object>> expected = cntGroups.entrySet().stream()
+            List<List<Object>> expected = cntGrps.entrySet().stream()
                 .filter(ent -> ent.getValue() > avgDep)
                 .map(ent -> Arrays.<Object>asList(ent.getKey(), ent.getValue()))
                 .collect(Collectors.toList());

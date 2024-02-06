@@ -26,7 +26,8 @@ exception,e,e2,ex
 execute,exec
 frequency,freq
 future,fut
-#group,grp
+group,grp
+groups,grps
 handler,hnd
 header,hdr
 implementation,impl

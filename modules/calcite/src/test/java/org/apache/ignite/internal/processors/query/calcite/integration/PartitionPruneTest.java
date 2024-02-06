@@ -94,10 +94,10 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
 
                         assertNotNull(mapping);
 
-                        List<ColocationGroup> groups = mapping.colocationGroups();
+                        List<ColocationGroup> grps = mapping.colocationGroups();
 
-                        for (ColocationGroup group: groups) {
-                            int[] parts = group.partitions(node.id());
+                        for (ColocationGroup grp: grps) {
+                            int[] parts = grp.partitions(node.id());
 
                             if (!F.isEmpty(parts)) {
                                 for (int part : parts)
