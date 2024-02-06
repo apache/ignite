@@ -66,6 +66,11 @@ public interface IgniteTxState {
     @Nullable public GridCacheContext singleCacheContext(GridCacheSharedContext cctx);
 
     /**
+     * @param cctx Awaits for previous async operations on active caches to be completed.
+     */
+    public void awaitLastFuture(GridCacheSharedContext cctx);
+
+    /**
      * @param cctx Context.
      * @param read {@code True} if validating for a read operation, {@code false} for write.
      * @param topFut Topology future.

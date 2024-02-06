@@ -1075,7 +1075,7 @@ public class GridCacheSharedContext<K, V> {
         boolean clearThreadMap = txMgr.threadLocalTx(null) == tx;
 
         if (clearThreadMap)
-            tx.txState().lastAsyncFuture().await();
+            tx.txState().awaitLastFuture(this);
         else
             tx.state(MARKED_ROLLBACK);
 
@@ -1091,7 +1091,7 @@ public class GridCacheSharedContext<K, V> {
         GridCacheContext ctx = tx.txState().singleCacheContext(this);
 
         if (ctx == null) {
-            tx.txState().lastAsyncFuture().await();
+            tx.txState().awaitLastFuture(this);
 
             return tx.commitNearTxLocalAsync();
         }
@@ -1107,7 +1107,7 @@ public class GridCacheSharedContext<K, V> {
         boolean clearThreadMap = txMgr.threadLocalTx(null) == tx;
 
         if (clearThreadMap)
-            tx.txState().lastAsyncFuture().await();
+            tx.txState().awaitLastFuture(this);
         else
             tx.state(MARKED_ROLLBACK);
 
@@ -1121,7 +1121,7 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If suspension failed.
      */
     public void suspendTx(GridNearTxLocal tx) throws IgniteCheckedException {
-        tx.txState().lastAsyncFuture().await();
+        tx.txState().awaitLastFuture(this);
 
         tx.suspend();
     }
@@ -1133,7 +1133,7 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If resume failed.
      */
     public void resumeTx(GridNearTxLocal tx) throws IgniteCheckedException {
-        tx.txState().lastAsyncFuture().await();
+        tx.txState().awaitLastFuture(this);
 
         tx.resume();
     }
