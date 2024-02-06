@@ -42,7 +42,6 @@ import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientCacheMode;
 import org.apache.ignite.internal.client.GridClientCompute;
@@ -51,10 +50,10 @@ import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientNodeMetrics;
 import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteUuid;
@@ -765,12 +764,10 @@ public class CommandUtils {
     public static <A, R> R execute(
         @Nullable GridClient cli,
         @Nullable Ignite ignite,
-        Class<? extends ComputeTask<VisorTaskArgument<A>, R>> taskCls,
+        Class<? extends VisorMultiNodeTask<A, R, ?>> taskCls,
         A arg,
         Collection<GridClientNode> nodes
     ) throws GridClientException {
-        assert U.hasAnnotation(taskCls, GridVisorManagementTask.class);
-
         Collection<UUID> nodesIds = nodes.stream()
             .map(GridClientNode::nodeId)
             .collect(Collectors.toList());
