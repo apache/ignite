@@ -485,7 +485,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 grp = gctx.groupId();
                 topVer = gctx.topology().lastTopologyChangeVersion();
 
-                startVer = grpPrimaries.get(gctx.groupId()).contains(part) ? gctx.shared().versions().last() : null;
+                startVer = grpPrimaries.get(gctx.groupId()).contains(part)
+                    ? gctx.shared().versions().next(topVer.topologyVersion())
+                    : null;
 
                 serializer = new DumpEntrySerializer(
                     thLocBufs,

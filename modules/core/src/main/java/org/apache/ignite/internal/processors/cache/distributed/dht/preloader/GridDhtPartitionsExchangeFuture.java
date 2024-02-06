@@ -2787,7 +2787,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         while (true) {
             GridCacheVersion old = lastVer.get();
 
-            if (old == null || Long.compare(old.order(), ver.order()) < 0) {
+            if (old == null || old.order() < ver.order()) {
                 if (lastVer.compareAndSet(old, ver))
                     break;
             }
