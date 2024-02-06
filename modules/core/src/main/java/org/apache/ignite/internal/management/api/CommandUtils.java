@@ -51,6 +51,7 @@ import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientNodeMetrics;
 import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -768,6 +769,8 @@ public class CommandUtils {
         A arg,
         Collection<GridClientNode> nodes
     ) throws GridClientException {
+        assert U.hasAnnotation(taskCls, GridVisorManagementTask.class);
+
         Collection<UUID> nodesIds = nodes.stream()
             .map(GridClientNode::nodeId)
             .collect(Collectors.toList());

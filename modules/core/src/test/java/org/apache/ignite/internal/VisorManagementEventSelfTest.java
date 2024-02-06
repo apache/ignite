@@ -68,17 +68,6 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Current test case start valid multi node visor task that has GridVisorManagementTask annotation.
-     * No exceptions are expected.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testManagementMultiNodeVisorTask() throws Exception {
-        doTestVisorTask(TestManagementVisorMultiNodeTask.class, true);
-    }
-
-    /**
      * Current test case start one node visor task that has not GridVisorManagementTask annotation.
      * No exceptions are expected.
      *
