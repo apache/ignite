@@ -31,6 +31,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -81,6 +82,9 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** Cache ids used for mvcc caching. See {@link MvccCachingManager}. */
     private final GridIntList mvccCachingCacheIds = new GridIntList();
 
+    /** Last asynchronous operation future. */
+    private final GridCacheAdapter.FutureHolder lastAsyncFut = new GridCacheAdapter.FutureHolder();
+
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
         return false;
@@ -117,6 +121,11 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         }
 
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheAdapter.FutureHolder lastAsyncFuture() {
+        return lastAsyncFut;
     }
 
     /** {@inheritDoc} */

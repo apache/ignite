@@ -255,6 +255,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
         };
 
+    /** Last asynchronous future for implicit tx. */
+    protected ThreadLocal<FutureHolder> lastFut = new ThreadLocal<FutureHolder>() {
+        @Override protected FutureHolder initialValue() {
+            return new FutureHolder();
+        }
+    };
+
     /** Cache configuration. */
     @GridToStringExclude
     protected GridCacheContext<K, V> ctx;
@@ -588,7 +595,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * to provide custom stop behavior.
      */
     public void stop() {
-        // No-op.
+        // Nulling thread local reference to ensure values will be eventually GCed
+        // no matter what references these futures are holding.
+        lastFut = null;
     }
 
     /**
@@ -4095,7 +4104,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     @SuppressWarnings("unchecked")
     IgniteInternalFuture<IgniteInternalTx> commitTxAsync(final GridNearTxLocal tx) {
-        FutureHolder holder = tx.lastAsyncFuture();
+        FutureHolder holder = tx.txState().lastAsyncFuture();
 
         holder.lock();
 
@@ -4129,6 +4138,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
+     * Awaits for previous async operation to be completed.
+     */
+    public FutureHolder lastFut() {
+        return lastFut.get();
+    }
+
+    /**
      * @param op Cache operation.
      * @param <T> Return type.
      * @return Operation result.
@@ -4141,7 +4157,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         GridNearTxLocal tx = checkCurrentTx();
 
         if (tx != null)
-            tx.awaitLastFuture();
+            tx.txState().lastAsyncFuture().await();
+        else
+            lastFut().await();
 
         if (tx == null || tx.implicit()) {
             TransactionConfiguration tCfg = CU.transactionConfiguration(ctx, ctx.kernalContext().config());
@@ -4314,7 +4332,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (fail != null)
             return fail;
 
-        FutureHolder holder = tx.lastAsyncFuture();
+        FutureHolder holder = tx.implicit() ? lastFut() : tx.txState().lastAsyncFuture();
 
         holder.lock();
 
@@ -4395,13 +4413,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 return f;
             }
-
-            /**
-             * Wait for concurrent tx operation to finish.
-             * See {@link GridDhtTxLocalAdapter#updateLockFuture(IgniteInternalFuture, IgniteInternalFuture)}
-             */
-            if (!tx0.txState().implicitSingle())
-                tx0.awaitLastFuture();
 
             IgniteInternalFuture<T> f;
 
@@ -6076,6 +6087,23 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
          */
         public void future(@Nullable IgniteInternalFuture fut) {
             this.fut = fut;
+        }
+
+        /**
+         * Awaits for future to be completed.
+         */
+        public void await() {
+            IgniteInternalFuture fut0 = fut;
+
+            if (fut0 != null && !fut0.isDone()) {
+                try {
+                    // Ignore any exception from previous async operation as it should be handled by user.
+                    fut0.get();
+                }
+                catch (IgniteCheckedException ignored) {
+                    // No-op.
+                }
+            }
         }
     }
 
