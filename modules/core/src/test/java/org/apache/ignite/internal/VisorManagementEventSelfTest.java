@@ -39,7 +39,7 @@ import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
 public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = new IgniteConfiguration();
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         // Enable visor management events.
         cfg.setIncludeEventTypes(
