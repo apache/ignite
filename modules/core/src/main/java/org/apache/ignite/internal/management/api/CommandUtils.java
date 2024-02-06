@@ -790,7 +790,7 @@ public class CommandUtils {
             );
         }
 
-        assert ((IgniteEx)ignite).commandsRegistry().isCommandTask(taskCls);
+        assert ((IgniteEx)ignite).commandsRegistry().isCommandTask(taskCls) : "Use Command#commandTasks() to register.";
 
         return ignite
             .compute(ignite.cluster())
