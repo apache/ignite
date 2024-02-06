@@ -53,7 +53,7 @@ property,prop
 properties,props
 process,proc
 processor,proc
-#query,qry
+query,qry
 receive,rcv
 reference,ref
 #regularexpression,regex

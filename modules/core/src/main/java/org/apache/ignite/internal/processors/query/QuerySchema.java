@@ -136,11 +136,11 @@ public class QuerySchema implements Serializable {
 
             StringBuilder conflicts = new StringBuilder();
 
-            for (QueryEntity queryEntity : target) {
-                if (locEntities.containsKey(queryEntity.getTableName())) {
-                    QueryEntity locEntity = locEntities.get(queryEntity.getTableName());
+            for (QueryEntity qryEntity : target) {
+                if (locEntities.containsKey(qryEntity.getTableName())) {
+                    QueryEntity locEntity = locEntities.get(qryEntity.getTableName());
 
-                    QueryEntityPatch entityPatch = locEntity.makePatch(queryEntity);
+                    QueryEntityPatch entityPatch = locEntity.makePatch(qryEntity);
 
                     if (entityPatch.hasConflict()) {
                         if (conflicts.length() > 0)
@@ -153,7 +153,7 @@ public class QuerySchema implements Serializable {
                         patchOperations.addAll(entityPatch.getPatchOperations());
                 }
                 else
-                    entityToAdd.add(QueryUtils.copy(queryEntity));
+                    entityToAdd.add(QueryUtils.copy(qryEntity));
             }
 
             return new QuerySchemaPatch(patchOperations, entityToAdd, conflicts.toString());

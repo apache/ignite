@@ -195,21 +195,21 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
         ccfg.setWriteBehindBatchSize(1000);
 
-        QueryEntity queryEntity = new QueryEntity();
+        QueryEntity qryEntity = new QueryEntity();
 
-        queryEntity.setKeyType("java.lang.Integer");
+        qryEntity.setKeyType("java.lang.Integer");
 
-        queryEntity.setValueType("org.apache.ignite.cache.store.jdbc.model.TestPojo");
+        qryEntity.setValueType("org.apache.ignite.cache.store.jdbc.model.TestPojo");
 
-        queryEntity.setTableName("TEST_CACHE");
+        qryEntity.setTableName("TEST_CACHE");
 
-        queryEntity.setKeyFieldName("value3");
+        qryEntity.setKeyFieldName("value3");
 
         Set<String> keyFiles = new HashSet<>();
 
         keyFiles.add("value3");
 
-        queryEntity.setKeyFields(keyFiles);
+        qryEntity.setKeyFields(keyFiles);
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
@@ -219,7 +219,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
         fields.put("value3", "java.sql.Date");
 
-        queryEntity.setFields(fields);
+        qryEntity.setFields(fields);
 
         Map<String, String> aliases = new HashMap<>();
 
@@ -229,13 +229,13 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
         aliases.put("value3", "VALUE3");
 
-        queryEntity.setAliases(aliases);
+        qryEntity.setAliases(aliases);
 
-        ArrayList<QueryEntity> queryEntities = new ArrayList<>();
+        ArrayList<QueryEntity> qryEntities = new ArrayList<>();
 
-        queryEntities.add(queryEntity);
+        qryEntities.add(qryEntity);
 
-        ccfg.setQueryEntities(queryEntities);
+        ccfg.setQueryEntities(qryEntities);
 
         return ccfg;
     }

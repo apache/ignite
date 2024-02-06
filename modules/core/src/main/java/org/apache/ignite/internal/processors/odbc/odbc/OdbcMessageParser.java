@@ -163,18 +163,18 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
             }
 
             case OdbcRequest.QRY_FETCH: {
-                long queryId = reader.readLong();
+                long qryId = reader.readLong();
                 int pageSize = reader.readInt();
 
-                res = new OdbcQueryFetchRequest(queryId, pageSize);
+                res = new OdbcQueryFetchRequest(qryId, pageSize);
 
                 break;
             }
 
             case OdbcRequest.QRY_CLOSE: {
-                long queryId = reader.readLong();
+                long qryId = reader.readLong();
 
-                res = new OdbcQueryCloseRequest(queryId);
+                res = new OdbcQueryCloseRequest(qryId);
 
                 break;
             }
@@ -202,27 +202,27 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
 
             case OdbcRequest.META_PARAMS: {
                 String schema = reader.readString();
-                String sqlQuery = reader.readString();
+                String sqlQry = reader.readString();
 
-                res = new OdbcQueryGetParamsMetaRequest(schema, sqlQuery);
+                res = new OdbcQueryGetParamsMetaRequest(schema, sqlQry);
 
                 break;
             }
 
             case OdbcRequest.META_RESULTSET: {
                 String schema = reader.readString();
-                String sqlQuery = reader.readString();
+                String sqlQry = reader.readString();
 
-                res = new OdbcQueryGetResultsetMetaRequest(schema, sqlQuery);
+                res = new OdbcQueryGetResultsetMetaRequest(schema, sqlQry);
 
                 break;
             }
 
             case OdbcRequest.MORE_RESULTS: {
-                long queryId = reader.readLong();
+                long qryId = reader.readLong();
                 int pageSize = reader.readInt();
 
-                res = new OdbcQueryMoreResultsRequest(queryId, pageSize);
+                res = new OdbcQueryMoreResultsRequest(qryId, pageSize);
 
                 break;
             }

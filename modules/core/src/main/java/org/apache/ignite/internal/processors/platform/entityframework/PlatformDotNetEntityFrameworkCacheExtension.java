@@ -107,7 +107,7 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
             }
 
             case OP_PUT_ITEM: {
-                String query = reader.readString();
+                String qry = reader.readString();
 
                 long[] versions = null;
                 String[] entitySets = null;
@@ -132,7 +132,7 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
                 IgniteCache<PlatformDotNetEntityFrameworkCacheKey, PlatformDotNetEntityFrameworkCacheEntry> dataCache
                     = target.rawCache();
 
-                PlatformDotNetEntityFrameworkCacheKey key = new PlatformDotNetEntityFrameworkCacheKey(query, versions);
+                PlatformDotNetEntityFrameworkCacheKey key = new PlatformDotNetEntityFrameworkCacheKey(qry, versions);
 
                 dataCache.put(key, efEntry);
 
@@ -140,7 +140,7 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
             }
 
             case OP_GET_ITEM: {
-                String query = reader.readString();
+                String qry = reader.readString();
 
                 long[] versions = null;
 
@@ -156,7 +156,7 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
                 IgniteCache<PlatformDotNetEntityFrameworkCacheKey, PlatformDotNetEntityFrameworkCacheEntry> dataCache
                     = target.rawCache();
 
-                PlatformDotNetEntityFrameworkCacheKey key = new PlatformDotNetEntityFrameworkCacheKey(query, versions);
+                PlatformDotNetEntityFrameworkCacheKey key = new PlatformDotNetEntityFrameworkCacheKey(qry, versions);
 
                 PlatformDotNetEntityFrameworkCacheEntry entry = dataCache.get(key);
 
