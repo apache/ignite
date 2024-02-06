@@ -138,7 +138,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      */
     private final @Nullable ConcurrentMap<Long, ByteBuffer> encThLocBufs;
 
-    /** */
+    /** Caches version the dump start. */
     private final GridCacheVersion dumpVer;
 
     /**
