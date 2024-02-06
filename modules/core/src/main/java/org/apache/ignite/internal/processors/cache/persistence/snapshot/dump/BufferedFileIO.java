@@ -40,7 +40,7 @@ public class BufferedFileIO extends FileIODecorator {
     private long position;
 
     /** */
-    public BufferedFileIO(FileIO fileIO) throws IOException {
+    public BufferedFileIO(FileIO fileIO) {
         super(fileIO);
 
         A.ensure(fileIO != null, "fileIO must not be null");
@@ -51,10 +51,6 @@ public class BufferedFileIO extends FileIODecorator {
             blockSize = DEFAULT_BLOCK_SIZE;
 
         buf = ByteBuffer.allocateDirect(blockSize);
-
-        position = fileIO.position();
-
-        assert position == 0;
     }
 
     /** {@inheritDoc} */
