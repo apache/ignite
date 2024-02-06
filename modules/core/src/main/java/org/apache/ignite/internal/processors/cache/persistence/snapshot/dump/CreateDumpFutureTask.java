@@ -138,6 +138,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      */
     private final @Nullable ConcurrentMap<Long, ByteBuffer> encThLocBufs;
 
+    /** */
+    private final GridCacheVersion dumpVer;
+
     /**
      * @param cctx Cache context.
      * @param srcNodeId Node id which cause snapshot task creation.
@@ -178,6 +181,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         this.rateLimiter = rateLimiter;
         this.encKey = encrypt ? cctx.gridConfig().getEncryptionSpi().create() : null;
         this.encThLocBufs = encrypt ? new ConcurrentHashMap<>() : null;
+        this.dumpVer = cctx.versions().next(cctx.kernalContext().discovery().topologyVersion());
     }
 
     /** {@inheritDoc} */
@@ -477,7 +481,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
          * @param gctx Group context.
          * @param part Partition id.
          */
-        public PartitionDumpContext(CacheGroupContext gctx, int part) {
+        private PartitionDumpContext(CacheGroupContext gctx, int part) {
             assert gctx != null;
 
             try {
@@ -485,9 +489,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 grp = gctx.groupId();
                 topVer = gctx.topology().lastTopologyChangeVersion();
 
-                startVer = grpPrimaries.get(gctx.groupId()).contains(part)
-                    ? gctx.shared().versions().next(topVer.topologyVersion())
-                    : null;
+                startVer = grpPrimaries.get(gctx.groupId()).contains(part) ? dumpVer : null;
 
                 serializer = new DumpEntrySerializer(
                     thLocBufs,
