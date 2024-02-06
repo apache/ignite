@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.tx;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,8 +55,8 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable Class<? extends ComputeTask<?, ?>>[] taskClasses() {
-        return F.asArray(FetchNearXidVersionTask.class, TxTask.class);
+    @Override public @Nullable Collection<Class<? extends ComputeTask<?, ?>>> commandTasks() {
+        return F.asList(FetchNearXidVersionTask.class, TxTask.class);
     }
 
     /** {@inheritDoc} */

@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -37,7 +38,6 @@ import org.apache.ignite.internal.client.thin.TestTask;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.LocalCommand;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -46,6 +46,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static java.util.Collections.singleton;
 import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
 
 /**
@@ -179,8 +180,8 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public @Nullable Class<? extends ComputeTask<?, ?>>[] taskClasses() {
-            return F.asArray(TestManagementTask.class);
+        @Override public @Nullable Collection<Class<? extends ComputeTask<?, ?>>> commandTasks() {
+            return singleton(TestManagementTask.class);
         }
 
         /** {@inheritDoc} */

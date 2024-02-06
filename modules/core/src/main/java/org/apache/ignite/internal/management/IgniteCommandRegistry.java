@@ -41,7 +41,6 @@ import org.apache.ignite.internal.management.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand;
 import org.apache.ignite.internal.management.tx.TxCommand;
 import org.apache.ignite.internal.management.wal.WalCommand;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Ignite command registry containing all commands known by Ignite node.
@@ -50,7 +49,7 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
     /** Commands task classes. */
-    private final Set<Class<? extends ComputeTask<?, ?>>> taskClasses = new HashSet<>();
+    private final Set<Class<? extends ComputeTask<?, ?>>> commandTasks = new HashSet<>();
 
     /** */
     public IgniteCommandRegistry() {
@@ -82,7 +81,7 @@ public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
             new CdcCommand()
         );
 
-        registerTaskClasses(this);
+        registerCommandTasks(this);
     }
 
     /**
@@ -93,19 +92,19 @@ public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
     public void register(Command<?, ?> cmd) {
         add(cmd);
 
-        registerTaskClasses(cmd);
+        registerCommandTasks(cmd);
     }
 
     /** @return {@code True} if the task related to a command. */
     public boolean isCommandTask(Class<?> taskCls) {
-        return taskClasses.contains(taskCls);
+        return commandTasks.contains(taskCls);
     }
 
     /** */
-    private void registerTaskClasses(Command<?, ?> cmd) {
+    private void registerCommandTasks(Command<?, ?> cmd) {
         if (cmd instanceof CommandsRegistry)
-            ((CommandsRegistry<?, ?>)cmd).commands().forEachRemaining(e -> registerTaskClasses(e.getValue()));
+            ((CommandsRegistry<?, ?>)cmd).commands().forEachRemaining(e -> registerCommandTasks(e.getValue()));
 
-        taskClasses.addAll(F.asList(cmd.taskClasses()));
+        commandTasks.addAll(cmd.commandTasks());
     }
 }

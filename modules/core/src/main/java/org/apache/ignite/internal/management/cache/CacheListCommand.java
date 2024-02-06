@@ -61,8 +61,8 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewC
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable Class<? extends ComputeTask<?, ?>>[] taskClasses() {
-        return F.asArray(ViewCacheTask.class, CacheConfigurationCollectorTask.class);
+    @Override public @Nullable Collection<Class<? extends ComputeTask<?, ?>>> commandTasks() {
+        return F.asList(ViewCacheTask.class, CacheConfigurationCollectorTask.class);
     }
 
     /** {@inheritDoc} */

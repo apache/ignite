@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.management.api;
 
+import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
@@ -64,7 +66,7 @@ public interface Command<A extends IgniteDataTransferObject, R> {
     }
 
     /** @return Task classes related to a command. */
-    public default @Nullable Class<? extends ComputeTask<?, ?>>[] taskClasses() {
-        return null;
+    public default @Nullable Collection<Class<? extends ComputeTask<?, ?>>> commandTasks() {
+        return Collections.emptyList();
     }
 }

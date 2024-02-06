@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.management.consistency;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
@@ -29,10 +28,10 @@ import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.LocalCommand;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.management.api.CommandUtils.nodes;
 
@@ -50,8 +49,8 @@ public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairC
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable Class<? extends ComputeTask<?, ?>>[] taskClasses() {
-        return F.asArray(ConsistencyRepairTask.class);
+    @Override public @Nullable Collection<Class<? extends ComputeTask<?, ?>>> commandTasks() {
+        return singleton(ConsistencyRepairTask.class);
     }
 
     /** {@inheritDoc} */
@@ -72,7 +71,7 @@ public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairC
                 .collect(toSet());
 
             for (GridClientNode node : nodes) {
-                failed = execute(cli, ignite, arg, Collections.singleton(node), sb);
+                failed = execute(cli, ignite, arg, singleton(node), sb);
 
                 if (failed)
                     break;
