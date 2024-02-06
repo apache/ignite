@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.management;
 
-import java.util.HashSet;
-import java.util.Set;
-import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
-import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.baseline.BaselineCommand;
 import org.apache.ignite.internal.management.cache.CacheCommand;
@@ -48,9 +44,6 @@ import org.apache.ignite.internal.management.wal.WalCommand;
  * @see Command
  */
 public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
-    /** Commands task classes. */
-    private final Set<Class<? extends ComputeTask<?, ?>>> commandTasks = new HashSet<>();
-
     /** */
     public IgniteCommandRegistry() {
         super(
@@ -80,31 +73,10 @@ public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
             new ConsistencyCommand(),
             new CdcCommand()
         );
-
-        registerCommandTasks(this);
     }
 
-    /**
-     * Register new command.
-     *
-     * @param cmd Command to register.
-     */
-    public void register(Command<?, ?> cmd) {
-        add(cmd);
-
-        registerCommandTasks(cmd);
-    }
-
-    /** @return {@code True} if the task related to a command. */
-    public boolean isCommandTask(Class<?> taskCls) {
-        return commandTasks.contains(taskCls);
-    }
-
-    /** */
-    private void registerCommandTasks(Command<?, ?> cmd) {
-        if (cmd instanceof CommandsRegistry)
-            ((CommandsRegistry<?, ?>)cmd).commands().forEachRemaining(e -> registerCommandTasks(e.getValue()));
-
-        commandTasks.addAll(cmd.commandTasks());
+    /** {@inheritDoc} */
+    @Override public void register(Command<?, ?> cmd) {
+        super.register(cmd);
     }
 }

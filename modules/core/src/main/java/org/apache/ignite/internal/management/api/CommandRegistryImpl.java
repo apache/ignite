@@ -38,14 +38,14 @@ public abstract class CommandRegistryImpl<A extends IgniteDataTransferObject, R>
     /** */
     protected CommandRegistryImpl(Command<?, ?>... subcommands) {
         for (Command<?, ?> cmd : subcommands)
-            add(cmd);
+            register(cmd);
     }
 
     /**
-     * Adds the command to a registry.
+     * Register new command.
      * @param cmd Command to register.
      */
-    protected void add(Command<?, ?> cmd) {
+    protected void register(Command<?, ?> cmd) {
         boolean hasParent = CommandsRegistry.class.isAssignableFrom(getClass())
             && getClass() != IgniteCommandRegistry.class;
 

@@ -27,13 +27,11 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.LocalCommand;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,11 +56,6 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewC
     /** {@inheritDoc} */
     @Override public Class<CacheListCommandArg> argClass() {
         return CacheListCommandArg.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable Collection<Class<? extends ComputeTask<?, ?>>> commandTasks() {
-        return F.asList(ViewCacheTask.class, CacheConfigurationCollectorTask.class);
     }
 
     /** {@inheritDoc} */

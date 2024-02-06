@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.management.tx;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,7 +26,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -52,11 +50,6 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
     /** {@inheritDoc} */
     @Override public Class<TxInfoCommandArg> argClass() {
         return TxInfoCommandArg.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable Collection<Class<? extends ComputeTask<?, ?>>> commandTasks() {
-        return F.asList(FetchNearXidVersionTask.class, TxTask.class);
     }
 
     /** {@inheritDoc} */

@@ -43,7 +43,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientCacheMode;
 import org.apache.ignite.internal.client.GridClientCompute;
@@ -789,8 +788,6 @@ public class CommandUtils {
                 new VisorTaskArgument<>(nodesIds, arg, false)
             );
         }
-
-        assert ((IgniteEx)ignite).commandsRegistry().isCommandTask(taskCls) : "Use Command#commandTasks() to register.";
 
         return ignite
             .compute(ignite.cluster())

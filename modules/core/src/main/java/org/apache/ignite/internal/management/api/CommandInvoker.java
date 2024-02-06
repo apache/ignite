@@ -24,6 +24,8 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
@@ -84,6 +86,8 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
 
             if (cmdNodes == null)
                 cmdNodes = singletonList(defaultNode());
+
+            assert U.hasAnnotation(cmd.taskClass(), GridVisorManagementTask.class);
 
             res = CommandUtils.execute(client(), ignite, cmd.taskClass(), arg, cmdNodes);
 
