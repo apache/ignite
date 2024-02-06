@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 
 /**
  *
@@ -67,4 +68,25 @@ public interface IgniteTxLocalState extends IgniteTxState {
      * @return Recovery mode flag.
      */
     public boolean recovery();
+
+    /**
+     * Awaits for previous async operations on active caches to be completed.
+     *
+     * @param cctx Cache shared context.
+     */
+    public void awaitLastFuture(GridCacheSharedContext cctx);
+
+    /**
+     * Suspends previous async operation futures for active caches.
+     *
+     * @param cctx Cache shared context.
+     */
+    public void suspendLastFuture(GridCacheSharedContext cctx);
+
+    /**
+     * Resumes previous async operation futures for active caches.
+     *
+     * @param cctx Cache shared context.
+     */
+    public void resumeLastFuture(GridCacheSharedContext cctx);
 }

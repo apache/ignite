@@ -3348,6 +3348,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         synchronized (this) {
             checkValid();
 
+            txState.suspendLastFuture(cctx);
+
             cctx.tm().suspendTx(this);
         }
     }
@@ -3373,6 +3375,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         synchronized (this) {
             checkValid(true);
+
+            txState.resumeLastFuture(cctx);
 
             cctx.tm().resumeTx(this, threadId);
         }

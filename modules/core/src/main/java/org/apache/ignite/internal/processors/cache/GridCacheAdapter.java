@@ -4157,6 +4157,32 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
+     * Replaces previous async operation future on transaction suspend.
+     */
+    public @Nullable FutureHolder suspendLastFut() {
+        FutureHolder holder = lastFut.get();
+
+        IgniteInternalFuture fut = holder.future();
+
+        if (fut != null && !fut.isDone()) {
+            lastFut.set(new FutureHolder());
+
+            return holder;
+        }
+        else
+            return null;
+    }
+
+    /**
+     * Replaces previous async operation future on transaction resume.
+     */
+    public void resumeLastFut(FutureHolder holder) {
+        awaitLastFut();
+
+        lastFut.set(holder);
+    }
+
+    /**
      * @param op Cache operation.
      * @param <T> Return type.
      * @return Operation result.
@@ -6049,7 +6075,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Holder for last async operation future.
      */
-    protected static class FutureHolder {
+    public static class FutureHolder {
         /** Lock. */
         private final ReentrantLock lock = new ReentrantLock();
 

@@ -112,6 +112,16 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public void suspendLastFuture(GridCacheSharedContext cctx) {
+        assert false : "Implicit tx can't be suspended";
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resumeLastFuture(GridCacheSharedContext cctx) {
+        assert false : "Implicit tx can't be resumed";
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
         return true;
     }
