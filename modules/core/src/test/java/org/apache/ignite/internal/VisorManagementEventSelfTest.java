@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.client.thin.TestTask;
+import org.apache.ignite.internal.events.ManagementTaskEvent;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -76,6 +77,8 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
     private void doTestVisorTask(Class<? extends ComputeTask<?, ?>> cls, boolean expEvt) throws Exception {
         IgniteEx ignite = startGrid(0);
 
+        String arg = "test-arg";
+
         final AtomicReference<TaskEvent> evt = new AtomicReference<>();
 
         final CountDownLatch evtLatch = new CountDownLatch(1);
@@ -91,11 +94,12 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
         }, EventType.EVT_MANAGEMENT_TASK_STARTED);
 
         for (ClusterNode node : ignite.cluster().forServers().nodes())
-            ignite.compute().executeAsync(cls.getName(), new VisorTaskArgument<>(node.id(), new VisorTaskArgument(), true));
+            ignite.compute().executeAsync(cls.getName(), new VisorTaskArgument<>(node.id(), arg, true));
 
         if (expEvt) {
             assertTrue(evtLatch.await(10000, TimeUnit.MILLISECONDS));
-            assertTrue(evt.get() instanceof TaskEvent);
+            assertTrue(evt.get() instanceof ManagementTaskEvent);
+            assertEquals(arg, ((ManagementTaskEvent)evt.get()).argument().getArgument());
         }
         else
             assertFalse(evtLatch.await(1000, TimeUnit.MILLISECONDS));
