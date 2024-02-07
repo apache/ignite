@@ -45,7 +45,8 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Get response.
  */
-public class GridNearGetResponse extends GridCacheIdMessage implements GridCacheDeployable, GridCacheVersionable {
+public class GridNearGetResponse extends GridCacheIdMessage implements GridCacheDeployable,
+    GridCacheVersionable {
     /** */
     private static final long serialVersionUID = 0L;
 
