@@ -73,7 +73,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOneP
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeValue;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicNearResponse;
@@ -324,7 +323,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)150, MvccSnapshotWithoutTxs::new);
         factory.register((short)157, PartitionUpdateCountersMessage::new);
         factory.register((short)158, GridDhtPartitionSupplyMessageV2::new);
-        factory.register((short)161, GridInvokeValue::new);
         factory.register((short)162, GenerateEncryptionKeyRequest::new);
         factory.register((short)163, GenerateEncryptionKeyResponse::new);
         factory.register((short)167, ServiceDeploymentProcessId::new);
