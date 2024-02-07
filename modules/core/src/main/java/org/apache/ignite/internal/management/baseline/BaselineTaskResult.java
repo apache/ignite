@@ -46,6 +46,9 @@ public class BaselineTaskResult extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Cluster activated flag. */
+    private boolean active;
+
     /** Cluster state. */
     private ClusterState clusterState;
 
@@ -194,6 +197,15 @@ public class BaselineTaskResult extends VisorDataTransferObject {
         this.autoAdjustSettings = autoAdjustSettings;
         this.remainingTimeToBaselineAdjust = remainingTimeToBaselineAdjust;
         this.baselineAdjustInProgress = baselineAdjustInProgress;
+
+        active = !(clusterState == ClusterState.INACTIVE);
+    }
+
+    /**
+     * @return Cluster activated flag.
+     */
+    public boolean isActive() {
+        return active;
     }
 
     /**
@@ -226,7 +238,7 @@ public class BaselineTaskResult extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V2;
+        return V3;
     }
 
     /**
@@ -264,7 +276,7 @@ public class BaselineTaskResult extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer,
         ObjectInput in) throws IOException, ClassNotFoundException {
-        clusterState = U.readEnum(in, ClusterState.class);
+        active = in.readBoolean();
         topVer = in.readLong();
         baseline = U.readTreeMap(in);
         servers = U.readTreeMap(in);
@@ -274,6 +286,9 @@ public class BaselineTaskResult extends VisorDataTransferObject {
             remainingTimeToBaselineAdjust = in.readLong();
             baselineAdjustInProgress = in.readBoolean();
         }
+
+        if (protoVer > V2)
+            clusterState = U.readEnum(in, ClusterState.class);
     }
 
     /** {@inheritDoc} */
