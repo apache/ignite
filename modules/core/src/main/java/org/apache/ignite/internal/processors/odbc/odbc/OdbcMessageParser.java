@@ -448,16 +448,16 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         if (ver.compareTo(OdbcConnectionContext.VER_2_3_2) < 0) {
             long summ = 0;
 
-            for (Long value : affectedRows)
-                summ += value == null ? 0 : value;
+            for (Long val : affectedRows)
+                summ += val == null ? 0 : val;
 
             writer.writeLong(summ);
         }
         else {
             writer.writeInt(affectedRows.length);
 
-            for (long value : affectedRows)
-                writer.writeLong(value);
+            for (long val : affectedRows)
+                writer.writeLong(val);
         }
     }
 }

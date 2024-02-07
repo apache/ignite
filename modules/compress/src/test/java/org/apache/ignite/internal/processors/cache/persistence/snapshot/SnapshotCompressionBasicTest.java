@@ -483,9 +483,9 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Value value = (Value)o;
+            Value val = (Value)o;
 
-            return Objects.equals(name, value.name);
+            return Objects.equals(name, val.name);
         }
 
         /** {@inheritDoc} */

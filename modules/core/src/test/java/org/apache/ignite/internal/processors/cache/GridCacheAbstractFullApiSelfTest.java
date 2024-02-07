@@ -6806,9 +6806,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             if (!(o instanceof TestValue))
                 return false;
 
-            TestValue value = (TestValue)o;
+            TestValue val = (TestValue)o;
 
-            if (val != value.val)
+            if (this.val != val.val)
                 return false;
 
             return true;
