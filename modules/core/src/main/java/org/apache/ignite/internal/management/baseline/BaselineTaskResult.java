@@ -264,13 +264,14 @@ public class BaselineTaskResult extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeEnum(out, clusterState);
+        out.writeBoolean(active);
         out.writeLong(topVer);
         U.writeMap(out, baseline);
         U.writeMap(out, servers);
         out.writeObject(autoAdjustSettings);
         out.writeLong(remainingTimeToBaselineAdjust);
         out.writeBoolean(baselineAdjustInProgress);
+        U.writeEnum(out, clusterState);
     }
 
     /** {@inheritDoc} */
