@@ -1550,9 +1550,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @return @return Service's id if exists, otherwise {@code null};
      */
     @Nullable private IgniteUuid lookupDeployedServiceId(String name) {
-        ServiceInfo serviceInfo = deployedServicesByName.get(name);
-        if (serviceInfo != null) {
-            return serviceInfo.serviceId();
+        ServiceInfo srvcInfo = deployedServicesByName.get(name);
+        if (srvcInfo != null) {
+            return srvcInfo.serviceId();
         }
 
         return null;
@@ -1713,11 +1713,11 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             }
 
             for (ServiceConfiguration srvcCfg : prepCfgs.cfgs) {
-                ServiceInfo serviceInfo = new ServiceInfo(ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true);
+                ServiceInfo srvcInfo = new ServiceInfo(ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true);
 
-                serviceInfo.context(ctx);
+                srvcInfo.context(ctx);
 
-                staticServicesInfo.add(serviceInfo);
+                staticServicesInfo.add(srvcInfo);
             }
         }
 

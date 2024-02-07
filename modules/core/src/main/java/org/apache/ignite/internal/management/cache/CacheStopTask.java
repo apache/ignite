@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -34,7 +33,6 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_
  * Task that stop specified caches on specified node.
  */
 @GridInternal
-@GridVisorManagementTask
 public class CacheStopTask extends VisorOneNodeTask<CacheDestroyCommandArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;

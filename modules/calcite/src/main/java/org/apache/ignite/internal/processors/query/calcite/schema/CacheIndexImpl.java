@@ -134,16 +134,16 @@ public class CacheIndexImpl implements IgniteIndex {
         ColocationGroup grp,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        UUID localNodeId = ectx.localNodeId();
+        UUID locNodeId = ectx.localNodeId();
 
-        if (grp.nodeIds().contains(localNodeId) && idx != null) {
+        if (grp.nodeIds().contains(locNodeId) && idx != null) {
             return new IndexFirstLastScan<>(
                 first,
                 ectx,
                 tbl.descriptor(),
                 idx.unwrap(InlineIndexImpl.class),
                 collation.getKeys(),
-                grp.partitions(localNodeId),
+                grp.partitions(locNodeId),
                 requiredColumns
             );
         }

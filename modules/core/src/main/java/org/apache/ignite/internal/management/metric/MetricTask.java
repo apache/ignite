@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.spi.metric.BooleanMetric;
@@ -43,7 +42,6 @@ import static org.apache.ignite.spi.metric.jmx.MetricRegistryMBean.searchHistogr
 
 /** Reperesents visor task for obtaining metric values. */
 @GridInternal
-@GridVisorManagementTask
 public class MetricTask extends VisorOneNodeTask<MetricCommandArg, Map<String, ?>> {
     /** */
     private static final long serialVersionUID = 0L;

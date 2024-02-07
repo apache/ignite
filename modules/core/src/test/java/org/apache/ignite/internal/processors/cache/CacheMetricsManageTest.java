@@ -549,7 +549,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache0 = cl.cache(cacheName);
 
-        CacheMetrics localCacheMetrics = cache.localMetrics();
+        CacheMetrics locCacheMetrics = cache.localMetrics();
 
         final List<Integer> priKeys = primaryKeys(cache, 3, 1);
 
@@ -638,7 +638,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
                     fail(e.toString());
                 }
 
-                String coll = localCacheMetrics.getTxKeyCollisions();
+                String coll = locCacheMetrics.getTxKeyCollisions();
 
                 if (coll.contains("val=" + priKeys.get(2)) || coll.contains("val=" + priKeys.get(0)));
                     return true;
@@ -744,7 +744,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
             commSpi0.stopBlock();
         }
 
-        CacheMetrics localCacheMetrics = cache.localMetrics();
+        CacheMetrics locCacheMetrics = cache.localMetrics();
 
         IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
 
@@ -757,7 +757,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
             txMXBean2.setTxKeyCollisionsInterval(ThreadLocalRandom.current().nextInt(1000, 1100));
 
-            localCacheMetrics.getTxKeyCollisions();
+            locCacheMetrics.getTxKeyCollisions();
 
             ig.cache(cacheName).clearStatistics();
 

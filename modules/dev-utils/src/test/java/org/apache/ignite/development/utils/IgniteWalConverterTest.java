@@ -265,9 +265,9 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
                     idx = result.indexOf("]", start);
 
                     if (idx > 0) {
-                        final String value = result.substring(start, idx);
+                        final String val = result.substring(start, idx);
 
-                        find = new String(Base64.getDecoder().decode(value)).contains(person.getName());
+                        find = new String(Base64.getDecoder().decode(val)).contains(person.getName());
                     }
                 }
             }
@@ -586,16 +586,16 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             for (int i = 0; i < 10; i++) {
                 final PersonKey key = new PersonKey(i);
 
-                final Person value;
+                final Person val;
 
                 if (i % 2 == 0)
-                    value = new Person(i, PERSON_NAME_PREFIX + i);
+                    val = new Person(i, PERSON_NAME_PREFIX + i);
                 else
-                    value = new PersonEx(i, PERSON_NAME_PREFIX + i, "Additional information " + i, "Description " + i);
+                    val = new PersonEx(i, PERSON_NAME_PREFIX + i, "Additional information " + i, "Description " + i);
 
-                cache.put(key, value);
+                cache.put(key, val);
 
-                list.add(value);
+                list.add(val);
             }
 
             if (afterPopulateConsumer != null)

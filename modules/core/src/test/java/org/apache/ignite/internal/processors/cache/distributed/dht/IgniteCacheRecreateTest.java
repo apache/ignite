@@ -310,10 +310,10 @@ public class IgniteCacheRecreateTest extends GridCommonAbstractTest {
             ATOMIC,
             GridCacheQueryRequest.class,
             (cache, keys) -> {
-                ScanQuery<Integer, Integer> scanQuery = new ScanQuery<>();
-                scanQuery.setPageSize(1);
+                ScanQuery<Integer, Integer> scanQry = new ScanQuery<>();
+                scanQry.setPageSize(1);
 
-                try (QueryCursor qry = cache.query(scanQuery)) {
+                try (QueryCursor qry = cache.query(scanQry)) {
                     for (Object o : qry.getAll()) {
                         IgniteBiTuple<Integer, Integer> tuple = (IgniteBiTuple<Integer, Integer>)o;
 

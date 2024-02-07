@@ -75,9 +75,9 @@ public class ClosableIteratorsHolderTest extends GridCommonAbstractTest {
 
     /** */
     private Iterator<?> newIterator() {
-        final ClosableIterator iterator = new ClosableIterator();
-        iterators.add(iterator);
-        return iterator;
+        final ClosableIterator iter = new ClosableIterator();
+        iterators.add(iter);
+        return iter;
     }
 
     /** */

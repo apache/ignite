@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
@@ -55,7 +54,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.NearTxResultHandler.createResponse;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -389,9 +387,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
                     false,
                     null);
 
-                dhtTx.mvccSnapshot(new MvccSnapshotWithoutTxs(mvccSnapshot.coordinatorVersion(),
-                    mvccSnapshot.counter(), MVCC_OP_COUNTER_NA, mvccSnapshot.cleanupVersion()));
-
                 dhtTx = cctx.tm().onCreated(null, dhtTx);
 
                 if (dhtTx == null || !cctx.tm().onStarted(dhtTx)) {
@@ -401,7 +396,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             }
 
             cctx.tm().txHandler().mvccEnlistBatch(dhtTx, cctx, it.operation(), keys, vals,
-                mvccSnapshot.withoutActiveTransactions(), null, -1);
+                null, null, -1);
         }
         catch (IgniteCheckedException e) {
             onDone(e);
@@ -448,7 +443,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             batchId,
             topVer,
             lockVer,
-            mvccSnapshot,
+            null,
             clientFirst,
             remainingTime(),
             tx.remainingTime(),
@@ -484,7 +479,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
         GridDhtTxEnlistFuture fut = new GridDhtTxEnlistFuture(nodeId,
             lockVer,
-            mvccSnapshot,
+            null,
             futId,
             batchId,
             tx,

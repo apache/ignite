@@ -328,7 +328,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
             srv.cluster().forServers().nodes().forEach(node -> readsNodes.add(node.id()));
 
         Set<UUID> dataNodes = new HashSet<>(readsNodes);
-        AtomicInteger queryCnt = new AtomicInteger();
+        AtomicInteger qryCnt = new AtomicInteger();
         AtomicInteger readsCnt = new AtomicInteger();
         HashSet<Long> qryIds = new HashSet<>();
         AtomicLong mapRowCnt = new AtomicLong();
@@ -339,7 +339,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         stopCollectStatisticsAndRead(new TestHandler() {
             @Override public void query(UUID nodeId, GridCacheQueryType type, String text, long id, long queryStartTime,
                 long duration, boolean success) {
-                queryCnt.incrementAndGet();
+                qryCnt.incrementAndGet();
                 qryIds.add(id);
 
                 assertTrue(expNodeIds.contains(nodeId));
@@ -405,7 +405,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
             }
         });
 
-        assertEquals(1, queryCnt.get());
+        assertEquals(1, qryCnt.get());
         assertTrue("Query reads expected on nodes: " + readsNodes, readsNodes.isEmpty());
         assertEquals(1, qryIds.size());
 

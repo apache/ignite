@@ -660,11 +660,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         for (String idxFullname : local.keySet()) {
             if (remote.containsKey(idxFullname)) {
-                int localInlineSize = local.get(idxFullname);
+                int locInlineSize = local.get(idxFullname);
                 int remoteInlineSize = remote.get(idxFullname);
 
-                if (localInlineSize != remoteInlineSize)
-                    sb.a(idxFullname).a("(").a(localInlineSize).a(",").a(remoteInlineSize).a(")").a(",");
+                if (locInlineSize != remoteInlineSize)
+                    sb.a(idxFullname).a("(").a(locInlineSize).a(",").a(remoteInlineSize).a(")").a(",");
             }
         }
 
@@ -1103,7 +1103,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 // Apply pending operation which could have been completed as no-op at this point.
                 // There could be only one in-flight operation for a cache.
                 for (SchemaOperation op : schemaOps.values()) {
-                    if (F.eq(op.proposeMessage().deploymentId(), cacheInfo.dynamicDeploymentId())) {
+                    if (F.eq(op.proposeMessage().operation().cacheName(), cacheName)
+                        && F.eq(op.proposeMessage().deploymentId(), cacheInfo.dynamicDeploymentId())) {
                         if (op.started()) {
                             SchemaOperationWorker worker = op.manager().worker();
 

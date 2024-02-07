@@ -922,9 +922,9 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
         IgniteInternalFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    final int localNodeId = (int)threadCounter.getAndIncrement();
+                    final int locNodeId = (int)threadCounter.getAndIncrement();
 
-                    final Ignite grid = grid(localNodeId);
+                    final Ignite grid = grid(locNodeId);
 
                     IgniteClosure<Ignite, Void> closure = new IgniteClosure<Ignite, Void>() {
                         @Override public Void apply(Ignite ignite) {
@@ -1672,15 +1672,15 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
         IgniteInternalFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    final int localNodeId = (int)threadCounter.getAndIncrement();
+                    final int locNodeId = (int)threadCounter.getAndIncrement();
 
-                    final Ignite grid = grid(localNodeId);
+                    final Ignite grid = grid(locNodeId);
 
                     IgniteClosure<Ignite, Long> closure = new IgniteClosure<Ignite, Long>() {
                         @Override public Long apply(Ignite ignite) {
                             IgniteLock l = ignite.reentrantLock("lock", true, true, true);
 
-                            long localCnt = 0;
+                            long locCnt = 0;
 
                             IgniteCountDownLatch latch = ignite.countDownLatch("latch", threadCnt, false, true);
 
@@ -1699,17 +1699,17 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                                     ignite.getOrCreateCache(OPS_COUNTER).put(OPS_COUNTER, ++opsCounter);
 
-                                    localCnt++;
+                                    locCnt++;
 
-                                    if (localCnt > 1000) {
-                                        assertTrue(localCnt < (1 + tolerance) * opsCounter / threadCnt);
+                                    if (locCnt > 1000) {
+                                        assertTrue(locCnt < (1 + tolerance) * opsCounter / threadCnt);
 
-                                        assertTrue(localCnt > (1 - tolerance) * opsCounter / threadCnt);
+                                        assertTrue(locCnt > (1 - tolerance) * opsCounter / threadCnt);
                                     }
 
-                                    if (localCnt % 100 == 0) {
+                                    if (locCnt % 100 == 0) {
                                         info("Node [id=" + ignite.cluster().localNode().id() + "] acquired " +
-                                            localCnt + " times. " + "Total ops count: " +
+                                            locCnt + " times. " + "Total ops count: " +
                                             opsCounter + "/" + opsCnt + "]");
                                     }
                                 }
@@ -1718,13 +1718,13 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                                 }
                             }
 
-                            return localCnt;
+                            return locCnt;
                         }
                     };
 
-                    long localCnt = closure.apply(grid);
+                    long locCnt = closure.apply(grid);
 
-                    counts.put(localNodeId, localCnt);
+                    counts.put(locNodeId, locCnt);
 
                     return null;
                 }

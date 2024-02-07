@@ -319,8 +319,8 @@ public class RelJsonReader {
         private ImmutableList<RexLiteral> getTuple(List jsonTuple) {
             ImmutableList.Builder<RexLiteral> builder =
                 ImmutableList.builder();
-            for (Object jsonValue : jsonTuple)
-                builder.add((RexLiteral)relJson.toRex(this, jsonValue));
+            for (Object jsonVal : jsonTuple)
+                builder.add((RexLiteral)relJson.toRex(this, jsonVal));
             return builder.build();
         }
 

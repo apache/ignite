@@ -641,7 +641,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             Set<String> actualUserCols = new TreeSet<>();
 
-            Set<String> actualSystemCols = new TreeSet<>();
+            Set<String> actualSysCols = new TreeSet<>();
 
             while (rs.next()) {
                 int precision = rs.getInt("COLUMN_SIZE");
@@ -660,7 +660,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 if (!schemaName.equals(SCHEMA_SYS))
                     actualUserCols.add(colDefinition);
                 else
-                    actualSystemCols.add(colDefinition);
+                    actualSysCols.add(colDefinition);
             }
 
             Assert.assertEquals(expectedCols, actualUserCols);
@@ -1160,7 +1160,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.PAGES_TIMESTAMP_HISTOGRAM.PAGES_COUNT.null"
                 ));
 
-            Assert.assertEquals(expectedCols, actualSystemCols);
+            Assert.assertEquals(expectedCols, actualSysCols);
         }
     }
 

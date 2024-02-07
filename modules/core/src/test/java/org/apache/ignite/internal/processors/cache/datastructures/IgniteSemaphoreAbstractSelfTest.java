@@ -290,18 +290,18 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     @Test
     public void testSemaphoreClosing() throws Exception {
         IgniteConfiguration cfg;
-        GridStringLogger stringLog;
+        GridStringLogger strLog;
 
-        stringLog = new GridStringLogger();
+        strLog = new GridStringLogger();
 
         cfg = optimize(getConfiguration("npeGrid"));
-        cfg.setGridLogger(stringLog);
+        cfg.setGridLogger(strLog);
 
         try (Ignite ignite = startGrid(cfg.getIgniteInstanceName(), cfg)) {
             ignite.semaphore("semaphore", 1, true, true);
         }
 
-        assertFalse(stringLog.toString().contains(NullPointerException.class.getName()));
+        assertFalse(strLog.toString().contains(NullPointerException.class.getName()));
     }
 
     /**
@@ -312,7 +312,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     @Test
     public void testAcquireAndExecute() throws Exception {
         IgniteSemaphore semaphore = ignite(0).semaphore("testAcquireAndExecute", 1, true, true);
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        ExecutorService executorSrvc = Executors.newSingleThreadExecutor();
 
         IgniteCallable<Integer> callable = new IgniteCallable<Integer>() {
             @Override public Integer call() {
@@ -334,7 +334,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
             }
         };
 
-        executorService.submit(runnable);
+        executorSrvc.submit(runnable);
 
         Thread.sleep(1000);
         igniteFut.get(7000, MILLISECONDS);
@@ -343,7 +343,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
 
         assertTrue(semaphore.availablePermits() == 1);
 
-        executorService.shutdown();
+        executorSrvc.shutdown();
     }
 
     /**
@@ -354,7 +354,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     @Test
     public void testAcquireAndExecuteIfFailure() {
         IgniteSemaphore semaphore = ignite(0).semaphore("testAcquireAndExecuteIfFailure", 1, true, true);
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        ExecutorService executorSrvc = Executors.newSingleThreadExecutor();
 
         IgniteCallable<Integer> callable = new IgniteCallable<Integer>() {
             @Override public Integer call() {
@@ -382,7 +382,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
                     }
                 };
 
-                executorService.submit(runnable);
+                executorSrvc.submit(runnable);
 
                 ((IgniteFutureImpl)igniteFut).internalFuture().get();
 
@@ -392,7 +392,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
             }
         }, RuntimeException.class, "Foobar");
 
-        executorService.shutdown();
+        executorSrvc.shutdown();
     }
 
     /**

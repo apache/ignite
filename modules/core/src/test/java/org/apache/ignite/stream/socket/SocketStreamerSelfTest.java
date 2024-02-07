@@ -294,8 +294,8 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
                 sockStmr.setMultipleTupleExtractor(new StreamMultipleTupleExtractor<Message, Integer, String>() {
                     @Override public Map<Integer, String> extract(Message msg) {
                         Map<Integer, String> answer = new HashMap<>();
-                        for (int value : msg.values) {
-                            answer.put(value, Integer.toString(value));
+                        for (int val : msg.values) {
+                            answer.put(val, Integer.toString(val));
                         }
                         return answer;
                     }

@@ -150,10 +150,10 @@ public class CheckCpHistTask extends ComputeTaskAdapter<Map<UUID, Map<Integer, S
                             break;
                         }
 
-                        CheckpointEntry.GroupState groupState = states.get(grpId);
+                        CheckpointEntry.GroupState grpState = states.get(grpId);
 
                         for (int p : grpIds.get(grpId)) {
-                            if (groupState.indexByPartition(p) < 0) {
+                            if (grpState.indexByPartition(p) < 0) {
                                 dbMng.forceCheckpoint(CP_REASON);
 
                                 break;

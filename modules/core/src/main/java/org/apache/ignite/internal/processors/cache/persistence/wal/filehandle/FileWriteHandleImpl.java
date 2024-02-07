@@ -638,9 +638,9 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
      * @return FSyncer suitable for the current JRE.
      */
     private static MMapFSyncer pickFsyncer() {
-        int javaVersion = majorJavaVersion(jdkVersion());
+        int javaVer = majorJavaVersion(jdkVersion());
 
-        if (javaVersion >= 15)
+        if (javaVer >= 15)
             return new JDK15FSyncer();
 
         return new LegacyFSyncer();

@@ -186,24 +186,24 @@ public class GridServiceDeployClusterReadOnlyModeTest extends GridCommonAbstract
     public void testDeployAllAllowed() {
         grid(0).cluster().state(ClusterState.ACTIVE_READ_ONLY);
 
-        Collection<String> serviceNames = new HashSet<>();
+        Collection<String> srvcNames = new HashSet<>();
 
         for (int i = 0; i < 2; i++)
-            serviceNames.add(SERVICE_NAME + "_" + i);
+            srvcNames.add(SERVICE_NAME + "_" + i);
 
-        Set<ServiceConfiguration> configs = serviceNames.stream()
+        Set<ServiceConfiguration> configs = srvcNames.stream()
             .map(GridServiceDeployClusterReadOnlyModeTest::serviceConfiguration)
             .collect(toSet());
 
         deployMultipleServices(s -> s.deployAll(configs), configs.size());
 
-        for (String serviceName : serviceNames)
-            checkServiceDeployed(serviceName, true);
+        for (String srvcName : srvcNames)
+            checkServiceDeployed(srvcName, true);
 
-        grid(0).services().cancelAll(serviceNames);
+        grid(0).services().cancelAll(srvcNames);
 
-        for (String serviceName : serviceNames)
-            checkServiceCanceled(serviceName, true);
+        for (String srvcName : srvcNames)
+            checkServiceCanceled(srvcName, true);
     }
 
     /** */
@@ -211,24 +211,24 @@ public class GridServiceDeployClusterReadOnlyModeTest extends GridCommonAbstract
     public void testDeployAllAsyncAllowed() {
         grid(0).cluster().state(ClusterState.ACTIVE_READ_ONLY);
 
-        Collection<String> serviceNames = new HashSet<>();
+        Collection<String> srvcNames = new HashSet<>();
 
         for (int i = 0; i < 2; i++)
-            serviceNames.add(SERVICE_NAME + "_" + i);
+            srvcNames.add(SERVICE_NAME + "_" + i);
 
-        Set<ServiceConfiguration> configs = serviceNames.stream()
+        Set<ServiceConfiguration> configs = srvcNames.stream()
             .map(GridServiceDeployClusterReadOnlyModeTest::serviceConfiguration)
             .collect(toSet());
 
         deployMultipleServices(s -> s.deployAllAsync(configs), configs.size());
 
-        for (String serviceName : serviceNames)
-            checkServiceDeployed(serviceName, true);
+        for (String srvcName : srvcNames)
+            checkServiceDeployed(srvcName, true);
 
-        grid(0).services().cancelAll(serviceNames);
+        grid(0).services().cancelAll(srvcNames);
 
-        for (String serviceName : serviceNames)
-            checkServiceCanceled(serviceName, true);
+        for (String srvcName : srvcNames)
+            checkServiceCanceled(srvcName, true);
     }
 
     /** */
@@ -256,50 +256,50 @@ public class GridServiceDeployClusterReadOnlyModeTest extends GridCommonAbstract
     /** */
     @Test
     public void testCancelAllAllowed() {
-        Collection<String> serviceNames = new HashSet<>();
+        Collection<String> srvcNames = new HashSet<>();
 
         for (int i = 0; i < 2; i++)
-            serviceNames.add(SERVICE_NAME + "_" + i);
+            srvcNames.add(SERVICE_NAME + "_" + i);
 
-        Set<ServiceConfiguration> configs = serviceNames.stream()
+        Set<ServiceConfiguration> configs = srvcNames.stream()
             .map(GridServiceDeployClusterReadOnlyModeTest::serviceConfiguration)
             .collect(toSet());
 
         deployMultipleServices(s -> s.deployAll(configs), configs.size());
 
-        for (String serviceName : serviceNames)
-            checkServiceDeployed(serviceName, true);
+        for (String srvcName : srvcNames)
+            checkServiceDeployed(srvcName, true);
 
         grid(0).cluster().state(ClusterState.ACTIVE_READ_ONLY);
 
-        grid(0).services().cancelAll(serviceNames);
+        grid(0).services().cancelAll(srvcNames);
 
-        for (String name : serviceNames)
+        for (String name : srvcNames)
             checkServiceCanceled(name, true);
     }
 
     /** */
     @Test
     public void testCancelAllAsyncAllowed() {
-        Collection<String> serviceNames = new HashSet<>();
+        Collection<String> srvcNames = new HashSet<>();
 
         for (int i = 0; i < 2; i++)
-            serviceNames.add(SERVICE_NAME + "_" + i);
+            srvcNames.add(SERVICE_NAME + "_" + i);
 
-        Set<ServiceConfiguration> configs = serviceNames.stream()
+        Set<ServiceConfiguration> configs = srvcNames.stream()
             .map(GridServiceDeployClusterReadOnlyModeTest::serviceConfiguration)
             .collect(toSet());
 
         deployMultipleServices(s -> s.deployAll(configs), configs.size());
 
-        for (String serviceName : serviceNames)
-            checkServiceDeployed(serviceName, true);
+        for (String srvcName : srvcNames)
+            checkServiceDeployed(srvcName, true);
 
         grid(0).cluster().state(ClusterState.ACTIVE_READ_ONLY);
 
-        grid(0).services().cancelAllAsync(serviceNames).get();
+        grid(0).services().cancelAllAsync(srvcNames).get();
 
-        for (String name : serviceNames)
+        for (String name : srvcNames)
             checkServiceCanceled(name, true);
     }
 

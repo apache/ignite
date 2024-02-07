@@ -77,14 +77,14 @@ public class KillQueryCommandDdlIntegrationTest extends AbstractDdlIntegrationTe
     public void testCancelUnknownSqlQuery() {
         IgniteEx srv = grid(0);
         UUID nodeId = cancelOnClient ? client.localNode().id() : srv.localNode().id();
-        Long queryId = ThreadLocalRandom.current().nextLong(10, 10000);
+        Long qryId = ThreadLocalRandom.current().nextLong(10, 10000);
         GridTestUtils.assertThrows(log, () -> {
                 sql(cancelOnClient ? client : srv, "KILL QUERY" + (isAsync ? " ASYNC '" : " '") + nodeId + "_"
-                    + queryId + "'");
+                    + qryId + "'");
             },
             IgniteException.class,
             String.format("Failed to cancel query [nodeId=%s, qryId=%d, err=Query with provided ID doesn't exist " +
-                    "[nodeId=%s, qryId=%d]]", nodeId, queryId, nodeId, queryId)
+                    "[nodeId=%s, qryId=%d]]", nodeId, qryId, nodeId, qryId)
         );
     }
 

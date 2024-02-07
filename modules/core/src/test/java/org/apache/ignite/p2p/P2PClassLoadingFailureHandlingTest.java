@@ -137,12 +137,12 @@ public class P2PClassLoadingFailureHandlingTest extends GridCommonAbstractTest {
     private void assertThatFailureHandlerIsNotCalled() throws InterruptedException {
         letFailurePropagateToFailureHandler();
 
-        StringWriter stringWriter = new StringWriter();
+        StringWriter strWriter = new StringWriter();
         if (failure.get() != null) {
-            failure.get().printStackTrace(new PrintWriter(stringWriter));
+            failure.get().printStackTrace(new PrintWriter(strWriter));
         }
 
-        assertNull("Failure handler should not be called, but it was with " + stringWriter, failure.get());
+        assertNull("Failure handler should not be called, but it was with " + strWriter, failure.get());
     }
 
     /***/
@@ -166,12 +166,12 @@ public class P2PClassLoadingFailureHandlingTest extends GridCommonAbstractTest {
         Service svc = instantiateClassLoadedWithExternalClassLoader(
             "org.apache.ignite.tests.p2p.classloadproblem.ServiceCausingP2PClassLoadProblem"
         );
-        ServiceConfiguration serviceCfg = new ServiceConfiguration()
+        ServiceConfiguration srvcCfg = new ServiceConfiguration()
             .setName("p2p-classloading-failure")
             .setTotalCount(1)
             .setService(svc);
 
-        assertThrows(log, () -> client.services().deploy(serviceCfg), IgniteException.class,
+        assertThrows(log, () -> client.services().deploy(srvcCfg), IgniteException.class,
             "Failed to deploy some services");
 
         assertThatFailureHandlerIsNotCalled();
@@ -218,14 +218,14 @@ public class P2PClassLoadingFailureHandlingTest extends GridCommonAbstractTest {
     public void continuousQueryRemoteFilterP2PClassLoadingProblemShouldNotCauseFailureHandling() throws Exception {
         IgniteCache<Integer, String> cache = client.createCache(CACHE_NAME);
 
-        ContinuousQuery<Integer, String> query = new ContinuousQuery<>();
-        query.setLocalListener(entry -> {});
-        query.setRemoteFilterFactory(instantiateClassLoadedWithExternalClassLoader(
+        ContinuousQuery<Integer, String> qry = new ContinuousQuery<>();
+        qry.setLocalListener(entry -> {});
+        qry.setRemoteFilterFactory(instantiateClassLoadedWithExternalClassLoader(
             "org.apache.ignite.tests.p2p.classloadproblem.RemoteFilterFactoryCausingP2PClassLoadProblem"
         ));
 
         Throwable ex = assertThrows(log, () -> {
-            try (QueryCursor<Cache.Entry<Integer, String>> ignored = cache.query(query)) {
+            try (QueryCursor<Cache.Entry<Integer, String>> ignored = cache.query(qry)) {
                 cache.put(1, "1");
             }
         }, IgniteException.class, "Failed to update keys");
@@ -239,14 +239,14 @@ public class P2PClassLoadingFailureHandlingTest extends GridCommonAbstractTest {
     public void continuousQueryRemoteTransformerP2PClassLoadingProblemShouldNotCauseFailureHandling() throws Exception {
         IgniteCache<Integer, String> cache = client.createCache(CACHE_NAME);
 
-        ContinuousQueryWithTransformer<Integer, String, String> query = new ContinuousQueryWithTransformer<>();
-        query.setLocalListener(entry -> {});
-        query.setRemoteTransformerFactory(instantiateClassLoadedWithExternalClassLoader(
+        ContinuousQueryWithTransformer<Integer, String, String> qry = new ContinuousQueryWithTransformer<>();
+        qry.setLocalListener(entry -> {});
+        qry.setRemoteTransformerFactory(instantiateClassLoadedWithExternalClassLoader(
             "org.apache.ignite.tests.p2p.classloadproblem.RemoteTransformerFactoryCausingP2PClassLoadProblem"
         ));
 
         Throwable ex = assertThrows(log, () -> {
-            try (QueryCursor<Cache.Entry<Integer, String>> ignored = cache.query(query)) {
+            try (QueryCursor<Cache.Entry<Integer, String>> ignored = cache.query(qry)) {
                 cache.put(1, "1");
             }
         }, IgniteException.class, "Failed to update keys");

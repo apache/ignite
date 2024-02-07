@@ -139,7 +139,7 @@ public class TimeBag {
         try {
             CompositeStage lastSeen = tlLastSeenStage.get();
             CompositeStage lastCompleted = lastCompletedGlobalStage();
-            IgniteStopwatch localStopWatch = tlStopwatch.get();
+            IgniteStopwatch locStopWatch = tlStopwatch.get();
 
             Stage stage;
 
@@ -150,9 +150,9 @@ public class TimeBag {
                 tlLastSeenStage.set(lastCompleted);
             }
             else
-                stage = new Stage(description, localStopWatch.elapsed(measurementUnit));
+                stage = new Stage(description, locStopWatch.elapsed(measurementUnit));
 
-            localStopWatch.reset().start();
+            locStopWatch.reset().start();
 
             // Associate local stage with current thread name.
             String threadName = Thread.currentThread().getName();

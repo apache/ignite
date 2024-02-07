@@ -413,7 +413,7 @@ public class TxTask
         res.nearXidVersion(locTx.nearXidVersion());
 
         Map<Integer, String> usedCaches = new HashMap<>();
-        Map<Integer, String> usedCacheGroups = new HashMap<>();
+        Map<Integer, String> usedCacheGrps = new HashMap<>();
 
         ClusterNode locNode = ignite.context().discovery().localNode();
 
@@ -439,10 +439,10 @@ public class TxTask
             res.txMappingType(TxMappingType.NEAR);
 
             List<TxVerboseKey> nearOnlyTxKeys = fetchTxEntriesAndFillUsedCaches(
-                ignite, locTx, usedCaches, usedCacheGroups, nearOnlyEntries, true);
+                ignite, locTx, usedCaches, usedCacheGrps, nearOnlyEntries, true);
 
             List<TxVerboseKey> locTxKeys = fetchTxEntriesAndFillUsedCaches(
-                ignite, locTx, usedCaches, usedCacheGroups, locEntries, false);
+                ignite, locTx, usedCaches, usedCacheGrps, locEntries, false);
 
             res.nearOnlyTxKeys(nearOnlyTxKeys);
             res.localTxKeys(locTxKeys);
@@ -463,7 +463,7 @@ public class TxTask
             res.txMappingType(TxMappingType.DHT);
 
             res.localTxKeys(fetchTxEntriesAndFillUsedCaches(
-                ignite, locTx, usedCaches, usedCacheGroups, locTx.allEntries(), false));
+                ignite, locTx, usedCaches, usedCacheGrps, locTx.allEntries(), false));
         }
         else if (locTx instanceof GridDhtTxRemote) {
             Iterator<UUID> masterNodesIter = locTx.masterNodeIds().iterator();
@@ -488,11 +488,11 @@ public class TxTask
             res.dhtNodeConsistentId(dhtNode.consistentId());
 
             res.localTxKeys(fetchTxEntriesAndFillUsedCaches(
-                ignite, locTx, usedCaches, usedCacheGroups, locTx.allEntries(), false));
+                ignite, locTx, usedCaches, usedCacheGrps, locTx.allEntries(), false));
         }
 
         res.usedCaches(usedCaches);
-        res.usedCacheGroups(usedCacheGroups);
+        res.usedCacheGroups(usedCacheGrps);
 
         return res;
     }

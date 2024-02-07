@@ -74,15 +74,15 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
     @Test
     public void testValueMarshallerFail() throws Exception {
         String key = UUID.randomUUID().toString();
-        String value = UUID.randomUUID().toString();
-        String newValue = UUID.randomUUID().toString();
+        String val = UUID.randomUUID().toString();
+        String newVal = UUID.randomUUID().toString();
 
         String key2 = UUID.randomUUID().toString();
-        GridCacheWrongValue1 wrongValue = new GridCacheWrongValue1();
+        GridCacheWrongValue1 wrongVal = new GridCacheWrongValue1();
 
         Transaction tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
         try {
-            grid().cache(DEFAULT_CACHE_NAME).put(key, value);
+            grid().cache(DEFAULT_CACHE_NAME).put(key, val);
 
             tx.commit();
         }
@@ -93,11 +93,11 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
         tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
         try {
-            assert value.equals(grid().cache(DEFAULT_CACHE_NAME).get(key));
+            assert val.equals(grid().cache(DEFAULT_CACHE_NAME).get(key));
 
-            grid().cache(DEFAULT_CACHE_NAME).put(key, newValue);
+            grid().cache(DEFAULT_CACHE_NAME).put(key, newVal);
 
-            grid().cache(DEFAULT_CACHE_NAME).put(key2, wrongValue);
+            grid().cache(DEFAULT_CACHE_NAME).put(key2, wrongVal);
 
             tx.commit();
         }

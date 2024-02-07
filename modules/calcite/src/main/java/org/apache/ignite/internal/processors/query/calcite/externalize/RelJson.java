@@ -821,9 +821,9 @@ class RelJson {
                 return map;
             case LITERAL:
                 RexLiteral literal = (RexLiteral)node;
-                Object value = literal.getValue3();
+                Object val = literal.getValue3();
                 map = map();
-                map.put("literal", toJson(value));
+                map.put("literal", toJson(val));
                 map.put("type", toJson(node.getType()));
 
                 return map;

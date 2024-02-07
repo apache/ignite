@@ -166,7 +166,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         String clientName = "client0";
 
         String key = "key";
-        String value = "value";
+        String val = "value";
 
         GridTestUtils.runAsync(() -> startClientGrid(clientName));
 
@@ -193,7 +193,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                clDms.write(key, value);
+                clDms.write(key, val);
 
                 return null;
             }

@@ -35,6 +35,7 @@ import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlDynamicParam;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
@@ -99,6 +100,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderImpl;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterUser;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlConformance;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTable;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateUser;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlOption;
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable;
@@ -530,29 +532,43 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         if (QueryUtils.INCLUDE_SENSITIVE)
             return qry.toString();
         else {
-            return qry.accept(
-                new SqlShuttle() {
-                    @Override public SqlNode visit(SqlLiteral literal) {
-                        return new SqlDynamicParam(-1, literal.getParserPosition());
-                    }
-
-                    @Override public SqlNode visit(SqlCall call) {
-                        // Handle some special cases.
-                        if (call instanceof IgniteSqlOption)
-                            return call;
-                        else if (call instanceof IgniteSqlCreateUser) {
-                            return new IgniteSqlCreateUser(call.getParserPosition(), ((IgniteSqlCreateUser)call).user(),
-                                SqlLiteral.createCharString("hidden", SqlParserPos.ZERO));
-                        }
-                        else if (call instanceof IgniteSqlAlterUser) {
-                            return new IgniteSqlAlterUser(call.getParserPosition(), ((IgniteSqlAlterUser)call).user(),
-                                SqlLiteral.createCharString("hidden", SqlParserPos.ZERO));
+            try {
+                return qry.accept(
+                    new SqlShuttle() {
+                        @Override public SqlNode visit(SqlLiteral literal) {
+                            return new SqlDynamicParam(-1, literal.getParserPosition());
                         }
 
-                        return super.visit(call);
+                        @Override public SqlNode visit(SqlCall call) {
+                            // Handle some special cases.
+                            if (call instanceof IgniteSqlOption)
+                                return call;
+                            else if (call instanceof IgniteSqlCreateUser) {
+                                return new IgniteSqlCreateUser(call.getParserPosition(), ((IgniteSqlCreateUser)call).user(),
+                                    SqlLiteral.createCharString("hidden", SqlParserPos.ZERO));
+                            }
+                            else if (call instanceof IgniteSqlAlterUser) {
+                                return new IgniteSqlAlterUser(call.getParserPosition(), ((IgniteSqlAlterUser)call).user(),
+                                    SqlLiteral.createCharString("hidden", SqlParserPos.ZERO));
+                            }
+                            // Assume DDL statements except CREATE ... AS SELECT, and CREATE/ALTER USER can't contain
+                            // sensitive data. Return these statements as is, since they can't be cloned by SqlShuttle
+                            // correctly and can't be unparsed.
+                            else if (call instanceof SqlDdl && !(call instanceof IgniteSqlCreateTable))
+                                return call;
+
+                            return super.visit(call);
+                        }
                     }
-                }
-            ).toString();
+                ).toString();
+            }
+            catch (Exception e) {
+                String msg = "Unable to remove sensitive information from SQL node of class: " + qry.getClass().getName();
+
+                log.warning(msg, e);
+
+                return msg;
+            }
         }
     }
 
@@ -669,17 +685,17 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
     /** */
     private void onStart(GridKernalContext ctx, Service... services) {
-        for (Service service : services) {
-            if (service instanceof LifecycleAware)
-                ((LifecycleAware)service).onStart(ctx);
+        for (Service srvc : services) {
+            if (srvc instanceof LifecycleAware)
+                ((LifecycleAware)srvc).onStart(ctx);
         }
     }
 
     /** */
     private void onStop(Service... services) {
-        for (Service service : services) {
-            if (service instanceof LifecycleAware)
-                ((LifecycleAware)service).onStop();
+        for (Service srvc : services) {
+            if (srvc instanceof LifecycleAware)
+                ((LifecycleAware)srvc).onStop();
         }
     }
 

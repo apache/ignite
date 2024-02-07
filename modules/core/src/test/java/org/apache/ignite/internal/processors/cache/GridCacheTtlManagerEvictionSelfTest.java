@@ -96,9 +96,9 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
 
             for (int i = 1; i <= ENTRIES_TO_PUT; i++) {
                 String key = "Some test entry key#" + i;
-                String value = "Some test entry value#" + i;
+                String val = "Some test entry value#" + i;
 
-                cache.put(key, value);
+                cache.put(key, val);
             }
 
             if (log.isTraceEnabled())

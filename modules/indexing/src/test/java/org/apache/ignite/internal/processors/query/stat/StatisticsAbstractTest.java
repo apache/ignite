@@ -555,14 +555,14 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
             try {
                 checkStatisticTasksEmpty(ign);
 
-                for (Map.Entry<StatisticsTarget, Long> targetVersionEntry : expectedVersions.entrySet()) {
-                    StatisticsTarget target = targetVersionEntry.getKey();
+                for (Map.Entry<StatisticsTarget, Long> targetVerEntry : expectedVersions.entrySet()) {
+                    StatisticsTarget target = targetVerEntry.getKey();
 
                     // Statistics configuration manager could not get fresh enough configuration version till now so we
                     // need to request global statistics again to force it's collection
                     // TODO: remove me statisticsMgr(ign).getGlobalStatistics(target.key());
 
-                    Long ver = targetVersionEntry.getValue();
+                    Long ver = targetVerEntry.getValue();
 
                     ObjectStatisticsImpl s;
 

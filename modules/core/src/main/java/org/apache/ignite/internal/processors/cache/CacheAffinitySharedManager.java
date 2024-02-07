@@ -496,11 +496,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             return null;
         }
 
-        Set<CacheGroupDescriptor> groupDescs = startDescs.stream()
+        Set<CacheGroupDescriptor> grpDescs = startDescs.stream()
             .map(DynamicCacheDescriptor::groupDescriptor)
             .collect(Collectors.toSet());
 
-        for (CacheGroupDescriptor grpDesc : groupDescs) {
+        for (CacheGroupDescriptor grpDesc : grpDescs) {
             try {
                 CacheGroupContext grp = cctx.cache().cacheGroup(grpDesc.groupId());
 
@@ -1042,14 +1042,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         ExchangeActions exchangeActions,
         boolean crd
     ) throws IgniteCheckedException {
-        List<CacheGroupDescriptor> startedGroups = exchangeActions.cacheStartRequests().stream()
+        List<CacheGroupDescriptor> startedGrps = exchangeActions.cacheStartRequests().stream()
             .map(action -> action.descriptor().groupDescriptor())
             .distinct()
             .collect(Collectors.toList());
 
         U.doInParallel(
             cctx.kernalContext().pools().getSystemExecutorService(),
-            startedGroups,
+            startedGrps,
             grpDesc -> {
                 initStartedGroup(fut, grpDesc, crd);
 
@@ -1517,7 +1517,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         // Such cache group may exist if cache is already destroyed on server nodes
         // and coordinator have no affinity for that group.
-        final Set<Integer> noAffGroups = new GridConcurrentHashSet<>();
+        final Set<Integer> noAffGrps = new GridConcurrentHashSet<>();
 
         forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
             @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
@@ -1535,7 +1535,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     CacheGroupAffinityMessage affMsg = receivedAff.get(aff.groupId());
 
                     if (affMsg == null) {
-                        noAffGroups.add(aff.groupId());
+                        noAffGrps.add(aff.groupId());
 
                         // Use ideal affinity to resume cache initialize process.
                         calculateAndInit(evts, aff, evts.topologyVersion());
@@ -1573,7 +1573,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         });
 
-        return noAffGroups;
+        return noAffGrps;
     }
 
     /**

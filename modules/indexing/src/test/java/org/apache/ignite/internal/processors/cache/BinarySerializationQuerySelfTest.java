@@ -114,15 +114,15 @@ public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
-        List<QueryEntity> queryEntities = new ArrayList<>();
+        List<QueryEntity> qryEntities = new ArrayList<>();
 
-        queryEntities.add(entityForClass(EntityPlain.class));
-        queryEntities.add(entityForClass(EntitySerializable.class));
-        queryEntities.add(entityForClass(EntityExternalizable.class));
-        queryEntities.add(entityForClass(EntityBinarylizable.class));
-        queryEntities.add(entityForClass(EntityWriteReadObject.class));
+        qryEntities.add(entityForClass(EntityPlain.class));
+        qryEntities.add(entityForClass(EntitySerializable.class));
+        qryEntities.add(entityForClass(EntityExternalizable.class));
+        qryEntities.add(entityForClass(EntityBinarylizable.class));
+        qryEntities.add(entityForClass(EntityWriteReadObject.class));
 
-        cacheCfg.setQueryEntities(queryEntities);
+        cacheCfg.setQueryEntities(qryEntities);
 
         cfg.setCacheConfiguration(cacheCfg);
 

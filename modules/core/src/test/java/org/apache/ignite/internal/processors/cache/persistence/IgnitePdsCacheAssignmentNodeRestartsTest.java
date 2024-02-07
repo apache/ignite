@@ -127,7 +127,7 @@ public class IgnitePdsCacheAssignmentNodeRestartsTest extends GridCommonAbstract
 
             final int gridsCnt = 5;
 
-            final int groupsCnt = 2;
+            final int grpsCnt = 2;
 
             final IgniteEx node = (IgniteEx)startGridsMultiThreaded(gridsCnt);
 
@@ -139,13 +139,13 @@ public class IgnitePdsCacheAssignmentNodeRestartsTest extends GridCommonAbstract
 
             node.getOrCreateCaches(cfgs);
 
-            validateDepIds(groupsCnt);
+            validateDepIds(grpsCnt);
 
             stopAllGrids();
 
             IgniteEx node2 = (IgniteEx)startGridsMultiThreaded(gridsCnt);
 
-            validateDepIds(groupsCnt); // Deployment ids must be the same on all nodes.
+            validateDepIds(grpsCnt); // Deployment ids must be the same on all nodes.
 
             final int restartIdxFrom = 2;
 

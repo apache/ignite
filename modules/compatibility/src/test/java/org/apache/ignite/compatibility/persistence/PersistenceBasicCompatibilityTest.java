@@ -102,13 +102,13 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
      */
     @Test
     public void testNodeStartByOldVersionPersistenceData() throws Exception {
-        int majorJavaVersion = U.majorJavaVersion(U.jdkVersion());
+        int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
 
-        if (majorJavaVersion > 11) {
+        if (majorJavaVer > 11) {
             Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
                 VER_2_12_0.compareTo(IgniteReleasedVersion.fromString(version)) < 0);
         }
-        else if (majorJavaVersion > 8) {
+        else if (majorJavaVer > 8) {
             Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
                 VER_2_3_0.compareTo(IgniteReleasedVersion.fromString(version)) < 0);
         }

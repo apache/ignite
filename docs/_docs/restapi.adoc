@@ -494,7 +494,7 @@ Adds and gets current value of given atomic long.
 +
 [source,shell]
 ----
-http://host:port/ignite?cmd=incr&cacheName={cacheName}&key={incrKey}&init={initialValue}&delta={delta}
+http://host:port/ignite?cmd=incr&key={incrKey}&init={initialValue}&delta={delta}
 ----
 +
 [{request_table_props}]
@@ -505,12 +505,6 @@ http://host:port/ignite?cmd=incr&cacheName={cacheName}&key={incrKey}&init={initi
 |Description
 |Example
 
-
-|`cacheName`
-| string
-| Yes
-| Cache name. If not provided, default cache is used.
-| partitionedCache
 
 |`key`
 | string
@@ -553,7 +547,7 @@ Subtracts and gets current value of given atomic long.
 +
 [source,shell]
 ----
-http://host:port/ignite?cmd=decr&cacheName={cacheName}&key={key}&init={init_value}&delta={delta}
+http://host:port/ignite?cmd=decr&key={key}&init={init_value}&delta={delta}
 ----
 +
 [{request_table_props}]
@@ -564,11 +558,6 @@ http://host:port/ignite?cmd=decr&cacheName={cacheName}&key={key}&init={init_valu
 |Description
 |Example
 
-|`cacheName`
-| string
-|Yes
-|Cache name. If not provided, the default cache ("default") is used.
-|partitionedCache
 
 |`key`
 |string

@@ -116,14 +116,14 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
 
         int keyCnt = 10_000;
 
-        byte[] value = new byte[8_192];
+        byte[] val = new byte[8_192];
 
         // Load data.
         try (IgniteDataStreamer<Integer, byte[]> st = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
             st.allowOverwrite(true);
 
             for (int i = 0; i < keyCnt; i++)
-                st.addData(i, value);
+                st.addData(i, val);
         }
 
         IgniteCache<Integer, byte[]> cache = ignite.cache(DEFAULT_CACHE_NAME);
@@ -170,7 +170,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
         assertThat(readThreadsError, empty());
 
         for (int i = 0; i < keyCnt; i++)
-            assertArrayEquals(String.valueOf(i), cache.get(i), value);
+            assertArrayEquals(String.valueOf(i), cache.get(i), val);
     }
 
     /**
@@ -192,7 +192,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
 
         AtomicBoolean stop = new AtomicBoolean();
 
-        byte[] value = new byte[8_192];
+        byte[] val = new byte[8_192];
 
         Thread[] workers = new Thread[THREADS_CNT];
 
@@ -202,7 +202,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
                     while (!stop.get()) {
                         int key = ThreadLocalRandom.current().nextInt(100_000);
 
-                        cache.put(key, value);
+                        cache.put(key, val);
 
                         keysToCheck.add(key);
                     }
@@ -235,6 +235,6 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
 
         // Post check.
         for (Integer key: keysToCheck)
-            assertArrayEquals(String.valueOf(key), value, cache.get(key));
+            assertArrayEquals(String.valueOf(key), val, cache.get(key));
     }
 }

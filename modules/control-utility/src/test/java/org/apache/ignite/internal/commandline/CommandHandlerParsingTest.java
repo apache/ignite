@@ -227,13 +227,13 @@ public class CommandHandlerParsingTest {
     public void testFindAndDeleteGarbage() {
         String nodeId = UUID.randomUUID().toString();
         String delete = "--delete";
-        String groups = "group1,grpoup2,group3";
+        String grps = "group1,grpoup2,group3";
 
         List<List<String>> lists = generateArgumentList(
             "find_garbage",
             new T2<>(nodeId, false),
             new T2<>(delete, false),
-            new T2<>(groups, false)
+            new T2<>(grps, false)
         );
 
         for (List<String> list : lists) {
@@ -248,7 +248,7 @@ public class CommandHandlerParsingTest {
 
             assertEquals(list.contains(delete), arg.delete());
 
-            if (list.contains(groups))
+            if (list.contains(grps))
                 assertEquals(3, arg.groups().length);
             else
                 assertNull(arg.groups());
@@ -284,11 +284,11 @@ public class CommandHandlerParsingTest {
         List<List<T>> res = new ArrayList<>();
 
         for (int i = 0; i < source.size(); i++) {
-            List<T> sourceCopy = new ArrayList<>(source);
+            List<T> srcCopy = new ArrayList<>(source);
 
-            T removed = sourceCopy.remove(i);
+            T removed = srcCopy.remove(i);
 
-            generateAllCombinations(singletonList(removed), sourceCopy, stopFunc, res);
+            generateAllCombinations(singletonList(removed), srcCopy, stopFunc, res);
         }
 
         return res;
@@ -314,13 +314,13 @@ public class CommandHandlerParsingTest {
         for (int i = 0; i < source.size(); i++) {
             ArrayList<T> res0 = new ArrayList<>(res);
 
-            List<T> sourceCopy = new ArrayList<>(source);
+            List<T> srcCopy = new ArrayList<>(source);
 
-            T removed = sourceCopy.remove(i);
+            T removed = srcCopy.remove(i);
 
             res0.add(removed);
 
-            generateAllCombinations(res0, sourceCopy, stopFunc, acc);
+            generateAllCombinations(res0, srcCopy, stopFunc, acc);
         }
     }
 

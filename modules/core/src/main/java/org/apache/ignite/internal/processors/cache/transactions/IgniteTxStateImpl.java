@@ -445,7 +445,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean empty() {
-        return txMap.isEmpty();
+        return F.isEmpty(txMap);
     }
 
     /** {@inheritDoc} */

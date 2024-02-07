@@ -145,7 +145,7 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
         String lb = null;
 
         Map<Integer, String> usedCaches = new HashMap<>();
-        Map<Integer, String> usedCacheGroups = new HashMap<>();
+        Map<Integer, String> usedCacheGrps = new HashMap<>();
         TxInfo firstInfo = null;
         TxVerboseInfo firstVerboseInfo = null;
         Set<TransactionState> states = new HashSet<>();
@@ -163,7 +163,7 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
                 }
 
                 usedCaches.putAll(info.getTxVerboseInfo().usedCaches());
-                usedCacheGroups.putAll(info.getTxVerboseInfo().usedCacheGroups());
+                usedCacheGrps.putAll(info.getTxVerboseInfo().usedCacheGroups());
                 states.add(info.getState());
             }
         }
@@ -174,7 +174,7 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
         printer.accept(indent + "Transaction detailed info:");
 
         printTransactionDetailedInfo(
-            res, usedCaches, usedCacheGroups, firstInfo, firstVerboseInfo, states, indent + DOUBLE_INDENT, printer);
+            res, usedCaches, usedCacheGrps, firstInfo, firstVerboseInfo, states, indent + DOUBLE_INDENT, printer);
     }
 
     /**

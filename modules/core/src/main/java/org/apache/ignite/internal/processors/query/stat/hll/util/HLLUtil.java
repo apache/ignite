@@ -70,12 +70,12 @@ public final class HLLUtil {
     static {
         for (int regWidth = HLL.MINIMUM_REGWIDTH_PARAM; regWidth <= HLL.MAXIMUM_REGWIDTH_PARAM; regWidth++) {
             for (int log2m = HLL.MINIMUM_LOG2M_PARAM; log2m <= HLL.MAXIMUM_LOG2M_PARAM; log2m++) {
-                int maxRegisterValue = (1 << regWidth) - 1;
+                int maxRegisterVal = (1 << regWidth) - 1;
 
                 // Since 1 is added to p(w) in the insertion algorithm, only
                 // (maxRegisterValue - 1) bits are inspected hence the hash
                 // space is one power of two smaller.
-                final int pwBits = (maxRegisterValue - 1);
+                final int pwBits = (maxRegisterVal - 1);
                 final int totalBits = (pwBits + log2m);
                 final double twoToL = Math.pow(2, totalBits);
                 TWO_TO_L[(REG_WIDTH_INDEX_MULTIPLIER * regWidth) + log2m] = twoToL;

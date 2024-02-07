@@ -139,12 +139,12 @@ public class MappedFile implements Closeable, DirectMemoryRegion {
 
     /** */
     private static Mapper pickMapper() {
-        int javaVersion = majorJavaVersion(jdkVersion());
+        int javaVer = majorJavaVersion(jdkVersion());
 
-        if (javaVersion >= 19)
+        if (javaVer >= 19)
             return new JDK19Mapper();
 
-        if (javaVersion >= 14)
+        if (javaVer >= 14)
             return new JDK14Mapper();
 
         return new LegacyMapper();

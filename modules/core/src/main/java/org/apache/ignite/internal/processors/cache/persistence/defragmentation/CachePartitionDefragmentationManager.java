@@ -902,9 +902,9 @@ public class CachePartitionDefragmentationManager {
         CacheGroupContext grpCtx,
         CacheGroupContext newCtx
     ) throws IgniteCheckedException {
-        GridQueryProcessor query = grpCtx.caches().get(0).kernalContext().query();
+        GridQueryProcessor qry = grpCtx.caches().get(0).kernalContext().query();
 
-        if (!query.moduleEnabled())
+        if (!qry.moduleEnabled())
             return;
 
         IndexProcessor idx = grpCtx.caches().get(0).kernalContext().indexProcessor();

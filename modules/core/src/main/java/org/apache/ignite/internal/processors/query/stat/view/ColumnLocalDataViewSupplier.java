@@ -81,12 +81,12 @@ public class ColumnLocalDataViewSupplier {
 
         List<StatisticsColumnLocalDataView> res = new ArrayList<>();
 
-        for (Map.Entry<StatisticsKey, ObjectStatisticsImpl> localStatsEntry : locStatsMap.entrySet()) {
-            StatisticsKey key = localStatsEntry.getKey();
-            ObjectStatisticsImpl stat = localStatsEntry.getValue();
+        for (Map.Entry<StatisticsKey, ObjectStatisticsImpl> locStatsEntry : locStatsMap.entrySet()) {
+            StatisticsKey key = locStatsEntry.getKey();
+            ObjectStatisticsImpl stat = locStatsEntry.getValue();
 
             if (column == null) {
-                for (Map.Entry<String, ColumnStatistics> colStat : localStatsEntry.getValue().columnsStatistics()
+                for (Map.Entry<String, ColumnStatistics> colStat : locStatsEntry.getValue().columnsStatistics()
                     .entrySet()) {
                     StatisticsColumnLocalDataView colStatView = new StatisticsColumnLocalDataView(key, colStat.getKey(),
                         stat);
@@ -95,7 +95,7 @@ public class ColumnLocalDataViewSupplier {
                 }
             }
             else {
-                ColumnStatistics colStat = localStatsEntry.getValue().columnStatistics(column);
+                ColumnStatistics colStat = locStatsEntry.getValue().columnStatistics(column);
 
                 if (colStat != null) {
                     StatisticsColumnLocalDataView colStatView = new StatisticsColumnLocalDataView(key, column, stat);

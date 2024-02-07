@@ -277,16 +277,16 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
             srvcTopOnClient.clear();
 
-            AffinityTopologyVersion prevTopVersion = grid(0).context().discovery().topologyVersionEx();
+            AffinityTopologyVersion prevTopVer = grid(0).context().discovery().topologyVersionEx();
 
             grid(0).createCache("testCache");
 
             awaitPartitionMapExchange();
 
-            AffinityTopologyVersion newTopVersion = grid(0).context().discovery().topologyVersionEx();
+            AffinityTopologyVersion newTopVer = grid(0).context().discovery().topologyVersionEx();
 
-            assertTrue(newTopVersion.topologyVersion() == prevTopVersion.topologyVersion()
-                && newTopVersion.minorTopologyVersion() > prevTopVersion.minorTopologyVersion());
+            assertTrue(newTopVer.topologyVersion() == prevTopVer.topologyVersion()
+                && newTopVer.minorTopologyVersion() > prevTopVer.minorTopologyVersion());
 
             while (srvcTopOnClient.isEmpty())
                 svc.testMethod();
@@ -322,7 +322,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
                 && srvcTopOnClient.contains(grid(1).localNode().id())
                 && srvcTopOnClient.contains(grid(2).localNode().id()));
 
-            long prevTopVersion = grid(0).context().discovery().topologyVersion();
+            long prevTopVer = grid(0).context().discovery().topologyVersion();
 
             grid(1).services().cancel(SRV_NAME);
 
@@ -334,7 +334,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
             waitForCondition(() -> !grid(0).services().serviceDescriptors().isEmpty(), getTestTimeout());
 
-            assertEquals(prevTopVersion, grid(0).context().discovery().topologyVersion());
+            assertEquals(prevTopVer, grid(0).context().discovery().topologyVersion());
 
             ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 

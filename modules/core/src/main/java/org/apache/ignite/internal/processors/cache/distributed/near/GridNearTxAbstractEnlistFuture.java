@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -68,9 +67,6 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
 
     /** */
     protected AffinityTopologyVersion topVer;
-
-    /** MVCC snapshot. */
-    protected MvccSnapshot mvccSnapshot;
 
     /** Logger. */
     @GridToStringExclude
@@ -121,10 +117,6 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
         threadId = tx.threadId();
         lockVer = tx.xidVersion();
         futId = IgniteUuid.randomUuid();
-
-        mvccSnapshot = tx.mvccSnapshot();
-
-        assert mvccSnapshot != null;
 
         log = cctx.logger(getClass());
     }

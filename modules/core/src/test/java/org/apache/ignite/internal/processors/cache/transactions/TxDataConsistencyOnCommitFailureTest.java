@@ -176,7 +176,7 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
         IgniteTxManager mockTm = Mockito.spy(tm);
 
         MockGridNearTxLocal locTx = new MockGridNearTxLocal(ctx, false, false, false, GridIoPolicy.SYSTEM_POOL,
-            TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 0, true, null, 1, null, 0, null,
+            TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 0, true, 1, null, 0, null,
             null);
 
         Mockito.doAnswer(new Answer<GridNearTxLocal>() {
@@ -187,7 +187,7 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
             }
         }).when(mockTm).
             newTx(locTx.implicit(), locTx.implicitSingle(), null, locTx.concurrency(),
-                locTx.isolation(), locTx.timeout(), locTx.storeEnabled(), null, locTx.size(), locTx.label());
+                locTx.isolation(), locTx.timeout(), locTx.storeEnabled(), locTx.size(), locTx.label());
 
         ctx.setTxManager(mockTm);
     }
@@ -212,7 +212,6 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
          * @param isolation Isolation.
          * @param timeout Timeout.
          * @param storeEnabled Store enabled.
-         * @param mvccOp Mvcc op.
          * @param txSize Tx size.
          * @param subjId Subj id.
          * @param taskNameHash Task name hash.
@@ -221,9 +220,9 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
          */
         public MockGridNearTxLocal(GridCacheSharedContext ctx, boolean implicit, boolean implicitSingle, boolean sys,
             byte plc, TransactionConcurrency concurrency, TransactionIsolation isolation, long timeout,
-            boolean storeEnabled, Boolean mvccOp, int txSize, @Nullable UUID subjId, int taskNameHash, @Nullable String lb,
+            boolean storeEnabled, int txSize, @Nullable UUID subjId, int taskNameHash, @Nullable String lb,
             IgniteTxManager.TxDumpsThrottling txDumpsThrottling) {
-            super(ctx, implicit, implicitSingle, sys, plc, concurrency, isolation, timeout, storeEnabled, mvccOp,
+            super(ctx, implicit, implicitSingle, sys, plc, concurrency, isolation, timeout, storeEnabled,
                 txSize, subjId, taskNameHash, lb, txDumpsThrottling);
         }
 

@@ -277,12 +277,12 @@ public class GridLuceneIndex implements AutoCloseable {
             // Filter expired items.
             Query filter = LongPoint.newRangeQuery(EXPIRATION_TIME_FIELD_NAME, U.currentTimeMillis(), Long.MAX_VALUE);
 
-            BooleanQuery query = new BooleanQuery.Builder()
+            BooleanQuery booleanQry = new BooleanQuery.Builder()
                 .add(parser.parse(qry), BooleanClause.Occur.MUST)
                 .add(filter, BooleanClause.Occur.FILTER)
                 .build();
 
-            docs = searcher.search(query, limit > 0 ? limit : Integer.MAX_VALUE);
+            docs = searcher.search(booleanQry, limit > 0 ? limit : Integer.MAX_VALUE);
         }
         catch (Exception e) {
             U.closeQuiet(reader);

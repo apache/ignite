@@ -110,13 +110,13 @@ public class PlatformCacheEntryEventFilterCpp implements CacheEntryEventSerializ
         assert Integer.valueOf(1).equals(objField.field("i32Field"));
         assert "2".equals(objField.field("strField"));
 
-        Object value = event.getValue();
+        Object val = event.getValue();
 
-        if (value instanceof String)
-            return ((String)value).startsWith(startsWith);
+        if (val instanceof String)
+            return ((String)val).startsWith(startsWith);
 
-        assert value instanceof BinaryObject;
+        assert val instanceof BinaryObject;
 
-        return ((String)((BinaryObject)value).field("String")).startsWith(startsWith);
+        return ((String)((BinaryObject)val).field("String")).startsWith(startsWith);
     }
 }

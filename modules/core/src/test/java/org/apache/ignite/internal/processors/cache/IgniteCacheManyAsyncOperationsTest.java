@@ -115,9 +115,9 @@ public class IgniteCacheManyAsyncOperationsTest extends IgniteCacheAbstractTest 
 
             IgniteCache<Integer, BinaryObject> cache = client.cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
-            BinaryObject value = client.binary().builder("TEST").build();
+            BinaryObject val = client.binary().builder("TEST").build();
 
-            cache.put(1, value);
+            cache.put(1, val);
 
             // Start parallel operations to initiate operation retry.
             List<IgniteFuture<Void>> futs = IntStream.range(0, 1000).parallel().mapToObj(i ->

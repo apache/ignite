@@ -138,10 +138,10 @@ public class PlatformDotNetEntityFrameworkCacheKey
 
     /** {@inheritDoc} */
     @Override public int compareTo(@NotNull PlatformDotNetEntityFrameworkCacheKey o) {
-        int cmpQuery = query.compareTo(o.query);
+        int cmpQry = query.compareTo(o.query);
 
-        if (cmpQuery != 0)
-            return cmpQuery;
+        if (cmpQry != 0)
+            return cmpQry;
 
         if (versions == null) {
             return o.versions == null ? 0 : -1;

@@ -24,18 +24,17 @@ import java.util.TreeMap;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.internal.management.cache.CacheMetricsOperation.ENABLE;
 
 /**
  * Task for a cache metrics command.
  */
 @GridInternal
-@GridVisorManagementTask
 public class CacheMetricsTask extends VisorOneNodeTask<CacheMetricsCommandArg, CacheMetricsTaskResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;

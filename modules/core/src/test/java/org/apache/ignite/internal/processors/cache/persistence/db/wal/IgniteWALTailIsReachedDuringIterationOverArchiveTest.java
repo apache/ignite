@@ -119,9 +119,9 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
 
         File walArchiveDir = U.field(wal, "walArchiveDir");
 
-        IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory();
+        IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory();
 
-        doTest(wal, iteratorFactory.iterator(walArchiveDir));
+        doTest(wal, iterFactory.iterator(walArchiveDir));
     }
 
     /**
@@ -146,9 +146,9 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
     private void doTest(IgniteWriteAheadLogManager walMgr, WALIterator it) throws IOException, IgniteCheckedException {
         File walArchiveDir = U.field(walMgr, "walArchiveDir");
 
-        IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory();
+        IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory();
 
-        List<FileDescriptor> descs = iteratorFactory.resolveWalFiles(
+        List<FileDescriptor> descs = iterFactory.resolveWalFiles(
             new IteratorParametersBuilder()
                 .filesOrDirs(walArchiveDir)
         );
@@ -163,7 +163,7 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
         WALPointer corruptedPtr = corruptedWAlSegmentFile(
             descs.get(corruptedIdx),
             new RandomAccessFileIOFactory(),
-            iteratorFactory
+            iterFactory
         );
 
         log.info("Should fail on ptr " + corruptedPtr);

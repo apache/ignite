@@ -262,9 +262,9 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
         for (int i = 0; i < 100; i++)
             cache.put(i, i);
 
-        FieldsQueryCursor<List<?>> query = cache.query(new SqlFieldsQuery("SELECT * FROM Integer order by _key"));
+        FieldsQueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery("SELECT * FROM Integer order by _key"));
 
-        query.iterator().forEachRemaining((e) -> {
+        qry.iterator().forEachRemaining((e) -> {
             Assert.assertEquals("Should be one running query",
                 1,
                 ignite.context().query().runningQueries(-1).size());
@@ -565,7 +565,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
         try (Connection conn = GridTestUtils.connect(ignite, null); Statement stmt = conn.createStatement()) {
             IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(() -> stmt.execute(sql));
 
-            for (String query : queries) {
+            for (String qry : queries) {
                 assertWaitingOnBarrier();
 
                 List<GridRunningQueryInfo> runningQueries = (List<GridRunningQueryInfo>)ignite.context().query()
@@ -573,7 +573,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
                 assertEquals(1, runningQueries.size());
 
-                assertEquals(query, runningQueries.get(0).query());
+                assertEquals(qry, runningQueries.get(0).query());
 
                 awaitTimeout();
             }

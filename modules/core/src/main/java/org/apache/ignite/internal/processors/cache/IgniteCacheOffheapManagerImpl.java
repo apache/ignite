@@ -1170,9 +1170,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             iterators.put(p, partIter);
         }
 
-        IgniteHistoricalIterator historicalIterator = historicalIterator(parts.historicalMap(), missing);
+        IgniteHistoricalIterator historicalIter = historicalIterator(parts.historicalMap(), missing);
 
-        IgniteRebalanceIterator iter = new IgniteRebalanceIteratorImpl(iterators, historicalIterator);
+        IgniteRebalanceIterator iter = new IgniteRebalanceIteratorImpl(iterators, historicalIter);
 
         for (Integer p : missing)
             iter.setPartitionMissing(p);

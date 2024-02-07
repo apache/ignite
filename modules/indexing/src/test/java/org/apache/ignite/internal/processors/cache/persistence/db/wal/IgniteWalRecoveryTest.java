@@ -1284,9 +1284,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         }
 
         for (int i = 0; i < cnt; i++) {
-            byte[] value = storage.readRaw(String.valueOf(i));
-            assert value != null;
-            assert value.length == 3;
+            byte[] val = storage.readRaw(String.valueOf(i));
+            assert val != null;
+            assert val.length == 3;
         }
 
         stopGrid(0);
@@ -1302,8 +1302,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         assert storage != null;
 
         for (int i = 0; i < cnt; i++) {
-            byte[] value = storage.readRaw(String.valueOf(i));
-            assert value != null;
+            byte[] val = storage.readRaw(String.valueOf(i));
+            assert val != null;
         }
     }
 
@@ -1582,11 +1582,11 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             for (int op = 0; op < operationsPerTransaction; op++) {
                 int key = random.nextInt(1000) + 1;
 
-                Object value = random.nextBoolean() ? randomString(random) + key : new BigObject(key);
+                Object val = random.nextBoolean() ? randomString(random) + key : new BigObject(key);
 
-                changesInTransaction.put(key, value);
+                changesInTransaction.put(key, val);
 
-                cache.put(key, value);
+                cache.put(key, val);
             }
 
             if (random.nextBoolean()) {
@@ -1609,9 +1609,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         cache = ignite.cache(cacheName);
 
         for (Object key : map.keySet()) {
-            Object expectedValue = map.get(key);
-            Object actualValue = cache.get(key);
-            Assert.assertEquals("Unexpected value for key " + key, expectedValue, actualValue);
+            Object expectedVal = map.get(key);
+            Object actualVal = cache.get(key);
+            Assert.assertEquals("Unexpected value for key " + key, expectedVal, actualVal);
         }
     }
 
@@ -1661,9 +1661,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             for (int op = 0; op < operationsPerTransaction; op++) {
                 int key = random.nextInt(1000) + 1;
 
-                Object value = random.nextBoolean() ? randomString(random) + key : new BigObject(key);
+                Object val = random.nextBoolean() ? randomString(random) + key : new BigObject(key);
 
-                cache.put(key, value);
+                cache.put(key, val);
             }
 
             if (random.nextBoolean())

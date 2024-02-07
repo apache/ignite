@@ -429,39 +429,39 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         Collection<K> remaining = null;
 
         for (K key : keys) {
-            StatefulValue<K, V> val;
+            StatefulValue<K, V> statefulVal;
 
             if (writeCoalescing)
-                val = writeCache.get(key);
+                statefulVal = writeCache.get(key);
             else
-                val = flusher(key).flusherWriteMap.get(key);
+                statefulVal = flusher(key).flusherWriteMap.get(key);
 
-            if (val != null) {
-                val.readLock().lock();
+            if (statefulVal != null) {
+                statefulVal.readLock().lock();
 
                 try {
                     StoreOperation op;
 
-                    V value;
+                    V val;
 
-                    if (writeCoalescing && val.nextOperation() != null) {
-                        op = val.nextOperation();
+                    if (writeCoalescing && statefulVal.nextOperation() != null) {
+                        op = statefulVal.nextOperation();
 
-                        value = (op == StoreOperation.PUT) ? val.nextEntry().getValue() : null;
+                        val = (op == StoreOperation.PUT) ? statefulVal.nextEntry().getValue() : null;
                     }
                     else {
-                        op = val.operation();
+                        op = statefulVal.operation();
 
-                        value = (op == StoreOperation.PUT) ? val.entry().getValue() : null;
+                        val = (op == StoreOperation.PUT) ? statefulVal.entry().getValue() : null;
                     }
 
                     if (op == StoreOperation.PUT)
-                        loaded.put(key, value);
+                        loaded.put(key, val);
                     else
                         assert op == StoreOperation.RMV : op;
                 }
                 finally {
-                    val.readLock().unlock();
+                    statefulVal.readLock().unlock();
                 }
             }
             else {
@@ -489,45 +489,45 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             log.debug(S.toString("Store load",
                 "key", key, true));
 
-        StatefulValue<K, V> val;
+        StatefulValue<K, V> statefulVal;
 
         if (writeCoalescing)
-            val = writeCache.get(key);
+            statefulVal = writeCache.get(key);
         else
-            val = flusher(key).flusherWriteMap.get(key);
+            statefulVal = flusher(key).flusherWriteMap.get(key);
 
-        if (val != null) {
-            val.readLock().lock();
+        if (statefulVal != null) {
+            statefulVal.readLock().lock();
 
             try {
                 StoreOperation op;
 
-                V value;
+                V val;
 
-                if (writeCoalescing && val.nextOperation() != null) {
-                    op = val.nextOperation();
+                if (writeCoalescing && statefulVal.nextOperation() != null) {
+                    op = statefulVal.nextOperation();
 
-                    value = (op == StoreOperation.PUT) ? val.nextEntry().getValue() : null;
+                    val = (op == StoreOperation.PUT) ? statefulVal.nextEntry().getValue() : null;
                 }
                 else {
-                    op = val.operation();
+                    op = statefulVal.operation();
 
-                    value = (op == StoreOperation.PUT) ? val.entry().getValue() : null;
+                    val = (op == StoreOperation.PUT) ? statefulVal.entry().getValue() : null;
                 }
 
                 switch (op) {
                     case PUT:
-                        return value;
+                        return val;
 
                     case RMV:
                         return null;
 
                     default:
-                        assert false : "Unexpected operation: " + val.status();
+                        assert false : "Unexpected operation: " + statefulVal.status();
                 }
             }
             finally {
-                val.readLock().unlock();
+                statefulVal.readLock().unlock();
             }
         }
 

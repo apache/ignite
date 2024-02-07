@@ -701,7 +701,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         TransactionIsolation isolation,
         long timeout,
         boolean storeEnabled,
-        Boolean mvccOp,
         int txSize,
         @Nullable String lb
     ) {
@@ -719,7 +718,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             isolation,
             timeout,
             storeEnabled,
-            mvccOp,
             txSize,
             securitySubjectId(cctx),
             taskNameHash,

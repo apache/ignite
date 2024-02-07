@@ -188,11 +188,11 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         cleanPersistenceDir(ig1Name);
 
-        int groupId = ((IgniteEx)ig0).cachex(CACHE3_NAME).context().groupId();
+        int grpId = ((IgniteEx)ig0).cachex(CACHE3_NAME).context().groupId();
 
         blockMessagePredicate = (node, msg) -> {
             if (msg instanceof GridDhtPartitionDemandMessage)
-                return ((GridDhtPartitionDemandMessage)msg).groupId() == groupId;
+                return ((GridDhtPartitionDemandMessage)msg).groupId() == grpId;
 
             return false;
         };
@@ -248,11 +248,11 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         fillCache(ig0.dataStreamer(CACHE3_NAME), nonAffKeysSet, GENERATING_FUNC);
 
-        int groupId = ((IgniteEx)ig0).cachex(CACHE3_NAME).context().groupId();
+        int grpId = ((IgniteEx)ig0).cachex(CACHE3_NAME).context().groupId();
 
         blockMessagePredicate = (node, msg) -> {
             if (msg instanceof GridDhtPartitionDemandMessage)
-                return ((GridDhtPartitionDemandMessage)msg).groupId() == groupId;
+                return ((GridDhtPartitionDemandMessage)msg).groupId() == grpId;
 
             return false;
         };
@@ -515,9 +515,9 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         String cacheName = cache.getName();
 
         for (int i = 0; i < size; i++) {
-            String value = (String)cache.get(i);
+            String val = (String)cache.get(i);
 
-            assertEquals(generatingFunc.apply(cacheName, i), value);
+            assertEquals(generatingFunc.apply(cacheName, i), val);
         }
     }
 }

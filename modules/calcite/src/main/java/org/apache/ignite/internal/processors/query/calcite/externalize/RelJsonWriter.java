@@ -136,11 +136,11 @@ public class RelJsonWriter implements RelWriter {
         map.put("id", null); // ensure that id is the first attribute
         map.put("relOp", relJson.classToTypeName(rel.getClass()));
 
-        for (Pair<String, Object> value : values) {
-            if (value.right instanceof RelNode)
+        for (Pair<String, Object> val : values) {
+            if (val.right instanceof RelNode)
                 continue;
 
-            map.put(value.left, relJson.toJson(value.right));
+            map.put(val.left, relJson.toJson(val.right));
         }
         // omit 'inputs: ["3"]' if "3" is the preceding rel
         final List<Object> list = explainInputs(rel.getInputs());

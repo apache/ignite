@@ -1977,10 +1977,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * @param name Instance name.
+     * @param consistentId Node consistentId.
      */
-    protected void cleanPersistenceDir(String name) throws Exception {
-        String dn2DirName = name.replace(".", "_");
+    protected void cleanPersistenceDir(String consistentId) throws Exception {
+        String dn2DirName = consistentId.replace(".", "_");
 
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/" + dn2DirName, true));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/wal/" + dn2DirName, true));

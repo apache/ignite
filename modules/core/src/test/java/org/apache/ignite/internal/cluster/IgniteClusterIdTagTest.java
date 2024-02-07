@@ -273,10 +273,10 @@ public class IgniteClusterIdTagTest extends GridCommonAbstractTest {
             assertTrue(e.getMessage().contains("should not be empty"));
         }
 
-        String longString = new String(new char[281]);
+        String longStr = new String(new char[281]);
 
         try {
-            ig0.cluster().tag(longString);
+            ig0.cluster().tag(longStr);
 
             fail("Expected exception has not been thrown.");
         }

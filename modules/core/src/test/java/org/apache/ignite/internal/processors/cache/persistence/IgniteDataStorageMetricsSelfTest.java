@@ -247,15 +247,15 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             Collection<MetricRegistry> grpRegs = F.viewReadOnly(ig.context().cache().cacheGroups(),
                 ctx -> ig.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, ctx.cacheOrGroupName())));
 
-            ToLongFunction<String> sumByGroups = metric -> grpRegs.stream()
+            ToLongFunction<String> sumByGrps = metric -> grpRegs.stream()
                 .map(grpReg -> grpReg.<LongMetric>findMetric(metric).value()).mapToLong(v -> v)
                 .sum();
 
             long storageSize = dsMetricRegistry(ig).<LongMetric>findMetric("StorageSize").value();
             long sparseStorageSize = dsMetricRegistry(ig).<LongMetric>findMetric("SparseStorageSize").value();
 
-            assertEquals(sumByGroups.applyAsLong("StorageSize"), storageSize);
-            assertEquals(sumByGroups.applyAsLong("SparseStorageSize"), sparseStorageSize);
+            assertEquals(sumByGrps.applyAsLong("StorageSize"), storageSize);
+            assertEquals(sumByGrps.applyAsLong("SparseStorageSize"), sparseStorageSize);
         }
         finally {
             stopAllGrids();

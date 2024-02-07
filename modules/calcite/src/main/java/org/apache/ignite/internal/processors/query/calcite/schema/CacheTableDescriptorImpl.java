@@ -701,7 +701,8 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
                     f,
                     storageType,
                     desc != null && desc.precision() != -1 ? desc.precision() : PRECISION_NOT_SPECIFIED,
-                    desc != null && desc.scale() != -1 ? desc.scale() : SCALE_NOT_SPECIFIED
+                    desc != null && desc.scale() != -1 ? desc.scale() : SCALE_NOT_SPECIFIED,
+                    desc == null || !desc.notNull()
                 );
             }
 
@@ -785,7 +786,9 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             if (logicalType == null) {
                 logicalType = TypeUtils.sqlType(f, storageType,
                     desc.precision() == -1 ? PRECISION_NOT_SPECIFIED : desc.precision(),
-                    desc.scale() == -1 ? SCALE_NOT_SPECIFIED : desc.scale());
+                    desc.scale() == -1 ? SCALE_NOT_SPECIFIED : desc.scale(),
+                    !desc.notNull()
+                );
             }
 
             return logicalType;

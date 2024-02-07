@@ -171,8 +171,8 @@ public class SqlAnalyzeCommand extends SqlStatisticsCommands {
         if (map == null)
             return dfltVal;
 
-        String value = map.remove(key);
-        return (value == null) ? dfltVal : Byte.valueOf(value);
+        String val = map.remove(key);
+        return (val == null) ? dfltVal : Byte.valueOf(val);
     }
 
     /**

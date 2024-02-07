@@ -315,12 +315,12 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMultilineQuery() throws Exception {
-        String multiLineQuery = "CREATE TABLE test (val0 int primary key, val1 varchar);" +
+        String multiLineQry = "CREATE TABLE test (val0 int primary key, val1 varchar);" +
             "INSERT INTO test(val0, val1) VALUES (0, 'test0');" +
             "ALTER TABLE test ADD COLUMN val2 int;" +
             "INSERT INTO test(val0, val1, val2) VALUES(1, 'test1', 10);" +
             "ALTER TABLE test DROP COLUMN val2;";
-        stmt.execute(multiLineQuery);
+        stmt.execute(multiLineQry);
 
         try (ResultSet rs = stmt.executeQuery("select * from test order by val0")) {
             int i;

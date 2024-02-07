@@ -448,7 +448,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         addData(srv0.cache(DEFAULT_CACHE_NAME), 0, KEYS_CNT);
 
         CountDownLatch preload = new CountDownLatch(1);
-        CountDownLatch topologyChanged = new CountDownLatch(1);
+        CountDownLatch topChanged = new CountDownLatch(1);
 
         AtomicInteger cnt = new AtomicInteger();
 
@@ -458,7 +458,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
             preload.countDown();
 
-            U.await(topologyChanged);
+            U.await(topChanged);
         };
 
         IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(() -> {
@@ -473,7 +473,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         startGrid(3);
 
-        topologyChanged.countDown();
+        topChanged.countDown();
 
         fut.get();
     }

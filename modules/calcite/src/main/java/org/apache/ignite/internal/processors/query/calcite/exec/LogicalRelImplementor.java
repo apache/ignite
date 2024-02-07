@@ -198,9 +198,9 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         IgniteDistribution distr = rel.distribution();
         Destination<Row> dest = distr.destination(ctx, affSrvc, ctx.group(rel.sourceId()));
-        UUID localNodeId = ctx.localNodeId();
+        UUID locNodeId = ctx.localNodeId();
 
-        FilterNode<Row> node = new FilterNode<>(ctx, rel.getRowType(), r -> Objects.equals(localNodeId, F.first(dest.targets(r))));
+        FilterNode<Row> node = new FilterNode<>(ctx, rel.getRowType(), r -> Objects.equals(locNodeId, F.first(dest.targets(r))));
 
         Node<Row> input = visit(rel.getInput());
 
@@ -492,9 +492,9 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rowType);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rowType);
 
-        ColocationGroup group = ctx.group(rel.sourceId());
+        ColocationGroup grp = ctx.group(rel.sourceId());
 
-        Iterable<Row> rowsIter = tbl.scan(ctx, group, requiredColunms);
+        Iterable<Row> rowsIter = tbl.scan(ctx, grp, requiredColunms);
 
         return new ScanStorageNode<>(tbl.name(), ctx, rowType, rowsIter, filters, prj);
     }

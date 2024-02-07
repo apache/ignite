@@ -359,7 +359,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         Set<UUID> dataNodesIds = new HashSet<>(F.asList(grid(0).localNode().id(), grid(1).localNode().id()));
         Set<UUID> readsNodes = new HashSet<>(dataNodesIds);
         Set<Long> readsQueries = new HashSet<>();
-        Map<Long, Long> rowsFetchedPerQuery = new HashMap<>();
+        Map<Long, Long> rowsFetchedPerQry = new HashMap<>();
         AtomicLong firstQryId = new AtomicLong(-1);
         AtomicLong lastQryId = new AtomicLong();
 
@@ -420,7 +420,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
                 }
                 else if ("Fetched".equals(action)) {
                     assertEquals(grid(0).localNode().id(), nodeId);
-                    assertNull(rowsFetchedPerQuery.put(id, rows));
+                    assertNull(rowsFetchedPerQry.put(id, rows));
                 }
             }
         });
@@ -428,8 +428,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         assertEquals(4, qryCnt.get());
         assertTrue("Query reads expected on nodes: " + readsNodes, readsNodes.isEmpty());
         assertEquals(Collections.singleton(lastQryId.get()), readsQueries);
-        assertEquals((Long)1000L, rowsFetchedPerQuery.get(firstQryId.get()));
-        assertEquals((Long)4L, rowsFetchedPerQuery.get(lastQryId.get()));
+        assertEquals((Long)1000L, rowsFetchedPerQry.get(firstQryId.get()));
+        assertEquals((Long)4L, rowsFetchedPerQry.get(lastQryId.get()));
         assertEquals(5L, rowsScanned.get());
     }
 
@@ -661,7 +661,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
             // Test bounds hiding in index scans.
             sql(grid(0), "CREATE TABLE test_sens (id int, val varchar)");
-            sql(grid(0), "CREATE INDEX test_sens_idx ON test_sens(val)");
+            sql(grid(0), "CREATE INDEX test_sens_idx ON test_sens(val) INLINE_SIZE 10");
             sql(grid(0), "INSERT INTO test_sens (id, val) VALUES (0, 'sensitive0'), (1, 'sensitive1'), " +
                 "(2, 'sensitive2'), (3, 'sensitive3'), (4, 'sensitive4'), (5, 'sensitive5'), (6, 'sensitive6')");
             sql(grid(0), "SELECT * FROM test_sens WHERE val IN ('sensitive0', 'sensitive1')");

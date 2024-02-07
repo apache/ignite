@@ -153,9 +153,9 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
 
         IgniteCache<Object, Object> clientCache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        QueryCursor<Integer> query = clientCache.query(new ScanQuery<Integer, Integer>(), loadTransformerClass());
+        QueryCursor<Integer> qry = clientCache.query(new ScanQuery<Integer, Integer>(), loadTransformerClass());
 
-        List<Integer> results = query.getAll();
+        List<Integer> results = qry.getAll();
 
         assertNotNull(results);
         assertEquals(CACHE_SIZE, results.size());
@@ -183,11 +183,11 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
 
         IgniteCache<Object, Object> clientCache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        QueryCursor<Integer> query = clientCache.query(new ScanQuery<Integer, Integer>(), loadTransformerClosure());
+        QueryCursor<Integer> qry = clientCache.query(new ScanQuery<Integer, Integer>(), loadTransformerClosure());
 
         int sumQueried = 0;
 
-        for (Integer val : query)
+        for (Integer val : qry)
             sumQueried += val;
 
         assertTrue(sumQueried == sumPopulated * SCALE_FACTOR);
@@ -238,10 +238,10 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
 
         IgniteCache<Object, Object> clientCache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        QueryCursor<Integer> query = clientCache.query(new ScanQuery<Integer, Integer>(),
+        QueryCursor<Integer> qry = clientCache.query(new ScanQuery<Integer, Integer>(),
             new SharedTransformer(SCALE_FACTOR));
 
-        List<Integer> results = query.getAll();
+        List<Integer> results = qry.getAll();
 
         assertNotNull(results);
         assertEquals(CACHE_SIZE, results.size());
@@ -285,11 +285,11 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
 
         IgniteCache<Object, Object> reqNodeCache = requestingNode.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        QueryCursor<Integer> query = reqNodeCache.query(new ScanQuery<Integer, Integer>(), loadTransformerClass());
+        QueryCursor<Integer> qry = reqNodeCache.query(new ScanQuery<Integer, Integer>(), loadTransformerClass());
 
         int sumQueried = 0;
 
-        for (Integer val : query)
+        for (Integer val : qry)
             sumQueried += val;
 
         assertTrue(sumQueried == sumPopulated * SCALE_FACTOR);
@@ -331,10 +331,10 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
 
         IgniteCache<Object, Object> reqNodeCache = reqNode.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        QueryCursor<Integer> query = reqNodeCache.query(new ScanQuery<Integer, Integer>(), loadTransformerClosure());
+        QueryCursor<Integer> qry = reqNodeCache.query(new ScanQuery<Integer, Integer>(), loadTransformerClosure());
 
         try {
-            List<Integer> all = query.getAll();
+            List<Integer> all = qry.getAll();
         }
         catch (Exception e) {
             //No-op.

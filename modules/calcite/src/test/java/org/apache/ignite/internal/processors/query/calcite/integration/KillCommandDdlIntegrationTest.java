@@ -183,20 +183,20 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
     /** @throws Exception If failed. */
     @Test
     public void testCancelService() throws Exception {
-        String serviceName = "MY_SERVICE";
+        String srvcName = "MY_SERVICE";
 
         ServiceConfiguration scfg = new ServiceConfiguration();
-        scfg.setName(serviceName);
+        scfg.setName(srvcName);
         scfg.setMaxPerNodeCount(1);
         scfg.setNodeFilter(grid(0).cluster().predicate());
         scfg.setService(new TestServiceImpl());
 
         client.services().deploy(scfg);
 
-        TestService svc = client.services().serviceProxy(serviceName, TestService.class, true);
+        TestService svc = client.services().serviceProxy(srvcName, TestService.class, true);
         assertNotNull(svc);
 
-        sql(client, "KILL SERVICE '" + serviceName + "'");
+        sql(client, "KILL SERVICE '" + srvcName + "'");
 
         boolean res = waitForCondition(() -> grid(0).context().systemView().view(SVCS_VIEW).size() == 0, TIMEOUT);
         assertTrue(res);

@@ -192,10 +192,10 @@ public class IgniteStatisticsRepository {
     ) {
         locStats.put(key, new VersionedStatistics(topVer, statistics));
 
-        ObjectStatisticsEvent newLocalStat = new ObjectStatisticsEvent(key, statistics, topVer);
+        ObjectStatisticsEvent newLocStat = new ObjectStatisticsEvent(key, statistics, topVer);
 
         for (Consumer<ObjectStatisticsEvent> subscriber : subscribers)
-            subscriber.accept(newLocalStat);
+            subscriber.accept(newLocStat);
     }
 
     /**

@@ -37,8 +37,8 @@ public class ProbabilisticTestUtil {
      */
     public static long constructHLLValue(final int log2m, final int registerIndex, final int registerValue) {
         final long partition = registerIndex;
-        final long substreamValue = (1L << (registerValue - 1));
-        return (substreamValue << log2m) | partition;
+        final long substreamVal = (1L << (registerValue - 1));
+        return (substreamVal << log2m) | partition;
     }
 
     /**
@@ -54,10 +54,10 @@ public class ProbabilisticTestUtil {
      * Extracts the HLL register value from a raw value.
      */
     public static byte getRegisterValue(final long rawValue, final int log2m) {
-        final long substreamValue = (rawValue >>> log2m);
+        final long substreamVal = (rawValue >>> log2m);
         final byte p_w;
 
-        if (substreamValue == 0L) {
+        if (substreamVal == 0L) {
             // The paper does not cover p(0x0), so the special value 0 is used.
             // 0 is the original initialization value of the registers, so by
             // doing this the HLL simply ignores it. This is acceptable
@@ -65,7 +65,7 @@ public class ProbabilisticTestUtil {
             p_w = 0;
         }
         else
-            p_w = (byte)Math.min(1 + BitUtil.leastSignificantBit(substreamValue), 31);
+            p_w = (byte)Math.min(1 + BitUtil.leastSignificantBit(substreamVal), 31);
 
         return p_w;
     }

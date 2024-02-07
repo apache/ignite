@@ -356,9 +356,9 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
                         entry.remove();
                     }
                     else {
-                        Integer value = entry.getValue() == null ? 0 : entry.getValue();
+                        Integer val = entry.getValue() == null ? 0 : entry.getValue();
 
-                        entry.setValue(++value);
+                        entry.setValue(++val);
                     }
 
                     if (key.startsWith("register_type"))
@@ -381,12 +381,12 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
                     assertNull(storeMap.get(keys));
             }
             else {
-                int value = entry.getValue();
+                int val = entry.getValue();
 
-                assertEquals("\"" + key + "' entry has wrong value, exp=1 actl=" + value, 1, value);
+                assertEquals("\"" + key + "' entry has wrong value, exp=1 actl=" + val, 1, val);
 
                 if (cacheStoreFactory() != null)
-                    assertEquals("\"" + key + "' entry has wrong value in cache store, exp=1 actl=" + value,
+                    assertEquals("\"" + key + "' entry has wrong value in cache store, exp=1 actl=" + val,
                         1, (int)storeMap.get(key));
             }
         }

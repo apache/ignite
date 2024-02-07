@@ -125,9 +125,9 @@ class ClientCachePartitionAwarenessGroup {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        ClientCachePartitionAwarenessGroup group = (ClientCachePartitionAwarenessGroup)o;
+        ClientCachePartitionAwarenessGroup grp = (ClientCachePartitionAwarenessGroup)o;
 
-        return dfltAffinity == group.dfltAffinity && Objects.equals(mapping, group.mapping);
+        return dfltAffinity == grp.dfltAffinity && Objects.equals(mapping, grp.mapping);
     }
 
     /** {@inheritDoc} */

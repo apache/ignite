@@ -2358,22 +2358,22 @@ public class IgnitionEx {
             if (fullMap == null)
                 return false;
 
-            UUID localNodeId = grid.localNodeId();
+            UUID locNodeId = grid.localNodeId();
 
-            GridDhtPartitionMap localPartMap = fullMap.get(localNodeId);
+            GridDhtPartitionMap locPartMap = fullMap.get(locNodeId);
 
             int parts = grpCtx.topology().partitions();
 
             List<List<ClusterNode>> idealAssignment = grpCtx.affinity().idealAssignmentRaw();
 
             for (int p = 0; p < parts; p++) {
-                if (localPartMap.get(p) != GridDhtPartitionState.OWNING)
+                if (locPartMap.get(p) != GridDhtPartitionState.OWNING)
                     continue;
 
                 boolean foundCopy = false;
 
                 for (Map.Entry<UUID, GridDhtPartitionMap> entry : fullMap.entrySet()) {
-                    if (localNodeId.equals(entry.getKey()) || nodesToExclude.contains(entry.getKey()))
+                    if (locNodeId.equals(entry.getKey()) || nodesToExclude.contains(entry.getKey()))
                         continue;
 
                     //This remote node does not present in ideal assignment.

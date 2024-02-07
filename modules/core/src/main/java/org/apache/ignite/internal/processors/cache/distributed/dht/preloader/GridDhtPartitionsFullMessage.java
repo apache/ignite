@@ -526,25 +526,25 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                     }
                 });
 
-            Iterator<byte[]> iterator = marshalled.iterator();
+            Iterator<byte[]> iter = marshalled.iterator();
 
             if (!F.isEmpty(parts) && partsBytes == null)
-                partsBytes = iterator.next();
+                partsBytes = iter.next();
 
             if (partCntrs != null && !partCntrs.empty() && partCntrsBytes == null)
-                partCntrsBytes = iterator.next();
+                partCntrsBytes = iter.next();
 
             if (partCntrs2 != null && !partCntrs2.empty() && partCntrsBytes2 == null)
-                partCntrsBytes2 = iterator.next();
+                partCntrsBytes2 = iter.next();
 
             if (partHistSuppliers != null && partHistSuppliersBytes == null)
-                partHistSuppliersBytes = iterator.next();
+                partHistSuppliersBytes = iter.next();
 
             if (partsToReload != null && partsToReloadBytes == null)
-                partsToReloadBytes = iterator.next();
+                partsToReloadBytes = iter.next();
 
             if (!F.isEmpty(errs) && errsBytes == null)
-                errsBytes = iterator.next();
+                errsBytes = iter.next();
         }
     }
 
@@ -604,10 +604,10 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             }
         );
 
-        Iterator<Object> iterator = unmarshalled.iterator();
+        Iterator<Object> iter = unmarshalled.iterator();
 
         if (partsBytes != null && parts == null) {
-            parts = (Map<Integer, GridDhtPartitionFullMap>)iterator.next();
+            parts = (Map<Integer, GridDhtPartitionFullMap>)iter.next();
 
             if (dupPartsData != null) {
                 assert parts != null;
@@ -638,19 +638,19 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         }
 
         if (partCntrsBytes != null && partCntrs == null)
-            partCntrs = (IgniteDhtPartitionCountersMap)iterator.next();
+            partCntrs = (IgniteDhtPartitionCountersMap)iter.next();
 
         if (partCntrsBytes2 != null && partCntrs2 == null)
-            partCntrs2 = (IgniteDhtPartitionCountersMap2)iterator.next();
+            partCntrs2 = (IgniteDhtPartitionCountersMap2)iter.next();
 
         if (partHistSuppliersBytes != null && partHistSuppliers == null)
-            partHistSuppliers = (IgniteDhtPartitionHistorySuppliersMap)iterator.next();
+            partHistSuppliers = (IgniteDhtPartitionHistorySuppliersMap)iter.next();
 
         if (partsToReloadBytes != null && partsToReload == null)
-            partsToReload = (IgniteDhtPartitionsToReloadMap)iterator.next();
+            partsToReload = (IgniteDhtPartitionsToReloadMap)iter.next();
 
         if (errsBytes != null && errs == null)
-            errs = (Map<UUID, Exception>)iterator.next();
+            errs = (Map<UUID, Exception>)iter.next();
 
         if (parts == null)
             parts = new HashMap<>();
@@ -929,9 +929,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             "Both current and merge full message must have exchangeId == null"
                 + other.exchangeId() + "," + exchangeId();
 
-        for (Map.Entry<Integer, GridDhtPartitionFullMap> groupAndMap : other.partitions().entrySet()) {
-            int grpId = groupAndMap.getKey();
-            GridDhtPartitionFullMap updMap = groupAndMap.getValue();
+        for (Map.Entry<Integer, GridDhtPartitionFullMap> grpAndMap : other.partitions().entrySet()) {
+            int grpId = grpAndMap.getKey();
+            GridDhtPartitionFullMap updMap = grpAndMap.getValue();
 
             GridDhtPartitionFullMap currMap = partitions().get(grpId);
 

@@ -48,9 +48,9 @@ class JavaVersionCommand {
                 readStream(proc.getErrorStream()) + "'");
         }
 
-        String versionOutput = readStream(proc.getErrorStream());
+        String verOutput = readStream(proc.getErrorStream());
 
-        return JavaVersionCommandParser.extractMajorVersion(versionOutput);
+        return JavaVersionCommandParser.extractMajorVersion(verOutput);
     }
 
     /**

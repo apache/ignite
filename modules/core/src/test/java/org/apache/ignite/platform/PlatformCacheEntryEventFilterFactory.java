@@ -43,14 +43,14 @@ public class PlatformCacheEntryEventFilterFactory implements Serializable,
 
         return new CacheEntryEventSerializableFilter() {
             @Override public boolean evaluate(CacheEntryEvent event) throws CacheEntryListenerException {
-                Object value = event.getValue();
+                Object val = event.getValue();
 
-                if (value instanceof String)
-                    return ((String)value).startsWith(startsWith);
+                if (val instanceof String)
+                    return ((String)val).startsWith(startsWith);
 
-                assert value instanceof BinaryObject;
+                assert val instanceof BinaryObject;
 
-                return ((String)((BinaryObject)value).field("String")).startsWith(startsWith);
+                return ((String)((BinaryObject)val).field("String")).startsWith(startsWith);
             }
         };
     }

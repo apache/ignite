@@ -460,7 +460,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
 
                 GridCacheReturnCompletableWrapper wrapper = null;
 
-                if (!F.isEmpty(writeMap) || mvccSnapshot != null) {
+                if (!F.isEmpty(writeMap)) {
                     GridCacheReturn ret = null;
 
                     if (!near() && !local() && onePhaseCommit()) {
@@ -491,8 +491,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                     Set<GridDhtLocalPartition> reservedParts = new HashSet<>();
 
                     try {
-                        assert mvccSnapshot == null;
-
                         Collection<IgniteTxEntry> entries = near() ? allEntries() : writeEntries();
 
                         // Data entry to write to WAL.

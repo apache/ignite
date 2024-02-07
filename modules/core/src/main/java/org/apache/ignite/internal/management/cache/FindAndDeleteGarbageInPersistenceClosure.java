@@ -169,21 +169,21 @@ public class FindAndDeleteGarbageInPersistenceClosure implements IgniteCallable<
         for (Map.Entry<Integer, Map<Integer, Long>> e : grpIdToPartIdToGarbageCount.entrySet()) {
             int grpId = e.getKey();
 
-            CacheGroupContext groupCtx = ignite.context().cache().cacheGroup(grpId);
+            CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
 
-            assert groupCtx != null;
+            assert grpCtx != null;
 
             for (Integer cacheId : e.getValue().keySet()) {
-                groupCtx.shared().database().checkpointReadLock();
+                grpCtx.shared().database().checkpointReadLock();
                 try {
-                    groupCtx.offheap().stopCache(cacheId, true);
+                    grpCtx.offheap().stopCache(cacheId, true);
                 }
                 finally {
-                    groupCtx.shared().database().checkpointReadUnlock();
+                    grpCtx.shared().database().checkpointReadUnlock();
                 }
 
                 ((GridCacheOffheapManager)
-                    groupCtx.offheap()).findAndCleanupLostIndexesForStoppedCache(cacheId);
+                    grpCtx.offheap()).findAndCleanupLostIndexesForStoppedCache(cacheId);
             }
         }
     }
@@ -214,28 +214,28 @@ public class FindAndDeleteGarbageInPersistenceClosure implements IgniteCallable<
     private Set<Integer> calcCacheGroupIds() {
         Set<Integer> grpIds = new HashSet<>();
 
-        Set<String> missingCacheGroups = new HashSet<>();
+        Set<String> missingCacheGrps = new HashSet<>();
 
         if (!F.isEmpty(grpNames)) {
             for (String grpName : grpNames) {
-                CacheGroupContext groupCtx = ignite.context().cache().cacheGroup(CU.cacheId(grpName));
+                CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(CU.cacheId(grpName));
 
-                if (groupCtx == null) {
-                    missingCacheGroups.add(grpName);
+                if (grpCtx == null) {
+                    missingCacheGrps.add(grpName);
 
                     continue;
                 }
 
-                if (groupCtx.sharedGroup())
-                    grpIds.add(groupCtx.groupId());
+                if (grpCtx.sharedGroup())
+                    grpIds.add(grpCtx.groupId());
                 else
                     log.warning("Group[name=" + grpName + "] is not shared one, it couldn't contain garbage from destroyed caches.");
             }
 
-            if (!missingCacheGroups.isEmpty()) {
+            if (!missingCacheGrps.isEmpty()) {
                 StringBuilder strBuilder = new StringBuilder("The following cache groups do not exist: ");
 
-                for (String name : missingCacheGroups)
+                for (String name : missingCacheGrps)
                     strBuilder.append(name).append(", ");
 
                 strBuilder.delete(strBuilder.length() - 2, strBuilder.length());
@@ -244,9 +244,9 @@ public class FindAndDeleteGarbageInPersistenceClosure implements IgniteCallable<
             }
         }
         else {
-            Collection<CacheGroupContext> groups = ignite.context().cache().cacheGroups();
+            Collection<CacheGroupContext> grps = ignite.context().cache().cacheGroups();
 
-            for (CacheGroupContext grp : groups) {
+            for (CacheGroupContext grp : grps) {
                 if (!grp.systemCache())
                     grpIds.add(grp.groupId());
             }

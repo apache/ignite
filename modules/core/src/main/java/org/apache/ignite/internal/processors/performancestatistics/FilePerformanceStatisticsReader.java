@@ -278,7 +278,7 @@ public class FilePerformanceStatisticsReader {
                 text = readString(buf, textLen);
             }
 
-            GridCacheQueryType queryType = GridCacheQueryType.fromOrdinal(buf.get());
+            GridCacheQueryType qryType = GridCacheQueryType.fromOrdinal(buf.get());
             long id = buf.getLong();
             long startTime = buf.getLong();
             long duration = buf.getLong();
@@ -288,7 +288,7 @@ public class FilePerformanceStatisticsReader {
                 forwardRead(hash);
 
             for (PerformanceStatisticsHandler hnd : curHnd)
-                hnd.query(nodeId, queryType, text, id, startTime, duration, success);
+                hnd.query(nodeId, qryType, text, id, startTime, duration, success);
 
             return true;
         }
@@ -296,14 +296,14 @@ public class FilePerformanceStatisticsReader {
             if (buf.remaining() < queryReadsRecordSize())
                 return false;
 
-            GridCacheQueryType queryType = GridCacheQueryType.fromOrdinal(buf.get());
+            GridCacheQueryType qryType = GridCacheQueryType.fromOrdinal(buf.get());
             UUID uuid = readUuid(buf);
             long id = buf.getLong();
             long logicalReads = buf.getLong();
             long physicalReads = buf.getLong();
 
             for (PerformanceStatisticsHandler hnd : curHnd)
-                hnd.queryReads(nodeId, queryType, uuid, id, logicalReads, physicalReads);
+                hnd.queryReads(nodeId, qryType, uuid, id, logicalReads, physicalReads);
 
             return true;
         }

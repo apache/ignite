@@ -47,9 +47,9 @@ public class GroupKey {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        GroupKey groupKey = (GroupKey)o;
+        GroupKey grpKey = (GroupKey)o;
 
-        return Arrays.equals(fields, groupKey.fields);
+        return Arrays.equals(fields, grpKey.fields);
     }
 
     /** {@inheritDoc} */

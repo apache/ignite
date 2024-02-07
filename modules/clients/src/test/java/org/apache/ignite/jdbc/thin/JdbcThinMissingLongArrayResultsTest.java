@@ -104,7 +104,7 @@ public class JdbcThinMissingLongArrayResultsTest extends JdbcThinAbstractSelfTes
             final int maxBlocks = SAMPLE_SIZE / BLOCK_SIZE;
 
             Key key = new Key();
-            Value value = new Value();
+            Value val = new Value();
             long date = System.nanoTime();
 
             for (int blockId = 0; blockId < maxBlocks; blockId++) {
@@ -130,15 +130,15 @@ public class JdbcThinMissingLongArrayResultsTest extends JdbcThinAbstractSelfTes
                 key.setDate(date);
                 key.setSecurityId(secId);
 
-                value.setTime(time); // BUG  in providing it via JDBC
+                val.setTime(time); // BUG  in providing it via JDBC
 
-                value.setOpen(open);
-                value.setHigh(high);
-                value.setLow(low);
-                value.setClose(close);
-                value.setMarketVWAP(marketVWAP);
+                val.setOpen(open);
+                val.setHigh(high);
+                val.setLow(low);
+                val.setClose(close);
+                val.setMarketVWAP(marketVWAP);
 
-                streamer.addData(key, value);
+                streamer.addData(key, val);
 
                 secId++; // for unique values
                 //secId = RAND.nextInt(1000);
