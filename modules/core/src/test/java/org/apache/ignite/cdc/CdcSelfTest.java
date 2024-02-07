@@ -169,7 +169,7 @@ public class CdcSelfTest extends AbstractCdcTest {
             }
 
             @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-                 return new AbstractCachePluginProvider() {
+                return new AbstractCachePluginProvider() {
                     @Override public @Nullable Object createComponent(Class cls) {
                         if (cls != CacheConflictResolutionManager.class || conflictResolutionMgrSupplier == null)
                             return null;
@@ -252,7 +252,8 @@ public class CdcSelfTest extends AbstractCdcTest {
                     assertEquals(evt.unwrappedKey(), evt.unwrappedPreviousStateMetadata());
                 }
             }, true);
-        }finally {
+        }
+        finally {
             conflictResolutionMgrSupplier = null;
         }
     }
