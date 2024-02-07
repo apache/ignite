@@ -17,18 +17,25 @@
 
 package org.apache.ignite.internal;
 
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.TaskEvent;
-import org.apache.ignite.internal.client.thin.TestTask;
+import org.apache.ignite.internal.events.ManagementTaskEvent;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
@@ -59,13 +66,13 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testManagementTask() throws Exception {
-        doTestVisorTask(TestManagementVisorOneNodeTask.class, true);
+        doTestTask(TestManagementVisorOneNodeTask.class, true);
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testNotManagementTask() throws Exception {
-        doTestVisorTask(TestTask.class, false);
+        doTestTask(NotManagementTask.class, false);
     }
 
     /**
@@ -73,8 +80,10 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    private void doTestVisorTask(Class<? extends ComputeTask<?, ?>> cls, boolean expEvt) throws Exception {
+    private void doTestTask(Class<? extends ComputeTask<?, ?>> cls, boolean expEvt) throws Exception {
         IgniteEx ignite = startGrid(0);
+
+        String arg = "test-arg";
 
         final AtomicReference<TaskEvent> evt = new AtomicReference<>();
 
@@ -91,13 +100,41 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
         }, EventType.EVT_MANAGEMENT_TASK_STARTED);
 
         for (ClusterNode node : ignite.cluster().forServers().nodes())
-            ignite.compute().executeAsync(cls.getName(), new VisorTaskArgument<>(node.id(), new VisorTaskArgument(), true));
+            ignite.compute().execute(cls.getName(), new VisorTaskArgument<>(node.id(), arg, true));
 
         if (expEvt) {
             assertTrue(evtLatch.await(10000, TimeUnit.MILLISECONDS));
-            assertTrue(evt.get() instanceof TaskEvent);
+            assertTrue(evt.get() instanceof ManagementTaskEvent);
+            assertEquals(arg, ((ManagementTaskEvent)evt.get()).argument().getArgument());
         }
         else
             assertFalse(evtLatch.await(1000, TimeUnit.MILLISECONDS));
+    }
+
+    /** */
+    private static class NotManagementTask extends ComputeTaskAdapter<VisorTaskArgument<String>, Void> {
+        /** {@inheritDoc} */
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+            @Nullable VisorTaskArgument<String> arg) {
+            return subgrid.stream().collect(Collectors.toMap(node -> new TestJob(), node -> node));
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable Void reduce(List<ComputeJobResult> results) {
+            return null;
+        }
+
+        /** */
+        public static class TestJob implements ComputeJob {
+            /** {@inheritDoc} */
+            @Override public void cancel() {
+                // No-op.
+            }
+
+            /** {@inheritDoc} */
+            @Override public Object execute() {
+                return null;
+            }
+        }
     }
 }
