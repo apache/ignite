@@ -21,7 +21,6 @@ import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
@@ -31,7 +30,6 @@ import org.jetbrains.annotations.Nullable;
  * Task to cancel client connection(s).
  */
 @GridInternal
-@GridVisorManagementTask
 public class ClientConnectionDropTask extends VisorMultiNodeTask<KillClientCommandArg, Void, Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
