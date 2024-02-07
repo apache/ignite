@@ -220,11 +220,16 @@ public class BlockingTxOpsTest extends AbstractThinClientTest {
 
         GridTestUtils.runMultiThreaded(() -> {
             for (int i = 0; i < 100; i++) {
-                try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TX_TIMEOUT)) {
-                    op.run();
+                // Mix implicit and explicit transactions.
+                if (ThreadLocalRandom.current().nextBoolean()) {
+                    try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TX_TIMEOUT)) {
+                        op.run();
 
-                    tx.commit();
+                        tx.commit();
+                    }
                 }
+                else
+                    op.run();
             }
         }, THREADS_CNT, "tx-thread");
 

@@ -120,6 +120,7 @@ import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.transactions.TransactionCheckedException;
 import org.apache.ignite.internal.util.GridSerializableMap;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -4177,9 +4178,29 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * Replaces previous async operation future on transaction resume.
      */
     public void resumeLastFut(FutureHolder holder) {
-        awaitLastFut();
+        IgniteInternalFuture resumedFut = holder.future();
 
-        lastFut.set(holder);
+        if (resumedFut == null || resumedFut.isDone())
+            return;
+
+        FutureHolder threadHolder = lastFut.get();
+
+        IgniteInternalFuture threadFut = threadHolder.future();
+
+        if (threadFut != null && !threadFut.isDone()) {
+            threadHolder.lock();
+
+            try {
+                GridCompoundFuture f = new GridCompoundFuture<>().add(threadFut).add(resumedFut).markInitialized();
+
+                saveFuture(threadHolder, f, /*asyncOp*/false, /*retry*/false);
+            }
+            finally {
+                threadHolder.unlock();
+            }
+        }
+        else
+            lastFut.set(holder);
     }
 
     /**
