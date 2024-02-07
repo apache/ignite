@@ -128,7 +128,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
                 }
             }
 
-            return new ClientListenerAsyncResponse(fut);
+            return new ClientListenerAsyncResponse(req0.requestId(), fut);
         }
         else
             return req0.process(ctx);

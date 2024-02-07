@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.platform.client;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 
 /**
  * Thin client request.
@@ -67,7 +66,7 @@ public class ClientRequest implements ClientListenerRequest {
      * @return Future for response.
      */
     public IgniteInternalFuture<ClientResponse> processAsync(ClientConnectionContext ctx) {
-        return new GridFinishedFuture<>(process(ctx));
+        throw new IllegalStateException("Async operation is not implemented for request " + getClass().getName());
     }
 
     /**

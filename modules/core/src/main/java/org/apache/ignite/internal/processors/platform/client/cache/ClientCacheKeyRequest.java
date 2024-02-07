@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -100,7 +99,7 @@ public abstract class ClientCacheKeyRequest extends ClientCacheDataRequest imple
 
     /** */
     protected IgniteInternalFuture<ClientResponse> processAsync0(ClientConnectionContext ctx) {
-        return new GridFinishedFuture<>(process0(ctx));
+        throw new IllegalStateException("Async operation is not implemented for request " + getClass().getName());
     }
 
     /**

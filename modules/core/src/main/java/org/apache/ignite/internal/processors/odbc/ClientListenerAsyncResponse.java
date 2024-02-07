@@ -30,8 +30,8 @@ public class ClientListenerAsyncResponse extends ClientResponse {
     /**
      * Constructs async response.
      */
-    public ClientListenerAsyncResponse(IgniteInternalFuture<? extends ClientListenerResponse> fut) {
-        super(STATUS_SUCCESS, null);
+    public ClientListenerAsyncResponse(long reqId, IgniteInternalFuture<? extends ClientListenerResponse> fut) {
+        super(reqId);
 
         this.fut = fut;
     }
@@ -43,6 +43,8 @@ public class ClientListenerAsyncResponse extends ClientResponse {
 
     /** {@inheritDoc} */
     @Override public int status() {
+        assert fut.isDone();
+
         try {
             return fut.get().status();
         }
@@ -58,6 +60,8 @@ public class ClientListenerAsyncResponse extends ClientResponse {
 
     /** {@inheritDoc} */
     @Override public String error() {
+        assert fut.isDone();
+
         try {
             return fut.get().error();
         }
@@ -73,10 +77,12 @@ public class ClientListenerAsyncResponse extends ClientResponse {
 
     /** {@inheritDoc} */
     @Override public void onSent() {
+        assert fut.isDone();
+
         try {
             fut.get().onSent();
         }
-        catch (Exception e) {
+        catch (Exception ignore) {
             // Ignore.
         }
     }
