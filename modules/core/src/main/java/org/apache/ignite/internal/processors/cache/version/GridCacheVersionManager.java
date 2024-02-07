@@ -365,4 +365,13 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     public boolean isStartVersion(GridCacheVersion ver) {
         return startVer.equals(ver);
     }
+
+    /**
+     * Update grid start time.
+     */
+    public void gridStartTime(long startTime) {
+        offset = (int)((startTime - TOP_VER_BASE_TIME) / 1000);
+
+        isolatedStreamerVer = new GridCacheVersion(1 + offset, 0, 1, dataCenterId);
+    }
 }
