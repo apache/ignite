@@ -55,8 +55,6 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
@@ -239,11 +237,8 @@ public class CdcSelfTest extends AbstractCdcTest {
             }
 
             @Override public Object previousStateMetadata(GridCacheEntryEx entry) {
-                CacheObjectValueContext ctx = entry.context().cacheObjectContext();
-                CacheObject key = entry.key();
-
-                // Checking Previous state meta delivery to the log records as well (setting key);
-                return CacheObjectUtils.unwrapBinaryIfNeeded(ctx, key, true, true, null);
+                // Checking Previous state meta delivery to the log records as well (using key);
+                return entry.key();
             }
 
             @Override public String toString() {

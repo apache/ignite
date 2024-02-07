@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManage
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
@@ -401,11 +400,8 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             }
 
             @Override public Object previousStateMetadata(GridCacheEntryEx entry) {
-                CacheObjectValueContext ctx = entry.context().cacheObjectContext();
-                CacheObject key = entry.key();
-
-                // Checking Previous state meta delivery to the log records as well (setting key);
-                return CacheObjectUtils.unwrapBinaryIfNeeded(ctx, key, true, true, null);
+                // Checking Previous state meta delivery to the log records as well (using key);
+                return entry.key();
             }
 
             @Override public String toString() {
@@ -460,7 +456,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
                 val.prepareMarshal(intCache.context().cacheObjectContext());
 
-                // Checking Previous state meta delivery to the resolver as well (setting val).
+                // Checking Previous state meta delivery to the resolver as well (using value).
                 drMap.put(key, new GridCacheDrInfo(val, new GridCacheVersion(1, i, 1, OTHER_CLUSTER_ID), val));
             }
 
