@@ -2292,7 +2292,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 IgniteInternalFuture<GridCacheReturn> fut =
                     tx.invokeAsync(ctx, null, (Map<? extends K, ? extends EntryProcessor<K, V, Object>>)map, args);
 
-                Map<K, EntryProcessorResult<T>> value = fut.get().value();
+                Map<K, EntryProcessorResult<T>> val = fut.get().value();
 
                 if (statsEnabled)
                     metrics0().addInvokeTimeNanos(System.nanoTime() - start);
@@ -2300,7 +2300,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 if (performanceStatsEnabled)
                     writeStatistics(OperationType.CACHE_INVOKE_ALL, start);
 
-                return value;
+                return val;
             }
         });
     }

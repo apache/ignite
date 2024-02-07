@@ -104,12 +104,12 @@ public class PlatformProcessUtils {
             }
 
             if (!process.isAlive()) {
-                int exitValue = process.exitValue();
+                int exitVal = process.exitValue();
                 process = null;
 
                 String logStr = String.join(System.lineSeparator(), log);
 
-                throw new Exception("Process has exited unexpectedly (" + exitValue + "): " + logStr);
+                throw new Exception("Process has exited unexpectedly (" + exitVal + "): " + logStr);
             }
         }
 

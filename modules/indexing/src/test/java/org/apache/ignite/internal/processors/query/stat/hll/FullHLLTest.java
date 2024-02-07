@@ -98,14 +98,14 @@ public class FullHLLTest {
 
         // all registers at 'medium' value
         {
-            final int registerValue = 7/*chosen to ensure neither correction kicks in*/;
+            final int registerVal = 7/*chosen to ensure neither correction kicks in*/;
             for (int i = 0; i < m; i++)
-                hll.addRaw(ProbabilisticTestUtil.constructHLLValue(log2m, i, registerValue));
+                hll.addRaw(ProbabilisticTestUtil.constructHLLValue(log2m, i, registerVal));
 
             final long cardinality = hll.cardinality();
 
             // Simplified estimator when all registers take same value: alpha / (m/2^val)
-            final double estimator = HLLUtil.alphaMSquared(m) / ((double)m / Math.pow(2, registerValue));
+            final double estimator = HLLUtil.alphaMSquared(m) / ((double)m / Math.pow(2, registerVal));
 
             // Assert conditions for uncorrected range
             assertTrue(estimator <= Math.pow(2, l) / 30);
@@ -132,14 +132,14 @@ public class FullHLLTest {
             256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
 
         {
-            final int registerValue = 31/*chosen to ensure large correction kicks in*/;
+            final int registerVal = 31/*chosen to ensure large correction kicks in*/;
             for (int i = 0; i < m; i++)
-                hll.addRaw(ProbabilisticTestUtil.constructHLLValue(log2m, i, registerValue));
+                hll.addRaw(ProbabilisticTestUtil.constructHLLValue(log2m, i, registerVal));
 
             final long cardinality = hll.cardinality();
 
             // Simplified estimator when all registers take same value: alpha / (m/2^val)
-            final double estimator = HLLUtil.alphaMSquared(m) / ((double)m / Math.pow(2, registerValue));
+            final double estimator = HLLUtil.alphaMSquared(m) / ((double)m / Math.pow(2, registerVal));
 
             // Assert conditions for large range
 
@@ -306,8 +306,8 @@ public class FullHLLTest {
                 256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
 
             for (int i = 0; i < 3; i++) {
-                final long rawValue = ProbabilisticTestUtil.constructHLLValue(log2m, i, (i + 9));
-                hll.addRaw(rawValue);
+                final long rawVal = ProbabilisticTestUtil.constructHLLValue(log2m, i, (i + 9));
+                hll.addRaw(rawVal);
             }
 
             final byte[] bytes = hll.toBytes(schemaVer);
@@ -326,8 +326,8 @@ public class FullHLLTest {
                 256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
 
             for (int i = 0; i < (1 << log2m)/*aka 2^log2m*/; i++) {
-                final long rawValue = ProbabilisticTestUtil.constructHLLValue(log2m, i, (i % 9) + 1);
-                hll.addRaw(rawValue);
+                final long rawVal = ProbabilisticTestUtil.constructHLLValue(log2m, i, (i % 9) + 1);
+                hll.addRaw(rawVal);
             }
 
             final byte[] bytes = hll.toBytes(schemaVer);

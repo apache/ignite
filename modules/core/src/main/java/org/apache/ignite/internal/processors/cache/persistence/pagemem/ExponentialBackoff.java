@@ -68,7 +68,7 @@ class ExponentialBackoff {
      * @return {@code true} iff this backoff was not already in a reset state
      */
     public boolean reset() {
-        int oldValue = exponentialBackoffCounter.getAndSet(0);
-        return oldValue != 0;
+        int oldVal = exponentialBackoffCounter.getAndSet(0);
+        return oldVal != 0;
     }
 }

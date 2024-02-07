@@ -515,9 +515,9 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         String cacheName = cache.getName();
 
         for (int i = 0; i < size; i++) {
-            String value = (String)cache.get(i);
+            String val = (String)cache.get(i);
 
-            assertEquals(generatingFunc.apply(cacheName, i), value);
+            assertEquals(generatingFunc.apply(cacheName, i), val);
         }
     }
 }

@@ -119,9 +119,9 @@ public class IgniteCacheQueryCacheDestroySelfTest extends GridCommonAbstractTest
 
             try (QueryCursor cursor = example.query(scanQry)) {
                 for (Object p : cursor) {
-                    String value = (String)((Cache.Entry)p).getValue();
+                    String val = (String)((Cache.Entry)p).getValue();
 
-                    assertNotNull(value);
+                    assertNotNull(val);
                 }
             }
         }

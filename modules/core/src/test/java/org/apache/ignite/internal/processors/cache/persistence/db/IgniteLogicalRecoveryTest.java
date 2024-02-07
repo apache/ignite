@@ -649,10 +649,10 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            TestValue testValue = (TestValue)o;
+            TestValue testVal = (TestValue)o;
 
-            return indexedField == testValue.indexedField &&
-                Arrays.equals(payload, testValue.payload);
+            return indexedField == testVal.indexedField &&
+                Arrays.equals(payload, testVal.payload);
         }
 
         /** {@inheritDoc} */
