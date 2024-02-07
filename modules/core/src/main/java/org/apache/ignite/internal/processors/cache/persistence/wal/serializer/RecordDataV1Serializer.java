@@ -2109,7 +2109,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         CacheObject prevStare = entry.previousStateMetadata();
 
         if (prevStare != null)
-            prevStare.putValue(buf);
+            if (!prevStare.putValue(buf))
+                throw new AssertionError();
     }
 
     /**
@@ -2218,7 +2219,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         byte prevStateMetaType = 0;
 
         if ((flags & PREV_STATE_FLAG) == PREV_STATE_FLAG) {
-            int prevStateMetaSize = in.readByte();
+            int prevStateMetaSize = in.readInt();
             prevStateMetaType = in.readByte();
             prevStateMetaBytes = new byte[prevStateMetaSize];
             in.readFully(prevStateMetaBytes);
@@ -2432,7 +2433,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             /*part ID*/4 +
             /*expire Time*/8 +
             /*part cnt*/8 +
-            /*flags*/(entry instanceof MvccDataEntry ? 0 : 1);
+            /*flags*/(entry instanceof MvccDataEntry ? 0 : 1) +
+            /*prev state meta*/(entry.previousStateMetadata() == null ? 0 : entry.previousStateMetadata().valueBytesLength(coCtx));
     }
 
     /**

@@ -113,6 +113,11 @@ public class UnwrapMvccDataEntry extends MvccDataEntry implements UnwrappedDataE
     }
 
     /** {@inheritDoc} */
+    @Override public Object unwrappedPreviousStateMetadata() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         SB sb = new SB();
 

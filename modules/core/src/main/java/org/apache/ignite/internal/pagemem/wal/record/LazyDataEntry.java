@@ -173,4 +173,14 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
     @Override public byte[] getValBytes() {
         return valBytes;
     }
+
+    /** {@inheritDoc} */
+    @Override public byte getPreviousStateMetadataType() {
+        return prevStateMetaType;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] getPreviousStateMetadataBytes() {
+        return prevStateMetaBytes;
+    }
 }

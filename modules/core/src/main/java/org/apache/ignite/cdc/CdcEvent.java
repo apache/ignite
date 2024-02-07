@@ -49,6 +49,11 @@ public interface CdcEvent extends Serializable {
     @Nullable public CacheObject value();
 
     /**
+     * @return Previous entry state metadata if expected.
+     */
+    @Nullable public CacheObject previousStateMetadata();
+
+    /**
      * @return Key which was placed into cache. Or null if failed to convert.
      */
     public Object unwrappedKey();
@@ -59,9 +64,9 @@ public interface CdcEvent extends Serializable {
     public Object unwrappedValue();
 
     /**
-     * @return Previous entry state metadata if expected.
+     * @return Previous entry state metadata.
      */
-    @Nullable public CacheObject previousStateMetadata();
+    public Object unwrappedPreviousStateMetadata();
 
     /**
      * @return {@code True} if event fired on primary node for partition containing this entry.

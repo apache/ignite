@@ -146,4 +146,14 @@ public class LazyMvccDataEntry extends MvccDataEntry implements MarshalledDataEn
     @Override public byte[] getValBytes() {
         return valBytes;
     }
+
+    /** {@inheritDoc} */
+    @Override public byte getPreviousStateMetadataType() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] getPreviousStateMetadataBytes() {
+        throw new UnsupportedOperationException();
+    }
 }

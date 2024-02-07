@@ -36,4 +36,12 @@ public interface UnwrappedDataEntry {
      * @return Value which was placed into cache. Or null for delete operation or for failure.
      */
     Object unwrappedValue();
+
+    /**
+     * Unwraps previous state metadata value from cache value object into primitive boxed type or source class.
+     * If client classes were used in key, call of this method requires classes to be available in classpath.
+     *
+     * @return Value Previous state metadata.
+     */
+    Object unwrappedPreviousStateMetadata();
 }

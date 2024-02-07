@@ -47,7 +47,8 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
      * @param partId Partition ID.
      * @param partCnt Partition counter.
      * @param cacheObjValCtx cache object value context for unwrapping objects.
-     * @param keepBinary disable unwrapping for non primitive objects, Binary Objects would be returned instead.
+     * @param keepBinary disable unwrapping for non-primitive objects, Binary Objects would be returned instead.
+     * @param prevStateMeta Previous state metadata.
      * @param flags Flags.
      */
     public UnwrapDataEntry(
@@ -62,8 +63,10 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
         final long partCnt,
         final CacheObjectValueContext cacheObjValCtx,
         final boolean keepBinary,
+        CacheObject prevStateMeta,
         final byte flags) {
-        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, null, flags);
+        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, prevStateMeta, flags);
+
         this.cacheObjValCtx = cacheObjValCtx;
         this.keepBinary = keepBinary;
     }
@@ -88,7 +91,19 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
         }
         catch (Exception e) {
             cacheObjValCtx.kernalContext().log(UnwrapDataEntry.class)
-                .error("Unable to convert value [" + value() + "]", e);
+                .error("Unable to convert value [" + val + "]", e);
+            return null;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object unwrappedPreviousStateMetadata() {
+        try {
+            return unwrapValue(prevStateMeta, keepBinary, cacheObjValCtx);
+        }
+        catch (Exception e) {
+            cacheObjValCtx.kernalContext().log(UnwrapDataEntry.class)
+                .error("Unable to convert previous state metadata [" + prevStateMeta + "]", e);
             return null;
         }
     }

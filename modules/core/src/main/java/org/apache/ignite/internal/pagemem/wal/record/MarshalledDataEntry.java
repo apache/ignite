@@ -42,4 +42,14 @@ public interface MarshalledDataEntry {
      * @return Value value bytes.
      */
     byte[] getValBytes();
+
+    /**
+     * @return Previous state metadata type code. See {@link CacheObject} for built-in value type codes.
+     */
+    byte getPreviousStateMetadataType();
+
+    /**
+     * @return Previous state metadata value bytes.
+     */
+    byte[] getPreviousStateMetadataBytes();
 }

@@ -59,6 +59,11 @@ public class CdcEventImpl implements CdcEvent {
     }
 
     /** {@inheritDoc} */
+    @Override public Object unwrappedPreviousStateMetadata() {
+        return ((UnwrappedDataEntry)(entry)).unwrappedPreviousStateMetadata();
+    }
+
+    /** {@inheritDoc} */
     @Override public KeyCacheObject key() {
         return entry.key();
     }
