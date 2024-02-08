@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -39,9 +38,6 @@ public class TxCounters {
 
     /** Final update counters for cache partitions in the end of transaction */
     private volatile Map<Integer, PartitionUpdateCountersMessage> updCntrs;
-
-    /** Counter tracking number of entries locked by tx. */
-    private final AtomicInteger lockCntr = new AtomicInteger();
 
     /**
      * Accumulates size change for cache partition.
@@ -134,20 +130,6 @@ public class TxCounters {
         }
 
         return acc;
-    }
-
-    /**
-     * Increments lock counter.
-     */
-    public void incrementLockCounter() {
-        lockCntr.incrementAndGet();
-    }
-
-    /**
-     * @return Current value of lock counter.
-     */
-    public int lockCounter() {
-        return lockCntr.get();
     }
 
     /**
