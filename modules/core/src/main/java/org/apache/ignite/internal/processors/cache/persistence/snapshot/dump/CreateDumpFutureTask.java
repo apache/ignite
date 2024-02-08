@@ -80,7 +80,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.dumpPartFileName;
-import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager.BOOL_FLAG;
 import static org.apache.ignite.internal.util.IgniteUtils.toLong;
 
 /**
@@ -139,8 +138,14 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      */
     private final @Nullable ConcurrentMap<Long, ByteBuffer> encThLocBufs;
 
-    /** Caches version the dump start. */
-    private final GridCacheVersion dumpVer;
+    /**
+     * Cache entry version at the dump start.
+     * Regular updates with {@link IgniteCache#put(Object, Object)} and similar calls use version generated with
+     * {@link GridCacheVersionManager#next(GridCacheVersion)}. This version value monotonically grows. It is generated
+     * on a <b>primary</b> node and is <b>propagated</b> to the backups. So, on a primary we can distinguish updates
+     * that happen before and after the dump start.
+     */
+    private GridCacheVersion startVer;
 
     /**
      * @param cctx Cache context.
@@ -182,9 +187,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         this.rateLimiter = rateLimiter;
         this.encKey = encrypt ? cctx.gridConfig().getEncryptionSpi().create() : null;
         this.encThLocBufs = encrypt ? new ConcurrentHashMap<>() : null;
-        synchronized (BOOL_FLAG) {
-            this.dumpVer = cctx.versions().next(cctx.kernalContext().discovery().topologyVersion());
-        }
     }
 
     /** {@inheritDoc} */
@@ -217,6 +219,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
     /** Prepares all data structures to dump entries. */
     private void prepare() throws IOException, IgniteCheckedException {
+        startVer = cctx.versions().next(cctx.kernalContext().discovery().topologyVersion());
+
         for (Map.Entry<Integer, Set<Integer>> e : processed.entrySet()) {
             int grp = e.getKey();
 
@@ -281,7 +285,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             int coCtxCache = 0;
             CacheObjectContext coCtx = null;
 
-            try (PartitionDumpContext dumpCtx = dumpContext(grp, part, false)) {
+            try (PartitionDumpContext dumpCtx = dumpContext(grp, part)) {
                 try (GridCloseableIterator<CacheDataRow> rows = gctx.offheap().reservedIterator(part, dumpCtx.topVer)) {
                     if (rows == null)
                         throw new IgniteCheckedException("Partition missing [part=" + part + ']');
@@ -354,7 +358,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             if (!processed.get(grp).contains(part))
                 return;
 
-            dumpContext(grp, part, true).writeChanged(cctx.cacheId(), expireTime, key, val, ver);
+            dumpContext(grp, part).writeChanged(cctx.cacheId(), expireTime, key, val, ver);
         }
         catch (IgniteException | IgniteCheckedException | IOException e) {
             acceptException(e);
@@ -418,10 +422,10 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     }
 
     /** */
-    private PartitionDumpContext dumpContext(int grp, int part, boolean delayed) {
+    private PartitionDumpContext dumpContext(int grp, int part) {
         return dumpCtxs.computeIfAbsent(
             toLong(grp, part),
-            key -> new PartitionDumpContext(cctx.kernalContext().cache().cacheGroup(grp), part, delayed)
+            key -> new PartitionDumpContext(cctx.kernalContext().cache().cacheGroup(grp), part)
         );
     }
 
@@ -430,38 +434,28 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      */
     private class PartitionDumpContext implements Closeable {
         /** Group id. */
-        final int grp;
+        private final int grp;
 
         /** Partition id. */
-        final int part;
+        private final int part;
 
         /**
          * Key is cache id, values is set of keys dumped via
          * {@link #writeChanged(int, long, KeyCacheObject, CacheObject, GridCacheVersion)}.
          */
-        final Map<Integer, Set<KeyCacheObject>> changed;
+        private final Map<Integer, Set<KeyCacheObject>> changed;
 
         /** Cache id for {@link #iterLastKey} */
-        int iterLastKeyCache;
+        private int iterLastKeyCache;
 
         /** Last key dumped via {@link #writeForIterator(int, long, KeyCacheObject, CacheObject, GridCacheVersion, CacheObjectContext)}. */
-        @Nullable KeyCacheObject iterLastKey;
+        private @Nullable KeyCacheObject iterLastKey;
 
         /** Count of entries changed during dump creation. */
-        LongAdder changedCnt = new LongAdder();
+        private final LongAdder changedCnt = new LongAdder();
 
         /** Partition dump file. Lazily initialized to prevent creation files for empty partitions. */
-        final FileIO file;
-
-        /**
-         * Regular updates with {@link IgniteCache#put(Object, Object)} and similar calls
-         * will use version generated with {@link GridCacheVersionManager#next(GridCacheVersion)}.
-         * Version is monotonically increase.
-         * Version generated on <b>primary</b> node and propagated to backups.
-         * So on primary we can distinguish updates that happens before and after dump start comparing versions
-         * with the version we read with {@link GridCacheVersionManager#last()}.
-         */
-        @Nullable final GridCacheVersion startVer;
+        private final FileIO file;
 
         /** Topology Version. */
         private final AffinityTopologyVersion topVer;
@@ -469,13 +463,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         /** Partition serializer. */
         private final DumpEntrySerializer serializer;
 
-        /** */
-        private final boolean delayed;
-
-        private final Integer startMinusLast;
-
         /** If {@code true} context is closed. */
-        volatile boolean closed;
+        private volatile boolean closed;
 
         /**
          * Count of writers. When count becomes {@code 0} context must be closed.
@@ -485,11 +474,14 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
          */
         private final AtomicInteger writers = new AtomicInteger(1);
 
+        /** Primary node/partition flag. */
+        private final boolean primary;
+
         /**
          * @param gctx Group context.
          * @param part Partition id.
          */
-        private PartitionDumpContext(CacheGroupContext gctx, int part, boolean delayed) {
+        private PartitionDumpContext(CacheGroupContext gctx, int part) {
             assert gctx != null;
 
             try {
@@ -497,14 +489,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 grp = gctx.groupId();
                 topVer = gctx.topology().lastTopologyChangeVersion();
 
-                synchronized (BOOL_FLAG) {
-                    startVer = grpPrimaries.get(gctx.groupId()).contains(part) ? dumpVer : null;
-//                    startVer = grpPrimaries.get(gctx.groupId()).contains(part) ? cctx.versions().next(topVer.topologyVersion()) : null;
-                    this.startMinusLast = startVer != null ? startVer.compareTo(cctx.versions().last()) : null;
-                }
-
-//                if (startVer != null)
-//                    System.err.println("TEST | startVer>last : " + startVer.compareTo(cctx.versions().last()));
+                primary = grpPrimaries.get(gctx.groupId()).contains(part);
 
                 serializer = new DumpEntrySerializer(
                     thLocBufs,
@@ -523,8 +508,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                     throw new IgniteException("Dump file can't be created: " + dumpFile);
 
                 file = ioFactory.create(dumpFile);
-
-                this.delayed = delayed;
             }
             catch (IOException | IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -575,8 +558,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
                         if (reasonToSkip == null)
                             changedCnt.increment();
-                        else
-                            System.err.println("TEST | reason to skip : " + reasonToSkip + ", delayed: " + delayed + (startMinusLast==null?", " : ", start-last : " + startMinusLast));
                     }
                 }
                 finally {
@@ -641,9 +622,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                     ", startVer=" + (startVer != null) + ']');
             }
 
-            if (reason != null)
-                System.err.println("TEST | reason to skip : " + "greater version, delayed: " + delayed + (startMinusLast == null ? ", " : ", start-last: " + startMinusLast));
-
             return reason == null;
         }
 
@@ -676,7 +654,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
          * @see GridCacheVersionManager#isolatedStreamerVersion()
          */
         private boolean afterStart(GridCacheVersion ver) {
-            return startVer != null && ver.isGreater(startVer);
+            return primary && ver.isGreater(startVer);
         }
 
         /**

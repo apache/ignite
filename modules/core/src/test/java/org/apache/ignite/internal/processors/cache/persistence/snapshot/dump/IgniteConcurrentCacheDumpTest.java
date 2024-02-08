@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -41,10 +40,10 @@ public class IgniteConcurrentCacheDumpTest extends AbstractCacheDumpTest {
     public static List<Object[]> params() {
         List<Object[]> params = new ArrayList<>();
 
-        for (boolean encrypted : new boolean[]{false})
-            for (int nodes : new int[]{3})
-                for (int backups : new int[]{2})
-                    for (boolean persistence : new boolean[]{true})
+        for (boolean encrypted : new boolean[]{true, false})
+            for (int nodes : new int[]{2, 3})
+                for (int backups : new int[]{1, 2})
+                    for (boolean persistence : new boolean[]{true, false})
                         for (CacheAtomicityMode mode : CacheAtomicityMode.values())
                             params.add(new Object[]{nodes, backups, persistence, mode, false, false, encrypted});
 
@@ -76,8 +75,7 @@ public class IgniteConcurrentCacheDumpTest extends AbstractCacheDumpTest {
                 initLatch.countDown();
 
                 while (!canceled.get()) {
-//                    switch (rand.nextInt(3)) {
-                    switch (2) {
+                    switch (rand.nextInt(3)) {
                         case 0:
                             int newKey = rand.nextInt(KEYS_CNT);
 
@@ -114,7 +112,7 @@ public class IgniteConcurrentCacheDumpTest extends AbstractCacheDumpTest {
 
             assertTrue(initLatch.await(30, TimeUnit.SECONDS));
 
-            createDump(srv, DMP_NAME, Collections.singletonList(DEFAULT_CACHE_NAME));
+            createDump(srv);
 
             canceled.set(true);
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.version;
 
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -41,8 +40,6 @@ import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE
  * caches.
  */
 public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
-    public static final AtomicBoolean BOOL_FLAG = new AtomicBoolean();
-
     /** */
     public static final GridCacheVersion EVICT_VER = new GridCacheVersion(Integer.MAX_VALUE, 0, 0, 0);
 
@@ -302,9 +299,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
             (int)nodeOrder,
             dataCenterId);
 
-        synchronized (BOOL_FLAG) {
-            last = next;
-        }
+        last = next;
 
         lastDataVer.value(ord);
 
@@ -325,9 +320,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
             (int)nodeOrder,
             dataCenterId);
 
-        synchronized (BOOL_FLAG) {
-            last = next;
-        }
+        last = next;
 
         lastDataVer.value(ord);
 
@@ -340,11 +333,9 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      * @return Last generated version.
      */
     public GridCacheVersion last() {
-        synchronized (BOOL_FLAG) {
-            GridCacheVersion last0 = last;
+        GridCacheVersion last0 = last;
 
-            return new GridCacheVersion(last0.topologyVersion(), localOrder(), last0.nodeOrder(), last0.dataCenterId());
-        }
+        return new GridCacheVersion(last0.topologyVersion(), localOrder(), last0.nodeOrder(), last0.dataCenterId());
     }
 
     /**
