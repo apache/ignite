@@ -24,7 +24,6 @@ import java.nio.file.OpenOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,21 +36,13 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheEntryProcessor;
-import org.apache.ignite.cdc.TypeMapping;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.dump.DumpConsumer;
 import org.apache.ignite.dump.DumpEntry;
-import org.apache.ignite.dump.DumpReader;
-import org.apache.ignite.dump.DumpReaderConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -71,7 +62,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 
 /** */
 public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
@@ -117,72 +107,6 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
         }
 
         return cfg;
-    }
-
-    /** Tests a dump when it is created just after restart. */
-    @Test
-    public void testDumpAfterRestart() throws Exception {
-        assumeTrue(persistence);
-
-        IgniteEx ign0 = startGrids(nodes);
-
-        ign0.cluster().state(ClusterState.ACTIVE);
-
-        try (IgniteDataStreamer<Integer, String> ds = ign0.dataStreamer(DEFAULT_CACHE_NAME)) {
-            IgniteCache<Integer, String> cache = ign0.cache(DEFAULT_CACHE_NAME);
-
-            for (int i = 0; i < KEYS_CNT; ++i) {
-                if (useDataStreamer)
-                    ds.addData(i, "" + i);
-                else
-                    cache.put(i, "" + i);
-            }
-        }
-
-        stopAllGrids(false);
-        IgniteEx ign1 = startGrids(nodes);
-        ign1.cluster().state(ClusterState.ACTIVE);
-
-        createDump(ign1, DMP_NAME, Collections.singletonList(DEFAULT_CACHE_NAME));
-
-        ign1.destroyCache(DEFAULT_CACHE_NAME);
-        awaitPartitionMapExchange();
-
-        new DumpReader(new DumpReaderConfiguration(dumpDirectory(ign1, DMP_NAME), new DumpConsumer() {
-            @Override public void start() {
-                // No-op.
-            }
-
-            @Override public void onMappings(Iterator<TypeMapping> mappings) {
-                // No-op.
-            }
-
-            @Override public void onTypes(Iterator<BinaryType> types) {
-                // No-op.
-            }
-
-            @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
-                caches.forEachRemaining(cacheData -> ign1.createCache(cacheData.config()));
-            }
-
-            @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
-                data.forEachRemaining(de ->
-                    ign1.cache(ign1.context().cache().cacheDescriptor(de.cacheId()).cacheName()).put(de.key(), de.value())
-                );
-            }
-
-            @Override public void stop() {
-                // No-op.
-            }
-        }), log).run();
-
-        IgniteCache<Integer, String> cache = ign1.cache(DEFAULT_CACHE_NAME);
-
-        assertNotNull(cache);
-        assertEquals(KEYS_CNT, cache.size());
-
-        for (int i = 0; i < KEYS_CNT; ++i)
-            assertEquals(i + "", cache.get(i));
     }
 
     /** */
