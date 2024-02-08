@@ -90,8 +90,8 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     public GridCacheVersion(int topVer, int nodeOrderDrId, long order) {
         assert topVer >= 0 : topVer;
         assert order >= 0 : order;
-        assert (nodeOrderDrId << DR_ID_SHIFT) >= 0 : (nodeOrderDrId << DR_ID_SHIFT);
-        assert (nodeOrderDrId | NODE_ORDER_MASK) >= 0 : (nodeOrderDrId | NODE_ORDER_MASK);
+        assert (nodeOrderDrId >>> DR_ID_SHIFT) >= 0 : (nodeOrderDrId >>> DR_ID_SHIFT);
+        assert (nodeOrderDrId & NODE_ORDER_MASK) >= 0 : (nodeOrderDrId & NODE_ORDER_MASK);
 
         this.topVer = topVer;
         this.nodeOrderDrId = nodeOrderDrId;
