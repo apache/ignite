@@ -80,6 +80,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.dumpPartFileName;
+import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager.BOOL_FLAG;
 import static org.apache.ignite.internal.util.IgniteUtils.toLong;
 
 /**
@@ -181,7 +182,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         this.rateLimiter = rateLimiter;
         this.encKey = encrypt ? cctx.gridConfig().getEncryptionSpi().create() : null;
         this.encThLocBufs = encrypt ? new ConcurrentHashMap<>() : null;
-        this.dumpVer = cctx.versions().next(cctx.kernalContext().discovery().topologyVersion());
+        synchronized (BOOL_FLAG) {
+            this.dumpVer = cctx.versions().next(cctx.kernalContext().discovery().topologyVersion());
+        }
     }
 
     /** {@inheritDoc} */
@@ -278,7 +281,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             int coCtxCache = 0;
             CacheObjectContext coCtx = null;
 
-            try (PartitionDumpContext dumpCtx = dumpContext(grp, part)) {
+            try (PartitionDumpContext dumpCtx = dumpContext(grp, part, false)) {
                 try (GridCloseableIterator<CacheDataRow> rows = gctx.offheap().reservedIterator(part, dumpCtx.topVer)) {
                     if (rows == null)
                         throw new IgniteCheckedException("Partition missing [part=" + part + ']');
@@ -351,7 +354,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             if (!processed.get(grp).contains(part))
                 return;
 
-            dumpContext(grp, part).writeChanged(cctx.cacheId(), expireTime, key, val, ver);
+            dumpContext(grp, part, true).writeChanged(cctx.cacheId(), expireTime, key, val, ver);
         }
         catch (IgniteException | IgniteCheckedException | IOException e) {
             acceptException(e);
@@ -415,10 +418,10 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     }
 
     /** */
-    private PartitionDumpContext dumpContext(int grp, int part) {
+    private PartitionDumpContext dumpContext(int grp, int part, boolean delayed) {
         return dumpCtxs.computeIfAbsent(
             toLong(grp, part),
-            key -> new PartitionDumpContext(cctx.kernalContext().cache().cacheGroup(grp), part)
+            key -> new PartitionDumpContext(cctx.kernalContext().cache().cacheGroup(grp), part, delayed)
         );
     }
 
@@ -466,6 +469,11 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         /** Partition serializer. */
         private final DumpEntrySerializer serializer;
 
+        /** */
+        private final boolean delayed;
+
+        private final Integer startMinusLast;
+
         /** If {@code true} context is closed. */
         volatile boolean closed;
 
@@ -481,7 +489,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
          * @param gctx Group context.
          * @param part Partition id.
          */
-        private PartitionDumpContext(CacheGroupContext gctx, int part) {
+        private PartitionDumpContext(CacheGroupContext gctx, int part, boolean delayed) {
             assert gctx != null;
 
             try {
@@ -489,7 +497,14 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 grp = gctx.groupId();
                 topVer = gctx.topology().lastTopologyChangeVersion();
 
-                startVer = grpPrimaries.get(gctx.groupId()).contains(part) ? dumpVer : null;
+                synchronized (BOOL_FLAG) {
+                    startVer = grpPrimaries.get(gctx.groupId()).contains(part) ? dumpVer : null;
+//                    startVer = grpPrimaries.get(gctx.groupId()).contains(part) ? cctx.versions().next(topVer.topologyVersion()) : null;
+                    this.startMinusLast = startVer != null ? startVer.compareTo(cctx.versions().last()) : null;
+                }
+
+//                if (startVer != null)
+//                    System.err.println("TEST | startVer>last : " + startVer.compareTo(cctx.versions().last()));
 
                 serializer = new DumpEntrySerializer(
                     thLocBufs,
@@ -508,6 +523,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                     throw new IgniteException("Dump file can't be created: " + dumpFile);
 
                 file = ioFactory.create(dumpFile);
+
+                this.delayed = delayed;
             }
             catch (IOException | IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -558,6 +575,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
                         if (reasonToSkip == null)
                             changedCnt.increment();
+                        else
+                            System.err.println("TEST | reason to skip : " + reasonToSkip + ", delayed: " + delayed + (startMinusLast==null?", " : ", start-last : " + startMinusLast));
                     }
                 }
                 finally {
@@ -621,6 +640,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                     ", ver=" + ver +
                     ", startVer=" + (startVer != null) + ']');
             }
+
+            if (reason != null)
+                System.err.println("TEST | reason to skip : " + "greater version, delayed: " + delayed + (startMinusLast == null ? ", " : ", start-last: " + startMinusLast));
 
             return reason == null;
         }
