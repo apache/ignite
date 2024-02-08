@@ -97,7 +97,6 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.nio.file.StandardOpenOption.READ;
@@ -173,14 +172,12 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
     /** Checks a dump when it is created with the data streamer just after a restart. */
     @Test
-    @Ignore
     public void testDumpAfterRestartWithStreamer() throws Exception {
         doTestDumpAfterRestart(true);
     }
 
     /** Checks a dump when it is created just after a restart. */
     @Test
-    @Ignore
     public void testDumpAfterRestart() throws Exception {
         doTestDumpAfterRestart(false);
     }
