@@ -76,10 +76,10 @@ public final class NearTxQueryEnlistResultHandler implements CI1<IgniteInternalF
         try {
             future.get();
 
-            assert future.tx.queryEnlisted() || future.cnt == 0;
+            assert future.cnt == 0;
 
             return new GridNearTxQueryEnlistResponse(future.cctx.cacheId(), future.nearFutId, future.nearMiniId,
-                future.nearLockVer, future.cnt, future.tx.empty() && !future.tx.queryEnlisted(), future.newDhtNodes);
+                future.nearLockVer, future.cnt, future.tx.empty(), future.newDhtNodes);
         }
         catch (IgniteCheckedException e) {
             return new GridNearTxQueryEnlistResponse(future.cctx.cacheId(), future.nearFutId, future.nearMiniId, future.nearLockVer, e);

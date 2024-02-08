@@ -132,9 +132,6 @@ public final class IgniteQueryErrorCode {
     /** MVCC disabled. */
     public static final int MVCC_DISABLED = 5002;
 
-    /** Transaction type mismatch (SQL/non SQL). */
-    public static final int TRANSACTION_TYPE_MISMATCH = 5003;
-
     /** Transaction is already completed. */
     public static final int TRANSACTION_COMPLETED = 5004;
 
@@ -201,7 +198,6 @@ public final class IgniteQueryErrorCode {
 
             case MVCC_DISABLED:
             case TRANSACTION_EXISTS:
-            case TRANSACTION_TYPE_MISMATCH:
             case TRANSACTION_COMPLETED:
                 return SqlStateCode.TRANSACTION_STATE_EXCEPTION;
 

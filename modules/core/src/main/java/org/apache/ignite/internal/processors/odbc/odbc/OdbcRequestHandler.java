@@ -578,25 +578,25 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response.
      */
     private ClientListenerResponse closeQuery(OdbcQueryCloseRequest req) {
-        long queryId = req.queryId();
+        long qryId = req.queryId();
 
         try {
-            OdbcQueryResults results = qryResults.get(queryId);
+            OdbcQueryResults results = qryResults.get(qryId);
 
             if (results == null)
                 return new OdbcResponse(IgniteQueryErrorCode.UNKNOWN,
-                    "Failed to find query with ID: " + queryId);
+                    "Failed to find query with ID: " + qryId);
 
-            CloseCursor(results, queryId);
+            CloseCursor(results, qryId);
 
-            OdbcQueryCloseResult res = new OdbcQueryCloseResult(queryId);
+            OdbcQueryCloseResult res = new OdbcQueryCloseResult(qryId);
 
             return new OdbcResponse(res);
         }
         catch (Exception e) {
-            qryResults.remove(queryId);
+            qryResults.remove(qryId);
 
-            U.error(log, "Failed to close SQL query [reqId=" + req.requestId() + ", req=" + queryId + ']', e);
+            U.error(log, "Failed to close SQL query [reqId=" + req.requestId() + ", req=" + qryId + ']', e);
 
             return exceptionToResult(e);
         }
@@ -610,12 +610,12 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private ClientListenerResponse fetchQuery(OdbcQueryFetchRequest req) {
         try {
-            long queryId = req.queryId();
-            OdbcQueryResults results = qryResults.get(queryId);
+            long qryId = req.queryId();
+            OdbcQueryResults results = qryResults.get(qryId);
 
             if (results == null)
                 return new OdbcResponse(ClientListenerResponse.STATUS_FAILED,
-                    "Failed to find query with ID: " + queryId);
+                    "Failed to find query with ID: " + qryId);
 
             OdbcResultSet set = results.currentResultSet();
 
@@ -625,9 +625,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             // Automatically closing cursor if no more data is available.
             if (!results.hasUnfetchedRows())
-                CloseCursor(results, queryId);
+                CloseCursor(results, qryId);
 
-            OdbcQueryFetchResult res = new OdbcQueryFetchResult(queryId, items, lastPage);
+            OdbcQueryFetchResult res = new OdbcQueryFetchResult(qryId, items, lastPage);
 
             return new OdbcResponse(res);
         }
@@ -806,12 +806,12 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private ClientListenerResponse moreResults(OdbcQueryMoreResultsRequest req) {
         try {
-            long queryId = req.queryId();
-            OdbcQueryResults results = qryResults.get(queryId);
+            long qryId = req.queryId();
+            OdbcQueryResults results = qryResults.get(qryId);
 
             if (results == null)
                 return new OdbcResponse(ClientListenerResponse.STATUS_FAILED,
-                    "Failed to find query with ID: " + queryId);
+                    "Failed to find query with ID: " + qryId);
 
             results.nextResultSet();
 
@@ -823,9 +823,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             // Automatically closing cursor if no more data is available.
             if (!results.hasUnfetchedRows())
-                CloseCursor(results, queryId);
+                CloseCursor(results, qryId);
 
-            OdbcQueryMoreResultsResult res = new OdbcQueryMoreResultsResult(queryId, items, lastPage);
+            OdbcQueryMoreResultsResult res = new OdbcQueryMoreResultsResult(qryId, items, lastPage);
 
             return new OdbcResponse(res);
         }

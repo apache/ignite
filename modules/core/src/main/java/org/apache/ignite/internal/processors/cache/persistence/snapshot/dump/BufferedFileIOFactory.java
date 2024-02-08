@@ -15,24 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.task;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.OpenOption;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 
 /**
- * Indicates that annotated task is a visor task that was invoked by user. They can be handled by event listeners.
- *
- * This annotation intended for internal use only.
+ * File I/O factory which provides {@link BufferedFileIO} implementation of FileIO.
  */
-@Documented
-@Inherited
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE})
-public @interface GridVisorManagementTask {
-    // No-op.
+public class BufferedFileIOFactory implements FileIOFactory {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    protected final FileIOFactory factory;
+
+    /** */
+    public BufferedFileIOFactory(FileIOFactory factory) {
+        this.factory = factory;
+    }
+
+    /** {@inheritDoc} */
+    @Override public BufferedFileIO create(File file, OpenOption... modes) throws IOException {
+        return new BufferedFileIO(factory.create(file, modes));
+    }
 }

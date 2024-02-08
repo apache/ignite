@@ -1193,9 +1193,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return {@code true} if local node is in baseline and {@code false} otherwise.
      */
     private boolean isLocalNodeInBaseline() {
-        BaselineTopology topology = cctx.discovery().discoCache().state().baselineTopology();
+        BaselineTopology top = cctx.discovery().discoCache().state().baselineTopology();
 
-        return topology != null && topology.consistentIds().contains(cctx.localNode().consistentId());
+        return top != null && top.consistentIds().contains(cctx.localNode().consistentId());
     }
 
     /**
@@ -1640,12 +1640,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         timeBag.finishGlobalStage("Preloading notification");
 
         // Skipping wait on local join is available when all cluster nodes have the same protocol.
-        boolean skipWaitOnLocalJoin = localJoinExchange()
+        boolean skipWaitOnLocJoin = localJoinExchange()
             && cctx.exchange().latch().canSkipJoiningNodes(initialVersion());
 
         if (context().exchangeFreeSwitch() && isBaselineNodeFailed())
             waitPartitionRelease(null, false, false);
-        else if (!skipWaitOnLocalJoin) { // Skip partition release if node has locally joined (it doesn't have any updates to be finished).
+        else if (!skipWaitOnLocJoin) { // Skip partition release if node has locally joined (it doesn't have any updates to be finished).
             boolean distributed = true;
 
             // Do not perform distributed partition release in case of cluster activation.
@@ -2482,10 +2482,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             // Create and destroy caches and cache proxies.
             cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
 
-            Map<T2<Integer, Integer>, Long> localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
+            Map<T2<Integer, Integer>, Long> locReserved = partHistSuppliers.getReservations(cctx.localNodeId());
 
-            if (localReserved != null) {
-                boolean success = cctx.database().reserveHistoryForPreloading(localReserved);
+            if (locReserved != null) {
+                boolean success = cctx.database().reserveHistoryForPreloading(locReserved);
 
                 if (!success) {
                     log.warning("Could not reserve history for historical rebalance " +
@@ -2567,9 +2567,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     log.info(exchangeTimingsLogMessage("Exchange timings", timings));
 
-                    List<String> localTimings = timeBag.longestLocalStagesTimings(3);
+                    List<String> locTimings = timeBag.longestLocalStagesTimings(3);
 
-                    log.info(exchangeTimingsLogMessage("Exchange longest local stages", localTimings));
+                    log.info(exchangeTimingsLogMessage("Exchange longest local stages", locTimings));
                 }
             }
 
@@ -3490,7 +3490,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         int grpId = top.groupId();
 
-        Map<Integer, Long> localReserved = partHistReserved0 != null ? partHistReserved0.get(grpId) : null;
+        Map<Integer, Long> locReserved = partHistReserved0 != null ? partHistReserved0.get(grpId) : null;
 
         List<SupplyPartitionInfo> list = new ArrayList<>();
 
@@ -3511,11 +3511,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             T2<UUID, Long> deepestReserved = new T2<>(null, Long.MAX_VALUE);
 
-            if (localReserved != null) {
-                Long localHistCntr = localReserved.get(p);
+            if (locReserved != null) {
+                Long locHistCntr = locReserved.get(p);
 
-                if (localHistCntr != null && maxCntrObj.nodes.contains(cctx.localNodeId())) {
-                    findCounterForReservation(grpId, p, maxCntr, localHistCntr, maxCntrObj.size, cctx.localNodeId(),
+                if (locHistCntr != null && maxCntrObj.nodes.contains(cctx.localNodeId())) {
+                    findCounterForReservation(grpId, p, maxCntr, locHistCntr, maxCntrObj.size, cctx.localNodeId(),
                         nonMaxCntrs, haveHistory, deepestReserved);
                 }
             }
@@ -3871,13 +3871,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         if (!F.isEmpty(caches))
                             resetLostPartitions(caches);
 
-                        Set<Integer> cacheGroupsToResetOwners = concat(exchActions.cacheGroupsToStart().stream()
+                        Set<Integer> cacheGrpsToResetOwners = concat(exchActions.cacheGroupsToStart().stream()
                                 .map(grp -> grp.descriptor().groupId()),
                             exchActions.cachesToResetLostPartitions().stream()
                                 .map(CU::cacheId))
                             .collect(Collectors.toSet());
 
-                        assignPartitionsStates(cacheGroupsToResetOwners);
+                        assignPartitionsStates(cacheGrpsToResetOwners);
 
                         if (exchActions.finalizePartitionCounters())
                             finalizePartitionCounters();
@@ -4673,11 +4673,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 exchCtx.events().processEvents(this);
 
                 if (localJoinExchange()) {
-                    Set<Integer> noAffGroups = cctx.affinity().onLocalJoin(this, msg.joinedNodeAffinity(), resTopVer);
+                    Set<Integer> noAffGrps = cctx.affinity().onLocalJoin(this, msg.joinedNodeAffinity(), resTopVer);
 
                     // Prevent cache usage by a user.
-                    if (!noAffGroups.isEmpty()) {
-                        List<GridCacheAdapter> closedCaches = cctx.cache().blockGateways(noAffGroups);
+                    if (!noAffGrps.isEmpty()) {
+                        List<GridCacheAdapter> closedCaches = cctx.cache().blockGateways(noAffGrps);
 
                         closedCaches.forEach(cache -> log.warning("Affinity for cache " + cache.context().name()
                             + " has not received from coordinator during local join. "

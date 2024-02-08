@@ -59,14 +59,14 @@ public abstract class AbstractJdbcPojoQuerySelfTest extends GridCommonAbstractTe
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
-        QueryEntity queryEntity = new QueryEntity();
-        queryEntity.setKeyType("java.lang.String");
-        queryEntity.setValueType("org.apache.ignite.internal.JdbcTestObject");
-        queryEntity.addQueryField("id", "java.lang.Integer", null);
-        queryEntity.addQueryField("testObject", "org.apache.ignite.internal.JdbcTestObject2", null);
-        queryEntity.setIndexes(Collections.singletonList(new QueryIndex("id")));
+        QueryEntity qryEntity = new QueryEntity();
+        qryEntity.setKeyType("java.lang.String");
+        qryEntity.setValueType("org.apache.ignite.internal.JdbcTestObject");
+        qryEntity.addQueryField("id", "java.lang.Integer", null);
+        qryEntity.addQueryField("testObject", "org.apache.ignite.internal.JdbcTestObject2", null);
+        qryEntity.setIndexes(Collections.singletonList(new QueryIndex("id")));
 
-        cache.setQueryEntities(Collections.singletonList(queryEntity));
+        cache.setQueryEntities(Collections.singletonList(qryEntity));
 
         cfg.setCacheConfiguration(cache);
 

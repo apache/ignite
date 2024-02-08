@@ -209,9 +209,9 @@ public class SqlBulkLoadCommand implements SqlCommand {
                 case SqlKeyword.NULLSTRING: {
                     lex.shift();
 
-                    String nullString = parseString(lex);
+                    String nullStr = parseString(lex);
 
-                    format.nullString(nullString);
+                    format.nullString(nullStr);
 
                     break;
                 }

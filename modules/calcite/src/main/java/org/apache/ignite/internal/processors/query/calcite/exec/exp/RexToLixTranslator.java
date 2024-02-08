@@ -747,9 +747,9 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                 break;
             default:
                 final Primitive primitive = Primitive.ofBoxOr(javaCls);
-                final Comparable value = literal.getValueAs(Comparable.class);
+                final Comparable val = literal.getValueAs(Comparable.class);
 
-                value2 = primitive != null && value instanceof Number ? primitive.number((Number)value) : value;
+                value2 = primitive != null && val instanceof Number ? primitive.number((Number)val) : val;
         }
         return Expressions.constant(value2, javaCls);
     }
@@ -901,30 +901,30 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
 
         // Generate one line of code to get the input, e.g.,
         // "final Employee current =(Employee) inputEnumerator.current();"
-        final Expression valueExpression = inputGetter.field(
+        final Expression valExpression = inputGetter.field(
             list, inputRef.getIndex(), currentStorageType);
 
         // Generate one line of code for the value of RexInputRef, e.g.,
         // "final Integer input_value = current.commission;"
-        final ParameterExpression valueVariable =
+        final ParameterExpression valVariable =
             Expressions.parameter(
-                valueExpression.getType(), list.newName("input_value"));
-        list.add(Expressions.declare(Modifier.FINAL, valueVariable, valueExpression));
+                valExpression.getType(), list.newName("input_value"));
+        list.add(Expressions.declare(Modifier.FINAL, valVariable, valExpression));
 
         // Generate one line of code to check whether RexInputRef is null, e.g.,
         // "final boolean input_isNull = input_value == null;"
-        final Expression isNullExpression = checkNull(valueVariable);
+        final Expression isNullExpression = checkNull(valVariable);
         final ParameterExpression isNullVariable =
             Expressions.parameter(
                 Boolean.TYPE, list.newName("input_isNull"));
         list.add(Expressions.declare(Modifier.FINAL, isNullVariable, isNullExpression));
 
-        final Result result = new Result(isNullVariable, valueVariable);
+        final Result result = new Result(isNullVariable, valVariable);
 
         // Cache <RexInputRef, currentStorageType>'s result
         rexWithStorageTypeResultMap.put(key, result);
 
-        return new Result(isNullVariable, valueVariable);
+        return new Result(isNullVariable, valVariable);
     }
 
     /** {@inheritDoc} */
@@ -944,15 +944,15 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
 
         // Generate one line of code for the value of RexLiteral, e.g.,
         // "final int literal_value = 10;"
-        final Expression valueExpression = literal.isNull()
+        final Expression valExpression = literal.isNull()
             // Note: even for null literal, we can't loss its type information
             ? getTypedNullLiteral(literal)
             : translateLiteral(literal, literal.getType(),
             typeFactory, RexImpTable.NullAs.NOT_POSSIBLE);
-        final ParameterExpression valueVariable =
-            Expressions.parameter(valueExpression.getType(),
+        final ParameterExpression valVariable =
+            Expressions.parameter(valExpression.getType(),
                 list.newName("literal_value"));
-        list.add(Expressions.declare(Modifier.FINAL, valueVariable, valueExpression));
+        list.add(Expressions.declare(Modifier.FINAL, valVariable, valExpression));
 
         // Generate one line of code to check whether RexLiteral is null, e.g.,
         // "final boolean literal_isNull = false;"
@@ -963,8 +963,8 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         list.add(Expressions.declare(Modifier.FINAL, isNullVariable, isNullExpression));
 
         // Maintain the map from valueVariable (ParameterExpression) to real Expression
-        literalMap.put(valueVariable, valueExpression);
-        final Result result = new Result(isNullVariable, valueVariable);
+        literalMap.put(valVariable, valExpression);
+        final Result result = new Result(isNullVariable, valVariable);
         // Cache RexLiteral's result
         rexResultMap.put(literal, result);
         return result;
@@ -1068,18 +1068,18 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
      */
     private Result implementCaseWhen(RexCall call) {
         final Type returnType = typeFactory.getJavaClass(call.getType());
-        final ParameterExpression valueVariable =
+        final ParameterExpression valVariable =
             Expressions.parameter(returnType,
                 list.newName("case_when_value"));
-        list.add(Expressions.declare(0, valueVariable, null));
+        list.add(Expressions.declare(0, valVariable, null));
         final List<RexNode> operandList = call.getOperands();
-        implementRecursively(this, operandList, valueVariable, 0);
-        final Expression isNullExpression = checkNull(valueVariable);
+        implementRecursively(this, operandList, valVariable, 0);
+        final Expression isNullExpression = checkNull(valVariable);
         final ParameterExpression isNullVariable =
             Expressions.parameter(
                 Boolean.TYPE, list.newName("case_when_isNull"));
         list.add(Expressions.declare(Modifier.FINAL, isNullVariable, isNullExpression));
-        final Result result = new Result(isNullVariable, valueVariable);
+        final Result result = new Result(isNullVariable, valVariable);
         rexResultMap.put(call, result);
         return result;
     }
@@ -1162,18 +1162,18 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
 
     /** */
     private Result toInnerStorageType(final Result result, final Type storageType) {
-        final Expression valueExpression =
+        final Expression valExpression =
             ConverterUtils.toInternal(result.valueVariable, storageType);
-        if (valueExpression.equals(result.valueVariable))
+        if (valExpression.equals(result.valueVariable))
             return result;
 
-        final ParameterExpression valueVariable =
+        final ParameterExpression valVariable =
             Expressions.parameter(
-                valueExpression.getType(),
+                valExpression.getType(),
                 list.newName(result.valueVariable.name + "_inner_type"));
-        list.add(Expressions.declare(Modifier.FINAL, valueVariable, valueExpression));
+        list.add(Expressions.declare(Modifier.FINAL, valVariable, valExpression));
         final ParameterExpression isNullVariable = result.isNullVariable;
-        return new Result(isNullVariable, valueVariable);
+        return new Result(isNullVariable, valVariable);
     }
 
     /** {@inheritDoc} */
@@ -1190,16 +1190,16 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         final Expression ctxGet = Expressions.call(root, IgniteMethod.CONTEXT_GET_PARAMETER_VALUE.method(),
             Expressions.constant("?" + dynamicParam.getIndex()), Expressions.constant(paramType));
 
-        final Expression valueExpression = SqlTypeUtil.isDecimal(dynamicParam.getType()) ?
+        final Expression valExpression = SqlTypeUtil.isDecimal(dynamicParam.getType()) ?
             ConverterUtils.convertToDecimal(ctxGet, dynamicParam.getType()) : ConverterUtils.convert(ctxGet, storageType);
 
-        final ParameterExpression valueVariable =
-            Expressions.parameter(valueExpression.getType(), list.newName("value_dynamic_param"));
-        list.add(Expressions.declare(Modifier.FINAL, valueVariable, valueExpression));
+        final ParameterExpression valVariable =
+            Expressions.parameter(valExpression.getType(), list.newName("value_dynamic_param"));
+        list.add(Expressions.declare(Modifier.FINAL, valVariable, valExpression));
         final ParameterExpression isNullVariable =
             Expressions.parameter(Boolean.TYPE, list.newName("isNull_dynamic_param"));
-        list.add(Expressions.declare(Modifier.FINAL, isNullVariable, checkNull(valueVariable)));
-        final Result result = new Result(isNullVariable, valueVariable);
+        list.add(Expressions.declare(Modifier.FINAL, isNullVariable, checkNull(valVariable)));
+        final Result result = new Result(isNullVariable, valVariable);
         rexWithStorageTypeResultMap.put(key, result);
         return result;
     }
@@ -1224,17 +1224,17 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                 final Expression input = getter.field(
                     list, fieldIdx, currentStorageType);
                 final Expression condition = checkNull(input);
-                final ParameterExpression valueVariable =
+                final ParameterExpression valVariable =
                     Expressions.parameter(input.getType(), list.newName("corInp_value"));
-                list.add(Expressions.declare(Modifier.FINAL, valueVariable, input));
+                list.add(Expressions.declare(Modifier.FINAL, valVariable, input));
                 final ParameterExpression isNullVariable =
                     Expressions.parameter(Boolean.TYPE, list.newName("corInp_isNull"));
                 final Expression isNullExpression = Expressions.condition(
                     condition,
                     RexImpTable.TRUE_EXPR,
-                    checkNull(valueVariable));
+                    checkNull(valVariable));
                 list.add(Expressions.declare(Modifier.FINAL, isNullVariable, isNullExpression));
-                final Result result1 = new Result(isNullVariable, valueVariable);
+                final Result result1 = new Result(isNullVariable, valVariable);
                 rexWithStorageTypeResultMap.put(key, result1);
                 return result1;
             default:

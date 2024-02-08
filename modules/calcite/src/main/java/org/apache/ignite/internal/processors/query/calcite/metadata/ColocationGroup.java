@@ -78,15 +78,15 @@ public class ColocationGroup implements MarshalableMessage {
 
     /** */
     public ColocationGroup local(UUID nodeId) {
-        List<List<UUID>> localAssignments = null;
+        List<List<UUID>> locAssignments = null;
         if (assignments != null) {
-            localAssignments = assignments.stream()
+            locAssignments = assignments.stream()
                     .map(l -> nodeId.equals(l.get(0)) ? l : Collections.<UUID>emptyList())
                     .collect(Collectors.toList());
         }
 
         return new ColocationGroup(Arrays.copyOf(sourceIds, sourceIds.length), Collections.singletonList(nodeId),
-                localAssignments);
+                locAssignments);
     }
 
     /** */

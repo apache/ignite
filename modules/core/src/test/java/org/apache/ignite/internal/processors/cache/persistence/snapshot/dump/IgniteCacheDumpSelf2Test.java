@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -38,6 +39,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.zip.ZipInputStream;
+import org.apache.commons.io.IOUtils;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -634,11 +637,35 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         assertEquals("Different set of partitions", rawSizes.keySet(), zipSizes.keySet());
 
+        zipSizes.keySet().forEach( p -> assertTrue("Compressed partition " + p + " file size should not be zero", zipSizes.get(p) > 0));
+
         rawSizes.keySet().forEach( p ->
-            assertTrue("Compressed size " + rawSizes.get(p) + " should be smaller than compressed " + zipSizes.get(p),
+            assertTrue("Compressed size " + zipSizes.get(p) + " should be smaller than raw size " + rawSizes.get(p),
                 rawSizes.get(p) > zipSizes.get(p)
             )
         );
+
+        IntStream.range(0, parts).forEach(i -> {
+            try {
+                String entryName = PART_FILE_PREFIX + i + DUMP_FILE_EXT;
+
+                File rawFile = new File(dumpDirectory(ign, rawDump) + "/db/" + id + "/cache-" + CACHE_0 + "/" + entryName);
+                File zipFile = new File(dumpDirectory(ign, zipDump) + "/db/" + id + "/cache-" + CACHE_0 + "/" + entryName + ZIP_SUFFIX);
+
+                byte[] rawFileContent = Files.readAllBytes(rawFile.toPath());
+
+                ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile));
+
+                assertEquals(entryName, zis.getNextEntry().getName());
+
+                byte[] zipFileContent = IOUtils.toByteArray(zis);
+
+                assertEqualsArraysAware("Files should have same data " + rawFile + " and " + zipFile, rawFileContent, zipFileContent);
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     /** */

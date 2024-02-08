@@ -1981,9 +1981,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            TestValue testValue = (TestValue)o;
+            TestValue testVal = (TestValue)o;
 
-            return notUniqueId == testValue.notUniqueId;
+            return notUniqueId == testVal.notUniqueId;
         }
 
         /** {@inheritDoc} */

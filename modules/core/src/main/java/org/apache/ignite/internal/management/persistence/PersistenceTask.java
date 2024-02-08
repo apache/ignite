@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.persistence.CheckCorruptedCac
 import org.apache.ignite.internal.processors.cache.persistence.CleanCacheStoresMaintenanceAction;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -56,12 +55,12 @@ import org.apache.ignite.maintenance.MaintenanceAction;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.maintenance.MaintenanceTask;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 
 /** */
 @GridInternal
-@GridVisorManagementTask
 public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, PersistenceTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -341,12 +340,12 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
 
                 if (grpDesc != null) {
                     boolean globalWalEnabled = grpDesc.walEnabled();
-                    boolean localWalEnabled = true;
+                    boolean locWalEnabled = true;
 
                     if (globalWalEnabled && corruptedCacheNames.contains(desc.cacheName()))
-                        localWalEnabled = false;
+                        locWalEnabled = false;
 
-                    cachesInfo.put(desc.cacheName(), new IgniteBiTuple<>(globalWalEnabled, localWalEnabled));
+                    cachesInfo.put(desc.cacheName(), new IgniteBiTuple<>(globalWalEnabled, locWalEnabled));
                 }
             }
 

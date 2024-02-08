@@ -993,11 +993,8 @@ public class IgniteTxHandler {
         else
             tx = ctx.tm().tx(dhtVer);
 
-        if (tx != null) {
-            tx.mvccSnapshot(req.mvccSnapshot());
-
+        if (tx != null)
             req.txState(tx.txState());
-        }
 
         if (tx == null && locTx != null && !req.commit()) {
             U.warn(log, "DHT local tx not found for near local tx rollback " +
@@ -1431,7 +1428,6 @@ public class IgniteTxHandler {
                     tx.invalidate(true);
                 if (req.isSystemInvalidate())
                     tx.systemInvalidate(true);
-                tx.mvccSnapshot(req.mvccSnapshot());
 
                 // Complete remote candidates.
                 tx.doneRemote(req.baseVersion(), null, null, null);
@@ -1443,7 +1439,6 @@ public class IgniteTxHandler {
                     tx.txCounters(true).updateCounters(req.updateCounters());
 
                 tx.doneRemote(req.baseVersion(), null, null, null);
-                tx.mvccSnapshot(req.mvccSnapshot());
                 tx.rollbackRemoteTx();
             }
         }
@@ -1481,7 +1476,6 @@ public class IgniteTxHandler {
         try {
             tx.commitVersion(req.writeVersion());
             tx.invalidate(req.isInvalidate());
-            tx.mvccSnapshot(req.mvccSnapshot());
 
             // Complete remote candidates.
             tx.doneRemote(req.version(), null, null, null);

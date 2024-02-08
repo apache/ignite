@@ -70,8 +70,8 @@ public class JdbcCachePartitionsResult extends JdbcResult {
 
         writer.writeInt(mappings.size());
 
-        for (JdbcThinPartitionAwarenessMappingGroup mappingGroup : mappings)
-            mappingGroup.writeBinary(writer, protoCtx);
+        for (JdbcThinPartitionAwarenessMappingGroup mappingGrp : mappings)
+            mappingGrp.writeBinary(writer, protoCtx);
     }
 
     /** {@inheritDoc} */

@@ -97,7 +97,7 @@ public class CacheScheduleIndexesRebuildCommand
         }
 
         Map<String, Set<UUID>> missedCaches = new HashMap<>();
-        Map<String, Set<UUID>> missedGroups = new HashMap<>();
+        Map<String, Set<UUID>> missedGrps = new HashMap<>();
         Map<String, Set<UUID>> notFoundIndexes = new HashMap<>();
         Map<String, Set<UUID>> scheduled = new HashMap<>();
         Set<UUID> notScheduled = new HashSet<>();
@@ -105,7 +105,7 @@ public class CacheScheduleIndexesRebuildCommand
         results.results().forEach((nodeId, res) -> {
             storeEntryToNodesResults(missedCaches, res.notFoundCacheNames(), nodeId);
 
-            storeEntryToNodesResults(missedGroups, res.notFoundGroupNames(), nodeId);
+            storeEntryToNodesResults(missedGrps, res.notFoundGroupNames(), nodeId);
 
             storeEntryToNodesResults(notFoundIndexes, extractCacheIndexNames(res.notFoundIndexes()), nodeId);
 
@@ -120,8 +120,8 @@ public class CacheScheduleIndexesRebuildCommand
         if (!F.isEmpty(missedCaches))
             printBlock(b, PREF_CACHES_NOT_FOUND, missedCaches, GridStringBuilder::a);
 
-        if (!F.isEmpty(missedGroups))
-            printBlock(b, PREF_GROUPS_NOT_FOUND, missedGroups, GridStringBuilder::a);
+        if (!F.isEmpty(missedGrps))
+            printBlock(b, PREF_GROUPS_NOT_FOUND, missedGrps, GridStringBuilder::a);
 
         if (!F.isEmpty(notFoundIndexes))
             printBlock(b, PREF_INDEXES_NOT_FOUND, notFoundIndexes, GridStringBuilder::a);

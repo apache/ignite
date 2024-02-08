@@ -144,9 +144,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /** */
     private CacheWriteSynchronizationMode syncMode;
 
-    /** */
-    protected volatile boolean qryEnlisted;
-
     /**
      * @param cctx Cache registry.
      * @param xidVer Transaction ID.
@@ -538,7 +535,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         Collection<IgniteTxEntry> commitEntries = near() ? allEntries() : writeEntries();
 
-        boolean empty = F.isEmpty(commitEntries) && !queryEnlisted();
+        boolean empty = F.isEmpty(commitEntries);
 
         // Register this transaction as completed prior to write-phase to
         // ensure proper lock ordering for removed entries.
@@ -1598,13 +1595,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
 
         return 0;
-    }
-
-    /**
-     * @return {@code True} if there are entries, enlisted by query.
-     */
-    public boolean queryEnlisted() {
-        return qryEnlisted;
     }
 
     /**

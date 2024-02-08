@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
-import org.apache.ignite.transactions.TransactionMixedModeException;
 import org.apache.ignite.transactions.TransactionSerializationException;
 import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException;
 import org.jetbrains.annotations.Nullable;
@@ -305,8 +304,6 @@ public abstract class SqlListenerUtils {
             return IgniteQueryErrorCode.TRANSACTION_COMPLETED;
         if (e instanceof TransactionDuplicateKeyException)
             return IgniteQueryErrorCode.DUPLICATE_KEY;
-        if (e instanceof TransactionMixedModeException)
-            return IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH;
         if (e instanceof TransactionUnsupportedConcurrencyException)
             return IgniteQueryErrorCode.UNSUPPORTED_OPERATION;
         if (e instanceof IgniteSQLException)

@@ -17,22 +17,25 @@
 
 package org.apache.ignite.internal;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.TaskEvent;
+import org.apache.ignite.internal.events.ManagementTaskEvent;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
@@ -43,106 +46,45 @@ import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
 public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = new IgniteConfiguration();
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         // Enable visor management events.
         cfg.setIncludeEventTypes(
             EVT_MANAGEMENT_TASK_STARTED
         );
 
-        cfg.setCacheConfiguration(
-            new CacheConfiguration<Integer, Integer>()
-                .setName("TEST")
-                .setIndexedTypes(Integer.class, Integer.class)
-                .setStatisticsEnabled(true)
-        );
-
-        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
-
-        List<String> addrs = Arrays.asList("127.0.0.1:47500..47502");
-
-        ipFinder.setAddresses(addrs);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(discoSpi);
-
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-
-        cleanPersistenceDir();
-
         super.afterTest();
+
+        stopAllGrids();
     }
 
-    /**
-     * Current test case start valid one node visor task that has GridVisorManagementTask annotation.
-     * No exceptions are expected.
-     *
-     * @throws Exception If failed.
-     */
+    /** @throws Exception If failed. */
     @Test
-    public void testManagementOneNodeVisorTask() throws Exception {
-        IgniteEx ignite = startGrid(0);
-
-        doTestVisorTask(TestManagementVisorOneNodeTask.class, new VisorTaskArgument(), ignite);
+    public void testManagementTask() throws Exception {
+        doTestTask(TestManagementVisorOneNodeTask.class, true);
     }
 
-    /**
-     * Current test case start valid multi node visor task that has GridVisorManagementTask annotation.
-     * No exceptions are expected.
-     *
-     * @throws Exception If failed.
-     */
+    /** @throws Exception If failed. */
     @Test
-    public void testManagementMultiNodeVisorTask() throws Exception {
-        IgniteEx ignite = startGrid(0);
-
-        doTestVisorTask(TestManagementVisorMultiNodeTask.class, new VisorTaskArgument(), ignite);
-    }
-
-    /**
-     * Current test case start one node visor task that has not GridVisorManagementTask annotation.
-     * No exceptions are expected.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testNotManagementOneNodeVisorTask() throws Exception {
-        IgniteEx ignite = startGrid(0);
-
-        doTestNotManagementVisorTask(TestNotManagementVisorOneNodeTask.class, new VisorTaskArgument(), ignite);
-    }
-
-    /**
-     * Current test case start multi node visor task that has not GridVisorManagementTask annotation.
-     * No exceptions are expected.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testNotManagementMultiNodeVisorTask() throws Exception {
-        IgniteEx ignite = startGrid(0);
-
-        doTestNotManagementVisorTask(TestNotManagementVisorMultiNodeTask.class, new VisorTaskArgument(), ignite);
+    public void testNotManagementTask() throws Exception {
+        doTestTask(NotManagementTask.class, false);
     }
 
     /**
      * @param cls class of the task.
-     * @param arg argument.
-     * @param ignite instance of Ignite.
      *
      * @throws Exception If failed.
      */
-    private <T, R> void doTestVisorTask(
-        Class<? extends ComputeTask<VisorTaskArgument<T>, R>> cls, T arg, IgniteEx ignite
-    ) throws Exception {
+    private void doTestTask(Class<? extends ComputeTask<?, ?>> cls, boolean expEvt) throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        String arg = "test-arg";
+
         final AtomicReference<TaskEvent> evt = new AtomicReference<>();
 
         final CountDownLatch evtLatch = new CountDownLatch(1);
@@ -158,40 +100,41 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
         }, EventType.EVT_MANAGEMENT_TASK_STARTED);
 
         for (ClusterNode node : ignite.cluster().forServers().nodes())
-            ignite.compute().executeAsync(cls, new VisorTaskArgument<>(node.id(), arg, true));
+            ignite.compute().execute(cls.getName(), new VisorTaskArgument<>(node.id(), arg, true));
 
-        assertTrue(evtLatch.await(10000, TimeUnit.MILLISECONDS));
-
-        assertNotNull(evt.get());
+        if (expEvt) {
+            assertTrue(evtLatch.await(10000, TimeUnit.MILLISECONDS));
+            assertTrue(evt.get() instanceof ManagementTaskEvent);
+            assertEquals(arg, ((ManagementTaskEvent)evt.get()).argument().getArgument());
+        }
+        else
+            assertFalse(evtLatch.await(1000, TimeUnit.MILLISECONDS));
     }
 
-    /**
-     * @param cls class of the task.
-     * @param arg argument.
-     * @param ignite instance of Ignite.
-     *
-     * @throws Exception If failed.
-     */
-    private <T, R> void doTestNotManagementVisorTask(
-        Class<? extends ComputeTask<VisorTaskArgument<T>, R>> cls, T arg, IgniteEx ignite
-    ) throws Exception {
-        final AtomicReference<TaskEvent> evt = new AtomicReference<>();
+    /** */
+    private static class NotManagementTask extends ComputeTaskAdapter<VisorTaskArgument<String>, Void> {
+        /** {@inheritDoc} */
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+            @Nullable VisorTaskArgument<String> arg) {
+            return subgrid.stream().collect(Collectors.toMap(node -> new TestJob(), node -> node));
+        }
 
-        final CountDownLatch evtLatch = new CountDownLatch(1);
+        /** {@inheritDoc} */
+        @Override public @Nullable Void reduce(List<ComputeJobResult> results) {
+            return null;
+        }
 
-        ignite.events().localListen(new IgnitePredicate<TaskEvent>() {
-            @Override public boolean apply(TaskEvent e) {
-                evt.set(e);
-
-                evtLatch.countDown();
-
-                return false;
+        /** */
+        public static class TestJob implements ComputeJob {
+            /** {@inheritDoc} */
+            @Override public void cancel() {
+                // No-op.
             }
-        }, EventType.EVT_MANAGEMENT_TASK_STARTED);
 
-        for (ClusterNode node : ignite.cluster().forServers().nodes())
-            ignite.compute().executeAsync(cls, new VisorTaskArgument<>(node.id(), arg, true));
-
-        assertFalse(evtLatch.await(10000, TimeUnit.MILLISECONDS));
+            /** {@inheritDoc} */
+            @Override public Object execute() {
+                return null;
+            }
+        }
     }
 }

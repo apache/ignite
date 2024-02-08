@@ -73,8 +73,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQu
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxRemote;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -102,7 +100,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -682,8 +679,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.topologyVersion(),
                 req.threadId(),
                 req.txTimeout(),
-                req.taskNameHash(),
-                req.mvccSnapshot());
+                req.taskNameHash());
         }
         catch (IgniteCheckedException | IgniteException ex) {
             GridNearTxQueryEnlistResponse res = new GridNearTxQueryEnlistResponse(req.cacheId(),
@@ -1918,8 +1914,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.topologyVersion(),
                 req.threadId(),
                 req.txTimeout(),
-                req.taskNameHash(),
-                req.mvccSnapshot());
+                req.taskNameHash());
         }
         catch (Throwable e) {
             GridNearTxQueryResultsEnlistResponse res = new GridNearTxQueryResultsEnlistResponse(req.cacheId(),
@@ -1981,8 +1976,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.topologyVersion(),
                 req.threadId(),
                 req.txTimeout(),
-                req.taskNameHash(),
-                req.mvccSnapshot());
+                req.taskNameHash());
         }
         catch (IgniteCheckedException | IgniteException ex) {
             GridNearTxEnlistResponse res = new GridNearTxEnlistResponse(req.cacheId(),
@@ -2035,7 +2029,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nearThreadId Near node thread id.
      * @param timeout Timeout.
      * @param txTaskNameHash Transaction task name hash.
-     * @param snapshot Mvcc snapsht.
      * @return Transaction.
      */
     public GridDhtTxLocal initTxTopologyVersion(UUID nodeId,
@@ -2047,8 +2040,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         AffinityTopologyVersion topVer,
         long nearThreadId,
         long timeout,
-        int txTaskNameHash,
-        MvccSnapshot snapshot
+        int txTaskNameHash
     ) throws IgniteException, IgniteCheckedException {
 
         assert ctx.affinityNode();
@@ -2144,7 +2136,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     throw new IgniteCheckedException(msg);
                 }
 
-                tx.mvccSnapshot(snapshot);
                 tx.topologyVersion(topVer);
             }
             finally {
@@ -2230,9 +2221,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     false,
                     null);
 
-                tx.mvccSnapshot(new MvccSnapshotWithoutTxs(req0.coordinatorVersion(), req0.counter(),
-                    MVCC_OP_COUNTER_NA, req0.cleanupVersion()));
-
                 tx = ctx.tm().onCreated(null, tx);
 
                 if (tx == null || !ctx.tm().onStarted(tx)) {
@@ -2243,12 +2231,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             assert tx != null;
 
-            MvccSnapshot s0 = tx.mvccSnapshot();
-
-            MvccSnapshot snapshot = new MvccSnapshotWithoutTxs(s0.coordinatorVersion(), s0.counter(),
-                req.operationCounter(), s0.cleanupVersion());
-
-            ctx.tm().txHandler().mvccEnlistBatch(tx, ctx, req.op(), req.keys(), req.values(), snapshot,
+            ctx.tm().txHandler().mvccEnlistBatch(tx, ctx, req.op(), req.keys(), req.values(), null,
                 req.dhtFutureId(), req.batchId());
 
             GridDhtTxQueryEnlistResponse res = new GridDhtTxQueryEnlistResponse(req.cacheId(),
