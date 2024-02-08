@@ -23,6 +23,7 @@ import org.apache.ignite.internal.client.thin.BlockingTxOpsTest;
 import org.apache.ignite.internal.client.thin.CacheAsyncTest;
 import org.apache.ignite.internal.client.thin.CacheEntryListenersTest;
 import org.apache.ignite.internal.client.thin.ClusterApiTest;
+import org.apache.ignite.internal.client.thin.ClusterGroupClusterRestartTest;
 import org.apache.ignite.internal.client.thin.ClusterGroupTest;
 import org.apache.ignite.internal.client.thin.ComputeTaskTest;
 import org.apache.ignite.internal.client.thin.DataReplicationOperationsTest;
@@ -91,6 +92,7 @@ import org.junit.runners.Suite;
     ThinClientEnpointsDiscoveryTest.class,
     InactiveClusterCacheRequestTest.class,
     AffinityMetricsTest.class,
+    ClusterGroupClusterRestartTest.class,
     BlockingTxOpsTest.class,
 })
 public class ClientTestSuite {

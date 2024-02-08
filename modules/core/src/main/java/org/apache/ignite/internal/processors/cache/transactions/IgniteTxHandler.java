@@ -993,11 +993,8 @@ public class IgniteTxHandler {
         else
             tx = ctx.tm().tx(dhtVer);
 
-        if (tx != null) {
-            tx.mvccSnapshot(req.mvccSnapshot());
-
+        if (tx != null)
             req.txState(tx.txState());
-        }
 
         if (tx == null && locTx != null && !req.commit()) {
             U.warn(log, "DHT local tx not found for near local tx rollback " +
@@ -1431,7 +1428,6 @@ public class IgniteTxHandler {
                     tx.invalidate(true);
                 if (req.isSystemInvalidate())
                     tx.systemInvalidate(true);
-                tx.mvccSnapshot(req.mvccSnapshot());
 
                 // Complete remote candidates.
                 tx.doneRemote(req.baseVersion(), null, null, null);
@@ -1443,7 +1439,6 @@ public class IgniteTxHandler {
                     tx.txCounters(true).updateCounters(req.updateCounters());
 
                 tx.doneRemote(req.baseVersion(), null, null, null);
-                tx.mvccSnapshot(req.mvccSnapshot());
                 tx.rollbackRemoteTx();
             }
         }
@@ -1481,7 +1476,6 @@ public class IgniteTxHandler {
         try {
             tx.commitVersion(req.writeVersion());
             tx.invalidate(req.isInvalidate());
-            tx.mvccSnapshot(req.mvccSnapshot());
 
             // Complete remote candidates.
             tx.doneRemote(req.version(), null, null, null);
@@ -1920,8 +1914,6 @@ public class IgniteTxHandler {
                         EntryProcessor entryProc = null;
                         Object[] invokeArgs = null;
 
-                        boolean needOldVal = tx.txState().useMvccCaching(ctx.cacheId());
-
                         Message val0 = vals != null ? vals.get(i) : null;
 
                         CacheEntryInfoCollection entries =
@@ -1958,7 +1950,7 @@ public class IgniteTxHandler {
                                                 tx.topologyVersion(),
                                                 snapshot,
                                                 false,
-                                                needOldVal,
+                                                false,
                                                 null,
                                                 false);
 
@@ -1980,7 +1972,7 @@ public class IgniteTxHandler {
                                                 op.cacheOperation(),
                                                 false,
                                                 false,
-                                                needOldVal,
+                                                false,
                                                 null,
                                                 false,
                                                 false);
@@ -2013,10 +2005,6 @@ public class IgniteTxHandler {
                                 ctx.shared().database().checkpointReadUnlock();
                             }
                         }
-
-                        if (!updRes.filtered())
-                            ctx.shared().mvccCaching().addEnlisted(key, updRes.newValue(), 0, 0, tx.xidVersion(),
-                                updRes.oldValue(), tx.local(), tx.topologyVersion(), snapshot, ctx.cacheId(), tx, futId, batchNum);
 
                         assert updRes.updateFuture() == null : "Entry should not be locked on the backup";
                     }

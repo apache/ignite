@@ -20,8 +20,8 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
@@ -88,7 +88,7 @@ public class MvccTxRecord extends TxRecord implements WalRecordCacheGroupAware {
 
     /** {@inheritDoc} */
     @Override public int groupId() {
-        return TxLog.TX_LOG_CACHE_ID;
+        return CU.cacheId("TxLog");
     }
 
     /** {@inheritDoc} */

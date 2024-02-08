@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -76,16 +75,9 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     @GridToStringInclude
     private Boolean recovery;
 
-    /** */
-    @GridToStringInclude
-    private Boolean mvccEnabled;
-
     /** Suspended async futures. */
     @GridToStringExclude
     private Map<Integer, GridCacheAdapter.FutureHolder> suspendedAsyncFuts;
-
-    /** Cache ids used for mvcc caching. See {@link MvccCachingManager}. */
-    private final GridIntList mvccCachingCacheIds = new GridIntList();
 
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
@@ -269,8 +261,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
                 "(cannot transact between recovery and non-recovery caches).");
 
         this.recovery = recovery;
-
-        mvccEnabled = false;
 
         // Check if we can enlist new cache to transaction.
         if (!activeCacheIds.contains(cacheId)) {
@@ -503,7 +493,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean empty() {
-        return txMap.isEmpty();
+        return F.isEmpty(txMap);
     }
 
     /** {@inheritDoc} */
@@ -528,11 +518,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public IgniteTxEntry singleWrite() {
         return writeView != null && writeView.size() == 1 ? F.firstValue(writeView) : null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean useMvccCaching(int cacheId) {
-        return mvccCachingCacheIds.contains(cacheId);
     }
 
     /** {@inheritDoc} */

@@ -59,9 +59,6 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     /** */
     private boolean recovery;
 
-    /** */
-    private volatile boolean useMvccCaching;
-
     /** {@inheritDoc} */
     @Override public void addActiveCache(GridCacheContext ctx, boolean recovery, IgniteTxAdapter tx) {
         assert cacheCtx == null : "Cache already set [cur=" + cacheCtx.name() + ", new=" + ctx.name() + ']';
@@ -71,8 +68,6 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         this.recovery = recovery;
 
         tx.activeCachesDeploymentEnabled(cacheCtx.deploymentEnabled());
-
-        useMvccCaching = false;
     }
 
     /** {@inheritDoc} */
@@ -324,13 +319,6 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public IgniteTxEntry singleWrite() {
         return entry != null ? entry.get(0) : null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean useMvccCaching(int cacheId) {
-        assert cacheCtx == null || cacheCtx.cacheId() == cacheId;
-
-        return useMvccCaching;
     }
 
     /** {@inheritDoc} */

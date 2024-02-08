@@ -64,18 +64,18 @@ public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
      * @return Group state.
      */
     @Nullable public Map<Integer, CheckpointEntry.GroupState> groupState(UUID checkpointId) {
-        Map<Integer, GroupStateSnapshot> groupStateSnapshotMap = data.get(checkpointId);
+        Map<Integer, GroupStateSnapshot> grpStateSnapshotMap = data.get(checkpointId);
 
-        Map<Integer, CheckpointEntry.GroupState> groupStateMap = null;
+        Map<Integer, CheckpointEntry.GroupState> grpStateMap = null;
 
-        if (groupStateSnapshotMap != null) {
-            groupStateMap = new HashMap<>();
+        if (grpStateSnapshotMap != null) {
+            grpStateMap = new HashMap<>();
 
-            for (Map.Entry<Integer, GroupStateSnapshot> e : groupStateSnapshotMap.entrySet()) {
+            for (Map.Entry<Integer, GroupStateSnapshot> e : grpStateSnapshotMap.entrySet()) {
                 Integer k = e.getKey();
                 GroupStateSnapshot v = e.getValue();
 
-                groupStateMap.put(k, new CheckpointEntry.GroupState(
+                grpStateMap.put(k, new CheckpointEntry.GroupState(
                     v.partitionIds(),
                     v.partitionCounters(),
                     v.size()
@@ -83,7 +83,7 @@ public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
             }
 
         }
-        return groupStateMap;
+        return grpStateMap;
     }
 
     /**

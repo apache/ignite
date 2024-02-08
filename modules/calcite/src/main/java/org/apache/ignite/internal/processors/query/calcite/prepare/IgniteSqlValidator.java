@@ -189,16 +189,16 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         for (SqlNode exp : call.getSourceExpressionList())
             selectList.add(SqlValidatorUtil.addAlias(exp, SqlUtil.deriveAliasFromOrdinal(ordinal++)));
 
-        SqlNode sourceTable = call.getTargetTable();
+        SqlNode srcTable = call.getTargetTable();
 
         if (call.getAlias() != null) {
-            sourceTable =
+            srcTable =
                 SqlValidatorUtil.addAlias(
-                    sourceTable,
+                    srcTable,
                     call.getAlias().getSimple());
         }
 
-        return new SqlSelect(SqlParserPos.ZERO, null, selectList, sourceTable,
+        return new SqlSelect(SqlParserPos.ZERO, null, selectList, srcTable,
             call.getCondition(), null, null, null, null, null, null, null);
     }
 
@@ -207,16 +207,16 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         final SqlNodeList selectList = SqlNodeList.of(
             new SqlIdentifier(QueryUtils.KEY_FIELD_NAME, SqlParserPos.ZERO));
 
-        SqlNode sourceTable = call.getTargetTable();
+        SqlNode srcTable = call.getTargetTable();
 
         if (call.getAlias() != null) {
-            sourceTable =
+            srcTable =
                 SqlValidatorUtil.addAlias(
-                    sourceTable,
+                    srcTable,
                     call.getAlias().getSimple());
         }
 
-        return new SqlSelect(SqlParserPos.ZERO, null, selectList, sourceTable,
+        return new SqlSelect(SqlParserPos.ZERO, null, selectList, srcTable,
             call.getCondition(), null, null, null, null, null, null, null);
     }
 

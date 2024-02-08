@@ -81,9 +81,9 @@ public class InlineJavaObjectCompatibilityTest extends IndexAbstractCompatibilit
     /** */
     @Test
     public void testQueryOldInlinedIndex() throws Exception {
-        int majorJavaVersion = U.majorJavaVersion(U.jdkVersion());
+        int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
 
-        if (majorJavaVersion > 11) {
+        if (majorJavaVer > 11) {
             Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
                 VER_2_12_0.compareTo(IgniteReleasedVersion.fromString(igniteVer)) < 0);
         }

@@ -218,10 +218,10 @@ public class GridCommandHandlerScheduleIndexRebuildTest extends GridCommandHandl
                 "--group-names", GROUP_NAME_NON_EXISTING));
         }
 
-        String notExistingGroupOutputStr = testOut.toString();
+        String notExistingGrpOutputStr = testOut.toString();
 
-        assertTrue(notExistingGroupOutputStr.contains(allNodes ? PREF_REBUILD_NOT_SCHEDULED_MULTI : PREF_REBUILD_NOT_SCHEDULED));
-        assertTrue(notExistingGroupOutputStr.contains(
+        assertTrue(notExistingGrpOutputStr.contains(allNodes ? PREF_REBUILD_NOT_SCHEDULED_MULTI : PREF_REBUILD_NOT_SCHEDULED));
+        assertTrue(notExistingGrpOutputStr.contains(
             PREF_GROUPS_NOT_FOUND + System.lineSeparator()
                 + INDENT + GROUP_NAME_NON_EXISTING
         ));

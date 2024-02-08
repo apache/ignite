@@ -451,22 +451,22 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      * Method checks that there were no rebalance for all caches (excluding sys cache).
      */
     private void checkNoRebalanceAfterRecovery() {
-        int sysCacheGroupId = CU.cacheId(GridCacheUtils.UTILITY_CACHE_NAME);
+        int sysCacheGrpId = CU.cacheId(GridCacheUtils.UTILITY_CACHE_NAME);
 
         List<Ignite> nodes = G.allGrids();
 
         for (final Ignite node : nodes) {
             TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(node);
 
-            List<Integer> rebalancedGroups = spi.recordedMessages(true).stream()
+            List<Integer> rebalancedGrps = spi.recordedMessages(true).stream()
                 .map(msg -> (GridDhtPartitionDemandMessage)msg)
                 .map(GridCacheGroupIdMessage::groupId)
-                .filter(grpId -> grpId != sysCacheGroupId)
+                .filter(grpId -> grpId != sysCacheGrpId)
                 .distinct()
                 .collect(Collectors.toList());
 
             Assert.assertTrue("There was unexpected rebalance for some groups" +
-                " [node=" + node.name() + ", groups=" + rebalancedGroups + ']', rebalancedGroups.isEmpty());
+                " [node=" + node.name() + ", groups=" + rebalancedGrps + ']', rebalancedGrps.isEmpty());
         }
     }
 
@@ -649,10 +649,10 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            TestValue testValue = (TestValue)o;
+            TestValue testVal = (TestValue)o;
 
-            return indexedField == testValue.indexedField &&
-                Arrays.equals(payload, testValue.payload);
+            return indexedField == testVal.indexedField &&
+                Arrays.equals(payload, testVal.payload);
         }
 
         /** {@inheritDoc} */

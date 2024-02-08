@@ -144,9 +144,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /** */
     private CacheWriteSynchronizationMode syncMode;
 
-    /** */
-    protected volatile boolean qryEnlisted;
-
     /**
      * @param cctx Cache registry.
      * @param xidVer Transaction ID.
@@ -538,7 +535,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         Collection<IgniteTxEntry> commitEntries = near() ? allEntries() : writeEntries();
 
-        boolean empty = F.isEmpty(commitEntries) && !queryEnlisted();
+        boolean empty = F.isEmpty(commitEntries);
 
         // Register this transaction as completed prior to write-phase to
         // ensure proper lock ordering for removed entries.
@@ -868,8 +865,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 // Apply cache sizes only for primary nodes. Update counters were applied on prepare state.
                 applyTxSizes();
 
-                cctx.mvccCaching().onTxFinished(this, true);
-
                 if (ptr != null)
                     cctx.wal(true).flush(ptr, false);
             }
@@ -993,8 +988,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 assert !needsCompletedVersions || committedVers != null : "Missing committed versions for transaction: " + this;
                 assert !needsCompletedVersions || rolledbackVers != null : "Missing rolledback versions for transaction: " + this;
             }
-
-            cctx.mvccCaching().onTxFinished(this, commit);
         }
     }
 
@@ -1049,8 +1042,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
             cctx.tm().rollbackTx(this, clearThreadMap, skipCompletedVersions());
-
-            cctx.mvccCaching().onTxFinished(this, false);
 
             if (!internal()) {
                 Collection<CacheStoreManager> stores = txState.stores(cctx);
@@ -1604,13 +1595,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
 
         return 0;
-    }
-
-    /**
-     * @return {@code True} if there are entries, enlisted by query.
-     */
-    public boolean queryEnlisted() {
-        return qryEnlisted;
     }
 
     /**

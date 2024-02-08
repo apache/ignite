@@ -67,13 +67,13 @@ public class StatisticsGatheringTest extends StatisticsRestartAbstractTest {
      */
     @Test
     public void testGathering() throws InterruptedException, IgniteCheckedException {
-        ObjectStatisticsImpl localStats[] = getStats("SMALL", StatisticsType.LOCAL);
+        ObjectStatisticsImpl locStats[] = getStats("SMALL", StatisticsType.LOCAL);
 
-        testCond(Objects::nonNull, localStats);
+        testCond(Objects::nonNull, locStats);
 
-        testCond(stat -> stat.columnsStatistics().size() == localStats[0].columnsStatistics().size(), localStats);
+        testCond(stat -> stat.columnsStatistics().size() == locStats[0].columnsStatistics().size(), locStats);
 
-        testCond(this::checkStat, localStats);
+        testCond(this::checkStat, locStats);
 
         ObjectStatisticsImpl globalStat = getStatsFromNode(0, "SMALL", StatisticsType.GLOBAL);
 

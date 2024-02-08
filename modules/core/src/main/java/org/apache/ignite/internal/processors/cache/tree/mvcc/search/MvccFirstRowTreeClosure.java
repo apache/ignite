@@ -60,9 +60,9 @@ public class MvccFirstRowTreeClosure implements MvccTreeClosure {
         long pageAddr, int idx) throws IgniteCheckedException {
         RowLinkIO rowIo = (RowLinkIO)io;
 
-        MvccVersion newVersion = getNewVersion(cctx, rowIo.getLink(pageAddr, idx));
+        MvccVersion newVer = getNewVersion(cctx, rowIo.getLink(pageAddr, idx));
 
-        if (newVersion == null)
+        if (newVer == null)
             res = tree.getRow(io, pageAddr, idx, CacheDataRowAdapter.RowData.NO_KEY);
 
         return false;  // Stop search.

@@ -101,7 +101,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistoryResult;
@@ -723,13 +722,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             if (grpDesc.config().isEncryptionEnabled())
                 cctx.kernalContext().encryption().onCacheGroupStop(grpDesc.groupId());
-        }
-
-        if (dataRegionMap.containsKey(TxLog.TX_LOG_CACHE_NAME)) {
-            PageMemory memory = dataRegionMap.get(TxLog.TX_LOG_CACHE_NAME).pageMemory();
-
-            if (memory instanceof PageMemoryEx)
-                ((PageMemoryEx)memory).invalidate(TxLog.TX_LOG_CACHE_ID, PageIdAllocator.INDEX_PARTITION);
         }
 
         storeMgr.cleanupPageStoreIfMatch(
@@ -1618,7 +1610,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override public synchronized Map<Integer, Map<Integer, Long>> reserveHistoryForExchange() {
         assert reservedForExchange == null : reservedForExchange;
 
-        Map</*grpId*/Integer, Set</*partId*/Integer>> applicableGroupsAndPartitions = partitionsApplicableForWalRebalance();
+        Map</*grpId*/Integer, Set</*partId*/Integer>> applicableGrpsAndPartitions = partitionsApplicableForWalRebalance();
 
         Map</*grpId*/Integer, T2</*reason*/ReservationReason, Map</*partId*/Integer, CheckpointEntry>>> earliestValidCheckpoints;
 
@@ -1628,7 +1620,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         try {
             CheckpointHistoryResult checkpointHistoryResult =
-                checkpointHistory().searchAndReserveCheckpoints(applicableGroupsAndPartitions);
+                checkpointHistory().searchAndReserveCheckpoints(applicableGrpsAndPartitions);
 
             earliestValidCheckpoints = checkpointHistoryResult.earliestValidCheckpoints();
 
@@ -1989,12 +1981,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @return Accumulated result for all page stores.
      */
     public long forGroupPageStores(CacheGroupContext gctx, ToLongFunction<PageStore> f) {
-        int groupId = gctx.groupId();
+        int grpId = gctx.groupId();
 
         long res = 0;
 
         try {
-            Collection<PageStore> stores = storeMgr.getStores(groupId);
+            Collection<PageStore> stores = storeMgr.getStores(grpId);
 
             if (stores != null) {
                 for (PageStore store : stores)
@@ -2165,10 +2157,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             // Here we do not require tag check because we may be applying memory changes after
                             // several repetitive restarts and the same pages may have changed several times.
-                            int groupId = pageSnapshot.fullPageId().groupId();
+                            int grpId = pageSnapshot.fullPageId().groupId();
                             int partId = partId(pageSnapshot.fullPageId().pageId());
 
-                            if (skipRemovedIndexUpdates(groupId, partId))
+                            if (skipRemovedIndexUpdates(grpId, partId))
                                 break;
 
                             stripedApplyPage((pageMem) -> {
@@ -2185,7 +2177,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                                 (IgniteCheckedException)t :
                                                 new IgniteCheckedException("Failed to apply page snapshot", t));
                                     }
-                                }, groupId, partId, exec
+                                }, grpId, partId, exec
                             );
                         }
 
@@ -2195,17 +2187,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         PartitionMetaStateRecord metaStateRecord = (PartitionMetaStateRecord)rec;
 
                     {
-                        int groupId = metaStateRecord.groupId();
+                        int grpId = metaStateRecord.groupId();
                         int partId = metaStateRecord.partitionId();
 
                         stripedApplyPage((pageMem) -> {
                             GridDhtPartitionState state = fromOrdinal(metaStateRecord.state());
 
                             if (state == null || state == GridDhtPartitionState.EVICTED)
-                                schedulePartitionDestroy(groupId, partId);
+                                schedulePartitionDestroy(grpId, partId);
                             else {
                                 try {
-                                    cancelOrWaitPartitionDestroy(groupId, partId);
+                                    cancelOrWaitPartitionDestroy(grpId, partId);
                                 }
                                 catch (Throwable t) {
                                     U.error(log, "Failed to cancel or wait partition destroy. rec=[" + metaStateRecord + ']');
@@ -2216,7 +2208,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                             new IgniteCheckedException("Failed to cancel or wait partition destroy", t));
                                 }
                             }
-                        }, groupId, partId, exec);
+                        }, grpId, partId, exec);
                     }
 
                         break;
@@ -2225,14 +2217,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         PartitionDestroyRecord destroyRecord = (PartitionDestroyRecord)rec;
 
                     {
-                        int groupId = destroyRecord.groupId();
+                        int grpId = destroyRecord.groupId();
                         int partId = destroyRecord.partitionId();
 
                         stripedApplyPage((pageMem) -> {
-                            pageMem.invalidate(groupId, partId);
+                            pageMem.invalidate(grpId, partId);
 
-                            schedulePartitionDestroy(groupId, partId);
-                        }, groupId, partId, exec);
+                            schedulePartitionDestroy(grpId, partId);
+                        }, grpId, partId, exec);
 
                     }
                         break;
@@ -2241,10 +2233,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (restoreBinaryState.needApplyBinaryUpdate() && rec instanceof PageDeltaRecord) {
                             PageDeltaRecord pageDelta = (PageDeltaRecord)rec;
 
-                            int groupId = pageDelta.groupId();
+                            int grpId = pageDelta.groupId();
                             int partId = partId(pageDelta.pageId());
 
-                            if (skipRemovedIndexUpdates(groupId, partId))
+                            if (skipRemovedIndexUpdates(grpId, partId))
                                 break;
 
                             stripedApplyPage((pageMem) -> {
@@ -2261,7 +2253,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                             (IgniteCheckedException)t :
                                             new IgniteCheckedException("Failed to apply page delta", t));
                                 }
-                            }, groupId, partId, exec);
+                            }, grpId, partId, exec);
                         }
                 }
             }
@@ -2398,10 +2390,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private PageMemoryEx getPageMemoryForCacheGroup(int grpId) throws IgniteCheckedException {
         if (grpId == MetaStorage.METASTORAGE_CACHE_ID)
             return (PageMemoryEx)dataRegion(METASTORE_DATA_REGION_NAME).pageMemory();
-
-        // TODO IGNITE-7792 add generic mapping.
-        if (grpId == TxLog.TX_LOG_CACHE_ID)
-            return (PageMemoryEx)dataRegion(TxLog.TX_LOG_CACHE_NAME).pageMemory();
 
         // TODO IGNITE-5075: cache descriptor can be removed.
         GridCacheSharedContext sharedCtx = context();
@@ -2624,11 +2612,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     case PART_META_UPDATE_STATE:
                         PartitionMetaStateRecord metaStateRecord = (PartitionMetaStateRecord)rec;
 
-                        GroupPartitionId groupPartitionId = new GroupPartitionId(
+                        GroupPartitionId grpPartitionId = new GroupPartitionId(
                             metaStateRecord.groupId(), metaStateRecord.partitionId()
                         );
 
-                        restoreLogicalState.partitionRecoveryStates.put(groupPartitionId, (int)metaStateRecord.state());
+                        restoreLogicalState.partitionRecoveryStates.put(grpPartitionId, (int)metaStateRecord.state());
 
                         break;
 

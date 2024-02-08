@@ -180,14 +180,22 @@ public class TypeUtils {
     }
 
     /** */
-    public static RelDataType sqlType(IgniteTypeFactory typeFactory, Class<?> cls, int precision, int scale) {
+    public static RelDataType sqlType(
+        IgniteTypeFactory typeFactory,
+        Class<?> cls,
+        int precision,
+        int scale,
+        boolean nullability
+    ) {
         RelDataType javaType = typeFactory.createJavaType(cls);
 
         if (javaType.getSqlTypeName().allowsPrecScale(true, true) &&
-            (precision != RelDataType.PRECISION_NOT_SPECIFIED || scale != RelDataType.SCALE_NOT_SPECIFIED))
-            return typeFactory.createSqlType(javaType.getSqlTypeName(), precision, scale);
+            (precision != RelDataType.PRECISION_NOT_SPECIFIED || scale != RelDataType.SCALE_NOT_SPECIFIED)) {
+            return typeFactory.createTypeWithNullability(
+                typeFactory.createSqlType(javaType.getSqlTypeName(), precision, scale), nullability);
+        }
 
-        return sqlType(typeFactory, javaType);
+        return typeFactory.createTypeWithNullability(sqlType(typeFactory, javaType), nullability);
     }
 
     /** */

@@ -73,9 +73,9 @@ public class JdbcThinSSLUtil {
      */
     public static SSLSocket createSSLSocket(InetSocketAddress addr, ConnectionProperties connProps) throws SQLException {
         try {
-            SSLSocketFactory sslSocketFactory = getSSLSocketFactory(connProps);
+            SSLSocketFactory sslSockFactory = getSSLSocketFactory(connProps);
 
-            SSLSocket sock = (SSLSocket)sslSocketFactory.createSocket(addr.getAddress(), addr.getPort());
+            SSLSocket sock = (SSLSocket)sslSockFactory.createSocket(addr.getAddress(), addr.getPort());
 
             sock.setUseClientMode(true);
 

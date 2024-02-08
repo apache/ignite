@@ -150,7 +150,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                     locFut = new GridDhtTxQueryEnlistFuture(
                         cctx.localNode().id(),
                         lockVer,
-                        mvccSnapshot,
+                        null,
                         futId,
                         -(++idx), // The common tx logic expects non-zero mini-future ids (negative local and positive non-local).
                         tx,
@@ -198,7 +198,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                         ++idx, // The common tx logic expects non-zero mini-future ids (negative local and positive non-local).
                         topVer,
                         lockVer,
-                        mvccSnapshot,
+                        null,
                         cacheIds,
                         parts == null ? null : parts.array(),
                         schema,
