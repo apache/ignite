@@ -843,13 +843,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
-     * @return Lock future.
-     */
-    public IgniteInternalFuture<?> lockFuture() {
-        return lockFut;
-    }
-
-    /**
      * Atomically updates lock future.
      *
      * @param oldFut Old future.
@@ -930,12 +923,5 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDhtTxLocalAdapter.class, this, "nearNodes", nearMap.keySet(),
             "dhtNodes", dhtMap.keySet(), "explicitLock", explicitLock, "super", super.toString());
-    }
-
-    /**
-     * Increments lock counter.
-     */
-    public void incrementLockCounter() {
-        txCounters(true).incrementLockCounter();
     }
 }

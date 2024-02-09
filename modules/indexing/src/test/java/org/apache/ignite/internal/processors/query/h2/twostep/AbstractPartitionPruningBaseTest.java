@@ -45,7 +45,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -530,19 +529,6 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
                     GridH2QueryRequest req = (GridH2QueryRequest)msg0.message();
 
                     int[] parts = req.queryPartitions();
-
-                    if (!F.isEmpty(parts)) {
-                        for (int part : parts)
-                            INTERCEPTED_PARTS.add(part);
-                    }
-                }
-                else if (msg0.message() instanceof GridNearTxQueryEnlistRequest) {
-                    INTERCEPTED_NODES.add(node);
-                    INTERCEPTED_REQS.incrementAndGet();
-
-                    GridNearTxQueryEnlistRequest req = (GridNearTxQueryEnlistRequest)msg0.message();
-
-                    int[] parts = req.partitions();
 
                     if (!F.isEmpty(parts)) {
                         for (int part : parts)
