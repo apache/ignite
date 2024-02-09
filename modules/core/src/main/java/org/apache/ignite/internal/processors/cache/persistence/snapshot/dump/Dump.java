@@ -267,7 +267,7 @@ public class Dump implements AutoCloseable {
      * @return Dump iterator.
      */
     public DumpedPartitionIterator iterator(String node, int group, int part) {
-        FileIOFactory ioFactory = comprParts ? new UnzipFileIOFactory() : new RandomAccessFileIOFactory();
+        FileIOFactory ioFactory = comprParts ? new UnzipFileIOFactory() : new ReadOnlyBufferedFileIOFactory();
 
         FileIO dumpFile;
 
