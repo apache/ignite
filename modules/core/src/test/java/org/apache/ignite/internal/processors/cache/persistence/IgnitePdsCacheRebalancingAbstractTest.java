@@ -701,10 +701,10 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         IgniteCache<Integer, TestValue> cacheInMem = ignite0.cache(INDEXED_CACHE_IN_MEMORY);
 
         for (int i = 0; i < entriesCnt / 2; i++) {
-            TestValue value = new TestValue(i, i * 2, i * 3);
+            TestValue val = new TestValue(i, i * 2, i * 3);
 
-            cachePds.put(i, value);
-            cacheInMem.put(i, value);
+            cachePds.put(i, val);
+            cacheInMem.put(i, val);
         }
 
         forceCheckpoint();
@@ -712,10 +712,10 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         stopGrid(1);
 
         for (int i = entriesCnt / 2; i < entriesCnt; i++) {
-            TestValue value = new TestValue(i, i * 2, i * 3);
+            TestValue val = new TestValue(i, i * 2, i * 3);
 
-            cachePds.put(i, value);
-            cacheInMem.put(i, value);
+            cachePds.put(i, val);
+            cacheInMem.put(i, val);
         }
 
         IgniteEx ignite1 = startGrid(1);
@@ -731,10 +731,10 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         assertEquals(entriesCnt, cacheInMem1.localSize(peekAll));
 
         for (int i = 0; i < entriesCnt; i++) {
-            TestValue value = new TestValue(i, i * 2, i * 3);
+            TestValue val = new TestValue(i, i * 2, i * 3);
 
-            assertEquals(value, cachePds1.localPeek(i, peekAll));
-            assertEquals(value, cacheInMem1.localPeek(i, peekAll));
+            assertEquals(val, cachePds1.localPeek(i, peekAll));
+            assertEquals(val, cacheInMem1.localPeek(i, peekAll));
         }
     }
 
@@ -773,11 +773,11 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
             if (o == null || getClass() != o.getClass()) return false;
 
-            TestValue testValue = (TestValue)o;
+            TestValue testVal = (TestValue)o;
 
-            return order == testValue.order &&
-                v1 == testValue.v1 &&
-                v2 == testValue.v2;
+            return order == testVal.order &&
+                v1 == testVal.v1 &&
+                v2 == testVal.v2;
         }
 
         /** {@inheritDoc} */

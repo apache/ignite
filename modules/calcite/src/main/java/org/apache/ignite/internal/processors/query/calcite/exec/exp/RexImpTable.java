@@ -458,9 +458,9 @@ public class RexImpTable {
 
         map.put(REINTERPRET, new ReinterpretImplementor());
 
-        final RexCallImplementor value = new ValueConstructorImplementor();
-        map.put(MAP_VALUE_CONSTRUCTOR, value);
-        map.put(ARRAY_VALUE_CONSTRUCTOR, value);
+        final RexCallImplementor val = new ValueConstructorImplementor();
+        map.put(MAP_VALUE_CONSTRUCTOR, val);
+        map.put(ARRAY_VALUE_CONSTRUCTOR, val);
         map.put(ITEM, new ItemImplementor());
 
         map.put(DEFAULT, new DefaultImplementor());
@@ -829,8 +829,8 @@ public class RexImpTable {
         @Override Expression implementSafe(final RexToLixTranslator translator,
             final RexCall call, final List<Expression> argValueList) {
             final boolean strict = !translator.conformance.allowExtendedTrim();
-            final Object value = translator.getLiteralValue(argValueList.get(0));
-            SqlTrimFunction.Flag flag = (SqlTrimFunction.Flag)value;
+            final Object val = translator.getLiteralValue(argValueList.get(0));
+            SqlTrimFunction.Flag flag = (SqlTrimFunction.Flag)val;
             return Expressions.call(
                 BuiltInMethod.TRIM.method,
                 Expressions.constant(
@@ -1056,9 +1056,9 @@ public class RexImpTable {
             List<Expression> leftExprs = Util.skip(argValueList, 2);
             // Default value for JSON_VALUE behaviors.
             Expression emptyBehavior = Expressions.constant(SqlJsonValueEmptyOrErrorBehavior.NULL);
-            Expression dfltValueOnEmpty = Expressions.constant(null);
+            Expression dfltValOnEmpty = Expressions.constant(null);
             Expression errorBehavior = Expressions.constant(SqlJsonValueEmptyOrErrorBehavior.NULL);
-            Expression dfltValueOnError = Expressions.constant(null);
+            Expression dfltValOnError = Expressions.constant(null);
             // Patched up with user defines.
             if (!leftExprs.isEmpty()) {
                 for (int i = 0; i < leftExprs.size(); i++) {
@@ -1070,7 +1070,7 @@ public class RexImpTable {
                             if (dfltSymbolIdx >= 0
                                 && translator.getLiteralValue(leftExprs.get(dfltSymbolIdx))
                                 == SqlJsonValueEmptyOrErrorBehavior.DEFAULT) {
-                                dfltValueOnEmpty = leftExprs.get(i - 1);
+                                dfltValOnEmpty = leftExprs.get(i - 1);
                                 emptyBehavior = leftExprs.get(dfltSymbolIdx);
                             }
                             else
@@ -1080,7 +1080,7 @@ public class RexImpTable {
                             if (dfltSymbolIdx >= 0
                                 && translator.getLiteralValue(leftExprs.get(dfltSymbolIdx))
                                 == SqlJsonValueEmptyOrErrorBehavior.DEFAULT) {
-                                dfltValueOnError = leftExprs.get(i - 1);
+                                dfltValOnError = leftExprs.get(i - 1);
                                 errorBehavior = leftExprs.get(dfltSymbolIdx);
                             }
                             else
@@ -1090,9 +1090,9 @@ public class RexImpTable {
                 }
             }
             newOperands.add(emptyBehavior);
-            newOperands.add(dfltValueOnEmpty);
+            newOperands.add(dfltValOnEmpty);
             newOperands.add(errorBehavior);
-            newOperands.add(dfltValueOnError);
+            newOperands.add(dfltValOnError);
             Class clazz = method.getDeclaringClass();
             expression = EnumUtils.call(null, clazz, method.getName(), newOperands);
 
@@ -1302,23 +1302,23 @@ public class RexImpTable {
         /** {@inheritDoc} */
         @Override Expression implementSafe(RexToLixTranslator translator,
             RexCall call, List<Expression> argValueList) {
-            final Expression argValue = argValueList.get(0);
+            final Expression argVal = argValueList.get(0);
 
             final Expression e;
             //Special case for implementing unary minus with BigDecimal type
             //for other data type(except BigDecimal) '-' operator is OK, but for
             //BigDecimal, we should call negate method of BigDecimal
-            if (expressionType == ExpressionType.Negate && argValue.type == BigDecimal.class
+            if (expressionType == ExpressionType.Negate && argVal.type == BigDecimal.class
                 && null != backupMethodName)
-                e = Expressions.call(argValue, backupMethodName);
+                e = Expressions.call(argVal, backupMethodName);
             else
-                e = Expressions.makeUnary(expressionType, argValue);
+                e = Expressions.makeUnary(expressionType, argVal);
 
-            if (e.type.equals(argValue.type))
+            if (e.type.equals(argVal.type))
                 return e;
             // Certain unary operators do not preserve type. For example, the "-"
             // operator applied to a "byte" expression returns an "int".
-            return Expressions.convert_(e, argValue.type);
+            return Expressions.convert_(e, argVal.type);
         }
     }
 
@@ -1601,22 +1601,22 @@ public class RexImpTable {
                             false);
                     for (int i = 0; i < argValueList.size(); i++) {
                         Expression key = argValueList.get(i++);
-                        Expression value = argValueList.get(i);
+                        Expression val = argValueList.get(i);
                         blockBuilder.add(
                             Expressions.statement(
                                 Expressions.call(map, BuiltInMethod.MAP_PUT.method,
-                                    Expressions.box(key), Expressions.box(value))));
+                                    Expressions.box(key), Expressions.box(val))));
                     }
                     return map;
                 case ARRAY_VALUE_CONSTRUCTOR:
                     Expression lyst =
                         blockBuilder.append("list", Expressions.new_(ArrayList.class),
                             false);
-                    for (Expression value : argValueList) {
+                    for (Expression val : argValueList) {
                         blockBuilder.add(
                             Expressions.statement(
                                 Expressions.call(lyst, BuiltInMethod.COLLECTION_ADD.method,
-                                    Expressions.box(value))));
+                                    Expressions.box(val))));
                     }
                     return lyst;
                 default:
@@ -1901,17 +1901,17 @@ public class RexImpTable {
             final RexCall call,
             final List<RexToLixTranslator.Result> arguments) {
             final List<Expression> argIsNullList = new ArrayList<>();
-            final List<Expression> argValueList = new ArrayList<>();
+            final List<Expression> argValList = new ArrayList<>();
             for (RexToLixTranslator.Result result : arguments) {
                 argIsNullList.add(result.isNullVariable);
-                argValueList.add(result.valueVariable);
+                argValList.add(result.valueVariable);
             }
             final Expression condition = getCondition(argIsNullList);
-            final ParameterExpression valueVariable =
-                genValueStatement(translator, call, argValueList, condition);
+            final ParameterExpression valVariable =
+                genValueStatement(translator, call, argValList, condition);
             final ParameterExpression isNullVariable =
-                genIsNullStatement(translator, valueVariable);
-            return new RexToLixTranslator.Result(isNullVariable, valueVariable);
+                genIsNullStatement(translator, valVariable);
+            return new RexToLixTranslator.Result(isNullVariable, valVariable);
         }
 
         /** */
@@ -1939,15 +1939,15 @@ public class RexImpTable {
             final RexToLixTranslator translator,
             final RexCall call, final List<Expression> argValueList,
             final Expression condition) {
-            List<Expression> optimizedArgValueList = argValueList;
+            List<Expression> optimizedArgValList = argValueList;
             if (harmonize) {
-                optimizedArgValueList =
-                    harmonize(optimizedArgValueList, translator, call);
+                optimizedArgValList =
+                    harmonize(optimizedArgValList, translator, call);
             }
-            optimizedArgValueList = unboxIfNecessary(optimizedArgValueList);
+            optimizedArgValList = unboxIfNecessary(optimizedArgValList);
 
-            final Expression callValue =
-                implementSafe(translator, call, optimizedArgValueList);
+            final Expression callVal =
+                implementSafe(translator, call, optimizedArgValList);
 
             // In general, RexCall's type is correct for code generation
             // and thus we should ensure the consistency.
@@ -1956,25 +1956,25 @@ public class RexImpTable {
             final SqlOperator op = call.getOperator();
             final Type returnType = translator.typeFactory.getJavaClass(call.getType());
             final boolean noConvert = (returnType == null)
-                || (returnType == callValue.getType())
+                || (returnType == callVal.getType())
                 || (op instanceof SqlTableFunction)
                 || (op instanceof SqlUserDefinedTableMacro)
                 || (op instanceof SqlUserDefinedTableFunction);
-            final Expression convertedCallValue =
+            final Expression convertedCallVal =
                 noConvert
-                    ? callValue
-                    : ConverterUtils.convert(callValue, returnType);
+                    ? callVal
+                    : ConverterUtils.convert(callVal, returnType);
 
-            final Expression valueExpression =
+            final Expression valExpression =
                 Expressions.condition(condition,
-                    getIfTrue(convertedCallValue.getType(), argValueList),
-                    convertedCallValue);
-            final ParameterExpression value =
-                Expressions.parameter(convertedCallValue.getType(),
+                    getIfTrue(convertedCallVal.getType(), argValueList),
+                    convertedCallVal);
+            final ParameterExpression val =
+                Expressions.parameter(convertedCallVal.getType(),
                     translator.getBlockBuilder().newName(getVariableName() + "_value"));
             translator.getBlockBuilder().add(
-                Expressions.declare(Modifier.FINAL, value, valueExpression));
-            return value;
+                Expressions.declare(Modifier.FINAL, val, valExpression));
+            return val;
         }
 
         /** */
@@ -2028,9 +2028,9 @@ public class RexImpTable {
             final Type javaCls =
                 translator.typeFactory.getJavaClass(type);
             final List<Expression> harmonizedArgValues = new ArrayList<>();
-            for (Expression argValue : argValueList) {
+            for (Expression argVal : argValueList) {
                 harmonizedArgValues.add(
-                    EnumUtils.convert(argValue, javaCls));
+                    EnumUtils.convert(argVal, javaCls));
             }
             return harmonizedArgValues;
         }
@@ -2039,18 +2039,18 @@ public class RexImpTable {
          * Under null check, it is safe to unbox the operands before entering the implementor.
          */
         private List<Expression> unboxIfNecessary(final List<Expression> argValueList) {
-            List<Expression> unboxValueList = argValueList;
+            List<Expression> unboxValList = argValueList;
             if (nullPolicy == NullPolicy.STRICT || nullPolicy == NullPolicy.ANY
                 || nullPolicy == NullPolicy.SEMI_STRICT) {
-                unboxValueList = argValueList.stream()
+                unboxValList = argValueList.stream()
                     .map(this::unboxExpression)
                     .collect(Collectors.toList());
             }
             if (nullPolicy == NullPolicy.ARG0 && !argValueList.isEmpty()) {
-                final Expression unboxArg0 = unboxExpression(unboxValueList.get(0));
-                unboxValueList.set(0, unboxArg0);
+                final Expression unboxArg0 = unboxExpression(unboxValList.get(0));
+                unboxValList.set(0, unboxArg0);
             }
-            return unboxValueList;
+            return unboxValList;
         }
 
         /** */
@@ -2110,19 +2110,19 @@ public class RexImpTable {
                     Expressions.condition(hasNull, NULL_EXPR, BOXED_TRUE_EXPR));
             final RexImpTable.NullAs nullAs = translator.isNullable(call)
                 ? RexImpTable.NullAs.NULL : RexImpTable.NullAs.NOT_POSSIBLE;
-            final Expression valueExpression = nullAs.handle(callExpression);
-            final ParameterExpression valueVariable =
-                Expressions.parameter(valueExpression.getType(),
+            final Expression valExpression = nullAs.handle(callExpression);
+            final ParameterExpression valVariable =
+                Expressions.parameter(valExpression.getType(),
                     translator.getBlockBuilder().newName(getVariableName() + "_value"));
-            final Expression isNullExpression = translator.checkNull(valueVariable);
+            final Expression isNullExpression = translator.checkNull(valVariable);
             final ParameterExpression isNullVariable =
                 Expressions.parameter(Boolean.TYPE,
                     translator.getBlockBuilder().newName(getVariableName() + "_isNull"));
             translator.getBlockBuilder().add(
-                Expressions.declare(Modifier.FINAL, valueVariable, valueExpression));
+                Expressions.declare(Modifier.FINAL, valVariable, valExpression));
             translator.getBlockBuilder().add(
                 Expressions.declare(Modifier.FINAL, isNullVariable, isNullExpression));
-            return new RexToLixTranslator.Result(isNullVariable, valueVariable);
+            return new RexToLixTranslator.Result(isNullVariable, valVariable);
         }
 
         /** {@inheritDoc} */
@@ -2164,19 +2164,19 @@ public class RexImpTable {
                     Expressions.condition(hasNull, NULL_EXPR, BOXED_FALSE_EXPR));
             final RexImpTable.NullAs nullAs = translator.isNullable(call)
                 ? RexImpTable.NullAs.NULL : RexImpTable.NullAs.NOT_POSSIBLE;
-            final Expression valueExpression = nullAs.handle(callExpression);
-            final ParameterExpression valueVariable =
-                Expressions.parameter(valueExpression.getType(),
+            final Expression valExpression = nullAs.handle(callExpression);
+            final ParameterExpression valVariable =
+                Expressions.parameter(valExpression.getType(),
                     translator.getBlockBuilder().newName(getVariableName() + "_value"));
-            final Expression isNullExpression = translator.checkNull(valueExpression);
+            final Expression isNullExpression = translator.checkNull(valExpression);
             final ParameterExpression isNullVariable =
                 Expressions.parameter(Boolean.TYPE,
                     translator.getBlockBuilder().newName(getVariableName() + "_isNull"));
             translator.getBlockBuilder().add(
-                Expressions.declare(Modifier.FINAL, valueVariable, valueExpression));
+                Expressions.declare(Modifier.FINAL, valVariable, valExpression));
             translator.getBlockBuilder().add(
                 Expressions.declare(Modifier.FINAL, isNullVariable, isNullExpression));
-            return new RexToLixTranslator.Result(isNullVariable, valueVariable);
+            return new RexToLixTranslator.Result(isNullVariable, valVariable);
         }
 
         /** {@inheritDoc} */
@@ -2224,14 +2224,14 @@ public class RexImpTable {
         /** {@inheritDoc} */
         @Override Expression implementSafe(RexToLixTranslator translator,
             RexCall call, List<Expression> argValueList) {
-            List<Expression> argValueList0 = ConverterUtils.fromInternal(method.getParameterTypes(), argValueList);
+            List<Expression> argValList0 = ConverterUtils.fromInternal(method.getParameterTypes(), argValueList);
             if ((method.getModifiers() & Modifier.STATIC) != 0)
-                return Expressions.call(method, argValueList0);
+                return Expressions.call(method, argValList0);
 
             // The UDF class must have a public zero-args constructor.
             // Assume that the validator checked already.
             final Expression target = Expressions.new_(method.getDeclaringClass());
-            return Expressions.call(target, method, argValueList0);
+            return Expressions.call(target, method, argValList0);
         }
     }
 

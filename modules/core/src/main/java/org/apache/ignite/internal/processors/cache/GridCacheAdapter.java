@@ -2292,7 +2292,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 IgniteInternalFuture<GridCacheReturn> fut =
                     tx.invokeAsync(ctx, null, (Map<? extends K, ? extends EntryProcessor<K, V, Object>>)map, args);
 
-                Map<K, EntryProcessorResult<T>> value = fut.get().value();
+                Map<K, EntryProcessorResult<T>> val = fut.get().value();
 
                 if (statsEnabled)
                     metrics0().addInvokeTimeNanos(System.nanoTime() - start);
@@ -2300,7 +2300,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 if (performanceStatsEnabled)
                     writeStatistics(OperationType.CACHE_INVOKE_ALL, start);
 
-                return value;
+                return val;
             }
         });
     }
@@ -2811,7 +2811,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     Collections.singletonList(key),
                     /*retval*/false,
                     filter,
-                    /*singleRmv*/true).chain(RET2FLAG);
+                    /*singleRmv*/filter == null).chain(RET2FLAG);
             }
 
             @Override public String toString() {
@@ -3683,7 +3683,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     READ_COMMITTED,
                     tCfg.getDefaultTxTimeout(),
                     !ctx.skipStore(),
-                    false,
                     0,
                     null
                 );
@@ -3801,7 +3800,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     READ_COMMITTED,
                     txCfg.getDefaultTxTimeout(),
                     !skipStore,
-                    false,
                     0,
                     null);
 
@@ -4821,7 +4819,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 READ_COMMITTED,
                 CU.transactionConfiguration(ctx, ctx.kernalContext().config()).getDefaultTxTimeout(),
                 opCtx == null || !opCtx.skipStore(),
-                false,
                 0,
                 null);
 

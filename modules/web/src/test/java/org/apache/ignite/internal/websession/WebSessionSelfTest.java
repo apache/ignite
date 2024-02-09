@@ -1071,7 +1071,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      * @return sesId
      */
     private String getSessionIdFromCookie(URLConnection conn) {
-        String sesCookieValue = null;
+        String sesCookieVal = null;
         String sesId = null;
         Map<String, List<String>> hdrFields = conn.getHeaderFields();
         Set<String> hdrFieldsSet = hdrFields.keySet();
@@ -1081,13 +1081,13 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             String hdrFieldKey = hdrFieldsIter.next();
 
             if ("Set-Cookie".equalsIgnoreCase(hdrFieldKey)) {
-                List<String> hdrFieldValue = hdrFields.get(hdrFieldKey);
+                List<String> hdrFieldVal = hdrFields.get(hdrFieldKey);
 
-                for (String hdrValue : hdrFieldValue) {
-                    String[] fields = hdrValue.split(";");
-                    sesCookieValue = fields[0];
-                    sesId = sesCookieValue.substring(sesCookieValue.indexOf("=") + 1,
-                            sesCookieValue.length());
+                for (String hdrVal : hdrFieldVal) {
+                    String[] fields = hdrVal.split(";");
+                    sesCookieVal = fields[0];
+                    sesId = sesCookieVal.substring(sesCookieVal.indexOf("=") + 1,
+                            sesCookieVal.length());
                 }
             }
         }

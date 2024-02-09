@@ -67,11 +67,11 @@ public class AtomicLongTest extends AbstractThinClientTest {
         try (IgniteClient client = startClient(0)) {
             ClientAtomicLong atomicLong = client.atomicLong(name, 42, true);
 
-            ClientAtomicLong atomicLongWithGroup = client.atomicLong(
+            ClientAtomicLong atomicLongWithGrp = client.atomicLong(
                     name, new ClientAtomicConfiguration().setGroupName("grp"), 43, true);
 
             assertEquals(42, atomicLong.get());
-            assertEquals(43, atomicLongWithGroup.get());
+            assertEquals(43, atomicLongWithGrp.get());
         }
     }
 
@@ -242,15 +242,15 @@ public class AtomicLongTest extends AbstractThinClientTest {
      */
     @Test
     public void testSameNameDifferentOptionsDoesNotCreateSecondAtomic() {
-        String groupName = "testSameNameDifferentOptions";
+        String grpName = "testSameNameDifferentOptions";
 
         ClientAtomicConfiguration cfg1 = new ClientAtomicConfiguration()
                 .setCacheMode(CacheMode.REPLICATED)
-                .setGroupName(groupName);
+                .setGroupName(grpName);
 
         ClientAtomicConfiguration cfg2 = new ClientAtomicConfiguration()
                 .setCacheMode(CacheMode.PARTITIONED)
-                .setGroupName(groupName);
+                .setGroupName(grpName);
 
         String name = "testSameNameDifferentOptionsDoesNotCreateSecondAtomic";
 
@@ -265,7 +265,7 @@ public class AtomicLongTest extends AbstractThinClientTest {
         }
 
         List<IgniteInternalCache<?, ?>> caches = grid(0).cachesx().stream()
-                .filter(c -> c.name().contains(groupName))
+                .filter(c -> c.name().contains(grpName))
                 .collect(Collectors.toList());
 
         assertEquals(1, caches.size());

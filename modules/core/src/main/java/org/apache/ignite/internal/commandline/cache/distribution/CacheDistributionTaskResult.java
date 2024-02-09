@@ -106,11 +106,11 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
         List<Row> rows = new ArrayList<>();
 
         for (CacheDistributionNode node : nodeResList) {
-            for (CacheDistributionGroup group : node.getGroups()) {
-                for (CacheDistributionPartition partition : group.getPartitions()) {
+            for (CacheDistributionGroup grp : node.getGroups()) {
+                for (CacheDistributionPartition partition : grp.getPartitions()) {
                     final Row row = new Row();
-                    row.setGroupId(group.getGroupId());
-                    row.setGroupName(group.getGroupName());
+                    row.setGroupId(grp.getGroupId());
+                    row.setGroupName(grp.getGroupName());
                     row.setPartition(partition.getPartition());
                     row.setNodeId(node.getNodeId());
                     row.setPrimary(partition.isPrimary());

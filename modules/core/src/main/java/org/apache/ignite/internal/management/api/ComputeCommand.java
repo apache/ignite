@@ -19,10 +19,9 @@ package org.apache.ignite.internal.management.api;
 
 import java.util.Collection;
 import java.util.function.Consumer;
-import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -30,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface ComputeCommand<A extends IgniteDataTransferObject, R> extends Command<A, R> {
     /** @return Task class. */
-    public Class<? extends ComputeTask<VisorTaskArgument<A>, R>> taskClass();
+    public Class<? extends VisorMultiNodeTask<A, R, ?>> taskClass();
 
     /**
      * Prints command result to the user.

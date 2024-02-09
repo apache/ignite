@@ -92,9 +92,9 @@ public class GridServletLoaderTest extends GridCommonAbstractTest {
 
             assert jmx != null;
 
-            String query = "*:*";
+            String qry = "*:*";
 
-            ObjectName queryName = new ObjectName(query);
+            ObjectName qryName = new ObjectName(qry);
 
             boolean found = false;
 
@@ -105,7 +105,7 @@ public class GridServletLoaderTest extends GridCommonAbstractTest {
             while (!found) {
                 info("Attempt to find GridKernal MBean [num=" + i + ']');
 
-                Set<ObjectName> names = jmx.getMBeanServerConnection().queryNames(queryName, null);
+                Set<ObjectName> names = jmx.getMBeanServerConnection().queryNames(qryName, null);
 
                 if (!names.isEmpty()) {
                     for (ObjectName objName : names) {

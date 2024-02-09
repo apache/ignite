@@ -37,6 +37,9 @@ public class BufferedFileIO extends FileIODecorator {
     private ByteBuffer buf;
 
     /** */
+    private long position;
+
+    /** */
     public BufferedFileIO(FileIO fileIO) {
         super(fileIO);
 
@@ -107,8 +110,12 @@ public class BufferedFileIO extends FileIODecorator {
     private void flush() throws IOException {
         buf.flip();
 
-        if (delegate.writeFully(buf) < 0)
+        int len = delegate.writeFully(buf, position);
+
+        if (len < 0)
             throw new IOException("Couldn't write data");
+
+        position = position + len;
 
         buf.clear();
     }

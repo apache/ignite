@@ -514,14 +514,14 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
                 if (file.getName().endsWith(DUMP_FILE_EXT)) {
                     return new FileIODecorator(delegate.create(file, modes)) {
                         /** {@inheritDoc} */
-                        @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
+                        @Override public int writeFully(ByteBuffer srcBuf, long position) throws IOException {
                             if (findValToFail(srcBuf)) {
                                 keyToFailFound.set(true);
 
                                 throw new IOException("Val to fail found");
                             }
 
-                            return super.writeFully(srcBuf);
+                            return super.writeFully(srcBuf, position);
                         }
 
                         private boolean findValToFail(ByteBuffer srcBuf) {
@@ -671,9 +671,9 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             if (failOnWrite) {
                 return new FileIODecorator(delegate.create(file, modes)) {
                     /** {@inheritDoc} */
-                    @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
+                    @Override public int writeFully(ByteBuffer srcBuf, long position) throws IOException {
                         if (errorAfter.decrementAndGet() > 0)
-                            return super.writeFully(srcBuf);
+                            return super.writeFully(srcBuf, position);
 
                         throw new IOException("Test write error");
                     }
