@@ -138,6 +138,15 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     private final @Nullable ConcurrentMap<Long, ByteBuffer> encThLocBufs;
 
     /**
+     * Cache entry version at the dump start.
+     * Regular updates with {@link IgniteCache#put(Object, Object)} and similar calls use version generated with
+     * {@link GridCacheVersionManager#next(GridCacheVersion)}. This version value monotonically grows. It is generated
+     * on a <b>primary</b> node and is <b>propagated</b> to the backups. So, on a primary we can distinguish updates
+     * that happen before and after the dump start.
+     */
+    private GridCacheVersion startVer;
+
+    /**
      * @param cctx Cache context.
      * @param srcNodeId Node id which cause snapshot task creation.
      * @param reqId Snapshot operation request ID.
@@ -211,6 +220,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
     /** Prepares all data structures to dump entries. */
     private void prepare() throws IOException, IgniteCheckedException {
+        startVer = cctx.versions().next(cctx.kernalContext().discovery().topologyVersion());
+
         for (Map.Entry<Integer, Set<Integer>> e : processed.entrySet()) {
             int grp = e.getKey();
 
@@ -424,47 +435,28 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      */
     private class PartitionDumpContext implements Closeable {
         /** Group id. */
-        final int grp;
+        private final int grp;
 
         /** Partition id. */
-        final int part;
+        private final int part;
 
         /**
          * Key is cache id, values is set of keys dumped via
          * {@link #writeChanged(int, long, KeyCacheObject, CacheObject, GridCacheVersion)}.
          */
-        final Map<Integer, Set<KeyCacheObject>> changed;
+        private final Map<Integer, Set<KeyCacheObject>> changed;
 
         /** Cache id for {@link #iterLastKey} */
-        int iterLastKeyCache;
+        private int iterLastKeyCache;
 
         /** Last key dumped via {@link #writeForIterator(int, long, KeyCacheObject, CacheObject, GridCacheVersion, CacheObjectContext)}. */
-        @Nullable KeyCacheObject iterLastKey;
+        private @Nullable KeyCacheObject iterLastKey;
 
         /** Count of entries changed during dump creation. */
-        LongAdder changedCnt = new LongAdder();
+        private final LongAdder changedCnt = new LongAdder();
 
         /** Partition dump file. Lazily initialized to prevent creation files for empty partitions. */
-        final FileIO file;
-
-        /**
-         * Regular updates with {@link IgniteCache#put(Object, Object)} and similar calls
-         * will use version generated with {@link GridCacheVersionManager#next(GridCacheVersion)}.
-         * Version is monotonically increase.
-         * Version generated on <b>primary</b> node and propagated to backups.
-         * So on primary we can distinguish updates that happens before and after dump start comparing versions
-         * with the version we read with {@link GridCacheVersionManager#last()}.
-         */
-        @Nullable final GridCacheVersion startVer;
-
-        /**
-         * Unlike regular update, {@link IgniteDataStreamer} updates receive the same version for all entries.
-         * See {@code IsolatedUpdater.receive}.
-         * Note, using {@link IgniteDataStreamer} during cache dump creation can lead to dump inconsistency.
-         *
-         * @see GridCacheVersionManager#isolatedStreamerVersion()
-         */
-        final GridCacheVersion isolatedStreamerVer;
+        private final FileIO file;
 
         /** Topology Version. */
         private final AffinityTopologyVersion topVer;
@@ -473,7 +465,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         private final DumpEntrySerializer serializer;
 
         /** If {@code true} context is closed. */
-        volatile boolean closed;
+        private volatile boolean closed;
 
         /**
          * Count of writers. When count becomes {@code 0} context must be closed.
@@ -483,11 +475,14 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
          */
         private final AtomicInteger writers = new AtomicInteger(1);
 
+        /** Primary node/partition flag. */
+        private final boolean primary;
+
         /**
          * @param gctx Group context.
          * @param part Partition id.
          */
-        public PartitionDumpContext(CacheGroupContext gctx, int part) {
+        private PartitionDumpContext(CacheGroupContext gctx, int part) {
             assert gctx != null;
 
             try {
@@ -495,8 +490,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 grp = gctx.groupId();
                 topVer = gctx.topology().lastTopologyChangeVersion();
 
-                startVer = grpPrimaries.get(gctx.groupId()).contains(part) ? gctx.shared().versions().last() : null;
-                isolatedStreamerVer = cctx.versions().isolatedStreamerVersion();
+                primary = grpPrimaries.get(gctx.groupId()).contains(part);
 
                 serializer = new DumpEntrySerializer(
                     thLocBufs,
@@ -658,9 +652,10 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
          *
          * @param ver Entry version.
          * @return {@code True} if {@code ver} appeared after dump started.
+         * @see GridCacheVersionManager#isolatedStreamerVersion()
          */
         private boolean afterStart(GridCacheVersion ver) {
-            return (startVer != null && ver.isGreater(startVer)) && !isolatedStreamerVer.equals(ver);
+            return primary && ver.isGreater(startVer);
         }
 
         /**
