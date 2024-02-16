@@ -661,20 +661,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                                     if (conflictCtx.isUseOld())
                                         op = NOOP;
-                                    else if (conflictCtx.isUseNew()) {
-                                        txEntry.ttl(conflictCtx.ttl());
-                                        txEntry.conflictExpireTime(conflictCtx.expireTime());
-                                    }
-                                    else {
-                                        assert conflictCtx.isMerge();
-
+                                    else if (conflictCtx.isMerge()){
                                         op = conflictRes.get1();
                                         val = txEntry.context().toCacheObject(conflictCtx.mergeValue());
                                         explicitVer = writeVersion();
-
-                                        txEntry.ttl(conflictCtx.ttl());
-                                        txEntry.conflictExpireTime(conflictCtx.expireTime());
                                     }
+
+                                    txEntry.ttl(conflictCtx.ttl());
+                                    txEntry.conflictExpireTime(conflictCtx.expireTime());
                                 }
                                 else
                                     // Nullify explicit version so that innerSet/innerRemove will work as usual.

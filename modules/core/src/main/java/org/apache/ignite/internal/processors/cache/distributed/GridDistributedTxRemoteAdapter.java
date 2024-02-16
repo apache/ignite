@@ -575,18 +575,14 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
 
                                         if (conflictCtx.isUseOld())
                                             op = NOOP;
-                                        else if (conflictCtx.isUseNew()) {
-                                            txEntry.ttl(conflictCtx.ttl());
-                                            txEntry.conflictExpireTime(conflictCtx.expireTime());
-                                        }
                                         else if (conflictCtx.isMerge()) {
                                             op = drRes.get1();
                                             val = txEntry.context().toCacheObject(conflictCtx.mergeValue());
                                             explicitVer = writeVersion();
-
-                                            txEntry.ttl(conflictCtx.ttl());
-                                            txEntry.conflictExpireTime(conflictCtx.expireTime());
                                         }
+
+                                        txEntry.ttl(conflictCtx.ttl());
+                                        txEntry.conflictExpireTime(conflictCtx.expireTime());
                                     }
                                     else
                                         // Nullify explicit version so that innerSet/innerRemove will work as usual.
@@ -606,7 +602,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                             op,
                                             nearXidVersion(),
                                             addConflictVersion(writeVersion(), txEntry.conflictVersion()),
-                                            0,
+                                            txEntry.conflictExpireTime(),
                                             txEntry.key().partition(),
                                             txEntry.updateCounter(),
                                             DataEntry.flags(CU.txOnPrimary(this))

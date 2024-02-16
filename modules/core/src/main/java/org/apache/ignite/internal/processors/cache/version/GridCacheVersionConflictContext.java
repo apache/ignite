@@ -112,8 +112,6 @@ public class GridCacheVersionConflictContext<K, V> {
      */
     public void useNew() {
         state = State.USE_NEW;
-
-        ttl = newEntry.ttl();
     }
 
     /**
@@ -183,7 +181,7 @@ public class GridCacheVersionConflictContext<K, V> {
      * @return TTL.
      */
     public long ttl() {
-        return ttl;
+        return isUseNew() ? newEntry.ttl() : isUseOld() ? oldEntry.ttl() : ttl;
     }
 
     /**
