@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -62,6 +64,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
+import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.readCacheData;
@@ -267,7 +270,68 @@ public class Dump implements AutoCloseable {
      * @return Dump iterator.
      */
     public DumpedPartitionIterator iterator(String node, int group, int part) {
-        FileIOFactory ioFactory = comprParts ? new UnzipFileIOFactory() : new RandomAccessFileIOFactory();
+        FileIOFactory ioFactory = comprParts ? new UnzipFileIOFactory() : new FileIOFactory() {
+            private final FileIOFactory factory = new RandomAccessFileIOFactory();
+
+            @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+                FileIO fileIO = factory.create(file, READ);
+
+                int blockSize = fileIO.getFileSystemBlockSize();
+
+                if (blockSize <= 0)
+                    blockSize = 4096;
+
+                ByteBuffer buf = ByteBuffer.allocate(blockSize);
+
+                buf.position(buf.limit());
+
+                return new FileIODecorator(fileIO) {
+                    private boolean eof;
+
+                    private long pos;
+
+                    @Override public int readFully(ByteBuffer destBuf) throws IOException {
+                        if (destBuf.remaining() == 0)
+                            throw new IOException("dest buffer full");
+
+                        int n = 0;
+
+                        while (destBuf.hasRemaining()) {
+                            if (!buf.hasRemaining()) {
+                                if (eof)
+                                    return -1;
+
+                                buf.clear();
+
+                                int len = delegate.readFully(buf, pos);
+
+                                if (len < buf.limit())
+                                    eof = true;
+                                else
+                                    pos += len;
+
+                                buf.flip();
+                            }
+
+                            if (!buf.hasRemaining())
+                                break;
+
+                            int len = Math.min(destBuf.remaining(), buf.remaining());
+
+                            if (len > 0) {
+                                buf.get(destBuf.array(), destBuf.arrayOffset() + destBuf.position(), len);
+
+                                destBuf.position(destBuf.position() + len);
+
+                                n += len;
+                            }
+                        }
+
+                        return n;
+                    }
+                };
+            }
+        };
 
         FileIO dumpFile;
 
