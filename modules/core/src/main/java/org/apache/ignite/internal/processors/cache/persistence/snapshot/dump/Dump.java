@@ -201,6 +201,16 @@ public class Dump implements AutoCloseable {
         return metadata;
     }
 
+    /** */
+    public GridKernalContext context() {
+        return cctx;
+    }
+
+    /** */
+    public String consistentId() {
+        return consistentId;
+    }
+
     /** @return List of snapshot metadata saved in {@link #dumpDir}. */
     private static List<SnapshotMetadata> metadata(File dumpDir, @Nullable String consistentId) {
         JdkMarshaller marsh = MarshallerUtils.jdkMarshaller("fake-node");
@@ -263,16 +273,16 @@ public class Dump implements AutoCloseable {
 
     /**
      * @param node Node directory name.
-     * @param group Group id.
+     * @param grp Group id.
      * @return Dump iterator.
      */
-    public DumpedPartitionIterator iterator(String node, int group, int part) {
+    public DumpedPartitionIterator iterator(String node, int grp, int part) {
         FileIOFactory ioFactory = comprParts ? new UnzipFileIOFactory() : new RandomAccessFileIOFactory();
 
         FileIO dumpFile;
 
         try {
-            dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, group), dumpPartFileName(part, comprParts)));
+            dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, grp), dumpPartFileName(part, comprParts)));
         }
         catch (IOException e) {
             throw new RuntimeException(e);
@@ -329,7 +339,7 @@ public class Dump implements AutoCloseable {
                     return;
 
                 try {
-                    next = serializer.read(dumpFile, group, part);
+                    next = serializer.read(dumpFile, grp, part);
                 }
                 catch (IOException | IgniteCheckedException e) {
                     throw new IgniteException(e);
