@@ -432,13 +432,13 @@ public class Dump implements AutoCloseable {
         }
 
         /** {@inheritDoc} */
-        @Override public int readFully(ByteBuffer destBuf) throws IOException {
-            if (destBuf.remaining() == 0)
+        @Override public int readFully(ByteBuffer dst) throws IOException {
+            if (dst.remaining() == 0)
                 throw new IOException("dest buffer full");
 
             int totalRead = 0;
 
-            while (destBuf.hasRemaining()) {
+            while (dst.hasRemaining()) {
                 if (!buf.hasRemaining()) {
                     if (eof)
                         return totalRead == 0 ? -1 : totalRead;
@@ -458,12 +458,12 @@ public class Dump implements AutoCloseable {
                 if (!buf.hasRemaining())
                     break;
 
-                int len = Math.min(destBuf.remaining(), buf.remaining());
+                int len = Math.min(dst.remaining(), buf.remaining());
 
                 if (len > 0) {
-                    buf.get(destBuf.array(), destBuf.arrayOffset() + destBuf.position(), len);
+                    buf.get(dst.array(), dst.arrayOffset() + dst.position(), len);
 
-                    destBuf.position(destBuf.position() + len);
+                    dst.position(dst.position() + len);
 
                     totalRead += len;
                 }
