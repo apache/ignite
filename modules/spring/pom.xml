@@ -65,9 +65,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <version>${h2.version}</version>
+            <groupId>com.sbt.ignite</groupId>
+            <artifactId>ignite-h2</artifactId>
+            <version>${ignite-h2.version}</version>
             <scope>test</scope>
         </dependency>
 
