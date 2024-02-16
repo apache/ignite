@@ -506,7 +506,7 @@ public class Dump implements AutoCloseable {
                 int bytesRead = zis.read(dst.array(), dst.arrayOffset() + dst.position(), dst.remaining());
 
                 if (bytesRead == -1)
-                    return -1;
+                    return totalRead == 0 ? -1 : totalRead;
 
                 dst.position(dst.position() + bytesRead);
 
