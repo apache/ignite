@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
-import java.nio.file.OpenOption;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,6 +33,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
+import java.util.zip.ZipInputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecora
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -62,6 +61,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
@@ -270,68 +270,11 @@ public class Dump implements AutoCloseable {
      * @return Dump iterator.
      */
     public DumpedPartitionIterator iterator(String node, int group, int part) {
-        FileIOFactory ioFactory = comprParts ? new UnzipFileIOFactory() : new FileIOFactory() {
-            private final FileIOFactory factory = new RandomAccessFileIOFactory();
+        FileIOFactory factory = new RandomAccessFileIOFactory();
 
-            @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-                FileIO fileIO = factory.create(file, READ);
-
-                int blockSize = fileIO.getFileSystemBlockSize();
-
-                if (blockSize <= 0)
-                    blockSize = 4096;
-
-                ByteBuffer buf = ByteBuffer.allocate(blockSize);
-
-                buf.position(buf.limit());
-
-                return new FileIODecorator(fileIO) {
-                    private boolean eof;
-
-                    private long pos;
-
-                    @Override public int readFully(ByteBuffer destBuf) throws IOException {
-                        if (destBuf.remaining() == 0)
-                            throw new IOException("dest buffer full");
-
-                        int n = 0;
-
-                        while (destBuf.hasRemaining()) {
-                            if (!buf.hasRemaining()) {
-                                if (eof)
-                                    return -1;
-
-                                buf.clear();
-
-                                int len = delegate.readFully(buf, pos);
-
-                                if (len < buf.limit())
-                                    eof = true;
-                                else
-                                    pos += len;
-
-                                buf.flip();
-                            }
-
-                            if (!buf.hasRemaining())
-                                break;
-
-                            int len = Math.min(destBuf.remaining(), buf.remaining());
-
-                            if (len > 0) {
-                                buf.get(destBuf.array(), destBuf.arrayOffset() + destBuf.position(), len);
-
-                                destBuf.position(destBuf.position() + len);
-
-                                n += len;
-                            }
-                        }
-
-                        return n;
-                    }
-                };
-            }
-        };
+        FileIOFactory ioFactory = comprParts
+            ? (file, modes) -> new ReadOnlyUnzipFileIO(factory.create(file, READ))
+            : (file, modes) -> new ReadOnlyBufferedFileIO(factory.create(file, READ));
 
         FileIO dumpFile;
 
@@ -459,5 +402,124 @@ public class Dump implements AutoCloseable {
      */
     public interface DumpedPartitionIterator extends Iterator<DumpEntry>, AutoCloseable {
         // No-op.
+    }
+
+    /** */
+    private static class ReadOnlyBufferedFileIO extends FileIODecorator {
+        /** */
+        private static final int DEFAULT_BLOCK_SIZE = 4096;
+
+        /** */
+        private final ByteBuffer buf;
+
+        /** */
+        private boolean eof;
+
+        /** */
+        private long pos;
+
+        /** */
+        ReadOnlyBufferedFileIO(FileIO fileIO) {
+            super(fileIO);
+
+            int blockSize = getFileSystemBlockSize();
+
+            if (blockSize <= 0)
+                blockSize = DEFAULT_BLOCK_SIZE;
+
+            buf = ByteBuffer.allocate(blockSize);
+
+            buf.position(buf.limit());
+        }
+
+        /** {@inheritDoc} */
+        @Override public int readFully(ByteBuffer destBuf) throws IOException {
+            if (destBuf.remaining() == 0)
+                throw new IOException("dest buffer full");
+
+            int totalRead = 0;
+
+            while (destBuf.hasRemaining()) {
+                if (!buf.hasRemaining()) {
+                    if (eof)
+                        return totalRead == 0 ? -1 : totalRead;
+
+                    buf.clear();
+
+                    int len = delegate.readFully(buf, pos);
+
+                    if (len < buf.limit())
+                        eof = true;
+
+                    pos += len;
+
+                    buf.flip();
+                }
+
+                if (!buf.hasRemaining())
+                    break;
+
+                int len = Math.min(destBuf.remaining(), buf.remaining());
+
+                if (len > 0) {
+                    buf.get(destBuf.array(), destBuf.arrayOffset() + destBuf.position(), len);
+
+                    destBuf.position(destBuf.position() + len);
+
+                    totalRead += len;
+                }
+            }
+
+            return totalRead;
+        }
+
+    }
+
+    /** */
+    private static class ReadOnlyUnzipFileIO extends ReadOnlyBufferedFileIO {
+        /** */
+        private final ZipInputStream zis;
+
+        /** */
+        ReadOnlyUnzipFileIO(FileIO fileIO) throws IOException {
+            super(fileIO);
+
+            zis = new ZipInputStream(new InputStream() {
+                /** {@inheritDoc} */
+                @Override public int read(byte @NotNull [] arr, int off, int len) throws IOException {
+                    return ReadOnlyUnzipFileIO.super.readFully(ByteBuffer.wrap(arr, off, len));
+                }
+
+                /** {@inheritDoc} */
+                @Override public int read() throws IOException {
+                    throw new IOException();
+                }
+            });
+
+            zis.getNextEntry();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int readFully(ByteBuffer dst) throws IOException {
+            int totalRead = 0;
+
+            while (dst.hasRemaining()) {
+                int bytesRead = zis.read(dst.array(), dst.arrayOffset() + dst.position(), dst.remaining());
+
+                if (bytesRead == -1)
+                    return -1;
+
+                dst.position(dst.position() + bytesRead);
+
+                totalRead += bytesRead;
+            }
+
+            return totalRead;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IOException {
+            zis.close();
+        }
     }
 }
