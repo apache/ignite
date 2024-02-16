@@ -61,7 +61,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
@@ -486,7 +485,7 @@ public class Dump implements AutoCloseable {
 
             zis = new ZipInputStream(new InputStream() {
                 /** {@inheritDoc} */
-                @Override public int read(byte @NotNull [] arr, int off, int len) throws IOException {
+                @Override public int read(byte[] arr, int off, int len) throws IOException {
                     return ReadOnlyUnzipFileIO.super.readFully(ByteBuffer.wrap(arr, off, len));
                 }
 
