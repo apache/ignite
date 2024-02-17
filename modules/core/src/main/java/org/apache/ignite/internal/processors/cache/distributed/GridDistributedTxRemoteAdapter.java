@@ -602,7 +602,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                             op,
                                             nearXidVersion(),
                                             addConflictVersion(writeVersion(), txEntry.conflictVersion()),
-                                            txEntry.conflictExpireTime(),
+                                            txEntry.conflictExpireTime() == CU.EXPIRE_TIME_CALCULATE ? 0 : txEntry.conflictExpireTime(),
                                             txEntry.key().partition(),
                                             txEntry.updateCounter(),
                                             DataEntry.flags(CU.txOnPrimary(this))
