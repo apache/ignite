@@ -661,7 +661,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                                     if (conflictCtx.isUseOld())
                                         op = NOOP;
-                                    else if (conflictCtx.isMerge()){
+                                    else if (conflictCtx.isMerge()) {
                                         op = conflictRes.get1();
                                         val = txEntry.context().toCacheObject(conflictCtx.mergeValue());
                                         explicitVer = writeVersion();
