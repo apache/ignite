@@ -134,6 +134,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** Metrics manager. */
     private final GridMetricManager metricMgr;
 
+    /** Timeout processor. */
+    private final GridTimeoutProcessor timeoutProc;
+
     /** System view manager. */
     private final GridSystemViewManager sysViewMgr;
 
@@ -200,6 +203,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         rsrcProc = new GridResourceProcessor(this);
         metricMgr = new GridMetricManager(this);
+        timeoutProc = new GridTimeoutProcessor(this);
         sysViewMgr = new GridSystemViewManager(this);
         transProc = createComponent(CacheObjectTransformerProcessor.class);
 
@@ -306,7 +310,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public IgniteEx grid() {
-        final IgniteEx kernal = new IgniteKernal();
+        final IgniteEx kernal = new IgniteKernal() {
+            @Override public GridKernalContext context() {
+                return StandaloneGridKernalContext.this;
+            }
+        };
         try {
             setField(kernal, "cfg", cfg);
             setField(kernal, "igniteInstanceName", cfg.getIgniteInstanceName());
@@ -319,7 +327,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** */
     private void setField(IgniteEx kernal, String name, Object val) throws NoSuchFieldException, IllegalAccessException {
-        Field field = kernal.getClass().getDeclaredField(name);
+        Field field = kernal.getClass().getSuperclass().getDeclaredField(name);
         field.setAccessible(true);
         field.set(kernal, val);
     }
@@ -346,7 +354,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridTimeoutProcessor timeout() {
-        return null;
+        return timeoutProc;
     }
 
     /** {@inheritDoc} */
