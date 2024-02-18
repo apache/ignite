@@ -113,7 +113,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     private EncryptionSpi encryptionSpi;
 
     /** */
-    private CompressionProcessor compressProc;
+    private Supplier<CompressionProcessor> compressProc;
 
     /** */
     private IgniteSnapshotManager snpMgr;
@@ -154,7 +154,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 ctx.log(SnapshotPartitionsVerifyHandler.class),
                 () -> ctx.cluster().get().localNode(),
                 ctx.config().getEncryptionSpi(),
-                ctx.compress(),
+                ctx::compress,
                 snpMgr,
                 snpMgr.snapshotExecutorService(),
                 (grp) -> cacheProc.cacheGroupDescriptor(grp).config(),
@@ -173,7 +173,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         IgniteLogger log,
         Supplier<ClusterNode> locNode,
         EncryptionSpi encryptionSpi,
-        CompressionProcessor compressProc,
+        Supplier<CompressionProcessor> compressProc,
         IgniteSnapshotManager snpMgr,
         ExecutorService execSvc,
         IntFunction<CacheConfiguration<?, ?>> cacheCfgProvider,
@@ -290,7 +290,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         GridKernalContext snpCtx = new StandaloneGridKernalContext(
             log,
-            compressProc,
+            compressProc.get(),
             resolveBinaryWorkDir(opCtx.snapshotDirectory().getAbsolutePath(), dataDir),
             resolveMappingFileStoreWorkDir(opCtx.snapshotDirectory().getAbsolutePath())
         );
@@ -561,10 +561,11 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     protected boolean isPunchHoleEnabled(SnapshotHandlerContext opCtx, Set<Integer> grpIds) {
         SnapshotMetadata meta = opCtx.metadata();
         Path snapshotDir = opCtx.snapshotDirectory().toPath();
+        CompressionProcessor compress = compressProc.get();
 
         if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompression)) {
             try {
-                compressProc.checkPageCompressionSupported();
+                compress.checkPageCompressionSupported();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Snapshot contains compressed cache groups " +
@@ -574,7 +575,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             }
 
             try {
-                compressProc.checkPageCompressionSupported(snapshotDir, meta.pageSize());
+                compress.checkPageCompressionSupported(snapshotDir, meta.pageSize());
 
                 return true;
             }
