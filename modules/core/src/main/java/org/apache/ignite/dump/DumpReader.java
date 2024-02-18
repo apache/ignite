@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
@@ -127,6 +128,8 @@ public class DumpReader implements Runnable {
                 if (grps != null)
                     grpToNodes.keySet().forEach(grpId -> grps.put(grpId, new HashSet<>()));
 
+                AtomicReference<Exception> err = new AtomicReference<>();
+
                 for (Map.Entry<Integer, List<String>> e : grpToNodes.entrySet()) {
                     int grp = e.getKey();
 
@@ -162,7 +165,7 @@ public class DumpReader implements Runnable {
                                     log.error("Error consuming partition [node=" + node + ", grp=" + grp +
                                         ", part=" + part + ']', ex);
 
-                                    throw new IgniteException(ex);
+                                    err.compareAndSet(null, new IgniteException(ex));
                                 }
                             };
 
@@ -174,6 +177,9 @@ public class DumpReader implements Runnable {
                 execSvc.shutdown();
 
                 boolean res = execSvc.awaitTermination(cfg.timeout().toMillis(), MILLISECONDS);
+
+                if (err.get() != null)
+                    throw err.get();
 
                 if (!res) {
                     log.warning("Dump processing tasks not finished after timeout. Cancelling");

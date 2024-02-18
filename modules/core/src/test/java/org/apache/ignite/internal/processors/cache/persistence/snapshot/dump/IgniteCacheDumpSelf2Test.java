@@ -125,6 +125,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.d
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntrySerializer.HEADER_SZ;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /** */
 public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
@@ -794,28 +795,37 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             dumpDir = dumpDirectory(srv, DMP_NAME);
         }
 
-        assertThrows(null, () -> new DumpReader(
-            new DumpReaderConfiguration(
-                dumpDir,
-                new TestDumpConsumer() {
-                    @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
-                        data.forEachRemaining(e -> {
-                            assert e != null;
-                        });
-                    }
-                },
-                DFLT_THREAD_CNT,
-                DFLT_TIMEOUT,
-                true,
-                false,
-                null,
-                false,
-                null
-            ),
-            log
-        ).run(), IgniteException.class, "Encryption SPI required to read encrypted dump");
+        assertThrowsAnyCause(
+            null,
+            () -> {
+                new DumpReader(
+                    new DumpReaderConfiguration(
+                        dumpDir,
+                        new TestDumpConsumer() {
+                            @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
+                                data.forEachRemaining(e -> {
+                                    assert e != null;
+                                });
+                            }
+                        },
+                        DFLT_THREAD_CNT,
+                        DFLT_TIMEOUT,
+                        true,
+                        false,
+                        null,
+                        false,
+                        null
+                    ),
 
-        assertThrows(
+                    log
+                ).run();
+                return null;
+            },
+            IllegalArgumentException.class,
+            "Encryption SPI required to read encrypted dump"
+        );
+
+        assertThrowsAnyCause(
             null,
             () -> {
                 EncryptionSpi encSpi = encryptionSpi();
@@ -842,8 +852,10 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                     ),
                     log
                 ).run();
+
+                return null;
             },
-            IgniteException.class,
+            IllegalArgumentException.class,
             "Dump '" + DMP_NAME + "' has different master key digest"
         );
 
