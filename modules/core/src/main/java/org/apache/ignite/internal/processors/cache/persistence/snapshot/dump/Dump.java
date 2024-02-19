@@ -421,7 +421,7 @@ public class Dump implements AutoCloseable {
             if (blockSize <= 0)
                 blockSize = DEFAULT_BLOCK_SIZE;
 
-            buf = ByteBuffer.allocateDirect(blockSize);
+            buf = ByteBuffer.allocate(blockSize);
 
             buf.position(buf.limit());
         }
