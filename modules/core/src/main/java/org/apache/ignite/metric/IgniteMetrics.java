@@ -47,7 +47,7 @@ public interface IgniteMetrics extends Iterable<ReadOnlyMetricRegistry> {
      * @param registryName name part to add to the prefix "custom.".
      * @return {@link IgniteMetricRegistry} registry.
      */
-    IgniteMetricRegistry registry(String registryName);
+    IgniteMetricRegistry customRegistry(String registryName);
 
 
     /**
@@ -67,5 +67,5 @@ public interface IgniteMetrics extends Iterable<ReadOnlyMetricRegistry> {
      *
      * @param registryName Registry name starting with 'custom.'.
      */
-    void removeRegistry(String registryName);
+    void removeCustomRegistry(String registryName);
 }

@@ -779,12 +779,12 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteMetricRegistry registry(String registryName) {
+        @Override public IgniteMetricRegistry customRegistry(String registryName) {
             return GridMetricManager.this.registry(customName(registryName));
         }
 
         /** {@inheritDoc} */
-        @Override public void removeRegistry(String registryName) {
+        @Override public void removeCustomRegistry(String registryName) {
             remove(customName(registryName), false);
         }
 
