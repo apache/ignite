@@ -51,6 +51,7 @@ import org.apache.ignite.spi.metric.ObjectMetric;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CUSTOM_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.HitRateMetric.DFLT_SIZE;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.fromFullName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -62,9 +63,6 @@ import static org.apache.ignite.internal.util.lang.GridFunc.nonThrowableSupplier
 public class MetricRegistry implements IgniteMetricRegistry {
     /** Registry name. */
     private String regName;
-
-    /** Custom metrics flag. */
-    private boolean custom;
 
     /** Logger. */
     private IgniteLogger log;
@@ -86,20 +84,7 @@ public class MetricRegistry implements IgniteMetricRegistry {
      */
     public MetricRegistry(String regName, Function<String, Long> hitRateCfgProvider,
         Function<String, long[]> histogramCfgProvider, IgniteLogger log) {
-        this(regName, false, hitRateCfgProvider, histogramCfgProvider, log);
-    }
-
-    /**
-     * @param regName Registry name.
-     * @param custom Custom metrics flag.
-     * @param hitRateCfgProvider HitRate config provider.
-     * @param histogramCfgProvider Histogram config provider.
-     * @param log Logger.
-     */
-    public MetricRegistry(String regName, boolean custom, Function<String, Long> hitRateCfgProvider,
-        Function<String, long[]> histogramCfgProvider, IgniteLogger log) {
         this.regName = regName;
-        this.custom = custom;
         this.log = log;
         this.hitRateCfgProvider = hitRateCfgProvider;
         this.histogramCfgProvider = histogramCfgProvider;
@@ -311,7 +296,7 @@ public class MetricRegistry implements IgniteMetricRegistry {
      * Assigns metric settings if {@code metric} is configurable.
      */
     private void configureMetrics(Metric metric) {
-        if (custom)
+        if (name().startsWith(CUSTOM_METRICS))
             return;
 
         if (metric instanceof HistogramMetricImpl) {

@@ -124,8 +124,9 @@ public interface Ignite extends AutoCloseable {
     /**
      * Gets custom metrics facade over current node.
      *
-     * @return {@link IgniteMetrics} instance over all cluster nodes started in server mode.
+     * @return {@link IgniteMetrics} instance for current node.
      */
+    @IgniteExperimental
     public IgniteMetrics metrics();
 
     /**

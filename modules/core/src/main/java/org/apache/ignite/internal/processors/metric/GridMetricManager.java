@@ -141,6 +141,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Custom metrics registry name. */
     public static final String CUSTOM_METRICS = "custom";
 
+    /** Custom metrics registry name. */
+    public static final String CUSTOM_METRICS_PREF = CUSTOM_METRICS + SEPARATOR;
+
     /** */
     private static final Pattern SEPARATOR_PATTERN = Pattern.compile("\\" + SEPARATOR);
 
@@ -255,7 +258,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         pmeReg.histogram(PME_OPS_BLOCKED_DURATION_HISTOGRAM, pmeBounds,
             "Histogram of cache operations blocked PME durations in milliseconds.");
 
-        customMetrics = new IgniteMetricsImpl();
+        customMetrics = new CustomMetricsImpl();
     }
 
     /** {@inheritDoc} */
@@ -322,20 +325,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @return Group of metrics.
      */
     public MetricRegistry registry(String name) {
-        return registry(name, false);
-    }
+        boolean custom = name.startsWith(CUSTOM_METRICS);
 
-    /**
-     * Gets or creates metric registry.
-     *
-     * @param name Group name.
-     * @param custom Custom metrics flag.
-     * @return Group of metrics.
-     */
-    private MetricRegistry registry(String name, boolean custom) {
         return (MetricRegistry)registries.computeIfAbsent(name, n -> {
             MetricRegistry mreg = new MetricRegistry(name,
-                custom,
                 custom ? null : mname -> readFromMetastorage(metricName(HITRATE_CFG_PREFIX, mname)),
                 custom ? null : mname -> readFromMetastorage(metricName(HISTOGRAM_CFG_PREFIX, mname)),
                 log);
@@ -748,11 +741,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         private final AtomicLongMetric max;
 
         /**
-         * @param group Metric registry.
+         * @param grp Metric registry.
          * @param metricNamePrefix Metric name prefix.
          */
-        public MemoryUsageMetrics(String group, String metricNamePrefix) {
-            MetricRegistry mreg = registry(group);
+        public MemoryUsageMetrics(String grp, String metricNamePrefix) {
+            MetricRegistry mreg = registry(grp);
 
             this.init = mreg.longMetric(metricName(metricNamePrefix, "init"), null);
             this.used = mreg.longMetric(metricName(metricNamePrefix, "used"), null);
@@ -779,51 +772,36 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     }
 
     /** Custom metrics impl. */
-    private class IgniteMetricsImpl implements IgniteMetrics {
+    private class CustomMetricsImpl implements IgniteMetrics {
         /** {@inheritDoc} */
         @Override public @Nullable ReadOnlyMetricRegistry findRegistry(String registryName) {
             return registries.get(customName(registryName));
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteMetricRegistry customRegistry(String registryName) {
-            return registry(customName(registryName), true);
+        @Override public IgniteMetricRegistry registry(String registryName) {
+            return GridMetricManager.this.registry(customName(registryName));
         }
 
         /** {@inheritDoc} */
-        @Override public void removeCustomRegistry(String registryName) {
+        @Override public void removeRegistry(String registryName) {
             remove(customName(registryName), false);
         }
 
         /** {@inheritDoc} */
         @NotNull @Override public Iterator<ReadOnlyMetricRegistry> iterator() {
-            return registries.values().stream().filter(r -> r.name().startsWith(CUSTOM_METRICS)).iterator();
+            return F.viewReadOnly(registries.values(), r -> r, r -> r.name().startsWith(CUSTOM_METRICS)).iterator();
         }
 
         /** Ensures that {@code name} starts with {@link #CUSTOM_METRICS}. */
         private String customName(String name) {
-            metricName(name);
+            if (name == null)
+                return metricName(name);
 
-            String[] splited = SEPARATOR_PATTERN.split(name);
+            if (name.startsWith(CUSTOM_METRICS_PREF) || name.equals(CUSTOM_METRICS))
+                return metricName(name);
 
-            assert splited.length > 0;
-
-            boolean addPrefix = true;
-
-            if (splited[0].equals(CUSTOM_METRICS))
-                addPrefix = false;
-
-            String[] prefixed = splited;
-
-            if (addPrefix) {
-                prefixed = new String[splited.length + 1];
-
-                System.arraycopy(splited, 0, prefixed, 1, splited.length);
-
-                prefixed[0] = CUSTOM_METRICS;
-            }
-
-            return metricName(prefixed);
+            return metricName(CUSTOM_METRICS, name);
         }
     }
 }

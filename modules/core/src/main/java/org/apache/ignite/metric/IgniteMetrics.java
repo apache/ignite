@@ -31,9 +31,10 @@ import org.jetbrains.annotations.Nullable;
  * dot-separated qualifiers. The prefix is automatically added if missed. For example, if provided custom registry name
  * is "a.b.c.mname", it is automatically extended to "custom.a.b.c.mname".
  * <p>
- * Any name or dot-separated name part cannot have spaces and must not be empty.
+ * Note: Custom metric are registered on demand and aren't stored. If node restarts, the metrics require registration anew.
  * <p>
- * Examples of custom metric registry names: "custom.admin", "custom.admin.sessions", "custom.processes", etc.
+ * Any name or dot-separated name part must not be empty, can contain only characters, numbers, '-' and '_'.
+ * Examples of custom metric registry names: "custom.admin.sessions", "custom.processes", "custom.processes.proc_1", etc.
  *
  * @see ReadOnlyMetricRegistry
  * @see IgniteMetricRegistry
@@ -46,7 +47,7 @@ public interface IgniteMetrics extends Iterable<ReadOnlyMetricRegistry> {
      * @param registryName name part to add to the prefix "custom.".
      * @return {@link IgniteMetricRegistry} registry.
      */
-    IgniteMetricRegistry customRegistry(String registryName);
+    IgniteMetricRegistry registry(String registryName);
 
 
     /**
@@ -66,5 +67,5 @@ public interface IgniteMetrics extends Iterable<ReadOnlyMetricRegistry> {
      *
      * @param registryName Registry name starting with 'custom.'.
      */
-    void removeCustomRegistry(String registryName);
+    void removeRegistry(String registryName);
 }

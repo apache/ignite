@@ -29,6 +29,7 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CUSTOM_METRICS;
 
 /**
  * Utility class to build or parse metric name in dot notation.
@@ -46,11 +47,15 @@ public class MetricUtils {
     /** Histogram name divider. */
     public static final char HISTOGRAM_NAME_DIVIDER = '_';
 
-    /** Metric name part separator. */
+    /** Metric name pattern. */
     private static final Pattern SPACES_PATTERN = Pattern.compile(".*[\\s]+.*");
 
+    /** Metric name pattern. */
+    //Dont allow: '.' at the start or end, consiquent '.', non alphadigits except hyphen and column.
+    private static final Pattern STRICT_NAME_PATTERN = Pattern.compile("^(?!\\.)(?!.*\\.$)(?!.*\\.\\.)(?!.*-$)(?!.*\\.\\.)[\\w-.:]+$");
+
     /**
-     * Builds metric name. Each parameter will separated by '.' char.
+     * Chechs and builds metric name. Each parameter will separated by '.'.
      *
      * @param names Metric name parts.
      * @return Metric name.
@@ -58,12 +63,22 @@ public class MetricUtils {
     public static String metricName(String... names) {
         assert names != null;
 
-        ensureNotEmptyAndHasNoSpaces(names);
+        for (int i = 0; i < names.length; i++) {
+            if (names[i] == null || names[i].isEmpty() || SPACES_PATTERN.matcher(names[i]).matches()) {
+                throw new IllegalArgumentException("Illegal metric or registry name. Spaces, nulls or empty name parts " +
+                    "are not allowed.");
+            }
+        }
 
-        if (names.length == 1)
-            return names[0];
+        String res = String.join(SEPARATOR, names);
 
-        return String.join(SEPARATOR, names);
+        if (res.startsWith(CUSTOM_METRICS) && !STRICT_NAME_PATTERN.matcher(res).matches()) {
+            throw new IllegalArgumentException("Metric or registry name '" + res + "' is illegal. It cannot have " +
+                "spaces, sequenced dots, start or end with dots or hyphen. Allowed: characters, digits, undersore, " +
+                "hypen, column and dot-separators.");
+        }
+
+        return res;
     }
 
     /**
