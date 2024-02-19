@@ -442,11 +442,17 @@ public class Dump implements AutoCloseable {
                     buf.flip();
                 }
 
-                while (dst.hasRemaining() && buf.hasRemaining()) {
-                    dst.put(buf.get());
+                int len = Math.min(buf.remaining(), dst.remaining());
 
-                    totalRead++;
-                }
+                int limit = buf.limit();
+
+                buf.limit(buf.position() + len);
+
+                dst.put(buf);
+
+                buf.limit(limit);
+
+                totalRead += len;
             }
 
             return totalRead;
