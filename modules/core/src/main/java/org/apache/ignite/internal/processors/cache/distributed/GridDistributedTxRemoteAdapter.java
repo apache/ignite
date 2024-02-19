@@ -595,14 +595,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                         if (dataEntries == null)
                                             dataEntries = new ArrayList<>(entries.size());
 
-                                        long expireTime;
-
-                                        if (txEntry.conflictExpireTime() >= 0)
-                                            expireTime = txEntry.conflictExpireTime();
-                                        else if (txEntry.ttl() >= 0)
-                                            expireTime = CU.toExpireTime(txEntry.ttl());
-                                        else
-                                            expireTime = 0;
+                                        long expireTime = txEntry.conflictExpireTime() == CU.EXPIRE_TIME_CALCULATE ?
+                                            CU.EXPIRE_TIME_ETERNAL : txEntry.conflictExpireTime();
 
                                         dataEntry = new DataEntry(
                                             cacheCtx.cacheId(),
