@@ -51,7 +51,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -269,11 +269,9 @@ public class Dump implements AutoCloseable {
      * @return Dump iterator.
      */
     public DumpedPartitionIterator iterator(String node, int group, int part) {
-        FileIOFactory factory = new RandomAccessFileIOFactory();
-
         FileIOFactory ioFactory = comprParts
-            ? (file, modes) -> new ReadOnlyUnzipFileIO(factory.create(file, READ))
-            : (file, modes) -> new ReadOnlyBufferedFileIO(factory.create(file, READ));
+            ? (file, modes) -> new ReadOnlyUnzipFileIO(file)
+            : (file, modes) -> new ReadOnlyBufferedFileIO(file);
 
         FileIO dumpFile;
 
@@ -415,8 +413,8 @@ public class Dump implements AutoCloseable {
         private long pos;
 
         /** */
-        ReadOnlyBufferedFileIO(FileIO fileIO) {
-            super(fileIO);
+        ReadOnlyBufferedFileIO(File file) throws IOException {
+            super(new RandomAccessFileIO(file, READ));
 
             int blockSize = getFileSystemBlockSize();
 
@@ -444,7 +442,7 @@ public class Dump implements AutoCloseable {
                     buf.flip();
                 }
 
-                while(dst.hasRemaining() && buf.hasRemaining()){
+                while (dst.hasRemaining() && buf.hasRemaining()) {
                     dst.put(buf.get());
 
                     totalRead++;
@@ -462,8 +460,8 @@ public class Dump implements AutoCloseable {
         private final ZipInputStream zis;
 
         /** */
-        ReadOnlyUnzipFileIO(FileIO fileIO) throws IOException {
-            super(fileIO);
+        ReadOnlyUnzipFileIO(File file) throws IOException {
+            super(file);
 
             zis = new ZipInputStream(new InputStream() {
                 /** {@inheritDoc} */
