@@ -590,7 +590,7 @@ public class PageMemoryTracker implements IgnitePlugin {
             }
         }
 
-        Set<Integer> groupsWarned = new HashSet<>();
+        Set<Integer> grpsWarned = new HashSet<>();
 
         for (DirectMemoryPage page : pages.values()) {
             FullPageId fullPageId = page.fullPageId();
@@ -605,10 +605,10 @@ public class PageMemoryTracker implements IgnitePlugin {
                 if (ctx != null)
                     pageMem = ctx.dataRegion().pageMemory();
                 else {
-                    if (!groupsWarned.contains(fullPageId.groupId())) {
+                    if (!grpsWarned.contains(fullPageId.groupId())) {
                         log.warning("Cache group " + fullPageId.groupId() + " not found.");
 
-                        groupsWarned.add(fullPageId.groupId());
+                        grpsWarned.add(fullPageId.groupId());
                     }
 
                     continue;
@@ -762,18 +762,18 @@ public class PageMemoryTracker implements IgnitePlugin {
      * Dump diff between allocated and tracked page counts.
      */
     private void dumpPagesCountDiff() throws IgniteCheckedException {
-        Map<Integer, Long> pagesByGroups = pages.keySet().stream().collect(
+        Map<Integer, Long> pagesByGrps = pages.keySet().stream().collect(
             Collectors.groupingBy(FullPageId::groupId, Collectors.counting()));
 
         IgnitePageStoreManager pageStoreMgr = gridCtx.cache().context().pageStore();
 
-        for (Map.Entry<Integer, Long> groupPages : pagesByGroups.entrySet()) {
-            int grpId = groupPages.getKey();
+        for (Map.Entry<Integer, Long> grpPages : pagesByGrps.entrySet()) {
+            int grpId = grpPages.getKey();
             long grpPagesAllocated = pageStoreMgr.pagesAllocated(grpId);
 
-            if (grpPagesAllocated != groupPages.getValue()) {
+            if (grpPagesAllocated != grpPages.getValue()) {
                 log.error(">>> Page count for groupId " + grpId + ": allocated=" + grpPagesAllocated +
-                    ", tracked=" + groupPages.getValue());
+                    ", tracked=" + grpPages.getValue());
 
                 Map<Integer, Long> pagesByParts = pages.keySet().stream().filter(id -> id.groupId() == grpId)
                     .collect(Collectors.groupingBy(id -> PageIdUtils.partId(id.pageId()), Collectors.counting()));

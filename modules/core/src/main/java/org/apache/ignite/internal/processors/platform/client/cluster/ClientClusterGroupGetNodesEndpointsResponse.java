@@ -65,7 +65,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
 
         long endTopVer0 = endTopVer == UNKNOWN_TOP_VER ? cluster.topologyVersion() : endTopVer;
 
-        Collection<ClusterNode> topology = cluster.topology(endTopVer0);
+        Collection<ClusterNode> top = cluster.topology(endTopVer0);
 
         writer.writeLong(endTopVer0);
 
@@ -73,7 +73,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
             int pos = writer.reserveInt();
             int size = 0;
 
-            for (ClusterNode node : topology) {
+            for (ClusterNode node : top) {
                 if (writeNode(writer, node))
                     size++;
             }
@@ -85,7 +85,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
         }
 
         Map<UUID, ClusterNode> startNodes = toMap(cluster.topology(startTopVer));
-        Map<UUID, ClusterNode> endNodes = toMap(topology);
+        Map<UUID, ClusterNode> endNodes = toMap(top);
 
         int pos = writer.reserveInt();
         int cnt = 0;

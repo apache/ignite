@@ -1616,23 +1616,23 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         EventType type = evt.entry().eventType();
 
-        CacheObject oldValue;
-        CacheObject newValue;
+        CacheObject oldVal;
+        CacheObject newVal;
 
         if (type == EXPIRED || type == REMOVED) {
-            newValue = null;
-            oldValue = cacheObj;
+            newVal = null;
+            oldVal = cacheObj;
         }
         else {
-            newValue = cacheObj;
-            oldValue = null;
+            newVal = cacheObj;
+            oldVal = null;
         }
 
         return new CacheContinuousQueryEntry(evt.entry().cacheId(),
             evt.entry().eventType(),
             null,
-            newValue,
-            oldValue,
+            newVal,
+            oldVal,
             evt.entry().isKeepBinary(),
             evt.entry().partition(),
             evt.entry().updateCounter(),

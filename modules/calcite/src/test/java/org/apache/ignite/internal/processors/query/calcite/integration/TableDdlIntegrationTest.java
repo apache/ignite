@@ -957,13 +957,13 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void testMulitlineWithCreateTable() {
-        String multiLineQuery = "CREATE TABLE test (val0 int primary key, val1 varchar);" +
+        String multiLineQry = "CREATE TABLE test (val0 int primary key, val1 varchar);" +
             "INSERT INTO test(val0, val1) VALUES (0, 'test0');" +
             "ALTER TABLE test ADD COLUMN val2 int;" +
             "INSERT INTO test(val0, val1, val2) VALUES(1, 'test1', 10);" +
             "ALTER TABLE test DROP COLUMN val2;";
 
-        sql(multiLineQuery);
+        sql(multiLineQry);
 
         List<List<?>> res = sql("SELECT * FROM test order by val0");
         assertEquals(2, res.size());

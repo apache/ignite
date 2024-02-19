@@ -15,16 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
-import org.jetbrains.annotations.Nullable;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.OpenOption;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 
 /**
- *
+ * File I/O factory which provides {@link BufferedFileIO} implementation of FileIO.
  */
-public interface ExceptionAware {
-    /**
-     * @return Exception.
-     */
-    @Nullable Throwable error();
+public class BufferedFileIOFactory implements FileIOFactory {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    protected final FileIOFactory factory;
+
+    /** */
+    public BufferedFileIOFactory(FileIOFactory factory) {
+        this.factory = factory;
+    }
+
+    /** {@inheritDoc} */
+    @Override public BufferedFileIO create(File file, OpenOption... modes) throws IOException {
+        return new BufferedFileIO(factory.create(file, modes));
+    }
 }

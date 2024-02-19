@@ -61,7 +61,7 @@ public class LongRunningTransactionsGenerator extends IgniteAwareApplication {
 
         String lbl = jsonNode.get("label") != null ? jsonNode.get("label").asText() : null;
 
-        long expectedTopologyVer = jsonNode.get("wait_for_topology_version") != null ?
+        long expectedTopVer = jsonNode.get("wait_for_topology_version") != null ?
             jsonNode.get("wait_for_topology_version").asLong() : -1L;
 
         CountDownLatch lockLatch = new CountDownLatch(txCnt);
@@ -70,17 +70,17 @@ public class LongRunningTransactionsGenerator extends IgniteAwareApplication {
 
         markInitialized();
 
-        if (expectedTopologyVer > 0) {
-            log.info("Start waiting for topology version: " + expectedTopologyVer + ", " +
+        if (expectedTopVer > 0) {
+            log.info("Start waiting for topology version: " + expectedTopVer + ", " +
                 "current version is: " + ignite.cluster().topologyVersion());
 
             long start = System.nanoTime();
 
-            while (ignite.cluster().topologyVersion() < expectedTopologyVer
+            while (ignite.cluster().topologyVersion() < expectedTopVer
                 && Duration.ofNanos(start - System.nanoTime()).compareTo(TOPOLOGY_WAIT_TIMEOUT) < 0)
                 Thread.sleep(100L);
 
-            log.info("Finished waiting for topology version: " + expectedTopologyVer + ", " +
+            log.info("Finished waiting for topology version: " + expectedTopVer + ", " +
                 "current version is: " + ignite.cluster().topologyVersion());
         }
 

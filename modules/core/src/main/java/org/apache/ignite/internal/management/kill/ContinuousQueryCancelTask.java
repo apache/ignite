@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
@@ -30,7 +29,6 @@ import org.jetbrains.annotations.Nullable;
  * Task to cancel continuous query.
  */
 @GridInternal
-@GridVisorManagementTask
 public class ContinuousQueryCancelTask extends VisorOneNodeTask<KillContinuousCommandArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;

@@ -449,11 +449,11 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
         int bufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
 
         int[] grpsCnt = {1, bufSize / 2, bufSize, bufSize + 1, bufSize * 4};
-        int[] rowsInGroups = {1, 5, bufSize};
+        int[] rowsInGrps = {1, 5, bufSize};
 
         for (int grps : grpsCnt) {
-            for (int rowsInGroup : rowsInGroups) {
-                log.info("Check: [grps=" + grps + ", rowsInGroup=" + rowsInGroup + ']');
+            for (int rowsInGrp : rowsInGrps) {
+                log.info("Check: [grps=" + grps + ", rowsInGroup=" + rowsInGrp + ']');
 
                 ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
                 IgniteTypeFactory tf = ctx.getTypeFactory();
@@ -463,10 +463,10 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
                     ctx,
                     rowType,
                     new TestTable(
-                        grps * rowsInGroup,
+                        grps * rowsInGrp,
                         rowType,
-                        (r) -> r / rowsInGroup,
-                        (r) -> r % rowsInGroup
+                        (r) -> r / rowsInGrp,
+                        (r) -> r % rowsInGrp
                     )
                 );
 
@@ -505,7 +505,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
 
                     grpId.remove(row[0]);
 
-                    assertEquals((rowsInGroup - 1) * rowsInGroup / 2, row[1]);
+                    assertEquals((rowsInGrp - 1) * rowsInGrp / 2, row[1]);
                 }
 
                 assertTrue(grpId.isEmpty());
