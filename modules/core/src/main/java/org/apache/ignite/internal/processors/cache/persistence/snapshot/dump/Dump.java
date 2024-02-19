@@ -412,9 +412,6 @@ public class Dump implements AutoCloseable {
         private final ByteBuffer buf;
 
         /** */
-        private boolean eof;
-
-        /** */
         private long pos;
 
         /** */
@@ -426,46 +423,31 @@ public class Dump implements AutoCloseable {
             if (blockSize <= 0)
                 blockSize = DEFAULT_BLOCK_SIZE;
 
-            buf = ByteBuffer.allocate(blockSize);
+            buf = ByteBuffer.allocateDirect(blockSize);
 
             buf.position(buf.limit());
         }
 
         /** {@inheritDoc} */
         @Override public int readFully(ByteBuffer dst) throws IOException {
-            if (dst.remaining() == 0)
-                throw new IOException("dest buffer full");
-
             int totalRead = 0;
 
             while (dst.hasRemaining()) {
                 if (!buf.hasRemaining()) {
-                    if (eof)
-                        return totalRead == 0 ? -1 : totalRead;
+                    if (buf.limit() < buf.capacity())
+                        break;
 
                     buf.clear();
 
-                    int len = delegate.readFully(buf, pos);
-
-                    if (len < buf.limit())
-                        eof = true;
-
-                    pos += len;
+                    pos += delegate.readFully(buf, pos);
 
                     buf.flip();
                 }
 
-                if (!buf.hasRemaining())
-                    break;
+                while(dst.hasRemaining() && buf.hasRemaining()){
+                    dst.put(buf.get());
 
-                int len = Math.min(dst.remaining(), buf.remaining());
-
-                if (len > 0) {
-                    buf.get(dst.array(), dst.arrayOffset() + dst.position(), len);
-
-                    dst.position(dst.position() + len);
-
-                    totalRead += len;
+                    totalRead++;
                 }
             }
 
@@ -506,7 +488,7 @@ public class Dump implements AutoCloseable {
                 int bytesRead = zis.read(dst.array(), dst.arrayOffset() + dst.position(), dst.remaining());
 
                 if (bytesRead == -1)
-                    return totalRead == 0 ? -1 : totalRead;
+                    break;
 
                 dst.position(dst.position() + bytesRead);
 
