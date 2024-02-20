@@ -18,72 +18,11 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
  * Client listener async response.
  */
-public class ClientListenerAsyncResponse extends ClientResponse {
+public interface ClientListenerAsyncResponse {
     /** Future for response. */
-    private final IgniteInternalFuture<? extends ClientListenerResponse> fut;
-
-    /**
-     * Constructs async response.
-     */
-    public ClientListenerAsyncResponse(long reqId, IgniteInternalFuture<? extends ClientListenerResponse> fut) {
-        super(reqId);
-
-        this.fut = fut;
-    }
-
-    /** Future for response. */
-    public IgniteInternalFuture<? extends ClientListenerResponse> future() {
-        return fut;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int status() {
-        assert fut.isDone();
-
-        try {
-            return fut.get().status();
-        }
-        catch (Exception e) {
-            return STATUS_FAILED;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void status(int status) {
-        throw new IllegalStateException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String error() {
-        assert fut.isDone();
-
-        try {
-            return fut.get().error();
-        }
-        catch (Exception e) {
-            return e.getMessage();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void error(String err) {
-        throw new IllegalStateException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onSent() {
-        assert fut.isDone();
-
-        try {
-            fut.get().onSent();
-        }
-        catch (Exception ignore) {
-            // Ignore.
-        }
-    }
+    public IgniteInternalFuture<? extends ClientListenerResponse> future();
 }

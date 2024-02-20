@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.odbc.ClientListenerAsyncResponse;
+import org.apache.ignite.internal.processors.odbc.ClientAsyncResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
@@ -128,7 +128,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
                 }
             }
 
-            return new ClientListenerAsyncResponse(req0.requestId(), fut);
+            return new ClientAsyncResponse(req0.requestId(), fut);
         }
         else
             return req0.process(ctx);
