@@ -432,6 +432,7 @@ public class Dump implements AutoCloseable {
 
             while (dst.hasRemaining()) {
                 if (!buf.hasRemaining()) {
+                    // Buf limit will be at its capacity unless partial fill has happened at the end of file.
                     if (buf.limit() < buf.capacity())
                         break;
 
