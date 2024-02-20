@@ -92,8 +92,6 @@ class IgniteCdcUtility(JvmProcessMixin):
 
         cdc_jvm_opts = list(map(lambda opt: replace_ports(opt), jvm_opts))
 
-        cdc_jvm_opts.append("-DIGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK=true")
-
         envs["CDC_JVM_OPTS"] = f"\"{' '.join(cdc_jvm_opts)}\""
 
         return (f"{envs_to_exports(envs)} bash " + self.cluster.script(cmd) +
