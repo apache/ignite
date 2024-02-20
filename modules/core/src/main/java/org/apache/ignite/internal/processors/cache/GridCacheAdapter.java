@@ -3663,7 +3663,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         IgniteInternalFuture fut = holder.future();
 
         if (fut != null && !fut.isDone()) {
-            lastFut.set(new FutureHolder());
+            lastFut.remove();
 
             return holder;
         }
