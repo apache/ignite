@@ -22,6 +22,9 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Dummy SPI context for offline utilities.
+ */
 public class StandaloneSpiContext implements IgniteSpiContext {
     /** {@inheritDoc} */
     @Override public void addLocalEventListener(GridLocalEventListener lsnr, int... types) {
