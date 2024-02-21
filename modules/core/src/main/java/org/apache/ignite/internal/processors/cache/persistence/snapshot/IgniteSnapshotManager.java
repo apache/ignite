@@ -1998,13 +1998,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     return;
                 }
 
-                if (meta.hasCompressedGroups() && grpIds.keySet().stream().anyMatch(meta::isGroupWithCompression)) {
+                if (meta.hasCompressedGroups() && grpIds.keySet().stream().anyMatch(meta::isGroupWithCompresion)) {
                     try {
                         compressionProc.checkPageCompressionSupported();
                     }
                     catch (IgniteCheckedException e) {
                         String grpWithCompr = grpIds.entrySet().stream()
-                            .filter(grp -> meta.isGroupWithCompression(grp.getKey()))
+                            .filter(grp -> meta.isGroupWithCompresion(grp.getKey()))
                             .map(Map.Entry::getValue).collect(Collectors.joining(", "));
 
                         String msg = "Requested cache groups [" + grpWithCompr + "] for check " +

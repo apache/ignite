@@ -581,6 +581,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
                 return false;
 
             if (compareAndSetState(oldState, newState)) {
+
                 if (oldState != INIT)
                     unblockAll((Node)oldState);
 

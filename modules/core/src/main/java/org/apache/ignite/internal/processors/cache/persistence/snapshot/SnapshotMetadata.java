@@ -236,7 +236,7 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /** */
-    public boolean isGroupWithCompression(int grpId) {
+    public boolean isGroupWithCompresion(int grpId) {
         return hasComprGrps && comprGrpIds.contains(grpId);
     }
 
@@ -355,7 +355,7 @@ public class SnapshotMetadata implements Serializable {
     /**
      * @return Snapshot creation warnings.
      */
-    public List<String> warnings() {
+    @Nullable public List<String> warnings() {
         return warnings;
     }
 

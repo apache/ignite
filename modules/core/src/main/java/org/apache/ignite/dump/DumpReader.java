@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
@@ -88,7 +87,7 @@ public class DumpReader implements Runnable {
      */
     public DumpReader(DumpReaderConfiguration cfg, IgniteLogger log) {
         this.cfg = cfg;
-        this.log = log.getLogger(DumpReader.class);
+        this.log = log.getLogger(getClass());
 
         this.cacheGrpIds = cfg.cacheGroupNames() != null
             ? Arrays.stream(cfg.cacheGroupNames()).collect(Collectors.toMap(CU::cacheId, Function.identity()))
@@ -110,16 +109,7 @@ public class DumpReader implements Runnable {
             try {
                 dump.metadata().forEach(this::onMeta);
 
-                File[] files = new File(cfg.dumpRoot(), DFLT_MARSHALLER_PATH).listFiles(BinaryUtils::notTmpFile);
-
-                if (files != null)
-                    cnsmr.onMappings(CdcMain.typeMappingIterator(files, tm -> true));
-
-                cnsmr.onTypes(dump.types());
-
-                cnsmr.onCacheConfigs(grpToNodes.entrySet().stream()
-                    .flatMap(e -> dump.configs(F.first(e.getValue()), e.getKey()).stream())
-                    .iterator());
+                beforePartitions();
 
                 AtomicBoolean skip = new AtomicBoolean(false);
 
@@ -127,8 +117,6 @@ public class DumpReader implements Runnable {
 
                 if (grps != null)
                     grpToNodes.keySet().forEach(grpId -> grps.put(grpId, new HashSet<>()));
-
-                AtomicReference<Exception> err = new AtomicReference<>();
 
                 for (Map.Entry<Integer, List<String>> e : grpToNodes.entrySet()) {
                     int grp = e.getKey();
@@ -165,7 +153,7 @@ public class DumpReader implements Runnable {
                                     log.error("Error consuming partition [node=" + node + ", grp=" + grp +
                                         ", part=" + part + ']', ex);
 
-                                    err.compareAndSet(null, new IgniteException(ex));
+                                    throw new IgniteException(ex);
                                 }
                             };
 
@@ -177,9 +165,6 @@ public class DumpReader implements Runnable {
                 execSvc.shutdown();
 
                 boolean res = execSvc.awaitTermination(cfg.timeout().toMillis(), MILLISECONDS);
-
-                if (err.get() != null)
-                    throw err.get();
 
                 if (!res) {
                     log.warning("Dump processing tasks not finished after timeout. Cancelling");
@@ -202,6 +187,20 @@ public class DumpReader implements Runnable {
         catch (Exception e) {
             throw e instanceof IgniteException ? (IgniteException)e : new IgniteException("Failed to run dump reader.", e);
         }
+    }
+
+    /** */
+    protected void beforePartitions() {
+        File[] files = new File(cfg.dumpRoot(), DFLT_MARSHALLER_PATH).listFiles(BinaryUtils::notTmpFile);
+
+        if (files != null)
+            cnsmr.onMappings(CdcMain.typeMappingIterator(files, tm -> true));
+
+        cnsmr.onTypes(dump.types());
+
+        cnsmr.onCacheConfigs(grpToNodes.entrySet().stream()
+            .flatMap(e -> dump.configs(F.first(e.getValue()), e.getKey()).stream())
+            .iterator());
     }
 
     /** */

@@ -113,7 +113,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     private EncryptionSpi encryptionSpi;
 
     /** */
-    private CompressionProcessor compressProc;
+    private Supplier<CompressionProcessor> compressProc;
 
     /** */
     private IgniteSnapshotManager snpMgr;
@@ -154,7 +154,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 ctx.log(SnapshotPartitionsVerifyHandler.class),
                 () -> ctx.cluster().get().localNode(),
                 ctx.config().getEncryptionSpi(),
-                ctx.compress(),
+                ctx::compress,
                 snpMgr,
                 snpMgr.snapshotExecutorService(),
                 (grp) -> cacheProc.cacheGroupDescriptor(grp).config(),
@@ -173,7 +173,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         IgniteLogger log,
         Supplier<ClusterNode> locNode,
         EncryptionSpi encryptionSpi,
-        CompressionProcessor compressProc,
+        Supplier<CompressionProcessor> compressProc,
         IgniteSnapshotManager snpMgr,
         ExecutorService execSvc,
         IntFunction<CacheConfiguration<?, ?>> cacheCfgProvider,
@@ -290,7 +290,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         GridKernalContext snpCtx = new StandaloneGridKernalContext(
             log,
-            compressProc,
+            compressProc.get(),
             resolveBinaryWorkDir(opCtx.snapshotDirectory().getAbsolutePath(), dataDir),
             resolveMappingFileStoreWorkDir(opCtx.snapshotDirectory().getAbsolutePath())
         );
@@ -314,7 +314,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     ) {
                         pageStore.init();
 
-                        if (punchHoleEnabled && meta.isGroupWithCompression(grpId) && type() == SnapshotHandlerType.CREATE) {
+                        if (punchHoleEnabled && meta.isGroupWithCompresion(grpId) && type() == SnapshotHandlerType.CREATE) {
                             byte pageType = partId == INDEX_PARTITION ? FLAG_IDX : FLAG_DATA;
 
                             checkPartitionsPageCrcSum(() -> pageStore, partId, pageType, (id, buffer) -> {
@@ -467,7 +467,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             return partitionHashRecordV2s.stream().collect(Collectors.toMap(PartitionHashRecordV2::partitionKey, r -> r));
         }
         catch (Throwable t) {
-            log.error("Error at handler executing.", t);
+            log.error("Error executing handler: ", t);
 
             throw new IgniteException(t);
         }
@@ -562,19 +562,19 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         SnapshotMetadata meta = opCtx.metadata();
         Path snapshotDir = opCtx.snapshotDirectory().toPath();
 
-        if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompression)) {
+        if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompresion)) {
             try {
-                compressProc.checkPageCompressionSupported();
+                compressProc.get().checkPageCompressionSupported();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Snapshot contains compressed cache groups " +
-                    "[grps=[" + grpIds.stream().filter(meta::isGroupWithCompression).collect(Collectors.toList()) +
+                    "[grps=[" + grpIds.stream().filter(meta::isGroupWithCompresion).collect(Collectors.toList()) +
                     "], snpName=" + meta.snapshotName() + "], but compression module is not enabled. " +
                     "Make sure that ignite-compress module is in classpath.");
             }
 
             try {
-                compressProc.checkPageCompressionSupported(snapshotDir, meta.pageSize());
+                compressProc.get().checkPageCompressionSupported(snapshotDir, meta.pageSize());
 
                 return true;
             }

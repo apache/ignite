@@ -273,16 +273,16 @@ public class Dump implements AutoCloseable {
 
     /**
      * @param node Node directory name.
-     * @param grp Group id.
+     * @param group Group id.
      * @return Dump iterator.
      */
-    public DumpedPartitionIterator iterator(String node, int grp, int part) {
+    public DumpedPartitionIterator iterator(String node, int group, int part) {
         FileIOFactory ioFactory = comprParts ? new UnzipFileIOFactory() : new RandomAccessFileIOFactory();
 
         FileIO dumpFile;
 
         try {
-            dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, grp), dumpPartFileName(part, comprParts)));
+            dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, group), dumpPartFileName(part, comprParts)));
         }
         catch (IOException e) {
             throw new RuntimeException(e);
@@ -339,7 +339,7 @@ public class Dump implements AutoCloseable {
                     return;
 
                 try {
-                    next = serializer.read(dumpFile, grp, part);
+                    next = serializer.read(dumpFile, group, part);
                 }
                 catch (IOException | IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -376,7 +376,7 @@ public class Dump implements AutoCloseable {
         File[] grpDirs = nodeDir.listFiles(f -> {
             if (!f.isDirectory()
                 || (!f.getName().startsWith(CACHE_DIR_PREFIX)
-                    && !f.getName().startsWith(CACHE_GRP_DIR_PREFIX)))
+                && !f.getName().startsWith(CACHE_GRP_DIR_PREFIX)))
                 return false;
 
             String grpName = f.getName().startsWith(CACHE_DIR_PREFIX)
