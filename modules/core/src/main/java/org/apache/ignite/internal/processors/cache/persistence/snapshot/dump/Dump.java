@@ -33,6 +33,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
+import java.util.zip.ZipInputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -47,10 +48,10 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -62,6 +63,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
+import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.readCacheData;
@@ -267,7 +269,9 @@ public class Dump implements AutoCloseable {
      * @return Dump iterator.
      */
     public DumpedPartitionIterator iterator(String node, int group, int part) {
-        FileIOFactory ioFactory = comprParts ? new UnzipFileIOFactory() : new RandomAccessFileIOFactory();
+        FileIOFactory ioFactory = comprParts
+            ? (file, modes) -> new ReadOnlyUnzipFileIO(file)
+            : (file, modes) -> new ReadOnlyBufferedFileIO(file);
 
         FileIO dumpFile;
 
@@ -395,5 +399,113 @@ public class Dump implements AutoCloseable {
      */
     public interface DumpedPartitionIterator extends Iterator<DumpEntry>, AutoCloseable {
         // No-op.
+    }
+
+    /** */
+    private static class ReadOnlyBufferedFileIO extends FileIODecorator {
+        /** */
+        private static final int DEFAULT_BLOCK_SIZE = 4096;
+
+        /** */
+        private final ByteBuffer buf;
+
+        /** */
+        private long pos;
+
+        /** */
+        ReadOnlyBufferedFileIO(File file) throws IOException {
+            super(new RandomAccessFileIO(file, READ));
+
+            int blockSize = getFileSystemBlockSize();
+
+            if (blockSize <= 0)
+                blockSize = DEFAULT_BLOCK_SIZE;
+
+            buf = ByteBuffer.allocateDirect(blockSize);
+
+            buf.position(buf.limit());
+        }
+
+        /** {@inheritDoc} */
+        @Override public int readFully(ByteBuffer dst) throws IOException {
+            int totalRead = 0;
+
+            while (dst.hasRemaining()) {
+                if (!buf.hasRemaining()) {
+                    // Buf limit will be at its capacity unless partial fill has happened at the end of file.
+                    if (buf.limit() < buf.capacity())
+                        break;
+
+                    buf.clear();
+
+                    pos += delegate.readFully(buf, pos);
+
+                    buf.flip();
+                }
+
+                int len = Math.min(buf.remaining(), dst.remaining());
+
+                int limit = buf.limit();
+
+                buf.limit(buf.position() + len);
+
+                dst.put(buf);
+
+                buf.limit(limit);
+
+                totalRead += len;
+            }
+
+            return totalRead;
+        }
+
+    }
+
+    /** */
+    private static class ReadOnlyUnzipFileIO extends ReadOnlyBufferedFileIO {
+        /** */
+        private final ZipInputStream zis;
+
+        /** */
+        ReadOnlyUnzipFileIO(File file) throws IOException {
+            super(file);
+
+            zis = new ZipInputStream(new InputStream() {
+                /** {@inheritDoc} */
+                @Override public int read(byte[] arr, int off, int len) throws IOException {
+                    return ReadOnlyUnzipFileIO.super.readFully(ByteBuffer.wrap(arr, off, len));
+                }
+
+                /** {@inheritDoc} */
+                @Override public int read() throws IOException {
+                    throw new IOException();
+                }
+            });
+
+            zis.getNextEntry();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int readFully(ByteBuffer dst) throws IOException {
+            int totalRead = 0;
+
+            while (dst.hasRemaining()) {
+                int bytesRead = zis.read(dst.array(), dst.arrayOffset() + dst.position(), dst.remaining());
+
+                if (bytesRead == -1)
+                    break;
+
+                dst.position(dst.position() + bytesRead);
+
+                totalRead += bytesRead;
+            }
+
+            return totalRead;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IOException {
+            zis.close();
+        }
     }
 }
