@@ -457,7 +457,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     private Serializable consistentId;
 
     /** Local node addresses. */
-    private IgniteBiTuple<Collection<String>, Collection<String>> addrs;
+    protected IgniteBiTuple<Collection<String>, Collection<String>> addrs;
 
     /** */
     protected IgniteSpiContext spiCtx;
