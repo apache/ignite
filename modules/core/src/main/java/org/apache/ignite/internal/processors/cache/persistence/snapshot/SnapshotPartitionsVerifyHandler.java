@@ -561,10 +561,11 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     protected boolean isPunchHoleEnabled(SnapshotHandlerContext opCtx, Set<Integer> grpIds) {
         SnapshotMetadata meta = opCtx.metadata();
         Path snapshotDir = opCtx.snapshotDirectory().toPath();
+        CompressionProcessor compress = compressProc.get();
 
-        if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompresion)) {
+        if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompression)) {
             try {
-                compressProc.get().checkPageCompressionSupported();
+                compress.checkPageCompressionSupported();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Snapshot contains compressed cache groups " +
@@ -574,7 +575,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             }
 
             try {
-                compressProc.get().checkPageCompressionSupported(snapshotDir, meta.pageSize());
+                compress.checkPageCompressionSupported(snapshotDir, meta.pageSize());
 
                 return true;
             }
