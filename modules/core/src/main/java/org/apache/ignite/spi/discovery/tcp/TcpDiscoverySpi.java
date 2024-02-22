@@ -457,7 +457,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     private Serializable consistentId;
 
     /** Local node addresses. */
-    protected IgniteBiTuple<Collection<String>, Collection<String>> addrs;
+    private IgniteBiTuple<Collection<String>, Collection<String>> addrs;
 
     /** */
     protected IgniteSpiContext spiCtx;
@@ -1262,8 +1262,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @param node Node.
      * @return {@link LinkedHashSet} of internal and external addresses of provided node.
      *      Internal addresses placed before external addresses.
+     * @see #getEffectiveNodeAddresses(TcpDiscoveryNode)
      */
-    LinkedHashSet<InetSocketAddress> getNodeAddresses(TcpDiscoveryNode node) {
+    LinkedHashSet<InetSocketAddress> getAllNodeAddresses(TcpDiscoveryNode node) {
         LinkedHashSet<InetSocketAddress> res = new LinkedHashSet<>(node.socketAddresses());
 
         Collection<InetSocketAddress> extAddrs = node.attribute(createSpiAttributeName(ATTR_EXT_ADDRS));
@@ -1276,15 +1277,34 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /**
      * @param node Node.
-     * @param sameHost Same host flag.
      * @return {@link LinkedHashSet} of internal and external addresses of provided node.
      *      Internal addresses placed before external addresses.
      *      Internal addresses will be sorted with {@code inetAddressesComparator(sameHost)}.
+     * @see #getAllNodeAddresses(TcpDiscoveryNode)
      */
-    LinkedHashSet<InetSocketAddress> getNodeAddresses(TcpDiscoveryNode node, boolean sameHost) {
+    LinkedHashSet<InetSocketAddress> getEffectiveNodeAddresses(TcpDiscoveryNode node) {
+        return getEffectiveNodeAddresses(node, true, U.sameMacs(locNode, node));
+    }
+
+    /**
+     * Gives node addresse with a preferable order.
+     *
+     * @param node Node.
+     * @param sameHost If {@code True}, loopback addresses go first. Otherwise, last.
+     * @param excludeSameLoopback If {@code True}, loopback addresses, equal to current node's, are excluded.
+     * @return {@link LinkedHashSet} of internal and external addresses of provided node.
+     *      Internal addresses placed before external addresses.
+     *      Internal addresses will be sorted with {@code inetAddressesComparator(sameHost)}.
+     * @see #getAllNodeAddresses(TcpDiscoveryNode)
+     */
+    LinkedHashSet<InetSocketAddress> getEffectiveNodeAddresses(TcpDiscoveryNode node, boolean sameHost, boolean excludeSameLoopback) {
         List<InetSocketAddress> addrs = U.arrayList(node.socketAddresses());
 
-        Collections.sort(addrs, U.inetAddressesComparator(sameHost));
+        // Do not give own loopback to avoid requesting current node.
+        if (excludeSameLoopback && !node.equals(locNode))
+            addrs.removeIf(addr -> addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr));
+
+        addrs.sort(U.inetAddressesComparator(U.sameMacs(locNode, node)));
 
         LinkedHashSet<InetSocketAddress> res = new LinkedHashSet<>();
 
