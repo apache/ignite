@@ -341,7 +341,14 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * @param futId Not null ID if need remove future.
      */
     final void completeFuture(@Nullable GridCacheReturn ret, Throwable err, @Nullable Long futId) {
-        Object retval = getReturnValue(ret);
+        Object retval = ret == null
+            ? null
+            : (this.retval || op == TRANSFORM)
+                ? cctx.unwrapBinaryIfNeeded(
+                    ret.value(),
+                    keepBinary,
+                    U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId))
+                : ret.success();
 
         if (op == TRANSFORM && retval == null)
             retval = Collections.emptyMap();
@@ -350,21 +357,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
             cctx.mvcc().removeAtomicFuture(futId);
 
         super.onDone(retval, err);
-    }
-
-    /** */
-    private Object getReturnValue(GridCacheReturn ret) {
-        if (ret == null)
-            return null;
-
-        if (retval || op == TRANSFORM) {
-            return cctx.unwrapBinaryIfNeeded(
-                ret.value(),
-                keepBinary,
-                U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
-        }
-
-        return ret.success();
     }
 
     /** {@inheritDoc} */
