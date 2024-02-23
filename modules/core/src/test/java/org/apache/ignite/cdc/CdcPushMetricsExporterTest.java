@@ -45,6 +45,7 @@ public class CdcPushMetricsExporterTest extends AbstractCdcTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected MetricExporterSpi[] metricExporters() {
         PushMetricsExporterAdapter pushMetricsExporter = new PushMetricsExporterAdapter() {
             @Override public void export() {
@@ -60,6 +61,7 @@ public class CdcPushMetricsExporterTest extends AbstractCdcTest {
         };
     }
 
+    /** Test checks that metrics are exported via exporter based on the push metrics exporter adapter. */
     @Test
     public void testPushMetricsExporter() throws Exception {
         IgniteConfiguration cfg = getConfiguration("ignite-0");
