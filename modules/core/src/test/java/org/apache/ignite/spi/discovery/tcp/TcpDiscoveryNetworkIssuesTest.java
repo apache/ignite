@@ -21,6 +21,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
@@ -54,8 +56,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -119,12 +119,6 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     private int failureDetectionTimeout = 2_000;
 
     /** */
-    private ListeningTestLogger lsnrLog;
-
-    /** */
-    private String localhost;
-
-    /** */
     private final GridConcurrentHashSet<Integer> segmentedNodes = new GridConcurrentHashSet<>();
 
     /** {@inheritDoc} */
@@ -156,11 +150,6 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         cfg.setMetricsUpdateFrequency(getTestTimeout());
         cfg.setClientFailureDetectionTimeout(cfg.getMetricsUpdateFrequency());
-
-        lsnrLog = new ListeningTestLogger();
-        cfg.setGridLogger(lsnrLog);
-
-        cfg.setLocalHost(localhost);
 
         return cfg;
     }
@@ -240,75 +229,72 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testBackwardLocalHostCheck() throws Exception {
-        localhost = "0.0.0.0";
-
-        failureDetectionTimeout = 5000;
+//        localhost = "0.0.0.0";
 
         specialSpi = new TestDiscoverySpi();
 
-        Ignite ig0 = startGrid(0);
+        Ignite node0 = startGrid(0);
 
         specialSpi = new TestDiscoverySpi();
 
-        Ignite ig1 = startGrid(1);
+        Ignite node1 = startGrid(1);
 
         specialSpi = new TestDiscoverySpi();
 
-        Ignite ig2 = startGrid(2);
+        Ignite node2 = startGrid(2);
 
-        Collection<InetSocketAddress> node2addrs = F.viewReadOnly(spi(ig2).locNode.socketAddresses(),
+        Collection<InetSocketAddress> node2loopbacks = F.viewReadOnly(spi(node2).locNode.socketAddresses(),
             a->a, a->a.getAddress().isLoopbackAddress());
-
-        assertEquals(1, node2addrs.size());
-        assertTrue(spi(ig2).locNodeAddrs.contains(node2addrs.iterator().next()));
 
         CountDownLatch handshakeToNode2 = new CountDownLatch(1);
 
-        spi(ig0).onNextHandshake((socket, handshakeRequest) -> {
-            assertTrue(spi(ig2).locNodeAddrs.contains(new InetSocketAddress(socket.getInetAddress(), socket.getPort())));
+        // Listener of handshake request from node0 to node2. Activates simulation of same localhost address of node1
+        // for node2. Also disabled netrowk malfunction. The cluster must be restored.
+        spi(node0).hsRqLsnr.set((socket, handshakeRequest) -> {
+            // First, node0 tries to connect and send handshake request to other address of faulty node1.
+            if(spi(node2).locNodeAddrs.contains(new InetSocketAddress(socket.getInetAddress(), socket.getPort()))){
+                spi(node2).simulatedPrevNodeAddr.set(node2loopbacks);
 
-            spi(ig2).simulatePrevNodeAddress(node2addrs.iterator().next());
+                // Restore network.
+                spi(node0).addrsToBlock = null;
+                spi(node1).addrsToBlock = null;
 
-            log.error("TEST | simulated same address on handshake");
-
-            spi(ig0).block(null);
-            spi(ig1).block(null);
-
-            handshakeToNode2.countDown();
+                handshakeToNode2.countDown();
+            }
         });
 
-        spi(ig2).onNextHandshakeResponse(((socket, response) -> {
-            spi(ig2).simulatePrevNodeAddress(null);
+        AtomicBoolean node1AliveStatus = new AtomicBoolean();
 
-            assertTrue(response.previousNodeAlive());
+        // Listener of handshake response from node2 to node1.
+        spi(node2).hsRespLsnr.set(((socket, response) -> {
+            assertTrue(spi(node0).locNodeAddrs.contains(new InetSocketAddress(socket.getInetAddress(), socket.getPort())));
+
+            spi(node2).simulatedPrevNodeAddr.set(null);
+
+            node1AliveStatus.set(response.previousNodeAlive());
         }));
 
-        LogListener logListener = LogListener.matches("alive").build();
+        // Simulate malfunction of connection node0 to mode1.
+        spi(node0).addrsToBlock = spi(node1).locNodeAddrs;
+        assertTrue(waitForCondition(() -> !spi(node0).messageBlocked, failureDetectionTimeout * 2L));
 
-        lsnrLog.registerListener(logListener);
-
-        U.TEST = true;
-
-//        U.sleep( failureDetectionTimeout / 2);
-
-        log.error("TEST | blocking node 0");
-        spi(ig0).block(spi(ig1).locNodeAddrs);
-        assertTrue(waitForCondition(()->!spi(ig0).blocked, ig0.configuration().getFailureDetectionTimeout() * 2));
-        log.error("TEST | node 0 blocked");
-
+        // Wait a bit to keep pinging node2 from node1 and update last message received time. This makes node2 think
+        // that node1 was alive when receives handshake request from node0.
         U.sleep(failureDetectionTimeout / 2);
 
-        log.error("TEST | blocking node 1");
-        spi(ig1).block(Collections.emptyList());
-//        assertTrue(waitForCondition(()->!spi(ig1).blocked, ig0.configuration().getFailureDetectionTimeout() * 2));
-        log.error("TEST | node 1 blocked");
+        // Simulate malfunction of all node1's connections.
+        spi(node1).addrsToBlock = Collections.emptyList();
+        assertTrue(waitForCondition(() -> !spi(node1).messageBlocked, failureDetectionTimeout * 2L));
 
-
-
-        // Node 0 tries to connect to node 2 and asks if node 1 is alive.
+        // Wait until node0 tries to connect to node2 and asks if node1 is alive.
         assertTrue(handshakeToNode2.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
-        Thread.sleep(10_000);
+        assertTrue(node1AliveStatus.get());
+
+        U.sleep(failureDetectionTimeout);
+
+        for (Ignite ig : G.allGrids())
+            assertEquals(3, ig.cluster().nodes().size());
     }
 
     /**
@@ -432,33 +418,37 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     /** */
     private static final class TestDiscoverySpi extends TcpDiscoverySpi {
         /** */
-        private volatile Collection<InetSocketAddress> blockedAddrs;
+        private volatile Collection<InetSocketAddress> addrsToBlock;
 
-        private volatile boolean blocked;
+        /** */
+        private volatile boolean messageBlocked;
 
-        private final AtomicReference<BiConsumer<Socket, TcpDiscoveryHandshakeRequest>> hsRqCnsmr = new AtomicReference<>();
+        /** Handshake request listener. */
+        private final AtomicReference<BiConsumer<Socket, TcpDiscoveryHandshakeRequest>> hsRqLsnr = new AtomicReference<>();
 
-        private final AtomicReference<BiConsumer<Socket, TcpDiscoveryHandshakeResponse>> hsRespCnsmr = new AtomicReference<>();
+        /** Handshake response listener. */
+        private final AtomicReference<BiConsumer<Socket, TcpDiscoveryHandshakeResponse>> hsRespLsnr = new AtomicReference<>();
 
-        private final AtomicReference<InetSocketAddress> testPrevNodeAddr = new AtomicReference<>();
+        /** Additional simulated addresses of a previous node. */
+        private final AtomicReference<Collection<InetSocketAddress>> simulatedPrevNodeAddr = new AtomicReference<>();
 
+        /** {@inheritDoc} */
         @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
             long timeout) throws IOException {
-            if (drop(sock))
+            if (dropMsg(sock))
                 return;
 
             super.writeToSocket(msg, sock, res, timeout);
         }
 
-        private boolean drop(Socket sock) {
-            Collection<InetSocketAddress> blockedAddrs = this.blockedAddrs;
+        /** */
+        private boolean dropMsg(Socket sock) {
+            Collection<InetSocketAddress> blockedAddrs = this.addrsToBlock;
 
-            if(blockedAddrs!=null && (blockedAddrs.isEmpty() ||
+            if (blockedAddrs != null && (blockedAddrs.isEmpty() ||
                 blockedAddrs.contains(new InetSocketAddress(sock.getInetAddress(), sock.getPort())))) {
 
-                log.error("TEST | dropped to " + sock);
-
-                blocked = true;
+                messageBlocked = true;
 
                 return true;
             }
@@ -466,66 +456,76 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
-            BiConsumer<Socket, TcpDiscoveryHandshakeRequest> hsRqCnsmr;
-            BiConsumer<Socket, TcpDiscoveryHandshakeResponse> hsRspCnsmr;
+            BiConsumer<Socket, TcpDiscoveryHandshakeRequest> hsRqCnsmr = this.hsRqLsnr.getAndSet(null);
+            BiConsumer<Socket, TcpDiscoveryHandshakeResponse> hsRespCnsmr = this.hsRespLsnr.getAndSet(null);
 
-            if (msg instanceof TcpDiscoveryHandshakeRequest && (hsRqCnsmr = this.hsRqCnsmr.getAndSet(null)) != null)
+            if (msg instanceof TcpDiscoveryHandshakeRequest && hsRqCnsmr != null)
                 hsRqCnsmr.accept(sock, (TcpDiscoveryHandshakeRequest)msg);
 
-            if (msg instanceof TcpDiscoveryHandshakeResponse && (hsRspCnsmr = this.hsRespCnsmr.getAndSet(null)) != null)
-                hsRspCnsmr.accept(sock, (TcpDiscoveryHandshakeResponse)msg);
+            if (msg instanceof TcpDiscoveryHandshakeResponse && hsRespCnsmr != null)
+                hsRespCnsmr.accept(sock, (TcpDiscoveryHandshakeResponse)msg);
 
-            if (drop(sock))
+            if (dropMsg(sock))
                 return;
 
             super.writeToSocket(sock, out, msg, timeout);
         }
 
+        /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
             long timeout) throws IOException {
-            if (drop(sock))
+            if (dropMsg(sock))
                 return;
 
             super.writeToSocket(sock, msg, data, timeout);
         }
 
-        @Override LinkedHashSet<InetSocketAddress> getEffectiveNodeAddresses(TcpDiscoveryNode node, boolean sameHost, boolean skipSameLoopback) {
-            LinkedHashSet<InetSocketAddress> res = super.getEffectiveNodeAddresses(node, sameHost, skipSameLoopback);
+        /**
+         * Simulates same tcp discovery local host address for {@code node} as if it is auto-generated on different host.
+         *
+         * @see IgniteConfiguration#setLocalHost(String)
+         * @see TcpDiscoverySpi#setLocalAddress(String)
+         */
+        @Override LinkedHashSet<InetSocketAddress> getEffectiveNodeAddresses(TcpDiscoveryNode node) {
+            Collection<InetSocketAddress> testAddrs = simulatedPrevNodeAddr.getAndSet(null);
 
-            InetSocketAddress addr = testPrevNodeAddr.getAndSet(null);
+            if (testAddrs != null)
+                node = new TestTcpDiscoveryNode(node, testAddrs);
 
-            if (addr != null) {
-                LinkedHashSet<InetSocketAddress> res0 = new LinkedHashSet<>();
+            return super.getEffectiveNodeAddresses(node);
+        }
+    }
 
-                res0.add(addr);
-                res0.addAll(res);
+    /**
+     * Simulates test node addresses.
+     *
+     * @see TcpDiscoveryNode#socketAddresses()
+     */
+    private static final class TestTcpDiscoveryNode extends TcpDiscoveryNode {
+        /** */
+        private final Collection<InetSocketAddress> testAddrs;
 
-                res = res0;
-            }
+        /**
+         * Creates test tco discovery spi.
+         *
+         * @param node Original node.
+         * @param simulatedAddrs Simulated addresses of {@code node}
+         */
+        public TestTcpDiscoveryNode(TcpDiscoveryNode node, Collection<InetSocketAddress> simulatedAddrs) {
+            super(node);
 
-            return res;
+            setAttributes(node.attributes());
+
+            testAddrs = new ArrayList<>(simulatedAddrs);
+            testAddrs.addAll(node.socketAddresses());
         }
 
-        private void onNextHandshake(BiConsumer<Socket, TcpDiscoveryHandshakeRequest> cnsmr) {
-            assert hsRqCnsmr.get() == null;
-
-            hsRqCnsmr.set(cnsmr);
-        }
-
-        private void onNextHandshakeResponse(BiConsumer<Socket, TcpDiscoveryHandshakeResponse> cnsmr) {
-            assert hsRqCnsmr.get() == null;
-
-            hsRespCnsmr.set(cnsmr);
-        }
-
-        private void simulatePrevNodeAddress(InetSocketAddress address) {
-            testPrevNodeAddr.set(address);
-        }
-
-        private void block(Collection<InetSocketAddress> blockedAddrs) {
-            this.blockedAddrs = blockedAddrs;
+        /** {@inheritDoc} */
+        @Override public Collection<InetSocketAddress> socketAddresses() {
+            return Collections.unmodifiableCollection(testAddrs);
         }
     }
 }

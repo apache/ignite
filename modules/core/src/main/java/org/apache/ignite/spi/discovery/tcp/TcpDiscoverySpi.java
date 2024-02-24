@@ -1304,7 +1304,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         if (excludeSameLoopback && !node.equals(locNode))
             addrs.removeIf(addr -> addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr));
 
-        addrs.sort(U.inetAddressesComparator(U.sameMacs(locNode, node)));
+        addrs.sort(U.inetAddressesComparator(sameHost));
 
         LinkedHashSet<InetSocketAddress> res = new LinkedHashSet<>();
 

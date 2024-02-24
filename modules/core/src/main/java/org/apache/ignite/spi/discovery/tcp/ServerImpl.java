@@ -1125,7 +1125,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     @Override protected Void body() {
                         pendingCustomMsgs.clear();
                         msgWorker.pendingMsgs.reset(null, null, null);
-                        msgWorker.next = null;
+                        msgWorker.nextNode(null);
                         failedNodes.clear();
                         leavingNodes.clear();
                         failedNodesMsgSent.clear();
@@ -2893,6 +2893,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Next node. */
         private TcpDiscoveryNode next;
 
+        /** Next node addresses. */
+        private Collection<InetSocketAddress> nextAddrs;
+
         /** Pending messages. */
         private final PendingMessages pendingMsgs = new PendingMessages();
 
@@ -3428,7 +3431,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     sock = null;
 
-                    next = newNext;
+                    nextNode(newNext);
 
                     newNextNode = true;
                 }
@@ -3438,7 +3441,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 List<InetSocketAddress> locNodeAddrs = U.arrayList(locNode.socketAddresses());
 
-                addr: for (InetSocketAddress addr : spi.getEffectiveNodeAddresses(next)) {
+                addr: for (InetSocketAddress addr : nextAddrs) {
                     long ackTimeout0 = spi.getAckTimeout();
 
                     if (locNodeAddrs.contains(addr)) {
@@ -3515,7 +3518,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     else {
                                         newNextNode = false;
 
-                                        next = ring.nextNode(failedNodes);
+                                        nextNode(ring.nextNode(failedNodes));
                                     }
 
                                     U.closeQuiet(sock);
@@ -3869,11 +3872,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else {
                             newNextNode = false;
 
-                            next = ring.nextNode(failedNodes);
+                            msgWorker.nextNode(ring.nextNode(failedNodes));
                         }
                     }
 
-                    next = null;
+                    nextNode(null);
 
                     errs = null;
                 }
@@ -4005,6 +4008,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                     msg.addFailedNode(failedNode.id());
                 }
             }
+        }
+
+        /**
+         * Sets next node in the ring.
+         *
+         * @param node New next node.
+         */
+        private void nextNode(TcpDiscoveryNode node) {
+            next = node;
+            nextAddrs = node == null ? null : spi.getEffectiveNodeAddresses(node);
         }
 
         /**
@@ -5481,7 +5494,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     finally {
                         forceSndPending = true;
 
-                        next = null;
+                        nextNode(null);
 
                         U.closeQuiet(sock);
                     }
@@ -6776,10 +6789,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         nodeAddrs + ", connectingNodeId=" + nodeId + ']');
                                 }
                             }
-
-                            // If local node was able to connect to previous, confirm that it's alive.
-                            ok = liveAddr != null && (!liveAddr.getAddress().isLoopbackAddress()
-                                || !locNode.socketAddresses().contains(liveAddr));
                         }
 
                         res.previousNodeAlive(ok);
@@ -7238,9 +7247,6 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private void ringMessageReceived() {
             lastRingMsgReceivedTime = System.nanoTime();
-
-            if(U.TEST && locNode.order() > 2)
-                log.error("TEST | ringMessageReceived(), updating last tme");
         }
 
         /** @return Alive address if was able to connected to. {@code Null} otherwise. */
