@@ -50,7 +50,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 
@@ -69,6 +68,10 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     /** Values to update. */
     @GridDirectCollection(CacheObject.class)
     private List<CacheObject> vals;
+
+    /** Previous state metadatas. */
+    @GridDirectCollection(CacheObject.class)
+    private List<CacheObject> prevStateMetas;
 
     /** Entry processors. */
     @GridDirectTransient
@@ -176,7 +179,8 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         @Nullable Object val,
         long conflictTtl,
         long conflictExpireTime,
-        @Nullable GridCacheVersion conflictVer) {
+        @Nullable GridCacheVersion conflictVer,
+        @Nullable Object prevStateMeta) {
         EntryProcessor<Object, Object, Object> entryProc = null;
 
         if (op == TRANSFORM) {
@@ -184,8 +188,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
             entryProc = (EntryProcessor<Object, Object, Object>)val;
         }
-
-        assert val != null || op == DELETE;
 
         keys.add(key);
 
@@ -217,6 +219,19 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         }
         else if (conflictVers != null)
             conflictVers.add(null);
+
+        if (prevStateMeta != null) {
+            if (prevStateMetas == null) {
+                prevStateMetas = new ArrayList<>(initSize);
+
+                for (int i = 0; i < keys.size() - 1; i++)
+                    prevStateMetas.add(null);
+            }
+
+            prevStateMetas.add((CacheObject)prevStateMeta);
+        }
+        else if (prevStateMetas != null)
+            prevStateMetas.add(null);
 
         if (conflictTtl >= 0) {
             if (conflictTtls == null) {
@@ -281,6 +296,14 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     @Override public CacheObject writeValue(int idx) {
         if (vals != null)
             return vals.get(idx);
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject previousStateMetadata(int idx) {
+        if (prevStateMetas != null)
+            return prevStateMetas.get(idx);
 
         return null;
     }
@@ -377,6 +400,8 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         }
         else
             prepareMarshalCacheObjects(vals, cctx);
+
+        prepareMarshalCacheObjects(prevStateMetas, cctx);
     }
 
     /** {@inheritDoc} */
@@ -406,6 +431,8 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         }
         else
             finishUnmarshalCacheObjects(vals, cctx, ldr);
+
+        finishUnmarshalCacheObjects(prevStateMetas, cctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -479,6 +506,12 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 writer.incrementState();
 
             case 18:
+                if (!writer.writeCollection("prevStateMetas", prevStateMetas, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 19:
                 if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
                     return false;
 
@@ -565,6 +598,14 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 reader.incrementState();
 
             case 18:
+                prevStateMetas = reader.readCollection("prevStateMetas", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 19:
                 vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -596,7 +637,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 19;
+        return 20;
     }
 
     /** {@inheritDoc} */

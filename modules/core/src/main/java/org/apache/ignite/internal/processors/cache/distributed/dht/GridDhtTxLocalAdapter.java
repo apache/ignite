@@ -487,6 +487,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
                 existing.conflictExpireTime(e.conflictExpireTime());
                 existing.conflictVersion(e.conflictVersion());
+                existing.previousStateMetadata(e.previousStateMetadata());
             }
             else {
                 existing = e;
@@ -614,6 +615,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                             false,
                             -1L,
                             -1L,
+                            null,
                             null,
                             skipStore,
                             keepBinary,

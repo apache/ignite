@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -376,7 +377,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
             if (evt.value() == null)
                 return;
 
-            User user = (User)evt.value();
+            User user = (User)evt.unwrappedValue();
 
             assertTrue(user.getName().startsWith(JOHN));
             assertTrue(user.getAge() >= 42);
@@ -384,7 +385,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Integer extract(CdcEvent evt) {
-            return (Integer)evt.key();
+            return (Integer)evt.unwrappedKey();
         }
 
         /** {@inheritDoc} */
@@ -512,6 +513,35 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         /** */
         public byte[] getPayload() {
             return payload;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            User user = (User)o;
+
+            if (age != user.age)
+                return false;
+
+            if (!Objects.equals(name, user.name))
+                return false;
+
+            return Arrays.equals(payload, user.payload);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int result = name != null ? name.hashCode() : 0;
+
+            result = 31 * result + age;
+            result = 31 * result + Arrays.hashCode(payload);
+
+            return result;
         }
     }
 

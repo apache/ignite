@@ -467,7 +467,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion ver, long expireTime,
-        long updCntr, boolean primary) {
+        long updCntr, boolean primary, CacheObject prevStateMeta) {
         // No-op: queries are disabled for near cache.
     }
 
@@ -477,7 +477,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         CacheObject val,
         GridCacheVersion writeVer,
         long expireTime,
-        long updCntr
+        long updCntr,
+        CacheObject prevStateMeta
     ) {
         return null;
     }

@@ -47,6 +47,12 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
     /** Value value bytes. */
     private byte[] valBytes;
 
+    /** Previous entry state metadata bytes type code. See {@link CacheObject} for built-in value type codes */
+    private byte prevStateMetaType;
+
+    /** Previous entry state metadata bytes. */
+    private byte[] prevStateMetaBytes;
+
     /**
      * @param cctx Shared context.
      * @param cacheId Cache ID.
@@ -60,6 +66,8 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
+     * @param prevStateMetaType Object type code for previous entry state metadata.
+     * @param prevStateMetaBytes Previous entry state metadata bytes.
      * @param flags Flags.
      */
     public LazyDataEntry(
@@ -75,15 +83,19 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
         long expireTime,
         int partId,
         long partCnt,
+        byte prevStateMetaType,
+        byte[] prevStateMetaBytes,
         byte flags
     ) {
-        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt, flags);
+        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt, null, flags);
 
         this.cctx = cctx;
         this.keyType = keyType;
         this.keyBytes = keyBytes;
         this.valType = valType;
         this.valBytes = valBytes;
+        this.prevStateMetaType = prevStateMetaType;
+        this.prevStateMetaBytes = prevStateMetaBytes;
     }
 
     /** {@inheritDoc} */
@@ -127,6 +139,22 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
     }
 
     /** {@inheritDoc} */
+    @Override public CacheObject previousStateMetadata() {
+        if (prevStateMeta == null && prevStateMetaBytes != null) {
+            GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+
+            if (cacheCtx == null)
+                throw new IgniteException("Failed to find cache context for the given cache ID: " + cacheId);
+
+            IgniteCacheObjectProcessor co = cctx.kernalContext().cacheObjects();
+
+            prevStateMeta = co.toCacheObject(cacheCtx.cacheObjectContext(), prevStateMetaType, prevStateMetaBytes);
+        }
+
+        return prevStateMeta;
+    }
+
+    /** {@inheritDoc} */
     @Override public byte getKeyType() {
         return keyType;
     }
@@ -144,5 +172,15 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
     /** {@inheritDoc} */
     @Override public byte[] getValBytes() {
         return valBytes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getPreviousStateMetadataType() {
+        return prevStateMetaType;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] getPreviousStateMetadataBytes() {
+        return prevStateMetaBytes;
     }
 }
