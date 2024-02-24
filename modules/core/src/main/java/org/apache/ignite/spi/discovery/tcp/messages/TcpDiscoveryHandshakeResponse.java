@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Handshake response.
  */
-public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
+    public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 

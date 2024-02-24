@@ -1277,31 +1277,32 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /**
      * @param node Node.
-     * @return {@link LinkedHashSet} of internal and external addresses of provided node.
+     * @return {@link LinkedHashSet} of internal and external addresses of provided node except loopback addresses if
+     * current node has the same.
      *      Internal addresses placed before external addresses.
      *      Internal addresses will be sorted with {@code inetAddressesComparator(sameHost)}.
      * @see #getAllNodeAddresses(TcpDiscoveryNode)
      */
     LinkedHashSet<InetSocketAddress> getEffectiveNodeAddresses(TcpDiscoveryNode node) {
-        return getEffectiveNodeAddresses(node, true, U.sameMacs(locNode, node));
+        return getEffectiveNodeAddresses(node, U.sameMacs(locNode, node));
     }
 
     /**
-     * Gives node addresse with a preferable order.
+     * Gives node addresses with a preferable order.
      *
      * @param node Node.
      * @param sameHost If {@code True}, loopback addresses go first. Otherwise, last.
-     * @param excludeSameLoopback If {@code True}, loopback addresses, equal to current node's, are excluded.
-     * @return {@link LinkedHashSet} of internal and external addresses of provided node.
+     * @return {@link LinkedHashSet} of internal and external addresses of provided node except loopback addresses if
+     * current node has the same..
      *      Internal addresses placed before external addresses.
      *      Internal addresses will be sorted with {@code inetAddressesComparator(sameHost)}.
      * @see #getAllNodeAddresses(TcpDiscoveryNode)
      */
-    LinkedHashSet<InetSocketAddress> getEffectiveNodeAddresses(TcpDiscoveryNode node, boolean sameHost, boolean excludeSameLoopback) {
+    LinkedHashSet<InetSocketAddress> getEffectiveNodeAddresses(TcpDiscoveryNode node, boolean sameHost) {
         List<InetSocketAddress> addrs = U.arrayList(node.socketAddresses());
 
         // Do not give own loopback to avoid requesting current node.
-        if (excludeSameLoopback && !node.equals(locNode))
+        if (!node.equals(locNode))
             addrs.removeIf(addr -> addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr));
 
         addrs.sort(U.inetAddressesComparator(sameHost));
@@ -2229,7 +2230,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /**
      *
      */
-    private void initializeImpl() {
+    protected void initializeImpl() {
         if (impl != null)
             return;
 
@@ -2255,7 +2256,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             if (sockTimeout == 0)
                 sockTimeout = DFLT_SOCK_TIMEOUT;
 
-            impl = new ServerImpl(this);
+            impl = new ServerImpl(this, 4);
         }
 
         metricsUpdateFreq = ignite.configuration().getMetricsUpdateFrequency();

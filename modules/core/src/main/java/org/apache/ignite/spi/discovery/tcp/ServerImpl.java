@@ -221,7 +221,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     private long connCheckTick;
 
     /** */
-    private IgniteThreadPoolExecutor utilityPool;
+    private final IgniteThreadPoolExecutor utilityPool;
 
     /** Nodes ring. */
     @GridToStringExclude
@@ -317,8 +317,15 @@ class ServerImpl extends TcpDiscoveryImpl {
     /**
      * @param adapter Adapter.
      */
-    ServerImpl(TcpDiscoverySpi adapter) {
+    ServerImpl(TcpDiscoverySpi adapter, int utilityPoolSize) {
         super(adapter);
+
+        utilityPool = new IgniteThreadPoolExecutor("disco-pool",
+            spi.ignite().name(),
+            0,
+            utilityPoolSize,
+            2000,
+            new LinkedBlockingQueue<>());
     }
 
     /** {@inheritDoc} */
@@ -398,13 +405,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         // Since we take in account time of last sent message, the interval should be quite short to give enough piece
         // of failure detection timeout as send-and-acknowledge timeout of the message to send.
         connCheckInterval = Math.min(connCheckTick, MAX_CON_CHECK_INTERVAL);
-
-        utilityPool = new IgniteThreadPoolExecutor("disco-pool",
-            spi.ignite().name(),
-            0,
-            4,
-            2000,
-            new LinkedBlockingQueue<>());
 
         if (debugMode) {
             if (!log.isInfoEnabled())
@@ -708,7 +708,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             else {
                 msg = new TcpDiscoveryStatusCheckMessage(
                     creatorNode.id(),
-                    spi.getEffectiveNodeAddresses(creatorNode, crd != null && U.sameMacs(creatorNode, crd), false),
+                    spi.getEffectiveNodeAddresses(creatorNode, crd != null && U.sameMacs(creatorNode, crd)),
                     failedNodeId
                 );
             }
@@ -1125,7 +1125,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     @Override protected Void body() {
                         pendingCustomMsgs.clear();
                         msgWorker.pendingMsgs.reset(null, null, null);
-                        msgWorker.nextNode(null);
+                        msgWorker.newNextNode(null);
                         failedNodes.clear();
                         leavingNodes.clear();
                         failedNodesMsgSent.clear();
@@ -3431,7 +3431,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     sock = null;
 
-                    nextNode(newNext);
+                    newNextNode(newNext);
 
                     newNextNode = true;
                 }
@@ -3518,7 +3518,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     else {
                                         newNextNode = false;
 
-                                        nextNode(ring.nextNode(failedNodes));
+                                        newNextNode(ring.nextNode(failedNodes));
                                     }
 
                                     U.closeQuiet(sock);
@@ -3872,11 +3872,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else {
                             newNextNode = false;
 
-                            msgWorker.nextNode(ring.nextNode(failedNodes));
+                            newNextNode(ring.nextNode(failedNodes));
                         }
                     }
 
-                    nextNode(null);
+                    newNextNode(null);
 
                     errs = null;
                 }
@@ -4015,7 +4015,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @param node New next node.
          */
-        private void nextNode(TcpDiscoveryNode node) {
+        private void newNextNode(TcpDiscoveryNode node) {
             next = node;
             nextAddrs = node == null ? null : spi.getEffectiveNodeAddresses(node);
         }
@@ -5494,7 +5494,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     finally {
                         forceSndPending = true;
 
-                        nextNode(null);
+                        newNextNode(null);
 
                         U.closeQuiet(sock);
                     }
@@ -6789,6 +6789,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         nodeAddrs + ", connectingNodeId=" + nodeId + ']');
                                 }
                             }
+
+                            ok = liveAddr != null;
+
+                            assert !(ok && liveAddr.getAddress().isLoopbackAddress() && spi.locNodeAddrs.contains(liveAddr));
                         }
 
                         res.previousNodeAlive(ok);
