@@ -267,8 +267,6 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         CountDownLatch handshakeToNode2 = new CountDownLatch(1);
 
-
-
         // Listener of handshake request from node0 to node2. Activates simulation of same localhost address of node1
         // for node2. Also disabled netrowk malfunction. The cluster must be restored.
         testSpi(node0).hsRqLsnr.set((socket, handshakeRequest) -> {
