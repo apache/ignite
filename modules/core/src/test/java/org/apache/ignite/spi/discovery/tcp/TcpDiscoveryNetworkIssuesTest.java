@@ -229,7 +229,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests backward ping of previous node if {@link TcpDiscoveryNode#socketAddresses()} contains same loppback address
+     * Tests backward ping of previous node if {@link TcpDiscoveryNode#socketAddresses()} contains same loopback address
      * as of local node. Assumes single localhost is set and single local address is resolved.
      */
     @Test
@@ -238,7 +238,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests backward ping of previous node if {@link TcpDiscoveryNode#socketAddresses()} contains same loppback address
+     * Tests backward ping of previous node if {@link TcpDiscoveryNode#socketAddresses()} contains same loopback address
      * as of local node. Assumes {@link #getConfiguration(String)} localhost.
      */
     @Test
@@ -247,7 +247,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Performs Tests backward node ping if {@link TcpDiscoveryNode#socketAddresses()} contains same loppback address as of local node.
+     * Performs Tests backward node ping if {@link TcpDiscoveryNode#socketAddresses()} contains same loopback address as of local node.
      * Assumes several local address are resolved.
      */
     private void doTestBackwardNodeCheckWithSameLoopback(String localhost) throws Exception {
@@ -268,7 +268,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         CountDownLatch handshakeToNode2 = new CountDownLatch(1);
 
         // Listener of handshake request from node0 to node2. Activates simulation of same localhost address of node1
-        // for node2. Also disabled netrowk malfunction. The cluster must be restored.
+        // for node2. Also disabled network malfunction. The cluster must be restored.
         testSpi(node0).hsRqLsnr.set((socket, handshakeRequest) -> {
             // First, node0 tries to connect and send handshake request to other address of faulty node1.
             if (testSpi(node2).locNodeAddrs.contains(new InetSocketAddress(socket.getInetAddress(), socket.getPort()))) {
@@ -277,7 +277,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
                 testSpi(node0).hsRqLsnr.set(null);
 
-                // Restore network. Node0 is now able to connect to node1 again and estore the ring.
+                // Restore network. Node0 is now able to connect to node1 again.
                 testSpi(node0).addrsToBlock = null;
 
                 handshakeToNode2.countDown();
@@ -305,7 +305,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(() -> node1AliveStatus.get() != null, failureDetectionTimeout));
 
-//        assertTrue(node1AliveStatus.get());
+        assertTrue(node1AliveStatus.get());
 
         // Wait a bit until node0 restore conndection node1.
         U.sleep(failureDetectionTimeout / 2);

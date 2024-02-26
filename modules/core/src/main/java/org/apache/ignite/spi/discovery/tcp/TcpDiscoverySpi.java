@@ -1278,7 +1278,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /**
      * @param node Node.
      * @return {@link LinkedHashSet} of internal and external addresses of provided node except loopback addresses if
-     * current node has the same.
+     * current node has the same ones.
      *      Internal addresses placed before external addresses.
      *      Internal addresses will be sorted with {@code inetAddressesComparator(sameHost)}.
      * @see #getAllNodeAddresses(TcpDiscoveryNode)
@@ -1293,7 +1293,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @param node Node.
      * @param sameHost If {@code True}, loopback addresses go first. Otherwise, last.
      * @return {@link LinkedHashSet} of internal and external addresses of provided node except loopback addresses if
-     * current node has the same..
+     * current node has the same ones.
      *      Internal addresses placed before external addresses.
      *      Internal addresses will be sorted with {@code inetAddressesComparator(sameHost)}.
      * @see #getAllNodeAddresses(TcpDiscoveryNode)
