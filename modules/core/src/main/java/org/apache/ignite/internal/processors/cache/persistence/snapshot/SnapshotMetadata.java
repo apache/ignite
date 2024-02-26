@@ -355,7 +355,7 @@ public class SnapshotMetadata implements Serializable {
     /**
      * @return Snapshot creation warnings.
      */
-    public List<String> warnings() {
+    @Nullable public List<String> warnings() {
         return warnings;
     }
 

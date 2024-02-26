@@ -24,8 +24,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -41,10 +41,10 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
         "able restore rest the caches from this snapshot.";
 
     /**
-     * @param cctx Shared context.
+     * @param ctx Grid context.
      */
-    public SnapshotPartitionsQuickVerifyHandler(GridCacheSharedContext<?, ?> cctx) {
-        super(cctx);
+    public SnapshotPartitionsQuickVerifyHandler(GridKernalContext ctx) {
+        super(ctx);
     }
 
     /** {@inheritDoc} */

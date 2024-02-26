@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
@@ -62,7 +64,22 @@ public class DumpReader implements Runnable {
     private final DumpReaderConfiguration cfg;
 
     /** Log. */
-    private final IgniteLogger log;
+    protected final IgniteLogger log;
+
+    /** */
+    protected final Map<Integer, List<String>> grpToNodes = new HashMap<>();
+
+    /** */
+    @Nullable protected final Map<Integer, String> cacheGrpIds;
+
+    /** */
+    protected Dump dump;
+
+    /** */
+    protected DumpConsumer cnsmr;
+
+    /** */
+    protected final ExecutorService execSvc;
 
     /**
      * @param cfg Dump reader configuration.
@@ -70,7 +87,13 @@ public class DumpReader implements Runnable {
      */
     public DumpReader(DumpReaderConfiguration cfg, IgniteLogger log) {
         this.cfg = cfg;
-        this.log = log.getLogger(DumpReader.class);
+        this.log = log.getLogger(getClass());
+
+        this.cacheGrpIds = cfg.cacheGroupNames() != null
+            ? Arrays.stream(cfg.cacheGroupNames()).collect(Collectors.toMap(CU::cacheId, Function.identity()))
+            : null;
+
+        this.execSvc = Executors.newFixedThreadPool(Math.min(1, cfg.threadCount()));
     }
 
     /** {@inheritDoc} */
@@ -78,36 +101,15 @@ public class DumpReader implements Runnable {
         ackAsciiLogo();
 
         try (Dump dump = new Dump(cfg.dumpRoot(), null, cfg.keepBinary(), false, encryptionSpi(), log)) {
-            DumpConsumer cnsmr = cfg.consumer();
+            this.dump = dump;
+            this.cnsmr = cfg.consumer();
 
             cnsmr.start();
 
             try {
-                File[] files = new File(cfg.dumpRoot(), DFLT_MARSHALLER_PATH).listFiles(BinaryUtils::notTmpFile);
+                dump.metadata().forEach(this::onMeta);
 
-                if (files != null)
-                    cnsmr.onMappings(CdcMain.typeMappingIterator(files, tm -> true));
-
-                cnsmr.onTypes(dump.types());
-
-                Map<Integer, List<String>> grpToNodes = new HashMap<>();
-
-                Set<Integer> cacheGrpIds = cfg.cacheGroupNames() != null
-                    ? Arrays.stream(cfg.cacheGroupNames()).map(CU::cacheId).collect(Collectors.toSet())
-                    : null;
-
-                for (SnapshotMetadata meta : dump.metadata()) {
-                    for (Integer grp : meta.cacheGroupIds()) {
-                        if (cacheGrpIds == null || cacheGrpIds.contains(grp))
-                            grpToNodes.computeIfAbsent(grp, key -> new ArrayList<>()).add(meta.folderName());
-                    }
-                }
-
-                cnsmr.onCacheConfigs(grpToNodes.entrySet().stream()
-                    .flatMap(e -> dump.configs(F.first(e.getValue()), e.getKey()).stream())
-                    .iterator());
-
-                ExecutorService execSvc = cfg.threadCount() > 1 ? Executors.newFixedThreadPool(cfg.threadCount()) : null;
+                beforePartitions();
 
                 AtomicBoolean skip = new AtomicBoolean(false);
 
@@ -155,32 +157,57 @@ public class DumpReader implements Runnable {
                                 }
                             };
 
-                            if (cfg.threadCount() > 1)
-                                execSvc.submit(consumePart);
-                            else
-                                consumePart.run();
+                            execSvc.submit(consumePart);
                         }
                     }
                 }
 
-                if (cfg.threadCount() > 1) {
-                    execSvc.shutdown();
+                execSvc.shutdown();
 
-                    boolean res = execSvc.awaitTermination(cfg.timeout().toMillis(), MILLISECONDS);
+                boolean res = execSvc.awaitTermination(cfg.timeout().toMillis(), MILLISECONDS);
 
-                    if (!res) {
-                        log.warning("Dump processing tasks not finished after timeout. Cancelling");
+                if (!res) {
+                    log.warning("Dump processing tasks not finished after timeout. Cancelling");
 
-                        execSvc.shutdownNow();
-                    }
+                    execSvc.shutdownNow();
                 }
             }
             finally {
-                cnsmr.stop();
+                try {
+                    cnsmr.stop();
+                }
+                finally {
+                    this.dump = null;
+                    this.cnsmr = null;
+
+                    this.execSvc.shutdown();
+                }
             }
         }
         catch (Exception e) {
-            throw new IgniteException(e);
+            throw e instanceof IgniteException ? (IgniteException)e : new IgniteException("Failed to run dump reader.", e);
+        }
+    }
+
+    /** */
+    protected void beforePartitions() {
+        File[] files = new File(cfg.dumpRoot(), DFLT_MARSHALLER_PATH).listFiles(BinaryUtils::notTmpFile);
+
+        if (files != null)
+            cnsmr.onMappings(CdcMain.typeMappingIterator(files, tm -> true));
+
+        cnsmr.onTypes(dump.types());
+
+        cnsmr.onCacheConfigs(grpToNodes.entrySet().stream()
+            .flatMap(e -> dump.configs(F.first(e.getValue()), e.getKey()).stream())
+            .iterator());
+    }
+
+    /** */
+    protected void onMeta(SnapshotMetadata meta) {
+        for (Integer grp : meta.cacheGroupIds()) {
+            if (cacheGrpIds == null || cacheGrpIds.keySet().contains(grp))
+                grpToNodes.computeIfAbsent(grp, key -> new ArrayList<>()).add(meta.folderName());
         }
     }
 
@@ -234,8 +261,8 @@ public class DumpReader implements Runnable {
         }
     }
 
-    /** */
-    private EncryptionSpi encryptionSpi() {
+    /** @return EncryptionSpi. */
+    public EncryptionSpi encryptionSpi() {
         EncryptionSpi encSpi = cfg.encryptionSpi();
 
         if (encSpi == null)

@@ -203,6 +203,16 @@ public class Dump implements AutoCloseable {
         return metadata;
     }
 
+    /** */
+    public GridKernalContext context() {
+        return cctx;
+    }
+
+    /** */
+    public String consistentId() {
+        return consistentId;
+    }
+
     /** @return List of snapshot metadata saved in {@link #dumpDir}. */
     private static List<SnapshotMetadata> metadata(File dumpDir, @Nullable String consistentId) {
         JdkMarshaller marsh = MarshallerUtils.jdkMarshaller("fake-node");
@@ -370,7 +380,7 @@ public class Dump implements AutoCloseable {
         File[] grpDirs = nodeDir.listFiles(f -> {
             if (!f.isDirectory()
                 || (!f.getName().startsWith(CACHE_DIR_PREFIX)
-                    && !f.getName().startsWith(CACHE_GRP_DIR_PREFIX)))
+                && !f.getName().startsWith(CACHE_GRP_DIR_PREFIX)))
                 return false;
 
             String grpName = f.getName().startsWith(CACHE_DIR_PREFIX)
