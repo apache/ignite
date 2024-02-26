@@ -82,18 +82,18 @@ public class RdbmsBenchmark extends JdbcAbstractBenchmark {
 
         long delta = ThreadLocalRandom.current().nextLong(1000);
 
-        for (String query : getDbqueries()) {
+        for (String qry : getDbqueries()) {
             boolean done = false;
 
-            query = query.replaceAll(":aid", Long.toString(aid));
-            query = query.replaceAll(":bid", Long.toString(bid));
-            query = query.replaceAll(":tid", Long.toString(tid));
-            query = query.replaceAll(":delta", Long.toString(delta));
-            if (query.contains(":id"))
-                query = query.replaceAll(":id", Long.toString(cnt.getAndIncrement()));
+            qry = qry.replaceAll(":aid", Long.toString(aid));
+            qry = qry.replaceAll(":bid", Long.toString(bid));
+            qry = qry.replaceAll(":tid", Long.toString(tid));
+            qry = qry.replaceAll(":delta", Long.toString(delta));
+            if (qry.contains(":id"))
+                qry = qry.replaceAll(":id", Long.toString(cnt.getAndIncrement()));
 
-            try (PreparedStatement stmt = conn.get().prepareStatement(query)) {
-                if (isIgnite && query.startsWith("INSERT")) {
+            try (PreparedStatement stmt = conn.get().prepareStatement(qry)) {
+                if (isIgnite && qry.startsWith("INSERT")) {
                     stmt.setLong(1, cnt.getAndIncrement());
                     stmt.setLong(2, tid);
                     stmt.setLong(3, bid);
@@ -106,7 +106,7 @@ public class RdbmsBenchmark extends JdbcAbstractBenchmark {
                 }
             }
             catch (Exception ignored) {
-                BenchmarkUtils.println("Failed to execute query " + query);
+                BenchmarkUtils.println("Failed to execute query " + qry);
             }
         }
         return true;

@@ -190,13 +190,13 @@ public class StatisticsUtils {
         if (stat == null)
             return -1;
 
-        for (Map.Entry<String, Long> version : versions.entrySet()) {
-            ColumnStatistics colStat = stat.columnsStatistics().get(version.getKey());
+        for (Map.Entry<String, Long> ver : versions.entrySet()) {
+            ColumnStatistics colStat = stat.columnsStatistics().get(ver.getKey());
 
-            if (colStat == null || colStat.version() < version.getValue())
+            if (colStat == null || colStat.version() < ver.getValue())
                 return -1;
 
-            if (colStat.version() > version.getValue())
+            if (colStat.version() > ver.getValue())
                 return 1;
         }
 
@@ -218,13 +218,13 @@ public class StatisticsUtils {
         if (cfg == null)
             return -1;
 
-        for (Map.Entry<String, Long> colVersion : versions.entrySet()) {
-            StatisticsColumnConfiguration colCfg = cfg.columns().get(colVersion.getKey());
+        for (Map.Entry<String, Long> colVer : versions.entrySet()) {
+            StatisticsColumnConfiguration colCfg = cfg.columns().get(colVer.getKey());
 
-            if (colCfg == null || colCfg.version() < colVersion.getValue())
+            if (colCfg == null || colCfg.version() < colVer.getValue())
                 return -1;
 
-            if (colCfg.version() > colVersion.getValue())
+            if (colCfg.version() > colVer.getValue())
                 return 1;
         }
 

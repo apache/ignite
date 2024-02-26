@@ -180,7 +180,7 @@ public class QueryEntity implements Serializable {
         checkEquals(conflicts, "valueFieldName", valueFieldName, target.valueFieldName);
         checkEquals(conflicts, "tableName", tableName, target.tableName);
 
-        List<QueryField> queryFieldsToAdd = checkFields(target, conflicts);
+        List<QueryField> qryFieldsToAdd = checkFields(target, conflicts);
 
         Collection<QueryIndex> indexesToAdd = checkIndexes(target, conflicts);
 
@@ -189,13 +189,13 @@ public class QueryEntity implements Serializable {
 
         Collection<SchemaAbstractOperation> patchOperations = new ArrayList<>();
 
-        if (!queryFieldsToAdd.isEmpty())
+        if (!qryFieldsToAdd.isEmpty())
             patchOperations.add(new SchemaAlterTableAddColumnOperation(
                 UUID.randomUUID(),
                 null,
                 null,
                 tableName,
-                queryFieldsToAdd,
+                qryFieldsToAdd,
                 true,
                 true
             ));
@@ -234,17 +234,17 @@ public class QueryEntity implements Serializable {
                 throw new IllegalStateException("Duplicate key");
         }
 
-        for (QueryIndex queryIdx : target.getIndexes()) {
-            if (curIndexes.containsKey(queryIdx.getName())) {
+        for (QueryIndex qryIdx : target.getIndexes()) {
+            if (curIndexes.containsKey(qryIdx.getName())) {
                 checkEquals(
                     conflicts,
-                    "index " + queryIdx.getName(),
-                    curIndexes.get(queryIdx.getName()),
-                    queryIdx
+                    "index " + qryIdx.getName(),
+                    curIndexes.get(qryIdx.getName()),
+                    qryIdx
                 );
             }
             else
-                indexesToAdd.add(queryIdx);
+                indexesToAdd.add(qryIdx);
         }
         return indexesToAdd;
     }
@@ -257,7 +257,7 @@ public class QueryEntity implements Serializable {
      * @return Fields which exist in target and not exist in local.
      */
     private List<QueryField> checkFields(QueryEntity target, StringBuilder conflicts) {
-        List<QueryField> queryFieldsToAdd = new ArrayList<>();
+        List<QueryField> qryFieldsToAdd = new ArrayList<>();
 
         for (Map.Entry<String, String> targetField : target.getFields().entrySet()) {
             String targetFieldName = targetField.getKey();
@@ -311,7 +311,7 @@ public class QueryEntity implements Serializable {
                     Integer precision = getFromMap(target.getFieldsPrecision(), targetFieldName);
                     Integer scale = getFromMap(target.getFieldsScale(), targetFieldName);
 
-                    queryFieldsToAdd.add(new QueryField(
+                    qryFieldsToAdd.add(new QueryField(
                         targetFieldName,
                         targetFieldType,
                         targetFieldAlias,
@@ -324,7 +324,7 @@ public class QueryEntity implements Serializable {
             }
         }
 
-        return queryFieldsToAdd;
+        return qryFieldsToAdd;
     }
 
     /**
@@ -918,8 +918,8 @@ public class QueryEntity implements Serializable {
             }
 
             if (!F.isEmpty(sqlAnn.groups())) {
-                for (String group : sqlAnn.groups())
-                    desc.addFieldToIndex(group, prop.fullName(), 0, false);
+                for (String grp : sqlAnn.groups())
+                    desc.addFieldToIndex(grp, prop.fullName(), 0, false);
             }
 
             if (!F.isEmpty(sqlAnn.orderedGroups())) {

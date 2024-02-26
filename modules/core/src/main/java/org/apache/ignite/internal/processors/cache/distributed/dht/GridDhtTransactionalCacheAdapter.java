@@ -28,9 +28,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -62,19 +60,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistFuture;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistFuture;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistFuture;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxRemote;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -94,7 +81,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -102,10 +88,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 
 /**
@@ -167,12 +151,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridDhtUnlockRequest.class,
             (CI2<UUID, GridDhtUnlockRequest>)this::processDhtUnlockRequest);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridNearTxQueryEnlistRequest.class,
-            (CI2<UUID, GridNearTxQueryEnlistRequest>)this::processNearTxQueryEnlistRequest);
-
-        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridNearTxQueryEnlistResponse.class,
-            (CI2<UUID, GridNearTxQueryEnlistResponse>)this::processNearTxQueryEnlistResponse);
-
         ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridDhtForceKeysRequest.class,
             new MessageHandler<GridDhtForceKeysRequest>() {
                 @Override public void onMessage(ClusterNode node, GridDhtForceKeysRequest msg) {
@@ -186,35 +164,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     processForceKeyResponse(node, msg);
                 }
             });
-
-        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridNearTxQueryResultsEnlistRequest.class,
-            (CI2<UUID, GridNearTxQueryResultsEnlistRequest>)this::processNearTxQueryResultsEnlistRequest);
-
-        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridNearTxQueryResultsEnlistResponse.class,
-            (CI2<UUID, GridNearTxQueryResultsEnlistResponse>)this::processNearTxQueryResultsEnlistResponse);
-
-        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridNearTxEnlistRequest.class,
-            (CI2<UUID, GridNearTxEnlistRequest>)this::processNearTxEnlistRequest);
-
-        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridNearTxEnlistResponse.class,
-            (CI2<UUID, GridNearTxEnlistResponse>)this::processNearTxEnlistResponse);
-
-        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridDhtTxQueryEnlistRequest.class,
-            new CI2<UUID, GridDhtTxQueryEnlistRequest>() {
-                @Override public void apply(UUID nodeId, GridDhtTxQueryEnlistRequest msg) {
-                    processDhtTxQueryEnlistRequest(nodeId, msg, false);
-                }
-            });
-
-        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridDhtTxQueryFirstEnlistRequest.class,
-            new CI2<UUID, GridDhtTxQueryEnlistRequest>() {
-                @Override public void apply(UUID nodeId, GridDhtTxQueryEnlistRequest msg) {
-                    processDhtTxQueryEnlistRequest(nodeId, msg, true);
-                }
-            });
-
-        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridDhtTxQueryEnlistResponse.class,
-            (CI2<UUID, GridDhtTxQueryEnlistResponse>)this::processDhtTxQueryEnlistResponse);
     }
 
     /** {@inheritDoc} */
@@ -658,73 +607,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         if (isNearEnabled(cacheCfg))
             near().clearLocks(nodeId, req);
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param req Request.
-     */
-    private void processNearTxQueryEnlistRequest(UUID nodeId, final GridNearTxQueryEnlistRequest req) {
-        assert nodeId != null;
-        assert req != null;
-
-        ClusterNode nearNode = ctx.discovery().node(nodeId);
-
-        GridDhtTxLocal tx;
-
-        try {
-            tx = initTxTopologyVersion(nodeId,
-                nearNode,
-                req.version(),
-                req.futureId(),
-                req.miniId(),
-                req.firstClientRequest(),
-                req.topologyVersion(),
-                req.threadId(),
-                req.txTimeout(),
-                req.taskNameHash(),
-                req.mvccSnapshot());
-        }
-        catch (IgniteCheckedException | IgniteException ex) {
-            GridNearTxQueryEnlistResponse res = new GridNearTxQueryEnlistResponse(req.cacheId(),
-                req.futureId(),
-                req.miniId(),
-                req.version(),
-                ex);
-
-            try {
-                ctx.io().send(nearNode, res, ctx.ioPolicy());
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to send near enlist response [" +
-                    "txId=" + req.version() +
-                    ", node=" + nodeId +
-                    ", res=" + res + ']', e);
-            }
-
-            return;
-        }
-
-        GridDhtTxQueryEnlistFuture fut = new GridDhtTxQueryEnlistFuture(
-            nodeId,
-            req.version(),
-            req.mvccSnapshot(),
-            req.futureId(),
-            req.miniId(),
-            tx,
-            req.cacheIds(),
-            req.partitions(),
-            req.schemaName(),
-            req.query(),
-            req.parameters(),
-            req.flags(),
-            req.pageSize(),
-            req.timeout(),
-            ctx);
-
-        fut.listen(NearTxQueryEnlistResultHandler.instance());
-
-        fut.init();
     }
 
     /**
@@ -1895,411 +1777,4 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         if (nearEntry != null)
             nearEntry.markObsolete(nextVersion());
     }
-
-    /**
-     * @param nodeId Node ID.
-     * @param req Request.
-     */
-    private void processNearTxQueryResultsEnlistRequest(UUID nodeId, final GridNearTxQueryResultsEnlistRequest req) {
-        assert nodeId != null;
-        assert req != null;
-
-        ClusterNode nearNode = ctx.discovery().node(nodeId);
-
-        GridDhtTxLocal tx;
-
-        try {
-            tx = initTxTopologyVersion(nodeId,
-                nearNode,
-                req.version(),
-                req.futureId(),
-                req.miniId(),
-                req.firstClientRequest(),
-                req.topologyVersion(),
-                req.threadId(),
-                req.txTimeout(),
-                req.taskNameHash(),
-                req.mvccSnapshot());
-        }
-        catch (Throwable e) {
-            GridNearTxQueryResultsEnlistResponse res = new GridNearTxQueryResultsEnlistResponse(req.cacheId(),
-                req.futureId(),
-                req.miniId(),
-                req.version(),
-                e);
-
-            try {
-                ctx.io().send(nearNode, res, ctx.ioPolicy());
-            }
-            catch (IgniteCheckedException ioEx) {
-                U.error(log, "Failed to send near enlist response " +
-                    "[txId=" + req.version() + ", node=" + nodeId + ", res=" + res + ']', ioEx);
-            }
-
-            if (e instanceof Error)
-                throw (Error)e;
-
-            return;
-        }
-
-        GridDhtTxQueryResultsEnlistFuture fut = new GridDhtTxQueryResultsEnlistFuture(
-            nodeId,
-            req.version(),
-            req.mvccSnapshot(),
-            req.futureId(),
-            req.miniId(),
-            tx,
-            req.timeout(),
-            ctx,
-            req.rows(),
-            req.operation());
-
-        fut.listen(NearTxQueryEnlistResultHandler.instance());
-
-        fut.init();
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param req Request.
-     */
-    private void processNearTxEnlistRequest(UUID nodeId, final GridNearTxEnlistRequest req) {
-        assert nodeId != null;
-        assert req != null;
-
-        ClusterNode nearNode = ctx.discovery().node(nodeId);
-
-        GridDhtTxLocal tx;
-
-        try {
-            tx = initTxTopologyVersion(nodeId,
-                nearNode,
-                req.version(),
-                req.futureId(),
-                req.miniId(),
-                req.firstClientRequest(),
-                req.topologyVersion(),
-                req.threadId(),
-                req.txTimeout(),
-                req.taskNameHash(),
-                req.mvccSnapshot());
-        }
-        catch (IgniteCheckedException | IgniteException ex) {
-            GridNearTxEnlistResponse res = new GridNearTxEnlistResponse(req.cacheId(),
-                req.futureId(),
-                req.miniId(),
-                req.version(),
-                ex);
-
-            try {
-                ctx.io().send(nearNode, res, ctx.ioPolicy());
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to send near enlist response [" +
-                    "txId=" + req.version() +
-                    ", node=" + nodeId +
-                    ", res=" + res + ']', e);
-            }
-
-            return;
-        }
-
-        GridDhtTxEnlistFuture fut = new GridDhtTxEnlistFuture(
-            nodeId,
-            req.version(),
-            req.mvccSnapshot(),
-            req.futureId(),
-            req.miniId(),
-            tx,
-            req.timeout(),
-            ctx,
-            req.rows(),
-            req.operation(),
-            req.filter(),
-            req.needRes(),
-            req.keepBinary());
-
-        fut.listen(NearTxResultHandler.instance());
-
-        fut.init();
-    }
-
-    /**
-     * @param nodeId Near node id.
-     * @param nearNode Near node.
-     * @param nearLockVer Near lock version.
-     * @param nearFutId Near future id.
-     * @param nearMiniId Near mini-future id.
-     * @param firstClientReq First client request flag.
-     * @param topVer Topology version.
-     * @param nearThreadId Near node thread id.
-     * @param timeout Timeout.
-     * @param txTaskNameHash Transaction task name hash.
-     * @param snapshot Mvcc snapsht.
-     * @return Transaction.
-     */
-    public GridDhtTxLocal initTxTopologyVersion(UUID nodeId,
-        ClusterNode nearNode,
-        GridCacheVersion nearLockVer,
-        IgniteUuid nearFutId,
-        int nearMiniId,
-        boolean firstClientReq,
-        AffinityTopologyVersion topVer,
-        long nearThreadId,
-        long timeout,
-        int txTaskNameHash,
-        MvccSnapshot snapshot
-    ) throws IgniteException, IgniteCheckedException {
-
-        assert ctx.affinityNode();
-
-        if (txLockMsgLog.isDebugEnabled()) {
-            txLockMsgLog.debug("Received near enlist request [txId=" + nearLockVer +
-                ", node=" + nodeId + ']');
-        }
-
-        if (nearNode == null) {
-            U.warn(txLockMsgLog, "Received near enlist request from unknown node (will ignore) [txId=" + nearLockVer +
-                ", node=" + nodeId + ']');
-
-            return null;
-        }
-
-        GridDhtTxLocal tx = null;
-
-        GridCacheVersion dhtVer = ctx.tm().mappedVersion(nearLockVer);
-
-        if (dhtVer != null)
-            tx = ctx.tm().tx(dhtVer);
-
-        GridDhtPartitionTopology top = null;
-
-        if (tx == null) {
-            if (firstClientReq) {
-                assert nearNode.isClient();
-
-                top = topology();
-
-                top.readLock();
-
-                GridDhtTopologyFuture topFut = top.topologyVersionFuture();
-
-                boolean done = topFut.isDone();
-
-                if (!done || !(topFut.topologyVersion().compareTo(topVer) >= 0
-                    && ctx.shared().exchange().lastAffinityChangedTopologyVersion(topFut.initialVersion()).compareTo(topVer) <= 0)) {
-                    // TODO IGNITE-7164 Wait for topology change, remap client TX in case affinity was changed.
-                    top.readUnlock();
-
-                    throw new ClusterTopologyException("Topology was changed. Please retry on stable topology.");
-                }
-            }
-
-            try {
-                tx = new GridDhtTxLocal(
-                    ctx.shared(),
-                    topVer,
-                    nearNode.id(),
-                    nearLockVer,
-                    nearFutId,
-                    nearMiniId,
-                    nearThreadId,
-                    false,
-                    false,
-                    ctx.systemTx(),
-                    false,
-                    ctx.ioPolicy(),
-                    PESSIMISTIC,
-                    REPEATABLE_READ,
-                    timeout,
-                    false,
-                    false,
-                    false,
-                    -1,
-                    null,
-                    securitySubjectId(ctx),
-                    txTaskNameHash,
-                    null,
-                    null);
-
-                // if (req.syncCommit())
-                tx.syncMode(FULL_SYNC);
-
-                tx = ctx.tm().onCreated(null, tx);
-
-                if (tx == null || !tx.init()) {
-                    String msg = "Failed to acquire lock (transaction has been completed): " +
-                        nearLockVer;
-
-                    U.warn(log, msg);
-
-                    try {
-                        if (tx != null)
-                            tx.rollbackDhtLocal();
-                    }
-                    catch (IgniteCheckedException ex) {
-                        U.error(log, "Failed to rollback the transaction: " + tx, ex);
-                    }
-
-                    throw new IgniteCheckedException(msg);
-                }
-
-                tx.mvccSnapshot(snapshot);
-                tx.topologyVersion(topVer);
-            }
-            finally {
-                if (top != null)
-                    top.readUnlock();
-            }
-        }
-
-        ctx.tm().txContext(tx);
-
-        return tx;
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param res Response.
-     */
-    private void processNearTxEnlistResponse(UUID nodeId, final GridNearTxEnlistResponse res) {
-        GridNearTxEnlistFuture fut = (GridNearTxEnlistFuture)
-            ctx.mvcc().versionedFuture(res.version(), res.futureId());
-
-        if (fut != null)
-            fut.onResult(nodeId, res);
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param res Response.
-     */
-    private void processNearTxQueryEnlistResponse(UUID nodeId, final GridNearTxQueryEnlistResponse res) {
-        GridNearTxQueryEnlistFuture fut = (GridNearTxQueryEnlistFuture)ctx.mvcc().versionedFuture(res.version(), res.futureId());
-
-        if (fut != null)
-            fut.onResult(res);
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param res Response.
-     */
-    private void processNearTxQueryResultsEnlistResponse(UUID nodeId, final GridNearTxQueryResultsEnlistResponse res) {
-        GridNearTxQueryResultsEnlistFuture fut = (GridNearTxQueryResultsEnlistFuture)
-            ctx.mvcc().versionedFuture(res.version(), res.futureId());
-
-        if (fut != null)
-            fut.onResult(nodeId, res);
-    }
-
-    /**
-     * @param primary Primary node.
-     * @param req Message.
-     * @param first Flag if this is a first request in current operation.
-     */
-    private void processDhtTxQueryEnlistRequest(UUID primary, GridDhtTxQueryEnlistRequest req, boolean first) {
-        try {
-            assert req.version() != null && req.op() != null;
-
-            GridDhtTxRemote tx = ctx.tm().tx(req.version());
-
-            if (tx == null) {
-                if (!first)
-                    throw new IgniteCheckedException("Can not find a transaction for version [version="
-                        + req.version() + ']');
-
-                GridDhtTxQueryFirstEnlistRequest req0 = (GridDhtTxQueryFirstEnlistRequest)req;
-
-                tx = new GridDhtTxRemote(ctx.shared(),
-                    req0.nearNodeId(),
-                    primary,
-                    req0.nearXidVersion(),
-                    req0.topologyVersion(),
-                    req0.version(),
-                    null,
-                    ctx.systemTx(),
-                    ctx.ioPolicy(),
-                    PESSIMISTIC,
-                    REPEATABLE_READ,
-                    false,
-                    req0.timeout(),
-                    -1,
-                    securitySubjectId(ctx),
-                    req0.taskNameHash(),
-                    false,
-                    null);
-
-                tx.mvccSnapshot(new MvccSnapshotWithoutTxs(req0.coordinatorVersion(), req0.counter(),
-                    MVCC_OP_COUNTER_NA, req0.cleanupVersion()));
-
-                tx = ctx.tm().onCreated(null, tx);
-
-                if (tx == null || !ctx.tm().onStarted(tx)) {
-                    throw new IgniteTxRollbackCheckedException("Failed to update backup " +
-                        "(transaction has been completed): " + req0.version());
-                }
-            }
-
-            assert tx != null;
-
-            MvccSnapshot s0 = tx.mvccSnapshot();
-
-            MvccSnapshot snapshot = new MvccSnapshotWithoutTxs(s0.coordinatorVersion(), s0.counter(),
-                req.operationCounter(), s0.cleanupVersion());
-
-            ctx.tm().txHandler().mvccEnlistBatch(tx, ctx, req.op(), req.keys(), req.values(), snapshot,
-                req.dhtFutureId(), req.batchId());
-
-            GridDhtTxQueryEnlistResponse res = new GridDhtTxQueryEnlistResponse(req.cacheId(),
-                req.dhtFutureId(),
-                req.batchId(),
-                null);
-
-            try {
-                ctx.io().send(primary, res, ctx.ioPolicy());
-            }
-            catch (IgniteCheckedException ioEx) {
-                U.error(log, "Failed to send DHT enlist reply to primary node [node: " + primary + ", req=" +
-                    req + ']', ioEx);
-            }
-        }
-        catch (Throwable e) {
-            GridDhtTxQueryEnlistResponse res = new GridDhtTxQueryEnlistResponse(ctx.cacheId(),
-                req.dhtFutureId(),
-                req.batchId(),
-                e);
-
-            try {
-                ctx.io().send(primary, res, ctx.ioPolicy());
-            }
-            catch (IgniteCheckedException ioEx) {
-                U.error(log, "Failed to send DHT enlist reply to primary node " +
-                    "[node: " + primary + ", req=" + req + ']', ioEx);
-            }
-
-            if (e instanceof Error)
-                throw (Error)e;
-        }
-    }
-
-    /**
-     * @param backup Backup node.
-     * @param res Response message.
-     */
-    private void processDhtTxQueryEnlistResponse(UUID backup, GridDhtTxQueryEnlistResponse res) {
-        GridDhtTxAbstractEnlistFuture fut = (GridDhtTxAbstractEnlistFuture)
-            ctx.mvcc().future(res.futureId());
-
-        if (fut == null) {
-            U.warn(log, "Received dht enlist response for unknown future [futId=" + res.futureId() +
-                ", batchId=" + res.batchId() +
-                ", node=" + backup + ']');
-
-            return;
-        }
-
-        fut.onResult(backup, res);
-    }
-
 }

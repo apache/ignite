@@ -64,6 +64,8 @@ namespace Apache.Ignite.Core.Tests
 
             Console.WriteLine("Using maven at: " + MavenPath);
             Console.WriteLine("JAVA_HOME: " + Environment.GetEnvironmentVariable("JAVA_HOME"));
+            Console.WriteLine("IsJava9: " + Jvm.IsJava9());
+            Console.WriteLine("GetJavaMajorVersion: " + TestUtilsJni.GetJavaMajorVersion());
 
             var pomWrapper =
                 ReplaceIgniteVersionInPomFile(groupId, version, Path.Combine(JavaServerSourcePath, "pom.xml"));

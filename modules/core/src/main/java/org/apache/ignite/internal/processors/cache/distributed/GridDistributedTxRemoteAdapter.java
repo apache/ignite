@@ -459,7 +459,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
 
                 GridCacheReturnCompletableWrapper wrapper = null;
 
-                if (!F.isEmpty(writeMap) || mvccSnapshot != null) {
+                if (!F.isEmpty(writeMap)) {
                     GridCacheReturn ret = null;
 
                     if (!near() && !local() && onePhaseCommit()) {
@@ -490,8 +490,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                     Set<GridDhtLocalPartition> reservedParts = new HashSet<>();
 
                     try {
-                        assert mvccSnapshot == null;
-
                         Collection<IgniteTxEntry> entries = near() ? allEntries() : writeEntries();
 
                         // Data entry to write to WAL.
@@ -778,8 +776,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                         if (txCntrs != null)
                             cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCntrs.updateCounters());
 
-                        cctx.mvccCaching().onTxFinished(this, true);
-
                         if (!near() && !F.isEmpty(dataEntries) && cctx.wal(true) != null)
                             ptr = cctx.wal(true).log(new DataRecord(dataEntries));
 
@@ -925,8 +921,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                     cctx.tm().txHandler().applyPartitionsUpdatesCounters(counters.updateCounters(), true, false);
 
                 state(ROLLED_BACK);
-
-                cctx.mvccCaching().onTxFinished(this, false);
             }
         }
         catch (IgniteCheckedException | RuntimeException | Error e) {

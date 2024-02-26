@@ -20,7 +20,6 @@ package org.apache.ignite.internal.management;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.resources.LoggerResource;
@@ -29,7 +28,6 @@ import org.apache.ignite.resources.LoggerResource;
  * Shutdown policy task.
  */
 @GridInternal
-@GridVisorManagementTask
 public class ShutdownPolicyTask extends VisorOneNodeTask<ShutdownPolicyCommandArg, ShutdownPolicyTaskResult> {
     /** Serial version id. */
     private static final long serialVersionUID = 0L;

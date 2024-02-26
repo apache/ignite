@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import io.opencensus.common.Functions;
 import io.opencensus.trace.AttributeValue;
-import io.opencensus.trace.Span;
 import io.opencensus.trace.SpanId;
 import io.opencensus.trace.Tracing;
 import io.opencensus.trace.export.SpanData;
@@ -40,7 +39,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.tracing.SpanType;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
@@ -56,6 +54,7 @@ import static io.opencensus.trace.AttributeValue.stringAttributeValue;
 import static org.apache.ignite.spi.tracing.Scope.COMMUNICATION;
 import static org.apache.ignite.spi.tracing.Scope.EXCHANGE;
 import static org.apache.ignite.spi.tracing.Scope.TX;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Abstract class for open census tracing tests.
@@ -64,8 +63,17 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
     /** Grid count. */
     static final int GRID_CNT = 3;
 
-    /** Span buffer count - hardcode in open census. */
-    private static final int SPAN_BUFFER_COUNT = 32;
+    /**
+     * Span buffer count - hardcode in open census.
+     * @see ExportComponentImpl
+     */
+    private static final int SPAN_BUFFER_COUNT = 2500;
+
+    /**
+     * Enforces that trace export exports data at least once every 5 seconds - hardcode in open census.
+     * @see ExportComponentImpl
+     */
+    private static final long EXPORTER_SCHEDULE_DELAY = 5_000;
 
     /** Default configuration map. */
     static final Map<TracingConfigurationCoordinates, TracingConfigurationParameters> DFLT_CONFIG_MAP =
@@ -427,16 +435,15 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
          */
         void flush() throws IgniteInterruptedCheckedException {
             // There is hardcoded invariant, that ended spans will be passed to exporter in 2 cases:
-            // By 5 seconds timeout and if buffer size exceeds 32 spans.
+            // By {@code EXPORTER_SCHEDULE_DELAY} seconds timeout and if buffer size exceeds {@code SPAN_BUFFER_COUNT} spans.
             // There is no ability to change this behavior in Opencensus, so this hack is needed to "flush" real spans to exporter.
             // @see io.opencensus.implcore.trace.export.ExportComponentImpl.
-            for (int i = 0; i < SPAN_BUFFER_COUNT; i++) {
-                Span span = Tracing.getTracer().spanBuilder("test-" + i).setSampler(Samplers.alwaysSample()).startSpan();
+            for (int i = 0; i < SPAN_BUFFER_COUNT; i++)
+                Tracing.getTracer().spanBuilder("test-" + i).setSampler(Samplers.alwaysSample()).startSpan().end();
 
-                U.sleep(10); // See same hack in OpenCensusSpanAdapter#end() method.
-
-                span.end();
-            }
+            assertTrue(waitForCondition(
+                () -> allSpans().anyMatch(span -> span.getName().equals("test-" + (SPAN_BUFFER_COUNT - 1))),
+                2 * EXPORTER_SCHEDULE_DELAY));
         }
 
         /** Clears collected spans. */

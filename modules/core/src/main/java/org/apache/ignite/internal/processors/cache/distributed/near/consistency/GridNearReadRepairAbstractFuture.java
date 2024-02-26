@@ -201,7 +201,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
                     true,
                     true,
                     tx != null ? tx.label() : null,
-                    tx != null ? tx.mvccSnapshot() : null,
+                    null,
                     node);
 
             futs.put(mapping.getKey(), fut);

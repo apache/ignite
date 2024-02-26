@@ -73,7 +73,6 @@ public class ClientTxStartRequest extends ClientRequest {
                 isolation,
                 timeout,
                 true,
-                null,
                 0,
                 lb
             );
