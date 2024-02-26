@@ -268,9 +268,9 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         CountDownLatch handshakeToNode2 = new CountDownLatch(1);
 
         // Listener of handshake request from node0 to node2. Activates simulation of same localhost address of node1
-        // for node2. Also disabled network malfunction. The cluster must be restored.
+        // for node2. Also, disabled network malfunction. The cluster must be restored.
         testSpi(node0).hsRqLsnr.set((socket, handshakeRequest) -> {
-            // First, node0 tries to connect and send handshake request to other address of faulty node1.
+            // First, node0 tries to connect and send the handshake request to another address of faulty node1.
             if (testSpi(node2).locNodeAddrs.contains(new InetSocketAddress(socket.getInetAddress(), socket.getPort()))) {
                 testSpi(node2).simulatedPrevNodeAddr.set(F.viewReadOnly(testSpi(node2).locNode.socketAddresses(),
                     a -> a, a -> a.getAddress().isLoopbackAddress()));
@@ -307,7 +307,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         assertTrue(node1AliveStatus.get());
 
-        // Wait a bit until node0 restore conndection node1.
+        // Wait a bit until node0 restore connection node1.
         U.sleep(failureDetectionTimeout / 2);
 
         // Node 1 must not be kicked.
@@ -457,9 +457,12 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected void initializeImpl() {
+            if (impl != null)
+                return;
+
             super.initializeImpl();
 
-            // To make the test stable we want loopback paddress of the previous node responds first.
+            // To make the test stable, we want a loopback paddress of the previous node responds first.
             // We don't need a concurrent ping execution.
             if (impl instanceof ServerImpl)
                 impl = new ServerImpl(this, 1);
