@@ -751,9 +751,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         boolean skipEntry = readNoEntry;
 
                         if (readNoEntry) {
-                            CacheDataRow row = mvccSnapshot != null ?
-                                ctx.offheap().mvccRead(ctx, key, mvccSnapshot) :
-                                ctx.offheap().read(ctx, key);
+                            CacheDataRow row = ctx.offheap().read(ctx, key);
 
                             if (row != null) {
                                 long expireTime = row.expireTime();

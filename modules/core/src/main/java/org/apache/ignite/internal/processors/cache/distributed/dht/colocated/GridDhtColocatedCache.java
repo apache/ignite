@@ -234,7 +234,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             }, opCtx, /*retry*/false);
         }
 
-        MvccSnapshot mvccSnapshot = null;
         MvccQueryTracker mvccTracker = null;
 
         AffinityTopologyVersion topVer;
@@ -276,7 +275,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             /*keepCacheObjects*/false,
             opCtx != null && opCtx.recovery(),
             null,
-            mvccSnapshot);
+            null);
 
         fut.init();
 
@@ -336,7 +335,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             }, opCtx, /*retry*/false);
         }
 
-        MvccSnapshot mvccSnapshot = null;
         MvccQueryTracker mvccTracker = null;
 
         AffinityTopologyVersion topVer;
@@ -378,7 +376,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             needVer,
             false,
             null,
-            mvccSnapshot
+            null
         );
 
         if (mvccTracker != null) {
@@ -497,9 +495,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 for (KeyCacheObject key : keys) {
                     if (readNoEntry) {
-                        CacheDataRow row = mvccSnapshot != null ?
-                            ctx.offheap().mvccRead(ctx, key, mvccSnapshot) :
-                            ctx.offheap().read(ctx, key);
+                        CacheDataRow row = ctx.offheap().read(ctx, key);
 
                         if (row != null) {
                             long expireTime = row.expireTime();
