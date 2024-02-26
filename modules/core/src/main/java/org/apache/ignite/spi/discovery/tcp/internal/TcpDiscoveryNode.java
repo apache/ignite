@@ -105,7 +105,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     @GridToStringExclude
     private volatile long lastUpdateTimeNanos = System.nanoTime();
 
-    /** Same as {@link #lastExchangeTime} but as returned by {@link System#nanoTime()} */
+    /** The most recent time when node exchanged a message with a remote node. */
     @GridToStringExclude
     private volatile long lastExchangeTimeNanos = System.nanoTime();
 
@@ -435,10 +435,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /**
      * Sets the last time a node exchanged a message with a remote node.
      *
-     * @param lastExchangeTime Time in milliseconds.
      * @param lastExchangeTimeNanos Time in nanoseconds.
      */
-    public void lastExchangeTime(long lastExchangeTime, long lastExchangeTimeNanos) {
+    public void lastExchangeTime(long lastExchangeTimeNanos) {
         this.lastExchangeTimeNanos = lastExchangeTimeNanos;
     }
 
