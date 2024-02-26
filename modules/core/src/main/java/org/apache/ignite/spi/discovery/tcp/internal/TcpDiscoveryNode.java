@@ -439,7 +439,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      * @param lastExchangeTimeNanos Time in nanoseconds.
      */
     public void lastExchangeTime(long lastExchangeTime, long lastExchangeTimeNanos) {
-        this.lastExchangeTime = lastExchangeTime;
         this.lastExchangeTimeNanos = lastExchangeTimeNanos;
     }
 
