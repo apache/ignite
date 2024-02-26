@@ -905,7 +905,7 @@ public class CacheGroupContext {
      * caches is already Unmodifiable list, so we don't need to explicitly wrap it here.
      */
     public List<GridCacheContext<?, ?>> caches() {
-        return caches;
+        return Collections.unmodifiableList(caches);
     }
 
     /**
