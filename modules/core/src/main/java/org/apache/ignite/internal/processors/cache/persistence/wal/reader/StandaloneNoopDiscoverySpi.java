@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
@@ -47,7 +48,7 @@ public class StandaloneNoopDiscoverySpi extends IgniteSpiAdapter implements Disc
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
-        return null;
+        return Collections.emptyList();
     }
 
     /** {@inheritDoc} */
