@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
@@ -318,7 +317,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)133, ClusterMetricsUpdateMessage::new);
         factory.register((short)134, ContinuousRoutineStartResultMessage::new);
         factory.register((short)135, LatchAckMessage::new);
-        factory.register((short)143, GridCacheMvccEntryInfo::new);
         factory.register((short)148, MvccVersionImpl::new);
         factory.register((short)150, MvccSnapshotWithoutTxs::new);
         factory.register((short)157, PartitionUpdateCountersMessage::new);

@@ -1047,7 +1047,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** {@inheritDoc} */
     @Override protected void onMessageExchanged() {
         if (spi.failureDetectionTimeoutEnabled() && locNode != null)
-            locNode.lastExchangeTime(U.currentTimeMillis(), System.nanoTime());
+            locNode.lastExchangeTime(System.nanoTime());
     }
 
     /**
