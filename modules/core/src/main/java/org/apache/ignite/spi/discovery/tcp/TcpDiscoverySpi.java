@@ -2213,7 +2213,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         if (impl != null)
             return;
 
-        sslEnable = ignite().configuration().getSslContextFactory() != null;
+        sslEnable = ignite.configuration().getSslContextFactory() != null;
 
         initFailureDetectionTimeout();
 
@@ -2261,7 +2261,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         if (isSslEnabled()) {
             try {
-                SSLContext sslCtx = ignite().configuration().getSslContextFactory().create();
+                SSLContext sslCtx = ignite.configuration().getSslContextFactory().create();
 
                 sslSockFactory = sslCtx.getSocketFactory();
                 sslSrvSockFactory = sslCtx.getServerSocketFactory();

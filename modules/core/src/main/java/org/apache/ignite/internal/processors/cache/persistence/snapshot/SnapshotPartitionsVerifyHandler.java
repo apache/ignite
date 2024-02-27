@@ -221,7 +221,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     ) {
                         pageStore.init();
 
-                        if (punchHoleEnabled && meta.isGroupWithCompresion(grpId) && type() == SnapshotHandlerType.CREATE) {
+                        if (punchHoleEnabled && meta.isGroupWithCompression(grpId) && type() == SnapshotHandlerType.CREATE) {
                             byte pageType = partId == INDEX_PARTITION ? FLAG_IDX : FLAG_DATA;
 
                             checkPartitionsPageCrcSum(() -> pageStore, partId, pageType, (id, buffer) -> {
@@ -476,13 +476,13 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         SnapshotMetadata meta = opCtx.metadata();
         Path snapshotDir = opCtx.snapshotDirectory().toPath();
 
-        if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompresion)) {
+        if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompression)) {
             try {
                 cctx.kernalContext().compress().checkPageCompressionSupported();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Snapshot contains compressed cache groups " +
-                    "[grps=[" + grpIds.stream().filter(meta::isGroupWithCompresion).collect(Collectors.toList()) +
+                    "[grps=[" + grpIds.stream().filter(meta::isGroupWithCompression).collect(Collectors.toList()) +
                     "], snpName=" + meta.snapshotName() + "], but compression module is not enabled. " +
                     "Make sure that ignite-compress module is in classpath.");
             }
