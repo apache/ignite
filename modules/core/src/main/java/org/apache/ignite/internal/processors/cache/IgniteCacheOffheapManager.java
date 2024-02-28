@@ -22,13 +22,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import javax.cache.Cache;
-import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRowCacheAware;
@@ -39,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.persistence.partstorage.Parti
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateResult;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
@@ -190,152 +187,6 @@ public interface IgniteCacheOffheapManager {
     /**
      * @param cctx Cache context.
      * @param key Key.
-     * @param mvccSnapshot MVCC snapshot.
-     * @return Cached row, if available, null otherwise.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot mvccSnapshot)
-        throws IgniteCheckedException;
-
-    /**
-     * Returns iterator over the all row versions for the given key.
-     *
-     * @param cctx Cache context.
-     * @param key Key.
-     * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
-     * @return Iterator over all versions.
-     * @throws IgniteCheckedException If failed.
-     */
-    GridCursor<CacheDataRow> mvccAllVersionsCursor(GridCacheContext cctx, KeyCacheObject key, Object x)
-        throws IgniteCheckedException;
-
-    /**
-     * @param entry Entry.
-     * @param val Value.
-     * @param ver Version.
-     * @param expireTime Expire time.
-     * @param mvccVer MVCC version.
-     * @param newMvccVer New MVCC version.
-     * @return {@code True} if value was inserted.
-     * @throws IgniteCheckedException If failed.
-     */
-    public boolean mvccInitialValue(
-        GridCacheMapEntry entry,
-        @Nullable CacheObject val,
-        GridCacheVersion ver,
-        long expireTime,
-        MvccVersion mvccVer,
-        MvccVersion newMvccVer
-    ) throws IgniteCheckedException;
-
-    /**
-     * Tries to apply entry history.
-     * Either applies full entry history or do nothing.
-     *
-     * @param entry Entry to update.
-     * @param hist Full entry history.
-     * @return {@code True} if history applied successfully, {@code False} otherwise.
-     */
-    boolean mvccApplyHistoryIfAbsent(GridCacheMapEntry entry, List<GridCacheMvccEntryInfo> hist) throws IgniteCheckedException;
-
-    /**
-     * @param entry Entry.
-     * @param val Value.
-     * @param ver Cache version.
-     * @param expireTime Expire time.
-     * @param mvccSnapshot MVCC snapshot.
-     * @param primary {@code True} if on primary node.
-     * @param needHist Flag to collect history.
-     * @param noCreate Flag indicating that row should not be created if absent.
-     * @param needOldVal {@code True} if need old value.
-     * @param filter Filter.
-     * @param retVal Flag to return previous value.
-     * @param keepBinary Keep binary flag.
-     * @param entryProc Entry processor.
-     * @param invokeArgs Entry processor invoke arguments.
-     * @return Update result.
-     * @throws IgniteCheckedException If failed.
-     */
-    public MvccUpdateResult mvccUpdate(
-        GridCacheMapEntry entry,
-        CacheObject val,
-        GridCacheVersion ver,
-        long expireTime,
-        MvccSnapshot mvccSnapshot,
-        boolean primary,
-        boolean needHist,
-        boolean noCreate,
-        boolean needOldVal,
-        @Nullable CacheEntryPredicate filter,
-        boolean retVal,
-        boolean keepBinary,
-        EntryProcessor entryProc,
-        Object[] invokeArgs) throws IgniteCheckedException;
-
-    /**
-     * @param entry Entry.
-     * @param mvccSnapshot MVCC snapshot.
-     * @param primary {@code True} if on primary node.
-     * @param needHist Flag to collect history.
-     * @param needOldVal {@code True} if need old value.
-     * @param filter Filter.
-     * @param retVal Flag to return previous value.
-     * @return Update result.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable public MvccUpdateResult mvccRemove(
-        GridCacheMapEntry entry,
-        MvccSnapshot mvccSnapshot,
-        boolean primary,
-        boolean needHist,
-        boolean needOldVal,
-        @Nullable CacheEntryPredicate filter,
-        boolean retVal) throws IgniteCheckedException;
-
-    /**
-     * @param entry Entry.
-     * @param mvccSnapshot MVCC snapshot.
-     * @return Update result.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable public MvccUpdateResult mvccLock(
-        GridCacheMapEntry entry,
-        MvccSnapshot mvccSnapshot
-    ) throws IgniteCheckedException;
-
-    /**
-     * Apply update with full history.
-     * Note: History version may be skipped if it have already been actualized with previous update operation.
-     *
-     * @param entry Entry.
-     * @param val Value.
-     * @param ver Version.
-     * @param mvccVer MVCC version.
-     * @param newMvccVer New MVCC version.
-     * @return {@code True} if value was inserted.
-     * @throws IgniteCheckedException If failed.
-     */
-    public boolean mvccUpdateRowWithPreloadInfo(
-        GridCacheMapEntry entry,
-        @Nullable CacheObject val,
-        GridCacheVersion ver,
-        long expireTime,
-        MvccVersion mvccVer,
-        MvccVersion newMvccVer,
-        byte mvccTxState,
-        byte newMvccTxState
-    ) throws IgniteCheckedException;
-
-    /**
-     * @param entry Entry.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void mvccRemoveAll(GridCacheMapEntry entry)
-        throws IgniteCheckedException;
-
-    /**
-     * @param cctx Cache context.
-     * @param key Key.
      * @param val Value.
      * @param ver Version.
      * @param expireTime Expire time.
@@ -352,25 +203,6 @@ public interface IgniteCacheOffheapManager {
         GridDhtLocalPartition part,
         @Nullable CacheDataRow oldRow
     ) throws IgniteCheckedException;
-
-    /**
-     * @param cctx Cache context.
-     * @param key Key.
-     * @param val Value.
-     * @param ver Version.
-     * @param expireTime Expire time.
-     * @param part Partition.
-     * @param mvccVer Mvcc version.
-     * @throws IgniteCheckedException If failed.
-     */
-    void mvccApplyUpdate(
-        GridCacheContext cctx,
-        KeyCacheObject key,
-        CacheObject val,
-        GridCacheVersion ver,
-        long expireTime,
-        GridDhtLocalPartition part,
-        MvccVersion mvccVer) throws IgniteCheckedException;
 
     /**
      * @param cctx Cache context.
@@ -776,163 +608,10 @@ public interface IgniteCacheOffheapManager {
         /**
          * @param cctx Cache context.
          * @param key Key.
-         * @param val Value.
-         * @param ver Version.
-         * @param mvccVer MVCC version.
-         * @param newMvccVer New MVCC version.
-         * @return {@code True} if new value was inserted.
-         * @throws IgniteCheckedException If failed.
-         */
-        boolean mvccInitialValue(
-            GridCacheContext cctx,
-            KeyCacheObject key,
-            @Nullable CacheObject val,
-            GridCacheVersion ver,
-            long expireTime,
-            MvccVersion mvccVer,
-            MvccVersion newMvccVer) throws IgniteCheckedException;
-
-        /**
-         * Tries to apply entry history.
-         * Either applies full entry history or do nothing.
-         *
-         * @param cctx Cache context.
-         * @param key Key.
-         * @param hist Full entry history.
-         * @return {@code True} if entry history applied successfully, {@code False} otherwise.
-         */
-        boolean mvccApplyHistoryIfAbsent(
-            GridCacheContext cctx,
-            KeyCacheObject key,
-            List<GridCacheMvccEntryInfo> hist) throws IgniteCheckedException;
-
-        /**
-         * Apply update with full history.
-         * Note: History version may be skipped if it have already been actualized with previous update operation.
-         *
-         * @param cctx Grid cache context.
-         * @param key Key.
-         * @param val Value.
-         * @param ver Version.
-         * @param expireTime Expiration time.
-         * @param mvccVer Mvcc version.
-         * @param newMvccVer New mvcc version.
-         * @return {@code true} on success.
-         * @throws IgniteCheckedException, if failed.
-         */
-        boolean mvccUpdateRowWithPreloadInfo(
-            GridCacheContext cctx,
-            KeyCacheObject key,
-            @Nullable CacheObject val,
-            GridCacheVersion ver,
-            long expireTime,
-            MvccVersion mvccVer,
-            MvccVersion newMvccVer,
-            byte mvccTxState,
-            byte newMvccTxState) throws IgniteCheckedException;
-
-        /**
-         * @param cctx Cache context.
-         * @param key Key.
-         * @param val Value.
-         * @param ver Version.
-         * @param expireTime Expire time.
-         * @param mvccSnapshot MVCC snapshot.
-         * @param filter Filter.
-         * @param entryProc Entry processor.
-         * @param invokeArgs Entry processor invoke arguments.
-         * @param primary {@code True} if update is executed on primary node.
-         * @param needHist Flag to collect history.
-         * @param noCreate Flag indicating that row should not be created if absent.
-         * @param needOldVal {@code True} if need old value.
-         * @param retVal Flag to return previous value.
-         * @param keepBinary Keep binary flag.
-         * @return Update result.
-         * @throws IgniteCheckedException If failed.
-         */
-        MvccUpdateResult mvccUpdate(
-            GridCacheContext cctx,
-            KeyCacheObject key,
-            CacheObject val,
-            GridCacheVersion ver,
-            long expireTime,
-            MvccSnapshot mvccSnapshot,
-            @Nullable CacheEntryPredicate filter,
-            EntryProcessor entryProc,
-            Object[] invokeArgs,
-            boolean primary,
-            boolean needHist,
-            boolean noCreate,
-            boolean needOldVal,
-            boolean retVal,
-            boolean keepBinary) throws IgniteCheckedException;
-
-        /**
-         * @param cctx Cache context.
-         * @param key Key.
-         * @param mvccSnapshot MVCC snapshot.
-         * @param filter Filter.
-         * @param primary {@code True} if update is executed on primary node.
-         * @param needHistory Flag to collect history.
-         * @param needOldVal {@code True} if need old value.
-         * @param retVal Flag to return previous value.
-         * @return List of transactions to wait for.
-         * @throws IgniteCheckedException If failed.
-         */
-        MvccUpdateResult mvccRemove(
-            GridCacheContext cctx,
-            KeyCacheObject key,
-            MvccSnapshot mvccSnapshot,
-            @Nullable CacheEntryPredicate filter,
-            boolean primary,
-            boolean needHistory,
-            boolean needOldVal,
-            boolean retVal) throws IgniteCheckedException;
-
-        /**
-         * @param cctx Cache context.
-         * @param key Key.
-         * @param mvccSnapshot MVCC snapshot.
-         * @return List of transactions to wait for.
-         * @throws IgniteCheckedException If failed.
-         */
-        MvccUpdateResult mvccLock(
-            GridCacheContext cctx,
-            KeyCacheObject key,
-            MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
-
-        /**
-         * @param cctx Cache context.
-         * @param key Key.
-         * @throws IgniteCheckedException If failed.
-         */
-        void mvccRemoveAll(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
-
-        /**
-         * @param cctx Cache context.
-         * @param key Key.
          * @param c Closure.
          * @throws IgniteCheckedException If failed.
          */
         public void invoke(GridCacheContext cctx, KeyCacheObject key, OffheapInvokeClosure c) throws IgniteCheckedException;
-
-        /**
-         *
-         * @param cctx Cache context.
-         * @param key Key.
-         * @param val Value.
-         * @param ver Version.
-         * @param expireTime Expire time.
-         * @param mvccVer Mvcc version.
-         * @throws IgniteCheckedException
-         */
-        void mvccApplyUpdate(GridCacheContext cctx,
-            KeyCacheObject key,
-            CacheObject val,
-            GridCacheVersion ver,
-            long expireTime,
-            MvccVersion mvccVer
-        ) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.
@@ -949,27 +628,6 @@ public interface IgniteCacheOffheapManager {
          * @throws IgniteCheckedException If failed.
          */
         public CacheDataRow find(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
-
-        /**
-         * Returns iterator over the all row versions for the given key.
-         *
-         * @param cctx Cache context.
-         * @param key Key.
-         * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
-         * @return Iterator over all versions.
-         * @throws IgniteCheckedException If failed.
-         */
-        GridCursor<CacheDataRow> mvccAllVersionsCursor(GridCacheContext cctx, KeyCacheObject key, Object x)
-            throws IgniteCheckedException;
-
-        /**
-         * @param cctx Cache context.
-         * @param key Key.
-         * @return Data row.
-         * @throws IgniteCheckedException If failed.
-         */
-        public CacheDataRow mvccFind(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot snapshot)
-            throws IgniteCheckedException;
 
         /**
          * @return Data cursor.

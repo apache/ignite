@@ -111,10 +111,10 @@ public abstract class PageIO {
     public static final short MAX_PAYLOAD_SIZE = 2048;
 
     /** */
-    private static List<IOVersions<? extends BPlusInnerIO<?>>> h2ExtraInnerIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
+    private static final List<IOVersions<? extends BPlusInnerIO<?>>> h2ExtraInnerIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
 
     /** */
-    private static List<IOVersions<? extends BPlusLeafIO<?>>> h2ExtraLeafIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
+    private static final List<IOVersions<? extends BPlusLeafIO<?>>> h2ExtraLeafIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
 
     /** */
     private static List<IOVersions<? extends BPlusInnerIO<?>>> h2ExtraMvccInnerIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
@@ -250,9 +250,6 @@ public abstract class PageIO {
 
     /** */
     public static final short T_DATA_PART = 32;
-
-    /** */
-    public static final short T_MARKER_PAGE = 33;
 
     /** */
     public static final short T_DEFRAG_LINK_MAPPING_INNER = 34;
@@ -632,12 +629,8 @@ public abstract class PageIO {
         )
             return true;
 
-        if ((T_H2_EX_REF_INNER_START <= pageType && pageType <= T_H2_EX_REF_INNER_END) ||
-            (T_H2_EX_REF_MVCC_INNER_START <= pageType && pageType <= T_H2_EX_REF_MVCC_INNER_END)
-        )
-            return true;
-
-        return false;
+        return (T_H2_EX_REF_INNER_START <= pageType && pageType <= T_H2_EX_REF_INNER_END) ||
+            (T_H2_EX_REF_MVCC_INNER_START <= pageType && pageType <= T_H2_EX_REF_MVCC_INNER_END);
     }
 
     /** {@inheritDoc} */
@@ -841,7 +834,7 @@ public abstract class PageIO {
      * @return Index page type.
      */
     public static IndexPageType deriveIndexPageType(long pageAddr) {
-        int pageIoType = PageIO.getType(pageAddr);
+        int pageIoType = getType(pageAddr);
         switch (pageIoType) {
             case T_DATA_REF_INNER:
             case T_DATA_REF_MVCC_INNER:
