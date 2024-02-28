@@ -105,7 +105,6 @@ import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -140,12 +139,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** Timeout processor. */
     private final GridTimeoutProcessor timeoutProc;
-
-    /** Event storage manager. */
-    private final GridEventStorageManager eventStorageMgr;
-
-    /** Discovery manager. */
-    private final GridDiscoveryManager discoveryMgr;
 
     /** */
     @GridToStringExclude
@@ -212,8 +205,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         metricMgr = new GridMetricManager(this);
         sysViewMgr = new GridSystemViewManager(this);
         timeoutProc = new GridTimeoutProcessor(this);
-        eventStorageMgr = new GridEventStorageManager(this);
-        discoveryMgr = new GridDiscoveryManager(this);
         transProc = createComponent(CacheObjectTransformerProcessor.class);
 
         // Fake folder provided to perform processor startup on empty folder.
@@ -262,7 +253,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
         cfg.setDiscoverySpi(new StandaloneNoopDiscoverySpi());
         cfg.setCommunicationSpi(new StandaloneNoopCommunicationSpi());
-        cfg.setEventStorageSpi(new NoopEventStorageSpi());
 
         final Marshaller marshaller = new BinaryMarshaller();
         cfg.setMarshaller(marshaller);
@@ -321,6 +311,15 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** {@inheritDoc} */
     @Override public IgniteEx grid() {
         final IgniteEx kernal = new IgniteKernal() {
+            /**
+             * Override to return the non-null context instance to make metric SPIs happy.<br>
+             *
+             * Say the SqlViewMetricExporterSpi one which may be automatically added by
+             * the {@link GridMetricManager} if indexing or query engine are found in classpath
+             * (which is the default behaviour).
+             *
+             * @return Kernal context.
+             */
             @Override public GridKernalContext context() {
                 return StandaloneGridKernalContext.this;
             }
@@ -509,7 +508,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridDiscoveryManager discovery() {
-        return discoveryMgr;
+        return new GridDiscoveryManager(this);
     }
 
     /** {@inheritDoc} */
@@ -519,7 +518,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridEventStorageManager event() {
-        return eventStorageMgr;
+        return null;
     }
 
     /** {@inheritDoc} */

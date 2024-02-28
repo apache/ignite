@@ -1924,9 +1924,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** @return All remote nodes in topology. */
     public Collection<ClusterNode> remoteNodes() {
-        DiscoCache discoCache = discoCache();
-
-        return discoCache == null ? getSpi().getRemoteNodes() : discoCache.remoteNodes();
+        return discoCache().remoteNodes();
     }
 
     /** @return All nodes in topology. */
