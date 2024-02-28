@@ -216,6 +216,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         comps.add(rsrcProc);
         comps.add(cacheObjProcessor);
         comps.add(metricMgr);
+        comps.add(timeoutProc);
 
         if (marshallerMappingFileStoreDir != null) {
             marshallerCtx.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
@@ -740,6 +741,8 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     public static void startAllComponents(GridKernalContext kctx) throws IgniteCheckedException {
         for (GridComponent comp : kctx)
             comp.start();
+
+        kctx.metric().onKernalStart(true);
     }
 
     /**
