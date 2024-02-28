@@ -474,7 +474,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     throw e;
                 }
-
             }
         };
     }
@@ -891,18 +890,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * Check whether command could be executed with the given cluster state.
-     *
-     * @param parseRes Parsing result.
+     * Check cluster state.
      */
-    private void checkClusterState(QueryParserResult parseRes) {
+    private void checkClusterState() {
         if (!ctx.state().publicApiActiveState(true)) {
-            if (parseRes.isCommand()) {
-                QueryParserResultCommand cmd = parseRes.command();
-
-                assert cmd != null;
-            }
-
             throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, " +
                 "that the cluster is considered inactive by default if Ignite Persistent Store is used to " +
                 "let all the nodes join the cluster. To activate the cluster call" +
@@ -951,7 +942,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
 
                 // Check if cluster state is valid.
-                checkClusterState(parseRes);
+                checkClusterState();
 
                 // Execute.
                 if (parseRes.isCommand()) {
