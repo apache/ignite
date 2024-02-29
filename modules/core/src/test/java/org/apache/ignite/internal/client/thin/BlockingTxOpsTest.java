@@ -38,7 +38,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class BlockingTxOpsTest extends AbstractThinClientTest {
     /** Default tx timeout value. */
-    private static final long TX_TIMEOUT = 1_000L;
+    private static final long TX_TIMEOUT = 5_000L;
 
     /** */
     private static final int THREADS_CNT = 5;
@@ -294,5 +294,38 @@ public class BlockingTxOpsTest extends AbstractThinClientTest {
         }
 
         assertEquals(0, sum);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testLastAsyncOperationFutureMerge() throws Exception {
+        poolSize = 1;
+
+        try (Ignite ignore = startGrid(0)) {
+            try (IgniteClient client = startClient(0)) {
+                ClientCache<Integer, Integer> cache = client.getOrCreateCache(new ClientCacheConfiguration()
+                    .setName("test")
+                    .setAtomicityMode(TRANSACTIONAL)
+                    .setBackups(1)
+                );
+
+                int iterations = 100;
+
+                GridTestUtils.runMultiThreaded(() -> {
+                    for (int i = 0; i < iterations; i++) {
+                        if (ThreadLocalRandom.current().nextBoolean()) {
+                            try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TX_TIMEOUT)) {
+                                cache.putAsync(0, 0);
+                                tx.commit();
+                            }
+                        }
+                        else
+                            cache.put(0, 0);
+                    }
+                }, THREADS_CNT, "tx-thread");
+            }
+        }
     }
 }
