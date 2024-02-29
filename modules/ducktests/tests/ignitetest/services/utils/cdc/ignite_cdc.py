@@ -17,6 +17,7 @@
 """
 This module contains Ignite CDC utility (ignite-cdc.sh) wrapper.
 """
+import os
 import re
 import signal
 from copy import deepcopy
@@ -93,7 +94,8 @@ class IgniteCdcUtility(JvmProcessMixin):
 
         envs["CDC_JVM_OPTS"] = f"\"{' '.join(cdc_jvm_opts)}\""
 
-        return f"{envs_to_exports(envs)} bash " + self.cluster.script(cmd)
+        return (f"{envs_to_exports(envs)} bash " + self.cluster.script(cmd) +
+                f" 2>&1 | tee -a {os.path.join(self.cluster.log_dir, 'ignite-cdc-console.log')} &")
 
     @staticmethod
     def __parse_output(raw_output):
