@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.dump.DumpEntry;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.util.AttributeNodeFilter;
 import org.junit.Test;
 
 import static java.lang.Boolean.FALSE;
@@ -112,14 +114,31 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     }
 
     /** */
-    @Test void testDumpWithNodeFilterCache() throws Exception {
+    @Test
+    public void testDumpWithNodeFilterCache() throws Exception {
         assumeTrue(nodes > 1);
 
-        IgniteEx ign = startGridAndFillCaches();
+        IgniteEx ign = startGrids(nodes);
+
+        ign.createCache(new CacheConfiguration<>()
+            .setName(NODE_FILTER_CACHE)
+            .setBackups(backups)
+            .setAtomicityMode(mode)
+            .setNodeFilter(new AttributeNodeFilter(NODE_FILTER_CACHE, ""))
+            .setAffinity(new RendezvousAffinityFunction().setPartitions(20)));
 
         createDump(ign, DMP_NAME, Collections.singletonList(NODE_FILTER_CACHE));
 
-        checkDump(ign);
+        checkDump(ign,
+            DMP_NAME,
+            new String[] {NODE_FILTER_CACHE},
+            Collections.singleton(NODE_FILTER_CACHE),
+            KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
+            0,
+            KEYS_CNT,
+            false,
+            false
+        );
     }
 
     /** */
@@ -636,19 +655,17 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     @Override protected void putData(
         IgniteCache<Object, Object> cache,
         IgniteCache<Object, Object> grpCache0,
-        IgniteCache<Object, Object> grpCache1,
-        IgniteCache<Object, Object> nfCache
+        IgniteCache<Object, Object> grpCache1
     ) {
-        if (!explicitTtl == FALSE) {
+        if (explicitTtl == FALSE) {
             super.putData(
                 cache.withExpiryPolicy(EXPIRY_POLICY),
                 grpCache0.withExpiryPolicy(EXPIRY_POLICY),
-                grpCache1.withExpiryPolicy(EXPIRY_POLICY),
-                nfCache == null ? null : nfCache.withExpiryPolicy(EXPIRY_POLICY)
+                grpCache1.withExpiryPolicy(EXPIRY_POLICY)
             );
         }
         else
-            super.putData(cache, grpCache0, grpCache1, nfCache);
+            super.putData(cache, grpCache0, grpCache1);
     }
 
     /** {@inheritDoc} */
