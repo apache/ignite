@@ -31,6 +31,7 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
 from ignitetest.utils import cluster
 
+
 class DnsFailureTest(IgniteTest):
     """
     Test DNS service failure.
@@ -76,7 +77,8 @@ class DnsFailureTest(IgniteTest):
 
         ignites.stop_node(ignites.nodes[1])
 
-        ignites.await_event("Node left topology", 60, from_the_beginning=True, nodes=[ignites.nodes[0], ignites.nodes[2]])
+        ignites.await_event("Node left topology", 60, from_the_beginning=True,
+                            nodes=[ignites.nodes[0], ignites.nodes[2]])
 
         assert ignites.alive(ignites.nodes[0]), 'Node 0 should be alive'
         assert ignites.alive(ignites.nodes[2]), 'Node 2 should be alive'
@@ -92,6 +94,7 @@ class DnsFailureTest(IgniteTest):
         app = IgniteApplicationService(
             self.test_context,
             ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
+            startup_timeout_sec=120,
             java_class_name="org.apache.ignite.internal.ducktest.tests.smoke_test.SimpleApplication")
 
         app.start()

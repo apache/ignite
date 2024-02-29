@@ -254,7 +254,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
                                err_msg="Event [%s] was not triggered on '%s' in %d seconds" % (evt_message, node.name,
                                                                                                timeout_sec))
 
-    def await_event(self, evt_message, timeout_sec, nodes=None, from_the_beginning=False, backoff_sec=.1, log_file=None):
+    def await_event(self, evt_message, timeout_sec, nodes=None, from_the_beginning=False, backoff_sec=.1,
+                    log_file=None):
         """
         Await for specific event messages on all nodes.
         :param evt_message: Event message.
