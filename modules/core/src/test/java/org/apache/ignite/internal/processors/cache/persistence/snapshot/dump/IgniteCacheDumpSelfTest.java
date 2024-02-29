@@ -63,6 +63,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 /** */
 public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
@@ -108,6 +109,17 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
         }
 
         return cfg;
+    }
+
+    /** */
+    @Test void testDumpWithNodeFilterCache() throws Exception {
+        assumeTrue(nodes > 1);
+
+        IgniteEx ign = startGridAndFillCaches();
+
+        createDump(ign, DMP_NAME, Collections.singletonList(NODE_FILTER_CACHE));
+
+        checkDump(ign);
     }
 
     /** */
@@ -624,17 +636,19 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     @Override protected void putData(
         IgniteCache<Object, Object> cache,
         IgniteCache<Object, Object> grpCache0,
-        IgniteCache<Object, Object> grpCache1
+        IgniteCache<Object, Object> grpCache1,
+        IgniteCache<Object, Object> nfCache
     ) {
-        if (explicitTtl == FALSE) {
+        if (!explicitTtl == FALSE) {
             super.putData(
                 cache.withExpiryPolicy(EXPIRY_POLICY),
                 grpCache0.withExpiryPolicy(EXPIRY_POLICY),
-                grpCache1.withExpiryPolicy(EXPIRY_POLICY)
+                grpCache1.withExpiryPolicy(EXPIRY_POLICY),
+                nfCache == null ? null : nfCache.withExpiryPolicy(EXPIRY_POLICY)
             );
         }
         else
-            super.putData(cache, grpCache0, grpCache1);
+            super.putData(cache, grpCache0, grpCache1, nfCache);
     }
 
     /** {@inheritDoc} */

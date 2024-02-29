@@ -27,9 +27,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -68,6 +71,7 @@ import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.util.AttributeNodeFilter;
 import org.jetbrains.annotations.Nullable;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -95,6 +99,9 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     public static final String CACHE_1 = "cache-1";
+
+    /** */
+    public static final String NODE_FILTER_CACHE = "nodeFilterCache";
 
     /** */
     public static final int KEYS_CNT = 1000;
@@ -208,6 +215,25 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                     .setAffinity(new RendezvousAffinityFunction().setPartitions(20))
             );
 
+        if (nodes > 1) {
+            CacheConfiguration<?, ?> ccfgWithNf = new CacheConfiguration<>()
+                .setName(CACHE_1)
+                .setBackups(backups)
+                .setAtomicityMode(mode)
+                .setWriteSynchronizationMode(FULL_SYNC)
+                .setNodeFilter(new AttributeNodeFilter(NODE_FILTER_CACHE, ""))
+                .setAffinity(new RendezvousAffinityFunction().setPartitions(20));
+
+            cfg.setCacheConfiguration(Stream.concat(Stream.of(cfg.getCacheConfiguration()), Stream.of(ccfgWithNf))
+                .toArray(CacheConfiguration[]::new));
+
+            if (!igniteInstanceName.endsWith("0")) {
+                assert F.isEmpty(cfg.getUserAttributes());
+
+                cfg.setUserAttributes(Stream.of(NODE_FILTER_CACHE).collect(Collectors.toMap(Function.identity(), v -> "")));
+            }
+        }
+
         if (encrypted)
             cfg.setEncryptionSpi(encryptionSpi());
 
@@ -222,7 +248,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
         ign.cluster().state(ClusterState.ACTIVE);
 
-        putData(cli.cache(DEFAULT_CACHE_NAME), cli.cache(CACHE_0), cli.cache(CACHE_1));
+        putData(cli.cache(DEFAULT_CACHE_NAME), cli.cache(CACHE_0), cli.cache(CACHE_1), cli.cache(NODE_FILTER_CACHE));
 
         return ign;
     }
@@ -266,18 +292,24 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     protected void putData(
         IgniteCache<Object, Object> cache,
         IgniteCache<Object, Object> grpCache0,
-        IgniteCache<Object, Object> grpCache1
+        IgniteCache<Object, Object> grpCache1,
+        @Nullable IgniteCache<Object, Object> nodeFilterCache
     ) {
         if (useDataStreamer) {
             try (
                 IgniteDataStreamer<Integer, Integer> _cache = cli.dataStreamer(cache.getName());
                 IgniteDataStreamer<Integer, User> _grpCache0 = cli.dataStreamer(grpCache0.getName());
-                IgniteDataStreamer<Key, Value> _grpCache1 = cli.dataStreamer(grpCache1.getName())
+                IgniteDataStreamer<Key, Value> _grpCache1 = cli.dataStreamer(grpCache1.getName());
+                IgniteDataStreamer<Integer, Integer> _nodeFilterCache = nodeFilterCache == null ? null
+                    : cli.dataStreamer(nodeFilterCache.getName())
             ) {
                 IntStream.range(0, KEYS_CNT).forEach(i -> {
                     _cache.addData(i, i);
                     _grpCache0.addData(i, USER_FACTORY.apply(i));
                     _grpCache1.addData(new Key(i), new Value(String.valueOf(i)));
+
+                    if (nodeFilterCache != null)
+                        _nodeFilterCache.addData(i, i);
                 });
             }
         }
@@ -286,6 +318,9 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 cache.put(i, i);
                 grpCache0.put(i, USER_FACTORY.apply(i));
                 grpCache1.put(new Key(i), new Value(String.valueOf(i)));
+
+                if (nodeFilterCache != null)
+                    nodeFilterCache.put(i, i);
             });
         }
     }
