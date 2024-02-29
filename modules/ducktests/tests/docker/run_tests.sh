@@ -95,7 +95,7 @@ die() {
 }
 
 _extend_json() {
-    python3 - "$1" "$2" <<EOF
+    python - "$1" "$2" <<EOF
 import sys
 import json
 
@@ -147,8 +147,6 @@ if [ -z "$FORCE" ]; then
     # If docker image changed then restart cluster (down here and up within next step)
     "$SCRIPT_DIR"/ducker-ignite compare "$IMAGE_NAME" || die "ducker-ignite compare failed"
 fi
-
-"$SCRIPT_DIR"/ducker-ignite down $FORCE || die "ducker-ignite down failed"
 
 # Up cluster if nothing is running
 if "$SCRIPT_DIR"/ducker-ignite ssh | grep -q '(none)'; then

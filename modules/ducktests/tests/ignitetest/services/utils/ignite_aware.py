@@ -78,7 +78,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
         self.init_logs_attribute()
 
         self.disconnected_nodes = []
-        self.dns_disabled_nodes = []
 
     @property
     def product(self):
@@ -159,7 +158,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
 
     def clean(self, **kwargs):
         self.__restore_iptables()
-        self.__restore_hosts()
 
         super().clean(**kwargs)
 
@@ -364,13 +362,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
         """
         return os.path.join(self.temp_dir, "iptables.bak")
 
-    @property
-    def hosts_store_path(self):
-        """
-        :return: path to store backup of hosts file
-        """
-        return os.path.join(self.temp_dir, "hosts.bak")
-
     def drop_network(self, nodes=None, net_part: NetPart = NetPart.ALL):
         """
         Disconnects node from cluster.
@@ -412,51 +403,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
 
         self.logger.debug("Activated netfilter on '%s':\n%s" % (node.name, settings))
 
-    def drop_dns(self, nodes=None):
-        """
-        Emulate DNS service failure on nodes.
-        :param nodes: Nodes to emulate DNS service failure.
-        """
-        if nodes is None:
-            nodes = self.nodes
-
-        for node in nodes:
-            self.logger.info("Deny DNS service on '" + node.account.hostname + "' ...")
-
-        self.__backup_iptables(nodes)
-        self.__backup_hosts(nodes)
-
-        return self.exec_on_nodes_async(nodes, lambda n: self.__disable_dns(n))
-
-    def __disable_dns(self, node):
-        # Filter hosts file.
-        cmd = "grep -v ducker /etc/hosts|sudo tee /etc/hosts"
-
-        _, err = IgniteAwareService.exec_command_ex(node, cmd)
-
-        assert len(err) == 0, "Failed to filter hosts file on '%s': %s" % (node.name, err)
-
-        # Block UDP port 53.
-        settings = self.__apply_iptables_settings(
-            node,
-            "sudo iptables -I OUTPUT 1 -p udp --dport 53 -j DROP")
-
-        self.logger.debug("Activated netfilter on '%s':\n%s" % (node.name, settings))
-
-        # Block TCP port 53.
-        settings = self.__apply_iptables_settings(
-            node,
-            "sudo iptables -I OUTPUT 1 -p tcp --dport 53 -j DROP")
-
-        self.logger.debug("Activated netfilter on '%s':\n%s" % (node.name, settings))
-
-        # Block 127.0.0.11 - Docker DNS server.
-        settings = self.__apply_iptables_settings(
-            node,
-            "sudo iptables -I OUTPUT 1 -d 127.0.0.11 -j DROP")
-
-        self.logger.debug("Activated netfilter on '%s':\n%s" % (node.name, settings))
-
     def __apply_iptables_settings(self, node, cmd):
         # Sets given iptables settings and ensures they were applied.
         settings_before = self.__dump_netfilter_settings(node)
@@ -483,7 +429,12 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
 
             _, err = IgniteAwareService.exec_command_ex(node, cmd)
 
-            assert len(err) == 0 or "Warning: iptables-legacy tables present" in err, "Failed to store iptables rules on '%s': %s" % (node.name, err)
+            if "Warning: iptables-legacy tables present" in err:
+                cmd = f"sudo iptables-legacy-save | tee {self.netfilter_store_path}"
+
+                _, err = IgniteAwareService.exec_command_ex(node, cmd)
+
+            assert len(err) == 0, "Failed to store iptables rules on '%s': %s" % (node.name, err)
 
             self.logger.debug("Netfilter before launch on '%s': %s" % (node.name, self.__dump_netfilter_settings(node)))
 
@@ -517,36 +468,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
 
             raise RuntimeError("Unable to restore node states. See the log above.")
 
-    def __backup_hosts(self, nodes):
-        # Store current network filter settings.
-        for node in nodes:
-            cmd = f"sudo cp -f /etc/hosts {self.hosts_store_path}"
-
-            _, err = IgniteAwareService.exec_command_ex(node, cmd)
-
-            assert len(err) == 0, "Failed to store hosts file on '%s': %s" % (node.name, err)
-
-            assert self.dns_disabled_nodes.count(node) == 0
-
-            self.dns_disabled_nodes.append(node)
-
-    def __restore_hosts(self):
-        # Restore previous hosts file.
-        cmd = f"sudo cp -f {self.hosts_store_path} /etc/hosts"
-
-        errors = []
-
-        for node in self.dns_disabled_nodes:
-            _, err = IgniteAwareService.exec_command_ex(node, cmd)
-
-            if len(err) > 0:
-                errors.append("Failed to restore hosts on '%s': %s" % (node.name, err))
-
-        if len(errors) > 0:
-            self.logger.error("Failed restoring actions:" + os.linesep + os.linesep.join(errors))
-
-            raise RuntimeError("Unable to restore node states. See the log above.")
-
     @staticmethod
     def __dump_netfilter_settings(node):
         """
@@ -554,7 +475,10 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
         """
         out, err = IgniteAwareService.exec_command_ex(node, "sudo iptables -L -n")
 
-        assert len(err) == 0 or "Warning: iptables-legacy tables present" in err, "Failed to dump iptables rules on '%s': %s" % (node.name, err)
+        if "Warning: iptables-legacy tables present" in err:
+            out, err = IgniteAwareService.exec_command_ex(node, "sudo iptables-legacy -L -n")
+
+        assert len(err) == 0, "Failed to dump iptables rules on '%s': %s" % (node.name, err)
 
         return out
 
