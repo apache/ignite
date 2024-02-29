@@ -741,8 +741,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     public static void startAllComponents(GridKernalContext kctx) throws IgniteCheckedException {
         for (GridComponent comp : kctx)
             comp.start();
-
-        kctx.metric().onKernalStart(true);
     }
 
     /**

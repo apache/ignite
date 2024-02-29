@@ -419,6 +419,8 @@ public class CdcMain implements Runnable {
 
         startAllComponents(kctx);
 
+        kctx.metric().onKernalStart(true);
+
         mreg = kctx.metric().registry("cdc");
 
         return kctx;
