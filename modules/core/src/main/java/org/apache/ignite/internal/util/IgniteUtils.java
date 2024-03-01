@@ -9728,8 +9728,12 @@ public abstract class IgniteUtils {
 
         // Try to resolve addresses from host names if no external addresses found.
         if (!hasAddr) {
-            for (String host : hostNames)
-                res.add(createResolved(host, port));
+            for (String host : hostNames) {
+                InetSocketAddress inetSockAddr = createResolved(host, port);
+
+                if (!inetSockAddr.isUnresolved())
+                    res.add(inetSockAddr);
+            }
         }
 
         return res;
