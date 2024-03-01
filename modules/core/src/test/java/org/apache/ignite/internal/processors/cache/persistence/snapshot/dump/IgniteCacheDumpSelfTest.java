@@ -43,7 +43,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.dump.DumpEntry;
@@ -82,6 +81,9 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     public static final long TTL = 5 * 1000;
 
     /** */
+    private static final String NODE_FILTER_CACHE = "nodeFilterCache";
+
+    /** */
     public static final ExpiryPolicy EXPIRY_POLICY = new ExpiryPolicy() {
         @Override public Duration getExpiryForCreation() {
             return new Duration(MILLISECONDS, TTL);
@@ -95,9 +97,6 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             return null;
         }
     };
-
-    /** */
-    private static final String NODE_FILTER_CACHE = "nodeFilterCache";
 
     /** */
     private Boolean explicitTtl;
@@ -134,19 +133,17 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
         configureDfltCaches = false;
 
-        IgniteEx ign = startGrids(nodes);
+        startGridAndFillCaches();
 
-        ign.cluster().state(ClusterState.ACTIVE);
-
-        ign.createCache(new CacheConfiguration<>()
+        cli.createCache(new CacheConfiguration<>()
             .setName(NODE_FILTER_CACHE)
             .setBackups(backups)
             .setAtomicityMode(mode)
             .setNodeFilter(new AttributeNodeFilter(NODE_FILTER_CACHE, ""))
             .setAffinity(new RendezvousAffinityFunction().setPartitions(20)));
 
-        try (IgniteDataStreamer<Key, Value> ds = ign.dataStreamer(NODE_FILTER_CACHE)) {
-            IgniteCache<Key, Value> cache = ign.cache(NODE_FILTER_CACHE);
+        try (IgniteDataStreamer<Key, Value> ds = cli.dataStreamer(NODE_FILTER_CACHE)) {
+            IgniteCache<Key, Value> cache = cli.cache(NODE_FILTER_CACHE);
 
             for (int i = 0; i < KEYS_CNT; ++i) {
                 if (useDataStreamer)
@@ -156,11 +153,11 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             }
         }
 
-        createDump(ign, DMP_NAME, Collections.singletonList(NODE_FILTER_CACHE));
+        createDump(cli, DMP_NAME, Collections.singleton(NODE_FILTER_CACHE));
 
         extraCaches.add(NODE_FILTER_CACHE);
 
-        checkDump(ign,
+        checkDump(cli,
             DMP_NAME,
             new String[] {NODE_FILTER_CACHE},
             Collections.singleton(NODE_FILTER_CACHE),
