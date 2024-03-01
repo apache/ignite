@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +36,7 @@ import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.util.Util.last;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.CNL_JOIN;
@@ -51,9 +53,6 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
 
     /** Known join type hints as flat array. */
     private static final HintDefinition[] ALL_HINTS;
-
-    /** Special join table name for the case when the current join has no any table scan input. */
-    private static final String UNALLOWED_TABLE_NAME = " <>+-!?=\t";
 
     /** Hint disabing this join type. */
     private final HintDefinition knownDisableHint;
@@ -86,12 +85,12 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
 
     /** */
     private boolean disabledByHints(LogicalJoin join) {
-        Collection<TableScan> tables = joinTables(join);
+        Collection<TableScan> joinTables = joinTables(join);
 
         Collection<RelHint> rawHints = new ArrayList<>();
 
         // Table hints have a bigger priority and go first.
-        tables.forEach(t -> rawHints.addAll(HintUtils.nonInheritedRelHints(t)));
+        joinTables.forEach(t -> rawHints.addAll(HintUtils.nonInheritedRelHints(t)));
 
         rawHints.addAll(HintUtils.allRelHints(join));
 
@@ -102,23 +101,30 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
 
         Map<String, Collection<HintDefinition>> hintedTables = new HashMap<>();
 
-        Set<String> tblNames = extractTblNames(tables);
+        Set<String> joinTblNames = F.isEmpty(joinTables)
+            ? Collections.emptySet()
+            : joinTables.stream().map(t -> last(t.getTable().getQualifiedName())).collect(Collectors.toSet());
+
+        Set<String> matchedTbls;
 
         for (RelHint hint : HintUtils.hints(join, rawHints, ALL_HINTS)) {
-            Set<String> matchedTbls = hint.listOptions.isEmpty() ? tblNames : new HashSet<>(hint.listOptions);
+            if (hint.listOptions.isEmpty())
+                matchedTbls = joinTblNames;
+            else {
+                matchedTbls = new HashSet<>(hint.listOptions);
 
-            if (!hint.listOptions.isEmpty())
-                matchedTbls.retainAll(tblNames);
+                matchedTbls.retainAll(joinTblNames);
 
-            // Do not skip if the hint has no option. It can be a 'global', request-level hint.
-            if (matchedTbls.isEmpty())
-                continue;
+                // Do not skip if the hint has no option. It can be a 'global', request-level hint.
+                if (matchedTbls.isEmpty())
+                    continue;
+            }
 
             HintDefinition curHintDef = HintDefinition.valueOf(hint.hintName);
             boolean curHintIsDisable = !HINTS.containsKey(curHintDef);
             boolean skipHint = false;
 
-            for (String tbl : tblNames) {
+            for (String tbl : joinTblNames) {
                 Collection<HintDefinition> prevTblHints = hintedTables.get(tbl);
 
                 if (prevTblHints == null)
@@ -137,8 +143,7 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
 
                     // Prohibited: disabling all join types, combinations of forcing and disabling same join type,
                     // forcing of different join types.
-                    if (curHintIsDisable && (allDisables != null && allDisables.size() == HINTS.size())
-                        || isMutuallyExclusive(curHintDef, prevTblHint))
+                    if (curHintIsDisable && allDisables.size() == HINTS.size() || isMutuallyExclusive(curHintDef, prevTblHint))
                         skipHint = true;
                 }
             }
@@ -159,15 +164,6 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
         }
 
         return ruleDisabled;
-    }
-
-    /**
-     * @return Names of the joining tables or {@link #UNALLOWED_TABLE_NAME} if the join has no any table scan input.
-     */
-    private static Set<String> extractTblNames(Collection<TableScan> tables) {
-        return tables.isEmpty()
-            ? Stream.of(UNALLOWED_TABLE_NAME).collect(Collectors.toSet())
-            : tables.stream().map(t -> last(t.getTable().getQualifiedName())).collect(Collectors.toSet());
     }
 
     /**

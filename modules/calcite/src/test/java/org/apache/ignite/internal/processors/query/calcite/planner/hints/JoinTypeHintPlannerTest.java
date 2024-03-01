@@ -452,30 +452,41 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
                 .and(nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)).negate()), CORE_JOIN_REORDER_RULES);
 
         assertPlan("SELECT /*+ " + CNL_JOIN + "(TBL1)," + MERGE_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 " +
-                "JOIN TBL2 t2  on t1.v3=t2.v3 where t2.v1 in (SELECT t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)",
-            schema, predicateForNestedHintOverrides(), CORE_JOIN_REORDER_RULES);
+                "JOIN TBL2 t2 on t1.v3=t2.v3 where t2.v1 in (SELECT t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)",
+            schema, predicateForNestedHintOverrides(false), CORE_JOIN_REORDER_RULES);
 
         assertPlan("SELECT /*+ " + MERGE_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
                 "where t2.v1 in (SELECT /*+ " + CNL_JOIN + "(TBL1) */ t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)",
-            schema, predicateForNestedHintOverrides(), CORE_JOIN_REORDER_RULES);
+            schema, predicateForNestedHintOverrides(true), CORE_JOIN_REORDER_RULES);
 
         assertPlan("SELECT /*+ " + MERGE_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
                 "where t2.v1 in (SELECT t3.v3 from TBL3 /*+ " + CNL_JOIN + " */ t3 JOIN TBL1 t4 on t3.v2=t4.v2)",
-            schema, predicateForNestedHintOverrides(), CORE_JOIN_REORDER_RULES);
+            schema, predicateForNestedHintOverrides(true), CORE_JOIN_REORDER_RULES);
 
         assertPlan("SELECT /*+ " + MERGE_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
                 "where t2.v1 in (SELECT t3.v3 from TBL3 t3 JOIN TBL1 /*+ " + CNL_JOIN + " */ t4 on t3.v2=t4.v2)",
-            schema, predicateForNestedHintOverrides(), CORE_JOIN_REORDER_RULES);
+            schema, predicateForNestedHintOverrides(true), CORE_JOIN_REORDER_RULES);
     }
 
     /**
      * @return A {@link Predicate} for {@link #testNestedHintOverrides()}
      */
-    private Predicate<RelNode> predicateForNestedHintOverrides() {
-        return nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class).and(hasNestedTableScan("TBL1")).and(hasNestedTableScan("TBL2")))
+    private Predicate<RelNode> predicateForNestedHintOverrides(boolean t1MergeT2) {
+        Predicate<RelNode> res = nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class)).negate()
             .and(nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
-                .and(hasNestedTableScan("TBL3")).and(hasNestedTableScan("TBL1"))))
-            .and(nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class)).negate());
+                .and(hasNestedTableScan("TBL3")).and(hasNestedTableScan("TBL1"))));
+
+        Predicate<RelNode> t1MergeT2Pred = nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
+            .and(input(0, nodeOrAnyChild(isTableScan("TBL1")))
+                .and(input(1, nodeOrAnyChild(isTableScan("TBL2"))))));
+
+        Predicate<RelNode> t1CnlT2Pred = nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+            .and(input(0, nodeOrAnyChild(isTableScan("TBL1")))
+                .and(input(1, nodeOrAnyChild(isTableScan("TBL2"))))));
+
+        return t1MergeT2
+            ? res.and(t1MergeT2Pred).and(t1CnlT2Pred.negate())
+            : res.and(t1MergeT2Pred.negate()).and(t1CnlT2Pred);
     }
 
     /**
