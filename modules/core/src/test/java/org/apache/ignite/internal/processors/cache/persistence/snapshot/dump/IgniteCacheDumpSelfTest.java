@@ -29,16 +29,21 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.dump.DumpEntry;
@@ -92,6 +97,9 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     };
 
     /** */
+    private static final String NODE_FILTER_CACHE = "nodeFilterCache";
+
+    /** */
     private Boolean explicitTtl;
 
     /** {@inheritDoc} */
@@ -110,6 +118,12 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
                 ccfg.setExpiryPolicyFactory(() -> EXPIRY_POLICY);
         }
 
+        if (!igniteInstanceName.endsWith("0")) {
+            assert F.isEmpty(cfg.getUserAttributes());
+
+            cfg.setUserAttributes(Stream.of(NODE_FILTER_CACHE).collect(Collectors.toMap(Function.identity(), v -> "")));
+        }
+
         return cfg;
     }
 
@@ -118,7 +132,11 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     public void testDumpWithNodeFilterCache() throws Exception {
         assumeTrue(nodes > 1);
 
+        configureDfltCaches = false;
+
         IgniteEx ign = startGrids(nodes);
+
+        ign.cluster().state(ClusterState.ACTIVE);
 
         ign.createCache(new CacheConfiguration<>()
             .setName(NODE_FILTER_CACHE)
@@ -127,15 +145,28 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             .setNodeFilter(new AttributeNodeFilter(NODE_FILTER_CACHE, ""))
             .setAffinity(new RendezvousAffinityFunction().setPartitions(20)));
 
+        try (IgniteDataStreamer<Key, Value> ds = ign.dataStreamer(NODE_FILTER_CACHE)) {
+            IgniteCache<Key, Value> cache = ign.cache(NODE_FILTER_CACHE);
+
+            for (int i = 0; i < KEYS_CNT; ++i) {
+                if (useDataStreamer)
+                    ds.addData(new Key(i), new Value(String.valueOf(i)));
+                else
+                    cache.put(new Key(i), new Value(String.valueOf(i)));
+            }
+        }
+
         createDump(ign, DMP_NAME, Collections.singletonList(NODE_FILTER_CACHE));
+
+        extraCaches.add(NODE_FILTER_CACHE);
 
         checkDump(ign,
             DMP_NAME,
             new String[] {NODE_FILTER_CACHE},
             Collections.singleton(NODE_FILTER_CACHE),
-            KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
             0,
-            KEYS_CNT,
+            (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
+            0,
             false,
             false
         );

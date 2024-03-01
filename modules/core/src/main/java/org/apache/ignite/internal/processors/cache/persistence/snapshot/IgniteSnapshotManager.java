@@ -1184,7 +1184,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         IgniteInternalFuture<?> task0;
 
         if (parts.isEmpty() && !withMetaStorage)
-            task0 = new GridFinishedFuture<>(Collections.emptySet());
+            task0 = new GridFinishedFuture<>(new SnapshotFutureTaskResult(Collections.emptySet(), null));
         else {
             task0 = registerSnapshotTask(req.snapshotName(),
                 req.snapshotPath(),

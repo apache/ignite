@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -26,12 +27,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -99,9 +97,6 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     public static final String CACHE_1 = "cache-1";
 
     /** */
-    public static final String NODE_FILTER_CACHE = "nodeFilterCache";
-
-    /** */
     public static final int KEYS_CNT = 1000;
 
     /** */
@@ -110,6 +105,12 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     /** */
     public static final IntFunction<User> USER_FACTORY = i ->
         new User(i, ACL.values()[Math.abs(i) % ACL.values().length], new Role("Role" + i, SUPER));
+
+    /** */
+    protected final Collection<String> extraCaches = new HashSet<>();
+
+    /** */
+    protected boolean configureDfltCaches = true;
 
     /** */
     @Parameterized.Parameter
@@ -189,9 +190,10 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setSnapshotThreadPoolSize(snpPoolSz)
             .setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence)))
-            .setCacheConfiguration(
-                new CacheConfiguration<>()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence)));
+
+        if (configureDfltCaches) {
+            cfg.setCacheConfiguration(new CacheConfiguration<>()
                     .setName(DEFAULT_CACHE_NAME)
                     .setBackups(backups)
                     .setAtomicityMode(mode)
@@ -212,6 +214,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                     .setWriteSynchronizationMode(FULL_SYNC)
                     .setAffinity(new RendezvousAffinityFunction().setPartitions(20))
             );
+        }
 
         if (encrypted)
             cfg.setEncryptionSpi(encryptionSpi());
@@ -376,7 +379,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
                     if (cacheName.startsWith("cache-"))
                         assertEquals(GRP, data.configuration().getGroupName());
-                    else if (!cacheName.equals(DEFAULT_CACHE_NAME))
+                    else if (!cacheName.equals(DEFAULT_CACHE_NAME) && !extraCaches.contains(cacheName))
                         throw new IgniteException("Unknown cache");
                 });
 
@@ -531,16 +534,18 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static void checkDumpWithCommand(IgniteEx ign, String name, int backups) throws Exception {
-        CacheGroupContext gctx = ign.context().cache().cacheGroup(CU.cacheId(DEFAULT_CACHE_NAME));
+    public void checkDumpWithCommand(IgniteEx ign, String name, int backups) throws Exception {
+        if (configureDfltCaches) {
+            CacheGroupContext gctx = ign.context().cache().cacheGroup(CU.cacheId(DEFAULT_CACHE_NAME));
 
-        for (GridCacheContext<?, ?> cctx : gctx.caches())
-            assertNull(cctx.dumpListener());
+            for (GridCacheContext<?, ?> cctx : gctx.caches())
+                assertNull(cctx.dumpListener());
 
-        gctx = ign.context().cache().cacheGroup(CU.cacheId(GRP));
+            gctx = ign.context().cache().cacheGroup(CU.cacheId(GRP));
 
-        for (GridCacheContext<?, ?> cctx : gctx.caches())
-            assertNull(cctx.dumpListener());
+            for (GridCacheContext<?, ?> cctx : gctx.caches())
+                assertNull(cctx.dumpListener());
+        }
 
         assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, name));
     }
