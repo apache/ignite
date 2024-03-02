@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -85,6 +86,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_COLOCATED_LOCK_MAP;
 
@@ -175,7 +177,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     private Deque<GridNearLockMapping> mappings;
 
     /** Keep binary. */
-    private final boolean keepBinary;
+    private final CacheReturnMode cacheReturnMode;
 
     /** */
     private final boolean recovery;
@@ -212,7 +214,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         long accessTtl,
         CacheEntryPredicate[] filter,
         boolean skipStore,
-        boolean keepBinary,
+        CacheReturnMode cacheReturnMode,
         boolean recovery
     ) {
         super(CU.boolReducer());
@@ -229,7 +231,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         this.accessTtl = accessTtl;
         this.filter = filter;
         this.skipStore = skipStore;
-        this.keepBinary = keepBinary;
+        this.cacheReturnMode = cacheReturnMode;
         this.recovery = recovery;
 
         ignoreInterrupts();
@@ -1096,7 +1098,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                         read ? createTtl : -1L,
                                         read ? accessTtl : -1L,
                                         skipStore,
-                                        keepBinary,
+                                        cacheReturnMode,
                                         clientFirst,
                                         false,
                                         cctx.deploymentEnabled(),
@@ -1274,7 +1276,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             accessTtl,
             filter,
             skipStore,
-            keepBinary);
+            cacheReturnMode);
 
         // Add new future.
         add(new GridEmbeddedFuture<>(
@@ -1761,7 +1763,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                         false,
                         null,
                         tx == null ? null : tx.resolveTaskName(),
-                        keepBinary);
+                        cacheReturnMode != DESERIALIZED);
                 }
 
                 i++;

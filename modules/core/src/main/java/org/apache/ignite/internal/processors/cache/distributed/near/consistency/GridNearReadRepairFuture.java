@@ -24,6 +24,7 @@ import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
@@ -45,7 +46,6 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
      * @param strategy Read repair strategy.
      * @param readThrough Read-through flag.
      * @param taskName Task name.
-     * @param deserializeBinary Deserialize binary flag.
      * @param recovery Partition recovery flag.
      * @param expiryPlc Expiry policy.
      * @param tx Transaction.
@@ -57,7 +57,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
         ReadRepairStrategy strategy,
         boolean readThrough,
         String taskName,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         boolean recovery,
         IgniteCacheExpiryPolicy expiryPlc,
         IgniteInternalTx tx) {
@@ -67,7 +67,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
             strategy,
             readThrough,
             taskName,
-            deserializeBinary,
+            cacheReturnMode,
             recovery,
             expiryPlc,
             tx,
@@ -81,7 +81,6 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
      * @param strategy Read repair strategy.
      * @param readThrough Read-through flag.
      * @param taskName Task name.
-     * @param deserializeBinary Deserialize binary flag.
      * @param recovery Partition recovery flag.
      * @param expiryPlc Expiry policy.
      * @param tx Transaction.
@@ -94,7 +93,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
         ReadRepairStrategy strategy,
         boolean readThrough,
         String taskName,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         boolean recovery,
         IgniteCacheExpiryPolicy expiryPlc,
         IgniteInternalTx tx,
@@ -105,7 +104,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
             strategy,
             readThrough,
             taskName,
-            deserializeBinary,
+            cacheReturnMode,
             recovery,
             expiryPlc,
             tx,
@@ -151,9 +150,10 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
                 Map<KeyCacheObject, EntryGetResult> correctedMap = rfe.correctedMap();
 
                 onDone(new IgniteIrreparableConsistencyViolationException(
-                    correctedMap != null ?
-                        ctx.unwrapBinariesIfNeeded(correctedMap.keySet(), !deserializeBinary) : null,
-                    ctx.unwrapBinariesIfNeeded(rfe.irreparableKeys(), !deserializeBinary)));
+                    correctedMap != null
+                        ? ctx.unwrapBinariesIfNeeded(correctedMap.keySet(), cacheReturnMode)
+                        : null,
+                    ctx.unwrapBinariesIfNeeded(rfe.irreparableKeys(), cacheReturnMode)));
             }
             catch (IgniteCheckedException ce) {
                 onDone(ce);

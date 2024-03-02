@@ -36,6 +36,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -70,6 +71,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NEAR_GET_MAX_REMAPS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.RAW;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistributedGetFutureAdapter.DFLT_MAX_REMAP_CNT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
@@ -115,8 +118,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     /** Task name. */
     private final String taskName;
 
-    /** Whether to deserialize binary objects. */
-    private final boolean deserializeBinary;
+    /** Cache return mode. */
+    private final CacheReturnMode cacheReturnMode;
 
     /** Skip values flag. */
     private final boolean skipVals;
@@ -129,9 +132,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
     /** */
     private final boolean needVer;
-
-    /** */
-    private final boolean keepCacheObjects;
 
     /** */
     private final boolean recovery;
@@ -166,11 +166,10 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param readThrough Read through flag.
      * @param forcePrimary If {@code true} then will force network trip to primary node even if called on backup node.
      * @param taskName Task name.
-     * @param deserializeBinary Deserialize binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
-     * @param keepCacheObjects Keep cache objects flag.
      * @param txLbl Transaction label.
      */
     public GridPartitionedSingleGetFuture(
@@ -180,11 +179,10 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         boolean readThrough,
         boolean forcePrimary,
         String taskName,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
-        boolean keepCacheObjects,
         boolean recovery,
         String txLbl,
         @Nullable MvccSnapshot mvccSnapshot
@@ -207,11 +205,10 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         this.readThrough = readThrough;
         this.forcePrimary = forcePrimary;
         this.taskName = taskName;
-        this.deserializeBinary = deserializeBinary;
+        this.cacheReturnMode = cacheReturnMode;
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
         this.needVer = needVer;
-        this.keepCacheObjects = keepCacheObjects;
         this.recovery = recovery;
         this.topVer = topVer;
         this.mvccSnapshot = mvccSnapshot;
@@ -486,7 +483,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                     txLbl,
                                     row.value(),
                                     taskName,
-                                    !deserializeBinary);
+                                    cacheReturnMode != DESERIALIZED);
                             }
                         }
                         else
@@ -761,10 +758,10 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 if (postProcessingClos != null)
                     postProcessingClos.apply(val, ver);
 
-                if (!keepCacheObjects) {
+                if (cacheReturnMode != RAW) {
                     Object res = cctx.unwrapBinaryIfNeeded(
                         val,
-                        !deserializeBinary,
+                        cacheReturnMode,
                         true,
                         U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
                     );

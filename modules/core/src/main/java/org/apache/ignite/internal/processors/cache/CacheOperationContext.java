@@ -24,6 +24,8 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
+
 /**
  * Cache operation context.
  */
@@ -45,8 +47,8 @@ public class CacheOperationContext implements Serializable {
     /** Read-repair strategy. */
     private final ReadRepairStrategy readRepairStrategy;
 
-    /** Keep binary flag. */
-    private final boolean keepBinary;
+    /** Cache return mode. */
+    private final CacheReturnMode cacheReturnMode;
 
     /** Expiry policy. */
     private final ExpiryPolicy expiryPlc;
@@ -59,7 +61,7 @@ public class CacheOperationContext implements Serializable {
      */
     public CacheOperationContext() {
         skipStore = false;
-        keepBinary = false;
+        cacheReturnMode = DESERIALIZED;
         expiryPlc = null;
         noRetries = false;
         recovery = false;
@@ -69,14 +71,14 @@ public class CacheOperationContext implements Serializable {
 
     /**
      * @param skipStore Skip store flag.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param expiryPlc Expiry policy.
      * @param dataCenterId Data center id.
      * @param readRepairStrategy Read-repair strategy.
      */
     public CacheOperationContext(
         boolean skipStore,
-        boolean keepBinary,
+        CacheReturnMode cacheReturnMode,
         @Nullable ExpiryPolicy expiryPlc,
         boolean noRetries,
         @Nullable Byte dataCenterId,
@@ -84,7 +86,7 @@ public class CacheOperationContext implements Serializable {
         @Nullable ReadRepairStrategy readRepairStrategy
     ) {
         this.skipStore = skipStore;
-        this.keepBinary = keepBinary;
+        this.cacheReturnMode = cacheReturnMode;
         this.expiryPlc = expiryPlc;
         this.noRetries = noRetries;
         this.dataCenterId = dataCenterId;
@@ -92,11 +94,9 @@ public class CacheOperationContext implements Serializable {
         this.readRepairStrategy = readRepairStrategy;
     }
 
-    /**
-     * @return Keep binary flag.
-     */
-    public boolean isKeepBinary() {
-        return keepBinary;
+    /** */
+    public CacheReturnMode cacheReturnMode() {
+        return cacheReturnMode;
     }
 
     /**
@@ -104,22 +104,6 @@ public class CacheOperationContext implements Serializable {
      */
     public boolean hasDataCenterId() {
         return dataCenterId != null;
-    }
-
-    /**
-     * See {@link IgniteInternalCache#keepBinary()}.
-     *
-     * @return New instance of CacheOperationContext with keep binary flag.
-     */
-    public CacheOperationContext keepBinary() {
-        return new CacheOperationContext(
-            skipStore,
-            true,
-            expiryPlc,
-            noRetries,
-            dataCenterId,
-            recovery,
-            readRepairStrategy);
     }
 
     /**
@@ -147,7 +131,7 @@ public class CacheOperationContext implements Serializable {
     public CacheOperationContext setSkipStore(boolean skipStore) {
         return new CacheOperationContext(
             skipStore,
-            keepBinary,
+            cacheReturnMode,
             expiryPlc,
             noRetries,
             dataCenterId,
@@ -171,8 +155,20 @@ public class CacheOperationContext implements Serializable {
     public CacheOperationContext withExpiryPolicy(ExpiryPolicy plc) {
         return new CacheOperationContext(
             skipStore,
-            keepBinary,
+            cacheReturnMode,
             plc,
+            noRetries,
+            dataCenterId,
+            recovery,
+            readRepairStrategy);
+    }
+
+    /** */
+    public CacheOperationContext withCacheReturnMode(CacheReturnMode cacheReturnMode) {
+        return new CacheOperationContext(
+            skipStore,
+            cacheReturnMode,
+            expiryPlc,
             noRetries,
             dataCenterId,
             recovery,
@@ -186,7 +182,7 @@ public class CacheOperationContext implements Serializable {
     public CacheOperationContext setNoRetries(boolean noRetries) {
         return new CacheOperationContext(
             skipStore,
-            keepBinary,
+            cacheReturnMode,
             expiryPlc,
             noRetries,
             dataCenterId,
@@ -201,7 +197,7 @@ public class CacheOperationContext implements Serializable {
     public CacheOperationContext setDataCenterId(byte dataCenterId) {
         return new CacheOperationContext(
             skipStore,
-            keepBinary,
+            cacheReturnMode,
             expiryPlc,
             noRetries,
             dataCenterId,
@@ -216,7 +212,7 @@ public class CacheOperationContext implements Serializable {
     public CacheOperationContext setRecovery(boolean recovery) {
         return new CacheOperationContext(
             skipStore,
-            keepBinary,
+            cacheReturnMode,
             expiryPlc,
             noRetries,
             dataCenterId,
@@ -231,7 +227,7 @@ public class CacheOperationContext implements Serializable {
     public CacheOperationContext setReadRepairStrategy(ReadRepairStrategy readRepairStrategy) {
         return new CacheOperationContext(
             skipStore,
-            keepBinary,
+            cacheReturnMode,
             expiryPlc,
             noRetries,
             dataCenterId,

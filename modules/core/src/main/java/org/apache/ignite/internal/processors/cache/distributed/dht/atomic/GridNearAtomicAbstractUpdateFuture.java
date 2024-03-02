@@ -38,6 +38,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
@@ -104,7 +105,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     protected final boolean skipStore;
 
     /** Keep binary flag. */
-    protected final boolean keepBinary;
+    protected final CacheReturnMode cacheReturnMode;
 
     /** Recovery flag. */
     protected final boolean recovery;
@@ -155,7 +156,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * @param filter Filter.
      * @param taskNameHash Task name hash.
      * @param skipStore Skip store flag.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param recovery {@code True} if cache operation is called in recovery mode.
      * @param remapCnt Remap count.
      */
@@ -170,7 +171,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         CacheEntryPredicate[] filter,
         int taskNameHash,
         boolean skipStore,
-        boolean keepBinary,
+        CacheReturnMode cacheReturnMode,
         boolean recovery,
         int remapCnt
     ) {
@@ -189,7 +190,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         this.filter = filter;
         this.taskNameHash = taskNameHash;
         this.skipStore = skipStore;
-        this.keepBinary = keepBinary;
+        this.cacheReturnMode = cacheReturnMode;
         this.recovery = recovery;
         deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
@@ -346,7 +347,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
             : (this.retval || op == TRANSFORM)
                 ? cctx.unwrapBinaryIfNeeded(
                     ret.value(),
-                    keepBinary,
+                    cacheReturnMode,
                     U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId))
                 : ret.success();
 
@@ -406,7 +407,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
             try {
                 keys.add(cctx.cacheObjectContext().unwrapBinaryIfNeeded(
                     key,
-                    keepBinary,
+                    cacheReturnMode,
                     false,
                     U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId))
                 );

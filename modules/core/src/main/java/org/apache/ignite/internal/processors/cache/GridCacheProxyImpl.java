@@ -50,6 +50,8 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
+
 /**
  * Cache proxy.
  */
@@ -262,7 +264,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                 opCtx != null ? opCtx.setSkipStore(skipStore) :
                     new CacheOperationContext(
                         skipStore,
-                        false,
+                        DESERIALIZED,
                         null,
                         false,
                         null,
@@ -275,20 +277,24 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public <K1, V1> GridCacheProxyImpl<K1, V1> keepBinary() {
-        if (opCtx != null && opCtx.isKeepBinary())
+    @Override public <K1, V1> GridCacheProxyImpl<K1, V1> withCacheReturnMode(CacheReturnMode cacheReturnMode) {
+        if (opCtx != null && opCtx.cacheReturnMode() == cacheReturnMode)
             return (GridCacheProxyImpl<K1, V1>)this;
 
-        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx,
+        return new GridCacheProxyImpl<>(
+            (GridCacheContext<K1, V1>)ctx,
             (GridCacheAdapter<K1, V1>)delegate,
-            opCtx != null ? opCtx.keepBinary() :
-                new CacheOperationContext(false,
-                    true,
+            opCtx != null
+                ? opCtx.withCacheReturnMode(cacheReturnMode)
+                : new CacheOperationContext(
+                    false,
+                    cacheReturnMode,
                     null,
                     false,
                     null,
                     false,
-                    null));
+                    null
+            ));
     }
 
     /** {@inheritDoc} */
@@ -1532,7 +1538,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                 opCtx != null ? opCtx.withExpiryPolicy(plc) :
                     new CacheOperationContext(
                         false,
-                        false,
+                        DESERIALIZED,
                         plc,
                         false,
                         null,
@@ -1552,7 +1558,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
             return new GridCacheProxyImpl<>(ctx, delegate,
                 new CacheOperationContext(
                     false,
-                    false,
+                    DESERIALIZED,
                     null,
                     true,
                     null,

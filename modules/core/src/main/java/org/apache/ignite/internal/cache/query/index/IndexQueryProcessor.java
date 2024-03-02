@@ -39,6 +39,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImp
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.query.IndexQueryDesc;
@@ -132,7 +133,7 @@ public class IndexQueryProcessor {
 
             /** */
             private <T> T unwrap(CacheObject o, boolean keepBinary) {
-                return (T)CacheObjectUtils.unwrapBinaryIfNeeded(coctx, o, keepBinary, false);
+                return (T)CacheObjectUtils.unwrapBinaryIfNeeded(coctx, o, CacheReturnMode.of(keepBinary), false);
             }
         });
     }

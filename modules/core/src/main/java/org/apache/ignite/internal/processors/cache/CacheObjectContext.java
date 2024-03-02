@@ -126,15 +126,15 @@ public class CacheObjectContext implements CacheObjectValueContext {
 
     /**
      * @param o Object to unwrap.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param cpy Copy value flag.
      * @param ldr Class loader, used for deserialization from binary representation.
      * @return Unwrapped object.
      */
-    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary, boolean cpy, @Nullable ClassLoader ldr) {
+    public Object unwrapBinaryIfNeeded(Object o, CacheReturnMode cacheReturnMode, boolean cpy, @Nullable ClassLoader ldr) {
         if (o == null)
             return null;
 
-        return CacheObjectUtils.unwrapBinaryIfNeeded(this, o, keepBinary, cpy, ldr);
+        return CacheObjectUtils.unwrapBinaryIfNeeded(this, o, cacheReturnMode, cpy, ldr);
     }
 }

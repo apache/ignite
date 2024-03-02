@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.query;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -64,7 +64,7 @@ public class GridQueryCacheObjectsIterator implements Iterator<List<?>>, AutoClo
     /** {@inheritDoc} */
     @Override public List<?> next() {
         return ((List<?>)CacheObjectUtils.unwrapBinariesIfNeeded(
-            cacheObjValCtx, (Collection<Object>)iter.next(), keepBinary));
+            cacheObjValCtx, (Collection<Object>)iter.next(), CacheReturnMode.of(keepBinary)));
     }
 
     /** {@inheritDoc} */

@@ -28,6 +28,8 @@ import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.BINARY;
+
 /**
  * Cache request.
  */
@@ -86,7 +88,7 @@ public class ClientCacheRequest extends ClientRequest {
     protected IgniteInternalCache<?, ?> cachex(ClientConnectionContext ctx) {
         String cacheName = cacheDescriptor(ctx).cacheName();
 
-        return ctx.kernalContext().grid().cachex(cacheName).keepBinary();
+        return ctx.kernalContext().grid().cachex(cacheName).withCacheReturnMode(BINARY);
     }
 
     /**

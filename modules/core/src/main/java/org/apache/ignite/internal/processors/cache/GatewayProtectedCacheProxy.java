@@ -60,6 +60,8 @@ import org.apache.ignite.transactions.TransactionException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.BINARY;
+
 /**
  * Cache proxy wrapper with gateway lock provided operations and possibility to change cache operation context.
  */
@@ -247,7 +249,11 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         CacheOperationGate opGate = onEnter();
 
         try {
-            return new GatewayProtectedCacheProxy<>((IgniteCacheProxy<K1, V1>)delegate, opCtx.keepBinary(), lock);
+            return new GatewayProtectedCacheProxy<>(
+                (IgniteCacheProxy<K1, V1>)delegate,
+                opCtx.withCacheReturnMode(BINARY),
+                lock
+            );
         }
         finally {
             onLeave(opGate);

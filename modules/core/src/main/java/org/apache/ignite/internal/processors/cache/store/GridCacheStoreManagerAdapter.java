@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.CacheStoreBalancingWrapper;
 import org.apache.ignite.internal.processors.cache.CacheStorePartialUpdateException;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
@@ -311,7 +312,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 // Never load internal keys from store as they are never persisted.
                 return null;
 
-            Object storeKey = cctx.unwrapBinaryIfNeeded(key, !convertBinary(), null);
+            Object storeKey = cctx.unwrapBinaryIfNeeded(key, CacheReturnMode.of(!convertBinary()), null);
 
             if (log.isDebugEnabled())
                 log.debug(S.toString("Loading value from store for key",
@@ -443,7 +444,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             Collection<Object> keys0 = F.viewReadOnly(keys,
                 new C1<KeyCacheObject, Object>() {
                     @Override public Object apply(KeyCacheObject key) {
-                        return cctx.unwrapBinaryIfNeeded(key, !convertBinary(), null);
+                        return cctx.unwrapBinaryIfNeeded(key, CacheReturnMode.of(convertBinary()), null);
                     }
                 });
 
@@ -565,8 +566,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             if (key instanceof GridCacheInternal)
                 return true;
 
-            Object key0 = cctx.unwrapBinaryIfNeeded(key, !convertBinary(), null);
-            Object val0 = cctx.unwrapBinaryIfNeeded(val, !convertBinary(), null);
+            Object key0 = cctx.unwrapBinaryIfNeeded(key, CacheReturnMode.of(!convertBinary()), null);
+            Object val0 = cctx.unwrapBinaryIfNeeded(val, CacheReturnMode.of(!convertBinary()), null);
 
             if (log.isDebugEnabled()) {
                 log.debug(S.toString("Storing value in cache store",
@@ -677,7 +678,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             if (key instanceof GridCacheInternal)
                 return false;
 
-            Object key0 = cctx.unwrapBinaryIfNeeded(key, !convertBinary(), null);
+            Object key0 = cctx.unwrapBinaryIfNeeded(key, CacheReturnMode.of(!convertBinary()), null);
 
             if (log.isDebugEnabled())
                 log.debug(S.toString("Removing value from cache store", "key", key0, true));
@@ -728,7 +729,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         if (store != null) {
-            Collection<Object> keys0 = cctx.unwrapBinariesIfNeeded(keys, !convertBinary());
+            Collection<Object> keys0 = cctx.unwrapBinariesIfNeeded(keys, CacheReturnMode.of(!convertBinary()));
 
             if (log.isDebugEnabled())
                 log.debug(S.toString("Removing values from cache store",
@@ -1196,8 +1197,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
                         Object v = locStore ? e.getValue() : e.getValue().get1();
 
-                        k = cctx.unwrapBinaryIfNeeded(k, !convertBinary(), null);
-                        v = cctx.unwrapBinaryIfNeeded(v, !convertBinary(), null);
+                        k = cctx.unwrapBinaryIfNeeded(k, CacheReturnMode.of(!convertBinary()), null);
+                        v = cctx.unwrapBinaryIfNeeded(v, CacheReturnMode.of(!convertBinary()), null);
 
                         if (rmvd != null && rmvd.contains(k))
                             continue;

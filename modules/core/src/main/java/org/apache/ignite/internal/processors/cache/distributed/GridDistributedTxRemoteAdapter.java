@@ -77,6 +77,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.BINARY;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
@@ -464,7 +465,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
 
                     if (!near() && !local() && onePhaseCommit()) {
                         if (needReturnValue()) {
-                            ret = new GridCacheReturn(null, cctx.localNodeId().equals(otherNodeId()), true, null, null, true);
+                            ret = new GridCacheReturn(null, cctx.localNodeId().equals(otherNodeId()), BINARY, null, null, true);
 
                             UUID origNodeId = otherNodeId(); // Originating node.
 

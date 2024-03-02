@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.datastreamer;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -85,7 +86,7 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
     public <K, V> Map.Entry<K, V> toEntry(final GridCacheContext ctx, final boolean keepBinary) {
         return new Map.Entry<K, V>() {
             @Override public K getKey() {
-                return (K)ctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false, null);
+                return (K)ctx.cacheObjectContext().unwrapBinaryIfNeeded(key, CacheReturnMode.of(keepBinary), false, null);
             }
 
             @Override public V setValue(V val) {
@@ -93,7 +94,7 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
             }
 
             @Override public V getValue() {
-                return (V)ctx.cacheObjectContext().unwrapBinaryIfNeeded(val, keepBinary, false, null);
+                return (V)ctx.cacheObjectContext().unwrapBinaryIfNeeded(val, CacheReturnMode.of(keepBinary), false, null);
             }
         };
     }

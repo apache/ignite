@@ -451,7 +451,7 @@ public interface IgniteCacheOffheapManager {
      * @param primary {@code True} if need to return primary entries.
      * @param backup {@code True} if need to return backup entries.
      * @param topVer Topology version.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param mvccSnapshot MVCC snapshot.
      * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Entries iterator.
@@ -462,7 +462,7 @@ public interface IgniteCacheOffheapManager {
         final boolean primary,
         final boolean backup,
         final AffinityTopologyVersion topVer,
-        final boolean keepBinary,
+        final CacheReturnMode cacheReturnMode,
         @Nullable final MvccSnapshot mvccSnapshot,
         Boolean dataPageScanEnabled
     ) throws IgniteCheckedException;

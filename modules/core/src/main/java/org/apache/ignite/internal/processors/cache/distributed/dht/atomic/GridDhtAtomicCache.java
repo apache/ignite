@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.CacheLazyEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.CacheStorePartialUpdateException;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
@@ -131,6 +132,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.BINARY;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
@@ -449,7 +452,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean forcePrimary,
         final boolean skipTx,
         final String taskName,
-        final boolean deserializeBinary,
+        final CacheReturnMode cacheReturnMode,
         final boolean skipVals,
         final boolean needVer
     ) {
@@ -467,7 +470,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 return getAsync0(ctx.toCacheKeyObject(key),
                     forcePrimary,
                     taskName,
-                    deserializeBinary,
+                    cacheReturnMode,
                     recovery,
                     readRepairStrategy,
                     expiryPlc,
@@ -481,14 +484,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override protected Map<K, V> getAll(
         Collection<? extends K> keys,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         boolean needVer,
         boolean recovery,
-        ReadRepairStrategy readRepairStrategy) throws IgniteCheckedException {
+        ReadRepairStrategy readRepairStrategy
+    ) throws IgniteCheckedException {
         return getAllAsyncInternal(keys,
             !ctx.config().isReadFromBackup(),
             ctx.kernalContext().job().currentTaskName(),
-            deserializeBinary,
+            cacheReturnMode,
             recovery,
             readRepairStrategy,
             false,
@@ -502,7 +506,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean forcePrimary,
         boolean skipTx,
         final String taskName,
-        final boolean deserializeBinary,
+        final CacheReturnMode cacheReturnMode,
         final boolean recovery,
         final ReadRepairStrategy readRepairStrategy,
         final boolean skipVals,
@@ -511,7 +515,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         return getAllAsyncInternal(keys,
             forcePrimary,
             taskName,
-            deserializeBinary,
+            cacheReturnMode,
             recovery,
             readRepairStrategy,
             skipVals,
@@ -523,7 +527,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param keys Keys.
      * @param forcePrimary Force primary flag.
      * @param taskName Task name.
-     * @param deserializeBinary Deserialize binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param readRepairStrategy Read Repair strategy.
      * @param skipVals Skip values flag.
      * @param needVer Need version flag.
@@ -534,7 +538,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable final Collection<? extends K> keys,
         final boolean forcePrimary,
         final String taskName,
-        final boolean deserializeBinary,
+        final CacheReturnMode cacheReturnMode,
         final boolean recovery,
         final ReadRepairStrategy readRepairStrategy,
         final boolean skipVals,
@@ -560,7 +564,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     return getAllAsync0(ctx.cacheKeysView(keys),
                         forcePrimary,
                         taskName,
-                        deserializeBinary,
+                        cacheReturnMode,
                         recovery,
                         readRepairStrategy,
                         expiryPlc,
@@ -574,7 +578,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             return getAllAsync0(ctx.cacheKeysView(keys),
                 forcePrimary,
                 taskName,
-                deserializeBinary,
+                cacheReturnMode,
                 recovery,
                 readRepairStrategy,
                 expiryPlc,
@@ -819,9 +823,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        CacheOperationContext opCtx = ctx.operationContextPerCall();
-
-        final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+        final CacheReturnMode cacheReturnMode = ctx.cacheReturnMode();
 
         IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> fut = update0(
             key,
@@ -851,7 +853,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         if (invokeRes.result() != null)
                             res = CacheInvokeResult.fromResult((T)ctx.unwrapBinaryIfNeeded(invokeRes.result(),
-                                keepBinary, false, null));
+                                cacheReturnMode, false, null));
                     }
 
                     return res;
@@ -896,9 +898,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         });
 
-        CacheOperationContext opCtx = ctx.operationContextPerCall();
-
-        final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+        final boolean keepBinary = ctx.keepBinary();
 
         IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> resFut = updateAll0(
             null,
@@ -1069,7 +1069,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             CU.filterArray(null),
             taskNameHash,
             opCtx != null && opCtx.skipStore(),
-            opCtx != null && opCtx.isKeepBinary(),
+            ctx.cacheReturnMode(),
             opCtx != null && opCtx.recovery(),
             opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES);
 
@@ -1255,7 +1255,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 filters,
                 ctx.kernalContext().job().currentTaskNameHash(),
                 opCtx != null && opCtx.skipStore(),
-                opCtx != null && opCtx.isKeepBinary(),
+                ctx.cacheReturnMode(),
                 opCtx != null && opCtx.recovery(),
                 opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES
             );
@@ -1276,7 +1276,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 filters,
                 ctx.kernalContext().job().currentTaskNameHash(),
                 opCtx != null && opCtx.skipStore(),
-                opCtx != null && opCtx.isKeepBinary(),
+                ctx.cacheReturnMode(),
                 opCtx != null && opCtx.recovery(),
                 opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES);
         }
@@ -1333,7 +1333,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             CU.filterArray(null),
             taskNameHash,
             opCtx != null && opCtx.skipStore(),
-            opCtx != null && opCtx.isKeepBinary(),
+            ctx.cacheReturnMode(),
             opCtx != null && opCtx.recovery(),
             opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES);
 
@@ -1359,7 +1359,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param key Key.
      * @param forcePrimary Force primary flag.
      * @param taskName Task name.
-     * @param deserializeBinary Deserialize binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param readRepairStrategy Read Repair strategy.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
@@ -1370,7 +1370,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private IgniteInternalFuture<V> getAsync0(KeyCacheObject key,
         boolean forcePrimary,
         String taskName,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         boolean recovery,
         ReadRepairStrategy readRepairStrategy,
         @Nullable ExpiryPolicy expiryPlc,
@@ -1390,13 +1390,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 readRepairStrategy,
                 !skipStore,
                 taskName,
-                deserializeBinary,
+                cacheReturnMode,
                 recovery,
                 expiry,
                 skipVals,
                 needVer,
-                false,
-                null).single();
+                null
+            ).single();
         }
 
         GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
@@ -1405,11 +1405,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             !skipStore,
             forcePrimary,
             taskName,
-            deserializeBinary,
+            cacheReturnMode,
             expiry,
             skipVals,
             needVer,
-            false,
             recovery,
             null,
             null);
@@ -1425,7 +1424,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param keys Keys.
      * @param forcePrimary Force primary flag.
      * @param taskName Task name.
-     * @param deserializeBinary Deserialize binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param skipStore Skip store flag.
@@ -1435,7 +1434,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private IgniteInternalFuture<Map<K, V>> getAllAsync0(@Nullable Collection<KeyCacheObject> keys,
         boolean forcePrimary,
         String taskName,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         boolean recovery,
         ReadRepairStrategy readRepairStrategy,
         @Nullable ExpiryPolicy expiryPlc,
@@ -1457,12 +1456,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 readRepairStrategy,
                 !skipStore,
                 taskName,
-                deserializeBinary,
+                cacheReturnMode,
                 recovery,
                 expiry,
                 skipVals,
                 needVer,
-                false,
                 null).multi();
         }
 
@@ -1490,8 +1488,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                     key,
                                     row.value(),
                                     skipVals,
-                                    false,
-                                    deserializeBinary,
+                                    cacheReturnMode,
                                     true,
                                     null,
                                     row.version(),
@@ -1506,7 +1503,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                         null,
                                         row.value(),
                                         taskName,
-                                        !deserializeBinary);
+                                        cacheReturnMode != DESERIALIZED);
                                 }
                             }
                             else
@@ -1557,7 +1554,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                             null,
                                             taskName,
                                             expiry,
-                                            !deserializeBinary);
+                                            cacheReturnMode != DESERIALIZED);
                                     }
 
                                     // Entry was not in memory or in swap, so we remove it from cache.
@@ -1572,8 +1569,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                             key,
                                             v,
                                             skipVals,
-                                            false,
-                                            deserializeBinary,
+                                            cacheReturnMode,
                                             true,
                                             getRes,
                                             ver,
@@ -1636,12 +1632,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             !skipStore,
             forcePrimary,
             taskName,
-            deserializeBinary,
+            cacheReturnMode,
             recovery,
             expiry,
             skipVals,
             needVer,
-            false,
             null,
             null,
             null);
@@ -2005,7 +2000,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridDhtAtomicAbstractUpdateFuture dhtFut = dhtUpdRes.dhtFuture();
 
         if (retVal == null)
-            retVal = new GridCacheReturn(ctx, node.isLocal(), true, null, null, true);
+            retVal = new GridCacheReturn(ctx, node.isLocal(), BINARY, null, null, true);
 
         res.returnValue(retVal);
 
@@ -2330,7 +2325,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 req.keepBinary()),
                             ctx.unwrapBinaryIfNeeded(
                                 updated,
-                                req.keepBinary(),
+                                CacheReturnMode.of(req.keepBinary()),
                                 false,
                                 null));
 
@@ -2663,7 +2658,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         retVal = new GridCacheReturn(ctx,
                             nearNode.isLocal(),
-                            req.keepBinary(),
+                            req.cacheReturnMode(),
                             U.deploymentClassLoader(ctx.kernalContext(), U.contextDeploymentClassLoaderId(ctx.kernalContext())),
                             req.returnValue() ? ret : null,
                             updRes.success());
@@ -3126,7 +3121,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             req.filter(),
             req.taskNameHash(),
             req.skipStore(),
-            req.keepBinary(),
+            req.cacheReturnMode(),
             req.recovery(),
             MAX_RETRIES);
 

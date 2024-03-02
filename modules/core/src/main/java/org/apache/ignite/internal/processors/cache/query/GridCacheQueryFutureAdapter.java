@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.reducer.CacheQueryReducer;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -255,10 +256,10 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                         ScoredCacheEntry e = (ScoredCacheEntry)o;
 
                         Object uKey = CacheObjectUtils.unwrapBinary(
-                            cctx.cacheObjectContext(), e.getKey(), qry.query().keepBinary(), true, null);
+                            cctx.cacheObjectContext(), e.getKey(), CacheReturnMode.of(qry.query().keepBinary()), true, null);
 
                         Object uVal = CacheObjectUtils.unwrapBinary(
-                            cctx.cacheObjectContext(), e.getValue(), qry.query().keepBinary(), true, null);
+                            cctx.cacheObjectContext(), e.getValue(), CacheReturnMode.of(qry.query().keepBinary()), true, null);
 
                         if (uKey != e.getKey() || uVal != e.getValue())
                             unwrapped.add(new ScoredCacheEntry<>(uKey, uVal, e.score()));
@@ -271,7 +272,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 }
                 else if (qry.query().type() != GridCacheQueryType.INDEX) {
                     // For IndexQuery BinaryObjects are used for sorting algorithm.
-                    data = cctx.unwrapBinariesIfNeeded((Collection<Object>)data, qry.query().keepBinary());
+                    data = cctx.unwrapBinariesIfNeeded((Collection<Object>)data, CacheReturnMode.of(qry.query().keepBinary()));
                 }
 
                 if (query().query().type() == GridCacheQueryType.INDEX)
@@ -350,7 +351,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** */
     private R unwrapIfNeeded(R obj) {
         if (qry.query().type() == GridCacheQueryType.INDEX)
-            return (R)cctx.unwrapBinaryIfNeeded(obj, qry.query().keepBinary(), false, null);
+            return (R)cctx.unwrapBinaryIfNeeded(obj, CacheReturnMode.of(qry.query().keepBinary()), false, null);
 
         return obj;
     }

@@ -30,6 +30,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -58,6 +59,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.RAW;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 
@@ -122,7 +124,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean forcePrimary,
         boolean skipTx,
         String taskName,
-        final boolean deserializeBinary,
+        final CacheReturnMode cacheReturnMode,
         final boolean recovery,
         final ReadRepairStrategy readRepairStrategy,
         final boolean skipVals,
@@ -144,12 +146,12 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
                 @Override public IgniteInternalFuture<Map<K, V>> op(GridNearTxLocal tx, AffinityTopologyVersion readyTopVer) {
-                    return tx.getAllAsync(ctx,
+                    return tx.getAllAsync(
+                        ctx,
                         readyTopVer,
                         ctx.cacheKeysView(keys),
-                        deserializeBinary,
+                        cacheReturnMode,
                         skipVals,
-                        false,
                         skipStore,
                         recovery,
                         readRepairStrategy,
@@ -162,7 +164,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             ctx.cacheKeysView(keys),
             forcePrimary,
             taskName,
-            deserializeBinary,
+            cacheReturnMode,
             recovery,
             skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals,
@@ -175,7 +177,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param keys Keys to load.
      * @param readThrough Read through flag.
      * @param forcePrimary Force primary flag.
-     * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
@@ -186,7 +187,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable Collection<KeyCacheObject> keys,
         boolean readThrough,
         boolean forcePrimary,
-        boolean deserializeBinary,
         boolean recovery,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
@@ -199,11 +199,10 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             forcePrimary,
             tx,
             tx.resolveTaskName(),
-            deserializeBinary,
+            RAW,
             expiryPlc,
             skipVals,
             needVer,
-            /*keepCacheObjects*/true,
             recovery);
 
         // init() will register future for responses if it has remote mappings.
@@ -348,7 +347,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     null /*Value.*/,
                                     null /*dr version*/,
                                     req.skipStore(),
-                                    req.keepBinary());
+                                    req.cacheReturnMode());
                             }
 
                             // Add remote candidate before reordering.
@@ -462,7 +461,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             accessTtl,
             CU.empty0(),
             opCtx != null && opCtx.skipStore(),
-            opCtx != null && opCtx.isKeepBinary(),
+            ctx.cacheReturnMode(),
             opCtx != null && opCtx.recovery());
 
         fut.map();

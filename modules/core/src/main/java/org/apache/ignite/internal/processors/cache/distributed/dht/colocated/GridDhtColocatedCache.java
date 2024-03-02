@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -81,6 +82,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
 
 /**
  * Colocated cache.
@@ -187,7 +190,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean forcePrimary,
         boolean skipTx,
         String taskName,
-        final boolean deserializeBinary,
+        final CacheReturnMode cacheReturnMode,
         final boolean skipVals,
         final boolean needVer) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
@@ -206,9 +209,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     IgniteInternalFuture<Map<Object, Object>> fut = tx.getAllAsync(ctx,
                         readyTopVer,
                         Collections.singleton(ctx.toCacheKeyObject(key)),
-                        deserializeBinary,
+                        cacheReturnMode,
                         skipVals,
-                        false,
                         opCtx != null && opCtx.skipStore(),
                         recovery,
                         readRepairStrategy,
@@ -254,12 +256,11 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 readRepairStrategy,
                 opCtx == null || !opCtx.skipStore(),
                 taskName,
-                deserializeBinary,
+                cacheReturnMode,
                 recovery,
                 skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
                 skipVals,
                 needVer,
-                false,
                 tx).single();
         }
 
@@ -269,11 +270,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             opCtx == null || !opCtx.skipStore(),
             forcePrimary,
             taskName,
-            deserializeBinary,
+            cacheReturnMode,
             skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
             skipVals,
             needVer,
-            /*keepCacheObjects*/false,
             opCtx != null && opCtx.recovery(),
             null,
             mvccSnapshot);
@@ -300,7 +300,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean forcePrimary,
         boolean skipTx,
         String taskName,
-        final boolean deserializeBinary,
+        final CacheReturnMode cacheReturnMode,
         final boolean recovery,
         final ReadRepairStrategy readRepairStrategy,
         final boolean skipVals,
@@ -325,9 +325,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     return tx.getAllAsync(ctx,
                         readyTopVer,
                         ctx.cacheKeysView(keys),
-                        deserializeBinary,
+                        cacheReturnMode,
                         skipVals,
-                        false,
                         opCtx != null && opCtx.skipStore(),
                         recovery,
                         readRepairStrategy,
@@ -356,12 +355,11 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 readRepairStrategy,
                 opCtx == null || !opCtx.skipStore(),
                 taskName,
-                deserializeBinary,
+                cacheReturnMode,
                 recovery,
                 skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
                 skipVals,
                 needVer,
-                false,
                 tx).multi();
         }
 
@@ -371,12 +369,11 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             forcePrimary,
             topVer,
             taskName,
-            deserializeBinary,
+            cacheReturnMode,
             recovery,
             skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
             skipVals,
             needVer,
-            false,
             null,
             mvccSnapshot
         );
@@ -402,11 +399,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param forcePrimary Force get from primary node flag.
      * @param topVer Topology version.
      * @param taskName Task name.
-     * @param deserializeBinary Deserialize binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
-     * @param keepCacheObj Keep cache objects flag.
      * @param txLbl Transaction label.
      * @return Load future.
      */
@@ -416,11 +412,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean forcePrimary,
         AffinityTopologyVersion topVer,
         String taskName,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
-        boolean keepCacheObj,
         boolean recovery,
         @Nullable MvccSnapshot mvccSnapshot,
         @Nullable String txLbl
@@ -431,11 +426,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             readThrough,
             forcePrimary,
             taskName,
-            deserializeBinary,
+            cacheReturnMode,
             expiryPlc,
             skipVals,
             needVer,
-            keepCacheObj,
             recovery,
             txLbl,
             mvccSnapshot);
@@ -451,11 +445,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param forcePrimary Force get from primary node flag.
      * @param topVer Topology version.
      * @param taskName Task name.
-     * @param deserializeBinary Deserialize binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
-     * @param keepCacheObj Keep cache objects flag.
      * @param txLbl Transaction label.
      * @param mvccSnapshot Mvcc snapshot.
      * @return Load future.
@@ -466,12 +459,11 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean forcePrimary,
         AffinityTopologyVersion topVer,
         String taskName,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         boolean recovery,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
-        boolean keepCacheObj,
         @Nullable String txLbl,
         @Nullable MvccSnapshot mvccSnapshot
     ) {
@@ -512,8 +504,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                     key,
                                     row.value(),
                                     skipVals,
-                                    keepCacheObj,
-                                    deserializeBinary,
+                                    cacheReturnMode,
                                     true,
                                     null,
                                     row.version(),
@@ -528,7 +519,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                         txLbl,
                                         row.value(),
                                         taskName,
-                                        !deserializeBinary);
+                                        cacheReturnMode != DESERIALIZED);
                                 }
                             }
                             else
@@ -561,7 +552,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                             null,
                                             taskName,
                                             expiryPlc,
-                                            !deserializeBinary,
+                                            cacheReturnMode != DESERIALIZED,
                                             null);
 
                                         if (getRes != null) {
@@ -579,7 +570,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                             null,
                                             taskName,
                                             expiryPlc,
-                                            !deserializeBinary);
+                                            cacheReturnMode != DESERIALIZED);
                                     }
 
                                     // Entry was not in memory or in swap, so we remove it from cache.
@@ -599,8 +590,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                             key,
                                             v,
                                             skipVals,
-                                            keepCacheObj,
-                                            deserializeBinary,
+                                            cacheReturnMode,
                                             true,
                                             getRes,
                                             ver,
@@ -664,12 +654,11 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             readThrough,
             forcePrimary,
             taskName,
-            deserializeBinary,
+            cacheReturnMode,
             recovery,
             expiryPlc,
             skipVals,
             needVer,
-            keepCacheObj,
             txLbl,
             mvccSnapshot,
             null);
@@ -711,7 +700,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             accessTtl,
             CU.empty0(),
             opCtx != null && opCtx.skipStore(),
-            opCtx != null && opCtx.isKeepBinary(),
+            ctx.cacheReturnMode(),
             opCtx != null && opCtx.recovery());
 
         // Future will be added to mvcc only if it was mapped to remote nodes.
@@ -976,7 +965,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter,
         final boolean skipStore,
-        final boolean keepBinary
+        final CacheReturnMode cacheReturnMode
     ) {
         assert keys != null;
 
@@ -1001,7 +990,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 accessTtl,
                 filter,
                 skipStore,
-                keepBinary);
+                cacheReturnMode);
         }
         else {
             return new GridEmbeddedFuture<>(keyFut,
@@ -1023,7 +1012,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             accessTtl,
                             filter,
                             skipStore,
-                            keepBinary);
+                            cacheReturnMode);
                     }
                 }
             );
@@ -1060,7 +1049,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter,
         boolean skipStore,
-        boolean keepBinary) {
+        CacheReturnMode cacheReturnMode) {
         int cnt = keys.size();
 
         if (tx == null) {
@@ -1077,7 +1066,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 createTtl,
                 accessTtl,
                 skipStore,
-                keepBinary);
+                cacheReturnMode);
 
             // Add before mapping.
             if (!ctx.mvcc().addFuture(fut))
@@ -1145,7 +1134,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 createTtl,
                 accessTtl,
                 skipStore,
-                keepBinary);
+                cacheReturnMode);
 
             return new GridDhtEmbeddedFuture<>(
                 new C2<GridCacheReturn, Exception, Exception>() {

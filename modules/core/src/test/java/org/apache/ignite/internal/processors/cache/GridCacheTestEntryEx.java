@@ -337,7 +337,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public Cache.Entry wrapLazyValue(boolean keepBinary) {
+    @Override public Cache.Entry wrapLazyValue(CacheReturnMode cacheReturnMode) {
         assert false;
 
         return null;

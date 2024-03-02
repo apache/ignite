@@ -40,6 +40,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
 
 /**
  *
@@ -167,8 +168,8 @@ public abstract class AbstractCacheObjectTransformationTest extends GridCommonAb
 
         CacheObjectContext coCtx = ((IgniteCacheProxy<?, ?>)cache).context().cacheObjectContext();
 
-        expVal = coCtx.unwrapBinaryIfNeeded(expVal, false, true, null);
-        obj = coCtx.unwrapBinaryIfNeeded(obj, false, true, null);
+        expVal = coCtx.unwrapBinaryIfNeeded(expVal, DESERIALIZED, true, null);
+        obj = coCtx.unwrapBinaryIfNeeded(obj, DESERIALIZED, true, null);
 
         assertEqualsArraysAware(expVal, obj);
 

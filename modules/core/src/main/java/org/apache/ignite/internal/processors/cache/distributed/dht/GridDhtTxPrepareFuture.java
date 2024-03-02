@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -100,6 +101,8 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.BINARY;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
@@ -363,7 +366,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      *
      */
     private void onEntriesLocked() {
-        ret = new GridCacheReturn(null, tx.localResult(), true, null, null, true);
+        ret = new GridCacheReturn(null, tx.localResult(), BINARY, null, null, true);
 
         for (IgniteTxEntry writeEntry : req.writes()) {
             IgniteTxEntry txEntry = tx.entry(writeEntry.txKey());
@@ -504,8 +507,13 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                     ret.invokeResult(true);
                             }
                         }
-                        else if (retVal)
-                            ret.value(cacheCtx, val, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                        else if (retVal) {
+                            ret.value(
+                                cacheCtx,
+                                val,
+                                txEntry.cacheReturnMode(),
+                                U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                        }
                     }
 
                     if (hasFilters && !cacheCtx.isAll(cached, txEntry.filters())) {
@@ -1239,7 +1247,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         GridCacheContext cctx = entry.context();
 
         try {
-            Object key = cctx.unwrapBinaryIfNeeded(entry.key(), entry.keepBinary(), false, null);
+            Object key = cctx.unwrapBinaryIfNeeded(entry.key(), CacheReturnMode.of(entry.keepBinary()), false, null);
 
             assert key != null : entry.key();
 
@@ -1255,7 +1263,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             CacheObject cacheVal = entryEx != null ? entryEx.rawGet() : null;
 
-            Object val = cacheVal != null ? cctx.unwrapBinaryIfNeeded(cacheVal, entry.keepBinary(), false, null) : null;
+            Object val = cacheVal != null ? cctx.unwrapBinaryIfNeeded(cacheVal, CacheReturnMode.of(entry.keepBinary()), false, null) : null;
 
             if (val != null) {
                 if (S.includeSensitive())
@@ -1994,7 +2002,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                     ret.value(
                                         cacheCtx,
                                         info.value(),
-                                        false,
+                                        DESERIALIZED,
                                         U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
                                     );
                                 }

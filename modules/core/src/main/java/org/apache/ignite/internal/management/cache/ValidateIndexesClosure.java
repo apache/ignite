@@ -83,6 +83,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.BINARY;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
@@ -669,7 +670,7 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
                 }
                 catch (Throwable t) {
                     Object o = CacheObjectUtils.unwrapBinaryIfNeeded(
-                        grpCtx.cacheObjectContext(), row.key(), true, true);
+                        grpCtx.cacheObjectContext(), row.key(), BINARY, true);
 
                     IndexValidationIssue is = new IndexValidationIssue(
                         o.toString(), cacheCtx.name(), idx.name(), t);
@@ -785,7 +786,7 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
                     if (X.hasCause(e, CorruptedTreeException.class))
                         throw new IgniteCheckedException("Key is present in SQL index, but is missing in corresponding " +
                             "data page. Previous successfully read key: " +
-                            CacheObjectUtils.unwrapBinaryIfNeeded(ctx.cacheObjectContext(), previousKey, true, true),
+                            CacheObjectUtils.unwrapBinaryIfNeeded(ctx.cacheObjectContext(), previousKey, BINARY, true),
                             X.cause(e, CorruptedTreeException.class)
                         );
 
@@ -828,7 +829,7 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
             }
             catch (Throwable t) {
                 Object o = CacheObjectUtils.unwrapBinaryIfNeeded(
-                    ctx.cacheObjectContext(), key, true, true);
+                    ctx.cacheObjectContext(), key, BINARY, true);
 
                 IndexValidationIssue is = new IndexValidationIssue(
                     String.valueOf(o), ctx.name(), idx.name(), t);

@@ -1399,7 +1399,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 intercept = !skipInterceptor(explicitVer);
 
             if (intercept) {
-                val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false, null);
+                val0 = cctx.unwrapBinaryIfNeeded(val, CacheReturnMode.of(keepBinary), false, null);
 
                 CacheLazyEntry e = new CacheLazyEntry(cctx, key, old, keepBinary);
 
@@ -2090,15 +2090,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * @param val Value.
      * @param cacheObj Cache object.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param cpy Copy flag.
      * @return Cache object value.
      */
-    @Nullable private Object value(@Nullable Object val, @Nullable CacheObject cacheObj, boolean keepBinary, boolean cpy) {
+    @Nullable private Object value(@Nullable Object val, @Nullable CacheObject cacheObj, CacheReturnMode cacheReturnMode, boolean cpy) {
         if (val != null)
             return val;
 
-        return cctx.unwrapBinaryIfNeeded(cacheObj, keepBinary, cpy, null);
+        return cctx.unwrapBinaryIfNeeded(cacheObj, cacheReturnMode, cpy, null);
     }
 
     /**
@@ -3942,8 +3942,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> Cache.Entry<K, V> wrapLazyValue(boolean keepBinary) {
-        return new LazyValueEntry<>(key, keepBinary);
+    @Override public <K, V> Cache.Entry<K, V> wrapLazyValue(CacheReturnMode cacheReturnMode) {
+        return new LazyValueEntry<>(key, cacheReturnMode);
     }
 
     /** {@inheritDoc} */
@@ -4640,25 +4640,25 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private final KeyCacheObject key;
 
         /** */
-        private boolean keepBinary;
+        private CacheReturnMode cacheReturnMode;
 
         /**
          * @param key Key.
-         * @param keepBinary Keep binary flag.
+         * @param cacheReturnMode Cache return mode.
          */
-        private LazyValueEntry(KeyCacheObject key, boolean keepBinary) {
+        private LazyValueEntry(KeyCacheObject key, CacheReturnMode cacheReturnMode) {
             this.key = key;
-            this.keepBinary = keepBinary;
+            this.cacheReturnMode = cacheReturnMode;
         }
 
         /** {@inheritDoc} */
         @Override public K getKey() {
-            return (K)cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, true, null);
+            return (K)cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, cacheReturnMode, true, null);
         }
 
         /** {@inheritDoc} */
         @Override public V getValue() {
-            return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(peekVisibleValue(), keepBinary, true, null);
+            return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(peekVisibleValue(), cacheReturnMode, true, null);
         }
 
         /** {@inheritDoc} */
@@ -5354,7 +5354,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (intercept && (conflictVer == null || !skipInterceptorOnConflict)) {
-                Object updated0 = cctx.unwrapBinaryIfNeeded(updated, keepBinary, false, null);
+                Object updated0 = cctx.unwrapBinaryIfNeeded(updated, CacheReturnMode.of(keepBinary), false, null);
 
                 CacheLazyEntry<Object, Object> interceptEntry =
                     new CacheLazyEntry<>(cctx, entry.key, null, oldVal, null, keepBinary);

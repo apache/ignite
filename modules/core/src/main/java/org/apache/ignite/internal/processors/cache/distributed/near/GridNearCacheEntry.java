@@ -23,6 +23,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -353,7 +354,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             F.asList(key),
             /*force primary*/false,
             taskName,
-            true,
+            CacheReturnMode.BINARY,
             /*recovery should have already been checked*/
             false,
             null,

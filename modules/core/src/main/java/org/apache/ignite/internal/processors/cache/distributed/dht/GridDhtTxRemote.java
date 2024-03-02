@@ -26,6 +26,7 @@ import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -308,7 +309,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         @Nullable Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessors,
         long ttl,
         boolean skipStore,
-        boolean keepBinary) {
+        CacheReturnMode cacheReturnMode) {
         checkInternal(key);
 
         if (isSystemInvalidate())
@@ -325,7 +326,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             cached,
             null,
             skipStore,
-            keepBinary);
+            cacheReturnMode);
 
         txEntry.entryProcessors(entryProcessors);
 

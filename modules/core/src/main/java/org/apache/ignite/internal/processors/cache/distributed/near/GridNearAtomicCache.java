@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -417,7 +418,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean forcePrimary,
         boolean skipTx,
         String taskName,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         boolean recovery,
         ReadRepairStrategy readRepairStrategy,
         boolean skipVals,
@@ -436,7 +437,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             ctx.cacheKeysView(keys),
             forcePrimary,
             taskName,
-            deserializeBinary,
+            cacheReturnMode,
             recovery,
             skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals,

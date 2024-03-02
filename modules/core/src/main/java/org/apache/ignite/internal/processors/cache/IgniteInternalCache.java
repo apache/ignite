@@ -18,13 +18,10 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
-import java.sql.Timestamp;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
@@ -227,44 +224,8 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      */
     public IgniteInternalCache<K, V> setSkipStore(boolean skipStore);
 
-    /**
-     * Creates projection that will operate with binary objects.
-     * <p>
-     * Projection returned by this method will force cache not to deserialize binary objects,
-     * so keys and values will be returned from cache API methods without changes. Therefore,
-     * signature of the projection can contain only following types:
-     * <ul>
-     *     <li><code>org.gridgain.grid.binary.BinaryObject</code> for binary classes</li>
-     *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
-     *     <li>Arrays of primitives (byte[], int[], ...)</li>
-     *     <li>{@link String} and array of {@link String}s</li>
-     *     <li>{@link UUID} and array of {@link UUID}s</li>
-     *     <li>{@link Date} and array of {@link Date}s</li>
-     *     <li>{@link Timestamp} and array of {@link Timestamp}s</li>
-     *     <li>Enums and array of enums</li>
-     *     <li>
-     *         Maps, collections and array of objects (but objects inside
-     *         them will still be converted if they are binary)
-     *     </li>
-     * </ul>
-     * <p>
-     * For example, if you use {@link Integer} as a key and {@code Value} class as a value
-     * (which will be stored in binary format), you should acquire following projection
-     * to avoid deserialization:
-     * <pre>
-     * IgniteInternalCache<Integer, GridBinaryObject> prj = cache.keepBinary();
-     *
-     * // Value is not deserialized and returned in binary format.
-     * GridBinaryObject po = prj.get(1);
-     * </pre>
-     * <p>
-     * Note that this method makes sense only if cache is working in binary mode
-     * (<code>org.apache.ignite.configuration.CacheConfiguration#isBinaryEnabled()</code> returns {@code true}. If not,
-     * this method is no-op and will return current projection.
-     *
-     * @return New internal cache instance for binary objects.
-     */
-    public <K1, V1> IgniteInternalCache<K1, V1> keepBinary();
+    /** */
+    public <K1, V1> IgniteInternalCache<K1, V1> withCacheReturnMode(CacheReturnMode mode);
 
     /**
      * Returns {@code true} if this map contains no key-value mappings.

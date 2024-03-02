@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.ModifyTuple;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.BINARY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.CONCURRENT_UPDATE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
 
@@ -196,7 +197,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
 
         GridCacheContext<Object, Object> cctx = desc.cacheContext();
         Map<Object, EntryProcessor<Object, Object, Long>> map = invokeMap(tuples);
-        Map<Object, EntryProcessorResult<Long>> res = cctx.cache().keepBinary().invokeAll(map);
+        Map<Object, EntryProcessorResult<Long>> res = cctx.cache().withCacheReturnMode(BINARY).invokeAll(map);
 
         long updated = res.values().stream().mapToLong(EntryProcessorResult::get).sum();
 

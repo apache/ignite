@@ -37,6 +37,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheClearAllRunnable;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -204,7 +205,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param keys Keys to load.
      * @param forcePrimary Force primary flag.
      * @param taskName Task name.
-     * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVal Skip value flag.
      * @param skipStore Skip store flag.
@@ -216,7 +216,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         @Nullable Collection<KeyCacheObject> keys,
         boolean forcePrimary,
         String taskName,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         boolean recovery,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVal,
@@ -236,11 +236,10 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             forcePrimary,
             txx,
             taskName,
-            deserializeBinary,
+            cacheReturnMode,
             expiry,
             skipVal,
             needVer,
-            false,
             recovery);
 
         // init() will register future for responses if future has remote mappings.

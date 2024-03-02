@@ -34,18 +34,18 @@ import org.jetbrains.annotations.Nullable;
 public class CacheObjectUtils {
     /**
      * @param o Object to unwrap.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param cpy Copy value flag.
      * @return Unwrapped object.
      */
-    public static Object unwrapBinaryIfNeeded(CacheObjectValueContext ctx, CacheObject o, boolean keepBinary, boolean cpy) {
-        return unwrapBinary(ctx, o, keepBinary, cpy, null);
+    public static Object unwrapBinaryIfNeeded(CacheObjectValueContext ctx, CacheObject o, CacheReturnMode cacheReturnMode, boolean cpy) {
+        return unwrapBinary(ctx, o, cacheReturnMode, cpy, null);
     }
 
     /**
      * @param ctx Cache object context.
      * @param o Object to unwrap.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param cpy Copy value flag.
      * @param ldr Class loader, used for deserialization from binary representation.
      * @return Unwrapped object.
@@ -53,7 +53,7 @@ public class CacheObjectUtils {
     public static Object unwrapBinaryIfNeeded(
         CacheObjectValueContext ctx,
         Object o,
-        boolean keepBinary,
+        CacheReturnMode cacheReturnMode,
         boolean cpy,
         @Nullable ClassLoader ldr
     ) {
@@ -66,42 +66,49 @@ public class CacheObjectUtils {
 
             Object key = entry.getKey();
 
-            Object uKey = unwrapBinary(ctx, key, keepBinary, cpy, ldr);
+            Object uKey = unwrapBinary(ctx, key, cacheReturnMode, cpy, ldr);
 
             Object val = entry.getValue();
 
-            Object uVal = unwrapBinary(ctx, val, keepBinary, cpy, ldr);
+            Object uVal = unwrapBinary(ctx, val, cacheReturnMode, cpy, ldr);
 
             return (key != uKey || val != uVal) ? F.t(uKey, uVal) : o;
         }
 
-        return unwrapBinary(ctx, o, keepBinary, cpy, ldr);
+        return unwrapBinary(ctx, o, cacheReturnMode, cpy, ldr);
     }
 
     /**
      * @param col Collection of objects to unwrap.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @return Unwrapped collection.
      */
-    public static Collection<Object> unwrapBinariesIfNeeded(CacheObjectValueContext ctx, Collection<?> col,
-        boolean keepBinary) {
-        return unwrapBinariesIfNeeded(ctx, col, keepBinary, true);
+    public static Collection<Object> unwrapBinariesIfNeeded(
+        CacheObjectValueContext ctx,
+        Collection<?> col,
+        CacheReturnMode cacheReturnMode
+    ) {
+        return unwrapBinariesIfNeeded(ctx, col, cacheReturnMode, true);
     }
 
     /**
      * @param col Collection to unwrap.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param cpy Copy flag.
      * @return Unwrapped collection.
      */
-    private static Collection<Object> unwrapKnownCollection(CacheObjectValueContext ctx, Collection<?> col,
-        boolean keepBinary, boolean cpy) {
+    private static Collection<Object> unwrapKnownCollection(
+        CacheObjectValueContext ctx,
+        Collection<?> col,
+        CacheReturnMode cacheReturnMode,
+        boolean cpy
+    ) {
         Collection<Object> col0 = BinaryUtils.newKnownCollection(col);
 
         assert col0 != null;
 
         for (Object obj : col)
-            col0.add(unwrapBinary(ctx, obj, keepBinary, cpy, null));
+            col0.add(unwrapBinary(ctx, obj, cacheReturnMode, cpy, null));
 
         return (col0 instanceof MutableSingletonList) ? U.convertToSingletonList(col0) : col0;
     }
@@ -110,12 +117,16 @@ public class CacheObjectUtils {
      * Unwraps map.
      *
      * @param map Map to unwrap.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @return Unwrapped collection.
      */
-    private static Map<Object, Object> unwrapBinariesIfNeeded(CacheObjectValueContext ctx, Map<Object, Object> map,
-        boolean keepBinary, boolean cpy) {
-        if (keepBinary)
+    private static Map<Object, Object> unwrapBinariesIfNeeded(
+        CacheObjectValueContext ctx,
+        Map<Object, Object> map,
+        CacheReturnMode cacheReturnMode,
+        boolean cpy
+    ) {
+        if (cacheReturnMode != CacheReturnMode.DESERIALIZED)
             return map;
 
         Map<Object, Object> map0 = BinaryUtils.newMap(map);
@@ -123,27 +134,31 @@ public class CacheObjectUtils {
         for (Map.Entry<Object, Object> e : map.entrySet())
             // TODO why don't we use keepBinary parameter here?
             map0.put(
-                unwrapBinary(ctx, e.getKey(), false, cpy, null),
-                unwrapBinary(ctx, e.getValue(), false, cpy, null));
+                unwrapBinary(ctx, e.getKey(), CacheReturnMode.DESERIALIZED, cpy, null),
+                unwrapBinary(ctx, e.getValue(), CacheReturnMode.DESERIALIZED, cpy, null));
 
         return map0;
     }
 
     /**
      * @param col Collection to unwrap.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param cpy Copy value flag.
      * @return Unwrapped collection.
      */
-    private static Collection<Object> unwrapBinariesIfNeeded(CacheObjectValueContext ctx, Collection<?> col,
-        boolean keepBinary, boolean cpy) {
+    private static Collection<Object> unwrapBinariesIfNeeded(
+        CacheObjectValueContext ctx,
+        Collection<?> col,
+        CacheReturnMode cacheReturnMode,
+        boolean cpy
+    ) {
         Collection<Object> col0 = BinaryUtils.newKnownCollection(col);
 
         if (col0 == null)
             col0 = new ArrayList<>(col.size());
 
         for (Object obj : col)
-            col0.add(unwrapBinaryIfNeeded(ctx, obj, keepBinary, cpy, null));
+            col0.add(unwrapBinaryIfNeeded(ctx, obj, cacheReturnMode, cpy, null));
 
         return col0;
     }
@@ -152,19 +167,23 @@ public class CacheObjectUtils {
      * Unwrap array of binaries if needed.
      *
      * @param arr Array.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param cpy Copy.
      * @return Result.
      */
-    private static Object[] unwrapBinariesInArrayIfNeeded(CacheObjectValueContext ctx, Object[] arr, boolean keepBinary,
-        boolean cpy) {
+    private static Object[] unwrapBinariesInArrayIfNeeded(
+        CacheObjectValueContext ctx,
+        Object[] arr,
+        CacheReturnMode cacheReturnMode,
+        boolean cpy
+    ) {
         if (BinaryUtils.knownArray(arr))
             return arr;
 
         Object[] res = new Object[arr.length];
 
         for (int i = 0; i < arr.length; i++)
-            res[i] = unwrapBinary(ctx, arr[i], keepBinary, cpy, null);
+            res[i] = unwrapBinary(ctx, arr[i], cacheReturnMode, cpy, null);
 
         return res;
     }
@@ -174,7 +193,7 @@ public class CacheObjectUtils {
      *
      * @param ctx Cache object context.
      * @param o Object to unwrap.
-     * @param keepBinary False when need to deserialize object from a binary one, true otherwise.
+     * @param cacheReturnMode Cache return mode.
      * @param cpy True means the object will be copied before return, false otherwise.
      * @param ldr Class loader, used for deserialization from binary representation.
      * @return Unwrapped object.
@@ -182,17 +201,23 @@ public class CacheObjectUtils {
     public static Object unwrapBinary(
         CacheObjectValueContext ctx,
         Object o,
-        boolean keepBinary,
+        CacheReturnMode cacheReturnMode,
         boolean cpy,
         @Nullable ClassLoader ldr
     ) {
         if (o == null)
             return o;
 
+        if (cacheReturnMode == CacheReturnMode.RAW) {
+            assert o instanceof CacheObject;
+
+            return o;
+        }
+
         while (BinaryUtils.knownCacheObject(o)) {
             CacheObject co = (CacheObject)o;
 
-            if (!co.isPlatformType() && keepBinary)
+            if (!co.isPlatformType() && cacheReturnMode == CacheReturnMode.BINARY)
                 return o;
 
             // It may be a collection of binaries
@@ -200,12 +225,12 @@ public class CacheObjectUtils {
         }
 
         if (BinaryUtils.knownCollection(o))
-            return unwrapKnownCollection(ctx, (Collection<Object>)o, keepBinary, cpy);
+            return unwrapKnownCollection(ctx, (Collection<Object>)o, cacheReturnMode, cpy);
         else if (BinaryUtils.knownMap(o))
-            return unwrapBinariesIfNeeded(ctx, (Map<Object, Object>)o, keepBinary, cpy);
+            return unwrapBinariesIfNeeded(ctx, (Map<Object, Object>)o, cacheReturnMode, cpy);
         else if (o instanceof Object[] && !BinaryArray.useBinaryArrays())
-            return unwrapBinariesInArrayIfNeeded(ctx, (Object[])o, keepBinary, cpy);
-        else if (o instanceof BinaryArray && !keepBinary)
+            return unwrapBinariesInArrayIfNeeded(ctx, (Object[])o, cacheReturnMode, cpy);
+        else if (o instanceof BinaryArray && cacheReturnMode == CacheReturnMode.DESERIALIZED)
             return ((BinaryObject)o).deserialize(ldr);
 
         return o;

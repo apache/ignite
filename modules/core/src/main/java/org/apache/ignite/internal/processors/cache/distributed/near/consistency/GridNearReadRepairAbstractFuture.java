@@ -39,6 +39,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
@@ -87,7 +88,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     protected final String taskName;
 
     /** Deserialize binary flag. */
-    protected final boolean deserializeBinary;
+    protected final CacheReturnMode cacheReturnMode;
 
     /** Recovery flag. */
     protected final boolean recovery;
@@ -128,7 +129,6 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
      * @param strategy Read repair strategy.
      * @param readThrough Read-through flag.
      * @param taskName Task name.
-     * @param deserializeBinary Deserialize binary flag.
      * @param recovery Partition recovery flag.
      * @param expiryPlc Expiry policy.
      * @param tx Transaction. Can be {@code null} in case of atomic cache.
@@ -141,7 +141,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         ReadRepairStrategy strategy,
         boolean readThrough,
         String taskName,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         boolean recovery,
         IgniteCacheExpiryPolicy expiryPlc,
         IgniteInternalTx tx,
@@ -150,7 +150,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         this.keys = Collections.unmodifiableCollection(keys);
         this.readThrough = readThrough;
         this.taskName = taskName;
-        this.deserializeBinary = deserializeBinary;
+        this.cacheReturnMode = cacheReturnMode;
         this.recovery = recovery;
         this.expiryPlc = expiryPlc;
         this.tx = tx;
@@ -194,11 +194,10 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
                     readThrough,
                     false, // Local get required.
                     taskName,
-                    deserializeBinary,
+                    cacheReturnMode,
                     recovery,
                     expiryPlc,
                     false,
-                    true,
                     true,
                     tx != null ? tx.label() : null,
                     null,
@@ -568,7 +567,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
             for (KeyCacheObject key : fut.keys()) {
                 if (inconsistentKeys.contains(key)) {
                     sensitiveKeyMap.computeIfAbsent(key, k -> includeSensitive
-                        ? ctx.unwrapBinaryIfNeeded(k, true, false, null)
+                        ? ctx.unwrapBinaryIfNeeded(k, CacheReturnMode.BINARY, false, null)
                         : "[HIDDEN_KEY#" + UUID.randomUUID() + "]");
 
                     CacheConsistencyViolationEvent.EntriesInfo entriesInfo =
@@ -626,7 +625,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
 
                 return sensitiveValMap.computeIfAbsent(wrapped, w ->
                     includeSensitive ?
-                        ctx.unwrapBinaryIfNeeded(val, true, false, null) :
+                        ctx.unwrapBinaryIfNeeded(val, CacheReturnMode.BINARY, false, null) :
                         "[HIDDEN_VALUE#" + UUID.randomUUID() + "]");
             }
             catch (IgniteCheckedException e) {

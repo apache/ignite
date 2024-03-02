@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheLazyEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -1457,7 +1458,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                                         key,
                                         e.cached().rawGet(),
                                         e.keepBinary()),
-                                    cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(val, e.keepBinary(), false, null));
+                                    cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(
+                                        val,
+                                        CacheReturnMode.of(e.keepBinary()),
+                                        false,
+                                        null
+                                    ));
 
                                 if (interceptorVal == null)
                                     continue;
@@ -1599,7 +1605,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 ret.value(
                     cacheCtx,
                     txEntry.value(),
-                    txEntry.keepBinary(),
+                    txEntry.cacheReturnMode(),
                     U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
                 );
             }

@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.EntryProcessorResourceInjectorProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -58,6 +59,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
@@ -108,7 +110,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @param filter Entry filter.
      * @param taskNameHash Task name hash code.
      * @param skipStore Skip store flag.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Keep binary flag.
      * @param remapCnt Maximum number of retries.
      */
     public GridNearAtomicUpdateFuture(
@@ -126,7 +128,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         final CacheEntryPredicate[] filter,
         int taskNameHash,
         boolean skipStore,
-        boolean keepBinary,
+        CacheReturnMode cacheReturnMode,
         boolean recovery,
         int remapCnt
     ) {
@@ -141,7 +143,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             filter,
             taskNameHash,
             skipStore,
-            keepBinary,
+            cacheReturnMode,
             recovery,
             remapCnt);
 
@@ -698,7 +700,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         }
 
         if (syncMode == FULL_ASYNC)
-            completeFuture(new GridCacheReturn(cctx, true, true, null, null, true), null, null);
+            completeFuture(new GridCacheReturn(cctx, true, DESERIALIZED, null, null, true), null, null);
     }
 
     /** {@inheritDoc} */
@@ -791,7 +793,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             assert mappings0 != null;
 
             if (size == 0) {
-                completeFuture(new GridCacheReturn(cctx, true, true, null, null, true), null, futId);
+                completeFuture(new GridCacheReturn(cctx, true, CacheReturnMode.BINARY, null, null, true), null, futId);
 
                 return;
             }
@@ -800,7 +802,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         }
 
         if (syncMode == FULL_ASYNC) {
-            completeFuture(new GridCacheReturn(cctx, true, true, null, null, true), null, futId);
+            completeFuture(new GridCacheReturn(cctx, true, CacheReturnMode.BINARY, null, null, true), null, futId);
 
             return;
         }
@@ -993,7 +995,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                     mappingKnown,
                     needPrimaryRes,
                     skipStore,
-                    keepBinary,
                     recovery);
 
                 GridNearAtomicFullUpdateRequest req = new GridNearAtomicFullUpdateRequest(
@@ -1009,7 +1010,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                     taskNameHash,
                     flags,
                     cctx.deploymentEnabled(),
-                    keys.size());
+                    keys.size(),
+                    cacheReturnMode);
 
                 mapped = new PrimaryRequestState(req, nodes, false);
 
@@ -1100,13 +1102,13 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
         boolean needPrimaryRes = !mappingKnown || primary.isLocal() || nodes.size() == 1 || nearEnabled;
 
-        byte flags = GridNearAtomicAbstractUpdateRequest.flags(nearEnabled,
+        byte flags = GridNearAtomicAbstractUpdateRequest.flags(
+            nearEnabled,
             topLocked,
             retval,
             mappingKnown,
             needPrimaryRes,
             skipStore,
-            keepBinary,
             recovery);
 
         GridNearAtomicFullUpdateRequest req = new GridNearAtomicFullUpdateRequest(
@@ -1122,7 +1124,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             taskNameHash,
             flags,
             cctx.deploymentEnabled(),
-            1);
+            1,
+            cacheReturnMode);
 
         req.addUpdateEntry(cacheKey,
             val,

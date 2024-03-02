@@ -59,6 +59,7 @@ import org.h2.value.ValueDate;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.BINARY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_CACHE_UPDATES;
@@ -559,9 +560,9 @@ public class DmlUtils {
 
             if (opCtx == null)
                 // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-                newOpCtx = new CacheOperationContext(false, true, null, false, null, false, null);
-            else if (!opCtx.isKeepBinary())
-                newOpCtx = opCtx.keepBinary();
+                newOpCtx = new CacheOperationContext(false, BINARY, null, false, null, false, null);
+            else if (opCtx.cacheReturnMode() != BINARY)
+                newOpCtx = opCtx.withCacheReturnMode(BINARY);
 
             if (newOpCtx != null)
                 cctx.operationContextPerCall(newOpCtx);

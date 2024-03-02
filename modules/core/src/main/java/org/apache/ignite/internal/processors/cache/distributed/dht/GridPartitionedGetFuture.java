@@ -31,6 +31,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -54,6 +55,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
+
 /**
  * Colocated get future.
  */
@@ -74,12 +77,11 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param forcePrimary If {@code true} then will force network trip to primary node even
      *          if called on backup node.
      * @param taskName Task name.
-     * @param deserializeBinary Deserialize binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param recovery Recovery mode flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
-     * @param keepCacheObjects Keep cache objects flag.
      * @param txLbl Transaction label.
      * @param mvccSnapshot Mvcc snapshot.
      */
@@ -89,12 +91,11 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         boolean readThrough,
         boolean forcePrimary,
         String taskName,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         boolean recovery,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
-        boolean keepCacheObjects,
         @Nullable String txLbl,
         @Nullable MvccSnapshot mvccSnapshot,
         ClusterNode affNode
@@ -105,11 +106,10 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             readThrough,
             forcePrimary,
             taskName,
-            deserializeBinary,
+            cacheReturnMode,
             expiryPlc,
             skipVals,
             needVer,
-            keepCacheObjects,
             recovery
         );
 
@@ -481,7 +481,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                     txLbl,
                                     row.value(),
                                     taskName,
-                                    !deserializeBinary);
+                                    cacheReturnMode != DESERIALIZED);
                             }
                         }
                         else
@@ -505,7 +505,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                 null,
                                 taskName,
                                 expiryPlc,
-                                !deserializeBinary,
+                                cacheReturnMode != DESERIALIZED,
                                 null);
 
                             if (getRes != null) {
@@ -523,7 +523,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                 null,
                                 taskName,
                                 expiryPlc,
-                                !deserializeBinary);
+                                cacheReturnMode != DESERIALIZED);
                         }
 
                         entry.touch();
@@ -541,8 +541,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         key,
                         v,
                         skipVals,
-                        keepCacheObjects,
-                        deserializeBinary,
+                        cacheReturnMode,
                         true,
                         getRes,
                         ver,
@@ -627,8 +626,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     info.key(),
                     info.value(),
                     skipVals,
-                    keepCacheObjects,
-                    deserializeBinary,
+                    cacheReturnMode,
                     false,
                     needVer ? info.version() : null,
                     0,

@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
@@ -45,9 +46,6 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
     /** Need version. */
     private final boolean needVer;
 
-    /** Keep cache objects. */
-    private final boolean keepCacheObjects;
-
     /**
      * Creates a new instance of GridNearReadRepairCheckOnlyFuture.
      *
@@ -57,12 +55,10 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
      * @param strategy Read repair strategy.
      * @param readThrough Read-through flag.
      * @param taskName Task name.
-     * @param deserializeBinary Deserialize binary flag.
      * @param recovery Partition recovery flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer Need version flag.
-     * @param keepCacheObjects Keep cache objects flag.
      * @param tx Transaction. Can be {@code null} in case of atomic cache.
      */
     public GridNearReadRepairCheckOnlyFuture(
@@ -72,12 +68,11 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
         ReadRepairStrategy strategy,
         boolean readThrough,
         String taskName,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         boolean recovery,
         IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
-        boolean keepCacheObjects,
         IgniteInternalTx tx) {
         this(topVer,
             ctx,
@@ -85,12 +80,11 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
             strategy,
             readThrough,
             taskName,
-            deserializeBinary,
+            cacheReturnMode,
             recovery,
             expiryPlc,
             skipVals,
             needVer,
-            keepCacheObjects,
             tx,
             null);
     }
@@ -102,12 +96,10 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
      * @param strategy Read repair strategy.
      * @param readThrough Read-through flag.
      * @param taskName Task name.
-     * @param deserializeBinary Deserialize binary flag.
      * @param recovery Partition recovery flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer Need version flag.
-     * @param keepCacheObjects Keep cache objects flag.
      * @param tx Transaction. Can be {@code null} in case of atomic cache.
      * @param remappedFut Remapped future.
      */
@@ -118,12 +110,11 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
         ReadRepairStrategy strategy,
         boolean readThrough,
         String taskName,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         boolean recovery,
         IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
-        boolean keepCacheObjects,
         IgniteInternalTx tx,
         GridNearReadRepairCheckOnlyFuture remappedFut) {
         super(topVer,
@@ -132,7 +123,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
             strategy,
             readThrough,
             taskName,
-            deserializeBinary,
+            cacheReturnMode,
             recovery,
             expiryPlc,
             tx,
@@ -140,7 +131,6 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
 
         this.skipVals = skipVals;
         this.needVer = needVer;
-        this.keepCacheObjects = keepCacheObjects;
     }
 
     /** {@inheritDoc} */
@@ -152,12 +142,11 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
             strategy,
             readThrough,
             taskName,
-            deserializeBinary,
+            cacheReturnMode,
             recovery,
             expiryPlc,
             skipVals,
             needVer,
-            keepCacheObjects,
             tx,
             this).init();
     }
@@ -216,8 +205,10 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
     protected void onDoneIrreparable(Set<KeyCacheObject> irreparableKeys) {
         recordConsistencyViolation(irreparableKeys, /*nothing repaired*/ null);
 
-        onDone(new IgniteIrreparableConsistencyViolationException(null,
-            ctx.unwrapBinariesIfNeeded(irreparableKeys, !deserializeBinary)));
+        onDone(new IgniteIrreparableConsistencyViolationException(
+            null,
+            ctx.unwrapBinariesIfNeeded(irreparableKeys, cacheReturnMode)
+        ));
     }
 
     /**
@@ -289,8 +280,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
                     entry.getKey(),
                     getRes.value(),
                     skipVals,
-                    keepCacheObjects,
-                    deserializeBinary,
+                    cacheReturnMode,
                     false,
                     getRes,
                     getRes.version(),

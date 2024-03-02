@@ -34,6 +34,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -104,7 +105,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
     protected String taskName;
 
     /** Whether to deserialize binary objects. */
-    protected boolean deserializeBinary;
+    protected CacheReturnMode cacheReturnMode;
 
     /** Skip values flag. */
     protected boolean skipVals;
@@ -117,9 +118,6 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
 
     /** */
     protected final boolean needVer;
-
-    /** */
-    protected final boolean keepCacheObjects;
 
     /** */
     protected final boolean recovery;
@@ -138,11 +136,10 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
      * @param forcePrimary If {@code true} then will force network trip to primary node even
      *          if called on backup node.
      * @param taskName Task name.
-     * @param deserializeBinary Deserialize binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
-     * @param keepCacheObjects Keep cache objects flag.
      */
     protected CacheDistributedGetFutureAdapter(
         GridCacheContext<K, V> cctx,
@@ -150,11 +147,10 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         boolean readThrough,
         boolean forcePrimary,
         String taskName,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
-        boolean keepCacheObjects,
         boolean recovery
     ) {
         super(CU.mapsReducer(keys.size()));
@@ -166,11 +162,10 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         this.readThrough = readThrough;
         this.forcePrimary = forcePrimary;
         this.taskName = taskName;
-        this.deserializeBinary = deserializeBinary;
+        this.cacheReturnMode = cacheReturnMode;
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
         this.needVer = needVer;
-        this.keepCacheObjects = keepCacheObjects;
         this.recovery = recovery;
         deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 

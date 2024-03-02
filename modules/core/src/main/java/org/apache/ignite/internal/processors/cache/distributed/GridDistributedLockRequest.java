@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -47,9 +48,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
     /** Skip store flag bit mask. */
     private static final int SKIP_STORE_FLAG_MASK = 0x01;
-
-    /** Keep binary flag. */
-    private static final int KEEP_BINARY_FLAG_MASK = 0x02;
 
     /** */
     private static final int STORE_USED_FLAG_MASK = 0x04;
@@ -99,6 +97,9 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /** Additional flags. */
     private byte flags;
 
+    /** */
+    private CacheReturnMode cacheReturnMode;
+
     /**
      * Empty constructor.
      */
@@ -138,7 +139,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         int keyCnt,
         int txSize,
         boolean skipStore,
-        boolean keepBinary,
+        CacheReturnMode cacheReturnMode,
         boolean addDepInfo
     ) {
         super(lockVer, keyCnt, addDepInfo);
@@ -158,11 +159,11 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         this.isInvalidate = isInvalidate;
         this.timeout = timeout;
         this.txSize = txSize;
+        this.cacheReturnMode = cacheReturnMode;
 
         retVals = new boolean[keyCnt];
 
         skipStore(skipStore);
-        keepBinary(keepBinary);
     }
 
     /**
@@ -241,17 +242,17 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      */
-    public void keepBinary(boolean keepBinary) {
-        flags = keepBinary ? (byte)(flags | KEEP_BINARY_FLAG_MASK) : (byte)(flags & ~KEEP_BINARY_FLAG_MASK);
+    public void cacheReturnMode(CacheReturnMode cacheReturnMode) {
+        this.cacheReturnMode = cacheReturnMode;
     }
 
     /**
-     * @return Keep binary.
+     * @return Cache return ode.
      */
-    public boolean keepBinary() {
-        return (flags & KEEP_BINARY_FLAG_MASK) != 0;
+    public CacheReturnMode cacheReturnMode() {
+        return cacheReturnMode;
     }
 
     /**
@@ -444,6 +445,11 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 writer.incrementState();
 
+            case 21:
+                if (!writer.writeByte("cacheReturnMode", (byte)cacheReturnMode.ordinal()))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -568,6 +574,13 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
+            case 21:
+                cacheReturnMode = CacheReturnMode.fromOrdinal(reader.readByte("cacheReturnMode"));
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDistributedLockRequest.class);
@@ -580,7 +593,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 21;
+        return 22;
     }
 
     /** {@inheritDoc} */

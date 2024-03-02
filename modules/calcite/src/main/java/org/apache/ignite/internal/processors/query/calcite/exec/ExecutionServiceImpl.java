@@ -109,6 +109,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 import static org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader.fromJson;
 
@@ -677,7 +678,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         QueryProperties qryProps = qry.context().unwrap(QueryProperties.class);
 
         Function<Object, Object> fieldConverter = (qryProps == null || qryProps.keepBinary()) ? null :
-            o -> CacheObjectUtils.unwrapBinaryIfNeeded(objValCtx, o, false, true, null);
+            o -> CacheObjectUtils.unwrapBinaryIfNeeded(objValCtx, o, DESERIALIZED, true, null);
 
         HeavyQueriesTracker.ResultSetChecker resultSetChecker = ctx.query().runningQueryManager()
             .heavyQueriesTracker().resultSetChecker(qry);

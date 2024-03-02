@@ -173,7 +173,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
             boolean skipStore = opCtx != null && opCtx.skipStore();
 
-            boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+            boolean keepBinary = ctx.keepBinary();
 
             do {
                 retry = false;
@@ -207,7 +207,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        removeAllAsync(opFut, topVer, opCtx != null && opCtx.skipStore(), opCtx != null && opCtx.isKeepBinary());
+        removeAllAsync(opFut, topVer, opCtx != null && opCtx.skipStore(), ctx.keepBinary());
 
         return opFut;
     }

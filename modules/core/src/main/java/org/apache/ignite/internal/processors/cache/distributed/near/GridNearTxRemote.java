@@ -26,6 +26,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -344,6 +345,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @param val Value.
      * @param drVer Data center replication version.
      * @param skipStore Skip store flag.
+     * @param cacheReturnMode Cache return mode.
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if entry has been enlisted.
      */
@@ -354,7 +356,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         CacheObject val,
         @Nullable GridCacheVersion drVer,
         boolean skipStore,
-        boolean keepBinary
+        CacheReturnMode cacheReturnMode
     ) throws IgniteCheckedException {
         checkInternal(key);
 
@@ -388,7 +390,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
                         cached,
                         drVer,
                         skipStore,
-                        keepBinary);
+                        cacheReturnMode);
 
                     txState.addWriteEntry(key, txEntry);
 

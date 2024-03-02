@@ -137,11 +137,11 @@ public interface GridCacheEntryEx {
 
     /**
      * Wraps entry to an entry with lazy value get.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache retur mode.
      *
      * @return Entry.
      */
-    public <K, V> Cache.Entry<K, V> wrapLazyValue(boolean keepBinary);
+    public <K, V> Cache.Entry<K, V> wrapLazyValue(CacheReturnMode cacheReturnMode);
 
     /**
      * Peeks value provided to public API entries and to entry filters.

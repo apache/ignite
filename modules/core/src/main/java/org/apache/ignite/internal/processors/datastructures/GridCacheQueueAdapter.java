@@ -39,6 +39,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -430,18 +431,18 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     @Override public <V1> IgniteQueue<V1> withKeepBinary() {
         CacheOperationContext opCtx = cctx.operationContextPerCall();
 
-        if (opCtx != null && opCtx.isKeepBinary())
+        if (cctx.cacheReturnMode() != CacheReturnMode.DESERIALIZED)
             return (GridCacheQueueAdapter<V1>)this;
 
         opCtx = opCtx == null ? new CacheOperationContext(
             false,
-            true,
+            CacheReturnMode.BINARY,
             null,
             false,
             null,
             false,
             null)
-            : opCtx.keepBinary();
+            : opCtx.withCacheReturnMode(CacheReturnMode.BINARY);
 
         cctx.operationContextPerCall(opCtx);
 

@@ -30,6 +30,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.BINARY;
+
 /**
  * Test methods for storage manipulation.
  */
@@ -51,7 +53,7 @@ public class TestStorageUtils {
         int partId = ctx.affinity().partition(key);
         GridDhtLocalPartition locPart = ctx.topology().localPartition(partId);
 
-        CacheEntry<Object, Object> e = ctx.cache().keepBinary().getEntry(key);
+        CacheEntry<Object, Object> e = ctx.cache().withCacheReturnMode(BINARY).getEntry(key);
 
         KeyCacheObject keyCacheObj = e.getKey() instanceof BinaryObject ?
             (KeyCacheObject)e.getKey() :

@@ -50,6 +50,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.BINARY;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 
 /**
@@ -201,7 +202,7 @@ public class CollectConflictPartitionKeysTask extends ComputeTaskAdapter<Partiti
 
                     assert desc != null;
 
-                    Object o = CacheObjectUtils.unwrapBinaryIfNeeded(grpCtx.cacheObjectContext(), row.key(), true, true);
+                    Object o = CacheObjectUtils.unwrapBinaryIfNeeded(grpCtx.cacheObjectContext(), row.key(), BINARY, true);
 
                     partEntryHashRecords.add(new PartitionEntryHashRecord(
                         cacheId, desc.cacheName(), row.key(), o.toString(),

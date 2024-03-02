@@ -23,6 +23,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
@@ -66,7 +67,8 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
         GridCacheOperation op,
         int taskNameHash,
         byte flags,
-        boolean addDepInfo
+        boolean addDepInfo,
+        CacheReturnMode cacheReturnMode
     ) {
         super(cacheId,
             nodeId,
@@ -76,7 +78,8 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
             op,
             taskNameHash,
             flags,
-            addDepInfo);
+            addDepInfo,
+            cacheReturnMode);
     }
 
     /**

@@ -40,6 +40,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -76,6 +77,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
 
 /**
  * Cache lock future.
@@ -165,8 +167,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     @GridToStringExclude
     private Queue<GridNearLockMapping> mappings;
 
-    /** Keep binary context flag. */
-    private final boolean keepBinary;
+    /** Cache return mode. */
+    private final CacheReturnMode cacheReturnMode;
 
     /** Recovery mode context flag. */
     private final boolean recovery;
@@ -185,7 +187,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * @param accessTtl TTL for read operation.
      * @param filter Filter.
      * @param skipStore skipStore
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param recovery Recovery flag.
      */
     public GridNearLockFuture(
@@ -199,7 +201,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         long accessTtl,
         CacheEntryPredicate[] filter,
         boolean skipStore,
-        boolean keepBinary,
+        CacheReturnMode cacheReturnMode,
         boolean recovery
     ) {
         super(CU.boolReducer());
@@ -217,7 +219,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         this.accessTtl = accessTtl;
         this.filter = filter;
         this.skipStore = skipStore;
-        this.keepBinary = keepBinary;
+        this.cacheReturnMode = cacheReturnMode;
         this.recovery = recovery;
 
         ignoreInterrupts();
@@ -1104,7 +1106,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                                 read ? createTtl : -1L,
                                                 read ? accessTtl : -1L,
                                                 skipStore,
-                                                keepBinary,
+                                                cacheReturnMode,
                                                 clientFirst,
                                                 true,
                                                 cctx.deploymentEnabled(),
@@ -1312,7 +1314,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                                     hasBytes,
                                                     null,
                                                     inTx() ? tx.resolveTaskName() : null,
-                                                    keepBinary);
+                                                    cacheReturnMode != DESERIALIZED);
 
                                             if (cctx.statisticsEnabled())
                                                 cctx.cache().metrics0().onRead(oldVal != null);
@@ -1733,7 +1735,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                     hasOldVal,
                                     null,
                                     inTx() ? tx.resolveTaskName() : null,
-                                    keepBinary);
+                                    cacheReturnMode != DESERIALIZED);
 
                             if (cctx.statisticsEnabled())
                                 cctx.cache().metrics0().onRead(false);

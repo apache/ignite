@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -86,6 +87,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
@@ -262,7 +264,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 null,
                                 req.accessTtl(),
                                 req.skipStore(),
-                                req.keepBinary());
+                                req.cacheReturnMode());
                         }
 
                         entry = entryExx(key, req.topologyVersion());
@@ -764,7 +766,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             accessTtl,
             CU.empty0(),
             opCtx != null && opCtx.skipStore(),
-            opCtx != null && opCtx.isKeepBinary());
+            ctx.cacheReturnMode());
     }
 
     /**
@@ -794,7 +796,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         long accessTtl,
         CacheEntryPredicate[] filter,
         boolean skipStore,
-        boolean keepBinary) {
+        CacheReturnMode cacheReturnMode) {
         if (keys == null || keys.isEmpty())
             return new GridDhtFinishedFuture<>(true);
 
@@ -816,7 +818,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             createTtl,
             accessTtl,
             skipStore,
-            keepBinary);
+            cacheReturnMode);
 
         if (fut.isDone()) // Possible in case of cancellation or timeout or rollback.
             return fut;
@@ -998,7 +1000,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         req.createTtl(),
                         req.accessTtl(),
                         req.skipStore(),
-                        req.keepBinary());
+                        req.cacheReturnMode());
 
                     // Add before mapping.
                     if (!ctx.mvcc().addFuture(fut))
@@ -1070,7 +1072,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     req.createTtl(),
                     req.accessTtl(),
                     req.skipStore(),
-                    req.keepBinary(),
+                    req.cacheReturnMode(),
                     req.nearCache());
 
                 final GridDhtTxLocal t = tx;
@@ -1280,7 +1282,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         null,
                                         tx != null ? tx.resolveTaskName() : null,
                                         null,
-                                        req.keepBinary());
+                                        req.cacheReturnMode() != DESERIALIZED);
                                 }
 
                                 assert e.lockedBy(mappedVer) ||

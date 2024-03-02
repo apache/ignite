@@ -48,6 +48,7 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
@@ -716,7 +717,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src) {
-            return cctx.unwrapBinaryIfNeeded(isKey ? src.key() : src.value(), ectx.keepBinary(), null);
+            return cctx.unwrapBinaryIfNeeded(isKey ? src.key() : src.value(), CacheReturnMode.of(ectx.keepBinary()), null);
         }
 
         /** {@inheritDoc} */
@@ -802,7 +803,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         /** {@inheritDoc} */
         @Override public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src)
             throws IgniteCheckedException {
-            return cctx.unwrapBinaryIfNeeded(desc.value(src.key(), src.value()), ectx.keepBinary(), null);
+            return cctx.unwrapBinaryIfNeeded(desc.value(src.key(), src.value()), CacheReturnMode.of(ectx.keepBinary()), null);
         }
 
         /** {@inheritDoc} */

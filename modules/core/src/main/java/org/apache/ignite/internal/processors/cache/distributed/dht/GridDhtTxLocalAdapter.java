@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -530,7 +531,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param accessTtl TTL for read operation.
      * @param needRetVal Return value flag.
      * @param skipStore Skip store flag.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param nearCache {@code True} if near cache enabled on originating node.
      * @return Lock future.
      */
@@ -544,7 +545,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         long createTtl,
         long accessTtl,
         boolean skipStore,
-        boolean keepBinary,
+        CacheReturnMode cacheReturnMode,
         boolean nearCache
     ) {
         try {
@@ -616,7 +617,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                             -1L,
                             null,
                             skipStore,
-                            keepBinary,
+                            cacheReturnMode,
                             nearCache);
 
                         if (read)
@@ -659,7 +660,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 createTtl,
                 accessTtl,
                 skipStore,
-                keepBinary);
+                cacheReturnMode);
         }
         catch (IgniteCheckedException e) {
             setRollbackOnly();
@@ -688,7 +689,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         final long createTtl,
         final long accessTtl,
         boolean skipStore,
-        boolean keepBinary) {
+        CacheReturnMode cacheReturnMode) {
         if (log.isDebugEnabled())
             log.debug("Before acquiring transaction lock on keys [keys=" + passedKeys + ']');
 
@@ -719,7 +720,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             accessTtl,
             CU.empty0(),
             skipStore,
-            keepBinary);
+            cacheReturnMode);
 
         return new GridEmbeddedFuture<>(
             fut,

@@ -37,6 +37,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_EXPIRED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_STOPPED;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.BINARY;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 
 /**
@@ -302,9 +303,9 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             Object oldVal0;
 
             try {
-                key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false, null);
-                val0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(newVal, keepBinary, false, null);
-                oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, keepBinary, false, null);
+                key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, CacheReturnMode.of(keepBinary), false, null);
+                val0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(newVal, CacheReturnMode.of(keepBinary), false, null);
+                oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, CacheReturnMode.of(keepBinary), false, null);
             }
             catch (Exception e) {
                 if (!cctx.cacheObjectContext().kernalContext().cacheObjects().isBinaryEnabled(cctx.config()))
@@ -319,9 +320,9 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
 
                 forceKeepBinary = true;
 
-                key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, true, false, null);
-                val0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(newVal, true, false, null);
-                oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, true, false, null);
+                key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, BINARY, false, null);
+                val0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(newVal, BINARY, false, null);
+                oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, BINARY, false, null);
             }
 
             IgniteUuid xid = tx == null ? null : tx.xid();

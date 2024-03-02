@@ -33,6 +33,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -55,6 +56,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.RAW;
+
 /**
  *
  */
@@ -73,11 +77,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      *      called on backup node.
      * @param tx Transaction.
      * @param taskName Task name.
-     * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
-     * @param keepCacheObjects Keep cache objects flag.
      */
     public GridNearGetFuture(
         GridCacheContext<K, V> cctx,
@@ -86,11 +88,10 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         boolean forcePrimary,
         @Nullable IgniteTxLocalEx tx,
         String taskName,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
-        boolean keepCacheObjects,
         boolean recovery
     ) {
         super(
@@ -99,11 +100,10 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             readThrough,
             forcePrimary,
             taskName,
-            deserializeBinary,
+            cacheReturnMode,
             expiryPlc,
             skipVals,
             needVer,
-            keepCacheObjects,
             recovery
         );
 
@@ -355,7 +355,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             null,
                             taskName,
                             expiryPlc,
-                            !deserializeBinary,
+                            cacheReturnMode != DESERIALIZED,
                             null);
 
                         if (res != null) {
@@ -373,7 +373,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             null,
                             taskName,
                             expiryPlc,
-                            !deserializeBinary);
+                            cacheReturnMode != DESERIALIZED);
                     }
                 }
 
@@ -498,7 +498,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             null,
                             taskName,
                             expiryPlc,
-                            !deserializeBinary,
+                            cacheReturnMode != DESERIALIZED,
                             null);
 
                         if (res != null) {
@@ -516,7 +516,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             null,
                             taskName,
                             expiryPlc,
-                            !deserializeBinary);
+                            cacheReturnMode != DESERIALIZED);
                     }
 
                     // Entry was not in memory or in swap, so we remove it from cache.
@@ -567,7 +567,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * @param ver Version.
      */
     private void addResult(KeyCacheObject key, CacheObject v, GridCacheVersion ver) {
-        if (keepCacheObjects) {
+        if (cacheReturnMode == RAW) {
             K key0 = (K)key;
             V val0 = needVer ?
                 (V)new EntryGetResult(skipVals ? true : v, ver) :
@@ -576,13 +576,13 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
         }
         else {
-            K key0 = (K)cctx.unwrapBinaryIfNeeded(key, !deserializeBinary, false, null);
+            K key0 = (K)cctx.unwrapBinaryIfNeeded(key, cacheReturnMode, false, null);
             V val0 = needVer ?
                 (V)new EntryGetResult(!skipVals ?
-                    cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false, null) :
+                    cctx.unwrapBinaryIfNeeded(v, cacheReturnMode, false, null) :
                     Boolean.TRUE, ver) :
                 !skipVals ?
-                    (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false, null) :
+                    (V)cctx.unwrapBinaryIfNeeded(v, cacheReturnMode, false, null) :
                     (V)Boolean.TRUE;
 
             add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
@@ -647,7 +647,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             info.ttl(),
                             info.expireTime(),
                             true,
-                            !deserializeBinary,
+                            cacheReturnMode != DESERIALIZED,
                             topVer);
                     }
 
@@ -660,8 +660,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         key,
                         val,
                         skipVals,
-                        keepCacheObjects,
-                        deserializeBinary,
+                        cacheReturnMode,
                         false,
                         needVer ? info.version() : null,
                         0,

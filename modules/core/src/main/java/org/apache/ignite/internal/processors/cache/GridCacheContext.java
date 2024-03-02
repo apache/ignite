@@ -1348,6 +1348,13 @@ public class GridCacheContext<K, V> implements Externalizable {
         return nearContext() ? dht().near().context().opCtxPerCall.get() : opCtxPerCall.get();
     }
 
+    /** */
+    public CacheReturnMode cacheReturnMode() {
+        CacheOperationContext ctx = operationContextPerCall();
+
+        return ctx == null ? CacheReturnMode.DESERIALIZED : ctx.cacheReturnMode();
+    }
+
     /**
      * @return {@code true} if the skip store flag is set.
      */
@@ -1710,7 +1717,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean keepBinary() {
         CacheOperationContext opCtx = operationContextPerCall();
 
-        return opCtx != null && opCtx.isKeepBinary();
+        return opCtx != null && opCtx.cacheReturnMode() != CacheReturnMode.DESERIALIZED;
     }
 
     /**
@@ -1735,36 +1742,36 @@ public class GridCacheContext<K, V> implements Externalizable {
      * Unwraps collection.
      *
      * @param col Collection to unwrap.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @return Unwrapped collection.
      */
-    public Collection<Object> unwrapBinariesIfNeeded(Collection<?> col, boolean keepBinary) {
-        return CacheObjectUtils.unwrapBinariesIfNeeded(cacheObjCtx, col, keepBinary);
+    public Collection<Object> unwrapBinariesIfNeeded(Collection<?> col, CacheReturnMode cacheReturnMode) {
+        return CacheObjectUtils.unwrapBinariesIfNeeded(cacheObjCtx, col, cacheReturnMode);
     }
 
     /**
      * Unwraps object for binary.
      *
      * @param o Object to unwrap.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param ldr Class loader, used for deserialization from binary representation.
      * @return Unwrapped object.
      */
-    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary, @Nullable ClassLoader ldr) {
-        return unwrapBinaryIfNeeded(o, keepBinary, true, ldr);
+    public Object unwrapBinaryIfNeeded(Object o, CacheReturnMode cacheReturnMode, @Nullable ClassLoader ldr) {
+        return unwrapBinaryIfNeeded(o, cacheReturnMode, true, ldr);
     }
 
     /**
      * Unwraps object for binary.
      *
      * @param o Object to unwrap.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param cpy Copy value flag.
      * @param ldr Class loader, used for deserialization from binary representation.
      * @return Unwrapped object.
      */
-    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary, boolean cpy, @Nullable ClassLoader ldr) {
-        return cacheObjCtx.unwrapBinaryIfNeeded(o, keepBinary, cpy, ldr);
+    public Object unwrapBinaryIfNeeded(Object o, CacheReturnMode cacheReturnMode, boolean cpy, @Nullable ClassLoader ldr) {
+        return cacheObjCtx.unwrapBinaryIfNeeded(o, cacheReturnMode, cpy, ldr);
     }
 
     /**
@@ -1780,7 +1787,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
                     if (invokeRes.result() != null)
                         res = CacheInvokeResult.fromResult(unwrapBinaryIfNeeded(invokeRes.result(),
-                            keepBinary, false, null));
+                            CacheReturnMode.of(keepBinary), false, null));
                 }
 
                 return res;
@@ -1864,8 +1871,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param key Key.
      * @param val Value.
      * @param skipVals Skip values flag.
-     * @param keepCacheObjects Keep cache objects flag.
-     * @param deserializeBinary Deserialize binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param cpy Copy flag.
      * @param ver GridCacheVersion.
      * @param ldr Class loader, used for deserialization from binary representation.
@@ -1874,15 +1880,14 @@ public class GridCacheContext<K, V> implements Externalizable {
         KeyCacheObject key,
         CacheObject val,
         boolean skipVals,
-        boolean keepCacheObjects,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         boolean cpy,
         final GridCacheVersion ver,
         final long expireTime,
         final long ttl,
         @Nullable ClassLoader ldr) {
         // Creates EntryGetResult
-        addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, cpy, null,
+        addResult(map, key, val, skipVals, cacheReturnMode, cpy, null,
             ver, expireTime, ttl, ver != null, ldr);
     }
 
@@ -1891,8 +1896,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param key Key.
      * @param getRes EntryGetResult.
      * @param skipVals Skip values.
-     * @param keepCacheObjects Keep CacheObject.
-     * @param deserializeBinary Deserialize binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param cpy Copy flag.
      * @param needVer Need version flag.
      */
@@ -1900,12 +1904,11 @@ public class GridCacheContext<K, V> implements Externalizable {
         KeyCacheObject key,
         EntryGetResult getRes,
         boolean skipVals,
-        boolean keepCacheObjects,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         boolean cpy,
         boolean needVer) {
         // Uses getRes as result.
-        addResult(map, key, getRes.<CacheObject>value(), skipVals, keepCacheObjects, deserializeBinary, cpy, getRes,
+        addResult(map, key, getRes.<CacheObject>value(), skipVals, cacheReturnMode, cpy, getRes,
             null, 0, 0, needVer, null);
     }
 
@@ -1914,8 +1917,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param key Key.
      * @param val Value.
      * @param skipVals Skip values.
-     * @param keepCacheObjects Keep CacheObject.
-     * @param deserializeBinary Deserialize binary.
+     * @param cacheReturnMode Cache return mode.
      * @param cpy Copy flag.
      * @param getRes EntryGetResult.
      * @param ver Version.
@@ -1928,8 +1930,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         KeyCacheObject key,
         CacheObject val,
         boolean skipVals,
-        boolean keepCacheObjects,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         boolean cpy,
         @Nullable EntryGetResult getRes,
         final GridCacheVersion ver,
@@ -1940,10 +1941,10 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert key != null;
         assert val != null || skipVals;
 
-        if (!keepCacheObjects) {
-            Object key0 = unwrapBinaryIfNeeded(key, !deserializeBinary, cpy, ldr);
+        if (cacheReturnMode != CacheReturnMode.RAW) {
+            Object key0 = unwrapBinaryIfNeeded(key, cacheReturnMode, cpy, ldr);
 
-            Object val0 = skipVals ? true : unwrapBinaryIfNeeded(val, !deserializeBinary, cpy, ldr);
+            Object val0 = skipVals ? true : unwrapBinaryIfNeeded(val, cacheReturnMode, cpy, ldr);
 
             assert key0 != null : key;
             assert val0 != null : val;

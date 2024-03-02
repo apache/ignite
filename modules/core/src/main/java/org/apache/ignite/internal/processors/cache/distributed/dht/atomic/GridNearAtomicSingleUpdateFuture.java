@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.EntryProcessorResourceInjectorProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -78,7 +79,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
      * @param filter Entry filter.
      * @param taskNameHash Task name hash code.
      * @param skipStore Skip store flag.
-     * @param keepBinary Keep binary flag.
      * @param recovery {@code True} if cache operation is called in recovery mode.
      * @param remapCnt Maximum number of retries.
      */
@@ -95,7 +95,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         final CacheEntryPredicate[] filter,
         int taskNameHash,
         boolean skipStore,
-        boolean keepBinary,
+        CacheReturnMode cacheReturnMode,
         boolean recovery,
         int remapCnt
     ) {
@@ -109,7 +109,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             filter,
             taskNameHash,
             skipStore,
-            keepBinary,
+            cacheReturnMode,
             recovery,
             remapCnt);
         this.key = key;
@@ -455,7 +455,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         sendSingleRequest(reqState0.req.nodeId(), reqState0.req);
 
         if (syncMode == FULL_ASYNC) {
-            completeFuture(new GridCacheReturn(cctx, true, true, null, null, true), null, null);
+            completeFuture(new GridCacheReturn(cctx, true, CacheReturnMode.BINARY, null, null, true), null, null);
 
             return;
         }
@@ -546,7 +546,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             mappingKnown,
             needPrimaryRes,
             skipStore,
-            keepBinary,
             recovery);
 
         if (canUseSingleRequest()) {
@@ -561,7 +560,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                     invokeArgs,
                     taskNameHash,
                     flags,
-                    cctx.deploymentEnabled());
+                    cctx.deploymentEnabled(),
+                    cacheReturnMode);
             }
             else {
                 if (filter == null || filter.length == 0) {
@@ -574,7 +574,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                         op,
                         taskNameHash,
                         flags,
-                        cctx.deploymentEnabled());
+                        cctx.deploymentEnabled(),
+                        cacheReturnMode);
                 }
                 else {
                     req = new GridNearAtomicSingleUpdateFilterRequest(
@@ -587,7 +588,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                         filter,
                         taskNameHash,
                         flags,
-                        cctx.deploymentEnabled());
+                        cctx.deploymentEnabled(),
+                        cacheReturnMode);
                 }
             }
         }
@@ -605,7 +607,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                 taskNameHash,
                 flags,
                 cctx.deploymentEnabled(),
-                1);
+                1,
+                cacheReturnMode);
         }
 
         req.addUpdateEntry(cacheKey,

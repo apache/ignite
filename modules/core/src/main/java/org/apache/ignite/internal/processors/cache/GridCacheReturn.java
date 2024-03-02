@@ -43,6 +43,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.BINARY;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.RAW;
+
 /**
  * Return value for cases where both, value and success flag need to be returned.
  */
@@ -75,6 +78,9 @@ public class GridCacheReturn implements Externalizable, Message {
     /** */
     private int cacheId;
 
+    /** */
+    private boolean skipUnmarshall;
+
     /**
      * Empty constructor.
      */
@@ -101,7 +107,7 @@ public class GridCacheReturn implements Externalizable, Message {
     /**
      * @param cctx Cache context.
      * @param loc {@code True} if created on the node initiated cache operation.
-     * @param keepBinary True is deserialize value from a binary representation, false otherwise.
+     * @param cacheReturnMode Cache return mode.
      * @param ldr Class loader, used for deserialization from binary representation.
      * @param v Value.
      * @param success Success flag.
@@ -109,7 +115,7 @@ public class GridCacheReturn implements Externalizable, Message {
     public GridCacheReturn(
         GridCacheContext cctx,
         boolean loc,
-        boolean keepBinary,
+        CacheReturnMode cacheReturnMode,
         @Nullable ClassLoader ldr,
         Object v,
         boolean success
@@ -119,7 +125,7 @@ public class GridCacheReturn implements Externalizable, Message {
 
         if (v != null) {
             if (v instanceof CacheObject)
-                initValue(cctx, (CacheObject)v, keepBinary, ldr);
+                initValue(cctx, (CacheObject)v, cacheReturnMode, ldr);
             else {
                 assert loc;
 
@@ -159,12 +165,12 @@ public class GridCacheReturn implements Externalizable, Message {
     /**
      * @param cctx Cache context.
      * @param v Value.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param ldr Class loader, used for deserialization from binary representation.
      * @return This instance for chaining.
      */
-    public GridCacheReturn value(GridCacheContext cctx, CacheObject v, boolean keepBinary, @Nullable ClassLoader ldr) {
-        initValue(cctx, v, keepBinary, ldr);
+    public GridCacheReturn value(GridCacheContext cctx, CacheObject v, CacheReturnMode cacheReturnMode, @Nullable ClassLoader ldr) {
+        initValue(cctx, v, cacheReturnMode, ldr);
 
         return this;
     }
@@ -180,7 +186,7 @@ public class GridCacheReturn implements Externalizable, Message {
      * @param cctx Cache context.
      * @param cacheObj Value to set.
      * @param success Success flag to set.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param ldr Class loader, used for deserialization from binary representation.
      * @return This instance for chaining.
      */
@@ -188,12 +194,12 @@ public class GridCacheReturn implements Externalizable, Message {
         GridCacheContext cctx,
         @Nullable CacheObject cacheObj,
         boolean success,
-        boolean keepBinary,
+        CacheReturnMode cacheReturnMode,
         @Nullable ClassLoader ldr
     ) {
         this.success = success;
 
-        initValue(cctx, cacheObj, keepBinary, ldr);
+        initValue(cctx, cacheObj, cacheReturnMode, ldr);
 
         return this;
     }
@@ -201,23 +207,25 @@ public class GridCacheReturn implements Externalizable, Message {
     /**
      * @param cctx Cache context.
      * @param cacheObj Cache object.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Keep binary flag.
      * @param ldr Class loader, used for deserialization from binary representation.
      */
     private void initValue(
         GridCacheContext cctx,
         @Nullable CacheObject cacheObj,
-        boolean keepBinary,
+        CacheReturnMode cacheReturnMode,
         @Nullable ClassLoader ldr
     ) {
         if (loc)
-            v = cctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheObj, keepBinary, true, ldr);
+            v = cctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheObj, cacheReturnMode, true, ldr);
         else {
             assert cacheId == 0 || cacheId == cctx.cacheId();
 
             cacheId = cctx.cacheId();
 
             this.cacheObj = cacheObj;
+
+            skipUnmarshall = cacheReturnMode == RAW;
         }
     }
 
@@ -362,10 +370,10 @@ public class GridCacheReturn implements Externalizable, Message {
     public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         loc = true;
 
-        if (cacheObj != null) {
+        if (cacheObj != null && !skipUnmarshall) {
             cacheObj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
 
-            v = ctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheObj, true, false, ldr);
+            v = ctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheObj, BINARY, false, ldr);
         }
 
         if (invokeRes && invokeResCol != null) {
@@ -376,10 +384,10 @@ public class GridCacheReturn implements Externalizable, Message {
 
             for (CacheInvokeDirectResult res : invokeResCol) {
                 CacheInvokeResult<?> res0 = res.error() == null ?
-                    CacheInvokeResult.fromResult(ctx.cacheObjectContext().unwrapBinaryIfNeeded(res.result(), true, false, null)) :
+                    CacheInvokeResult.fromResult(ctx.cacheObjectContext().unwrapBinaryIfNeeded(res.result(), BINARY, false, null)) :
                     CacheInvokeResult.fromError(res.error());
 
-                map0.put(ctx.cacheObjectContext().unwrapBinaryIfNeeded(res.key(), true, false, null), res0);
+                map0.put(ctx.cacheObjectContext().unwrapBinaryIfNeeded(res.key(), BINARY, false, null), res0);
             }
 
             v = map0;
@@ -436,8 +444,11 @@ public class GridCacheReturn implements Externalizable, Message {
                 if (!writer.writeBoolean("success", success))
                     return false;
 
-                writer.incrementState();
+            case 5:
+                if (!writer.writeBoolean("skipUnmarshall", skipUnmarshall))
+                    return false;
 
+                writer.incrementState();
         }
 
         return true;
@@ -491,6 +502,14 @@ public class GridCacheReturn implements Externalizable, Message {
 
                 reader.incrementState();
 
+            case 5:
+                skipUnmarshall = reader.readBoolean("skipUnmarshall");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridCacheReturn.class);
@@ -498,7 +517,7 @@ public class GridCacheReturn implements Externalizable, Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 6;
     }
 
     /** {@inheritDoc} */

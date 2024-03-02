@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import javax.cache.Cache;
 import org.apache.ignite.cache.query.CacheQueryEntryEvent;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -65,17 +66,17 @@ class CacheContinuousQueryEvent<K, V> extends CacheQueryEntryEvent<K, V> {
 
     /** {@inheritDoc} */
     @Override public K getKey() {
-        return (K)cctx.cacheObjectContext().unwrapBinaryIfNeeded(e.key(), e.isKeepBinary(), false, null);
+        return (K)cctx.cacheObjectContext().unwrapBinaryIfNeeded(e.key(), CacheReturnMode.of(e.isKeepBinary()), false, null);
     }
 
     /** {@inheritDoc} */
     @Override protected V getNewValue() {
-        return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(e.newValue(), e.isKeepBinary(), false, null);
+        return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(e.newValue(), CacheReturnMode.of(e.isKeepBinary()), false, null);
     }
 
     /** {@inheritDoc} */
     @Override public V getOldValue() {
-        return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(e.oldValue(), e.isKeepBinary(), false, null);
+        return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(e.oldValue(), CacheReturnMode.of(e.isKeepBinary()), false, null);
     }
 
     /** {@inheritDoc} */

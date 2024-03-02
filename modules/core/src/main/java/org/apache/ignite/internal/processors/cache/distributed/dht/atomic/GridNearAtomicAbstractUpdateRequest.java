@@ -28,6 +28,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -40,6 +41,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
 
 /**
  *
@@ -56,9 +59,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
     /** Skip write-through to a persistent storage. */
     private static final int SKIP_STORE_FLAG_MASK = 0x04;
-
-    /** Keep binary flag. */
-    private static final int KEEP_BINARY_FLAG_MASK = 0x08;
 
     /** Return value flag. */
     private static final int RET_VAL_FLAG_MASK = 0x10;
@@ -99,6 +99,9 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     @GridDirectTransient
     private GridNearAtomicUpdateResponse res;
 
+    /** */
+    private CacheReturnMode cacheReturnMode;
+
     /**
      *
      */
@@ -118,6 +121,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
      * @param addDepInfo Deployment info flag.
+     * @param cacheReturnMode Cache return mode.
      */
     protected GridNearAtomicAbstractUpdateRequest(
         int cacheId,
@@ -128,7 +132,8 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         GridCacheOperation op,
         int taskNameHash,
         byte flags,
-        boolean addDepInfo
+        boolean addDepInfo,
+        CacheReturnMode cacheReturnMode
     ) {
         this.cacheId = cacheId;
         this.nodeId = nodeId;
@@ -139,6 +144,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         this.taskNameHash = taskNameHash;
         this.flags = flags;
         this.addDepInfo = addDepInfo;
+        this.cacheReturnMode = cacheReturnMode;
     }
 
     /**
@@ -149,7 +155,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      *    expects that update is mapped using current affinity.
      * @param needPrimaryRes {@code True} if near node waits for primary response.
      * @param skipStore Skip write-through to a CacheStore flag.
-     * @param keepBinary Keep binary flag.
      * @param recovery Recovery mode flag.
      * @return Flags.
      */
@@ -160,7 +165,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         boolean affMapping,
         boolean needPrimaryRes,
         boolean skipStore,
-        boolean keepBinary,
         boolean recovery) {
         byte flags = 0;
 
@@ -182,13 +186,15 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         if (skipStore)
             flags |= SKIP_STORE_FLAG_MASK;
 
-        if (keepBinary)
-            flags |= KEEP_BINARY_FLAG_MASK;
-
         if (recovery)
             flags |= RECOVERY_FLAG_MASK;
 
         return flags;
+    }
+
+    /** */
+    public CacheReturnMode cacheReturnMode() {
+        return cacheReturnMode;
     }
 
     /**
@@ -372,14 +378,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @return Keep binary flag.
      */
     public final boolean keepBinary() {
-        return isFlag(KEEP_BINARY_FLAG_MASK);
-    }
-
-    /**
-     * @param val Keep binary flag.
-     */
-    public void keepBinary(boolean val) {
-        setFlag(val, KEEP_BINARY_FLAG_MASK);
+        return cacheReturnMode != DESERIALIZED;
     }
 
     /**
@@ -515,7 +514,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 11;
     }
 
     /** {@inheritDoc} */
@@ -569,6 +568,11 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
                 writer.incrementState();
 
+            case 10:
+                if (!writer.writeByte("cacheReturnMode", (byte)cacheReturnMode.ordinal()))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -640,7 +644,13 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
                     return false;
 
                 reader.incrementState();
+            case 10:
+                cacheReturnMode = CacheReturnMode.fromOrdinal(reader.readByte("cacheReturnMode"));
 
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridNearAtomicAbstractUpdateRequest.class);

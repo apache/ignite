@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -105,6 +106,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.RAW;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
@@ -582,7 +585,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             KeyCacheObject cacheKey = cacheCtx.toCacheKeyObject(key);
 
-            boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+            CacheReturnMode cacheReturnMode = cacheCtx.cacheReturnMode();
 
             final CacheEntryPredicate[] filters = CU.filterArray(filter);
 
@@ -598,7 +601,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 filters,
                 ret,
                 opCtx != null && opCtx.skipStore(),
-                keepBinary,
+                cacheCtx.cacheReturnMode(),
                 opCtx != null && opCtx.recovery(),
                 dataCenterId);
 
@@ -678,7 +681,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 }
             }
             else
-                return optimisticPutFuture(cacheCtx, loadFut, ret, keepBinary);
+                return optimisticPutFuture(cacheCtx, loadFut, ret, cacheReturnMode);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture(e);
@@ -758,7 +761,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             final Collection<KeyCacheObject> enlisted = new ArrayList<>(keySet.size());
 
-            final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+            CacheReturnMode cacheReturnMode = cacheCtx.cacheReturnMode();
 
             final IgniteInternalFuture<Void> loadFut = enlistWrite(
                 cacheCtx,
@@ -776,7 +779,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 null,
                 opCtx != null && opCtx.skipStore(),
                 false,
-                keepBinary,
+                cacheReturnMode,
                 opCtx != null && opCtx.recovery(),
                 dataCenterId);
 
@@ -854,7 +857,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 }
             }
             else
-                return optimisticPutFuture(cacheCtx, loadFut, ret, keepBinary);
+                return optimisticPutFuture(cacheCtx, loadFut, ret, cacheReturnMode);
         }
         catch (RuntimeException e) {
             onException();
@@ -890,7 +893,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final CacheEntryPredicate[] filter,
         final GridCacheReturn ret,
         boolean skipStore,
-        boolean keepBinary,
+        CacheReturnMode cacheReturnMode,
         boolean recovery,
         Byte dataCenterId) {
         try (TraceSurroundings ignored2 =
@@ -931,7 +934,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     hasFilters,
                     needVal,
                     needReadVer,
-                    keepBinary);
+                    cacheReturnMode);
 
                 if (loadMissed) {
                     AffinityTopologyVersion topVer = topologyVersionSnapshot();
@@ -949,7 +952,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         hasFilters,
                         /*read through*/(entryProc != null || cacheCtx.config().isLoadPreviousValue()) && !skipStore,
                         retval,
-                        keepBinary,
+                        cacheReturnMode,
                         recovery,
                         expiryPlc);
 
@@ -994,7 +997,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param drRmvMap DR remove map (optional).
      * @param skipStore Skip store flag.
      * @param singleRmv {@code True} for single key remove operation ({@link Cache#remove(Object)}.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param recovery Recovery flag.
      * @param dataCenterId Optional data center ID.
      * @return Future for enlisting writes.
@@ -1015,7 +1018,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable Map<KeyCacheObject, GridCacheVersion> drRmvMap,
         boolean skipStore,
         final boolean singleRmv,
-        final boolean keepBinary,
+        final CacheReturnMode cacheReturnMode,
         final boolean recovery,
         Byte dataCenterId
     ) {
@@ -1119,7 +1122,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         hasFilters,
                         needVal,
                         needReadVer,
-                        keepBinary);
+                        cacheReturnMode);
 
                     if (loadMissed) {
                         if (missedForLoad == null)
@@ -1145,7 +1148,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         hasFilters,
                         /*read through*/(invokeMap != null || cacheCtx.config().isLoadPreviousValue()) && !skipStore,
                         retval,
-                        keepBinary,
+                        cacheReturnMode,
                         recovery,
                         expiryPlc);
 
@@ -1212,7 +1215,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         boolean hasFilters,
         final boolean needVal,
         boolean needReadVer,
-        boolean keepBinary
+        CacheReturnMode cacheReturnMode
     ) throws IgniteCheckedException {
         boolean loadMissed = false;
 
@@ -1259,7 +1262,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                             entryProc,
                                             resolveTaskName(),
                                             null,
-                                            keepBinary,
+                                            cacheReturnMode != DESERIALIZED,
                                             null);
 
                                         if (res != null) {
@@ -1285,7 +1288,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                         entryProc,
                                         resolveTaskName(),
                                         null,
-                                        keepBinary);
+                                        cacheReturnMode != DESERIALIZED);
                                 }
                                 finally {
                                     cctx.database().checkpointReadUnlock();
@@ -1309,7 +1312,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             cacheCtx,
                             old,
                             false,
-                            keepBinary,
+                            cacheReturnMode,
                             U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
                         );
 
@@ -1327,7 +1330,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     drExpireTime,
                                     drVer,
                                     skipStore,
-                                    keepBinary,
+                                    cacheReturnMode,
                                     CU.isNearEnabled(cacheCtx));
                             }
                             else {
@@ -1343,7 +1346,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     -1L,
                                     null,
                                     skipStore,
-                                    keepBinary,
+                                    cacheReturnMode,
                                     CU.isNearEnabled(cacheCtx));
                             }
 
@@ -1379,7 +1382,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         drExpireTime,
                         drVer,
                         skipStore,
-                        keepBinary,
+                        cacheReturnMode,
                         CU.isNearEnabled(cacheCtx));
 
                     if (op == TRANSFORM && txEntry.value() == null && old != null)
@@ -1403,7 +1406,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                         cacheCtx,
                                         null,
                                         true,
-                                        keepBinary,
+                                        cacheReturnMode,
                                         U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
                                     );
                                 }
@@ -1418,8 +1421,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 txEntry.entryReadVersion(singleRmv ? SER_READ_NOT_EMPTY_VER : readVer);
                             }
 
-                            if (retval && !transform)
-                                ret.set(cacheCtx, old, true, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                            if (retval && !transform) {
+                                ret.set(
+                                    cacheCtx,
+                                    old,
+                                    true,
+                                    cacheReturnMode,
+                                    U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                            }
                             else {
                                 if (txEntry.op() == TRANSFORM) {
                                     GridCacheVersion ver;
@@ -1447,7 +1456,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     // Pessimistic.
                     else {
                         if (retval && !transform)
-                            ret.set(cacheCtx, old, true, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                            ret.set(cacheCtx, old, true, cacheReturnMode, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
                         else
                             ret.success(true);
                     }
@@ -1473,7 +1482,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             if (!del) {
                 if (hasFilters && !filter(entry.context(), cacheKey, v, filter)) {
-                    ret.set(cacheCtx, v, false, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                    ret.set(cacheCtx, v, false, cacheReturnMode, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
 
                     return loadMissed;
                 }
@@ -1498,7 +1507,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     drExpireTime,
                     drVer,
                     skipStore,
-                    keepBinary,
+                    cacheReturnMode,
                     CU.isNearEnabled(cacheCtx));
 
                 if (enlisted != null)
@@ -1527,7 +1536,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 txEntry.markValid();
 
                 if (retval && !transform)
-                    ret.set(cacheCtx, v, true, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                    ret.set(cacheCtx, v, true, cacheReturnMode, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
                 else
                     ret.success(true);
             }
@@ -1632,7 +1641,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         else
             plc = null;
 
-        final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+        final CacheReturnMode cacheReturnMode = cacheCtx.cacheReturnMode();
 
         final IgniteInternalFuture<Void> loadFut = enlistWrite(
             cacheCtx,
@@ -1650,7 +1659,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             drMap,
             opCtx != null && opCtx.skipStore(),
             singleRmv,
-            keepBinary,
+            cacheReturnMode,
             opCtx != null && opCtx.recovery(),
             dataCenterId
         );
@@ -1749,7 +1758,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 return new GridCacheReturn(
                                     cacheCtx,
                                     true,
-                                    keepBinary,
+                                    cacheReturnMode,
                                     U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId),
                                     implicitRes.value(),
                                     implicitRes.success()
@@ -1780,9 +1789,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /**
      * @param cacheCtx Cache context.
      * @param keys Keys to get.
-     * @param deserializeBinary Deserialize binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param skipVals Skip values flag.
-     * @param keepCacheObjects Keep cache objects
      * @param skipStore Skip store flag.
      * @param readRepairStrategy Read Repair strategy.
      * @return Future for this get.
@@ -1792,9 +1800,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final GridCacheContext cacheCtx,
         @Nullable final AffinityTopologyVersion entryTopVer,
         final Collection<KeyCacheObject> keys,
-        final boolean deserializeBinary,
+        final CacheReturnMode cacheReturnMode,
         final boolean skipVals,
-        final boolean keepCacheObjects,
         final boolean skipStore,
         final boolean recovery,
         final ReadRepairStrategy readRepairStrategy,
@@ -1834,9 +1841,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     retMap,
                     missed,
                     keysCnt,
-                    deserializeBinary,
+                    cacheReturnMode,
                     skipVals,
-                    keepCacheObjects,
                     skipStore,
                     recovery,
                     readRepairStrategy,
@@ -1887,10 +1893,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                         // Load keys only after the locks have been acquired.
                         for (KeyCacheObject cacheKey : lockKeys) {
-                            K keyVal = (K)
-                                (keepCacheObjects ? cacheKey :
-                                    cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(cacheKey, !deserializeBinary,
-                                        true, null));
+                            K keyVal = (K)cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(cacheKey, cacheReturnMode, true, null);
 
                             if (retMap.containsKey(keyVal))
                                 // We already have a return value.
@@ -1959,8 +1962,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                             cacheKey,
                                             val,
                                             skipVals,
-                                            keepCacheObjects,
-                                            deserializeBinary,
+                                            cacheReturnMode,
                                             false,
                                             getRes,
                                             readVer,
@@ -2000,7 +2002,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 readRepairStrategy,
                                 !skipStore,
                                 taskName,
-                                deserializeBinary,
+                                cacheReturnMode,
                                 recovery,
                                 cacheCtx.cache().expiryPolicy(expiryPlc0),
                                 GridNearTxLocal.this)
@@ -2025,7 +2027,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                                     null,
                                                     null,
                                                     skipStore,
-                                                    !deserializeBinary,
+                                                    cacheReturnMode,
                                                     recovery,
                                                     null);
 
@@ -2035,8 +2037,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                                         key,
                                                         getRes.value(),
                                                         skipVals,
-                                                        keepCacheObjects,
-                                                        deserializeBinary,
+                                                        cacheReturnMode,
                                                         false,
                                                         null,
                                                         getRes.version(),
@@ -2044,11 +2045,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                                         0,
                                                         needVer,
                                                         U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
-                                                else
-                                                    retMap.remove(keepCacheObjects ? key :
-                                                        cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(
-                                                            key, !deserializeBinary, false,
-                                                            U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)));
+                                                else {
+                                                    retMap.remove((K)cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(
+                                                        key,
+                                                        cacheReturnMode,
+                                                        false,
+                                                        U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)));
+                                                }
                                             }
 
                                             return Collections.emptyMap();
@@ -2107,9 +2110,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         for (Iterator<KeyCacheObject> it = missed.keySet().iterator(); it.hasNext(); ) {
                             KeyCacheObject cacheKey = it.next();
 
-                            K keyVal = (K)(keepCacheObjects ? cacheKey
-                                : cacheCtx.cacheObjectContext()
-                                .unwrapBinaryIfNeeded(cacheKey, !deserializeBinary, false, null));
+                            K keyVal = (K)cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(
+                                cacheKey,
+                                cacheReturnMode,
+                                false,
+                                null
+                            );
 
                             if (retMap.containsKey(keyVal))
                                 it.remove();
@@ -2127,9 +2133,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         topVer != null ? topVer : topologyVersion(),
                         retMap,
                         missed,
-                        deserializeBinary,
+                        cacheReturnMode,
                         skipVals,
-                        keepCacheObjects,
                         skipStore,
                         recovery,
                         readRepairStrategy,
@@ -2154,9 +2159,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param map Return map.
      * @param missed Map of missed keys.
      * @param keysCnt Keys count (to avoid call to {@code Collection.size()}).
-     * @param deserializeBinary Deserialize binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param skipVals Skip values flag.
-     * @param keepCacheObjects Keep cache objects flag.
      * @param skipStore Skip store flag.
      * @param recovery Recovery flag..
      * @return Enlisted keys.
@@ -2171,9 +2175,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         Map<K, V> map,
         Map<KeyCacheObject, GridCacheVersion> missed,
         int keysCnt,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         boolean skipVals,
-        boolean keepCacheObjects,
         boolean skipStore,
         boolean recovery,
         ReadRepairStrategy readRepairStrategy,
@@ -2252,8 +2255,20 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 assert ver != null;
                             }
 
-                            cacheCtx.addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, false,
-                                ver, 0, 0, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                            cacheCtx.addResult(
+                                map,
+                                key,
+                                val,
+                                skipVals,
+                                cacheReturnMode,
+                                false,
+                                ver,
+                                0,
+                                0,
+                                U.deploymentClassLoader(
+                                    cctx.kernalContext(),
+                                    deploymentLdrId)
+                            );
                         }
                     }
                     else {
@@ -2310,8 +2325,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                         key,
                                         val,
                                         skipVals,
-                                        keepCacheObjects,
-                                        deserializeBinary,
+                                        cacheReturnMode,
                                         false,
                                         getRes,
                                         readVer,
@@ -2364,7 +2378,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                             null,
                                             resolveTaskName(),
                                             accessPlc,
-                                            !deserializeBinary,
+                                            cacheReturnMode != CacheReturnMode.DESERIALIZED,
                                             null) : null;
 
                                     if (getRes != null) {
@@ -2382,7 +2396,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                         null,
                                         resolveTaskName(),
                                         accessPlc,
-                                        !deserializeBinary);
+                                        cacheReturnMode != CacheReturnMode.DESERIALIZED);
                                 }
 
                                 if (val != null) {
@@ -2390,8 +2404,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                         key,
                                         val,
                                         skipVals,
-                                        keepCacheObjects,
-                                        deserializeBinary,
+                                        cacheReturnMode,
                                         false,
                                         getRes,
                                         readVer,
@@ -2420,7 +2433,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     -1L,
                                     null,
                                     skipStore,
-                                    !deserializeBinary,
+                                    cacheReturnMode,
                                     CU.isNearEnabled(cacheCtx));
 
                                 // As optimization, mark as checked immediately
@@ -2486,7 +2499,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean hasFilters,
         final boolean readThrough,
         final boolean retval,
-        final boolean keepBinary,
+        final CacheReturnMode cacheReturnMode,
         final boolean recovery,
         final ExpiryPolicy expiryPlc) {
         GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c =
@@ -2508,7 +2521,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     assert !hasFilters && !retval;
                     assert val == null || Boolean.TRUE.equals(val) : val;
 
-                    ret.set(cacheCtx, null, val != null, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                    ret.set(cacheCtx, null, val != null, cacheReturnMode, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
                 }
                 else {
                     CacheObject cacheVal = cacheCtx.toCacheObject(val);
@@ -2551,7 +2564,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             cacheCtx,
                             cacheVal,
                             success,
-                            keepBinary,
+                            cacheReturnMode,
                             U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
                         );
                     }
@@ -2565,7 +2578,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             keys,
             /*skipVals*/singleRmv,
             needReadVer,
-            keepBinary,
             recovery,
             null,
             expiryPlc,
@@ -2576,14 +2588,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param cacheCtx Cache context.
      * @param loadFut Missing keys load future.
      * @param ret Future result.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @return Future.
      */
     private IgniteInternalFuture optimisticPutFuture(
         final GridCacheContext cacheCtx,
         IgniteInternalFuture<Void> loadFut,
         final GridCacheReturn ret,
-        final boolean keepBinary
+        CacheReturnMode cacheReturnMode
     ) {
         if (implicit()) {
             // Should never load missing values for implicit transaction as values will be returned
@@ -2602,13 +2614,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             if (implicitRes.invokeResult()) {
                                 assert res == null || res instanceof Map : implicitRes;
 
-                                res = cacheCtx.unwrapInvokeResult((Map)res, keepBinary);
+                                res = cacheCtx.unwrapInvokeResult((Map)res, cacheReturnMode != DESERIALIZED);
                             }
 
                             return new GridCacheReturn(
                                 cacheCtx,
                                 true,
-                                keepBinary,
+                                cacheReturnMode,
                                 U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId),
                                 res,
                                 implicitRes.success()
@@ -2672,7 +2684,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final Collection<KeyCacheObject> keys,
         final boolean skipVals,
         final boolean needVer,
-        boolean keepBinary,
         boolean recovery,
         ReadRepairStrategy readRepairStrategy,
         final ExpiryPolicy expiryPlc,
@@ -2688,7 +2699,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     keys,
                     readThrough,
                     needVer || !cacheCtx.config().isReadFromBackup() || (optimistic() && serializable() && readThrough),
-                    /*deserializeBinary*/false,
                     recovery,
                     expiryPlc0,
                     skipVals,
@@ -2718,12 +2728,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     readRepairStrategy,
                     readThrough,
                     taskName,
-                    !keepBinary,
+                    RAW,
                     recovery,
                     expiryPlc0,
                     skipVals,
                     needVer,
-                    true,
                     this)
                     .multi()
                     .chain(fut -> {
@@ -2757,11 +2766,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     needVer || !cacheCtx.config().isReadFromBackup() || (optimistic() && serializable() && readThrough),
                     topVer,
                     resolveTaskName(),
-                    /*deserializeBinary*/false,
+                    RAW,
                     expiryPlc0,
                     skipVals,
                     needVer,
-                    /*keepCacheObject*/true,
                     recovery,
                     null,
                     label()
@@ -2787,12 +2795,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     needVer || !cacheCtx.config().isReadFromBackup() || (optimistic() && serializable() && readThrough),
                     topVer,
                     resolveTaskName(),
-                    /*deserializeBinary*/false,
+                    RAW,
                     recovery,
                     expiryPlc0,
                     skipVals,
                     needVer,
-                    /*keepCacheObject*/true,
                     label(),
                     null
                 ).chain(f -> {
@@ -3841,7 +3848,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param accessTtl Access ttl.
      * @param <K> Key type.
      * @param skipStore Skip store flag.
-     * @param keepBinary Keep binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @return Future with respond.
      */
     public <K> IgniteInternalFuture<GridCacheReturn> lockAllAsync(GridCacheContext cacheCtx,
@@ -3851,7 +3858,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         long createTtl,
         long accessTtl,
         boolean skipStore,
-        boolean keepBinary) {
+        CacheReturnMode cacheReturnMode
+    ) {
         assert pessimistic();
 
         try {
@@ -3887,7 +3895,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             accessTtl,
             CU.empty0(),
             skipStore,
-            keepBinary);
+            cacheReturnMode);
 
         return new GridEmbeddedFuture<>(
             fut,
@@ -4095,9 +4103,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param topVer Topology version.
      * @param map Return map.
      * @param missedMap Missed keys.
-     * @param deserializeBinary Deserialize binary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param skipVals Skip values flag.
-     * @param keepCacheObjects Keep cache objects flag.
      * @param skipStore Skip store flag.
      * @param readRepairStrategy Read Repair strategy.
      * @param expiryPlc Expiry policy.
@@ -4108,9 +4115,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final AffinityTopologyVersion topVer,
         final Map<K, V> map,
         final Map<KeyCacheObject, GridCacheVersion> missedMap,
-        final boolean deserializeBinary,
+        final CacheReturnMode cacheReturnMode,
         final boolean skipVals,
-        final boolean keepCacheObjects,
         final boolean skipStore,
         final boolean recovery,
         final ReadRepairStrategy readRepairStrategy,
@@ -4144,7 +4150,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 missedMap.keySet(),
                 skipVals,
                 needReadVer,
-                !deserializeBinary,
                 recovery,
                 readRepairStrategy,
                 expiryPlc,
@@ -4177,8 +4182,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 key,
                                 visibleVal,
                                 skipVals,
-                                keepCacheObjects,
-                                deserializeBinary,
+                                cacheReturnMode,
                                 false,
                                 needVer ? loadVer : null,
                                 0,
@@ -4202,8 +4206,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 key,
                                 visibleVal,
                                 skipVals,
-                                keepCacheObjects,
-                                deserializeBinary,
+                                cacheReturnMode,
                                 false,
                                 needVer ? loadVer : null,
                                 0,

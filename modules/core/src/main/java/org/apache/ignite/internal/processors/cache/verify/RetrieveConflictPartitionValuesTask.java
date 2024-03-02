@@ -47,6 +47,8 @@ import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.BINARY;
+
 /**
  *
  */
@@ -183,7 +185,7 @@ public class RetrieveConflictPartitionValuesTask extends ComputeTaskAdapter<Map<
 
                     CacheObject val = row.value();
 
-                    Object o = CacheObjectUtils.unwrapBinaryIfNeeded(grpCtx.cacheObjectContext(), val, true, true);
+                    Object o = CacheObjectUtils.unwrapBinaryIfNeeded(grpCtx.cacheObjectContext(), val, BINARY, true);
 
                     if (o != null)
                         entryHashRecord.valueString(o.toString());

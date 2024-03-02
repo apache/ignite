@@ -471,9 +471,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     ) throws IgniteCheckedException {
         GridCacheContext<K, V> ctx = getContextSafe();
 
-        CacheOperationContext opCtxCall = ctx.operationContextPerCall();
-
-        boolean isKeepBinary = opCtxCall != null && opCtxCall.isKeepBinary();
+        boolean isKeepBinary = ctx.keepBinary();
 
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
@@ -509,9 +507,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         final CacheQuery qry;
 
-        CacheOperationContext opCtxCall = ctx.operationContextPerCall();
-
-        boolean isKeepBinary = opCtxCall != null && opCtxCall.isKeepBinary();
+        boolean isKeepBinary = ctx.keepBinary();
 
         final CacheQueryFuture fut;
 
@@ -778,9 +774,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
             convertToBinary(qry);
 
-            CacheOperationContext opCtxCall = ctx.operationContextPerCall();
-
-            boolean keepBinary = opCtxCall != null && opCtxCall.isKeepBinary();
+            boolean keepBinary = ctx.keepBinary();
 
             return ctx.kernalContext().query().querySqlFields(ctx, qry, null, keepBinary, false);
         }
@@ -804,9 +798,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
             convertToBinary(qry);
 
-            CacheOperationContext opCtxCall = ctx.operationContextPerCall();
-
-            boolean keepBinary = opCtxCall != null && opCtxCall.isKeepBinary();
+            boolean keepBinary = ctx.keepBinary();
 
             if (qry instanceof ContinuousQuery || qry instanceof ContinuousQueryWithTransformer)
                 return (QueryCursor<R>)queryContinuous((AbstractContinuousQuery)qry, qry.isLocal(), keepBinary);
@@ -1946,9 +1938,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         GridCacheContext<K, V> ctx = getContextSafe();
 
         try {
-            CacheOperationContext opCtx = ctx.operationContextPerCall();
-
-            ctx.continuousQueries().executeJCacheQuery(lsnrCfg, false, opCtx != null && opCtx.isKeepBinary());
+            ctx.continuousQueries().executeJCacheQuery(lsnrCfg, false, ctx.keepBinary());
         }
         catch (IgniteCheckedException | IgniteException e) {
             throw cacheException(e);

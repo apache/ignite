@@ -713,7 +713,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         boolean primary,
         boolean backup,
         AffinityTopologyVersion topVer,
-        boolean keepBinary,
+        CacheReturnMode cacheReturnMode,
         @Nullable MvccSnapshot mvccSnapshot,
         Boolean dataPageScanEnabled
     ) {
@@ -745,8 +745,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     KeyCacheObject key = nextRow.key();
                     CacheObject val = nextRow.value();
 
-                    Object key0 = cctx.unwrapBinaryIfNeeded(key, keepBinary, false, null);
-                    Object val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false, null);
+                    Object key0 = cctx.unwrapBinaryIfNeeded(key, cacheReturnMode, false, null);
+                    Object val0 = cctx.unwrapBinaryIfNeeded(val, cacheReturnMode, false, null);
 
                     next = new CacheEntryImplEx(key0, val0, nextRow.version());
 

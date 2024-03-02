@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.EntryProcessorResourceInjectorProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -1183,7 +1184,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             ret.value(
                                 cacheCtx,
                                 v,
-                                txEntry.keepBinary(),
+                                txEntry.cacheReturnMode(),
                                 U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
                             );
                         }
@@ -1373,7 +1374,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         long drExpireTime,
         @Nullable GridCacheVersion drVer,
         boolean skipStore,
-        boolean keepBinary,
+        CacheReturnMode cacheReturnMode,
         boolean addReader
     ) {
         assert invokeArgs == null || op == TRANSFORM;
@@ -1414,7 +1415,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             // Keep old skipStore and keepBinary flags.
             old.skipStore(skipStore);
-            old.keepBinary(keepBinary);
+            old.cacheReturnMode(cacheReturnMode);
 
             // Update ttl if specified.
             if (drTtl >= 0L) {
@@ -1444,7 +1445,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 filter,
                 drVer,
                 skipStore,
-                keepBinary,
+                cacheReturnMode,
                 addReader);
 
             txEntry.conflictExpireTime(drExpireTime);

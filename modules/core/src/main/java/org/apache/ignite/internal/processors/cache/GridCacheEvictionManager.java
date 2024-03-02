@@ -317,7 +317,12 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
         if (log.isDebugEnabled())
             log.debug("Notifying eviction policy with entry: " + e);
 
-        if (filter == null || filter.evictAllowed(e.wrapLazyValue(cctx.keepBinary()))) {
+        CacheReturnMode cacheReturnMode = cctx.cacheReturnMode();
+
+        if (cacheReturnMode == CacheReturnMode.RAW)
+            cacheReturnMode = CacheReturnMode.BINARY;
+
+        if (filter == null || filter.evictAllowed(e.wrapLazyValue(cacheReturnMode))) {
             try {
                 plc.onEntryAccessed(e.obsoleteOrDeleted(), e.wrapEviction());
             }

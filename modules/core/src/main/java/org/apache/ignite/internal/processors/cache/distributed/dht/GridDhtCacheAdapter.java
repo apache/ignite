@@ -44,6 +44,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.EntryGetWithTtlResult;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -104,6 +105,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
@@ -654,7 +656,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean forcePrimary,
         boolean skipTx,
         String taskName,
-        boolean deserializeBinary,
+        CacheReturnMode cacheReturnMode,
         boolean recovery,
         ReadRepairStrategy readRepairStrategy,
         boolean skipVals,
@@ -671,10 +673,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             null,
             opCtx == null || !opCtx.skipStore(),
             taskName,
-            deserializeBinary,
+            cacheReturnMode,
             null,
             skipVals,
-            /*keep cache objects*/false,
             opCtx != null && opCtx.recovery(),
             needVer,
             null,
@@ -686,10 +687,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param readerArgs Near cache reader will be added if not null.
      * @param readThrough Read-through flag.
      * @param taskName Task name/
-     * @param deserializeBinary Deserialize binary flag.
      * @param expiry Expiry policy.
      * @param skipVals Skip values flag.
-     * @param keepCacheObjects Keep cache objects.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param txLbl Transaction label.
      * @param mvccSnapshot MVCC snapshot.
@@ -700,10 +699,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable final ReaderArguments readerArgs,
         final boolean readThrough,
         final String taskName,
-        final boolean deserializeBinary,
+        final CacheReturnMode cacheReturnMode,
         @Nullable final IgniteCacheExpiryPolicy expiry,
         final boolean skipVals,
-        final boolean keepCacheObjects,
         final boolean recovery,
         final boolean needVer,
         @Nullable String txLbl,
@@ -780,7 +778,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                         txLbl,
                                         row.value(),
                                         taskName,
-                                        !deserializeBinary);
+                                        cacheReturnMode != DESERIALIZED);
                                 }
 
                                 if (updateMetrics && ctx.statisticsEnabled())
@@ -814,7 +812,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                     evt,
                                     taskName,
                                     expiry,
-                                    !deserializeBinary,
+                                    cacheReturnMode != DESERIALIZED,
                                     readerArgs);
 
                                 assert res != null;
@@ -837,7 +835,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                     null,
                                     taskName,
                                     expiry,
-                                    !deserializeBinary,
+                                    cacheReturnMode != DESERIALIZED,
                                     readerArgs);
 
                                 if (res == null)
@@ -850,8 +848,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                 key,
                                 res,
                                 skipVals,
-                                keepCacheObjects,
-                                deserializeBinary,
+                                cacheReturnMode,
                                 true,
                                 needVer);
 
@@ -930,8 +927,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                                     key,
                                                     verVal,
                                                     skipVals,
-                                                    keepCacheObjects,
-                                                    deserializeBinary,
+                                                    cacheReturnMode,
                                                     true,
                                                     needVer);
                                             }
@@ -941,8 +937,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                                     key,
                                                     new EntryGetResult(cacheVal, res.version()),
                                                     skipVals,
-                                                    keepCacheObjects,
-                                                    deserializeBinary,
+                                                    cacheReturnMode,
                                                     false,
                                                     needVer
                                                 );
@@ -1085,10 +1080,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             readerArgs,
             readThrough,
             taskName,
-            false,
+            CacheReturnMode.RAW,
             expiry,
             skipVals,
-            /*keep cache objects*/true,
             recovery,
             /*need version*/true,
             txLbl,
@@ -1591,31 +1585,35 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * @param primary If {@code true} includes primary entries.
      * @param backup If {@code true} includes backup entries.
-     * @param keepBinary Keep binary flag.
      * @return Local entries iterator.
      */
-    public Iterator<Cache.Entry<K, V>> localEntriesIterator(final boolean primary,
+    public Iterator<Cache.Entry<K, V>> localEntriesIterator(
+        final boolean primary,
         final boolean backup,
-        final boolean keepBinary) {
-        return localEntriesIterator(primary,
+        final CacheReturnMode cacheReturnMode
+    ) {
+        return localEntriesIterator(
+            primary,
             backup,
-            keepBinary,
-            ctx.affinity().affinityTopologyVersion());
+            cacheReturnMode,
+            ctx.affinity().affinityTopologyVersion()
+        );
     }
 
     /**
      * @param primary If {@code true} includes primary entries.
      * @param backup If {@code true} includes backup entries.
-     * @param keepBinary Keep binary flag.
      * @param topVer Specified affinity topology version.
      * @return Local entries iterator.
      */
-    private Iterator<Cache.Entry<K, V>> localEntriesIterator(final boolean primary,
+    private Iterator<Cache.Entry<K, V>> localEntriesIterator(
+        final boolean primary,
         final boolean backup,
-        final boolean keepBinary,
-        final AffinityTopologyVersion topVer) {
+        final CacheReturnMode cacheReturnMode,
+        final AffinityTopologyVersion topVer
+    ) {
 
-        return iterator(localEntriesIteratorEx(primary, backup, topVer), !keepBinary);
+        return iterator(localEntriesIteratorEx(primary, backup, topVer), cacheReturnMode);
     }
 
     /**

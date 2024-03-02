@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -86,9 +87,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** Skip store flag bit mask. */
     private static final int TX_ENTRY_SKIP_STORE_FLAG_MASK = 1;
-
-    /** Keep binary flag. */
-    private static final int TX_ENTRY_KEEP_BINARY_FLAG_MASK = 1 << 1;
 
     /** Flag indicating that old value for 'invoke' operation was non null on primary node. */
     private static final int TX_ENTRY_OLD_VAL_ON_PRIMARY = 1 << 2;
@@ -154,6 +152,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** Conflict version. */
     private GridCacheVersion conflictVer;
+
+    /** */
+    private CacheReturnMode cacheReturnMode;
 
     /** Explicit lock version if there is one. */
     @GridToStringInclude
@@ -254,7 +255,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         GridCacheEntryEx entry,
         @Nullable GridCacheVersion conflictVer,
         boolean skipStore,
-        boolean keepBinary
+        CacheReturnMode cacheReturnMode
     ) {
         assert ctx != null;
         assert tx != null;
@@ -268,9 +269,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         this.ttl = ttl;
         this.conflictExpireTime = conflictExpireTime;
         this.conflictVer = conflictVer;
+        this.cacheReturnMode = cacheReturnMode;
 
         skipStore(skipStore);
-        keepBinary(keepBinary);
 
         key = entry.key();
 
@@ -304,7 +305,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         CacheEntryPredicate[] filters,
         GridCacheVersion conflictVer,
         boolean skipStore,
-        boolean keepBinary,
+        CacheReturnMode cacheReturnMode,
         boolean addReader
     ) {
         assert ctx != null;
@@ -319,9 +320,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         this.ttl = ttl;
         this.filters = filters;
         this.conflictVer = conflictVer;
+        this.cacheReturnMode = cacheReturnMode;
 
         skipStore(skipStore);
-        keepBinary(keepBinary);
         addReader(addReader);
 
         if (entryProcessor != null)
@@ -383,6 +384,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         cp.expiryPlc = expiryPlc;
         cp.flags = flags;
         cp.serReadVer = serReadVer;
+        cp.cacheReturnMode = cacheReturnMode;
 
         return cp;
     }
@@ -536,17 +538,22 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /**
      * Sets keep binary flag value.
      *
-     * @param keepBinary Keep binary flag value.
+     * @param cacheReturnMode Cache return mode.
      */
-    public void keepBinary(boolean keepBinary) {
-        setFlag(keepBinary, TX_ENTRY_KEEP_BINARY_FLAG_MASK);
+    public void cacheReturnMode(CacheReturnMode cacheReturnMode) {
+        this.cacheReturnMode = cacheReturnMode;
     }
 
     /**
      * @return Keep binary flag value.
      */
     public boolean keepBinary() {
-        return isFlag(TX_ENTRY_KEEP_BINARY_FLAG_MASK);
+        return cacheReturnMode != CacheReturnMode.DESERIALIZED;
+    }
+
+    /** */
+    public CacheReturnMode cacheReturnMode() {
+        return cacheReturnMode;
     }
 
     /**
@@ -1181,6 +1188,11 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
                 writer.incrementState();
 
+            case 13:
+                if (!writer.writeByte("cacheReturnMode", (byte)cacheReturnMode.ordinal()))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -1298,6 +1310,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
                 reader.incrementState();
 
+            case 13:
+                cacheReturnMode = CacheReturnMode.fromOrdinal(reader.readByte("cacheReturnMode"));
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(IgniteTxEntry.class);
@@ -1310,7 +1330,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 13;
+        return 14;
     }
 
     /** {@inheritDoc} */

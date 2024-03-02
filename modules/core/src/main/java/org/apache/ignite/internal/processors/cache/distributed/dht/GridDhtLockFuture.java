@@ -38,6 +38,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -184,8 +185,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     /** Skip store flag. */
     private final boolean skipStore;
 
-    /** Keep binary. */
-    private final boolean keepBinary;
+    /** Cache return mode. */
+    private final CacheReturnMode cacheReturnMode;
 
     /**
      * @param cctx Cache context.
@@ -215,7 +216,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         long createTtl,
         long accessTtl,
         boolean skipStore,
-        boolean keepBinary) {
+        CacheReturnMode cacheReturnMode) {
         super(CU.boolReducer());
 
         assert nearNodeId != null;
@@ -234,7 +235,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.skipStore = skipStore;
-        this.keepBinary = keepBinary;
+        this.cacheReturnMode = cacheReturnMode;
 
         if (tx != null)
             tx.topologyVersion(topVer);
@@ -918,7 +919,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             read ? accessTtl : -1L,
                             skipStore,
                             cctx.store().configured(),
-                            keepBinary,
+                            cacheReturnMode,
                             cctx.deploymentEnabled(),
                             inTx() ? tx.label() : null);
 

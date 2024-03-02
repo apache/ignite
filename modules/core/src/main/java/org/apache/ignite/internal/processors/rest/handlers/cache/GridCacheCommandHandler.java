@@ -90,6 +90,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.client.GridClientCacheFlag.KEEP_BINARIES;
 import static org.apache.ignite.internal.client.GridClientCacheFlag.SKIP_STORE;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.BINARY;
 import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_PARTITIONED;
 import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_REPLICATED;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.ATOMIC_DECREMENT;
@@ -754,7 +755,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 .setSkipStore(cacheFlags.contains(SKIP_STORE));
 
             if (cacheFlags.contains(KEEP_BINARIES))
-                prj = prj.keepBinary();
+                prj = prj.withCacheReturnMode(BINARY);
 
             return op.apply((IgniteInternalCache<Object, Object>)prj, ctx).
                 chain(resultWrapper((IgniteInternalCache<Object, Object>)prj, key));
@@ -922,7 +923,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 .setSkipStore(cacheFlags.contains(SKIP_STORE));
 
             if (cacheFlags.contains(KEEP_BINARIES))
-                prj = prj.keepBinary();
+                prj = prj.withCacheReturnMode(BINARY);
 
             // Need to apply both operation and response transformation remotely
             // as cache could be inaccessible on local node and

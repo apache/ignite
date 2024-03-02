@@ -41,6 +41,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
 
 /**
  * Binary object representing array.
@@ -128,7 +129,7 @@ public class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<B
             deserialized = (Object[])Array.newInstance(compType, arr.length);
 
             for (int i = 0; i < arr.length; i++) {
-                Object obj = CacheObjectUtils.unwrapBinaryIfNeeded(null, arr[i], false, false, ldr);
+                Object obj = CacheObjectUtils.unwrapBinaryIfNeeded(null, arr[i], DESERIALIZED, false, ldr);
 
                 if (obj instanceof BinaryObject)
                     obj = ((BinaryObject)obj).deserialize(ldr);

@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheReturnMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -86,7 +87,8 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         GridCacheOperation op,
         int taskNameHash,
         byte flags,
-        boolean addDepInfo
+        boolean addDepInfo,
+        CacheReturnMode cacheReturnMode
     ) {
         super(cacheId,
             nodeId,
@@ -96,7 +98,8 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
             op,
             taskNameHash,
             flags,
-            addDepInfo
+            addDepInfo,
+            cacheReturnMode
         );
     }
 
@@ -244,13 +247,13 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         }
 
         switch (writer.state()) {
-            case 10:
+            case 11:
                 if (!writer.writeMessage("key", key))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
+            case 12:
                 if (!writer.writeMessage("val", val))
                     return false;
 
@@ -272,7 +275,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
             return false;
 
         switch (reader.state()) {
-            case 10:
+            case 11:
                 key = reader.readMessage("key");
 
                 if (!reader.isLastRead())
@@ -280,7 +283,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
                 reader.incrementState();
 
-            case 11:
+            case 12:
                 val = reader.readMessage("val");
 
                 if (!reader.isLastRead())
@@ -308,7 +311,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 12;
+        return 13;
     }
 
     /** {@inheritDoc} */
