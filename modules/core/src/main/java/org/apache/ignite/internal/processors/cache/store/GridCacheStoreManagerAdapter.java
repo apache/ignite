@@ -444,7 +444,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             Collection<Object> keys0 = F.viewReadOnly(keys,
                 new C1<KeyCacheObject, Object>() {
                     @Override public Object apply(KeyCacheObject key) {
-                        return cctx.unwrapBinaryIfNeeded(key, CacheReturnMode.of(convertBinary()), null);
+                        return cctx.unwrapBinaryIfNeeded(key, CacheReturnMode.of(!convertBinary()), null);
                     }
                 });
 
