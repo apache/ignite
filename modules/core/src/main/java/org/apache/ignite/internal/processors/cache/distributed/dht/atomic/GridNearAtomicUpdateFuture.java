@@ -59,7 +59,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.BINARY;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
@@ -700,7 +700,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         }
 
         if (syncMode == FULL_ASYNC)
-            completeFuture(new GridCacheReturn(cctx, true, DESERIALIZED, null, null, true), null, null);
+            completeFuture(new GridCacheReturn(cctx, true, BINARY, null, null, true), null, null);
     }
 
     /** {@inheritDoc} */

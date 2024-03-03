@@ -105,6 +105,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.BINARY;
 import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
@@ -676,6 +677,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             cacheReturnMode,
             null,
             skipVals,
+            /*keep cache objects*/false,
             opCtx != null && opCtx.recovery(),
             needVer,
             null,
@@ -687,8 +689,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param readerArgs Near cache reader will be added if not null.
      * @param readThrough Read-through flag.
      * @param taskName Task name/
+     * @param cacheReturnMode Cache return mode Cache return mode.
      * @param expiry Expiry policy.
      * @param skipVals Skip values flag.
+     * @param keepCacheObjects Keep cache objects.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param txLbl Transaction label.
      * @param mvccSnapshot MVCC snapshot.
@@ -702,6 +706,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         final CacheReturnMode cacheReturnMode,
         @Nullable final IgniteCacheExpiryPolicy expiry,
         final boolean skipVals,
+        final boolean keepCacheObjects,
         final boolean recovery,
         final boolean needVer,
         @Nullable String txLbl,
@@ -848,6 +853,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                 key,
                                 res,
                                 skipVals,
+                                keepCacheObjects,
                                 cacheReturnMode,
                                 true,
                                 needVer);
@@ -927,6 +933,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                                     key,
                                                     verVal,
                                                     skipVals,
+                                                    keepCacheObjects,
                                                     cacheReturnMode,
                                                     true,
                                                     needVer);
@@ -937,6 +944,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                                     key,
                                                     new EntryGetResult(cacheVal, res.version()),
                                                     skipVals,
+                                                    keepCacheObjects,
                                                     cacheReturnMode,
                                                     false,
                                                     needVer
@@ -1080,9 +1088,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             readerArgs,
             readThrough,
             taskName,
-            CacheReturnMode.RAW,
+            BINARY,
             expiry,
             skipVals,
+            /*keep cache objects*/true,
             recovery,
             /*need version*/true,
             txLbl,
@@ -1585,6 +1594,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * @param primary If {@code true} includes primary entries.
      * @param backup If {@code true} includes backup entries.
+     * @param cacheReturnMode Cache return mode.
      * @return Local entries iterator.
      */
     public Iterator<Cache.Entry<K, V>> localEntriesIterator(
@@ -1603,6 +1613,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * @param primary If {@code true} includes primary entries.
      * @param backup If {@code true} includes backup entries.
+     * @param cacheReturnMode Cache return mode.
      * @param topVer Specified affinity topology version.
      * @return Local entries iterator.
      */

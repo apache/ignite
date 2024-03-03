@@ -82,6 +82,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
+     * @param keepCacheObjects Keep cache objects flag.
      * @param txLbl Transaction label.
      * @param mvccSnapshot Mvcc snapshot.
      */
@@ -96,6 +97,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
+        boolean keepCacheObjects,
         @Nullable String txLbl,
         @Nullable MvccSnapshot mvccSnapshot,
         ClusterNode affNode
@@ -110,6 +112,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             expiryPlc,
             skipVals,
             needVer,
+            keepCacheObjects,
             recovery
         );
 
@@ -541,6 +544,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         key,
                         v,
                         skipVals,
+                        keepCacheObjects,
                         cacheReturnMode,
                         true,
                         getRes,
@@ -626,6 +630,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     info.key(),
                     info.value(),
                     skipVals,
+                    keepCacheObjects,
                     cacheReturnMode,
                     false,
                     needVer ? info.version() : null,

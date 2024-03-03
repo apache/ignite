@@ -59,7 +59,6 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.CacheReturnMode.RAW;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 
@@ -152,6 +151,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         ctx.cacheKeysView(keys),
                         cacheReturnMode,
                         skipVals,
+                        false,
                         skipStore,
                         recovery,
                         readRepairStrategy,
@@ -177,6 +177,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param keys Keys to load.
      * @param readThrough Read through flag.
      * @param forcePrimary Force primary flag.
+     * @param cacheReturnMode Cache return mode.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
@@ -187,6 +188,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable Collection<KeyCacheObject> keys,
         boolean readThrough,
         boolean forcePrimary,
+        CacheReturnMode cacheReturnMode,
         boolean recovery,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
@@ -199,10 +201,11 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             forcePrimary,
             tx,
             tx.resolveTaskName(),
-            RAW,
+            cacheReturnMode,
             expiryPlc,
             skipVals,
             needVer,
+            /*keepCacheObjects*/true,
             recovery);
 
         // init() will register future for responses if it has remote mappings.

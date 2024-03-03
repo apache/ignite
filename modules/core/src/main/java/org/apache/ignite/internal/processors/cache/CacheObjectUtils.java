@@ -28,6 +28,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
+
 /**
  * Cache object utility methods.
  */
@@ -126,7 +128,9 @@ public class CacheObjectUtils {
         CacheReturnMode cacheReturnMode,
         boolean cpy
     ) {
-        if (cacheReturnMode != CacheReturnMode.DESERIALIZED)
+        assert cacheReturnMode != CacheReturnMode.RAW;
+
+        if (cacheReturnMode == CacheReturnMode.BINARY)
             return map;
 
         Map<Object, Object> map0 = BinaryUtils.newMap(map);
@@ -134,8 +138,8 @@ public class CacheObjectUtils {
         for (Map.Entry<Object, Object> e : map.entrySet())
             // TODO why don't we use keepBinary parameter here?
             map0.put(
-                unwrapBinary(ctx, e.getKey(), CacheReturnMode.DESERIALIZED, cpy, null),
-                unwrapBinary(ctx, e.getValue(), CacheReturnMode.DESERIALIZED, cpy, null));
+                unwrapBinary(ctx, e.getKey(), DESERIALIZED, cpy, null),
+                unwrapBinary(ctx, e.getValue(), DESERIALIZED, cpy, null));
 
         return map0;
     }
@@ -230,7 +234,7 @@ public class CacheObjectUtils {
             return unwrapBinariesIfNeeded(ctx, (Map<Object, Object>)o, cacheReturnMode, cpy);
         else if (o instanceof Object[] && !BinaryArray.useBinaryArrays())
             return unwrapBinariesInArrayIfNeeded(ctx, (Object[])o, cacheReturnMode, cpy);
-        else if (o instanceof BinaryArray && cacheReturnMode == CacheReturnMode.DESERIALIZED)
+        else if (o instanceof BinaryArray && cacheReturnMode == DESERIALIZED)
             return ((BinaryObject)o).deserialize(ldr);
 
         return o;

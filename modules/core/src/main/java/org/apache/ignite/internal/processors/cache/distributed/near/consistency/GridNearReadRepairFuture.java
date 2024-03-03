@@ -46,6 +46,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
      * @param strategy Read repair strategy.
      * @param readThrough Read-through flag.
      * @param taskName Task name.
+     * @param cacheReturnMode Cache return mode.
      * @param recovery Partition recovery flag.
      * @param expiryPlc Expiry policy.
      * @param tx Transaction.
@@ -81,6 +82,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
      * @param strategy Read repair strategy.
      * @param readThrough Read-through flag.
      * @param taskName Task name.
+     * @param cacheReturnMode Cache return mode.
      * @param recovery Partition recovery flag.
      * @param expiryPlc Expiry policy.
      * @param tx Transaction.

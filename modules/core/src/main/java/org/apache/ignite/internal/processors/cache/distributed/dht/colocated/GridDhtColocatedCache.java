@@ -211,6 +211,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         Collections.singleton(ctx.toCacheKeyObject(key)),
                         cacheReturnMode,
                         skipVals,
+                        false,
                         opCtx != null && opCtx.skipStore(),
                         recovery,
                         readRepairStrategy,
@@ -261,6 +262,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
                 skipVals,
                 needVer,
+                false,
                 tx).single();
         }
 
@@ -274,6 +276,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
             skipVals,
             needVer,
+            /*keepCacheObjects*/false,
             opCtx != null && opCtx.recovery(),
             null,
             mvccSnapshot);
@@ -327,6 +330,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         ctx.cacheKeysView(keys),
                         cacheReturnMode,
                         skipVals,
+                        false,
                         opCtx != null && opCtx.skipStore(),
                         recovery,
                         readRepairStrategy,
@@ -360,6 +364,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
                 skipVals,
                 needVer,
+                false,
                 tx).multi();
         }
 
@@ -374,6 +379,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
             skipVals,
             needVer,
+            false,
             null,
             mvccSnapshot
         );
@@ -403,6 +409,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
+     * @param keepCacheObj Keep cache objects flag.
      * @param txLbl Transaction label.
      * @return Load future.
      */
@@ -416,6 +423,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
+        boolean keepCacheObj,
         boolean recovery,
         @Nullable MvccSnapshot mvccSnapshot,
         @Nullable String txLbl
@@ -430,6 +438,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             expiryPlc,
             skipVals,
             needVer,
+            keepCacheObj,
             recovery,
             txLbl,
             mvccSnapshot);
@@ -449,6 +458,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
+     * @param keepCacheObj Keep cache objects flag.
      * @param txLbl Transaction label.
      * @param mvccSnapshot Mvcc snapshot.
      * @return Load future.
@@ -464,6 +474,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
+        boolean keepCacheObj,
         @Nullable String txLbl,
         @Nullable MvccSnapshot mvccSnapshot
     ) {
@@ -504,6 +515,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                     key,
                                     row.value(),
                                     skipVals,
+                                    keepCacheObj,
                                     cacheReturnMode,
                                     true,
                                     null,
@@ -590,6 +602,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                             key,
                                             v,
                                             skipVals,
+                                            keepCacheObj,
                                             cacheReturnMode,
                                             true,
                                             getRes,
@@ -659,6 +672,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             expiryPlc,
             skipVals,
             needVer,
+            keepCacheObj,
             txLbl,
             mvccSnapshot,
             null);

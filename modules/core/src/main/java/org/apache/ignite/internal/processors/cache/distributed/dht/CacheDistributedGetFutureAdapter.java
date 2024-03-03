@@ -120,6 +120,9 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
     protected final boolean needVer;
 
     /** */
+    protected final boolean keepCacheObjects;
+
+    /** */
     protected final boolean recovery;
 
     /** Deployment class loader id which will be used for deserialization of entries on a distributed task. */
@@ -140,6 +143,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
+     * @param keepCacheObjects Keep cache objects flag.
      */
     protected CacheDistributedGetFutureAdapter(
         GridCacheContext<K, V> cctx,
@@ -151,6 +155,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
+        boolean keepCacheObjects,
         boolean recovery
     ) {
         super(CU.mapsReducer(keys.size()));
@@ -166,6 +171,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
         this.needVer = needVer;
+        this.keepCacheObjects = keepCacheObjects;
         this.recovery = recovery;
         deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 

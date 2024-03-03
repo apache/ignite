@@ -79,6 +79,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
      * @param filter Entry filter.
      * @param taskNameHash Task name hash code.
      * @param skipStore Skip store flag.
+     * @param keepBinary Keep binary flag.
      * @param recovery {@code True} if cache operation is called in recovery mode.
      * @param remapCnt Maximum number of retries.
      */

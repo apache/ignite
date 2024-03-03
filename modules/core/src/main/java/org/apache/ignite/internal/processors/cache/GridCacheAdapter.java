@@ -129,6 +129,7 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
+import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.CIX3;
 import org.apache.ignite.internal.util.typedef.CX1;
@@ -164,6 +165,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUN
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.processors.cache.CacheReturnMode.BINARY;
 import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.RAW;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
@@ -1639,49 +1641,20 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      *
      * @param keys All requested keys.
      * @param map Result map.
-     * @return Map with values returned by cache interceptor..
+     * @return Map with values returned by cache interceptor.
      */
     private Map<K, V> interceptGetAll(@Nullable Collection<? extends K> keys, Map<K, V> map, CacheReturnMode cacheReturnMode) {
         if (F.isEmpty(keys))
             return map;
 
-        CacheInterceptor<K, V> interceptor = cacheCfg.getInterceptor();
-
-        assert interceptor != null;
-
         Map<K, V> res = U.newHashMap(keys.size());
 
-        for (Map.Entry<K, V> e : map.entrySet()) {
-            V val = interceptOnGet(e.getKey(), e.getValue(), cacheReturnMode);
-
-            if (val != null)
-                res.put(e.getKey(), val);
-        }
-
-        Set<K> unwrappedKeys;
-
-        if (cacheReturnMode == DESERIALIZED)
-            unwrappedKeys = map.keySet();
-        else {
-            unwrappedKeys = U.newHashSet(map.size());
-
-            for (K k : map.keySet()) {
-                unwrappedKeys.add((K)ctx.unwrapBinaryIfNeeded(k, BINARY, false, null));
-            }
-        }
-
-        if (map.size() != keys.size()) { // Not all requested keys were in cache.
-            for (K key : keys) {
-                if (key != null) {
-                    if (!unwrappedKeys.contains(key)) {
-                        V val = interceptor.onGet(key, null);
-
-                        if (val != null)
-                            res.put(key, val);
-                    }
-                }
-            }
-        }
+        interceptOnGet(
+            keys,
+            map,
+            v -> v,
+            (k, ignored, v) -> res.put(k, v),
+            cacheReturnMode);
 
         return res;
     }
@@ -1691,55 +1664,79 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      *
      * @param keys All requested keys.
      * @param map Result map.
-     * @return Map with values returned by cache interceptor..
+     * @return Map with values returned by cache interceptor.
      */
     private Collection<CacheEntry<K, V>> interceptGetEntries(
-        @Nullable Collection<? extends K> keys, Map<K, EntryGetResult> map, CacheReturnMode cacheReturnMode) {
+        @Nullable Collection<? extends K> keys,
+        Map<K, EntryGetResult> map,
+        CacheReturnMode cacheReturnMode
+    ) {
         if (F.isEmpty(keys)) {
             assert map.isEmpty();
 
             return Collections.emptySet();
         }
 
-        Map<K, CacheEntry<K, V>> res = U.newHashMap(keys.size());
+        Set<CacheEntry<K, V>> res = U.newHashSet(keys.size());
 
+        interceptOnGet(
+            keys,
+            map,
+            EntryGetResult::value,
+            (k, r, v) -> res.add(new CacheEntryImplEx<>(k, v, r == null ? null : r.version())),
+            cacheReturnMode);
+
+        return res;
+    }
+
+    /** */
+    private <T> void interceptOnGet(
+        @Nullable Collection<? extends K> keys,
+        Map<K, T> map,
+        Function<T, V> cacheValueExtractor,
+        CI3<K, T, V> interceptResultConsumer,
+        CacheReturnMode cacheReturnMode
+    ) {
         CacheInterceptor<K, V> interceptor = cacheCfg.getInterceptor();
 
         assert interceptor != null;
 
-        for (Map.Entry<K, EntryGetResult> e : map.entrySet()) {
-            V val = interceptOnGet(e.getKey(), e.getValue().value(), cacheReturnMode);
+        Set<K> interceptedKeys = U.newHashSet(map.size());
+
+        for (Map.Entry<K, T> e : map.entrySet()) {
+            K key = e.getKey();
+            V val = cacheValueExtractor.apply(e.getValue());
+
+            if (cacheReturnMode == RAW) {
+                key = (K)ctx.unwrapBinaryIfNeeded(key, BINARY, false, null);
+                val = (V)ctx.unwrapBinaryIfNeeded(val, BINARY, false, null);
+            }
+
+            val = (V)ctx.config().getInterceptor().onGet(key, val);
+
+            interceptedKeys.add(key);
 
             if (val != null)
-                res.put(e.getKey(), new CacheEntryImplEx<>(e.getKey(), val, e.getValue().version()));
-        }
-
-        Set<K> unwrappedKeys;
-
-        if (cacheReturnMode == DESERIALIZED)
-            unwrappedKeys = map.keySet();
-        else {
-            unwrappedKeys = U.newHashSet(map.size());
-
-            for (K k : map.keySet()) {
-                unwrappedKeys.add((K)ctx.unwrapBinaryIfNeeded(k, BINARY, false, null));
-            }
+                interceptResultConsumer.apply(e.getKey(), e.getValue(), val);
         }
 
         if (map.size() != keys.size()) { // Not all requested keys were in cache.
             for (K key : keys) {
-                if (key != null) {
-                    if (!unwrappedKeys.contains(key)) {
-                        V val = interceptor.onGet(key, null);
+                if (key == null)
+                    continue;
 
-                        if (val != null)
-                            res.put(key, new CacheEntryImplEx<>(key, val, null));
-                    }
+                K unwrappedKey = cacheReturnMode == RAW
+                    ? (K)ctx.unwrapBinaryIfNeeded(key, BINARY, false, null)
+                    : key;
+
+                if (!interceptedKeys.contains(unwrappedKey)) {
+                    V val = interceptor.onGet(unwrappedKey, null);
+
+                    if (val != null)
+                        interceptResultConsumer.apply(key, null, val);
                 }
             }
         }
-
-        return res.values();
     }
 
     /** */
@@ -3539,6 +3536,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
+     * @param keepBinary Keep binary flag.
      * @return Distributed ignite cache iterator.
      * @throws IgniteCheckedException If failed.
      */
@@ -4212,6 +4210,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * @param key Key.
+     * @param cacheReturnMode Cache return mode.
      * @param needVer Need version.
      * @return Read operation future.
      */
@@ -6691,6 +6690,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
          * Constructor.
          *
          * @param internalIterator Internal iterator.
+         * @param cacheReturnMode Cache return mode.
          */
         private KeySetIterator(Iterator<GridCacheMapEntry> internalIterator, CacheReturnMode cacheReturnMode) {
             this.internalIterator = internalIterator;
@@ -6782,6 +6782,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
          * Constructor.
          *
          * @param internalIterator Internal iterator.
+         * @param cacheReturnMode Cache return mode.
          */
         private EntryIterator(Iterator<GridCacheMapEntry> internalIterator, CacheReturnMode cacheReturnMode) {
             this.internalIterator = internalIterator;

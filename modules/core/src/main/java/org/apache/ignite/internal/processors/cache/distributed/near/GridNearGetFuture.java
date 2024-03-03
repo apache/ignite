@@ -57,7 +57,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
-import static org.apache.ignite.internal.processors.cache.CacheReturnMode.RAW;
 
 /**
  *
@@ -77,9 +76,11 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      *      called on backup node.
      * @param tx Transaction.
      * @param taskName Task name.
+     * @param cacheReturnMode Cache return mode.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
+     * @param keepCacheObjects Keep cache objects flag.
      */
     public GridNearGetFuture(
         GridCacheContext<K, V> cctx,
@@ -92,6 +93,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
+        boolean keepCacheObjects,
         boolean recovery
     ) {
         super(
@@ -104,6 +106,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             expiryPlc,
             skipVals,
             needVer,
+            keepCacheObjects,
             recovery
         );
 
@@ -567,7 +570,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * @param ver Version.
      */
     private void addResult(KeyCacheObject key, CacheObject v, GridCacheVersion ver) {
-        if (cacheReturnMode == RAW) {
+        if (keepCacheObjects) {
             K key0 = (K)key;
             V val0 = needVer ?
                 (V)new EntryGetResult(skipVals ? true : v, ver) :
@@ -660,6 +663,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         key,
                         val,
                         skipVals,
+                        keepCacheObjects,
                         cacheReturnMode,
                         false,
                         needVer ? info.version() : null,

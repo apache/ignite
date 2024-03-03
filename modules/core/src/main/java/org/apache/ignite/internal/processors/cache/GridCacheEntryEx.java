@@ -137,7 +137,7 @@ public interface GridCacheEntryEx {
 
     /**
      * Wraps entry to an entry with lazy value get.
-     * @param cacheReturnMode Cache retur mode.
+     * @param cacheReturnMode Cache return mode.
      *
      * @return Entry.
      */

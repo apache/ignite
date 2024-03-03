@@ -205,6 +205,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param keys Keys to load.
      * @param forcePrimary Force primary flag.
      * @param taskName Task name.
+     * @param cacheReturnMode Cache return mode.
      * @param expiryPlc Expiry policy.
      * @param skipVal Skip value flag.
      * @param skipStore Skip store flag.
@@ -240,6 +241,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             expiry,
             skipVal,
             needVer,
+            false,
             recovery);
 
         // init() will register future for responses if future has remote mappings.

@@ -55,6 +55,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NEAR_GET_MAX_REMAPS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
+import static org.apache.ignite.internal.processors.cache.CacheReturnMode.BINARY;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistributedGetFutureAdapter.DFLT_MAX_REMAP_CNT;
 
 /**
@@ -129,6 +130,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
      * @param strategy Read repair strategy.
      * @param readThrough Read-through flag.
      * @param taskName Task name.
+     * @param cacheReturnMode Cache return mode.
      * @param recovery Partition recovery flag.
      * @param expiryPlc Expiry policy.
      * @param tx Transaction. Can be {@code null} in case of atomic cache.
@@ -198,6 +200,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
                     recovery,
                     expiryPlc,
                     false,
+                    true,
                     true,
                     tx != null ? tx.label() : null,
                     null,
@@ -567,7 +570,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
             for (KeyCacheObject key : fut.keys()) {
                 if (inconsistentKeys.contains(key)) {
                     sensitiveKeyMap.computeIfAbsent(key, k -> includeSensitive
-                        ? ctx.unwrapBinaryIfNeeded(k, CacheReturnMode.BINARY, false, null)
+                        ? ctx.unwrapBinaryIfNeeded(k, BINARY, false, null)
                         : "[HIDDEN_KEY#" + UUID.randomUUID() + "]");
 
                     CacheConsistencyViolationEvent.EntriesInfo entriesInfo =
@@ -625,7 +628,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
 
                 return sensitiveValMap.computeIfAbsent(wrapped, w ->
                     includeSensitive ?
-                        ctx.unwrapBinaryIfNeeded(val, CacheReturnMode.BINARY, false, null) :
+                        ctx.unwrapBinaryIfNeeded(val, BINARY, false, null) :
                         "[HIDDEN_VALUE#" + UUID.randomUUID() + "]");
             }
             catch (IgniteCheckedException e) {

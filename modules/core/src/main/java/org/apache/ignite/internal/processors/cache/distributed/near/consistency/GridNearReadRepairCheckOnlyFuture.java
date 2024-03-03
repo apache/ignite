@@ -46,6 +46,9 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
     /** Need version. */
     private final boolean needVer;
 
+    /** Keep cache objects. */
+    private final boolean keepCacheObjects;
+
     /**
      * Creates a new instance of GridNearReadRepairCheckOnlyFuture.
      *
@@ -55,10 +58,12 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
      * @param strategy Read repair strategy.
      * @param readThrough Read-through flag.
      * @param taskName Task name.
+     * @param cacheReturnMode Cache return mode.
      * @param recovery Partition recovery flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer Need version flag.
+     * @param keepCacheObjects Keep cache objects flag.
      * @param tx Transaction. Can be {@code null} in case of atomic cache.
      */
     public GridNearReadRepairCheckOnlyFuture(
@@ -73,6 +78,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
         IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
+        boolean keepCacheObjects,
         IgniteInternalTx tx) {
         this(topVer,
             ctx,
@@ -85,6 +91,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
             expiryPlc,
             skipVals,
             needVer,
+            keepCacheObjects,
             tx,
             null);
     }
@@ -96,10 +103,12 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
      * @param strategy Read repair strategy.
      * @param readThrough Read-through flag.
      * @param taskName Task name.
+     * @param cacheReturnMode Cache return mode.
      * @param recovery Partition recovery flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer Need version flag.
+     * @param keepCacheObjects Keep cache objects flag.
      * @param tx Transaction. Can be {@code null} in case of atomic cache.
      * @param remappedFut Remapped future.
      */
@@ -115,6 +124,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
         IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
+        boolean keepCacheObjects,
         IgniteInternalTx tx,
         GridNearReadRepairCheckOnlyFuture remappedFut) {
         super(topVer,
@@ -131,6 +141,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
 
         this.skipVals = skipVals;
         this.needVer = needVer;
+        this.keepCacheObjects = keepCacheObjects;
     }
 
     /** {@inheritDoc} */
@@ -147,6 +158,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
             expiryPlc,
             skipVals,
             needVer,
+            keepCacheObjects,
             tx,
             this).init();
     }
@@ -280,6 +292,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
                     entry.getKey(),
                     getRes.value(),
                     skipVals,
+                    keepCacheObjects,
                     cacheReturnMode,
                     false,
                     getRes,

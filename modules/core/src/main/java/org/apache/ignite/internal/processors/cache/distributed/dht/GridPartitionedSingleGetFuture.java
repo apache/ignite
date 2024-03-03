@@ -72,7 +72,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NEAR_GET_MAX_REMAPS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.internal.processors.cache.CacheReturnMode.DESERIALIZED;
-import static org.apache.ignite.internal.processors.cache.CacheReturnMode.RAW;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistributedGetFutureAdapter.DFLT_MAX_REMAP_CNT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
@@ -134,6 +133,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private final boolean needVer;
 
     /** */
+    private final boolean keepCacheObjects;
+
+    /** */
     private final boolean recovery;
 
     /** */
@@ -170,6 +172,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
+     * @param keepCacheObjects Keep cache objects flag.
      * @param txLbl Transaction label.
      */
     public GridPartitionedSingleGetFuture(
@@ -183,6 +186,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
+        boolean keepCacheObjects,
         boolean recovery,
         String txLbl,
         @Nullable MvccSnapshot mvccSnapshot
@@ -209,6 +213,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
         this.needVer = needVer;
+        this.keepCacheObjects = keepCacheObjects;
         this.recovery = recovery;
         this.topVer = topVer;
         this.mvccSnapshot = mvccSnapshot;
@@ -758,7 +763,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 if (postProcessingClos != null)
                     postProcessingClos.apply(val, ver);
 
-                if (cacheReturnMode != RAW) {
+                if (!keepCacheObjects) {
                     Object res = cctx.unwrapBinaryIfNeeded(
                         val,
                         cacheReturnMode,

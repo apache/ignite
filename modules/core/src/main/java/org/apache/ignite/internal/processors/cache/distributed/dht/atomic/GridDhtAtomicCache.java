@@ -1395,8 +1395,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 expiry,
                 skipVals,
                 needVer,
-                null
-            ).single();
+                false,
+                null).single();
         }
 
         GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
@@ -1409,6 +1409,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             expiry,
             skipVals,
             needVer,
+            false,
             recovery,
             null,
             null);
@@ -1461,6 +1462,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 expiry,
                 skipVals,
                 needVer,
+                false,
                 null).multi();
         }
 
@@ -1488,6 +1490,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                     key,
                                     row.value(),
                                     skipVals,
+                                    false,
                                     cacheReturnMode,
                                     true,
                                     null,
@@ -1569,6 +1572,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                             key,
                                             v,
                                             skipVals,
+                                            false,
                                             cacheReturnMode,
                                             true,
                                             getRes,
@@ -1637,6 +1641,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             expiry,
             skipVals,
             needVer,
+            false,
             null,
             null,
             null);

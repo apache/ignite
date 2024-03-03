@@ -1880,6 +1880,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         KeyCacheObject key,
         CacheObject val,
         boolean skipVals,
+        boolean keepCacheObjects,
         CacheReturnMode cacheReturnMode,
         boolean cpy,
         final GridCacheVersion ver,
@@ -1887,7 +1888,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         final long ttl,
         @Nullable ClassLoader ldr) {
         // Creates EntryGetResult
-        addResult(map, key, val, skipVals, cacheReturnMode, cpy, null,
+        addResult(map, key, val, skipVals, keepCacheObjects, cacheReturnMode, cpy, null,
             ver, expireTime, ttl, ver != null, ldr);
     }
 
@@ -1904,11 +1905,12 @@ public class GridCacheContext<K, V> implements Externalizable {
         KeyCacheObject key,
         EntryGetResult getRes,
         boolean skipVals,
+        boolean keepCacheObjects,
         CacheReturnMode cacheReturnMode,
         boolean cpy,
         boolean needVer) {
         // Uses getRes as result.
-        addResult(map, key, getRes.<CacheObject>value(), skipVals, cacheReturnMode, cpy, getRes,
+        addResult(map, key, getRes.<CacheObject>value(), skipVals, keepCacheObjects, cacheReturnMode, cpy, getRes,
             null, 0, 0, needVer, null);
     }
 
@@ -1930,6 +1932,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         KeyCacheObject key,
         CacheObject val,
         boolean skipVals,
+        boolean keepCacheObjects,
         CacheReturnMode cacheReturnMode,
         boolean cpy,
         @Nullable EntryGetResult getRes,
@@ -1941,7 +1944,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert key != null;
         assert val != null || skipVals;
 
-        if (cacheReturnMode != CacheReturnMode.RAW) {
+        if (!keepCacheObjects) {
             Object key0 = unwrapBinaryIfNeeded(key, cacheReturnMode, cpy, ldr);
 
             Object val0 = skipVals ? true : unwrapBinaryIfNeeded(val, cacheReturnMode, cpy, ldr);
