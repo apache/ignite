@@ -40,19 +40,24 @@ class ClientQueryCursor<T> implements QueryCursor<T> {
 
     /** {@inheritDoc} */
     @Override public List<T> getAll() {
-        while (true) {
-            try {
-                List<T> res = new ArrayList<>();
+        try {
+            while (true) {
+                try {
+                    List<T> res = new ArrayList<>();
 
-                for (T ent : this)
-                    res.add(ent);
+                    for (T ent : this)
+                        res.add(ent);
 
-                return res;
+                    return res;
+                }
+                catch (ClientReconnectedException ex) {
+                    // If we were reconnected to a new server we can retry entire query to failover.
+                    pager.reset();
+                }
             }
-            catch (ClientReconnectedException ex) {
-                // If we were reconnected to a new server we can retry entire query to failover.
-                pager.reset();
-            }
+        }
+        finally {
+            close();
         }
     }
 
