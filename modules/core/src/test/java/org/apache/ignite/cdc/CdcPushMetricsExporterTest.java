@@ -128,7 +128,7 @@ public class CdcPushMetricsExporterTest extends AbstractCdcTest {
 
     /** Test checks that consumer can start ignite client node and connect to destination cluster. */
     @Test
-    public void testIgniteLikeConsumer() throws Exception {
+    public void testIgniteToIgniteConsumer() throws Exception {
         IgniteConfiguration srcClusterCfg = getSrcClusterCfg("src-cluster");
         startGrid(srcClusterCfg);
 
