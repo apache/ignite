@@ -254,11 +254,12 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
         grid(0).events().enableLocal(EventType.EVT_CACHE_OBJECT_PUT);
 
         grid(0).events().localListen(e -> {
-            CacheEvent ce = (CacheEvent) e;
+            CacheEvent ce = (CacheEvent)e;
             if (partitionWithSlowThread.compareAndSet(-1, ce.partition())) {
                 try {
                     partLatch.await();
-                } catch (InterruptedException ex) {
+                }
+                catch (InterruptedException ex) {
                     throw new RuntimeException(ex);
                 }
             }
@@ -275,14 +276,14 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
         ConcurrentHashMap<Integer, Integer> itemsHolder = new ConcurrentHashMap<>();
 
         qry.setLocalListener(events -> {
-            for (CacheEntryEvent<? extends Integer, ? extends Integer> event : events) {
+            for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : events) {
                 itemsHolder.put(event.getKey(), event.getValue());
             }
         });
 
         cache.query(qry);
 
-        int itemsToProcess = gridCount() * 5000;
+        int itemsToProc = gridCount() * 5000;
 
         try (IgniteDataStreamer<Integer, Integer> stmr = grid(0).dataStreamer("ds-cq-test")) {
             stmr.allowOverwrite(true);
