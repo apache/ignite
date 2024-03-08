@@ -54,7 +54,6 @@ public class DnsBlocker {
     public void onAddrResolve(InetAddressImpl impl, byte[] addr) throws UnknownHostException {
         if (!Arrays.equals(impl.loopbackAddress().getAddress(), addr))
             check(InetAddress.getByAddress(addr).toString());
-
     }
 
     /** */

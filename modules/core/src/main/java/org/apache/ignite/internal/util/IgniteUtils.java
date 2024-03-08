@@ -145,6 +145,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
@@ -319,6 +320,9 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
  */
 @SuppressWarnings({"UnusedReturnValue"})
 public abstract class IgniteUtils {
+    /** */
+    public static volatile boolean TEST = false;
+
     /** Logger. */
     private static final Logger log = Logger.getLogger(IgniteUtils.class.getName());
 
@@ -530,6 +534,9 @@ public abstract class IgniteUtils {
 
     /** Byte bit-mask. */
     private static final int MASK = 0xf;
+
+    /** Default addres resolver. */
+    public static final BiFunction<String, Integer, InetSocketAddress> DFLT_ADDR_RESOLVER = InetSocketAddress::new;
 
     /** Long date format pattern for log messages. */
     public static final DateTimeFormatter LONG_DATE_FMT =
@@ -9712,14 +9719,33 @@ public abstract class IgniteUtils {
      */
     public static Collection<InetSocketAddress> toSocketAddresses(
         Collection<String> addrs,
-        Collection<String> hostNames, int port
+        Collection<String> hostNames,
+        int port
+    ) {
+        return toSocketAddresses(addrs, hostNames, port, null);
+    }
+
+    /**
+     * For testing purposes. Returns the list of resolved socket addresses.
+     *
+     * @param addrs Addresses.
+     * @param hostNames Host names.
+     * @param port Port.
+     * @param resolver The address resolver.
+     * @return Socket addresses for given addresses and host names.
+     */
+    public static Collection<InetSocketAddress> toSocketAddresses(
+        Collection<String> addrs,
+        Collection<String> hostNames,
+        int port,
+        @Nullable BiFunction<String, Integer, InetSocketAddress> resolver
     ) {
         Set<InetSocketAddress> res = new HashSet<>(addrs.size());
 
         boolean hasAddr = false;
 
         for (String addr : addrs) {
-            InetSocketAddress inetSockAddr = createResolved(addr, port);
+            InetSocketAddress inetSockAddr = createResolved(addr, port, resolver);
             res.add(inetSockAddr);
 
             if (!inetSockAddr.isUnresolved() && !inetSockAddr.getAddress().isLoopbackAddress())
@@ -9729,7 +9755,7 @@ public abstract class IgniteUtils {
         // Try to resolve addresses from host names if no external addresses found.
         if (!hasAddr) {
             for (String host : hostNames) {
-                InetSocketAddress inetSockAddr = createResolved(host, port);
+                InetSocketAddress inetSockAddr = createResolved(host, port, resolver);
 
                 if (!inetSockAddr.isUnresolved())
                     res.add(inetSockAddr);
@@ -9745,9 +9771,17 @@ public abstract class IgniteUtils {
      *
      * @param addr Host address.
      * @param port Port value.
+     * @param resolver The address resolver. If {@code null}, {@link #DFLT_ADDR_RESOLVER} is used.
      * @return Resolved address.
      */
-    private static InetSocketAddress createResolved(String addr, int port) {
+    private static InetSocketAddress createResolved(
+        String addr,
+        int port,
+        @Nullable BiFunction<String, Integer, InetSocketAddress> resolver
+    ) {
+        if (resolver == null)
+            resolver = DFLT_ADDR_RESOLVER;
+
         log.log(Level.FINE, () -> S.toString(
             "Resolving address",
             "addr", addr, false,
@@ -9758,7 +9792,7 @@ public abstract class IgniteUtils {
         long startNanos = System.nanoTime();
 
         try {
-            return new InetSocketAddress(addr, port);
+            return resolver.apply(addr, port);
         }
         finally {
             long endNanos = System.nanoTime();

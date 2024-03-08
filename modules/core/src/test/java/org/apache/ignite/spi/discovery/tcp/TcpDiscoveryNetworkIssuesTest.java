@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -57,6 +59,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -272,7 +275,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         testSpi(node0).hsRqLsnr.set((socket, handshakeRequest) -> {
             // First, node0 tries to connect and send the handshake request to another address of faulty node1.
             if (testSpi(node2).locNodeAddrs.contains(new InetSocketAddress(socket.getInetAddress(), socket.getPort()))) {
-                testSpi(node2).simulatedPrevNodeAddr.set(F.viewReadOnly(testSpi(node2).locNode.socketAddresses(),
+                testSpi(node2).simulatedNodeAddrs.set(F.viewReadOnly(testSpi(node2).locNode.socketAddresses(),
                     a -> a, a -> a.getAddress().isLoopbackAddress()));
 
                 testSpi(node0).hsRqLsnr.set(null);
@@ -288,7 +291,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         // Listener of handshake response from node2 to node1.
         testSpi(node2).hsRespLsnr.set(((socket1, response) -> {
-            testSpi(node2).simulatedPrevNodeAddr.set(null);
+            testSpi(node2).simulatedNodeAddrs.set(null);
 
             testSpi(node2).hsRespLsnr.set(null);
 
@@ -313,6 +316,39 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         // Node 1 must not be kicked.
         for (Ignite ig : G.allGrids())
             assertEquals(3, ig.cluster().nodes().size());
+    }
+
+    /** */
+    @Test
+    public void testNewTest() throws Exception {
+        this.localhost = "0.0.0.0";
+
+        AtomicBoolean simulateDnsFailure = new AtomicBoolean();
+
+        BiFunction<String, Integer, InetSocketAddress> addrsResolver = new BiFunction<String, Integer, InetSocketAddress>() {
+            @Override public InetSocketAddress apply(String addrs, Integer port) {
+                if (simulateDnsFailure.get()) {
+
+                }
+
+                return IgniteUtils.DFLT_ADDR_RESOLVER.apply(addrs, port);
+            }
+        };
+
+        U.TEST = true;
+
+        specialSpi = new TestDiscoverySpi(addrsResolver);
+        Ignite node0 = startGrid(0);
+        specialSpi = new TestDiscoverySpi(addrsResolver);
+        Ignite node1 = startGrid(1);
+        specialSpi = new TestDiscoverySpi(addrsResolver);
+        Ignite node2 = startGrid(2);
+
+        awaitPartitionMapExchange();
+
+        simulateDnsFailure.set(true);
+
+
     }
 
     /**
@@ -453,7 +489,22 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         private final AtomicReference<BiConsumer<Socket, TcpDiscoveryHandshakeResponse>> hsRespLsnr = new AtomicReference<>();
 
         /** Additional simulated addresses of a previous node. */
-        private final AtomicReference<Collection<InetSocketAddress>> simulatedPrevNodeAddr = new AtomicReference<>();
+        private final AtomicReference<Collection<InetSocketAddress>> simulatedNodeAddrs;
+
+        /** */
+        @Nullable private final BiFunction<String, Integer, InetSocketAddress> addrsResolver;
+
+        /** Ctor */
+        private TestDiscoverySpi(@Nullable BiFunction<String, Integer, InetSocketAddress> resolver) {
+            addrsResolver = resolver;
+
+            simulatedNodeAddrs = resolver == null ? new AtomicReference<>() : null;
+        }
+
+        /** Ctor */
+        private TestDiscoverySpi() {
+            this(null);
+        }
 
         /** {@inheritDoc} */
         @Override protected void initializeImpl() {
@@ -526,10 +577,12 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
          * @see TcpDiscoverySpi#setLocalAddress(String)
          */
         @Override LinkedHashSet<InetSocketAddress> getEffectiveNodeAddresses(TcpDiscoveryNode node) {
-            Collection<InetSocketAddress> testAddrs = simulatedPrevNodeAddr.getAndSet(null);
+            Collection<InetSocketAddress> testAddrs = simulatedNodeAddrs == null
+                ? null
+                : simulatedNodeAddrs.getAndSet(null);
 
-            if (testAddrs != null)
-                node = new TestTcpDiscoveryNode(node, testAddrs);
+            if (testAddrs != null || addrsResolver != null)
+                node = new TestTcpDiscoveryNode(node, testAddrs, addrsResolver);
 
             return super.getEffectiveNodeAddresses(node);
         }
@@ -542,27 +595,57 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
      */
     private static final class TestTcpDiscoveryNode extends TcpDiscoveryNode {
         /** */
-        private final Collection<InetSocketAddress> testAddrs;
+        private final @Nullable Collection<InetSocketAddress> testAddrs;
+
+        /** */
+        private final @Nullable BiFunction<String, Integer, InetSocketAddress> addrsResolver;
 
         /**
-         * Creates test tco discovery spi.
+         * Creates test TPC discovery spi.
          *
          * @param node Original node.
          * @param simulatedAddrs Simulated addresses of {@code node}
          */
-        public TestTcpDiscoveryNode(TcpDiscoveryNode node, Collection<InetSocketAddress> simulatedAddrs) {
+        public TestTcpDiscoveryNode(
+            TcpDiscoveryNode node,
+            @Nullable Collection<InetSocketAddress> simulatedAddrs,
+            @Nullable BiFunction<String, Integer, InetSocketAddress> addrsResolver
+        ) {
             super(node);
+
+            assert simulatedAddrs != null ^ addrsResolver != null;
 
             setAttributes(node.attributes());
 
+            this.addrsResolver = addrsResolver;
+
+            if (simulatedAddrs == null) {
+                testAddrs = null;
+
+                return;
+            }
+
             // We put test addresses first to make sure they are processed/requested before the real addresses.
-            testAddrs = new ArrayList<>(simulatedAddrs);
+            Collection<InetSocketAddress> testAddrs = new ArrayList<>(simulatedAddrs);
             testAddrs.addAll(node.socketAddresses());
+
+            this.testAddrs = Collections.unmodifiableCollection(testAddrs);
         }
 
         /** {@inheritDoc} */
         @Override public Collection<InetSocketAddress> socketAddresses() {
-            return Collections.unmodifiableCollection(testAddrs);
+            if (testAddrs == null)
+                return super.socketAddresses();
+
+            return testAddrs;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Collection<InetSocketAddress> initSocketAddrs(int port) {
+            if (addrsResolver != null)
+                return U.toSocketAddresses(addresses(), hostNames(), port, addrsResolver);
+
+            return super.initSocketAddrs(port);
         }
     }
 }
