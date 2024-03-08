@@ -277,7 +277,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
 
         qry.setLocalListener(events -> {
             for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : events) {
-                itemsHolder.put(event.getKey(), event.getValue());
+                itemsHolder.put(evt.getKey(), evt.getValue());
             }
         });
 
@@ -291,7 +291,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
             stmr.autoFlushFrequency(500);
 
             // Stream entries.
-            for (int i = 0; i < itemsToProcess; i++) {
+            for (int i = 0; i < itemsToProc; i++) {
                 stmr.addData(i, i);
 
                 if (i == 1024)
@@ -301,7 +301,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
             stmr.flush();
         }
 
-        assertTrue(waitForCondition(() -> itemsToProcess == itemsHolder.size(), 2000));
+        assertTrue(waitForCondition(() -> itemsToProc == itemsHolder.size(), 2000));
     }
 
     /**
