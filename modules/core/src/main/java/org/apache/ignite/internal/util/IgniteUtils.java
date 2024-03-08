@@ -320,9 +320,6 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
  */
 @SuppressWarnings({"UnusedReturnValue"})
 public abstract class IgniteUtils {
-    /** */
-    public static volatile boolean TEST = false;
-
     /** Logger. */
     private static final Logger log = Logger.getLogger(IgniteUtils.class.getName());
 
@@ -535,9 +532,6 @@ public abstract class IgniteUtils {
     /** Byte bit-mask. */
     private static final int MASK = 0xf;
 
-    /** Default addres resolver. */
-    public static final BiFunction<String, Integer, InetSocketAddress> DFLT_ADDR_RESOLVER = InetSocketAddress::new;
-
     /** Long date format pattern for log messages. */
     public static final DateTimeFormatter LONG_DATE_FMT =
         DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss").withZone(ZoneId.systemDefault());
@@ -604,6 +598,9 @@ public abstract class IgniteUtils {
     /** Exception converters. */
     private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
         exceptionConverters;
+
+    /** */
+    public static volatile BiFunction<String, Integer, InetSocketAddress> ADDR_RESOLVER = InetSocketAddress::new;
 
     /** */
     private static volatile IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddr;
@@ -6649,9 +6646,10 @@ public abstract class IgniteUtils {
             }
 
             // If all are nulls - don't throw an exception.
-            if (notAllNulls)
+            if (notAllNulls) {
                 throw new IllegalArgumentException("Failed to find common class loader for all elements in " +
                     "given collection. Peer deployment cannot be performed for such collection.");
+            }
         }
 
         return peerDeployAware(c);
@@ -6739,9 +6737,10 @@ public abstract class IgniteUtils {
             }
 
             // If all are nulls - don't throw an exception.
-            if (notAllNulls)
+            if (notAllNulls) {
                 throw new IllegalArgumentException("Failed to find common class loader for all elements in " +
                     "given collection. Peer deployment cannot be performed for such collection.");
+            }
         }
 
         return peerDeployAware(new Object[0]);
@@ -9710,7 +9709,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Returns the list of resolved socket addresses.
+     * For testing purposes. Returns the list of resolved socket addresses.
      *
      * @param addrs Addresses.
      * @param hostNames Host names.
@@ -9722,30 +9721,12 @@ public abstract class IgniteUtils {
         Collection<String> hostNames,
         int port
     ) {
-        return toSocketAddresses(addrs, hostNames, port, null);
-    }
-
-    /**
-     * For testing purposes. Returns the list of resolved socket addresses.
-     *
-     * @param addrs Addresses.
-     * @param hostNames Host names.
-     * @param port Port.
-     * @param resolver The address resolver.
-     * @return Socket addresses for given addresses and host names.
-     */
-    public static Collection<InetSocketAddress> toSocketAddresses(
-        Collection<String> addrs,
-        Collection<String> hostNames,
-        int port,
-        @Nullable BiFunction<String, Integer, InetSocketAddress> resolver
-    ) {
         Set<InetSocketAddress> res = new HashSet<>(addrs.size());
 
         boolean hasAddr = false;
 
         for (String addr : addrs) {
-            InetSocketAddress inetSockAddr = createResolved(addr, port, resolver);
+            InetSocketAddress inetSockAddr = createResolved(addr, port);
             res.add(inetSockAddr);
 
             if (!inetSockAddr.isUnresolved() && !inetSockAddr.getAddress().isLoopbackAddress())
@@ -9755,7 +9736,7 @@ public abstract class IgniteUtils {
         // Try to resolve addresses from host names if no external addresses found.
         if (!hasAddr) {
             for (String host : hostNames) {
-                InetSocketAddress inetSockAddr = createResolved(host, port, resolver);
+                InetSocketAddress inetSockAddr = createResolved(host, port);
 
                 if (!inetSockAddr.isUnresolved())
                     res.add(inetSockAddr);
@@ -9771,16 +9752,10 @@ public abstract class IgniteUtils {
      *
      * @param addr Host address.
      * @param port Port value.
-     * @param resolver The address resolver. If {@code null}, {@link #DFLT_ADDR_RESOLVER} is used.
      * @return Resolved address.
      */
-    private static InetSocketAddress createResolved(
-        String addr,
-        int port,
-        @Nullable BiFunction<String, Integer, InetSocketAddress> resolver
-    ) {
-        if (resolver == null)
-            resolver = DFLT_ADDR_RESOLVER;
+    private static InetSocketAddress createResolved(String addr, int port) {
+        assert ADDR_RESOLVER != null : "No address resolver set";
 
         log.log(Level.FINE, () -> S.toString(
             "Resolving address",
@@ -9792,7 +9767,7 @@ public abstract class IgniteUtils {
         long startNanos = System.nanoTime();
 
         try {
-            return resolver.apply(addr, port);
+            return ADDR_RESOLVER.apply(addr, port);
         }
         finally {
             long endNanos = System.nanoTime();
@@ -10356,9 +10331,9 @@ public abstract class IgniteUtils {
      * @return a SingletonList containing the element in the original collection
      */
     public static <T> Collection<T> convertToSingletonList(Collection<T> col) {
-        if (col.size() != 1) {
+        if (col.size() != 1)
             throw new IllegalArgumentException("Unexpected collection size for singleton list, expecting 1 but was: " + col.size());
-        }
+
         return Collections.singletonList(col.iterator().next());
     }
 

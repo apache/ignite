@@ -21,6 +21,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,6 +29,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,6 +39,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
@@ -320,35 +323,79 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testNewTest() throws Exception {
-        this.localhost = "0.0.0.0";
+    public void testDnsFailure() throws Exception {
+        localhost = "0.0.0.0";
+        long timeout = 20_000;
+        boolean fail = true;
 
-        AtomicBoolean simulateDnsFailure = new AtomicBoolean();
+        BiFunction<String, Integer, InetSocketAddress> DFLT_RESOLVER = IgniteUtils.ADDR_RESOLVER;
 
-        BiFunction<String, Integer, InetSocketAddress> addrsResolver = new BiFunction<String, Integer, InetSocketAddress>() {
-            @Override public InetSocketAddress apply(String addrs, Integer port) {
-                if (simulateDnsFailure.get()) {
+        try {
+            specialSpi = new TestDiscoverySpi();
+            Ignite node0 = startGrid(0);
+            specialSpi = new TestDiscoverySpi();
+            UUID node1Id = startGrid(1).cluster().localNode().id();
+            specialSpi = new TestDiscoverySpi();
+            Ignite node2 = startGrid(2);
 
+            node0.cluster().state(ClusterState.ACTIVE);
+
+            awaitPartitionMapExchange();
+
+            IgniteUtils.ADDR_RESOLVER = new BiFunction<String, Integer, InetSocketAddress>() {
+                @Override public InetSocketAddress apply(String addr, Integer port) {
+                    InetSocketAddress dfltResolved = DFLT_RESOLVER.apply(addr, port);
+
+                    if (dfltResolved.getHostName().startsWith("longResolvingName")) {
+                        log.info("Blocking DNS for " + timeout + " ms");
+
+                        try {
+                            Thread.sleep(timeout);
+
+                            if (fail)
+                                throw new UnknownHostException();
+                        }
+                        catch (InterruptedException e) {
+                            throw new IllegalStateException("Failed to block DNS.", e);
+                        }
+                        catch (UnknownHostException e) {
+                            dfltResolved = new InetSocketAddress(dfltResolved.getAddress().getHostAddress(), dfltResolved.getPort());
+                        }
+                    }
+
+                    return dfltResolved;
                 }
+            };
 
-                return IgniteUtils.DFLT_ADDR_RESOLVER.apply(addrs, port);
+            for (int i = 0; i < G.allGrids().size(); ++i)
+                testSpi(grid(i)).testHostName = "longResolvingName" + i;
+
+            stopGrid(1, false);
+
+            waitForCondition(() -> node0.cluster().nodes().size() == 2, getTestTimeout());
+            waitForCondition(() -> node2.cluster().nodes().size() == 2, getTestTimeout());
+            assertNull(node0.cluster().node(node1Id));
+            assertNull(node2.cluster().node(node1Id));
+
+            IgniteUtils.ADDR_RESOLVER = DFLT_RESOLVER;
+
+            for (int i = 0; i < G.allGrids().size(); ++i) {
+                if (i == 1)
+                    continue;
+
+                testSpi(grid(i)).testHostName = null;
             }
-        };
 
-        U.TEST = true;
+            specialSpi = null;
 
-        specialSpi = new TestDiscoverySpi(addrsResolver);
-        Ignite node0 = startGrid(0);
-        specialSpi = new TestDiscoverySpi(addrsResolver);
-        Ignite node1 = startGrid(1);
-        specialSpi = new TestDiscoverySpi(addrsResolver);
-        Ignite node2 = startGrid(2);
+            startGrid(1);
 
-        awaitPartitionMapExchange();
-
-        simulateDnsFailure.set(true);
-
-
+            waitForCondition(() -> node0.cluster().nodes().size() == 3, getTestTimeout());
+            waitForCondition(() -> node2.cluster().nodes().size() == 3, getTestTimeout());
+        }
+        finally {
+            IgniteUtils.ADDR_RESOLVER = DFLT_RESOLVER;
+        }
     }
 
     /**
@@ -482,6 +529,9 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         /** */
         private volatile boolean blocked;
 
+        /** */
+        private String testHostName;
+
         /** Handshake request listener. */
         private final AtomicReference<BiConsumer<Socket, TcpDiscoveryHandshakeRequest>> hsRqLsnr = new AtomicReference<>();
 
@@ -489,21 +539,11 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         private final AtomicReference<BiConsumer<Socket, TcpDiscoveryHandshakeResponse>> hsRespLsnr = new AtomicReference<>();
 
         /** Additional simulated addresses of a previous node. */
-        private final AtomicReference<Collection<InetSocketAddress>> simulatedNodeAddrs;
-
-        /** */
-        @Nullable private final BiFunction<String, Integer, InetSocketAddress> addrsResolver;
-
-        /** Ctor */
-        private TestDiscoverySpi(@Nullable BiFunction<String, Integer, InetSocketAddress> resolver) {
-            addrsResolver = resolver;
-
-            simulatedNodeAddrs = resolver == null ? new AtomicReference<>() : null;
-        }
+        private final AtomicReference<Collection<InetSocketAddress>> simulatedNodeAddrs = new AtomicReference<>();
 
         /** Ctor */
         private TestDiscoverySpi() {
-            this(null);
+            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -577,14 +617,23 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
          * @see TcpDiscoverySpi#setLocalAddress(String)
          */
         @Override LinkedHashSet<InetSocketAddress> getEffectiveNodeAddresses(TcpDiscoveryNode node) {
-            Collection<InetSocketAddress> testAddrs = simulatedNodeAddrs == null
-                ? null
-                : simulatedNodeAddrs.getAndSet(null);
+            return super.getEffectiveNodeAddresses(wrapNode(node));
+        }
 
-            if (testAddrs != null || addrsResolver != null)
-                node = new TestTcpDiscoveryNode(node, testAddrs, addrsResolver);
+        /** */
+        @Override LinkedHashSet<InetSocketAddress> getAllNodeAddresses(TcpDiscoveryNode node) {
+            return super.getAllNodeAddresses(wrapNode(node));
+        }
 
-            return super.getEffectiveNodeAddresses(node);
+        /** */
+        private TcpDiscoveryNode wrapNode(TcpDiscoveryNode node) {
+            Collection<InetSocketAddress> testAddrs = simulatedNodeAddrs.getAndSet(null);
+
+            if (testAddrs != null || testHostName != null)
+                node = new TestTcpDiscoveryNode(node, testAddrs, testHostName);
+
+            return node;
+
         }
     }
 
@@ -598,26 +647,30 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         private final @Nullable Collection<InetSocketAddress> testAddrs;
 
         /** */
-        private final @Nullable BiFunction<String, Integer, InetSocketAddress> addrsResolver;
+        private final @Nullable String testHostName;
+
+        /** */
+        private final TcpDiscoveryNode origNode;
 
         /**
          * Creates test TPC discovery spi.
          *
          * @param node Original node.
-         * @param simulatedAddrs Simulated addresses of {@code node}
+         * @param simulatedAddrs Simulated additional addresses of {@code node}.
+         * @param testHostName Simulated hostname of {@code node}.
          */
         public TestTcpDiscoveryNode(
             TcpDiscoveryNode node,
             @Nullable Collection<InetSocketAddress> simulatedAddrs,
-            @Nullable BiFunction<String, Integer, InetSocketAddress> addrsResolver
+            @Nullable String testHostName
         ) {
             super(node);
 
-            assert simulatedAddrs != null ^ addrsResolver != null;
+            origNode = node;
 
             setAttributes(node.attributes());
 
-            this.addrsResolver = addrsResolver;
+            this.testHostName = testHostName;
 
             if (simulatedAddrs == null) {
                 testAddrs = null;
@@ -633,6 +686,19 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public int discoveryPort() {
+            return origNode.discoveryPort();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<String> hostNames() {
+            if (!F.isEmpty(testHostName))
+                return F.viewReadOnly(addresses(), addr -> testHostName);
+
+            return origNode.hostNames();
+        }
+
+        /** {@inheritDoc} */
         @Override public Collection<InetSocketAddress> socketAddresses() {
             if (testAddrs == null)
                 return super.socketAddresses();
@@ -641,11 +707,10 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<InetSocketAddress> initSocketAddrs(int port) {
-            if (addrsResolver != null)
-                return U.toSocketAddresses(addresses(), hostNames(), port, addrsResolver);
-
-            return super.initSocketAddrs(port);
+        @Override protected Collection<InetSocketAddress> initSocketAddrs() {
+            return testHostName == null
+                ? super.initSocketAddrs()
+                : U.toSocketAddresses(addresses(), hostNames(), discoveryPort());
         }
     }
 }

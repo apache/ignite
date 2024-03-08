@@ -385,15 +385,15 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      * @return Addresses that could be used by discovery.
      */
     public Collection<InetSocketAddress> socketAddresses() {
-        if (this.sockAddrs == null)
-            this.sockAddrs = initSocketAddrs(discPort);
+        if (sockAddrs == null)
+            sockAddrs = initSocketAddrs();
 
         return sockAddrs;
     }
 
     /** */
-    protected Collection<InetSocketAddress> initSocketAddrs(int port) {
-        return U.toSocketAddresses(this, port);
+    protected Collection<InetSocketAddress> initSocketAddrs() {
+        return U.toSocketAddresses(this, discoveryPort());
     }
 
     /**
