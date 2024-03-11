@@ -33,7 +33,6 @@ import org.apache.ignite.internal.transactions.IgniteTxUnexpectedStateCheckedExc
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.TransactionState;
 import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -688,29 +687,6 @@ public class MvccUtils {
         tx.syncMode(FULL_SYNC);
 
         return tx;
-    }
-
-    /**
-     * Initialises MVCC filter and returns MVCC query tracker if needed.
-     * @param cctx Cache context.
-     * @param tx Transaction.
-     * @return MVCC query tracker.
-     * @throws IgniteCheckedException If failed.
-     */
-    @NotNull public static MvccQueryTracker mvccTracker(GridCacheContext cctx,
-        GridNearTxLocal tx) throws IgniteCheckedException {
-        MvccQueryTracker tracker;
-
-        if (tx == null)
-            tracker = new MvccQueryTrackerImpl(cctx);
-        else
-            tracker = new StaticMvccQueryTracker(cctx, null);
-
-        if (tracker.snapshot() == null)
-            // TODO IGNITE-7388
-            tracker.requestSnapshot().get();
-
-        return tracker;
     }
 
     /** */

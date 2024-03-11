@@ -63,9 +63,7 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.StaticMvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -392,7 +390,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qryParams Query parameters.
      * @param select Select.
      * @param filter Cache name and key filter.
-     * @param mvccTracker Query tracker.
      * @param cancel Query cancel.
      * @param inTx Flag whether the query is executed in transaction.
      * @param timeout Timeout.
@@ -404,7 +401,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         QueryParameters qryParams,
         QueryParserResultSelect select,
         final IndexingQueryFilter filter,
-        MvccQueryTracker mvccTracker,
         GridQueryCancel cancel,
         boolean inTx,
         int timeout
@@ -416,7 +412,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else
             qry = qryDesc.sql();
 
-        boolean mvccEnabled = mvccTracker != null;
+        boolean mvccEnabled = false;
 
         try {
             assert select != null;
@@ -425,9 +421,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 checkSecurity(select.cacheIds());
 
             MvccSnapshot mvccSnapshot = null;
-
-            if (mvccEnabled)
-                mvccSnapshot = mvccTracker.snapshot();
 
             final QueryContext qctx = new QueryContext(
                 0,
@@ -489,7 +482,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                         return new H2FieldsIterator(
                             rs,
-                            mvccTracker,
                             conn,
                             qryParams.pageSize(),
                             log,
@@ -500,14 +492,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     }
                     catch (IgniteCheckedException | RuntimeException | Error e) {
                         conn.close();
-
-                        try {
-                            if (mvccTracker != null)
-                                mvccTracker.onDone();
-                        }
-                        catch (Exception e0) {
-                            e.addSuppressed(e0);
-                        }
 
                         throw e;
                     }
@@ -682,7 +666,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 selectParseRes.queryDescriptor(),
                 selectParseRes.queryParameters(),
                 selectParseRes.select(),
-                null,
                 null,
                 null,
                 false,
@@ -1189,7 +1172,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_CURSOR_OPEN, MTC.span()))) {
             GridNearTxLocal tx = null;
-            MvccQueryTracker tracker = null;
             GridCacheContext mvccCctx = null;
 
             boolean inTx = false;
@@ -1202,7 +1184,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 qryParams,
                 select,
                 keepBinary,
-                tracker,
                 cancel,
                 inTx,
                 timeout);
@@ -1241,7 +1222,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qryId Query id.
      * @param schema Schema.
      * @param selectQry Select query.
-     * @param mvccTracker MVCC tracker.
      * @param cancel Cancel.
      * @param timeout Timeout.
      * @return Fields query.
@@ -1250,7 +1230,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         long qryId,
         String schema,
         SqlFieldsQuery selectQry,
-        MvccQueryTracker mvccTracker,
         GridQueryCancel cancel,
         int timeout
     ) {
@@ -1266,7 +1245,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             parseRes.queryParameters(),
             select,
             true,
-            mvccTracker,
             cancel,
             false,
             timeout
@@ -1289,7 +1267,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qryParams Parameters.
      * @param select Select.
      * @param keepBinary Whether binary objects must not be deserialized automatically.
-     * @param mvccTracker MVCC tracker.
      * @param cancel Query cancel state holder.
      * @param inTx Flag whether query is executed within transaction.
      * @param timeout Timeout.
@@ -1301,7 +1278,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         QueryParameters qryParams,
         QueryParserResultSelect select,
         boolean keepBinary,
-        MvccQueryTracker mvccTracker,
         GridQueryCancel cancel,
         boolean inTx,
         int timeout
@@ -1325,7 +1301,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 qryParams,
                 twoStepQry,
                 keepBinary,
-                mvccTracker,
                 cancel,
                 timeout
             );
@@ -1340,7 +1315,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 qryParams,
                 select,
                 filter,
-                mvccTracker,
                 cancel,
                 inTx,
                 timeout
@@ -1557,7 +1531,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 RunningQueryManager.UNDEFINED_QUERY_ID,
                 schema,
                 selectFieldsQry,
-                new StaticMvccQueryTracker(planCctx, mvccSnapshot),
                 cancel,
                 timeout
             );
@@ -1573,7 +1546,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 selectParseRes.queryParameters(),
                 selectParseRes.select(),
                 filter,
-                new StaticMvccQueryTracker(planCctx, mvccSnapshot),
                 cancel,
                 true,
                 timeout
@@ -1602,7 +1574,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qryParams Query parameters.
      * @param twoStepQry Two-step query.
      * @param keepBinary Keep binary flag.
-     * @param mvccTracker Query tracker.
      * @param cancel Cancel handler.
      * @param timeout Timeout.
      * @return Cursor representing distributed query result.
@@ -1614,7 +1585,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final QueryParameters qryParams,
         final GridCacheTwoStepQuery twoStepQry,
         final boolean keepBinary,
-        MvccQueryTracker mvccTracker,
         final GridQueryCancel cancel,
         int timeout
     ) {
@@ -1660,15 +1630,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             qryParams.arguments(),
                             parts,
                             qryParams.lazy(),
-                            mvccTracker,
                             qryParams.dataPageScanEnabled(),
                             qryParams.pageSize()
                         );
                     }
                     catch (Throwable e) {
-                        if (mvccTracker != null)
-                            mvccTracker.onDone();
-
                         throw e;
                     }
                 }
@@ -2441,7 +2407,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 qryId,
                 qryDesc.schemaName(),
                 selectFieldsQry,
-                null,
                 selectCancel,
                 qryParams.timeout()
             );
@@ -2459,7 +2424,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 selectParseRes.queryParameters(),
                 selectParseRes.select(),
                 filters,
-                null,
                 selectCancel,
                 false,
                 qryParams.timeout()
