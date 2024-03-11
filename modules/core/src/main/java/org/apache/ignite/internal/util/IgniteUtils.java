@@ -9687,67 +9687,7 @@ public abstract class IgniteUtils {
 
             neighbors.add(n);
         }
-
         return map;
-    }
-
-    /**
-     * Returns tha list of resolved inet addresses. First addresses are resolved by host names,
-     * if this attempt fails then the addresses are resolved by ip addresses.
-     *
-     * @param node Grid node.
-     * @return Inet addresses for given addresses and host names.
-     * @throws IgniteCheckedException If non of addresses can be resolved.
-     */
-    public static Collection<InetAddress> toInetAddresses(ClusterNode node) throws IgniteCheckedException {
-        return toInetAddresses(node.addresses(), node.hostNames());
-    }
-
-    /**
-     * Returns tha list of resolved inet addresses. First addresses are resolved by host names,
-     * if this attempt fails then the addresses are resolved by ip addresses.
-     *
-     * @param addrs Addresses.
-     * @param hostNames Host names.
-     * @return Inet addresses for given addresses and host names.
-     * @throws IgniteCheckedException If non of addresses can be resolved.
-     */
-    public static Collection<InetAddress> toInetAddresses(Collection<String> addrs,
-        Collection<String> hostNames) throws IgniteCheckedException {
-        Set<InetAddress> res = new HashSet<>(addrs.size());
-
-        Iterator<String> hostNamesIt = hostNames.iterator();
-
-        for (String addr : addrs) {
-            String hostName = hostNamesIt.hasNext() ? hostNamesIt.next() : null;
-
-            InetAddress inetAddr = null;
-
-            if (!F.isEmpty(hostName)) {
-                try {
-                    inetAddr = InetAddress.getByName(hostName);
-                }
-                catch (UnknownHostException ignored) {
-                }
-            }
-
-            if (inetAddr == null || inetAddr.isLoopbackAddress()) {
-                try {
-                    inetAddr = InetAddress.getByName(addr);
-                }
-                catch (UnknownHostException ignored) {
-                }
-            }
-
-            if (inetAddr != null)
-                res.add(inetAddr);
-        }
-
-        if (res.isEmpty())
-            throw new IgniteCheckedException("Addresses can not be resolved [addr=" + addrs +
-                ", hostNames=" + hostNames + ']');
-
-        return res;
     }
 
     /**

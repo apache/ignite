@@ -545,7 +545,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         private final Collection<InetSocketAddress> testAddrs;
 
         /**
-         * Creates test tco discovery spi.
+         * Creates test TCP discovery spi.
          *
          * @param node Original node.
          * @param simulatedAddrs Simulated addresses of {@code node}

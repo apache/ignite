@@ -455,7 +455,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     /**
      * Node filter.
      */
-    protected static class NodeFilter implements IgnitePredicate<ClusterNode>, Serializable {
+    protected static class NodeFilter implements IgnitePredicate<ClusterNode> {
         /** */
         private static final long serialVersionUID = 0L;
 
