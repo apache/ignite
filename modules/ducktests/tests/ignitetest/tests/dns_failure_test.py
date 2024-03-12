@@ -19,6 +19,7 @@ Module contains DNS service failure test.
 import os
 import socket
 
+from ducktape.mark import defaults
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
@@ -39,7 +40,8 @@ class DnsFailureTest(IgniteTest):
 
     @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH))
-    def dns_failure_test(self, ignite_version):
+    @defaults(fail=[True, False])
+    def dns_failure_test(self, ignite_version, fail):
         """
         DNS failure test.
         """
@@ -73,7 +75,7 @@ class DnsFailureTest(IgniteTest):
         control_utility = ControlUtility(ignites)
         control_utility.activate()
 
-        self.__block_dns(ignites, 20000, True)
+        self.__block_dns(ignites, 20000, fail)
 
         ignites.stop_node(ignites.nodes[1])
 
