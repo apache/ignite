@@ -81,9 +81,6 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     public static final long TTL = 5 * 1000;
 
     /** */
-    private static final String NODE_FILTER_CACHE = "nodeFilterCache";
-
-    /** */
     public static final ExpiryPolicy EXPIRY_POLICY = new ExpiryPolicy() {
         @Override public Duration getExpiryForCreation() {
             return new Duration(MILLISECONDS, TTL);
@@ -120,7 +117,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
         if (!igniteInstanceName.endsWith("0")) {
             assert F.isEmpty(cfg.getUserAttributes());
 
-            cfg.setUserAttributes(Stream.of(NODE_FILTER_CACHE).collect(Collectors.toMap(Function.identity(), v -> "")));
+            cfg.setUserAttributes(Stream.of(DEFAULT_CACHE_NAME).collect(Collectors.toMap(Function.identity(), v -> "")));
         }
 
         return cfg;
@@ -136,33 +133,31 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
         startGridAndFillCaches();
 
         cli.createCache(new CacheConfiguration<>()
-            .setName(NODE_FILTER_CACHE)
+            .setName(DEFAULT_CACHE_NAME)
             .setBackups(backups)
             .setAtomicityMode(mode)
-            .setNodeFilter(new AttributeNodeFilter(NODE_FILTER_CACHE, ""))
+            .setNodeFilter(new AttributeNodeFilter(DEFAULT_CACHE_NAME, ""))
             .setAffinity(new RendezvousAffinityFunction().setPartitions(20)));
 
-        try (IgniteDataStreamer<Key, Value> ds = cli.dataStreamer(NODE_FILTER_CACHE)) {
-            IgniteCache<Key, Value> cache = cli.cache(NODE_FILTER_CACHE);
+        try (IgniteDataStreamer<Integer, Integer> ds = cli.dataStreamer(DEFAULT_CACHE_NAME)) {
+            IgniteCache<Integer, Integer> cache = cli.cache(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < KEYS_CNT; ++i) {
                 if (useDataStreamer)
-                    ds.addData(new Key(i), new Value(String.valueOf(i)));
+                    ds.addData(i, i);
                 else
-                    cache.put(new Key(i), new Value(String.valueOf(i)));
+                    cache.put(i, i);
             }
         }
 
-        createDump(cli, DMP_NAME, Collections.singleton(NODE_FILTER_CACHE));
-
-        extraCaches.add(NODE_FILTER_CACHE);
+        createDump(cli, DMP_NAME, Collections.singleton(DEFAULT_CACHE_NAME));
 
         checkDump(cli,
             DMP_NAME,
-            new String[] {NODE_FILTER_CACHE},
-            Collections.singleton(NODE_FILTER_CACHE),
-            0,
+            new String[] {DEFAULT_CACHE_NAME},
+            Collections.singleton(DEFAULT_CACHE_NAME),
             (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
+            0,
             0,
             false,
             false

@@ -1159,10 +1159,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         // Prepare collection of pairs group and appropriate cache partition to be snapshot.
         // Cache group context may be 'null' on some nodes e.g. a node filter is set.
         for (Integer grpId : grpIds) {
-            if (cctx.cache().cacheGroup(grpId) == null)
-                continue;
-
             CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpId);
+
+            assert grpCtx != null;
 
             AffinityTopologyVersion topVer = grpCtx.affinity().lastVersion();
 

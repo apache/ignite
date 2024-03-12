@@ -68,6 +68,7 @@ import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.util.AttributeNodeFilter;
 import org.jetbrains.annotations.Nullable;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -105,9 +106,6 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     /** */
     public static final IntFunction<User> USER_FACTORY = i ->
         new User(i, ACL.values()[Math.abs(i) % ACL.values().length], new Role("Role" + i, SUPER));
-
-    /** */
-    protected final Collection<String> extraCaches = new HashSet<>();
 
     /** */
     protected boolean configureDfltCaches = true;
@@ -198,6 +196,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                     .setBackups(backups)
                     .setAtomicityMode(mode)
                     .setWriteSynchronizationMode(FULL_SYNC)
+                    .setNodeFilter(new AttributeNodeFilter("nodeFilterCache", ""))
                     .setAffinity(new RendezvousAffinityFunction().setPartitions(20)),
                 new CacheConfiguration<>()
                     .setGroupName(GRP)
@@ -380,7 +379,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
                     if (cacheName.startsWith("cache-"))
                         assertEquals(GRP, data.configuration().getGroupName());
-                    else if (!cacheName.equals(DEFAULT_CACHE_NAME) && !extraCaches.contains(cacheName))
+                    else if (!cacheName.equals(DEFAULT_CACHE_NAME))
                         throw new IgniteException("Unknown cache");
                 });
 
