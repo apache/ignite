@@ -78,6 +78,7 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.internal.IgniteKernal.NL;
 import static org.apache.ignite.internal.IgniteKernal.SITE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
@@ -321,6 +322,8 @@ public class CdcMain implements Runnable {
             throw new IllegalArgumentException(ERR_MSG);
         }
 
+        System.setProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, "true");
+
         try (CdcFileLockHolder lock = lockPds()) {
             String consIdDir = cdcDir.getName(cdcDir.getNameCount() - 1).toString();
 
@@ -415,6 +418,8 @@ public class CdcMain implements Runnable {
         kctx.resource().setSpringContext(ctx);
 
         startAllComponents(kctx);
+
+        kctx.metric().onKernalStart(true);
 
         mreg = kctx.metric().registry("cdc");
 
