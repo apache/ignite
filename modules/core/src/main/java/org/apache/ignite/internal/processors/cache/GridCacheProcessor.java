@@ -1684,17 +1684,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             .map(cacheInfo -> new StartCacheInfo(cacheInfo.get1(), cacheInfo.get2(), exchTopVer, false))
             .collect(toList());
 
-        locJoinCtx.initCaches().forEach(cacheDesc -> {
-            try {
-                QuerySchema schema = cacheDesc.schema() != null ? cacheDesc.schema() : new QuerySchema();
-
-                ctx.query().onCacheStart(new GridCacheContextInfo<>(cacheDesc), schema, cacheDesc.sql());
-            }
-            catch (Exception e) {
-                log.error("Can't initialize query structures for not started cache [cacheName=" +
-                    cacheDesc.cacheName() + "]", e);
-            }
-        });
+        locJoinCtx.initCaches()
+            .forEach(cacheDesc -> {
+                try {
+                    ctx.query().initQueryStructuresForNotStartedCache(cacheDesc);
+                }
+                catch (Exception e) {
+                    log.error("Can't initialize query structures for not started cache [cacheName=" +
+                        cacheDesc.cacheName() + "]", e);
+                }
+            });
 
         prepareStartCaches(startCacheInfos);
 

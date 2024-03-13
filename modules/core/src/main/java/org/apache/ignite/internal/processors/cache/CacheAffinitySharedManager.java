@@ -949,35 +949,50 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             DynamicCacheChangeRequest req = action.request();
 
-            NearCacheConfiguration<?, ?> nearCfg = null;
+            boolean startCache;
 
-            if (req.locallyConfigured() || (cctx.localNodeId().equals(req.initiatingNodeId()) && !exchActions.activate()))
+            NearCacheConfiguration nearCfg = null;
+
+            if (req.locallyConfigured() || (cctx.localNodeId().equals(req.initiatingNodeId()) && !exchActions.activate())) {
+                startCache = true;
+
                 nearCfg = req.nearCacheConfiguration();
+            }
             else {
                 // Cache should not be started
                 assert cctx.cacheContext(cacheDesc.cacheId()) == null
                     : "Starting cache has not null context: " + cacheDesc.cacheName();
 
-                IgniteCacheProxyImpl<?, ?> cacheProxy = cctx.cache().jcacheProxy(req.cacheName(), false);
+                IgniteCacheProxyImpl cacheProxy = cctx.cache().jcacheProxy(req.cacheName(), false);
 
                 // If it has proxy then try to start it
                 if (cacheProxy != null) {
                     // Cache should be in restarting mode
                     assert cacheProxy.isRestarting()
                         : "Cache has non restarting proxy " + cacheProxy;
+
+                    startCache = true;
+                }
+                else {
+                    startCache = CU.affinityNode(cctx.localNode(),
+                        cacheDesc.groupDescriptor().config().getNodeFilter());
                 }
             }
 
-            startCacheInfos.put(
-                new StartCacheInfo(
-                    req.startCacheConfiguration(),
-                    cacheDesc,
-                    nearCfg,
-                    evts.topologyVersion(),
-                    req.disabledAfterStart()
-                ),
-                req
-            );
+            if (startCache) {
+                startCacheInfos.put(
+                    new StartCacheInfo(
+                        req.startCacheConfiguration(),
+                        cacheDesc,
+                        nearCfg,
+                        evts.topologyVersion(),
+                        req.disabledAfterStart()
+                    ),
+                    req
+                );
+            }
+            else
+                cctx.kernalContext().query().initQueryStructuresForNotStartedCache(cacheDesc);
         }
 
         Map<StartCacheInfo, IgniteCheckedException> failedCaches = cctx.cache().prepareStartCachesIfPossible(startCacheInfos.keySet());

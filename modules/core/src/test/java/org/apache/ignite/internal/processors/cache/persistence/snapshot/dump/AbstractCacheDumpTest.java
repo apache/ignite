@@ -68,7 +68,6 @@ import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.util.AttributeNodeFilter;
 import org.jetbrains.annotations.Nullable;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -196,7 +195,6 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                     .setBackups(backups)
                     .setAtomicityMode(mode)
                     .setWriteSynchronizationMode(FULL_SYNC)
-                    .setNodeFilter(new AttributeNodeFilter("nodeFilterCache", ""))
                     .setAffinity(new RendezvousAffinityFunction().setPartitions(20)),
                 new CacheConfiguration<>()
                     .setGroupName(GRP)

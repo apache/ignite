@@ -1161,11 +1161,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         for (Integer grpId : grpIds) {
             CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpId);
 
-            assert grpCtx != null;
-
-            AffinityTopologyVersion topVer = grpCtx.affinity().lastVersion();
-
             if (req.onlyPrimary()) {
+                AffinityTopologyVersion topVer = grpCtx.affinity().lastVersion();
+
                 Set<Integer> include = new HashSet<>(grpCtx.affinity().primaryPartitions(cctx.localNodeId(), topVer));
 
                 include.remove(INDEX_PARTITION);
