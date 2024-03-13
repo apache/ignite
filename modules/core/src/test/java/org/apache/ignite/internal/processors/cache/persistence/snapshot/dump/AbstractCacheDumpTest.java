@@ -107,6 +107,9 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         new User(i, ACL.values()[Math.abs(i) % ACL.values().length], new Role("Role" + i, SUPER));
 
     /** */
+    protected boolean configureDfltCaches = true;
+
+    /** */
     @Parameterized.Parameter
     public int nodes;
 
@@ -184,9 +187,10 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setSnapshotThreadPoolSize(snpPoolSz)
             .setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence)))
-            .setCacheConfiguration(
-                new CacheConfiguration<>()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence)));
+
+        if (configureDfltCaches) {
+            cfg.setCacheConfiguration(new CacheConfiguration<>()
                     .setName(DEFAULT_CACHE_NAME)
                     .setBackups(backups)
                     .setAtomicityMode(mode)
@@ -207,6 +211,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                     .setWriteSynchronizationMode(FULL_SYNC)
                     .setAffinity(new RendezvousAffinityFunction().setPartitions(20))
             );
+        }
 
         if (encrypted)
             cfg.setEncryptionSpi(encryptionSpi());
@@ -222,7 +227,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
         ign.cluster().state(ClusterState.ACTIVE);
 
-        putData(cli.cache(DEFAULT_CACHE_NAME), cli.cache(CACHE_0), cli.cache(CACHE_1));
+        if (configureDfltCaches)
+            putData(cli.cache(DEFAULT_CACHE_NAME), cli.cache(CACHE_0), cli.cache(CACHE_1));
 
         return ign;
     }
@@ -526,16 +532,18 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static void checkDumpWithCommand(IgniteEx ign, String name, int backups) throws Exception {
-        CacheGroupContext gctx = ign.context().cache().cacheGroup(CU.cacheId(DEFAULT_CACHE_NAME));
+    public void checkDumpWithCommand(IgniteEx ign, String name, int backups) throws Exception {
+        if (configureDfltCaches) {
+            CacheGroupContext gctx = ign.context().cache().cacheGroup(CU.cacheId(DEFAULT_CACHE_NAME));
 
-        for (GridCacheContext<?, ?> cctx : gctx.caches())
-            assertNull(cctx.dumpListener());
+            for (GridCacheContext<?, ?> cctx : gctx.caches())
+                assertNull(cctx.dumpListener());
 
-        gctx = ign.context().cache().cacheGroup(CU.cacheId(GRP));
+            gctx = ign.context().cache().cacheGroup(CU.cacheId(GRP));
 
-        for (GridCacheContext<?, ?> cctx : gctx.caches())
-            assertNull(cctx.dumpListener());
+            for (GridCacheContext<?, ?> cctx : gctx.caches())
+                assertNull(cctx.dumpListener());
+        }
 
         assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, name));
     }
