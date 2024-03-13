@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -455,7 +456,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     /**
      * Node filter.
      */
-    protected static class NodeFilter implements IgnitePredicate<ClusterNode> {
+    protected static class NodeFilter implements IgnitePredicate<ClusterNode>, Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 

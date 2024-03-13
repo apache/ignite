@@ -185,6 +185,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
@@ -1159,7 +1160,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         // Prepare collection of pairs group and appropriate cache partition to be snapshot.
         // Cache group context may be 'null' on some nodes e.g. a node filter is set.
         for (Integer grpId : grpIds) {
-            CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpId);
+            CacheGroupContext grpCtx = checkNoPartitions(grpId, parts);
+
+            if (grpCtx == null)
+                continue;
 
             if (req.onlyPrimary()) {
                 AffinityTopologyVersion topVer = grpCtx.affinity().lastVersion();
@@ -1250,6 +1254,29 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 throw F.wrap(e);
             }
         }, snapshotExecutorService());
+    }
+
+    /**
+     * Check if cache is registered on the current node. It might be excluded by
+     * {@link CacheConfiguration#setNodeFilter(IgnitePredicate)}. If excluded, an empty part set is put to {@code parts}.
+     *
+     * @return {@link CacheGroupContext} if registered on current node. {@code Null} otherwise.
+     */
+    private @Nullable CacheGroupContext checkNoPartitions(int grpId, Map<Integer, Set<Integer>> parts) {
+        CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpId);
+
+        if (grpCtx == null && grpId != METASTORAGE_CACHE_ID) {
+            assert cctx.cache().cacheGroupDescriptor(grpId) != null
+                : "Cache group description is excepted for group " + grpId;
+
+            assert cctx.cache().cacheGroupDescriptor(grpId).config().getNodeFilter() != null
+                && !cctx.cache().cacheGroupDescriptor(grpId).config().getNodeFilter().apply(cctx.localNode())
+                : "A cache node filter must exist and exclude current node if there is no required cache group.";
+
+            parts.put(grpId, Collections.emptySet());
+        }
+
+        return grpCtx;
     }
 
     /**
