@@ -9712,7 +9712,8 @@ public abstract class IgniteUtils {
      */
     public static Collection<InetSocketAddress> toSocketAddresses(
         Collection<String> addrs,
-        Collection<String> hostNames, int port
+        Collection<String> hostNames,
+        int port
     ) {
         Set<InetSocketAddress> res = new HashSet<>(addrs.size());
 
