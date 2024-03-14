@@ -477,7 +477,9 @@ public class QueryParser {
                 // node stripes in parallel and then merged through reduce process.
                 boolean splitNeeded = !loc || locSplit;
 
-                assert !GridSqlQueryParser.isForUpdateQuery(prepared);
+                if (GridSqlQueryParser.isForUpdateQuery(prepared))
+                    throw new IgniteSQLException("SELECT FOR UPDATE queries are not supported.",
+                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
                 GridCacheTwoStepQuery twoStepQry = null;
 
