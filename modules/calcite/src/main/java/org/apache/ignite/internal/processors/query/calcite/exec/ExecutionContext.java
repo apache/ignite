@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
@@ -57,6 +58,9 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.c
  * Runtime context allowing access to the tables in a database.
  */
 public class ExecutionContext<Row> extends AbstractQueryContext implements DataContext {
+    /** */
+    public static final Supplier<AutoCloseable> NO_OP_SECURITY_CONTEXT_PROVIDER = () -> null;
+
     /** Placeholder for values, which expressions is not specified. */
     private static final Object UNSPECIFIED_VALUE = new Object();
 
@@ -103,6 +107,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     private final IoTracker ioTracker;
 
     /** */
+    private final Supplier<AutoCloseable> secCtxProvider;
+
+    /** */
     private final long timeout;
 
     /** */
@@ -129,6 +136,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         RowHandler<Row> handler,
         MemoryTracker qryMemoryTracker,
         IoTracker ioTracker,
+        Supplier<AutoCloseable> secCtxProvider,
         long timeout,
         Map<String, Object> params
     ) {
@@ -145,6 +153,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         this.ioTracker = ioTracker;
         this.params = params;
         this.timeout = timeout;
+        this.secCtxProvider = secCtxProvider;
 
         startTs = U.currentTimeMillis();
 
@@ -309,7 +318,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
             return;
 
         executor.execute(qryId, fragmentId(), () -> {
-            try {
+            try (AutoCloseable ignore = secCtxProvider.get()) {
                 if (!isCancelled())
                     task.run();
             }

@@ -166,6 +166,11 @@ public class SystemViewTableImpl extends AbstractTable implements IgniteTable {
         return desc.name();
     }
 
+    /** {@inheritDoc} */
+    @Override public void authorize(Operation op) {
+        // No-op.
+    }
+
     /** */
     private static class StatisticsImpl implements Statistic {
         /** {@inheritDoc} */

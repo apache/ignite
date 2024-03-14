@@ -24,10 +24,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.Frameworks;
@@ -88,12 +90,20 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadataImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentPlan;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteRelShuttle;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PrepareServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.CreateTableCommand;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
@@ -101,6 +111,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.ConvertingClosableIterator;
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -568,6 +579,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         List<Fragment> fragments = execPlan.fragments();
 
+        if (ctx.security().enabled()) {
+            for (Fragment fragment : fragments)
+                checkPermissions(fragment.root());
+        }
+
         // Local execution
         Fragment fragment = F.first(fragments);
 
@@ -608,6 +624,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             handler,
             qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
             createIoTracker(locNodeId, qry.localQueryId()),
+            securityContextProvider(),
             timeout,
             qryParams);
 
@@ -742,6 +759,40 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
+    private void checkPermissions(IgniteRel root) {
+        IgniteRelShuttle shuttle = new IgniteRelShuttle() {
+            @Override public IgniteRel visit(IgniteTableModify rel) {
+                return authorize(rel, rel.getOperation() == TableModify.Operation.DELETE ?
+                    IgniteTable.Operation.REMOVE : IgniteTable.Operation.PUT);
+            }
+
+            @Override public IgniteRel visit(IgniteTableScan rel) {
+                return authorize(rel, IgniteTable.Operation.READ);
+            }
+
+            @Override public IgniteRel visit(IgniteIndexScan rel) {
+                return authorize(rel, IgniteTable.Operation.READ);
+            }
+
+            @Override public IgniteRel visit(IgniteIndexCount rel) {
+                return authorize(rel, IgniteTable.Operation.READ);
+            }
+
+            @Override public IgniteRel visit(IgniteIndexBound rel) {
+                return authorize(rel, IgniteTable.Operation.READ);
+            }
+
+            private IgniteRel authorize(IgniteRel rel, IgniteTable.Operation op) {
+                rel.getTable().unwrap(IgniteTable.class).authorize(op);
+
+                return rel;
+            }
+        };
+
+        shuttle.visit(root);
+    }
+
+    /** */
     private FieldsQueryCursor<List<?>> executeExplain(RootQuery<Row> qry, ExplainPlan plan) {
         QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(singletonList(singletonList(plan.plan())));
         cur.fieldsMeta(plan.fieldsMeta().queryFieldsMetadata(Commons.typeFactory()));
@@ -815,6 +866,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 handler,
                 qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
                 createIoTracker(nodeId, msg.originatingQryId()),
+                securityContextProvider(),
                 msg.timeout(),
                 Commons.parametersMap(msg.parameters())
             );
@@ -888,5 +940,15 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         return perfStatProc.enabled() ?
             new PerformanceStatisticsIoTracker(perfStatProc, originatingNodeId, originatingQryId) :
             NoOpIoTracker.INSTANCE;
+    }
+
+    /** */
+    private Supplier<AutoCloseable> securityContextProvider() {
+        SecurityContext secCtx = ctx.security().securityContext();
+
+        if (secCtx == null)
+            return ExecutionContext.NO_OP_SECURITY_CONTEXT_PROVIDER;
+
+        return () -> ctx.security().withContext(secCtx);
     }
 }

@@ -131,6 +131,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             ArrayRowHandler.INSTANCE,
             NoOpMemoryTracker.INSTANCE,
             NoOpIoTracker.INSTANCE,
+            ExecutionContext.NO_OP_SECURITY_CONTEXT_PROVIDER,
             0,
             null
         ) {
