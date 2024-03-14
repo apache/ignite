@@ -46,6 +46,7 @@ import org.apache.ignite.internal.binary.GridBinaryMarshallerCtxDisabledSelfTest
 import org.apache.ignite.internal.binary.GridBinaryWildcardsSelfTest;
 import org.apache.ignite.internal.binary.GridDefaultBinaryMappersBinaryMetaDataSelfTest;
 import org.apache.ignite.internal.binary.GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest;
+import org.apache.ignite.internal.binary.RawBytesObjectReaderTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryFieldsHeapNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryFieldsOffheapNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryFooterOffsetsHeapNonCompactSelfTest;
@@ -179,6 +180,8 @@ import org.junit.runners.Suite;
 
     BinaryMetadataMoveLegacyFolderTest.class,
     BinaryContextPredefinedTypesTest.class,
+
+    RawBytesObjectReaderTest.class,
 })
 public class IgniteBinaryObjectsTestSuite {
 }
