@@ -360,7 +360,6 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
             null,
             NoOpMemoryTracker.INSTANCE,
             NoOpIoTracker.INSTANCE,
-            ExecutionContext.NO_OP_SECURITY_CONTEXT_PROVIDER,
             0,
             ImmutableMap.of());
     }

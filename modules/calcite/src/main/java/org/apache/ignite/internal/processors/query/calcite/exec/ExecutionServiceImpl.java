@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
@@ -111,7 +110,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.ConvertingClosableIterator;
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
-import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -624,7 +622,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             handler,
             qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
             createIoTracker(locNodeId, qry.localQueryId()),
-            securityContextProvider(),
             timeout,
             qryParams);
 
@@ -866,7 +863,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 handler,
                 qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
                 createIoTracker(nodeId, msg.originatingQryId()),
-                securityContextProvider(),
                 msg.timeout(),
                 Commons.parametersMap(msg.parameters())
             );
@@ -940,15 +936,5 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         return perfStatProc.enabled() ?
             new PerformanceStatisticsIoTracker(perfStatProc, originatingNodeId, originatingQryId) :
             NoOpIoTracker.INSTANCE;
-    }
-
-    /** */
-    private Supplier<AutoCloseable> securityContextProvider() {
-        SecurityContext secCtx = ctx.security().securityContext();
-
-        if (secCtx == null)
-            return ExecutionContext.NO_OP_SECURITY_CONTEXT_PROVIDER;
-
-        return () -> ctx.security().withContext(secCtx);
     }
 }

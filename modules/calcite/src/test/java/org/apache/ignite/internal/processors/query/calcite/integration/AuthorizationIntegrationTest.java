@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
@@ -86,12 +87,8 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
         grid0.getOrCreateCache(new CacheConfiguration<>(FORBIDDEN_CACHE).setIndexedTypes(Integer.class, Integer.class));
 
         IgnitePredicate<CacheEvent> lsnrPut = evt -> {
-            try {
-                assertEquals(LOGIN, grid0.context().security().authenticatedSubject(evt.subjectId()).login());
-            }
-            catch (IgniteCheckedException e) {
-                throw new AssertionError("Unexpected exception", e);
-            }
+            // Ensure event is triggered with the correct security context.
+            ensureSubjId(grid0, evt.subjectId());
 
             putCnt.incrementAndGet();
 
@@ -99,12 +96,8 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
         };
 
         IgnitePredicate<CacheEvent> lsnrRemove = evt -> {
-            try {
-                assertEquals(LOGIN, grid0.context().security().authenticatedSubject(evt.subjectId()).login());
-            }
-            catch (IgniteCheckedException e) {
-                throw new AssertionError("Unexpected exception", e);
-            }
+            // Ensure event is triggered with the correct security context.
+            ensureSubjId(grid0, evt.subjectId());
 
             removeCnt.incrementAndGet();
 
@@ -187,6 +180,16 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
         assertThrows(sqlExecutor, selectSql(FORBIDDEN_CACHE), errCls, errMsg);
         assertThrows(sqlExecutor, deleteSql(FORBIDDEN_CACHE), errCls, errMsg);
         assertThrows(sqlExecutor, "CREATE TABLE test(id INT, val VARCHAR)", errCls, errMsg);
+    }
+
+    /** Ensure security context subject relates to client.  */
+    private void ensureSubjId(IgniteEx ignite, UUID subjId) {
+        try {
+            assertEquals(LOGIN, ignite.context().security().authenticatedSubject(subjId).login());
+        }
+        catch (IgniteCheckedException e) {
+            throw new AssertionError("Unexpected exception", e);
+        }
     }
 
     /** */
