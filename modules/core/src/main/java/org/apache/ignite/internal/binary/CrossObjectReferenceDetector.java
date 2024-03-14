@@ -20,8 +20,8 @@ package org.apache.ignite.internal.binary;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 
 import static org.apache.ignite.internal.binary.BinaryUtils.dataStartRelative;
+import static org.apache.ignite.internal.binary.BinaryUtils.footerStartAbsolute;
 import static org.apache.ignite.internal.binary.BinaryUtils.length;
-import static org.apache.ignite.internal.binary.BinaryUtils.rawOffsetAbsolute;
 
 /** */
 class CrossObjectReferenceDetector {
@@ -54,7 +54,7 @@ class CrossObjectReferenceDetector {
         switch (objType) {
             case GridBinaryMarshaller.OBJ: {
                 int objDataStartPos = objStartPos + dataStartRelative(reader, objStartPos);
-                int objDataEndPos = rawOffsetAbsolute(reader, objStartPos);
+                int objDataEndPos = footerStartAbsolute(reader, objStartPos);
                 int objEndPos = objStartPos + length(reader, objStartPos);
 
                 reader.position(objDataStartPos);

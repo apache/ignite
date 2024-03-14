@@ -27,6 +27,12 @@ import java.util.Objects;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -70,15 +76,21 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
     @Parameterized.Parameter(2)
     public boolean isCompactFooterEnabled;
 
+    /** */
+    @Parameterized.Parameter(3)
+    public SerializationMode serializationMode;
+
     /** Test parameters. */
-    @Parameterized.Parameters(name = "innerObjectType={0}, outerObjectType={1}, isCompactFooterEnabled={2}")
+    @Parameterized.Parameters(name = "innerObjectType={0}, outerObjectType={1}, isCompactFooterEnabled={2}, serializationMode={3}")
     public static Iterable<Object[]> parameters() {
         List<Object[]> res = new ArrayList<>();
 
         for (ObjectType innerObjType : ObjectType.values()) {
             for (ObjectType outerObjType : ObjectType.values()) {
-                for (boolean isCompactFooterEnabled : new boolean[] {true, false})
-                    res.add(new Object[] {innerObjType, outerObjType, isCompactFooterEnabled});
+                for (boolean isCompactFooterEnabled : new boolean[] {true, false}) {
+                    for (SerializationMode serializationMode : SerializationMode.values())
+                        res.add(new Object[] {innerObjType, outerObjType, isCompactFooterEnabled, serializationMode});
+                }
             }
         }
 
@@ -87,11 +99,9 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
+        return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME))
             .setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(isCompactFooterEnabled));
-
-        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -119,9 +129,21 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
     /** */
     @Test
     public void testArray() {
-        Object outerObj = createTestObject(outerObjType);
+        Object outerObj = createObject(outerObjType);
 
-        Object[] arr = new Object[] {new Person(createInnerobject(), outerObj), new Person(createInnerobject(), outerObj)};
+        Object[] arr = new Object[] {createReferencesHolder(outerObj), createReferencesHolder(outerObj)};
+
+        checkPutGetRemove(arr, arr);
+    }
+
+    /** */
+    @Test
+    public void testInnerArray() {
+        Object outerObj = createObject(outerObjType);
+
+        Object[] innerArr = new Object[] {new TestObjectAllTypes(), outerObj};
+
+        Object[] arr = new Object[] {createReferencesHolder(outerObj), createReferencesHolder(innerArr)};
 
         checkPutGetRemove(arr, arr);
     }
@@ -129,12 +151,30 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
     /** */
     @Test
     public void testCollection() {
-        Object outerObj = createTestObject(outerObjType) ;
+        Object outerObj = createObject(outerObjType) ;
 
         Collection<Object> col = new ArrayList<>();
 
-        col.add(new Person(createInnerobject(), outerObj));
-        col.add(new Person(createInnerobject(), outerObj));
+        col.add(createReferencesHolder(outerObj));
+        col.add(createReferencesHolder(outerObj));
+
+        checkPutGetRemove(col, col);
+    }
+
+    /** */
+    @Test
+    public void testInnerCollection() {
+        Object outerObj = createObject(outerObjType) ;
+
+        Collection<Object> col = new ArrayList<>();
+
+        Collection<Object> innerCol = new ArrayList<>();
+
+        innerCol.add(new TestObjectAllTypes());
+        innerCol.add(outerObj);
+
+        col.add(createReferencesHolder(outerObj));
+        col.add(createReferencesHolder(innerCol));
 
         checkPutGetRemove(col, col);
     }
@@ -142,12 +182,12 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
     /** */
     @Test
     public void testMapReferenceBetweenKeyAndValue() {
-        Object outerObj = createTestObject(outerObjType);
+        Object outerObj = createObject(outerObjType);
 
         Map<Object, Object> map = new HashMap<>();
 
-        map.put(new Person(createInnerobject(), outerObj), new Person(createInnerobject(), outerObj));
-        map.put(0, new Person(createInnerobject(), outerObj));
+        map.put(createReferencesHolder(outerObj), createReferencesHolder(outerObj));
+        map.put(0, createReferencesHolder(outerObj));
 
         checkPutGetRemove(map, map);
     }
@@ -155,12 +195,12 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
     /** */
     @Test
     public void testMapReferenceBetweenEntries() {
-        Object outerObj = createTestObject(outerObjType);
+        Object outerObj = createObject(outerObjType);
 
         Map<Object, Object> map = new HashMap<>();
 
-        map.put(0, new Person(createInnerobject(), outerObj));
-        map.put(new Person(createInnerobject(), outerObj), new Person(createInnerobject(), outerObj));
+        map.put(0, createReferencesHolder(outerObj));
+        map.put(createReferencesHolder(outerObj), createReferencesHolder(outerObj));
 
         checkPutGetRemove(map, map);
     }
@@ -168,17 +208,16 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
     /** */
     @Test
     public void testMapCollectionInValue() {
-        Object outerObj = createTestObject(outerObjType) ;
+        Object outerObj = createObject(outerObjType) ;
 
         Collection<Object> col = new ArrayList<>();
 
-        col.add(new Person(createInnerobject(), outerObj));
-        col.add(new Person(createInnerobject(), outerObj));
+        col.add(createReferencesHolder(outerObj));
+        col.add(createReferencesHolder(outerObj));
 
         Map<Object, Object> map = new HashMap<>();
 
-        map.put(0, new TestObjectAllTypes());
-        map.put(1, col);
+        map.put(0, col);
 
         checkPutGetRemove(map, map);
     }
@@ -186,22 +225,31 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
     /** */
     @Test
     public void testMapArrayInValue() {
-        Object outerObj = createTestObject(outerObjType) ;
+        Object outerObj = createObject(outerObjType) ;
 
         Map<Object, Object> map = new HashMap<>();
 
-        map.put(0, new Object[] {new Person(createInnerobject(), outerObj), new Person(createInnerobject(), outerObj)});
+        map.put(0, new Object[] {createReferencesHolder(outerObj), createReferencesHolder(outerObj)});
 
         checkPutGetRemove(0, map);
     }
 
     /** */
-    private Object createInnerobject() {
-        return createTestObject(innerObjType);
+    private Object createReferencesHolder(Object outerObj) {
+        switch (serializationMode) {
+            case RAW:
+                return new RawObject(createObject(innerObjType), outerObj);
+            case MIXED:
+                return new MixedObject(createObject(innerObjType), outerObj);
+            case SCHEMA:
+                return new SchemaObject(createObject(innerObjType), outerObj);
+            default:
+                throw new IllegalStateException();
+        }
     }
 
     /** */
-    private Object createTestObject(ObjectType type) {
+    private Object createObject(ObjectType type) {
         switch (type) {
             case OBJECT: {
                 return new TestObjectAllTypes();
@@ -264,17 +312,40 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
     }
 
     /** */
-    private void assertDeepEquals(Object exp, Object actual) {
-        if (exp instanceof Map && actual instanceof Map) {
-            Map<Object, Object> lhs = (Map<Object, Object>)exp;
-            Map<Object, Object> rhs = (Map<Object, Object>)actual;
+    private static void assertDeepEquals(Object exp, Object actual) {
+        assertTrue(deepEquals(exp, actual));
+    }
 
-            assertEquals(lhs.size(), rhs.size());
+    /** */
+    private static boolean deepEquals(Object lhs, Object rhs) {
+        if (lhs instanceof Map && rhs instanceof Map) {
+            Map<Object, Object> lhsMap = (Map<Object, Object>)lhs;
+            Map<Object, Object> rhsMap = (Map<Object, Object>)rhs;
 
-            lhs.forEach((k, v) -> assertEqualsArraysAware(v, rhs.get(k)));
+            assertEquals(lhsMap.size(), rhsMap.size());
+
+            return lhsMap.entrySet().stream().allMatch(e -> deepEquals(e.getValue(), rhsMap.get(e.getKey())));
+        }
+        else if (lhs instanceof List && rhs instanceof List) {
+            List<Object> lhsList = (List<Object>)lhs;
+            List<Object> rhsList = (List<Object>)rhs;
+
+            assertEquals(lhsList.size(), rhsList.size());
+
+            boolean res = true;
+
+            for (int i = 0; i < lhsList.size(); i++) {
+                if (!deepEquals(lhsList.get(i), rhsList.get(i))) {
+                    res = false;
+
+                    break;
+                }
+            }
+
+            return res;
         }
         else
-            assertEqualsArraysAware(exp, actual);
+            return Objects.deepEquals(lhs, rhs);
     }
 
     /** */
@@ -298,21 +369,105 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
     }
 
     /** */
-    private static class Person {
+    public enum SerializationMode {
         /** */
-        private final Object aWrapperOfOuterRefToReplaceWithObj;
+        RAW,
 
         /** */
-        private final Object bInnerObj;
+        MIXED,
 
         /** */
-        private final Object cRefToOuterObjToReplaceWithInnerRef;
+        SCHEMA
+    }
+
+    /** */
+    private static class MixedObject extends SchemaObject implements Binarylizable {
+        /** */
+        public MixedObject() {
+            // No-op.
+        }
 
         /** */
-        private final Object dRefToInnerObjToRecalculate;
+        public MixedObject(Object innerObj, Object outerObj) {
+            super(innerObj, outerObj);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            writer.writeObject("aWrapperOfOuterRefToReplaceWithObj", aWrapperOfOuterRefToReplaceWithObj);
+
+            BinaryRawWriter rawWriter = writer.rawWriter();
+
+            rawWriter.writeObject(bInnerObj);
+            rawWriter.writeObject(cRefToOuterObjToReplaceWithInnerRef);
+            rawWriter.writeObject(dRefToInnerObjToRecalculate);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            aWrapperOfOuterRefToReplaceWithObj = reader.readObject("aWrapperOfOuterRefToReplaceWithObj");
+
+            BinaryRawReader rawReader = reader.rawReader();
+
+            bInnerObj = rawReader.readObject();
+            cRefToOuterObjToReplaceWithInnerRef = rawReader.readObject();
+            dRefToInnerObjToRecalculate = rawReader.readObject();
+        }
+    }
+
+    /** */
+    private static class RawObject extends SchemaObject implements Binarylizable {
+        /** */
+        public RawObject() {
+            // No-op.
+        }
+        
+        /** */
+        public RawObject(Object innerObj, Object outerObj) {
+            super(innerObj, outerObj);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            BinaryRawWriter rawWriter = writer.rawWriter();
+            
+            rawWriter.writeObject(aWrapperOfOuterRefToReplaceWithObj);
+            rawWriter.writeObject(bInnerObj);
+            rawWriter.writeObject(cRefToOuterObjToReplaceWithInnerRef);
+            rawWriter.writeObject(dRefToInnerObjToRecalculate);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            BinaryRawReader rawReader = reader.rawReader();
+            
+            aWrapperOfOuterRefToReplaceWithObj = rawReader.readObject();
+            bInnerObj = rawReader.readObject();
+            cRefToOuterObjToReplaceWithInnerRef = rawReader.readObject();
+            dRefToInnerObjToRecalculate = rawReader.readObject();
+        }
+    }
+
+    /** */
+    private static class SchemaObject {
+        /** */
+        protected Object aWrapperOfOuterRefToReplaceWithObj;
 
         /** */
-        public Person(Object innerObj, Object outerObj) {
+        protected Object bInnerObj;
+
+        /** */
+        protected Object cRefToOuterObjToReplaceWithInnerRef;
+
+        /** */
+        protected Object dRefToInnerObjToRecalculate;
+        
+        public SchemaObject(){
+            // No-op.
+        }
+
+        /** */
+        public SchemaObject(Object innerObj, Object outerObj) {
             aWrapperOfOuterRefToReplaceWithObj = new ComplexWrapper(outerObj);
 
             bInnerObj = innerObj;
@@ -327,15 +482,15 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
             if (this == o)
                 return true;
 
-            if (!(o instanceof Person))
+            if (!(o instanceof SchemaObject))
                 return false;
 
-            Person person = (Person)o;
+            SchemaObject that = (SchemaObject)o;
 
-            return Objects.deepEquals(aWrapperOfOuterRefToReplaceWithObj, person.aWrapperOfOuterRefToReplaceWithObj)
-                && Objects.deepEquals(bInnerObj, person.bInnerObj)
-                && Objects.deepEquals(cRefToOuterObjToReplaceWithInnerRef, person.cRefToOuterObjToReplaceWithInnerRef)
-                && Objects.deepEquals(dRefToInnerObjToRecalculate, person.dRefToInnerObjToRecalculate);
+            return deepEquals(aWrapperOfOuterRefToReplaceWithObj, that.aWrapperOfOuterRefToReplaceWithObj)
+                && deepEquals(bInnerObj, that.bInnerObj)
+                && deepEquals(cRefToOuterObjToReplaceWithInnerRef, that.cRefToOuterObjToReplaceWithInnerRef)
+                && deepEquals(dRefToInnerObjToRecalculate, that.dRefToInnerObjToRecalculate);
         }
 
         /** {@inheritDoc} */
@@ -371,7 +526,7 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
 
             ComplexWrapper that = (ComplexWrapper)o;
 
-            return super.equals(o) && Objects.deepEquals(data, that.data);
+            return super.equals(o) && deepEquals(data, that.data);
         }
 
         /** {@inheritDoc} */

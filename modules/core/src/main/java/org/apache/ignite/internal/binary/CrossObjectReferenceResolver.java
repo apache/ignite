@@ -169,17 +169,18 @@ public class CrossObjectReferenceResolver {
             if (readObjStruct.hasRaw) {
                 writeRawDataStartPos = writer.position();
 
-                copyBytes(readObjStruct.footerStartPos - reader.position());
+                while (reader.position() < readObjStruct.footerStartPos)
+                    reassembleNextObject();
             }
 
-            int writeDataEndPos = writer.position();
+            int writeFooterStartPos = writer.position();
 
             int schemaOrRawOffsetPos;
             int footerFieldOffsetLen;
 
             // Write footer and raw data offset if required.
             if (readObjStruct.hasSchema) {
-                schemaOrRawOffsetPos = offset(writerObjStartPos, writeDataEndPos);
+                schemaOrRawOffsetPos = offset(writerObjStartPos, writeFooterStartPos);
                 footerFieldOffsetLen = schema.write(writer, fieldsCnt, readObjStruct.isCompactFooter);
 
                 if (readObjStruct.hasRaw)
@@ -194,7 +195,7 @@ public class CrossObjectReferenceResolver {
             overrideHeader(
                 writerObjStartPos,
                 /** flags */ setFieldOffsetFlag(readObjStruct.flags, footerFieldOffsetLen),
-                /** hash */ instance().hashCode(writer.array(), writerObjStartPos + DFLT_HDR_LEN, writeDataEndPos),
+                /** hash */ instance().hashCode(writer.array(), writerObjStartPos + DFLT_HDR_LEN, writeFooterStartPos),
                 /** total length */ writer.position() - writerObjStartPos,
                 schemaOrRawOffsetPos
             );
