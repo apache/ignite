@@ -151,7 +151,7 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
     /** */
     @Test
     public void testCollection() {
-        Object outerObj = createObject(outerObjType) ;
+        Object outerObj = createObject(outerObjType);
 
         Collection<Object> col = new ArrayList<>();
 
@@ -164,7 +164,7 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
     /** */
     @Test
     public void testInnerCollection() {
-        Object outerObj = createObject(outerObjType) ;
+        Object outerObj = createObject(outerObjType);
 
         Collection<Object> col = new ArrayList<>();
 
@@ -208,7 +208,7 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
     /** */
     @Test
     public void testMapCollectionInValue() {
-        Object outerObj = createObject(outerObjType) ;
+        Object outerObj = createObject(outerObjType);
 
         Collection<Object> col = new ArrayList<>();
 
@@ -225,7 +225,7 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
     /** */
     @Test
     public void testMapArrayInValue() {
-        Object outerObj = createObject(outerObjType) ;
+        Object outerObj = createObject(outerObjType);
 
         Map<Object, Object> map = new HashMap<>();
 
@@ -461,8 +461,9 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
 
         /** */
         protected Object dRefToInnerObjToRecalculate;
-        
-        public SchemaObject(){
+
+        /** */
+        public SchemaObject() {
             // No-op.
         }
 

@@ -38,6 +38,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+/** */
 public class RawBytesObjectReaderTest extends GridCommonAbstractTest {
     /** */
     @Test
@@ -174,6 +175,7 @@ public class RawBytesObjectReaderTest extends GridCommonAbstractTest {
             proxyClsName = proxyCls.getName();
         }
 
+        /** {@inheritDoc} */
         @Override public Object invoke(Object p, Method method, Object[] methodArgs) throws Throwable {
             if ("toString".equals(method.getName()))
                 return proxyClsName;

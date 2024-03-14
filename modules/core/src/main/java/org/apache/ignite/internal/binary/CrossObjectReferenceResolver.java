@@ -299,7 +299,7 @@ public class CrossObjectReferenceResolver {
 
     /** */
     private void copyBytes(int cnt) {
-        assert cnt >=0;
+        assert cnt >= 0;
 
         if (cnt == 0)
             return;
