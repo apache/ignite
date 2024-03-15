@@ -252,6 +252,9 @@ public abstract class PageIO {
     public static final short T_DATA_PART = 32;
 
     /** */
+    public static final short T_MARKER_PAGE = 33;
+
+    /** */
     public static final short T_DEFRAG_LINK_MAPPING_INNER = 34;
 
     /** */
