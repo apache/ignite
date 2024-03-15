@@ -64,6 +64,7 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -185,6 +186,13 @@ public class GridCacheSharedContext<K, V> {
 
     /** Cluster is in read-only mode. */
     private volatile boolean readOnlyMode;
+
+    /** Last asynchronous future. */
+    protected ThreadLocal<FutureHolder> lastFut = new ThreadLocal<FutureHolder>() {
+        @Override protected FutureHolder initialValue() {
+            return new FutureHolder();
+        }
+    };
 
     /** @return GridCacheSharedContext builder instance. */
     public static Builder builder() {

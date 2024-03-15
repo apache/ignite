@@ -42,7 +42,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.cache.Cache;
@@ -118,7 +117,6 @@ import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.transactions.TransactionCheckedException;
 import org.apache.ignite.internal.util.GridSerializableMap;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -252,13 +250,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
         };
 
-    /** Last asynchronous future. */
-    protected ThreadLocal<FutureHolder> lastFut = new ThreadLocal<FutureHolder>() {
-        @Override protected FutureHolder initialValue() {
-            return new FutureHolder();
-        }
-    };
-
     /** Cache configuration. */
     @GridToStringExclude
     protected GridCacheContext<K, V> ctx;
@@ -290,9 +281,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** Affinity impl. */
     private Affinity<K> aff;
-
-    /** Asynchronous operations limit semaphore. */
-    private Semaphore asyncOpsSem;
 
     /** {@code True} if attempted to use partition preloading on outdated node. */
     private volatile boolean partPreloadBadVerWarned;
@@ -340,9 +328,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         txLockMsgLog = ctx.shared().txLockMessageLogger();
 
         metrics = new CacheMetricsImpl(ctx, isNear());
-
-        if (ctx.config().getMaxConcurrentAsyncOperations() > 0)
-            asyncOpsSem = new Semaphore(ctx.config().getMaxConcurrentAsyncOperations());
 
         init();
 
@@ -3636,71 +3621,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * Awaits for previous async operation to be completed.
-     */
-    public void awaitLastFut() {
-        FutureHolder holder = lastFut.get();
-
-        IgniteInternalFuture fut = holder.future();
-
-        if (fut != null && !fut.isDone()) {
-            try {
-                // Ignore any exception from previous async operation as it should be handled by user.
-                fut.get();
-            }
-            catch (IgniteCheckedException ignored) {
-                // No-op.
-            }
-        }
-    }
-
-    /**
-     * Replaces previous async operation future on transaction suspend.
-     */
-    public @Nullable FutureHolder suspendLastFut() {
-        FutureHolder holder = lastFut.get();
-
-        IgniteInternalFuture fut = holder.future();
-
-        if (fut != null && !fut.isDone()) {
-            lastFut.remove();
-
-            return holder;
-        }
-        else
-            return null;
-    }
-
-    /**
-     * Replaces previous async operation future on transaction resume.
-     */
-    public void resumeLastFut(FutureHolder holder) {
-        IgniteInternalFuture resumedFut = holder.future();
-
-        if (resumedFut == null || resumedFut.isDone())
-            return;
-
-        FutureHolder threadHolder = lastFut.get();
-
-        IgniteInternalFuture threadFut = threadHolder.future();
-
-        if (threadFut != null && !threadFut.isDone()) {
-            threadHolder.lock();
-
-            try {
-                GridCompoundFuture f = new GridCompoundFuture<>().add(threadFut).add(resumedFut).markInitialized();
-
-                saveFuture(threadHolder, f, /*asyncOp*/false, /*retry*/false);
-            }
-            finally {
-                threadHolder.unlock();
-            }
-        }
-        else
-            lastFut.set(holder);
-    }
-
-    /**
      * @param op Cache operation.
      * @param <T> Return type.
      * @return Operation result.
@@ -3992,80 +3912,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         finally {
             holder.unlock();
         }
-    }
-
-    /**
-     * Saves future in thread local holder and adds listener
-     * that will clear holder when future is finished.
-     *
-     * @param holder Future holder.
-     * @param fut Future to save.
-     * @param asyncOp Whether operation is instance of AsyncOp.
-     * @param retry {@code true} for retry operations.
-     */
-    protected void saveFuture(final FutureHolder holder, IgniteInternalFuture<?> fut, final boolean asyncOp, final boolean retry) {
-        assert holder != null;
-        assert fut != null;
-        assert holder.holdsLock();
-
-        holder.future(fut);
-
-        if (fut.isDone()) {
-            holder.future(null);
-
-            if (asyncOp)
-                asyncOpRelease(retry);
-        }
-        else {
-            fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> f) {
-                    if (asyncOp)
-                        asyncOpRelease(retry);
-
-                    if (!holder.tryLock())
-                        return;
-
-                    try {
-                        if (holder.future() == f)
-                            holder.future(null);
-                    }
-                    finally {
-                        holder.unlock();
-                    }
-                }
-            });
-        }
-    }
-
-    /**
-     * Tries to acquire asynchronous operations permit, if limited.
-     *
-     * @param retry Retry flag.
-     * @return Failed future if waiting was interrupted.
-     */
-    @Nullable protected <T> IgniteInternalFuture<T> asyncOpAcquire(boolean retry) {
-        try {
-            if (!retry && asyncOpsSem != null)
-                asyncOpsSem.acquire();
-
-            return null;
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            return new GridFinishedFuture<>(new IgniteInterruptedCheckedException("Failed to wait for asynchronous " +
-                "operation permit (thread got interrupted).", e));
-        }
-    }
-
-    /**
-     * Releases asynchronous operations permit, if limited.
-     *
-     * @param retry Retry flag.
-     */
-    protected final void asyncOpRelease(boolean retry) {
-        if (!retry && asyncOpsSem != null)
-            asyncOpsSem.release();
     }
 
     /** {@inheritDoc} */
@@ -5584,66 +5430,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(LoadCacheJobV2.class, this);
-        }
-    }
-
-    /**
-     * Holder for last async operation future.
-     */
-    public static class FutureHolder {
-        /** Lock. */
-        private final ReentrantLock lock = new ReentrantLock();
-
-        /** Future. */
-        private IgniteInternalFuture fut;
-
-        /**
-         * Tries to acquire lock.
-         *
-         * @return Whether lock was actually acquired.
-         */
-        public boolean tryLock() {
-            return lock.tryLock();
-        }
-
-        /**
-         * Acquires lock.
-         */
-        @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-        public void lock() {
-            lock.lock();
-        }
-
-        /**
-         * Releases lock.
-         */
-        public void unlock() {
-            lock.unlock();
-        }
-
-        /**
-         * @return Whether lock is held by current thread.
-         */
-        public boolean holdsLock() {
-            return lock.isHeldByCurrentThread();
-        }
-
-        /**
-         * Gets future.
-         *
-         * @return Future.
-         */
-        public IgniteInternalFuture future() {
-            return fut;
-        }
-
-        /**
-         * Sets future.
-         *
-         * @param fut Future.
-         */
-        public void future(@Nullable IgniteInternalFuture fut) {
-            this.fut = fut;
         }
     }
 
