@@ -841,7 +841,7 @@ public class BinaryUtils {
         int typeId = in.readIntPositioned(start + GridBinaryMarshaller.TYPE_ID_POS);
 
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
-            // Get the length of the type name which is stored as string.
+            // Gets the length of the type name which is stored as string.
             int len = in.readIntPositioned(start + GridBinaryMarshaller.DFLT_HDR_LEN + /** object type */1);
 
             return GridBinaryMarshaller.DFLT_HDR_LEN + /** object type */1 + /** string length */ 4 + len;

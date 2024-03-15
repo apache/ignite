@@ -207,7 +207,7 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
 
     /** */
     @Test
-    public void testMapCollectionInValue() {
+    public void testMapInnerCollection() {
         Object outerObj = createObject(outerObjType);
 
         Collection<Object> col = new ArrayList<>();
@@ -224,7 +224,7 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
 
     /** */
     @Test
-    public void testMapArrayInValue() {
+    public void testMapInnerArray() {
         Object outerObj = createObject(outerObjType);
 
         Map<Object, Object> map = new HashMap<>();
