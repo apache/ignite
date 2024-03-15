@@ -73,7 +73,6 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
@@ -266,10 +265,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @GridToStringExclude
     protected CacheConfiguration cacheCfg;
 
-    /** Grid configuration. */
-    @GridToStringExclude
-    private IgniteConfiguration gridCfg;
-
     /** Cache metrics. */
     protected CacheMetricsImpl metrics;
 
@@ -281,6 +276,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** Affinity impl. */
     private Affinity<K> aff;
+
+    /** Asynchronous operations limit semaphore. */
+    private Semaphore asyncOpsSem;
 
     /** {@code True} if attempted to use partition preloading on outdated node. */
     private volatile boolean partPreloadBadVerWarned;
@@ -317,7 +315,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         this.ctx = ctx;
 
-        gridCfg = ctx.gridConfig();
         cacheCfg = ctx.config();
 
         locNodeId = ctx.gridConfig().getNodeId();
@@ -328,6 +325,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         txLockMsgLog = ctx.shared().txLockMessageLogger();
 
         metrics = new CacheMetricsImpl(ctx, isNear());
+
+        if (ctx.config().getMaxConcurrentAsyncOperations() > 0)
+            asyncOpsSem = new Semaphore(ctx.config().getMaxConcurrentAsyncOperations());
 
         init();
 
@@ -570,16 +570,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     protected final String startInfo() {
         return "Cache started: " + U.maskName(ctx.config().getName());
-    }
-
-    /**
-     * Stops this cache. Child classes should override this method
-     * to provide custom stop behavior.
-     */
-    public void stop() {
-        // Nulling thread local reference to ensure values will be eventually GCed
-        // no matter what references these futures are holding.
-        lastFut = null;
     }
 
     /**
@@ -3602,14 +3592,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         }
                     });
 
-                saveFuture(holder, f, /*asyncOp*/false, /*retry*/false);
+                saveFuture(holder, f);
 
                 return f;
             }
 
             IgniteInternalFuture<IgniteInternalTx> f = tx.commitNearTxLocalAsync();
 
-            saveFuture(holder, f, /*asyncOp*/false, /*retry*/false);
+            saveFuture(holder, f);
 
             ctx.tm().resetContext();
 
@@ -3880,7 +3870,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         return resFut;
                     });
 
-                saveFuture(holder, f, /*asyncOp*/true, retry);
+                saveFuture(holder, f);
+
+                f.listen(f0 -> asyncOpRelease(retry));
 
                 return f;
             }
@@ -3902,7 +3894,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 ctx.shared().txContextReset();
             }
 
-            saveFuture(holder, f, /*asyncOp*/true, retry);
+            saveFuture(holder, f);
+
+            f.listen(f0 -> asyncOpRelease(retry));
 
             if (tx.implicit())
                 ctx.tm().resetContext();
@@ -3912,6 +3906,37 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         finally {
             holder.unlock();
         }
+    }
+
+    /**
+     * Tries to acquire asynchronous operations permit, if limited.
+     *
+     * @param retry Retry flag.
+     * @return Failed future if waiting was interrupted.
+     */
+    @Nullable protected <T> IgniteInternalFuture<T> asyncOpAcquire(boolean retry) {
+        try {
+            if (!retry && asyncOpsSem != null)
+                asyncOpsSem.acquire();
+
+            return null;
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            return new GridFinishedFuture<>(new IgniteInterruptedCheckedException("Failed to wait for asynchronous " +
+                "operation permit (thread got interrupted).", e));
+        }
+    }
+
+    /**
+     * Releases asynchronous operations permit, if limited.
+     *
+     * @param retry Retry flag.
+     */
+    protected final void asyncOpRelease(boolean retry) {
+        if (!retry && asyncOpsSem != null)
+            asyncOpsSem.release();
     }
 
     /** {@inheritDoc} */
