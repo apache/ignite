@@ -19,6 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 
 /** */
 public class RawBytesObjectReader implements BinaryPositionReadable {
@@ -44,29 +45,38 @@ public class RawBytesObjectReader implements BinaryPositionReadable {
     }
 
     /** */
-    public byte[] readObjectPositioned(int pos) {
-        int retPos = in.position();
+    public void readObject(BinaryOutputStream out) {
+        int startPos = in.position();
 
-        in.position(pos);
+        skipObject();
 
-        byte[] res = readObject();
-
-        in.position(retPos);
-
-        return res;
+        out.writeByteArray(in.array(), startPos, in.position() - startPos);
     }
 
     /** */
-    public byte[] readTypeId() {
+    public void readTypeId(BinaryOutputStream out) {
         int startPos = in.position();
 
         skipTypeId();
 
-        int endPos = in.position();
+        out.writeByteArray(in.array(), startPos, in.position() - startPos);
+    }
 
-        in.position(startPos);
+    /** */
+    public void readBytes(int cnt, BinaryOutputStream out) {
+        assert cnt >= 0;
 
-        return in.readByteArray(endPos - startPos);
+        if (cnt == 0)
+            return;
+
+        out.writeByteArray(in.array(), in.position(), cnt);
+
+        skipBytes(cnt);
+    }
+
+    /** */
+    public int readInt() {
+        return in.readInt();
     }
 
     /** */
@@ -254,26 +264,6 @@ public class RawBytesObjectReader implements BinaryPositionReadable {
     /** */
     public void position(int position) {
         in.position(position);
-    }
-
-    /** */
-    public byte readByte() {
-        return in.readByte();
-    }
-
-    /** */
-    public int readInt() {
-        return in.readInt();
-    }
-
-    /** */
-    public short readShort() {
-        return in.readShort();
-    }
-
-    /** */
-    public byte[] readByteArray(int cnt) {
-        return in.readByteArray(cnt);
     }
 
     /** */

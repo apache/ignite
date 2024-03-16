@@ -103,7 +103,7 @@ public class CrossObjectReferenceResolver {
 
                 copyBytes(1); // Object type.
 
-                copyTypeId();
+                reader.readTypeId(writer);
 
                 int size = readAndCopyInt();
 
@@ -141,7 +141,7 @@ public class CrossObjectReferenceResolver {
             }
 
             default:
-                writer.writeByteArray(reader.readObject());
+                reader.readObject(writer);
         }
     }
 
@@ -230,7 +230,7 @@ public class CrossObjectReferenceResolver {
 
             objPosTranslation.put(readerHandleObjPos, writer.position());
 
-            writer.writeByteArray(reader.readObjectPositioned(readerHandleObjPos));
+            copyObjectPositioned(readerHandleObjPos);
         }
     }
 
@@ -276,8 +276,14 @@ public class CrossObjectReferenceResolver {
     }
 
     /** */
-    private void copyTypeId() {
-        writer.writeByteArray(reader.readTypeId());
+    private void copyObjectPositioned(int readerPos) {
+        int retPos = reader.position();
+
+        reader.position(readerPos);
+
+        reader.readObject(writer);
+
+        reader.position(retPos);
     }
 
     /** */
@@ -291,12 +297,7 @@ public class CrossObjectReferenceResolver {
 
     /** */
     private void copyBytes(int cnt) {
-        assert cnt >= 0;
-
-        if (cnt == 0)
-            return;
-
-        writer.writeByteArray(reader.readByteArray(cnt));
+        reader.readBytes(cnt, writer);
     }
 
     /** */
