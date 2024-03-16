@@ -277,15 +277,7 @@ public class CrossObjectReferenceResolver {
 
     /** */
     private void copyTypeId() {
-        int typeId = readAndCopyInt();
-
-        if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
-            copyBytes(1); // String type.
-
-            int strLen = readAndCopyInt();
-
-            copyBytes(strLen);
-        }
+        writer.writeByteArray(reader.readTypeId());
     }
 
     /** */

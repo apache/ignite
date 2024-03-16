@@ -57,6 +57,19 @@ public class RawBytesObjectReader implements BinaryPositionReadable {
     }
 
     /** */
+    public byte[] readTypeId() {
+        int startPos = in.position();
+
+        skipTypeId();
+
+        int endPos = in.position();
+
+        in.position(startPos);
+
+        return in.readByteArray(endPos - startPos);
+    }
+
+    /** */
     public void skipObject() {
         int objStartPos = in.position();
 
