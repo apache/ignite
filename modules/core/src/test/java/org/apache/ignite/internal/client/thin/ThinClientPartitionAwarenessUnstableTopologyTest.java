@@ -42,6 +42,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static java.util.stream.IntStream.range;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -219,12 +220,25 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
      * Test that partition awareness works when reconnecting to the new cluster (with lower topology version)
      */
     @Test
-    public void testPartitionAwarenessOnClusterRestart() throws Exception {
-        startGrids(3);
+    public void testPartitionAwarenessOnClusterRestartWithLowerTopologyVersion() throws Exception {
+        doPartitionAwarenessOnClusterRestartTest(3, 2);
+    }
+
+    /**
+     * Test that partition awareness works when reconnecting to the new cluster (with the same topology version)
+     */
+    @Test
+    public void testPartitionAwarenessOnClusterRestartWithSameTopologyVersion() throws Exception {
+        doPartitionAwarenessOnClusterRestartTest(3, 3);
+    }
+
+    /** */
+    private void doPartitionAwarenessOnClusterRestartTest(int initialClusterSize, int restartedClusterSize) throws Exception {
+        startGrids(initialClusterSize);
 
         awaitPartitionMapExchange();
 
-        initClient(getClientConfiguration(0, 1, 2), 0, 1, 2);
+        initClient(getClientConfiguration(range(0, initialClusterSize).toArray()), range(0, initialClusterSize).toArray());
 
         // Test partition awareness before cluster restart.
         testPartitionAwareness(true);
@@ -233,17 +247,16 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
 
         Arrays.fill(channels, null);
 
-        // Start 2 grids, so topology version of the new cluster will be less then old cluster.
-        startGrids(2);
+        startGrids(restartedClusterSize);
 
         awaitPartitionMapExchange();
 
         // Send any request to failover.
-        client.cache(REPL_CACHE_NAME).put(0, 0);
+        client.cache(cacheName).put(0, 0);
 
         detectTopologyChange();
 
-        awaitChannelsInit(0, 1);
+        awaitChannelsInit(range(0, restartedClusterSize).toArray());
 
         testPartitionAwareness(true);
     }

@@ -61,13 +61,21 @@ public final class HintUtils {
     }
 
     /**
-     * @return Hints filtered with {@code hintDefs} and suitable for {@code rel}.
+     * @return Hints of {@code rel} filtered with {@code hintDefs}.
      * @see HintStrategyTable#apply(List, RelNode)
      * @see #filterHints(RelNode, Collection, List)
      */
     public static List<RelHint> hints(RelNode rel, HintDefinition... hintDefs) {
-        return rel.getCluster().getHintStrategies()
-            .apply(filterHints(rel, allRelHints(rel), Arrays.asList(hintDefs)), rel);
+        return hints(rel, allRelHints(rel), hintDefs);
+    }
+
+    /**
+     * @return Hints filtered with {@code hintDefs} and suitable for {@code rel}.
+     * @see HintStrategyTable#apply(List, RelNode)
+     * @see #filterHints(RelNode, Collection, List)
+     */
+    public static List<RelHint> hints(RelNode rel, Collection<RelHint> hints, HintDefinition... hintDefs) {
+        return rel.getCluster().getHintStrategies().apply(filterHints(rel, hints, Arrays.asList(hintDefs)), rel);
     }
 
     /**
@@ -76,6 +84,17 @@ public final class HintUtils {
      */
     public static List<RelHint> allRelHints(RelNode rel) {
         return rel instanceof Hintable ? ((Hintable)rel).getHints() : Collections.emptyList();
+    }
+
+    /**
+     * @return Only noninherited hints of {@code rel} if it is a {@code Hintable}. If is not or has no hints, empty
+     * collection.
+     * @see Hintable#getHints()
+     */
+    public static List<RelHint> nonInheritedRelHints(RelNode rel) {
+        return rel instanceof Hintable
+            ? ((Hintable)rel).getHints().stream().filter(hint -> hint.inheritPath.isEmpty()).collect(Collectors.toList())
+            : Collections.emptyList();
     }
 
     /**

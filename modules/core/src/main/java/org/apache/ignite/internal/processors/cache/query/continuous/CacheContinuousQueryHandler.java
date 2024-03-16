@@ -1212,10 +1212,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             else if (initUpdCntrs != null)
                 partCntrs = initUpdCntrs.get(partId);
 
-            rec = new CacheContinuousQueryPartitionRecovery(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY), topVer,
-                partCntrs != null ? partCntrs.get2() : null);
-
-            CacheContinuousQueryPartitionRecovery oldRec = rcvs.putIfAbsent(partId, rec);
+            T2<Long, Long> partCntrs0 = partCntrs;
+            CacheContinuousQueryPartitionRecovery oldRec = rcvs.computeIfAbsent(partId, k ->
+                    new CacheContinuousQueryPartitionRecovery(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY), topVer,
+                            partCntrs0 != null ? partCntrs0.get2() : null));
 
             if (oldRec != null)
                 rec = oldRec;

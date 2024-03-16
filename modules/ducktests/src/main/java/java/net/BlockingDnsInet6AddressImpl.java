@@ -14,22 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package java.net;
 
-package org.apache.ignite.internal.transactions;
+/** */
+public class BlockingDnsInet6AddressImpl extends Inet6AddressImpl {
+    /** {@inheritDoc} */
+    @Override public InetAddress[] lookupAllHostAddr(String hostname) throws UnknownHostException {
+        DnsBlocker.INSTANCE.onHostResolve(this, hostname);
 
-/**
- * Exception thrown whenever transaction tries to inserts entry with same mvcc version more than once.
- */
-public class IgniteTxDuplicateKeyCheckedException extends TransactionCheckedException {
-    /** */
-    private static final long serialVersionUID = 0L;
+        return super.lookupAllHostAddr(hostname);
+    }
 
-    /**
-     * Creates new duplicate ket exception with given error message.
-     *
-     * @param msg Error message.
-     */
-    public IgniteTxDuplicateKeyCheckedException(String msg) {
-        super(msg);
+    /** {@inheritDoc} */
+    @Override public String getHostByAddr(byte[] addr) throws UnknownHostException {
+        DnsBlocker.INSTANCE.onAddrResolve(this, addr);
+
+        return super.getHostByAddr(addr);
     }
 }

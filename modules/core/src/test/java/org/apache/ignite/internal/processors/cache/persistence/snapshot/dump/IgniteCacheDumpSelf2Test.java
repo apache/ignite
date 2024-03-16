@@ -608,6 +608,10 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         ign.context().cache().context().snapshotMgr()
             .createSnapshot(zipDump, null, null, false, true, true, true, false).get();
 
+        assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, rawDump));
+
+        assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, zipDump));
+
         stopAllGrids();
 
         Map<Integer, Long> rawSizes = Arrays

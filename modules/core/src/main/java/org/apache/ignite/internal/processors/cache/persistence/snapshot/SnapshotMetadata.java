@@ -236,7 +236,7 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /** */
-    public boolean isGroupWithCompresion(int grpId) {
+    public boolean isGroupWithCompression(int grpId) {
         return hasComprGrps && comprGrpIds.contains(grpId);
     }
 

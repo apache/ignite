@@ -91,9 +91,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     /** Return value require flag. */
     protected final boolean retval;
 
-    /** Raw return value flag. */
-    protected final boolean rawRetval;
-
     /** Expiry policy. */
     protected final ExpiryPolicy expiryPlc;
 
@@ -154,7 +151,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * @param op Operation.
      * @param invokeArgs Invoke arguments.
      * @param retval Return value flag.
-     * @param rawRetval Raw return value flag.
      * @param expiryPlc Expiry policy.
      * @param filter Filter.
      * @param taskNameHash Task name hash.
@@ -170,7 +166,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         GridCacheOperation op,
         @Nullable Object[] invokeArgs,
         boolean retval,
-        boolean rawRetval,
         @Nullable ExpiryPolicy expiryPlc,
         CacheEntryPredicate[] filter,
         int taskNameHash,
@@ -190,7 +185,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         this.op = op;
         this.invokeArgs = invokeArgs;
         this.retval = retval;
-        this.rawRetval = rawRetval;
         this.expiryPlc = expiryPlc;
         this.filter = filter;
         this.taskNameHash = taskNameHash;
@@ -347,12 +341,14 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * @param futId Not null ID if need remove future.
      */
     final void completeFuture(@Nullable GridCacheReturn ret, Throwable err, @Nullable Long futId) {
-        Object retval = ret == null ? null : rawRetval ? ret : (this.retval || op == TRANSFORM) ?
-            cctx.unwrapBinaryIfNeeded(
-                ret.value(),
-                keepBinary,
-                U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
-            ) : ret.success();
+        Object retval = ret == null
+            ? null
+            : (this.retval || op == TRANSFORM)
+                ? cctx.unwrapBinaryIfNeeded(
+                    ret.value(),
+                    keepBinary,
+                    U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId))
+                : ret.success();
 
         if (op == TRANSFORM && retval == null)
             retval = Collections.emptyMap();
