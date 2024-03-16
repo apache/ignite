@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Note: Custom metric are registered on demand and aren't stored. If node restarts, the metrics require registration anew.
  * <p>
- * Any name or dot-separated name part must not be empty, can contain only characters, numbers, '-' and '_'.
+ * Any name or dot-separated name part must not be empty and cannot have spaces.
  * Examples of custom metric registry names: "custom.admin.sessions", "custom.processes", "custom.processes.proc_1", etc.
  *
  * @see ReadOnlyMetricRegistry

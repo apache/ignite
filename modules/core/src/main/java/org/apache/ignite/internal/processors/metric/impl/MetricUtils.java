@@ -29,7 +29,6 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CUSTOM_METRICS;
 
 /**
  * Utility class to build or parse metric name in dot notation.
@@ -47,38 +46,26 @@ public class MetricUtils {
     /** Histogram name divider. */
     public static final char HISTOGRAM_NAME_DIVIDER = '_';
 
-    /** Metric name pattern. */
-    private static final Pattern SPACES_PATTERN = Pattern.compile(".*[\\s]+.*");
-
-    /** Metric name pattern. */
-    //Dont allow: '.' at the start or end, consiquent '.', non alphadigits except hyphen and column.
-    private static final Pattern STRICT_NAME_PATTERN = Pattern.compile("^(?!\\.)(?!.*\\.$)(?!.*\\.\\.)(?!.*-$)(?!.*\\.\\.)[\\w-.:]+$");
+    /** Metric name pattern. Permits empty string, spaces, tabs, dot at the start or end, consiquent dots. */
+    private static final Pattern NAME_PATTERN = Pattern.compile("(?!\\.)(?!.*\\.$)(?!.*\\.\\.)(?!.*[\\s]+.*).+");
 
     /**
-     * Chechs and builds metric name. Each parameter will separated by '.'.
+     * Chechs and builds metric name.
      *
      * @param names Metric name parts.
      * @return Metric name.
      */
     public static String metricName(String... names) {
-        assert names != null;
+        assert names != null && names.length > 0 : "Metric name must consist of at least one element.";
 
         for (int i = 0; i < names.length; i++) {
-            if (names[i] == null || names[i].isEmpty() || SPACES_PATTERN.matcher(names[i]).matches()) {
-                throw new IllegalArgumentException("Illegal metric or registry name. Spaces, nulls or empty name parts " +
-                    "are not allowed.");
+            if (names[i] == null || names[i].isEmpty() || !NAME_PATTERN.matcher(names[i]).matches()) {
+                throw new IllegalArgumentException("Illegal metric or registry name. Spaces, nulls or empty name " +
+                    "parts are not allowed.");
             }
         }
 
-        String res = String.join(SEPARATOR, names);
-
-        if (res.startsWith(CUSTOM_METRICS) && !STRICT_NAME_PATTERN.matcher(res).matches()) {
-            throw new IllegalArgumentException("Metric or registry name '" + res + "' is illegal. It cannot have " +
-                "spaces, sequenced dots, start or end with dots or hyphen. Allowed: characters, digits, undersore, " +
-                "hypen, column and dot-separators.");
-        }
-
-        return res;
+        return String.join(SEPARATOR, names);
     }
 
     /**
@@ -163,18 +150,6 @@ public class MetricUtils {
 
         while (v < update && !AtomicLongMetric.updater.compareAndSet(m, v, update))
             v = m.value();
-    }
-
-    /**
-     * Asserts all arguments are not empty and contains no spaces.
-     *
-     * @param names Names.
-     */
-    private static void ensureNotEmptyAndHasNoSpaces(String... names) {
-        for (int i = 0; i < names.length; i++) {
-            if (names[i] == null || names[i].isEmpty() || SPACES_PATTERN.matcher(names[i]).matches())
-                throw new IllegalArgumentException("Metric name element " + (i + 1) + " is empty or contains spaces.");
-        }
     }
 
     /**

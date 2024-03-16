@@ -216,56 +216,55 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
 
         AtomicInteger val = new AtomicInteger();
 
-        String errTxt1 = "Illegal metric or registry name. Spaces, nulls or empty name parts are not allowed";
-        String errTxt2 = "is illegal. It cannot have spaces, sequenced dots, start or end with dots or hyphen";
+        String errTxt = "Illegal metric or registry name. Spaces, nulls or empty name parts are not allowed";
 
         assertThrows(
             null,
             () -> metrics.customRegistry("").register("intMetric1", val::get, "intMetric1Desc"),
             IllegalArgumentException.class,
-            errTxt1
+            errTxt
         );
 
         assertThrows(
             null,
             () -> metrics.customRegistry(null).register("intMetric1", val::get, "intMetric1Desc"),
             IllegalArgumentException.class,
-            errTxt1
+            errTxt
         );
 
         assertThrows(
             null,
             () -> metrics.customRegistry("myreg").register(null, val::get, "intMetric1Desc"),
             IllegalArgumentException.class,
-            errTxt1
+            errTxt
         );
 
         assertThrows(
             null,
             () -> metrics.customRegistry(CUSTOM_METRICS + ' ').register("intMetric1", val::get, "intMetric1Desc"),
             IllegalArgumentException.class,
-            errTxt1
+            errTxt
         );
 
         assertThrows(
             null,
             () -> metrics.customRegistry(" \t myreg ").register("intMetric1", val::get, "intMetric1Desc"),
             IllegalArgumentException.class,
-            errTxt1
+            errTxt
         );
 
         assertThrows(
             null,
             () -> metrics.customRegistry(" \t ").register("intMetric1", val::get, "intMetric1Desc"),
             IllegalArgumentException.class,
-            errTxt1
+            errTxt
         );
 
         assertThrows(
             null,
             () -> metrics.customRegistry("a.b").register(" \t  c . \t d \t .  \t intMetric", val::get, null),
             IllegalArgumentException.class,
-            errTxt1
+            errTxt
         );
 
         assertNotNull(metrics.findRegistry(CUSTOM_METRICS + ".a.b"));
@@ -274,42 +273,28 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
             null,
             () -> metrics.customRegistry("myreg").register("intValues..intMetric1", val::get, "intMetric1Desc"),
             IllegalArgumentException.class,
-            errTxt2
+            errTxt
         );
 
         assertThrows(
             null,
             () -> metrics.customRegistry("myreg.").register("intValues.intMetric1", val::get, "intMetric1Desc"),
             IllegalArgumentException.class,
-            errTxt2
+            errTxt
         );
 
         assertThrows(
             null,
             () -> metrics.customRegistry(".myreg.").register("intValues.intMetric1", val::get, "intMetric1Desc"),
             IllegalArgumentException.class,
-            errTxt2
+            errTxt
         );
 
         assertThrows(
             null,
             () -> metrics.customRegistry("myreg..reg2").register("intValues.intMetric1", val::get, "intMetric1Desc"),
             IllegalArgumentException.class,
-            errTxt2
-        );
-
-        assertThrows(
-            null,
-            () -> metrics.customRegistry("myreg.reg2").register("intValues.int@Metric1", val::get, "intMetric1Desc"),
-            IllegalArgumentException.class,
-            errTxt2
-        );
-
-        assertThrows(
-            null,
-            () -> metrics.customRegistry("myreg.reg2").register("intValues.int+Metric1", val::get, "intMetric1Desc"),
-            IllegalArgumentException.class,
-            errTxt2
+            errTxt
         );
 
         metrics.customRegistry(CUSTOM_METRICS).register("intMetric1", val::get, "intMetric1Desc");

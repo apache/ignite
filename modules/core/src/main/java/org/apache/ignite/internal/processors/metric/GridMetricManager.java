@@ -32,7 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -143,9 +142,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
     /** Custom metrics registry name. */
     public static final String CUSTOM_METRICS_PREF = CUSTOM_METRICS + SEPARATOR;
-
-    /** */
-    private static final Pattern SEPARATOR_PATTERN = Pattern.compile("\\" + SEPARATOR);
 
     /** JVM interface to memory consumption info */
     private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();

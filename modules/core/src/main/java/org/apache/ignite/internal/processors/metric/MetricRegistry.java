@@ -287,7 +287,8 @@ public class MetricRegistry implements IgniteMetricRegistry {
             return (T)old;
         }
 
-        configureMetrics(metric);
+        if (!name().startsWith(CUSTOM_METRICS))
+            configureMetrics(metric);
 
         return metric;
     }
@@ -296,8 +297,7 @@ public class MetricRegistry implements IgniteMetricRegistry {
      * Assigns metric settings if {@code metric} is configurable.
      */
     private void configureMetrics(Metric metric) {
-        if (name().startsWith(CUSTOM_METRICS))
-            return;
+        assert !name().startsWith(CUSTOM_METRICS) : "Custom metrics cannot be configured yet";
 
         if (metric instanceof HistogramMetricImpl) {
             long[] cfgBounds = histogramCfgProvider.apply(metric.name());
