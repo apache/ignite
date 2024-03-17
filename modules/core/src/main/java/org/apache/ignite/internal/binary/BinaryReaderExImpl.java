@@ -1334,6 +1334,11 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Nullable @Override public Object readObjectDetached() throws BinaryObjectException {
+        return readObjectDetached(false);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Object readObjectDetached(boolean deserialize) throws BinaryObjectException {
         byte objType = in.readBytePositioned(in.position());
 
         return BinaryUtils.unmarshal(
@@ -1342,13 +1347,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             ldr,
             this,
             true,
-            false
+            deserialize
         );
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Object readObjectDetached(boolean deserialize) throws BinaryObjectException {
-        return BinaryUtils.unmarshal(in, ctx, ldr, this, true, deserialize);
     }
 
     /** {@inheritDoc} */
