@@ -508,7 +508,7 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
     }
 
     /** */
-    private static class ComplexWrapper extends TestObjectAllTypes {
+    public static class ComplexWrapper extends TestObjectAllTypes {
         /** */
         private final Object data;
 

@@ -38,9 +38,9 @@ class CrossObjectReferenceDetector {
 
     /** */
     boolean checkObject() {
-        objLeftBoundaryPos = reader.position();
-
         assert reader.peekByte() == GridBinaryMarshaller.OBJ;
+
+        objLeftBoundaryPos = reader.position();
 
         return findInNextObject();
     }

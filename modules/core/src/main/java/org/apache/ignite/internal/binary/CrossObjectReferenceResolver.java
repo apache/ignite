@@ -50,30 +50,28 @@ public class CrossObjectReferenceResolver {
     private final BinaryOutputStream writer;
 
     /** */
-    private final BinaryWriterSchemaHolder schema;
-
-    /** */
-    private final Map<Integer, Integer> objPosTranslation;
-
-    /** */
     private int leftBoundPos;
+
+    /** */
+    private Map<Integer, Integer> objPosTranslation;
+
+    /** */
+    private BinaryWriterSchemaHolder schema;
 
     /** */
     public CrossObjectReferenceResolver(BinaryInputStream in, BinaryOutputStream out) {
         reader = new RawBytesObjectReader(in);
 
         writer = out;
-
-        schema = new BinaryWriterSchemaHolder();
-
-        objPosTranslation = new HashMap<>();
     }
 
     /** */
     public void resolveCrossObjectReferences() {
         leftBoundPos = reader.position();
 
-        objPosTranslation.clear();
+        schema = new BinaryWriterSchemaHolder();
+
+        objPosTranslation = new HashMap<>();
 
         reassembleNextObject();
     }
@@ -270,7 +268,7 @@ public class CrossObjectReferenceResolver {
     }
 
     /** */
-    void reassembleNextCortege(int cortegeSize) {
+    private void reassembleNextCortege(int cortegeSize) {
         for (int elemIdx = 0; elemIdx < cortegeSize; elemIdx++)
             reassembleNextObject();
     }
