@@ -57,7 +57,7 @@ public class DumpReaderConfiguration {
     private final boolean keepBinary;
 
     /** Cache group names. */
-    private String[] cacheGroupNames;
+    private final String[] cacheGrpNames;
 
     /** Skip copies. */
     private final boolean skipCopies;
@@ -80,7 +80,7 @@ public class DumpReaderConfiguration {
      * @param timeout Timeout of dump reader invocation.
      * @param failFast Stop processing partitions if consumer fail to process one.
      * @param keepBinary If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}.
-     * @param cacheGroupNames Cache group names.
+     * @param cacheGrpNames Cache group names.
      * @param skipCopies Skip copies.
      * @param encSpi Encryption SPI.
      */
@@ -91,7 +91,7 @@ public class DumpReaderConfiguration {
         Duration timeout,
         boolean failFast,
         boolean keepBinary,
-        String[] cacheGroupNames,
+        String[] cacheGrpNames,
         boolean skipCopies,
         EncryptionSpi encSpi
     ) {
@@ -101,7 +101,7 @@ public class DumpReaderConfiguration {
         this.timeout = timeout;
         this.failFast = failFast;
         this.keepBinary = keepBinary;
-        this.cacheGroupNames = cacheGroupNames;
+        this.cacheGrpNames = cacheGrpNames;
         this.skipCopies = skipCopies;
         this.encSpi = encSpi;
     }
@@ -138,7 +138,7 @@ public class DumpReaderConfiguration {
 
     /** @return Cache group names. */
     public String[] cacheGroupNames() {
-        return cacheGroupNames;
+        return cacheGrpNames;
     }
 
     /** @return Skip copies. */

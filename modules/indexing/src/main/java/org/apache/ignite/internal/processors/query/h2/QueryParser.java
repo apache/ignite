@@ -667,12 +667,7 @@ public class QueryParser {
                 throw new IgniteSQLException("Failed to prepare update plan.", e);
         }
 
-        return new QueryParserResultDml(
-            stmt,
-            false,
-            streamTbl,
-            plan
-        );
+        return new QueryParserResultDml(stmt, streamTbl, plan);
     }
 
     /**
