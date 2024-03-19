@@ -101,7 +101,8 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME))
-            .setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(isCompactFooterEnabled));
+            .setBinaryConfiguration(new BinaryConfiguration()
+                .setCompactFooter(isCompactFooterEnabled));
     }
 
     /** {@inheritDoc} */
@@ -187,7 +188,6 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
         Map<Object, Object> map = new HashMap<>();
 
         map.put(createReferencesHolder(outerObj), createReferencesHolder(outerObj));
-        map.put(0, createReferencesHolder(outerObj));
 
         checkPutGetRemove(map, map);
     }
@@ -200,7 +200,7 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
         Map<Object, Object> map = new HashMap<>();
 
         map.put(0, createReferencesHolder(outerObj));
-        map.put(createReferencesHolder(outerObj), createReferencesHolder(outerObj));
+        map.put(1, createReferencesHolder(outerObj));
 
         checkPutGetRemove(map, map);
     }
@@ -350,7 +350,7 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
 
     /** */
     private static int hashCodeArraysAware(Object obj) {
-        return obj.getClass().isArray() ? Arrays.deepHashCode((Object[])obj) : Objects.hash(obj);
+        return obj != null && obj.getClass().isArray() ? Arrays.deepHashCode((Object[])obj) : Objects.hash(obj);
     }
 
     /** */
@@ -395,23 +395,25 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
         /** {@inheritDoc} */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.writeObject("aWrapperOfOuterRefToReplaceWithObj", aWrapperOfOuterRefToReplaceWithObj);
+            writer.writeObject("bInnerObj", bInnerObj);
+            writer.writeObject("cRefToOuterObjToReplaceWithInnerRef", cRefToOuterObjToReplaceWithInnerRef);
+            writer.writeObject("dRefToInnerObjToRecalculate", dRefToInnerObjToRecalculate);
 
             BinaryRawWriter rawWriter = writer.rawWriter();
 
-            rawWriter.writeObject(bInnerObj);
-            rawWriter.writeObject(cRefToOuterObjToReplaceWithInnerRef);
-            rawWriter.writeObject(dRefToInnerObjToRecalculate);
+            rawWriter.writeByte(eInnerBytePrimitive);
         }
 
         /** {@inheritDoc} */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             aWrapperOfOuterRefToReplaceWithObj = reader.readObject("aWrapperOfOuterRefToReplaceWithObj");
+            bInnerObj = reader.readObject("bInnerObj");
+            cRefToOuterObjToReplaceWithInnerRef = reader.readObject("cRefToOuterObjToReplaceWithInnerRef");
+            dRefToInnerObjToRecalculate = reader.readObject("dRefToInnerObjToRecalculate");
 
             BinaryRawReader rawReader = reader.rawReader();
 
-            bInnerObj = rawReader.readObject();
-            cRefToOuterObjToReplaceWithInnerRef = rawReader.readObject();
-            dRefToInnerObjToRecalculate = rawReader.readObject();
+            eInnerBytePrimitive = rawReader.readByte();
         }
     }
 
@@ -425,6 +427,10 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
         /** */
         public RawObject(Object innerObj, Object outerObj) {
             super(innerObj, outerObj);
+
+            // Reference recalculation for objects written with Raw Binary Writer currently is not supported.
+            aWrapperOfOuterRefToReplaceWithObj = null;
+            cRefToOuterObjToReplaceWithInnerRef = null;
         }
 
         /** {@inheritDoc} */
@@ -435,6 +441,7 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
             rawWriter.writeObject(bInnerObj);
             rawWriter.writeObject(cRefToOuterObjToReplaceWithInnerRef);
             rawWriter.writeObject(dRefToInnerObjToRecalculate);
+            rawWriter.writeByte(eInnerBytePrimitive);
         }
 
         /** {@inheritDoc} */
@@ -445,6 +452,7 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
             bInnerObj = rawReader.readObject();
             cRefToOuterObjToReplaceWithInnerRef = rawReader.readObject();
             dRefToInnerObjToRecalculate = rawReader.readObject();
+            eInnerBytePrimitive = rawReader.readByte();
         }
     }
 
@@ -463,6 +471,9 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
         protected Object dRefToInnerObjToRecalculate;
 
         /** */
+        protected byte eInnerBytePrimitive;
+
+        /** */
         public SchemaObject() {
             // No-op.
         }
@@ -476,6 +487,8 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
             cRefToOuterObjToReplaceWithInnerRef = outerObj;
 
             dRefToInnerObjToRecalculate = innerObj;
+
+            eInnerBytePrimitive = 127;
         }
 
         /** {@inheritDoc} */

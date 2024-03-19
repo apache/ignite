@@ -167,8 +167,7 @@ public class CrossObjectReferenceResolver {
             if (readObjStruct.hasRaw) {
                 writeRawDataStartPos = writer.position();
 
-                while (reader.position() < readObjStruct.footerStartPos)
-                    reassembleNextObject();
+                copyBytes(readObjStruct.footerStartPos - reader.position());
             }
 
             int writeFooterStartPos = writer.position();
