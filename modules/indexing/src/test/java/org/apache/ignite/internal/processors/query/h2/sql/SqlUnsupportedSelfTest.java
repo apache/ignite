@@ -257,6 +257,8 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
 
         assertSqlUnsupported("GRANT SELECT ON test TO PUBLIC");
         assertSqlUnsupported("REVOKE SELECT ON test FROM PUBLIC");
+
+        assertSqlUnsupported("SELECT * FROM TEST FOR UPDATE");
     }
 
     /**

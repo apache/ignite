@@ -43,12 +43,10 @@ import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
@@ -64,7 +62,6 @@ import org.h2.command.Prepared;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.keyColumn;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_PARSER_CACHE_HIT;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_QRY_PARSE;
 
@@ -456,7 +453,6 @@ public class QueryParser {
                 GridSqlQuery selectStmt = (GridSqlQuery)parser.parse(prepared);
 
                 List<Integer> cacheIds = parser.cacheIds();
-                Integer mvccCacheId = null;
 
                 // Calculate if query is in fact can be executed locally.
                 boolean loc = qry.isLocal();
@@ -481,62 +477,9 @@ public class QueryParser {
                 // node stripes in parallel and then merged through reduce process.
                 boolean splitNeeded = !loc || locSplit;
 
-                String forUpdateQryOutTx = null;
-                String forUpdateQryTx = null;
-                GridCacheTwoStepQuery forUpdateTwoStepQry = null;
-
-                boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
-
-                // SELECT FOR UPDATE case handling. We need to create extra queries with appended _key
-                // column to be able to lock selected rows further.
-                if (forUpdate) {
-                    // We have checked above that it's not an UNION query, so it's got to be SELECT.
-                    assert selectStmt instanceof GridSqlSelect;
-
-                    // Check FOR UPDATE invariants: only one table, MVCC is there.
-                    if (cacheIds.size() != 1)
-                        throw new IgniteSQLException("SELECT FOR UPDATE is supported only for queries " +
-                            "that involve single transactional cache.");
-
-                    if (mvccCacheId == null)
-                        throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional cache " +
-                            "with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-                    // We need a copy because we are going to modify AST a bit. We do not want to modify original select.
-                    GridSqlSelect selForUpdate = ((GridSqlSelect)selectStmt).copySelectForUpdate();
-
-                    // Clear forUpdate flag to run it as a plain query.
-                    selForUpdate.forUpdate(false);
-                    ((GridSqlSelect)selectStmt).forUpdate(false);
-
-                    // Remember sql string without FOR UPDATE clause.
-                    forUpdateQryOutTx = selForUpdate.getSQL();
-
-                    GridSqlAlias keyCol = keyColumn(selForUpdate);
-
-                    selForUpdate.addColumn(keyCol, true);
-
-                    // Remember sql string without FOR UPDATE clause and with _key column.
-                    forUpdateQryTx = selForUpdate.getSQL();
-
-                    // Prepare additional two-step query for FOR UPDATE case.
-                    if (splitNeeded) {
-                        c.schema(newQry.getSchema());
-
-                        forUpdateTwoStepQry = GridSqlQuerySplitter.split(
-                            c,
-                            selForUpdate,
-                            forUpdateQryTx,
-                            newQry.isCollocated(),
-                            newQry.isDistributedJoins(),
-                            newQry.isEnforceJoinOrder(),
-                            locSplit,
-                            idx,
-                            paramsCnt,
-                            log
-                        );
-                    }
-                }
+                if (GridSqlQueryParser.isForUpdateQuery(prepared))
+                    throw new IgniteSQLException("SELECT FOR UPDATE queries are not supported.",
+                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
                 GridCacheTwoStepQuery twoStepQry = null;
 
@@ -564,12 +507,8 @@ public class QueryParser {
                 QueryParserResultSelect select = new QueryParserResultSelect(
                     selectStmt,
                     twoStepQry,
-                    forUpdateTwoStepQry,
                     meta,
-                    cacheIds,
-                    mvccCacheId,
-                    forUpdateQryOutTx,
-                    forUpdateQryTx
+                    cacheIds
                 );
 
                 return new QueryParserResult(
