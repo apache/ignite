@@ -237,9 +237,6 @@ public class MvccUtils {
             return opCntr < snapshotOpCntr; // we don't see own pending updates
         }
 
-        if (snapshot.activeTransactions().contains(mvccCntr)) // we don't see of other transactions' pending updates
-            return false;
-
         if (!useTxLog)
             return true; // The checking row is expected to be committed.
 
