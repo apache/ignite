@@ -349,6 +349,10 @@ public class QueryParser {
                     throw new IgniteSQLException("Explains of update queries are not supported.",
                         IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
+                if (GridSqlQueryParser.isForUpdateQuery(prepared))
+                    throw new IgniteSQLException("SELECT FOR UPDATE queries are not supported.",
+                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
                 // Get remaining query and check if it is allowed.
                 SqlFieldsQuery remainingQry = null;
 
@@ -476,10 +480,6 @@ public class QueryParser {
                 // over segmented PARTITIONED case. In this case multiple map queries will be executed against local
                 // node stripes in parallel and then merged through reduce process.
                 boolean splitNeeded = !loc || locSplit;
-
-                if (GridSqlQueryParser.isForUpdateQuery(prepared))
-                    throw new IgniteSQLException("SELECT FOR UPDATE queries are not supported.",
-                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
                 GridCacheTwoStepQuery twoStepQry = null;
 

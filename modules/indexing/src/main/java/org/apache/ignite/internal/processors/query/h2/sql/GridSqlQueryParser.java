@@ -541,9 +541,6 @@ public class GridSqlQueryParser {
      */
     private int parsingSubQryExpression;
 
-    /** Whether this is SELECT FOR UPDATE. */
-    private boolean selectForUpdate;
-
     /**
      * @param useOptimizedSubqry If we have to find correct order for table filters in FROM clause.
      *                           Relies on uniqueness of table filter aliases.
@@ -729,10 +726,6 @@ public class GridSqlQueryParser {
         ArrayList<TableFilter> tableFilters = new ArrayList<>();
 
         TableFilter filter = select.getTopTableFilter();
-
-        if (SELECT_IS_FOR_UPDATE.get(select))
-            throw new IgniteSQLException("SELECT FOR UPDATE queries are not supported.",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         do {
             assert0(filter != null, select);
@@ -1760,9 +1753,6 @@ public class GridSqlQueryParser {
      *     to run distributed query.
      */
     public boolean isLocalQuery() {
-        if (selectForUpdate)
-            return false;
-
         for (Object o : h2ObjToGridObj.values()) {
             if (o instanceof GridSqlAlias)
                 o = GridSqlAlias.unwrap((GridSqlAst)o);
@@ -1898,8 +1888,6 @@ public class GridSqlQueryParser {
         if (stmt instanceof Query) {
             if (optimizedTableFilterOrder != null)
                 collectOptimizedTableFiltersOrder((Query)stmt);
-
-            selectForUpdate = isForUpdateQuery(stmt);
 
             return parseQuery((Query)stmt);
         }
