@@ -100,8 +100,6 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsFalse(cfg.IsActiveOnStart);
             Assert.IsTrue(cfg.AuthenticationEnabled);
 
-            Assert.AreEqual(10000, cfg.MvccVacuumFrequency);
-            Assert.AreEqual(4, cfg.MvccVacuumThreadCount);
             Assert.AreEqual(123, cfg.SqlQueryHistorySize);
             Assert.AreEqual(true, cfg.JavaPeerClassLoadingEnabled);
 
