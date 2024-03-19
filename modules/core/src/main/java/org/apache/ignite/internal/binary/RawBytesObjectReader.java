@@ -101,22 +101,30 @@ public class RawBytesObjectReader implements BinaryPositionReadable {
 
                 break;
 
-            case GridBinaryMarshaller.BOOLEAN:
             case GridBinaryMarshaller.BYTE:
-                skipBytes(1);
+            case GridBinaryMarshaller.BOOLEAN:
+                skipBytes(Byte.BYTES);
 
                 break;
 
             case GridBinaryMarshaller.CHAR:
+                skipBytes(Character.BYTES);
+
+                break;
+
             case GridBinaryMarshaller.SHORT:
-                skipBytes(2);
+                skipBytes(Short.BYTES);
+
+                break;
+
+            case GridBinaryMarshaller.FLOAT:
+                skipBytes(Float.BYTES);
 
                 break;
 
             case GridBinaryMarshaller.HANDLE:
-            case GridBinaryMarshaller.FLOAT:
             case GridBinaryMarshaller.INT:
-                skipBytes(4);
+                skipBytes(Integer.BYTES);
 
                 break;
 
@@ -124,21 +132,23 @@ public class RawBytesObjectReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.BINARY_ENUM: {
                 skipTypeId();
 
-                skipBytes(4); // Ordinal.
+                skipBytes(Integer.BYTES); // Ordinal.
 
                 break;
             }
 
             case GridBinaryMarshaller.LONG:
-            case GridBinaryMarshaller.DOUBLE:
             case GridBinaryMarshaller.DATE:
             case GridBinaryMarshaller.TIME:
-                skipBytes(8);
+                skipBytes(Long.BYTES);
 
                 break;
 
-            case GridBinaryMarshaller.BYTE_ARR:
-            case GridBinaryMarshaller.BOOLEAN_ARR:
+            case GridBinaryMarshaller.DOUBLE:
+                skipBytes(Double.BYTES);
+
+                break;
+
             case GridBinaryMarshaller.OPTM_MARSH:
             case GridBinaryMarshaller.STRING:
                 skipBytes(in.readInt());
@@ -146,36 +156,54 @@ public class RawBytesObjectReader implements BinaryPositionReadable {
                 break;
 
             case GridBinaryMarshaller.DECIMAL:
-                skipBytes(4); // Scale.
+                skipBytes(Integer.BYTES); // Scale.
                 skipBytes(in.readInt());
 
                 break;
 
             case GridBinaryMarshaller.UUID:
-                skipBytes(8 + 8);
+                skipBytes(Long.BYTES + Long.BYTES);
 
                 break;
 
             case GridBinaryMarshaller.TIMESTAMP:
-                skipBytes(8 + 4);
+                skipBytes(Long.BYTES + Integer.BYTES);
+
+                break;
+
+            case GridBinaryMarshaller.BYTE_ARR:
+            case GridBinaryMarshaller.BOOLEAN_ARR:
+                skipBytes(in.readInt() * Byte.BYTES);
 
                 break;
 
             case GridBinaryMarshaller.CHAR_ARR:
+                skipBytes(in.readInt() * Character.BYTES);
+
+                break;
+
             case GridBinaryMarshaller.SHORT_ARR:
-                skipBytes(in.readInt() * 2);
+                skipBytes(in.readInt() * Short.BYTES);
 
                 break;
 
             case GridBinaryMarshaller.INT_ARR:
+                skipBytes(in.readInt() * Integer.BYTES);
+
+                break;
+
             case GridBinaryMarshaller.FLOAT_ARR:
-                skipBytes(in.readInt() * 4);
+                skipBytes(in.readInt() * Float.BYTES);
 
                 break;
 
             case GridBinaryMarshaller.LONG_ARR:
+                skipBytes(in.readInt() * Long.BYTES);
+
+                break;
+
             case GridBinaryMarshaller.DOUBLE_ARR:
-                skipBytes(in.readInt() * 8);
+                skipBytes(in.readInt() * Double.BYTES);
 
                 break;
 

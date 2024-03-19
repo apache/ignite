@@ -287,7 +287,7 @@ public class CrossObjectReferenceResolver {
     private int readAndCopyInt() {
         int res = reader.peekInt();
 
-        copyBytes(4);
+        copyBytes(Integer.BYTES);
 
         return res;
     }
