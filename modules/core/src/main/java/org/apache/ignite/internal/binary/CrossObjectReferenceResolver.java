@@ -99,7 +99,7 @@ public class CrossObjectReferenceResolver {
             case GridBinaryMarshaller.OBJ_ARR: {
                 objPosTranslation.put(readerObjStartPos, writerObjStartPos);
 
-                copyBytes(1); // Object type.
+                copyBytes(Byte.BYTES); // Object type.
 
                 reader.readTypeId(writer);
 
@@ -113,11 +113,11 @@ public class CrossObjectReferenceResolver {
             case GridBinaryMarshaller.COL: {
                 objPosTranslation.put(readerObjStartPos, writerObjStartPos);
 
-                copyBytes(1); // Object type.
+                copyBytes(Byte.BYTES); // Object type.
 
                 int size = readAndCopyInt();
 
-                copyBytes(1); // Collection type.
+                copyBytes(Byte.BYTES); // Collection type.
 
                 reassembleNextCortege(size);
 
@@ -127,11 +127,11 @@ public class CrossObjectReferenceResolver {
             case GridBinaryMarshaller.MAP: {
                 objPosTranslation.put(readerObjStartPos, writerObjStartPos);
 
-                copyBytes(1); // Object type.
+                copyBytes(Byte.BYTES); // Object type.
 
                 int size = readAndCopyInt() * 2;
 
-                copyBytes(1); // Map type.
+                copyBytes(Byte.BYTES); // Map type.
 
                 reassembleNextCortege(size);
 
@@ -150,7 +150,7 @@ public class CrossObjectReferenceResolver {
 
         objPosTranslation.put(readerObjStartPos, writerObjStartPos);
 
-        BinaryObjectStructure readObjStruct = BinaryObjectStructure.parse(reader, readerObjStartPos);
+        BinaryObjectDescriptor readObjDesc = BinaryObjectDescriptor.parse(reader, readerObjStartPos);
 
         int fieldsCnt = 0;
 
@@ -159,15 +159,15 @@ public class CrossObjectReferenceResolver {
             copyBytes(dataStartRelative(reader, readerObjStartPos));
 
             // Process object fields.
-            while (reader.position() < readObjStruct.rawDataStartPos)
-                reassembleField(fieldsCnt++, offset(writerObjStartPos, writer.position()), readObjStruct);
+            while (reader.position() < readObjDesc.rawDataStartPos)
+                reassembleField(fieldsCnt++, offset(writerObjStartPos, writer.position()), readObjDesc);
 
             int writeRawDataStartPos = -1;
 
-            if (readObjStruct.hasRaw) {
+            if (readObjDesc.hasRaw) {
                 writeRawDataStartPos = writer.position();
 
-                copyBytes(readObjStruct.footerStartPos - reader.position());
+                copyBytes(readObjDesc.footerStartPos - reader.position());
             }
 
             int writeFooterStartPos = writer.position();
@@ -176,28 +176,28 @@ public class CrossObjectReferenceResolver {
             int footerFieldOffsetLen;
 
             // Write footer and raw data offset if required.
-            if (readObjStruct.hasSchema) {
+            if (readObjDesc.hasSchema) {
                 schemaOrRawOffsetPos = offset(writerObjStartPos, writeFooterStartPos);
-                footerFieldOffsetLen = schema.write(writer, fieldsCnt, readObjStruct.isCompactFooter);
+                footerFieldOffsetLen = schema.write(writer, fieldsCnt, readObjDesc.isCompactFooter);
 
-                if (readObjStruct.hasRaw)
+                if (readObjDesc.hasRaw)
                     writer.writeInt(offset(writerObjStartPos, writeRawDataStartPos));
             }
             else {
-                schemaOrRawOffsetPos = readObjStruct.hasRaw ? offset(writerObjStartPos, writeRawDataStartPos) : DFLT_HDR_LEN;
+                schemaOrRawOffsetPos = readObjDesc.hasRaw ? offset(writerObjStartPos, writeRawDataStartPos) : DFLT_HDR_LEN;
                 footerFieldOffsetLen = 0;
             }
 
             // Update header to reflect changes after cross object references are resolved.
             overrideHeader(
                 writerObjStartPos,
-                /** flags */ setFieldOffsetFlag(readObjStruct.flags, footerFieldOffsetLen),
+                /** flags */ setFieldOffsetFlag(readObjDesc.flags, footerFieldOffsetLen),
                 /** hash */ instance().hashCode(writer.array(), writerObjStartPos + DFLT_HDR_LEN, writeFooterStartPos),
                 /** total length */ writer.position() - writerObjStartPos,
                 schemaOrRawOffsetPos
             );
 
-            reader.position(readObjStruct.endPos);
+            reader.position(readObjDesc.endPos);
         }
         finally {
             schema.pop(fieldsCnt);
@@ -256,10 +256,10 @@ public class CrossObjectReferenceResolver {
     }
 
     /** */
-    private void reassembleField(int fieldOrder, int fieldOffset, BinaryObjectStructure objStruct) {
-        int fieldId = objStruct.isCompactFooter
+    private void reassembleField(int fieldOrder, int fieldOffset, BinaryObjectDescriptor binObjDesc) {
+        int fieldId = binObjDesc.isCompactFooter
             ? -1
-            : reader.readIntPositioned(objStruct.fieldIdPosition(fieldOrder));
+            : reader.readIntPositioned(binObjDesc.fieldIdPosition(fieldOrder));
 
         schema.push(fieldId, fieldOffset);
 
@@ -305,7 +305,7 @@ public class CrossObjectReferenceResolver {
     }
 
     /** */
-    private static class BinaryObjectStructure {
+    private static class BinaryObjectDescriptor {
         /** */
         private final int rawDataStartPos;
 
@@ -331,7 +331,7 @@ public class CrossObjectReferenceResolver {
         private final int fieldOffsetLength;
 
         /** */
-        private BinaryObjectStructure(BinaryPositionReadable reader, int startPos) {
+        private BinaryObjectDescriptor(BinaryPositionReadable reader, int startPos) {
             rawDataStartPos = rawOffsetAbsolute(reader, startPos);
             footerStartPos = footerStartAbsolute(reader, startPos);
             endPos = startPos + length(reader, startPos);
@@ -345,8 +345,8 @@ public class CrossObjectReferenceResolver {
         }
 
         /** */
-        private static BinaryObjectStructure parse(BinaryPositionReadable reader, int startPos) {
-            return new BinaryObjectStructure(reader, startPos);
+        private static BinaryObjectDescriptor parse(BinaryPositionReadable reader, int startPos) {
+            return new BinaryObjectDescriptor(reader, startPos);
         }
 
         /** */

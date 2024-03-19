@@ -90,14 +90,14 @@ public class RawBytesObjectReader implements BinaryPositionReadable {
                 break;
 
             case GridBinaryMarshaller.OBJ:
-                skipBytes(BinaryUtils.length(in, objStartPos) - /** Object type. */ 1);
+                skipBytes(BinaryUtils.length(in, objStartPos) - /** Object type. */ Byte.BYTES);
 
                 break;
 
             case GridBinaryMarshaller.BINARY_OBJ:
                 skipBytes(in.readInt());
 
-                skipBytes(4); // Offset.
+                skipBytes(Integer.BYTES); // Offset.
 
                 break;
 
@@ -230,7 +230,7 @@ public class RawBytesObjectReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.COL: {
                 int size = in.readInt();
 
-                skipBytes(1); // Collection type.
+                skipBytes(Byte.BYTES); // Collection type.
 
                 skipCortege(size);
 
@@ -240,7 +240,7 @@ public class RawBytesObjectReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.MAP: {
                 int size = in.readInt() * 2;
 
-                skipBytes(1); // Map type.
+                skipBytes(Byte.BYTES); // Map type.
 
                 skipCortege(size);
 
@@ -316,7 +316,7 @@ public class RawBytesObjectReader implements BinaryPositionReadable {
         int typeId = in.readInt();
 
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
-            skipBytes(1); // String type.
+            skipBytes(Byte.BYTES); // String type.
 
             skipBytes(in.readInt());
         }
