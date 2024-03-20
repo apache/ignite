@@ -36,7 +36,6 @@ import org.apache.ignite.internal.sql.command.SqlKillScanQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
 import org.apache.ignite.internal.sql.command.SqlKillTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlRefreshStatitsicsCommand;
-import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,7 +56,6 @@ import static org.apache.ignite.internal.sql.SqlKeyword.PRIMARY;
 import static org.apache.ignite.internal.sql.SqlKeyword.QUERY;
 import static org.apache.ignite.internal.sql.SqlKeyword.REFRESH;
 import static org.apache.ignite.internal.sql.SqlKeyword.REVOKE;
-import static org.apache.ignite.internal.sql.SqlKeyword.ROLLBACK;
 import static org.apache.ignite.internal.sql.SqlKeyword.SCAN;
 import static org.apache.ignite.internal.sql.SqlKeyword.SERVICE;
 import static org.apache.ignite.internal.sql.SqlKeyword.SET;
@@ -71,7 +69,6 @@ import static org.apache.ignite.internal.sql.SqlKeyword.USER;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnsupportedIfMatchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
-import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesOptionalKeyword;
 
 /**
  * SQL parser.
@@ -158,11 +155,6 @@ public class SqlParser {
 
                             break;
 
-                        case ROLLBACK:
-                            cmd = processRollback();
-
-                            break;
-
                         case COPY:
                             try {
                                 cmd = processCopy();
@@ -232,7 +224,7 @@ public class SqlParser {
                         return cmd;
                     }
                     else
-                        throw errorUnexpectedToken(lex, CREATE, DROP, ROLLBACK, COPY, SET, ALTER, KILL);
+                        throw errorUnexpectedToken(lex, CREATE, DROP, COPY, SET, ALTER, KILL);
 
                 case QUOTED:
                 case MINUS:
@@ -375,17 +367,6 @@ public class SqlParser {
         }
 
         throw errorUnexpectedToken(lex, INDEX, USER);
-    }
-
-    /**
-     * Process ROLLBACK keyword.
-     *
-     * @return Command.
-     */
-    private SqlCommand processRollback() {
-        skipIfMatchesOptionalKeyword(lex, TRANSACTION);
-
-        return new SqlRollbackTransactionCommand();
     }
 
     /**
