@@ -23,14 +23,12 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateResult;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_BIT_OFF;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_MASK;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_KEY_ABSENT_BEFORE_OFF;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.EntryPart.CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.EntryPart.EXPIRE_TIME;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.EntryPart.KEY;
@@ -74,8 +72,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
             if (mvccInfoSize > 0) {
                 assert MvccUtils.mvccVersionIsValid(row.mvccCoordinatorVersion(), row.mvccCounter(), row.mvccOperationCounter());
 
-                final int keyAbsentBeforeFlag = (row instanceof MvccUpdateResult) &&
-                    ((MvccUpdateResult)row).isKeyAbsentBefore() ? (1 << MVCC_KEY_ABSENT_BEFORE_OFF) : 0;
+                final int keyAbsentBeforeFlag = 0;
 
                 // xid_min.
                 PageUtils.putLong(addr, 0, row.mvccCoordinatorVersion());
@@ -216,8 +213,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
 
         final int len = Math.min(curLen - rowOff, payloadSize);
 
-        final int keyAbsentBeforeFlag = (row instanceof MvccUpdateResult) &&
-            ((MvccUpdateResult)row).isKeyAbsentBefore() ? (1 << MVCC_KEY_ABSENT_BEFORE_OFF) : 0;
+        final int keyAbsentBeforeFlag = 0;
 
         if (type == EXPIRE_TIME)
             writeExpireTimeFragment(buf, row.expireTime(), rowOff, len, prevLen);

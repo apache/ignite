@@ -110,8 +110,6 @@ public class InlineTreeFilterClosure implements BPlusTree.TreeRowClosure<IndexRo
      * @return {@code True} if row passes the filter.
      */
     private boolean applyMvcc(InlineIO io, long pageAddr, int idx) throws IgniteCheckedException {
-        assert io.storeMvccInfo() : io;
-
         long rowCrdVer = io.mvccCoordinatorVersion(pageAddr, idx);
         long rowCntr = io.mvccCounter(pageAddr, idx);
         int rowOpCntr = io.mvccOperationCounter(pageAddr, idx);
