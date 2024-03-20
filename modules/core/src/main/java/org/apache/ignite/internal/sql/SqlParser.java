@@ -23,7 +23,6 @@ import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
 import org.apache.ignite.internal.sql.command.SqlAnalyzeCommand;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
-import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
@@ -44,7 +43,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.sql.SqlKeyword.ALTER;
 import static org.apache.ignite.internal.sql.SqlKeyword.ANALYZE;
 import static org.apache.ignite.internal.sql.SqlKeyword.CLIENT;
-import static org.apache.ignite.internal.sql.SqlKeyword.COMMIT;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
 import static org.apache.ignite.internal.sql.SqlKeyword.CONTINUOUS;
 import static org.apache.ignite.internal.sql.SqlKeyword.COPY;
@@ -150,11 +148,6 @@ public class SqlParser {
                     int curCmdBegin = lex.tokenPosition();
 
                     switch (lex.token()) {
-                        case COMMIT:
-                            cmd = processCommit();
-
-                            break;
-
                         case CREATE:
                             cmd = processCreate();
 
@@ -239,7 +232,7 @@ public class SqlParser {
                         return cmd;
                     }
                     else
-                        throw errorUnexpectedToken(lex, COMMIT, CREATE, DROP, ROLLBACK, COPY, SET, ALTER, KILL);
+                        throw errorUnexpectedToken(lex, CREATE, DROP, ROLLBACK, COPY, SET, ALTER, KILL);
 
                 case QUOTED:
                 case MINUS:
@@ -251,17 +244,6 @@ public class SqlParser {
                     throw errorUnexpectedToken(lex);
             }
         }
-    }
-
-    /**
-     * Process COMMIT keyword.
-     *
-     * @return Command.
-     */
-    private SqlCommand processCommit() {
-        skipIfMatchesOptionalKeyword(lex, TRANSACTION);
-
-        return new SqlCommitTransactionCommand();
     }
 
     /**
