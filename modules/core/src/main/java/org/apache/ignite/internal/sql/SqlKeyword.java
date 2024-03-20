@@ -233,9 +233,6 @@ public class SqlKeyword {
     /** Keyword: RESTRICT. */
     public static final String RESTRICT = "RESTRICT";
 
-    /** Keyword: ROLLBACK. */
-    public static final String ROLLBACK = "ROLLBACK";
-
     /** Keyword: SET. */
     public static final String SET = "SET";
 
