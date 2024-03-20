@@ -86,9 +86,6 @@ public class SqlKeyword {
     /** Keyword: CHARSET. */
     public static final String CHARSET = "CHARSET";
 
-    /** Keyword: COMMIT. */
-    public static final String COMMIT = "COMMIT";
-
     /** Keyword: COPY. */
     public static final String COPY = "COPY";
 
