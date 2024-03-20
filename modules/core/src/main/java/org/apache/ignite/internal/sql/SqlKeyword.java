@@ -284,9 +284,6 @@ public class SqlKeyword {
     /** Keyword: VARCHAR_CASESENSITIVE. */
     public static final String VARCHAR_CASESENSITIVE = "VARCHAR_CASESENSITIVE";
 
-    /** Keyword: WORK. */
-    public static final String WORK = "WORK";
-
     /** Keyword: YEAR. */
     public static final String YEAR = "YEAR";
 
