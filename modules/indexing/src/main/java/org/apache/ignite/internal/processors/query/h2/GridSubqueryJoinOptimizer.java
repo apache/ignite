@@ -270,7 +270,6 @@ public class GridSubqueryJoinOptimizer {
      * <p>
      * We call query simple if it is select query (not union) and it has neither having nor grouping,
      * has no distinct clause, has no aggregations, has no limits, no sorting, no offset clause.
-     * Also it is not SELECT FOR UPDATE.
      *
      * @param subQry Sub query.
      * @return {@code true} if it is simple query.

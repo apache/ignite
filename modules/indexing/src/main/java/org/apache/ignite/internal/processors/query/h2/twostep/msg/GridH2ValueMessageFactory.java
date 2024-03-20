@@ -63,7 +63,6 @@ public class GridH2ValueMessageFactory implements MessageFactoryProvider {
         factory.register((short)-54, QueryTable::new);
         factory.register((short)-55, GridH2DmlRequest::new);
         factory.register((short)-56, GridH2DmlResponse::new);
-        factory.register((short)-57, GridH2SelectForUpdateTxDetails::new);
     }
 
     /** {@inheritDoc} */
