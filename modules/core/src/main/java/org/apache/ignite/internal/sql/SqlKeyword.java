@@ -59,9 +59,6 @@ public class SqlKeyword {
     /** Keyword: BATCH_SIZE */
     public static final String BATCH_SIZE = "BATCH_SIZE";
 
-    /** Keyword: BEGIN. */
-    public static final String BEGIN = "BEGIN";
-
     /** Keyword: BIGINT */
     public static final String BIGINT = "BIGINT";
 
@@ -256,9 +253,6 @@ public class SqlKeyword {
 
     /** Keyword: SPATIAL. */
     public static final String SPATIAL = "SPATIAL";
-
-    /** Keyword: START. */
-    public static final String START = "START";
 
     /** Keyword: STREAMING. */
     public static final String STREAMING = "STREAMING";

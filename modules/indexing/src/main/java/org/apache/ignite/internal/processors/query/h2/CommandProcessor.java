@@ -64,7 +64,6 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.sql.SqlCommandProcessor;
-import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
@@ -194,7 +193,6 @@ public class CommandProcessor extends SqlCommandProcessor {
     /** {@inheritDoc} */
     @Override public boolean isCommandSupported(SqlCommand cmd) {
         return super.isCommandSupported(cmd)
-            || cmd instanceof SqlBeginTransactionCommand
             || cmd instanceof SqlCommitTransactionCommand
             || cmd instanceof SqlRollbackTransactionCommand
             || cmd instanceof SqlBulkLoadCommand

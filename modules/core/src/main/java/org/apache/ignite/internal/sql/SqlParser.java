@@ -21,7 +21,6 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
 import org.apache.ignite.internal.sql.command.SqlAnalyzeCommand;
-import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
@@ -44,7 +43,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.ALTER;
 import static org.apache.ignite.internal.sql.SqlKeyword.ANALYZE;
-import static org.apache.ignite.internal.sql.SqlKeyword.BEGIN;
 import static org.apache.ignite.internal.sql.SqlKeyword.CLIENT;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMMIT;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
@@ -67,17 +65,14 @@ import static org.apache.ignite.internal.sql.SqlKeyword.SERVICE;
 import static org.apache.ignite.internal.sql.SqlKeyword.SET;
 import static org.apache.ignite.internal.sql.SqlKeyword.SHOW;
 import static org.apache.ignite.internal.sql.SqlKeyword.SPATIAL;
-import static org.apache.ignite.internal.sql.SqlKeyword.START;
 import static org.apache.ignite.internal.sql.SqlKeyword.STREAMING;
 import static org.apache.ignite.internal.sql.SqlKeyword.TABLE;
 import static org.apache.ignite.internal.sql.SqlKeyword.TRANSACTION;
 import static org.apache.ignite.internal.sql.SqlKeyword.UNIQUE;
 import static org.apache.ignite.internal.sql.SqlKeyword.USER;
-import static org.apache.ignite.internal.sql.SqlKeyword.WORK;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnsupportedIfMatchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
-import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesOptionalKeyword;
 
 /**
@@ -155,11 +150,6 @@ public class SqlParser {
                     int curCmdBegin = lex.tokenPosition();
 
                     switch (lex.token()) {
-                        case BEGIN:
-                            cmd = processBegin();
-
-                            break;
-
                         case COMMIT:
                             cmd = processCommit();
 
@@ -177,11 +167,6 @@ public class SqlParser {
 
                         case ROLLBACK:
                             cmd = processRollback();
-
-                            break;
-
-                        case START:
-                            cmd = processStart();
 
                             break;
 
@@ -254,7 +239,7 @@ public class SqlParser {
                         return cmd;
                     }
                     else
-                        throw errorUnexpectedToken(lex, BEGIN, COMMIT, CREATE, DROP, ROLLBACK, COPY, SET, ALTER, START, KILL);
+                        throw errorUnexpectedToken(lex, COMMIT, CREATE, DROP, ROLLBACK, COPY, SET, ALTER, KILL);
 
                 case QUOTED:
                 case MINUS:
@@ -266,19 +251,6 @@ public class SqlParser {
                     throw errorUnexpectedToken(lex);
             }
         }
-    }
-
-    /**
-     * Process BEGIN keyword.
-     *
-     * @return Command.
-     */
-    private SqlCommand processBegin() {
-        skipIfMatchesOptionalKeyword(lex, TRANSACTION);
-
-        skipIfMatchesOptionalKeyword(lex, WORK);
-
-        return new SqlBeginTransactionCommand();
     }
 
     /**
@@ -432,17 +404,6 @@ public class SqlParser {
         skipIfMatchesOptionalKeyword(lex, TRANSACTION);
 
         return new SqlRollbackTransactionCommand();
-    }
-
-    /**
-     * Process START keyword.
-     *
-     * @return Command.
-     */
-    private SqlCommand processStart() {
-        skipIfMatchesKeyword(lex, TRANSACTION);
-
-        return new SqlBeginTransactionCommand();
     }
 
     /**
