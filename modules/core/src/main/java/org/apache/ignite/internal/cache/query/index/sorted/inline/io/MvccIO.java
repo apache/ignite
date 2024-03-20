@@ -46,11 +46,4 @@ public interface MvccIO {
     public default int mvccOperationCounter(long pageAddr, int idx) {
         throw new UnsupportedOperationException();
     }
-
-    /**
-     * @return {@code True} if IO stores mvcc information.
-     */
-    public default boolean storeMvccInfo() {
-        return false;
-    }
 }
