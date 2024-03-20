@@ -41,7 +41,9 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.ALTER;
 import static org.apache.ignite.internal.sql.SqlKeyword.ANALYZE;
+import static org.apache.ignite.internal.sql.SqlKeyword.BEGIN;
 import static org.apache.ignite.internal.sql.SqlKeyword.CLIENT;
+import static org.apache.ignite.internal.sql.SqlKeyword.COMMIT;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
 import static org.apache.ignite.internal.sql.SqlKeyword.CONTINUOUS;
 import static org.apache.ignite.internal.sql.SqlKeyword.COPY;
@@ -56,19 +58,24 @@ import static org.apache.ignite.internal.sql.SqlKeyword.PRIMARY;
 import static org.apache.ignite.internal.sql.SqlKeyword.QUERY;
 import static org.apache.ignite.internal.sql.SqlKeyword.REFRESH;
 import static org.apache.ignite.internal.sql.SqlKeyword.REVOKE;
+import static org.apache.ignite.internal.sql.SqlKeyword.ROLLBACK;
 import static org.apache.ignite.internal.sql.SqlKeyword.SCAN;
 import static org.apache.ignite.internal.sql.SqlKeyword.SERVICE;
 import static org.apache.ignite.internal.sql.SqlKeyword.SET;
 import static org.apache.ignite.internal.sql.SqlKeyword.SHOW;
 import static org.apache.ignite.internal.sql.SqlKeyword.SPATIAL;
+import static org.apache.ignite.internal.sql.SqlKeyword.START;
 import static org.apache.ignite.internal.sql.SqlKeyword.STREAMING;
 import static org.apache.ignite.internal.sql.SqlKeyword.TABLE;
 import static org.apache.ignite.internal.sql.SqlKeyword.TRANSACTION;
 import static org.apache.ignite.internal.sql.SqlKeyword.UNIQUE;
 import static org.apache.ignite.internal.sql.SqlKeyword.USER;
+import static org.apache.ignite.internal.sql.SqlKeyword.WORK;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnsupportedIfMatchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
+import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
+import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesOptionalKeyword;
 
 /**
  * SQL parser.
@@ -145,6 +152,16 @@ public class SqlParser {
                     int curCmdBegin = lex.tokenPosition();
 
                     switch (lex.token()) {
+                        case BEGIN:
+                            cmd = processBegin();
+
+                            break;
+
+                        case COMMIT:
+                            cmd = processCommit();
+
+                            break;
+
                         case CREATE:
                             cmd = processCreate();
 
@@ -152,6 +169,16 @@ public class SqlParser {
 
                         case DROP:
                             cmd = processDrop();
+
+                            break;
+
+                        case ROLLBACK:
+                            cmd = processRollback();
+
+                            break;
+
+                        case START:
+                            cmd = processStart();
 
                             break;
 
@@ -224,7 +251,7 @@ public class SqlParser {
                         return cmd;
                     }
                     else
-                        throw errorUnexpectedToken(lex, CREATE, DROP, COPY, SET, ALTER, KILL);
+                        throw errorUnexpectedToken(lex, BEGIN, COMMIT, CREATE, DROP, ROLLBACK, COPY, SET, ALTER, START, KILL);
 
                 case QUOTED:
                 case MINUS:
@@ -236,6 +263,32 @@ public class SqlParser {
                     throw errorUnexpectedToken(lex);
             }
         }
+    }
+
+    /**
+     * Process BEGIN keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processBegin() {
+        skipIfMatchesOptionalKeyword(lex, TRANSACTION);
+
+        skipIfMatchesOptionalKeyword(lex, WORK);
+
+        throw new SqlStrictParseException("BEGIN command is not supported", IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
+            SqlParserUtils.errorUnsupported(lex));
+    }
+
+    /**
+     * Process COMMIT keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processCommit() {
+        skipIfMatchesOptionalKeyword(lex, TRANSACTION);
+
+        throw new SqlStrictParseException("COMMIT command is not supported", IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
+            SqlParserUtils.errorUnsupported(lex));
     }
 
     /**
@@ -367,6 +420,30 @@ public class SqlParser {
         }
 
         throw errorUnexpectedToken(lex, INDEX, USER);
+    }
+
+    /**
+     * Process ROLLBACK keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processRollback() {
+        skipIfMatchesOptionalKeyword(lex, TRANSACTION);
+
+        throw new SqlStrictParseException("ROLLBACK command is not supported", IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
+            SqlParserUtils.errorUnsupported(lex));
+    }
+
+    /**
+     * Process START keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processStart() {
+        skipIfMatchesKeyword(lex, TRANSACTION);
+
+        throw new SqlStrictParseException("START command is not supported", IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
+            SqlParserUtils.errorUnsupported(lex));
     }
 
     /**
