@@ -260,13 +260,24 @@ public class SqlUnsupportedSelfTest extends AbstractIndexingCommonTest {
 
         assertSqlUnsupported("SELECT * FROM TEST FOR UPDATE");
 
+        assertTxCommandsUnsupported();
+    }
+
+    /**
+     *
+     */
+    private void assertTxCommandsUnsupported() {
         assertSqlUnsupported("BEGIN");
         assertSqlUnsupported("BEGIN TRANSACTION");
         assertSqlUnsupported("BEGIN WORK");
 
+        assertSqlUnsupported("START TRANSACTION");
+
         assertSqlUnsupported("ROLLBACK");
+        assertSqlUnsupported("ROLLBACK TRANSACTION");
 
         assertSqlUnsupported("COMMIT");
+        assertSqlUnsupported("COMMIT TRANSACTION");
     }
 
     /**
