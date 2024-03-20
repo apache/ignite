@@ -158,9 +158,6 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /** */
     private MvccSnapshot mvccSnapshot;
 
-    /** TX details holder for {@code SELECT FOR UPDATE}, or {@code null} if not applicable. */
-    private GridH2SelectForUpdateTxDetails txReq;
-
     /** Id of the query assigned by {@link RunningQueryManager} on originator node. */
     private long qryId;
 
@@ -192,7 +189,6 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         paramsBytes = req.paramsBytes;
         schemaName = req.schemaName;
         mvccSnapshot = req.mvccSnapshot;
-        txReq = req.txReq;
         qryId = req.qryId;
         explicitTimeout = req.explicitTimeout;
     }
@@ -446,20 +442,6 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     }
 
     /**
-     * @return TX details holder for {@code SELECT FOR UPDATE}, or {@code null} if not applicable.
-     */
-    public GridH2SelectForUpdateTxDetails txDetails() {
-        return txReq;
-    }
-
-    /**
-     * @param txReq TX details holder for {@code SELECT FOR UPDATE}, or {@code null} if not applicable.
-     */
-    public void txDetails(GridH2SelectForUpdateTxDetails txReq) {
-        this.txReq = txReq;
-    }
-
-    /**
      * @param flags Flags.
      * @param dataPageScanEnabled {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
      * @return Updated flags.
@@ -682,18 +664,12 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeMessage("txReq", txReq))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
                 if (!writer.writeBoolean("explicitTimeout", explicitTimeout))
                     return false;
 
                 writer.incrementState();
 
-            case 15:
+            case 14:
                 if (!writer.writeLong("qryId", qryId))
                     return false;
 
@@ -816,14 +792,6 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 13:
-                txReq = reader.readMessage("txReq");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
                 explicitTimeout = reader.readBoolean("explicitTimeout");
 
                 if (!reader.isLastRead())
@@ -831,7 +799,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 15:
+            case 14:
                 qryId = reader.readLong("qryId");
 
                 if (!reader.isLastRead())

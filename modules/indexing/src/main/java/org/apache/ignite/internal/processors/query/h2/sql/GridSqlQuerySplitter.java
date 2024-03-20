@@ -36,7 +36,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
 import org.apache.ignite.internal.processors.query.h2.H2StatementCache;
@@ -44,13 +43,11 @@ import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.QueryTable;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
-import org.h2.table.Column;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel.isCollocated;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst.TRUE;
@@ -1286,30 +1283,6 @@ public class GridSqlQuerySplitter {
             map.derivedPartitions(extractor.extract(mapQry));
 
         mapSqlQrys.add(map);
-    }
-
-    /**
-     * Retrieves _KEY column from SELECT. This column is used for SELECT FOR UPDATE statements.
-     *
-     * @param sel Select statement.
-     * @return Key column alias.
-     */
-    public static GridSqlAlias keyColumn(GridSqlSelect sel) {
-        GridSqlAst from = sel.from();
-
-        GridSqlTable tbl = from instanceof GridSqlTable ? (GridSqlTable)from :
-            ((GridSqlElement)from).child();
-
-        GridH2Table gridTbl = tbl.dataTable();
-
-        Column h2KeyCol = gridTbl.getColumn(QueryUtils.KEY_COL);
-
-        GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName());
-        keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));
-
-        GridSqlAlias al = SplitterUtils.alias(QueryUtils.KEY_FIELD_NAME, keyCol);
-
-        return al;
     }
 
     /**
