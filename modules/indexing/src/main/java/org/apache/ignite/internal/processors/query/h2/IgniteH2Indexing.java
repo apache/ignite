@@ -460,7 +460,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     return new H2FieldsIterator(
                         rs,
-                        null,
                         conn,
                         qryParams.pageSize(),
                         log,
@@ -1424,7 +1423,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             qryParams.arguments(),
                             parts,
                             qryParams.lazy(),
-                            null,
                             qryParams.dataPageScanEnabled(),
                             qryParams.pageSize()
                         );
