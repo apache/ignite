@@ -26,8 +26,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccDataPageClosure;
 import org.apache.ignite.internal.transactions.IgniteTxUnexpectedStateCheckedException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -40,7 +38,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccVer
 /**
  * Reopresents filter that allow query only primary partitions.
  */
-public class InlineTreeFilterClosure implements BPlusTree.TreeRowClosure<IndexRow, IndexRow>, MvccDataPageClosure {
+public class InlineTreeFilterClosure implements BPlusTree.TreeRowClosure<IndexRow, IndexRow> {
     /** */
     private final MvccSnapshot mvccSnapshot;
 
@@ -118,23 +116,6 @@ public class InlineTreeFilterClosure implements BPlusTree.TreeRowClosure<IndexRo
 
         try {
             return isVisible(cctx, mvccSnapshot, rowCrdVer, rowCntr, rowOpCntr, io.link(pageAddr, idx));
-        }
-        catch (IgniteTxUnexpectedStateCheckedException e) {
-            // TODO this catch must not be needed if we switch Vacuum to data page scan
-            // We expect the active tx state can be observed by read tx only in the cases when tx has been aborted
-            // asynchronously and node hasn't received finish message yet but coordinator has already removed it from
-            // the active txs map. Rows written by this tx are invisible to anyone and will be removed by the vacuum.
-            if (log.isDebugEnabled())
-                log.debug( "Unexpected tx state on index lookup. " + X.getFullStackTrace(e));
-
-            return false;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean applyMvcc(DataPageIO io, long dataPageAddr, int itemId, int pageSize) throws IgniteCheckedException {
-        try {
-            return isVisible(cctx, mvccSnapshot, io, dataPageAddr, itemId, pageSize);
         }
         catch (IgniteTxUnexpectedStateCheckedException e) {
             // TODO this catch must not be needed if we switch Vacuum to data page scan
