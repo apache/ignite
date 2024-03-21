@@ -1074,7 +1074,7 @@ public class GridCacheSharedContext<K, V> {
      * @return Commit future.
      */
     public IgniteInternalFuture<IgniteInternalTx> commitTxAsync(GridNearTxLocal tx) {
-        AsyncCacheOpContext.FutureHolder holder = asyncOpCtx.lastFuture();
+        AsyncCacheOpContext.FutureHolder holder = tx.txState().lastAsyncFuture();
 
         holder.lock();
 

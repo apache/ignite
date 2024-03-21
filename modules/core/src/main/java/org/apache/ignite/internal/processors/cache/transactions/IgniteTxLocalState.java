@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import org.apache.ignite.internal.processors.cache.AsyncCacheOpContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 
 /**
@@ -74,4 +75,7 @@ public interface IgniteTxLocalState extends IgniteTxState {
      * @param cctx Cache shared context.
      */
     public void resumeLastFuture(GridCacheSharedContext<?, ?> cctx);
+
+    /** */
+    public AsyncCacheOpContext.FutureHolder lastAsyncFuture();
 }

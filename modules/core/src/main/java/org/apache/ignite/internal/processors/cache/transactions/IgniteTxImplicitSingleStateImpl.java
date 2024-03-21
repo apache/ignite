@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.processors.cache.AsyncCacheOpContext;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -114,6 +115,13 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public void resumeLastFuture(GridCacheSharedContext<?, ?> cctx) {
         assert false : "Implicit tx can't be resumed";
+    }
+
+    /** {@inheritDoc} */
+    @Override public AsyncCacheOpContext.FutureHolder lastAsyncFuture() {
+        assert false : "Implicit tx can't use this method";
+
+        return null;
     }
 
     /** {@inheritDoc} */

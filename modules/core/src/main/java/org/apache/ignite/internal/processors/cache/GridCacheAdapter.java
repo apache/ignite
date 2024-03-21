@@ -3576,11 +3576,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Nullable private <T> T syncOp(SyncOp<T> op) throws IgniteCheckedException {
         checkJta();
 
-        ctx.shared().asyncOpContext().awaitLastFut();
+        //ctx.shared().asyncOpContext().awaitLastFut();
 
         GridNearTxLocal tx = checkCurrentTx();
 
         if (tx == null || tx.implicit()) {
+            ctx.shared().asyncOpContext().awaitLastFut();
+
             TransactionConfiguration tCfg = CU.transactionConfiguration(ctx, ctx.kernalContext().config());
 
             CacheOperationContext opCtx = ctx.operationContextPerCall();
@@ -3673,8 +3675,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             // Should not happen.
             throw new IgniteCheckedException("Failed to perform cache operation (maximum number of retries exceeded).");
         }
-        else
+        else {
+            tx.txState().awaitLastFuture(ctx.shared());
+
             return op.op(tx);
+        }
     }
 
     /**
@@ -3749,7 +3754,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (fail != null)
             return fail;
 
-        AsyncCacheOpContext.FutureHolder holder = ctx.shared().asyncOpContext().lastFuture();
+        //AsyncCacheOpContext.FutureHolder holder = ctx.shared().asyncOpContext().lastFuture();
+        AsyncCacheOpContext.FutureHolder holder = tx.implicit() ?
+            ctx.shared().asyncOpContext().lastFuture() : tx.txState().lastAsyncFuture();
 
         holder.lock();
 

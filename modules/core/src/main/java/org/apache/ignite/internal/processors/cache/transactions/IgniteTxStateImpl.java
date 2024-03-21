@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.AsyncCacheOpContext;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
@@ -78,6 +79,10 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     @GridToStringExclude
     private AsyncCacheOpContext.FutureHolder suspendedAsyncFut;
 
+    /** Async future. */
+    @GridToStringExclude
+    private final AsyncCacheOpContext.FutureHolder lastAsyncFut = new AsyncCacheOpContext.FutureHolder();
+
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
         return false;
@@ -118,22 +123,40 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public void awaitLastFuture(GridCacheSharedContext<?, ?> cctx) {
-        cctx.asyncOpContext().awaitLastFut();
+        //cctx.asyncOpContext().awaitLastFut();
+        IgniteInternalFuture<Void> fut = lastAsyncFut.future();
+
+        if (fut != null && !fut.isDone()) {
+            try {
+                // Ignore any exception from previous async operation as it should be handled by user.
+                fut.get();
+            }
+            catch (IgniteCheckedException ignored) {
+                // No-op.
+            }
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void suspendLastFuture(GridCacheSharedContext<?, ?> cctx) {
-        suspendedAsyncFut = cctx.asyncOpContext().suspendLastFut();
+        //suspendedAsyncFut = cctx.asyncOpContext().suspendLastFut();
     }
 
     /** {@inheritDoc} */
     @Override public void resumeLastFuture(GridCacheSharedContext<?, ?> cctx) {
+/*
         AsyncCacheOpContext.FutureHolder hld = suspendedAsyncFut;
 
         if (hld != null)
             cctx.asyncOpContext().resumeLastFut(hld);
 
         suspendedAsyncFut = null;
+*/
+    }
+
+    /** {@inheritDoc} */
+    @Override public AsyncCacheOpContext.FutureHolder lastAsyncFuture() {
+        return lastAsyncFut;
     }
 
     /** {@inheritDoc} */

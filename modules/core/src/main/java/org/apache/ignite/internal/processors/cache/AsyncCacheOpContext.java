@@ -69,6 +69,7 @@ public class AsyncCacheOpContext {
     /**
      * Replaces previous async operation future on transaction suspend.
      */
+/*
     public @Nullable FutureHolder suspendLastFut() {
         FutureHolder holder = lastFut.get();
 
@@ -82,10 +83,12 @@ public class AsyncCacheOpContext {
         else
             return null;
     }
+*/
 
     /**
      * Replaces previous async operation future on transaction resume.
      */
+/*
     public void resumeLastFut(FutureHolder holder) {
         IgniteInternalFuture<Void> resumedFut = holder.future();
 
@@ -115,6 +118,7 @@ public class AsyncCacheOpContext {
         else
             lastFut.set(holder);
     }
+*/
 
     /**
      * Saves future in thread local holder and adds listener
