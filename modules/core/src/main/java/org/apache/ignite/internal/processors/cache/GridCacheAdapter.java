@@ -3758,7 +3758,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         holder.lock();
 
         try {
-            IgniteInternalFuture<Void> fut = holder.future();
+            IgniteInternalFuture<?> fut = holder.future();
 
             final GridNearTxLocal tx0 = tx;
 

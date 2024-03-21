@@ -1080,7 +1080,7 @@ public class GridCacheSharedContext<K, V> {
         holder.lock();
 
         try {
-            IgniteInternalFuture<Void> fut = holder.future();
+            IgniteInternalFuture<?> fut = holder.future();
 
             if (fut != null && !fut.isDone()) {
                 IgniteInternalFuture<IgniteInternalTx> f = new GridEmbeddedFuture<>(fut,
@@ -1447,7 +1447,7 @@ public class GridCacheSharedContext<K, V> {
         private final ReentrantLock lock = new ReentrantLock();
 
         /** Future. */
-        private IgniteInternalFuture<Void> fut;
+        private IgniteInternalFuture<?> fut;
 
         /**
          * Tries to acquire lock.
@@ -1485,7 +1485,7 @@ public class GridCacheSharedContext<K, V> {
          *
          * @return Future.
          */
-        public IgniteInternalFuture<Void> future() {
+        public IgniteInternalFuture<?> future() {
             return fut;
         }
 
@@ -1494,7 +1494,7 @@ public class GridCacheSharedContext<K, V> {
          *
          * @param fut Future.
          */
-        public void future(@Nullable IgniteInternalFuture<Void> fut) {
+        public void future(@Nullable IgniteInternalFuture<?> fut) {
             this.fut = fut;
         }
 
@@ -1502,7 +1502,7 @@ public class GridCacheSharedContext<K, V> {
          * Awaits for previous async operation to be completed.
          */
         public void await() {
-            IgniteInternalFuture<Void> fut = this.fut;
+            IgniteInternalFuture<?> fut = this.fut;
 
             if (fut != null && !fut.isDone()) {
                 try {
@@ -1527,7 +1527,7 @@ public class GridCacheSharedContext<K, V> {
             if (fut.isDone())
                 future(null);
             else {
-                future((IgniteInternalFuture<Void>)fut);
+                future(fut);
 
                 fut.listen(f -> {
                     if (!tryLock())
