@@ -31,7 +31,14 @@ import org.jetbrains.annotations.Nullable;
 @GridToStringExclude
 public class AsyncCacheOpContext {
     /** Last asynchronous future. */
-    protected ThreadLocal<FutureHolder> lastFut = ThreadLocal.withInitial(FutureHolder::new);
+    private ThreadLocal<FutureHolder> lastFut = ThreadLocal.withInitial(FutureHolder::new);
+
+    /**
+     * Returns last async future holder.
+     */
+    public FutureHolder lastFuture() {
+        return lastFut.get();
+    }
 
     /**
      * Awaits for previous async operation to be completed.
@@ -39,7 +46,7 @@ public class AsyncCacheOpContext {
     public void awaitLastFut() {
         FutureHolder holder = lastFut.get();
 
-        IgniteInternalFuture<?> fut = holder.future();
+        IgniteInternalFuture<Void> fut = holder.future();
 
         if (fut != null && !fut.isDone()) {
             try {
@@ -116,18 +123,20 @@ public class AsyncCacheOpContext {
      * @param holder Future holder.
      * @param fut Future to save.
      */
-    protected void saveFuture(final FutureHolder holder, IgniteInternalFuture<Void> fut) {
+    public void saveFuture(final FutureHolder holder, IgniteInternalFuture<?> fut) {
         assert holder != null;
         assert fut != null;
         assert holder.holdsLock();
 
-        holder.future(fut);
+        IgniteInternalFuture<Void> fut0 = (IgniteInternalFuture<Void>)fut;
 
-        if (fut.isDone())
+        holder.future(fut0);
+
+        if (fut0.isDone())
             holder.future(null);
         else {
-            fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> f) {
+            fut0.listen(new CI1<IgniteInternalFuture<Void>>() {
+                @Override public void apply(IgniteInternalFuture<Void> f) {
                     if (!holder.tryLock())
                         return;
 

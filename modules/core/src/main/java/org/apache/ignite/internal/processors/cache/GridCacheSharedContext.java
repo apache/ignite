@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -185,6 +186,9 @@ public class GridCacheSharedContext<K, V> {
 
     /** Cluster is in read-only mode. */
     private volatile boolean readOnlyMode;
+
+    /** Async cache operations context. */
+    private final AsyncCacheOpContext asyncOpCtx = new AsyncCacheOpContext();
 
     /** @return GridCacheSharedContext builder instance. */
     public static Builder builder() {
@@ -1069,17 +1073,34 @@ public class GridCacheSharedContext<K, V> {
      * @param tx Transaction to commit.
      * @return Commit future.
      */
-    @SuppressWarnings("unchecked")
     public IgniteInternalFuture<IgniteInternalTx> commitTxAsync(GridNearTxLocal tx) {
-        GridCacheContext ctx = tx.txState().singleCacheContext(this);
+        AsyncCacheOpContext.FutureHolder holder = asyncOpCtx.lastFuture();
 
-        if (ctx == null) {
-            tx.txState().awaitLastFuture(this);
+        holder.lock();
 
-            return tx.commitNearTxLocalAsync();
+        try {
+            IgniteInternalFuture<Void> fut = holder.future();
+
+            if (fut != null && !fut.isDone()) {
+                IgniteInternalFuture<IgniteInternalTx> f = new GridEmbeddedFuture<>(fut,
+                    (o, e) -> tx.commitNearTxLocalAsync());
+
+                asyncOpCtx.saveFuture(holder, f);
+
+                return f;
+            }
+
+            IgniteInternalFuture<IgniteInternalTx> f = tx.commitNearTxLocalAsync();
+
+            asyncOpCtx.saveFuture(holder, f);
+
+            txMgr.resetContext();
+
+            return f;
         }
-        else
-            return ctx.cache().commitTxAsync(tx);
+        finally {
+            holder.unlock();
+        }
     }
 
     /**
@@ -1202,6 +1223,13 @@ public class GridCacheSharedContext<K, V> {
      */
     public boolean isLazyMemoryAllocation(@Nullable DataRegion region) {
         return gridConfig().isClientMode() || region == null || region.config().isLazyMemoryAllocation();
+    }
+
+    /**
+     * Getter for async operations context.
+     */
+    public AsyncCacheOpContext asyncOpContext() {
+        return asyncOpCtx;
     }
 
     /** Builder for {@link GridCacheSharedContext}. */

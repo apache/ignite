@@ -26,13 +26,12 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.processors.cache.AsyncCacheOpContext;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -75,9 +74,9 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     @GridToStringInclude
     private Boolean recovery;
 
-    /** Suspended async futures. */
+    /** Suspended async future. */
     @GridToStringExclude
-    private Map<Integer, GridCacheAdapter.FutureHolder> suspendedAsyncFuts;
+    private AsyncCacheOpContext.FutureHolder suspendedAsyncFut;
 
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
@@ -118,58 +117,23 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void awaitLastFuture(GridCacheSharedContext cctx) {
-        for (int i = 0; i < activeCacheIds.size(); i++) {
-            int cacheId = activeCacheIds.get(i);
-
-            GridCacheContext<?, ?> ctx = cctx.cacheContext(cacheId);
-
-            if (ctx == null)
-                throw new IgniteException("Cache is stopped, id=" + cacheId);
-
-            ctx.cache().awaitLastFut();
-        }
+    @Override public void awaitLastFuture(GridCacheSharedContext<?, ?> cctx) {
+        cctx.asyncOpContext().awaitLastFut();
     }
 
     /** {@inheritDoc} */
-    @Override public void suspendLastFuture(GridCacheSharedContext cctx) {
-        Map<Integer, GridCacheAdapter.FutureHolder> suspendedAsyncFuts = U.newHashMap(activeCacheIds.size());
-
-        for (int i = 0; i < activeCacheIds.size(); i++) {
-            int cacheId = activeCacheIds.get(i);
-
-            GridCacheContext<?, ?> ctx = cctx.cacheContext(cacheId);
-
-            if (ctx == null)
-                throw new IgniteException("Cache is stopped, id=" + cacheId);
-
-            GridCacheAdapter.FutureHolder hld = ctx.cache().suspendLastFut();
-
-            if (hld != null)
-                suspendedAsyncFuts.put(cacheId, hld);
-        }
-
-        assert this.suspendedAsyncFuts == null : this.suspendedAsyncFuts;
-
-        this.suspendedAsyncFuts = suspendedAsyncFuts;
+    @Override public void suspendLastFuture(GridCacheSharedContext<?, ?> cctx) {
+        suspendedAsyncFut = cctx.asyncOpContext().suspendLastFut();
     }
 
     /** {@inheritDoc} */
-    @Override public void resumeLastFuture(GridCacheSharedContext cctx) {
-        assert suspendedAsyncFuts != null;
+    @Override public void resumeLastFuture(GridCacheSharedContext<?, ?> cctx) {
+        AsyncCacheOpContext.FutureHolder hld = suspendedAsyncFut;
 
-        Map<Integer, GridCacheAdapter.FutureHolder> suspendedAsyncFuts = this.suspendedAsyncFuts;
+        if (hld != null)
+            cctx.asyncOpContext().resumeLastFut(hld);
 
-        for (Map.Entry<Integer, GridCacheAdapter.FutureHolder> entry: suspendedAsyncFuts.entrySet()) {
-            GridCacheContext<?, ?> ctx = cctx.cacheContext(entry.getKey());
-
-            if (ctx == null)
-                throw new IgniteException("Cache is stopped, id=" + entry.getKey());
-
-            ctx.cache().resumeLastFut(entry.getValue());
-        }
-
-        this.suspendedAsyncFuts = null;
+        suspendedAsyncFut = null;
     }
 
     /** {@inheritDoc} */

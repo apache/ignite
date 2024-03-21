@@ -59,19 +59,19 @@ public interface IgniteTxLocalState extends IgniteTxState {
      *
      * @param cctx Cache shared context.
      */
-    public void awaitLastFuture(GridCacheSharedContext cctx);
+    public void awaitLastFuture(GridCacheSharedContext<?, ?> cctx);
 
     /**
      * Suspends previous async operation futures for active caches.
      *
      * @param cctx Cache shared context.
      */
-    public void suspendLastFuture(GridCacheSharedContext cctx);
+    public void suspendLastFuture(GridCacheSharedContext<?, ?> cctx);
 
     /**
      * Resumes previous async operation futures for active caches.
      *
      * @param cctx Cache shared context.
      */
-    public void resumeLastFuture(GridCacheSharedContext cctx);
+    public void resumeLastFuture(GridCacheSharedContext<?, ?> cctx);
 }

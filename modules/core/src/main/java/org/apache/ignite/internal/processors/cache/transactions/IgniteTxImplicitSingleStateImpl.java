@@ -99,20 +99,20 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void awaitLastFuture(GridCacheSharedContext ctx) {
+    @Override public void awaitLastFuture(GridCacheSharedContext<?, ?> ctx) {
         if (cacheCtx == null)
             return;
 
-        cacheCtx.cache().awaitLastFut();
+        ctx.asyncOpContext().awaitLastFut();
     }
 
     /** {@inheritDoc} */
-    @Override public void suspendLastFuture(GridCacheSharedContext cctx) {
+    @Override public void suspendLastFuture(GridCacheSharedContext<?, ?> cctx) {
         assert false : "Implicit tx can't be suspended";
     }
 
     /** {@inheritDoc} */
-    @Override public void resumeLastFuture(GridCacheSharedContext cctx) {
+    @Override public void resumeLastFuture(GridCacheSharedContext<?, ?> cctx) {
         assert false : "Implicit tx can't be resumed";
     }
 

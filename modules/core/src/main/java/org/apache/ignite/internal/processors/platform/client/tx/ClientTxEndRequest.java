@@ -19,12 +19,16 @@ package org.apache.ignite.internal.processors.platform.client.tx;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.GridClosureException;
 
 /**
  * End the transaction request.
@@ -49,11 +53,26 @@ public class ClientTxEndRequest extends ClientRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
+    @Override public boolean isAsync(ClientConnectionContext ctx) {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<ClientResponse> processAsync(ClientConnectionContext ctx) {
+        return endTxAsync(ctx).chain(f -> {
+            if (f.error() != null)
+                throw new GridClosureException(f.error());
+            else
+                return process(ctx);
+        });
+    }
+
+    /** End transaction asynchronously. */
+    private IgniteInternalFuture<IgniteInternalTx> endTxAsync(ClientConnectionContext ctx) {
         ClientTxContext txCtx = ctx.txContext(txId);
 
         if (txCtx == null && !committed)
-            return super.process(ctx);
+            return new GridFinishedFuture<>();
 
         if (txCtx == null)
             throw new IgniteClientException(ClientStatus.TX_NOT_FOUND, "Transaction with id " + txId + " not found.");
@@ -63,9 +82,9 @@ public class ClientTxEndRequest extends ClientRequest {
 
             try (GridNearTxLocal tx = txCtx.tx()) {
                 if (committed)
-                    tx.commit();
+                    return ctx.kernalContext().cache().context().commitTxAsync(tx);
                 else
-                    tx.rollback();
+                    return tx.rollbackAsync();
             }
         }
         catch (IgniteCheckedException e) {
@@ -81,7 +100,5 @@ public class ClientTxEndRequest extends ClientRequest {
                 // No-op.
             }
         }
-
-        return super.process(ctx);
     }
 }
