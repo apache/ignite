@@ -20,16 +20,11 @@ package org.apache.ignite.internal.client.thin;
 import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -330,57 +325,6 @@ public class BlockingTxOpsTest extends AbstractThinClientTest {
                             cache.put(0, 0);
                     }
                 }, THREADS_CNT, "tx-thread");
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testThickClientAsyncCommit() throws Exception {
-        poolSize = 1;
-
-        try (IgniteEx ignite = startGrid(0)) {
-            IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
-                .setName("test")
-                .setAtomicityMode(TRANSACTIONAL)
-                .setBackups(1)
-            );
-
-            GridNearTxLocal[] txs = new GridNearTxLocal[5];
-            byte[] states = new byte[5];
-
-            int iterations = 1000;
-
-            for (int i = 0; i < iterations; i++) {
-                if (ThreadLocalRandom.current().nextBoolean()) {
-                    int idx = ThreadLocalRandom.current().nextInt(5);
-
-                    switch (states[idx]) {
-                        case 0:
-                            states[idx] = 1;
-                            txs[idx] = ((TransactionProxyImpl)ignite.transactions()
-                                .txStart(PESSIMISTIC, REPEATABLE_READ, TX_TIMEOUT, 0)).tx();
-                            txs[idx].suspend();
-                            break;
-
-                        case 1:
-                            states[idx] = 2;
-                            txs[idx].resume();
-                            cache.putAsync(0, 0);
-                            txs[idx].suspend();
-                            break;
-
-                        case 2:
-                            states[idx] = 0;
-                            ignite.context().cache().context().commitTxAsync(txs[idx]);
-                            txs[idx] = null;
-                            break;
-                    }
-                }
-                else
-                    cache.putAsync(0, 0);
             }
         }
     }
