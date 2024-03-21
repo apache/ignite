@@ -602,9 +602,8 @@ public class GridSqlQueryParser {
 
     /**
      * @param p Prepared.
-     * @return Whether {@code p} is an {@code SELECT FOR UPDATE} query.
      */
-    public static boolean isForUpdateQuery(Prepared p) {
+    public static void failIfSelectForUpdateQuery(Prepared p) {
         boolean union;
 
         if (p.getClass() == Select.class)
@@ -612,7 +611,7 @@ public class GridSqlQueryParser {
         else if (p.getClass() == SelectUnion.class)
             union = true;
         else
-            return false;
+            return;
 
         boolean forUpdate = (!union && SELECT_IS_FOR_UPDATE.get((Select)p)) ||
             (union && UNION_IS_FOR_UPDATE.get((SelectUnion)p));
@@ -622,7 +621,9 @@ public class GridSqlQueryParser {
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
-        return forUpdate;
+        if (forUpdate)
+            throw new IgniteSQLException("SELECT FOR UPDATE is not supported.",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**
@@ -1931,6 +1932,8 @@ public class GridSqlQueryParser {
      * @return Parsed query AST.
      */
     private GridSqlQuery parseQuery(Query qry) {
+        failIfSelectForUpdateQuery(qry);
+
         if (qry instanceof Select)
             return parseSelect((Select)qry);
 

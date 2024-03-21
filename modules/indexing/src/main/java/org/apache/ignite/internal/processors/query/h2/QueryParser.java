@@ -349,9 +349,7 @@ public class QueryParser {
                     throw new IgniteSQLException("Explains of update queries are not supported.",
                         IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-                if (GridSqlQueryParser.isForUpdateQuery(prepared))
-                    throw new IgniteSQLException("SELECT FOR UPDATE queries are not supported.",
-                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                GridSqlQueryParser.failIfSelectForUpdateQuery(prepared);
 
                 // Get remaining query and check if it is allowed.
                 SqlFieldsQuery remainingQry = null;
