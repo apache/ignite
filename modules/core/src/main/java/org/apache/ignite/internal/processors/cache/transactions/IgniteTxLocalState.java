@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.apache.ignite.internal.processors.cache.AsyncCacheOpContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 
 /**
@@ -55,27 +54,6 @@ public interface IgniteTxLocalState extends IgniteTxState {
      */
     public boolean recovery();
 
-    /**
-     * Awaits for previous async operations on active caches to be completed.
-     *
-     * @param cctx Cache shared context.
-     */
-    public void awaitLastFuture(GridCacheSharedContext<?, ?> cctx);
-
-    /**
-     * Suspends previous async operation futures for active caches.
-     *
-     * @param cctx Cache shared context.
-     */
-    public void suspendLastFuture(GridCacheSharedContext<?, ?> cctx);
-
-    /**
-     * Resumes previous async operation futures for active caches.
-     *
-     * @param cctx Cache shared context.
-     */
-    public void resumeLastFuture(GridCacheSharedContext<?, ?> cctx);
-
-    /** */
-    public AsyncCacheOpContext.FutureHolder lastAsyncFuture();
+    /** Previous async operations on caches. */
+    public GridCacheSharedContext.FutureHolder lastAsyncFuture(GridCacheSharedContext<?, ?> cctx);
 }

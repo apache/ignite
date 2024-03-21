@@ -28,9 +28,7 @@ import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.processors.cache.AsyncCacheOpContext;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -75,13 +73,9 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     @GridToStringInclude
     private Boolean recovery;
 
-    /** Suspended async future. */
-    @GridToStringExclude
-    private AsyncCacheOpContext.FutureHolder suspendedAsyncFut;
-
     /** Async future. */
     @GridToStringExclude
-    private final AsyncCacheOpContext.FutureHolder lastAsyncFut = new AsyncCacheOpContext.FutureHolder();
+    private final GridCacheSharedContext.FutureHolder lastAsyncFut = new GridCacheSharedContext.FutureHolder();
 
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
@@ -111,51 +105,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheContext singleCacheContext(GridCacheSharedContext cctx) {
-        if (activeCacheIds.size() == 1) {
-            int cacheId = activeCacheIds.get(0);
-
-            return cctx.cacheContext(cacheId);
-        }
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void awaitLastFuture(GridCacheSharedContext<?, ?> cctx) {
-        //cctx.asyncOpContext().awaitLastFut();
-        IgniteInternalFuture<Void> fut = lastAsyncFut.future();
-
-        if (fut != null && !fut.isDone()) {
-            try {
-                // Ignore any exception from previous async operation as it should be handled by user.
-                fut.get();
-            }
-            catch (IgniteCheckedException ignored) {
-                // No-op.
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void suspendLastFuture(GridCacheSharedContext<?, ?> cctx) {
-        //suspendedAsyncFut = cctx.asyncOpContext().suspendLastFut();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void resumeLastFuture(GridCacheSharedContext<?, ?> cctx) {
-/*
-        AsyncCacheOpContext.FutureHolder hld = suspendedAsyncFut;
-
-        if (hld != null)
-            cctx.asyncOpContext().resumeLastFut(hld);
-
-        suspendedAsyncFut = null;
-*/
-    }
-
-    /** {@inheritDoc} */
-    @Override public AsyncCacheOpContext.FutureHolder lastAsyncFuture() {
+    @Override public GridCacheSharedContext.FutureHolder lastAsyncFuture(GridCacheSharedContext<?, ?> ctx) {
         return lastAsyncFut;
     }
 

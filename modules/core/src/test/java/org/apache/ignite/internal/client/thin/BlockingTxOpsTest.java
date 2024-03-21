@@ -17,21 +17,15 @@
 
 package org.apache.ignite.internal.client.thin;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -332,28 +326,6 @@ public class BlockingTxOpsTest extends AbstractThinClientTest {
                     }
                 }, THREADS_CNT, "tx-thread");
             }
-        }
-    }
-
-
-    /** */
-    @Test
-    public void test() throws Exception {
-        poolSize = 4;
-        startGrid(0);
-        try (Ignite ignite = startGrid()) {
-            IgniteCache<Integer, Object> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Object>("test")
-                .setNearConfiguration(new NearCacheConfiguration<>())
-                .setAtomicityMode(TRANSACTIONAL)
-            );
-
-            List<IgniteFuture<?>> futs = new ArrayList<>();
-
-            for (int i = 0; i < 2; i++)
-                futs.add(cache.putIfAbsentAsync(0, i));
-
-            for (IgniteFuture<?> fut : futs)
-                fut.get();
         }
     }
 }

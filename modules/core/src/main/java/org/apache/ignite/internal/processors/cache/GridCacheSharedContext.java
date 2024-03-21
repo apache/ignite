@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSnapshot;
@@ -187,8 +188,8 @@ public class GridCacheSharedContext<K, V> {
     /** Cluster is in read-only mode. */
     private volatile boolean readOnlyMode;
 
-    /** Async cache operations context. */
-    private final AsyncCacheOpContext asyncOpCtx = new AsyncCacheOpContext();
+    /** Last asynchronous future. */
+    private ThreadLocal<FutureHolder> lastFut = ThreadLocal.withInitial(FutureHolder::new);
 
     /** @return GridCacheSharedContext builder instance. */
     public static Builder builder() {
@@ -1062,7 +1063,7 @@ public class GridCacheSharedContext<K, V> {
         boolean clearThreadMap = txMgr.threadLocalTx(null) == tx;
 
         if (clearThreadMap)
-            tx.txState().awaitLastFuture(this);
+            tx.txState().lastAsyncFuture(this).await();
         else
             tx.state(MARKED_ROLLBACK);
 
@@ -1074,7 +1075,7 @@ public class GridCacheSharedContext<K, V> {
      * @return Commit future.
      */
     public IgniteInternalFuture<IgniteInternalTx> commitTxAsync(GridNearTxLocal tx) {
-        AsyncCacheOpContext.FutureHolder holder = tx.txState().lastAsyncFuture();
+        FutureHolder holder = tx.txState().lastAsyncFuture(this);
 
         holder.lock();
 
@@ -1085,14 +1086,14 @@ public class GridCacheSharedContext<K, V> {
                 IgniteInternalFuture<IgniteInternalTx> f = new GridEmbeddedFuture<>(fut,
                     (o, e) -> tx.commitNearTxLocalAsync());
 
-                asyncOpCtx.saveFuture(holder, f);
+                holder.saveFuture(f);
 
                 return f;
             }
 
             IgniteInternalFuture<IgniteInternalTx> f = tx.commitNearTxLocalAsync();
 
-            asyncOpCtx.saveFuture(holder, f);
+            holder.saveFuture(f);
 
             txMgr.resetContext();
 
@@ -1111,7 +1112,7 @@ public class GridCacheSharedContext<K, V> {
         boolean clearThreadMap = txMgr.threadLocalTx(null) == tx;
 
         if (clearThreadMap)
-            tx.txState().awaitLastFuture(this);
+            tx.txState().lastAsyncFuture(this).await();
         else
             tx.state(MARKED_ROLLBACK);
 
@@ -1125,7 +1126,7 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If suspension failed.
      */
     public void suspendTx(GridNearTxLocal tx) throws IgniteCheckedException {
-        tx.txState().awaitLastFuture(this);
+        tx.txState().lastAsyncFuture(this).await();
 
         tx.suspend();
     }
@@ -1137,7 +1138,7 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If resume failed.
      */
     public void resumeTx(GridNearTxLocal tx) throws IgniteCheckedException {
-        tx.txState().awaitLastFuture(this);
+        tx.txState().lastAsyncFuture(this).await();
 
         tx.resume();
     }
@@ -1226,10 +1227,10 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * Getter for async operations context.
+     * Returns last async future holder.
      */
-    public AsyncCacheOpContext asyncOpContext() {
-        return asyncOpCtx;
+    public FutureHolder lastFuture() {
+        return lastFut.get();
     }
 
     /** Builder for {@link GridCacheSharedContext}. */
@@ -1435,6 +1436,112 @@ public class GridCacheSharedContext<K, V> {
             this.cdcMgr = cdcMgr;
 
             return this;
+        }
+    }
+
+    /**
+     * Holder for last async operation future.
+     */
+    public static class FutureHolder {
+        /** Lock. */
+        private final ReentrantLock lock = new ReentrantLock();
+
+        /** Future. */
+        private IgniteInternalFuture<Void> fut;
+
+        /**
+         * Tries to acquire lock.
+         *
+         * @return Whether lock was actually acquired.
+         */
+        public boolean tryLock() {
+            return lock.tryLock();
+        }
+
+        /**
+         * Acquires lock.
+         */
+        @SuppressWarnings("LockAcquiredButNotSafelyReleased")
+        public void lock() {
+            lock.lock();
+        }
+
+        /**
+         * Releases lock.
+         */
+        public void unlock() {
+            lock.unlock();
+        }
+
+        /**
+         * @return Whether lock is held by current thread.
+         */
+        public boolean holdsLock() {
+            return lock.isHeldByCurrentThread();
+        }
+
+        /**
+         * Gets future.
+         *
+         * @return Future.
+         */
+        public IgniteInternalFuture<Void> future() {
+            return fut;
+        }
+
+        /**
+         * Sets future.
+         *
+         * @param fut Future.
+         */
+        public void future(@Nullable IgniteInternalFuture<Void> fut) {
+            this.fut = fut;
+        }
+
+        /**
+         * Awaits for previous async operation to be completed.
+         */
+        public void await() {
+            IgniteInternalFuture<Void> fut = this.fut;
+
+            if (fut != null && !fut.isDone()) {
+                try {
+                    // Ignore any exception from previous async operation as it should be handled by user.
+                    fut.get();
+                }
+                catch (IgniteCheckedException ignored) {
+                    // No-op.
+                }
+            }
+        }
+
+        /**
+         * Saves future in the holder and adds listener that will clear holder when future is finished.
+         *
+         * @param fut Future to save.
+         */
+        public void saveFuture(IgniteInternalFuture<?> fut) {
+            assert fut != null;
+            assert holdsLock();
+
+            if (fut.isDone())
+                future(null);
+            else {
+                future((IgniteInternalFuture<Void>)fut);
+
+                fut.listen(f -> {
+                    if (!tryLock())
+                        return;
+
+                    try {
+                        if (future() == f)
+                            future(null);
+                    }
+                    finally {
+                        unlock();
+                    }
+                });
+            }
         }
     }
 }
