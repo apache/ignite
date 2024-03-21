@@ -82,7 +82,7 @@ public class ClientTxEndRequest extends ClientRequest {
 
             try (GridNearTxLocal tx = txCtx.tx()) {
                 if (committed)
-                    return ctx.kernalContext().cache().context().commitTxAsync(tx);
+                    return tx.context().commitTxAsync(tx);
                 else
                     return tx.rollbackAsync();
             }
