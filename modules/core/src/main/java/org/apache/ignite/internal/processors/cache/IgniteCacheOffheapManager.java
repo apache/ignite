@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
@@ -37,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.persistence.partstorage.Parti
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -572,11 +570,10 @@ public interface IgniteCacheOffheapManager {
 
         /**
          * @param cctx Cache context.
-         * @param cleanupRows Rows to cleanup.
          * @throws IgniteCheckedException If failed.
          * @return Cleaned rows count.
          */
-        public int cleanup(GridCacheContext cctx, @Nullable List<MvccLinkAwareSearchRow> cleanupRows)
+        public int cleanup(GridCacheContext cctx)
             throws IgniteCheckedException;
 
         /**
