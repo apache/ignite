@@ -66,7 +66,6 @@ import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingRow;
 import org.apache.ignite.internal.processors.cache.tree.SearchRow;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -1566,16 +1565,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public int cleanup(GridCacheContext cctx, @Nullable List<MvccLinkAwareSearchRow> cleanupRows)
+        @Override public int cleanup(GridCacheContext cctx)
             throws IgniteCheckedException {
-            if (F.isEmpty(cleanupRows))
-                return 0;
 
             if (!busyLock.enterBusy())
                 throw operationCancelledException();
 
             try {
-                return cleanup0(cctx, cleanupRows);
+                return cleanup0(cctx);
             }
             finally {
                 busyLock.leaveBusy();
@@ -1584,41 +1581,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /**
          * @param cctx Cache context.
-         * @param cleanupRows Rows to cleanup.
-         * @throws IgniteCheckedException If failed.
          * @return Cleaned rows count.
          */
-        private int cleanup0(GridCacheContext cctx, @Nullable List<MvccLinkAwareSearchRow> cleanupRows)
-             throws IgniteCheckedException {
-            if (F.isEmpty(cleanupRows))
-                 return 0;
-
+        private int cleanup0(GridCacheContext cctx) {
             int res = 0;
-
-            GridCacheQueryManager qryMgr = cctx.queries();
-
-            for (int i = 0; i < cleanupRows.size(); i++) {
-                MvccLinkAwareSearchRow cleanupRow = cleanupRows.get(i);
-
-                assert cleanupRow.link() != 0 : cleanupRow;
-
-                assert cctx.shared().database().checkpointLockIsHeldByThread();
-
-                CacheDataRow oldRow = dataTree.remove(cleanupRow);
-
-                if (oldRow != null) { // oldRow == null means it was cleaned by another cleanup process.
-                    assert oldRow.mvccCounter() == cleanupRow.mvccCounter();
-
-                    if (qryMgr.enabled())
-                        qryMgr.remove(oldRow.key(), oldRow);
-
-                    clearPendingEntries(cctx, oldRow);
-
-                    rowStore.removeRow(cleanupRow.link(), grp.statisticsHolderData());
-
-                    res++;
-                }
-            }
 
             return res;
         }
