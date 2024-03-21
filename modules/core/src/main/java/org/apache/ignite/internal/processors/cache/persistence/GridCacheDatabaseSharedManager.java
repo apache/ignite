@@ -80,7 +80,6 @@ import org.apache.ignite.internal.pagemem.wal.record.IndexRenameRootPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.PartitionClearingStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
@@ -2781,42 +2780,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         switch (dataEntry.op()) {
             case CREATE:
             case UPDATE:
-                if (dataEntry instanceof MvccDataEntry) {
-                    cacheCtx.offheap().mvccApplyUpdate(
-                        cacheCtx,
-                        dataEntry.key(),
-                        dataEntry.value(),
-                        dataEntry.writeVersion(),
-                        dataEntry.expireTime(),
-                        locPart,
-                        ((MvccDataEntry)dataEntry).mvccVer());
-                }
-                else {
-                    cacheCtx.offheap().update(
-                        cacheCtx,
-                        dataEntry.key(),
-                        dataEntry.value(),
-                        dataEntry.writeVersion(),
-                        dataEntry.expireTime(),
-                        locPart,
-                        null);
-                }
+                cacheCtx.offheap().update(
+                    cacheCtx,
+                    dataEntry.key(),
+                    dataEntry.value(),
+                    dataEntry.writeVersion(),
+                    dataEntry.expireTime(),
+                    locPart,
+                    null);
 
                 return true;
 
             case DELETE:
-                if (dataEntry instanceof MvccDataEntry) {
-                    cacheCtx.offheap().mvccApplyUpdate(
-                        cacheCtx,
-                        dataEntry.key(),
-                        null,
-                        dataEntry.writeVersion(),
-                        0L,
-                        locPart,
-                        ((MvccDataEntry)dataEntry).mvccVer());
-                }
-                else
-                    cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), locPart.id(), locPart);
+                cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), locPart.id(), locPart);
 
                 return true;
 

@@ -5907,8 +5907,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             StringJoiner sj1 = new StringJoiner(", ", "[", "]");
 
             for (Map.Entry<Integer, List<GroupPartitionId>> e1 : byCacheGrpId.entrySet()) {
-                @Nullable CacheGroupContext grp =
-                    groups.stream().filter(g -> g.groupId() == e1.getKey()).findAny().orElse(null);
+                CacheGroupContext grp = groups.stream().filter(g -> g.groupId() == e1.getKey()).findAny().orElse(null);
 
                 String parts = e1.getValue().stream().map(GroupPartitionId::getPartitionId).sorted()
                     .map(p -> grp == null ? p.toString() : p + ":" + grp.topology().localPartition(p).fullSize())

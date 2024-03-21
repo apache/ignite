@@ -76,6 +76,17 @@ public class ForceIndexHintPlannerTest extends AbstractPlannerTest {
         assertPlan("SELECT /*+ FORCE_INDEX(IDX2_3) */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
             schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
 
+        assertPlan("SELECT * FROM TBL2 /*+ FORCE_INDEX(IDX2_3) */ WHERE val23=1 and val21=2 and val22=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
+
+        // Table hint has a bigger priority.
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX2_3) */ * FROM TBL2 /*+ FORCE_INDEX(IDX2_2) */ WHERE val23=1 and " +
+            "val21=2 and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2")));
+
+        // First table hint has a bigger priority.
+        assertPlan("SELECT * FROM TBL2 /*+ FORCE_INDEX(IDX2_2), FORCE_INDEX(IDX2_3) */ WHERE val23=1 and " +
+            "val21=2 and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2")));
+
         assertPlan("SELECT /*+ FORCE_INDEX(UNEXISTING,IDX2_3,UNEXISTING) */ * FROM TBL2 WHERE val23=1 and val21=2 " +
             "and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
 
@@ -86,6 +97,10 @@ public class ForceIndexHintPlannerTest extends AbstractPlannerTest {
         assertPlan("SELECT /*+ FORCE_INDEX(IDX2_2,IDX2_3) */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
             schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2"))
                     .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3"))));
+
+        assertPlan("SELECT * FROM TBL2 /*+ FORCE_INDEX(IDX2_2,IDX2_3) */ WHERE val23=1 and val21=2 and val22=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2"))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3"))));
 
         assertPlan("SELECT /*+ FORCE_INDEX(IDX2_3), FORCE_INDEX(IDX2_3) */ * FROM TBL2 WHERE val23=1 and val21=2 " +
             "and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
@@ -104,6 +119,16 @@ public class ForceIndexHintPlannerTest extends AbstractPlannerTest {
         assertPlan("SELECT /*+ FORCE_INDEX(IDX2_2) */ t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 " +
                 "t2 on t1.val3=t2.val23 and t1.val1=t2.val22", schema,
             nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2")));
+
+        assertPlan("SELECT t1.val1, t2.val22 FROM TBL1 /*+ FORCE_INDEX(IDX1_3) */ t1 " + jt
+                + " JOIN TBL2 /*+ FORCE_INDEX(IDX2_2) */ t2 on t1.val3=t2.val23 and t1.val1=t2.val22", schema,
+            nodeOrAnyChild(isIndexScan("TBL1", "IDX1_3"))
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2"))));
+
+        assertPlan("SELECT t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 /*+ FORCE_INDEX */ t2 on " +
+                "t1.val3=t2.val23 and t1.val1=t2.val22", schema,
+            nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2"))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3"))));
 
         assertPlan("SELECT /*+ FORCE_INDEX(IDX2_3) */ t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 " +
                 "t2 on t1.val3=t2.val23 and t1.val1=t2.val22", schema,
@@ -180,7 +205,17 @@ public class ForceIndexHintPlannerTest extends AbstractPlannerTest {
         assertPlan("SELECT /*+ NO_INDEX(IDX2_1), FORCE_INDEX(IDX2_1), FORCE_INDEX(IDX2_3) */ * FROM TBL2 where " +
             "val21=1 and val22=2 and val23=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
 
+        assertPlan("SELECT /*+ NO_INDEX */ t1.val1 FROM TBL1 t1 where t1.val2 = " +
+            "(SELECT t2.val23 from TBL2 /*+ FORCE_INDEX(IDX2_3) */ t2 where t2.val21=10 and t2.val23=10 and " +
+            "t2.val21=10)", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
+
         assertPlan("SELECT /*+ FORCE_INDEX(IDX2_3), NO_INDEX */ * FROM TBL2 where " +
+            "val21=1 and val22=2 and val23=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
+
+        // Table hint has a bigger priority.
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX2_1), FORCE_INDEX(IDX2_3) */ * FROM TBL2 /*+ NO_INDEX(IDX2_1) */ where " +
+            "val21=1 and val22=2 and val23=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
+        assertPlan("SELECT /*+ NO_INDEX */ * FROM TBL2 /*+ FORCE_INDEX(IDX2_3) */ where " +
             "val21=1 and val22=2 and val23=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
     }
 
@@ -195,6 +230,10 @@ public class ForceIndexHintPlannerTest extends AbstractPlannerTest {
         assertPlan("SELECT t1.val1 FROM TBL1 t1 where t1.val2 = (SELECT /*+ FORCE_INDEX(IDX1_2,IDX2_3) */ " +
                 "t2.val23 from TBL2 t2 where t2.val21=10 and t2.val23=10 and t2.val21=10)", schema,
             nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
+
+        assertPlan("SELECT t1.val1 FROM TBL1 t1 where t1.val2 = (SELECT t2.val23 from TBL2 " +
+                "/*+ FORCE_INDEX(IDX2_3) */ t2 where t2.val21=10 and t2.val23=10 and t2.val21=10)", schema,
+            nodeOrAnyChild(isIndexScan("TBL2", "IDX2_3")));
     }
 
     /** */
@@ -202,6 +241,11 @@ public class ForceIndexHintPlannerTest extends AbstractPlannerTest {
     public void testTwoTables() throws Exception {
         assertPlan("SELECT /*+ FORCE_INDEX(IDX1_1,IDX2_1,IDX2_2) */ val1 FROM TBL1, TBL2 WHERE val1=val21 and " +
             "val2=val22 and val3=val23", schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX1_1"))
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_1")
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2"))))));
+
+        assertPlan("SELECT val1 FROM TBL1 /*+ FORCE_INDEX(IDX1_1) */, TBL2 /*+ FORCE_INDEX(IDX2_1,IDX2_2) */ WHERE " +
+            "val1=val21 and val2=val22 and val3=val23", schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX1_1"))
             .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_1")
                 .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2"))))));
     }
