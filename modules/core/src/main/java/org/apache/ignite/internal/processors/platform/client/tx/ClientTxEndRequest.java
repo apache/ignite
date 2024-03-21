@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.platform.client.tx;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
@@ -78,14 +77,12 @@ public class ClientTxEndRequest extends ClientRequest {
             throw new IgniteClientException(ClientStatus.TX_NOT_FOUND, "Transaction with id " + txId + " not found.");
 
         try {
-            txCtx.acquire(committed);
+            txCtx.acquire(false);
 
-            try (GridNearTxLocal tx = txCtx.tx()) {
-                if (committed)
-                    return tx.context().commitTxAsync(tx);
-                else
-                    return tx.rollbackAsync();
-            }
+            if (committed)
+                return txCtx.tx().context().commitTxAsync(txCtx.tx());
+            else
+                return txCtx.tx().rollbackAsync();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);

@@ -1111,7 +1111,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                 case SUSPENDED:
                 case PREPARING: {
-                    valid = prev == ACTIVE;
+                    valid = prev == ACTIVE || prev == SUSPENDED;
 
                     break;
                 }
