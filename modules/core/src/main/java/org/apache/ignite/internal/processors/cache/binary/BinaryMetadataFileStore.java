@@ -193,6 +193,8 @@ class BinaryMetadataFileStore {
         if (!enabled)
             return;
 
+        ctx.marshallerContext().unregisterClassNameLocally(typeId);
+
         File file = new File(metadataDir, BinaryUtils.binaryMetaFileName(typeId));
 
         if (!file.delete()) {
