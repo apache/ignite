@@ -66,6 +66,9 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
     private static final String ALLOWED_CACHE = "allowed_cache";
 
     /** */
+    private static final String ALLOWED_READ_CACHE = "allowed_read_cache";
+
+    /** */
     private static final String FORBIDDEN_CACHE = "forbidden_cache";
 
     /** */
@@ -78,6 +81,7 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
     private final SecurityPermissionSet clientPermissions = SecurityPermissionSetBuilder.create()
         .defaultAllowAll(false)
         .appendCachePermissions(ALLOWED_CACHE, CACHE_PUT, CACHE_READ, CACHE_REMOVE)
+        .appendCachePermissions(ALLOWED_READ_CACHE, CACHE_READ)
         .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build();
 
     /** */
@@ -101,6 +105,7 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
         IgniteEx grid1 = startGridAllowAll("srv2");
 
         grid0.getOrCreateCache(new CacheConfiguration<>(ALLOWED_CACHE).setIndexedTypes(Integer.class, Integer.class));
+        grid0.getOrCreateCache(new CacheConfiguration<>(ALLOWED_READ_CACHE).setIndexedTypes(Integer.class, Integer.class));
         grid0.getOrCreateCache(new CacheConfiguration<>(FORBIDDEN_CACHE).setIndexedTypes(Integer.class, Integer.class));
 
         IgnitePredicate<CacheEvent> lsnrPut = evt -> {
@@ -132,6 +137,7 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
         super.beforeTest();
 
         grid("srv1").cache(ALLOWED_CACHE).clear();
+        grid("srv1").cache(ALLOWED_READ_CACHE).clear();
         grid("srv1").cache(FORBIDDEN_CACHE).clear();
     }
 
@@ -196,6 +202,13 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
 
         assertThrows(sqlExecutor, selectSql(FORBIDDEN_CACHE), errCls, errMsg);
         assertThrows(sqlExecutor, deleteSql(FORBIDDEN_CACHE), errCls, errMsg);
+
+        for (int i = 0; i < cnt; i++)
+            assertThrows(sqlExecutor, insertSql(ALLOWED_READ_CACHE, i), errCls, errMsg);
+
+        sqlExecutor.execute(selectSql(ALLOWED_READ_CACHE));
+        assertThrows(sqlExecutor, deleteSql(ALLOWED_READ_CACHE), errCls, errMsg);
+
         assertThrows(sqlExecutor, "CREATE TABLE test(id INT, val VARCHAR)", errCls, errMsg);
     }
 
