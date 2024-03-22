@@ -157,4 +157,21 @@ public interface IgniteTable extends TranslatableTable {
      * @return Table name.
      */
     String name();
+
+    /**
+     * Authorizes operation on table.
+     */
+    void authorize(Operation op);
+
+    /** */
+    enum Operation {
+        /** */
+        READ,
+
+        /** */
+        PUT,
+
+        /** */
+        REMOVE
+    }
 }
