@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
@@ -27,15 +28,22 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Thin client blocking transactional operations tests.
  */
+@RunWith(Parameterized.class)
 public class BlockingTxOpsTest extends AbstractThinClientTest {
     /** Default tx timeout value. */
     private static final long TX_TIMEOUT = 5_000L;
@@ -45,6 +53,24 @@ public class BlockingTxOpsTest extends AbstractThinClientTest {
 
     /** */
     private int poolSize;
+
+    /** */
+    @Parameterized.Parameter(0)
+    public TransactionConcurrency txConcurrency;
+
+    /** */
+    @Parameterized.Parameter(1)
+    public TransactionIsolation txIsolation;
+
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "concurrency={0}, isolation={1}")
+    public static List<Object[]> params() {
+        return F.asList(
+            new Object[]{ PESSIMISTIC, REPEATABLE_READ },
+            new Object[]{ OPTIMISTIC, SERIALIZABLE }
+        );
+    }
+
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -222,10 +248,20 @@ public class BlockingTxOpsTest extends AbstractThinClientTest {
             for (int i = 0; i < 100; i++) {
                 // Mix implicit and explicit transactions.
                 if (ThreadLocalRandom.current().nextBoolean()) {
-                    try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TX_TIMEOUT)) {
-                        op.run();
+                    while (true) {
+                        try (ClientTransaction tx = client.transactions().txStart(txConcurrency, txIsolation, TX_TIMEOUT)) {
+                            op.run();
 
-                        tx.commit();
+                            try {
+                                tx.commit();
+
+                                break;
+                            }
+                            catch (Exception e) {
+                                if (!e.getMessage().contains("Failed to prepare transaction"))
+                                    throw e;
+                            }
+                        }
                     }
                 }
                 else
@@ -258,7 +294,7 @@ public class BlockingTxOpsTest extends AbstractThinClientTest {
 
         GridTestUtils.runMultiThreaded(() -> {
             for (int i = 0; i < iterations; i++) {
-                try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TX_TIMEOUT)) {
+                try (ClientTransaction tx = client.transactions().txStart(txConcurrency, txIsolation, TX_TIMEOUT)) {
                     int key1 = ThreadLocalRandom.current().nextInt(keys);
                     int key2 = ThreadLocalRandom.current().nextInt(keys);
                     int sum = ThreadLocalRandom.current().nextInt(100);
@@ -277,7 +313,13 @@ public class BlockingTxOpsTest extends AbstractThinClientTest {
                     }
 
                     if (ThreadLocalRandom.current().nextBoolean())
-                        tx.commit();
+                        try {
+                            tx.commit();
+                        }
+                        catch (Exception e) {
+                            if (!e.getMessage().contains("Failed to prepare transaction"))
+                                throw e;
+                        }
                     else
                         tx.rollback();
                 }
@@ -316,7 +358,7 @@ public class BlockingTxOpsTest extends AbstractThinClientTest {
                 GridTestUtils.runMultiThreaded(() -> {
                     for (int i = 0; i < iterations; i++) {
                         if (ThreadLocalRandom.current().nextBoolean()) {
-                            try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TX_TIMEOUT)) {
+                            try (ClientTransaction tx = client.transactions().txStart(txConcurrency, txIsolation, TX_TIMEOUT)) {
                                 cache.putAsync(0, 0);
                                 tx.commit();
                             }
