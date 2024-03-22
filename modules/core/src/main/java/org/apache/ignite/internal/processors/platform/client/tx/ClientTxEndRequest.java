@@ -77,7 +77,7 @@ public class ClientTxEndRequest extends ClientRequest {
             throw new IgniteClientException(ClientStatus.TX_NOT_FOUND, "Transaction with id " + txId + " not found.");
 
         try {
-            txCtx.acquire(false);
+            txCtx.acquire(committed);
 
             if (committed)
                 return txCtx.tx().context().commitTxAsync(txCtx.tx());
