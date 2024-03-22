@@ -129,4 +129,32 @@ public class GridHistoryAffinityAssignmentTest extends GridCommonAbstractTest {
 
         return GridTestUtils.getFieldValue(cctx.affinity(), "aff");
     }
+
+    /** */
+    @Test
+    public void testAffinityCacheSizeOnCacheRecreate() throws Exception {
+        try (IgniteEx server = startGrid()) {
+            try (IgniteEx client = startClientGrid()) {
+                for (int i = 0; i < 1000; i++) {
+                    client.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+                    server.context().cache().cacheGroups().forEach(x -> assertTrue(x.affinity().cachedVersions().size() < 260));
+
+                    client.destroyCache(DEFAULT_CACHE_NAME);
+                }
+            }
+        }
+    }
+
+    /** */
+    @Test
+    public void testAffinityCacheSizeOnReconnect() throws Exception {
+        try (IgniteEx server = startGrid()) {
+            for (int i = 0; i < 1000; i++) {
+                try (IgniteEx client = startClientGrid()) {
+                    server.context().cache().cacheGroups().forEach(x -> assertTrue(x.affinity().cachedVersions().size() < 260));
+                }
+            }
+        }
+    }
 }
