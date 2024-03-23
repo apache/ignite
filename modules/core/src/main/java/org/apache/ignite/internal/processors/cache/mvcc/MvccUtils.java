@@ -350,18 +350,6 @@ public class MvccUtils {
     }
 
     /**
-     * Compares row version (xid_min) with the given version.
-     *
-     * @param row Row.
-     * @param ver Version.
-     * @return Comparison result, see {@link Comparable}.
-     */
-    public static int compare(MvccVersionAware row, MvccVersion ver) {
-        return compare(row.mvccCoordinatorVersion(), row.mvccCounter(), row.mvccOperationCounter(),
-            ver.coordinatorVersion(), ver.counter(), ver.operationCounter());
-    }
-
-    /**
      * Compares to pairs of MVCC versions. See {@link Comparable}.
      *
      * @param mvccVerLeft First MVCC version.
@@ -376,18 +364,6 @@ public class MvccUtils {
     /**
      * Compares to pairs of MVCC versions. See {@link Comparable}.
      *
-     * @param row First MVCC version.
-     * @param mvccCrdRight Second coordinator version.
-     * @param mvccCntrRight Second counter.
-     * @return Comparison result, see {@link Comparable}.
-     */
-    public static int compare(MvccVersionAware row, long mvccCrdRight, long mvccCntrRight) {
-        return compare(row.mvccCoordinatorVersion(), row.mvccCounter(), mvccCrdRight, mvccCntrRight);
-    }
-
-    /**
-     * Compares to pairs of MVCC versions. See {@link Comparable}.
-     *
      * @param mvccVerLeft First MVCC version.
      * @param mvccCrdRight Second coordinator version.
      * @param mvccCntrRight Second counter.
@@ -397,20 +373,6 @@ public class MvccUtils {
     public static int compare(MvccVersion mvccVerLeft, long mvccCrdRight, long mvccCntrRight, int mvccOpCntrRight) {
         return compare(mvccVerLeft.coordinatorVersion(), mvccVerLeft.counter(),
             mvccVerLeft.operationCounter(), mvccCrdRight, mvccCntrRight, mvccOpCntrRight);
-    }
-
-    /**
-     * Compares to pairs of coordinator/counter versions. See {@link Comparable}.
-     *
-     * @param mvccCrdLeft First coordinator version.
-     * @param mvccCntrLeft First counter version.
-     * @param mvccOpCntrLeft First operation counter.
-     * @param other The object to compare with.
-     * @return Comparison result, see {@link Comparable}.
-     */
-    public static int compare(long mvccCrdLeft, long mvccCntrLeft, int mvccOpCntrLeft, MvccVersionAware other) {
-        return compare(mvccCrdLeft, mvccCntrLeft, mvccOpCntrLeft,
-            other.mvccCoordinatorVersion(), other.mvccCounter(), other.mvccOperationCounter());
     }
 
     /**
