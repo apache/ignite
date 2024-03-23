@@ -246,21 +246,6 @@ public class DefragIndexFactory extends InlineIndexFactory {
         @Override public int inlineSize() {
             return io.inlineSize();
         }
-
-        /** {@inheritDoc} */
-        @Override public long mvccCoordinatorVersion(long pageAddr, int idx) {
-            return io.mvccCoordinatorVersion(pageAddr, idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long mvccCounter(long pageAddr, int idx) {
-            return io.mvccCounter(pageAddr, idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int mvccOperationCounter(long pageAddr, int idx) {
-            return io.mvccOperationCounter(pageAddr, idx);
-        }
     }
 
     /** */
@@ -306,21 +291,6 @@ public class DefragIndexFactory extends InlineIndexFactory {
         /** {@inheritDoc} */
         @Override public int inlineSize() {
             return io.inlineSize();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long mvccCoordinatorVersion(long pageAddr, int idx) {
-            return io.mvccCoordinatorVersion(pageAddr, idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long mvccCounter(long pageAddr, int idx) {
-            return io.mvccCounter(pageAddr, idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int mvccOperationCounter(long pageAddr, int idx) {
-            return io.mvccOperationCounter(pageAddr, idx);
         }
     }
 
