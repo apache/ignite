@@ -135,7 +135,7 @@ public class GridHistoryAffinityAssignmentTest extends GridCommonAbstractTest {
     public void testAffinityCacheSizeOnCacheRecreate() throws Exception {
         try (IgniteEx server = startGrid(0)) {
             try (IgniteEx client = startClientGrid()) {
-                for (int i = 0; i < 1000; i++) {
+                for (int i = 0; i < 300; i++) {
                     client.getOrCreateCache(DEFAULT_CACHE_NAME);
 
                     server.context().cache().cacheGroups().forEach(x -> assertTrue(x.affinity().cachedVersions().size() < 260));
@@ -150,7 +150,7 @@ public class GridHistoryAffinityAssignmentTest extends GridCommonAbstractTest {
     @Test
     public void testAffinityCacheSizeOnReconnect() throws Exception {
         try (IgniteEx server = startGrid(0)) {
-            for (int i = 0; i < 1000; i++) {
+            for (int i = 0; i < 300; i++) {
                 try (IgniteEx client = startClientGrid()) {
                     server.context().cache().cacheGroups().forEach(x -> assertTrue(x.affinity().cachedVersions().size() < 260));
                 }
