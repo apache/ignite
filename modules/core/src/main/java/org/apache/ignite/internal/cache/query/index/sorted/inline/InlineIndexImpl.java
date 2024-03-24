@@ -479,8 +479,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         if (cacheFilter == null && qryCtx.rowFilter() == null)
             return null;
 
-        return new InlineTreeFilterClosure(
-            cacheFilter, qryCtx.rowFilter());
+        return new InlineTreeFilterClosure(cacheFilter, qryCtx.rowFilter());
     }
 
     /** {@inheritDoc} */
