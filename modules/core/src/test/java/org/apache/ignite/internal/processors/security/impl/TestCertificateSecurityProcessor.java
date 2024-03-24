@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
@@ -41,6 +40,8 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
+import static org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor.contains;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
 import static org.junit.Assert.assertEquals;
@@ -78,8 +79,7 @@ public class TestCertificateSecurityProcessor extends GridProcessorAdapter imple
                 .setType(REMOTE_NODE)
                 .setId(node.id())
                 .setAddr(new InetSocketAddress(F.first(node.addresses()), 0))
-                .setLogin("")
-                .setPerms(ALL_PERMISSIONS)
+                .setLogin(cred.getLogin())
         );
 
         secCtxs.put(res.subject().id(), res);
@@ -114,7 +114,6 @@ public class TestCertificateSecurityProcessor extends GridProcessorAdapter imple
                 .setId(ctx.subjectId())
                 .setAddr(ctx.address())
                 .setLogin(cn)
-                .setPerms(PERMS.get(cn))
                 .setCerts(ctx.certificates())
         );
 
@@ -139,13 +138,20 @@ public class TestCertificateSecurityProcessor extends GridProcessorAdapter imple
     }
 
     /** {@inheritDoc} */
-    @Override public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx)
-        throws SecurityException {
+    @Override public void authorize(
+        String name,
+        SecurityPermission perm,
+        SecurityContext securityCtx
+    ) throws SecurityException {
+        String username = (String)securityCtx.subject().login();
 
-        if (!((TestSecurityContext)securityCtx).operationAllowed(name, perm))
+        SecurityPermissionSet userPerms = PERMS.get(username);
+
+        if (userPerms == null || !contains(userPerms, name, perm)) {
             throw new SecurityException("Authorization failed [perm=" + perm +
                 ", name=" + name +
                 ", subject=" + securityCtx.subject() + ']');
+        }
     }
 
     /** {@inheritDoc} */
@@ -162,7 +168,9 @@ public class TestCertificateSecurityProcessor extends GridProcessorAdapter imple
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, new SecurityCredentials("", ""));
+        ctx.addNodeAttribute(ATTR_SECURITY_CREDENTIALS, new SecurityCredentials(ctx.igniteInstanceName(), ""));
+
+        PERMS.put(ctx.igniteInstanceName(), ALL_PERMISSIONS);
 
         for (TestSecurityData data : predefinedAuthData)
             PERMS.put(data.credentials().getLogin().toString(), data.permissions());

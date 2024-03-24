@@ -156,9 +156,9 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
 
         executeContinuousQuery(ignite0.cache(DEFAULT_CACHE_NAME));
 
-        ListeningTestLogger listeningLogger = new ListeningTestLogger();
+        ListeningTestLogger listeningLog = new ListeningTestLogger();
 
-        log = listeningLogger;
+        log = listeningLog;
 
         LogListener lsnr = LogListener.matches(logStr ->
             logStr.contains("class org.apache.ignite.IgniteCheckedException: " +
@@ -166,7 +166,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
                 || logStr.contains("Failed to unmarshal continuous routine handler"
             )).build();
 
-        listeningLogger.registerListener(lsnr);
+        listeningLog.registerListener(lsnr);
 
         setExternalLoader = false;
 

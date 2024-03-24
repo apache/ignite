@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.query.calcite.message.MessageServic
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
+import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -162,6 +163,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             GridTestKernalContext kernal = newContext();
 
             kernal.add(new GridTimeoutProcessor(kernal));
+            kernal.add(new NoOpIgniteSecurityProcessor(kernal));
 
             QueryTaskExecutorImpl taskExecutor = new QueryTaskExecutorImpl(kernal);
             taskExecutor.stripedThreadPoolExecutor(new IgniteTestStripedThreadPoolExecutor(

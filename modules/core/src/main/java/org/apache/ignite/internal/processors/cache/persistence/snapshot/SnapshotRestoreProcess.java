@@ -787,7 +787,7 @@ public class SnapshotRestoreProcess {
                 if (!F.isEmpty(req.groups()) && !req.groups().contains(grpName))
                     continue;
 
-                if (!skipCompressCheck && meta.isGroupWithCompresion(CU.cacheId(grpName))) {
+                if (!skipCompressCheck && meta.isGroupWithCompression(CU.cacheId(grpName))) {
                     try {
                         File path = ctx.pdsFolderResolver().resolveFolders().persistentStoreRootPath();
 
@@ -795,7 +795,7 @@ public class SnapshotRestoreProcess {
                     }
                     catch (Exception e) {
                         String grpWithCompr = F.isEmpty(req.groups()) ? ""
-                            : req.groups().stream().filter(s -> meta.isGroupWithCompresion(CU.cacheId(grpName)))
+                            : req.groups().stream().filter(s -> meta.isGroupWithCompression(CU.cacheId(grpName)))
                                 .collect(Collectors.joining(", "));
 
                         String msg = "Requested cache groups [" + grpWithCompr + "] for restore " +
@@ -891,7 +891,7 @@ public class SnapshotRestoreProcess {
 
             if (!F.isEmpty(e.getValue().metas)) {
                 e.getValue().metas.stream().filter(SnapshotMetadata::hasCompressedGroups)
-                    .forEach(meta -> meta.cacheGroupIds().stream().filter(meta::isGroupWithCompresion)
+                    .forEach(meta -> meta.cacheGroupIds().stream().filter(meta::isGroupWithCompression)
                         .forEach(opCtx0::addCompressedGroup));
             }
 
@@ -937,11 +937,11 @@ public class SnapshotRestoreProcess {
         // Try to copy everything right from the single snapshot part.
         for (SnapshotMetadata meta : metas) {
             Set<Integer> grpParts = meta.partitions().get(grpId);
-            Set<Integer> grpWoIndex = grpParts == null ? Collections.emptySet() : new HashSet<>(grpParts);
+            Set<Integer> grpWoIdx = grpParts == null ? Collections.emptySet() : new HashSet<>(grpParts);
 
-            grpWoIndex.remove(INDEX_PARTITION);
+            grpWoIdx.remove(INDEX_PARTITION);
 
-            if (grpWoIndex.equals(parts))
+            if (grpWoIdx.equals(parts))
                 return meta;
         }
 

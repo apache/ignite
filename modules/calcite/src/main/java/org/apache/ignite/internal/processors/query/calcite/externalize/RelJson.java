@@ -137,8 +137,8 @@ class RelJson {
         Class<?> clazz = null;
 
         if (!typeName.contains(".")) {
-            for (String package_ : PACKAGES) {
-                if ((clazz = classForName(package_ + typeName, true)) != null)
+            for (String pkg_ : PACKAGES) {
+                if ((clazz = classForName(pkg_ + typeName, true)) != null)
                     break;
             }
         }
@@ -250,9 +250,9 @@ class RelJson {
             return class_.getSimpleName();
 
         String canonicalName = class_.getName();
-        for (String package_ : PACKAGES) {
-            if (canonicalName.startsWith(package_)) {
-                String remaining = canonicalName.substring(package_.length());
+        for (String pkg_ : PACKAGES) {
+            if (canonicalName.startsWith(pkg_)) {
+                String remaining = canonicalName.substring(pkg_.length());
                 if (remaining.indexOf('.') < 0 && remaining.indexOf('$') < 0)
                     return remaining;
             }
@@ -821,9 +821,9 @@ class RelJson {
                 return map;
             case LITERAL:
                 RexLiteral literal = (RexLiteral)node;
-                Object value = literal.getValue3();
+                Object val = literal.getValue3();
                 map = map();
-                map.put("literal", toJson(value));
+                map.put("literal", toJson(val));
                 map.put("type", toJson(node.getType()));
 
                 return map;

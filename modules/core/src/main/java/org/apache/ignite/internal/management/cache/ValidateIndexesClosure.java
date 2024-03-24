@@ -231,9 +231,9 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
             }
         }
         else {
-            Collection<CacheGroupContext> groups = ignite.context().cache().cacheGroups();
+            Collection<CacheGroupContext> grps = ignite.context().cache().cacheGroups();
 
-            for (CacheGroupContext grp : groups) {
+            for (CacheGroupContext grp : grps) {
                 if (!grp.systemCache() && grp.affinityNode())
                     grpIds.add(grp.groupId());
             }
@@ -578,7 +578,7 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
     ) throws IgniteCheckedException {
         boolean enoughIssues = false;
 
-        GridQueryProcessor qryProcessor = ignite.context().query();
+        GridQueryProcessor qryProc = ignite.context().query();
 
         final boolean skipConditions = checkFirst > 0 || checkThrough > 0;
         final boolean bothSkipConditions = checkFirst > 0 && checkThrough > 0;
@@ -634,7 +634,7 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
                 continue;
             }
 
-            QueryTypeDescriptorImpl res = qryProcessor.typeByValue(
+            QueryTypeDescriptorImpl res = qryProc.typeByValue(
                 cacheCtx.name(),
                 cacheCtx.cacheObjectContext(),
                 row.key(),
@@ -842,18 +842,18 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
             }
         }
 
-        CacheGroupContext group = ctx.group();
+        CacheGroupContext grp = ctx.group();
 
         String uniqueIdxName = String.format(
             "[cacheGroup=%s, cacheGroupId=%s, cache=%s, cacheId=%s, idx=%s]",
-            group.name(),
-            group.groupId(),
+            grp.name(),
+            grp.groupId(),
             ctx.name(),
             ctx.cacheId(),
             idx.name()
         );
 
-        idleChecker.apply(group.groupId());
+        idleChecker.apply(grp.groupId());
 
         processedIndexes.incrementAndGet();
 
@@ -930,7 +930,7 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
 
                 GridIterator<CacheDataRow> partIter = grpCtx.offheap().partitionIterator(partId);
 
-                GridQueryProcessor qryProcessor = ignite.context().query();
+                GridQueryProcessor qryProc = ignite.context().query();
 
                 while (partIter.hasNextX() && !failCalcCacheSizeGrpIds.contains(grpId)) {
                     CacheDataRow cacheDataRow = partIter.nextX();
@@ -948,7 +948,7 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
 
                     String cacheName = cacheCtx.name();
 
-                    QueryTypeDescriptorImpl qryTypeDesc = qryProcessor.typeByValue(
+                    QueryTypeDescriptorImpl qryTypeDesc = qryProc.typeByValue(
                         cacheName,
                         cacheCtx.cacheObjectContext(),
                         cacheDataRow.key(),
@@ -1038,11 +1038,11 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
             String idxName = idx.indexDefinition().idxName().idxName();
 
             try {
-                long indexSize = idx.totalCount();
+                long idxSize = idx.totalCount();
 
                 idleChecker.apply(cacheCtx.groupId());
 
-                return new T2<>(null, indexSize);
+                return new T2<>(null, idxSize);
             }
             catch (Throwable t) {
                 Throwable idxSizeErr = new IgniteException("Index size calculation error [" +

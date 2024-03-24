@@ -28,7 +28,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -46,7 +45,6 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toSq
 
 /** Reperesents visor task for obtaining system view content. */
 @GridInternal
-@GridVisorManagementTask
 public class SystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg, SystemViewTaskResult, SystemViewTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;

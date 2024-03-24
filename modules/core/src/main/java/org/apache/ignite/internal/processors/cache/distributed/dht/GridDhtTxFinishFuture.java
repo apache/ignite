@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFutu
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -253,8 +252,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 Throwable finishErr = e != null ? e : err;
 
                 if (super.onDone(tx, finishErr)) {
-                    cctx.tm().mvccFinish(this.tx);
-
                     if (finishErr == null)
                         finishErr = this.tx.commitError();
 
@@ -319,8 +316,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                  MTC.supportContinual(span = cctx.kernalContext().tracing().create(TX_DHT_FINISH, MTC.span()))) {
             boolean sync;
 
-            assert tx.mvccSnapshot() == null;
-
             if (!F.isEmpty(dhtMap) || !F.isEmpty(nearMap))
                 sync = finish(commit, dhtMap, nearMap);
             else if (!commit && !F.isEmpty(tx.lockTransactionNodes()))
@@ -348,7 +343,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
         boolean sync = tx.syncMode() == FULL_SYNC;
 
-        if (tx.explicitLock() || tx.queryEnlisted())
+        if (tx.explicitLock())
             sync = true;
 
         boolean res = false;
@@ -386,7 +381,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.activeCachesDeploymentEnabled(),
                 false,
                 false,
-                tx.mvccSnapshot(),
+                null,
                 cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
 
             try {
@@ -437,18 +432,12 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
         boolean sync = tx.syncMode() == FULL_SYNC;
 
-        if (tx.explicitLock() || tx.queryEnlisted())
+        if (tx.explicitLock())
             sync = true;
 
         boolean res = false;
 
         int miniId = 0;
-
-        // Do not need process active transactions on backups.
-        MvccSnapshot mvccSnapshot = tx.mvccSnapshot();
-
-        if (mvccSnapshot != null)
-            mvccSnapshot = mvccSnapshot.withoutActiveTransactions();
 
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : dhtMap.values()) {
@@ -491,7 +480,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 null,
                 false,
                 false,
-                mvccSnapshot,
+                null,
                 commit ? null : cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
@@ -568,7 +557,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     tx.activeCachesDeploymentEnabled(),
                     false,
                     false,
-                    mvccSnapshot,
+                    null,
                     null);
 
                 req.writeVersion(tx.writeVersion());

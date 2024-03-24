@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.rel.logical;
 
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
@@ -35,12 +36,13 @@ public class IgniteLogicalTableScan extends ProjectableFilterableTableScan {
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
-        List<RelHint> hints,
+        @Nullable List<RelHint> hints,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        return new IgniteLogicalTableScan(cluster, traits, tbl, hints, proj, cond, requiredColumns);
+        return new IgniteLogicalTableScan(cluster, traits, tbl, hints == null ? ImmutableList.of() : hints, proj, cond,
+            requiredColumns);
     }
 
     /**

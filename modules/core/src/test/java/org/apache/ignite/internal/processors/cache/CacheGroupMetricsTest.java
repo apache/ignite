@@ -341,15 +341,15 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
             assertTrue("Renting partitions count when node returns not equals to moved partitions when node left",
                 GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
-                        IntMetric localNodeRentingPartitionsCnt =
+                        IntMetric locNodeRentingPartitionsCnt =
                             mxBean0Grp1.findMetric("LocalNodeRentingPartitionsCount");
 
                         log.info("Renting partitions count: " +
-                            localNodeRentingPartitionsCnt.value());
+                            locNodeRentingPartitionsCnt.value());
                         log.info("Renting entries count: " +
                             mxBean0Grp1.findMetric("LocalNodeRentingEntriesCount").getAsString());
 
-                        return localNodeRentingPartitionsCnt.value() == movingCnt;
+                        return locNodeRentingPartitionsCnt.value() == movingCnt;
                     }
                 }, 10_000L)
             );

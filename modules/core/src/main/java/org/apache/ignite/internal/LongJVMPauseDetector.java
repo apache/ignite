@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -113,7 +114,7 @@ public class LongJVMPauseDetector {
 
             @Override public void run() {
                 synchronized (LongJVMPauseDetector.this) {
-                    lastWakeUpTime = System.currentTimeMillis();
+                    lastWakeUpTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                 }
 
                 if (log.isDebugEnabled())
@@ -123,7 +124,7 @@ public class LongJVMPauseDetector {
                     try {
                         Thread.sleep(PRECISION);
 
-                        final long now = System.currentTimeMillis();
+                        final long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                         final long pause = now - PRECISION - lastWakeUpTime;
 
                         if (pause >= THRESHOLD) {

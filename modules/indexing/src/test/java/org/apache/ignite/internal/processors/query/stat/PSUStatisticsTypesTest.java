@@ -72,11 +72,11 @@ public class PSUStatisticsTypesTest extends StatisticsTypesAbstractTest {
 
         checkOptimalPlanChosenForDifferentIndexes(grid(0), new String[]{}, descSql, wrongHints);
 
-        String descNoIndexSql = sql + " order by col_no_index desc";
+        String descNoIdxSql = sql + " order by col_no_index desc";
 
-        checkOptimalPlanChosenForDifferentIndexes(grid(0), new String[]{"DTYPES_" + name}, descNoIndexSql, noHints);
+        checkOptimalPlanChosenForDifferentIndexes(grid(0), new String[]{"DTYPES_" + name}, descNoIdxSql, noHints);
 
-        checkOptimalPlanChosenForDifferentIndexes(grid(0), new String[]{"DTYPES_" + name}, descNoIndexSql, hints);
+        checkOptimalPlanChosenForDifferentIndexes(grid(0), new String[]{"DTYPES_" + name}, descNoIdxSql, hints);
     }
 
     /**

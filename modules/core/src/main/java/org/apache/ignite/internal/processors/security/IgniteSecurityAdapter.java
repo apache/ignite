@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.processors.security.SecurityUtils.doPrivileged;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.isInIgnitePackage;
 
 /** */
 public abstract class IgniteSecurityAdapter extends GridProcessorAdapter implements IgniteSecurity {
@@ -47,7 +48,13 @@ public abstract class IgniteSecurityAdapter extends GridProcessorAdapter impleme
             c -> {
                 ProtectionDomain pd = doPrivileged(c::getProtectionDomain);
 
-                return pd != null && F.eq(CORE_CODE_SOURCE, pd.getCodeSource());
+                return pd != null
+                    && F.eq(CORE_CODE_SOURCE, pd.getCodeSource())
+                    // It allows users create an Uber-JAR that includes both Ignite source code and custom classes
+                    // and to pass mentioned classes to Ignite via public API (e.g. tasks execution).
+                    // Otherwise, Ignite will treat custom classes as internal and block their execution through the
+                    // public API.
+                    && isInIgnitePackage(cls);
             }
         );
     }

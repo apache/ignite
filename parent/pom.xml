@@ -89,6 +89,7 @@
         <guava.version>32.1.2-jre</guava.version>
         <guava14.version>14.0.1</guava14.version>
         <guava16.version>16.0.1</guava16.version>
+        <grpc-context.version>1.61.0</grpc-context.version>
         <h2.version>1.4.197</h2.version>
         <hadoop.version>2.9.1</hadoop.version>
         <hamcrest.version>2.2</hamcrest.version>
@@ -114,7 +115,7 @@
         <jsonlib.bundle.version>2.4_1</jsonlib.bundle.version>
         <jsonlib.version>2.4</jsonlib.version>
         <jtidy.version>r938</jtidy.version>
-        <kafka.version>2.0.1</kafka.version>
+        <kafka.version>3.4.0</kafka.version>
         <log4j2.version>2.22.0</log4j2.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
         <lucene.version>8.11.2</lucene.version>
@@ -149,7 +150,7 @@
         <zkclient.version>0.5</zkclient.version>
         <zookeeper.version>3.8.3</zookeeper.version>
         <zstd.version>1.5.5-5</zstd.version>
-        <opencensus.version>0.22.0</opencensus.version>
+        <opencensus.version>0.31.1</opencensus.version>
         <commons.lang3.version>3.9</commons.lang3.version>
         <ignite-kafka-ext.version>1.0.0</ignite-kafka-ext.version>
 

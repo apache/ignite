@@ -23,13 +23,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.h2.index.Cursor;
 import org.h2.result.Row;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_ITER_CLOSE;
 
@@ -64,9 +62,6 @@ public class ReduceIndexIterator implements Iterator<List<?>>, AutoCloseable {
     /** Whether remote resources were released. */
     private boolean released;
 
-    /** */
-    private MvccQueryTracker mvccTracker;
-
     /** Tracing processor. */
     private final Tracing tracing;
 
@@ -85,7 +80,6 @@ public class ReduceIndexIterator implements Iterator<List<?>>, AutoCloseable {
         ReduceQueryRun run,
         long qryReqId,
         boolean distributedJoins,
-        @Nullable MvccQueryTracker mvccTracker,
         Tracing tracing
     ) {
         this.rdcExec = rdcExec;
@@ -93,7 +87,6 @@ public class ReduceIndexIterator implements Iterator<List<?>>, AutoCloseable {
         this.run = run;
         this.qryReqId = qryReqId;
         this.distributedJoins = distributedJoins;
-        this.mvccTracker = mvccTracker;
         this.tracing = tracing;
 
         rdcIter = run.reducers().iterator();
@@ -175,7 +168,7 @@ public class ReduceIndexIterator implements Iterator<List<?>>, AutoCloseable {
     private void releaseIfNeeded() {
         if (!released) {
             try {
-                rdcExec.releaseRemoteResources(nodes, run, qryReqId, distributedJoins, mvccTracker);
+                rdcExec.releaseRemoteResources(nodes, run, qryReqId, distributedJoins);
             }
             finally {
                 released = true;

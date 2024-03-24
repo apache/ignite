@@ -903,7 +903,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertContains(log, testOut.toString(), "Cluster is inactive");
+        assertClusterState(INACTIVE, testOut.toString());
 
         String out = testOut.toString();
 
@@ -919,7 +919,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertContains(log, testOut.toString(), "Cluster is active");
+        assertClusterState(ACTIVE, testOut.toString());
 
         ignite.cluster().state(ACTIVE_READ_ONLY);
 
@@ -929,7 +929,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertContains(log, testOut.toString(), "Cluster is active (read-only)");
+        assertClusterState(ACTIVE_READ_ONLY, testOut.toString());
 
         boolean tagUpdated = GridTestUtils.waitForCondition(() -> {
             try {
@@ -1425,7 +1425,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        ShutdownPolicy policy = ignite.cluster().shutdownPolicy();
+        ShutdownPolicy plc = ignite.cluster().shutdownPolicy();
 
         injectTestSystemOut();
 
@@ -1433,7 +1433,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String out = testOut.toString();
 
-        assertContains(log, out, "Cluster shutdown policy is " + policy);
+        assertContains(log, out, "Cluster shutdown policy is " + plc);
     }
 
     /**
@@ -1449,24 +1449,24 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        ShutdownPolicy policyToChange = null;
+        ShutdownPolicy plcToChange = null;
 
-        for (ShutdownPolicy policy : ShutdownPolicy.values()) {
-            if (policy != ignite.cluster().shutdownPolicy())
-                policyToChange = policy;
+        for (ShutdownPolicy plc : ShutdownPolicy.values()) {
+            if (plc != ignite.cluster().shutdownPolicy())
+                plcToChange = plc;
         }
 
-        assertNotNull(policyToChange);
+        assertNotNull(plcToChange);
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--shutdown-policy", policyToChange.name()));
+        assertEquals(EXIT_CODE_OK, execute("--shutdown-policy", plcToChange.name()));
 
-        assertSame(policyToChange, ignite.cluster().shutdownPolicy());
+        assertSame(plcToChange, ignite.cluster().shutdownPolicy());
 
         String out = testOut.toString();
 
-        assertContains(log, out, "Cluster shutdown policy is " + policyToChange);
+        assertContains(log, out, "Cluster shutdown policy is " + plcToChange);
     }
 
     /**
@@ -3973,6 +3973,25 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /**
+     * Test to make sure that the '--baseline' command shows correct cluster state
+     *
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testClusterStateInBaselineCommand() throws Exception {
+        Ignite ignite = startGrids(1);
+
+        injectTestSystemOut();
+
+        for (ClusterState state : ClusterState.values()) {
+            ignite.cluster().state(state);
+            assertEquals(EXIT_CODE_OK, execute("--baseline"));
+            assertEquals(state, ignite.cluster().state());
+            assertClusterState(state, testOut.toString());
+        }
+    }
+
+    /**
      * @param ignite Ignite to execute task on.
      * @param delFoundGarbage If clearing mode should be used.
      * @return Result of task run.
@@ -4059,5 +4078,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    /**
+     * @param state Current state of the cluster.
+     * @param logOutput Logger output where current cluster state is supposed to be specified.
+     */
+    public static void assertClusterState(ClusterState state, String logOutput) {
+        assertTrue(Pattern.compile("Cluster state: " + state + "\\s+").matcher(logOutput).find());
     }
 }

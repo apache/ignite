@@ -237,12 +237,12 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
 
         List<StatisticsColumnGlobalDataView> res = new ArrayList<>();
 
-        for (Map.Entry<StatisticsKey, ObjectStatisticsImpl> localStatsEntry : globalStatsMap.entrySet()) {
-            StatisticsKey key = localStatsEntry.getKey();
-            ObjectStatisticsImpl stat = localStatsEntry.getValue();
+        for (Map.Entry<StatisticsKey, ObjectStatisticsImpl> locStatsEntry : globalStatsMap.entrySet()) {
+            StatisticsKey key = locStatsEntry.getKey();
+            ObjectStatisticsImpl stat = locStatsEntry.getValue();
 
             if (column == null) {
-                for (Map.Entry<String, ColumnStatistics> colStat : localStatsEntry.getValue().columnsStatistics()
+                for (Map.Entry<String, ColumnStatistics> colStat : locStatsEntry.getValue().columnsStatistics()
                     .entrySet()) {
                     StatisticsColumnGlobalDataView colStatView = new StatisticsColumnGlobalDataView(key,
                         colStat.getKey(), stat);
@@ -251,7 +251,7 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
                 }
             }
             else {
-                ColumnStatistics colStat = localStatsEntry.getValue().columnStatistics(column);
+                ColumnStatistics colStat = locStatsEntry.getValue().columnStatistics(column);
 
                 if (colStat != null) {
                     StatisticsColumnGlobalDataView colStatView = new StatisticsColumnGlobalDataView(key, column, stat);
@@ -476,20 +476,20 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
 
         StatisticsKey key = new StatisticsKey(req.key().schema(), req.key().obj());
 
-        ObjectStatisticsImpl objectStatistics = statMgr.getLocalStatistics(key, req.topVer());
+        ObjectStatisticsImpl objStatistics = statMgr.getLocalStatistics(key, req.topVer());
 
-        if (StatisticsUtils.compareVersions(objectStatistics, req.versions()) == 0)
-            sendResponse(nodeId, req.reqId(), key, StatisticsType.LOCAL, objectStatistics);
+        if (StatisticsUtils.compareVersions(objStatistics, req.versions()) == 0)
+            sendResponse(nodeId, req.reqId(), key, StatisticsType.LOCAL, objStatistics);
         else {
             addToRequests(inLocalRequests, key, new StatisticsAddressedRequest(req, nodeId));
 
-            objectStatistics = statMgr.getLocalStatistics(key, req.topVer());
+            objStatistics = statMgr.getLocalStatistics(key, req.topVer());
 
-            if (StatisticsUtils.compareVersions(objectStatistics, req.versions()) == 0) {
+            if (StatisticsUtils.compareVersions(objStatistics, req.versions()) == 0) {
                 StatisticsAddressedRequest removed = removeFromRequests(inLocalRequests, key, req.reqId());
 
                 if (removed != null)
-                    sendResponse(nodeId, req.reqId(), key, StatisticsType.LOCAL, objectStatistics);
+                    sendResponse(nodeId, req.reqId(), key, StatisticsType.LOCAL, objStatistics);
             }
         }
     }
@@ -504,10 +504,10 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
         if (cfg == null)
             return false;
 
-        for (Map.Entry<String, Long> version : versions.entrySet()) {
-            StatisticsColumnConfiguration colCfg = cfg.columns().get(version.getKey());
+        for (Map.Entry<String, Long> ver : versions.entrySet()) {
+            StatisticsColumnConfiguration colCfg = cfg.columns().get(ver.getKey());
 
-            if (colCfg == null || colCfg.version() < version.getValue())
+            if (colCfg == null || colCfg.version() < ver.getValue())
                 return false;
         }
 

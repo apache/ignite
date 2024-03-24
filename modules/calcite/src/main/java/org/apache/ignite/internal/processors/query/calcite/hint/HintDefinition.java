@@ -25,7 +25,6 @@ import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintPredicates;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 
 /**
  * Holds supported SQL hints and their settings.
@@ -76,7 +75,7 @@ public enum HintDefinition {
     NO_INDEX {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {
-            return (hint, rel) -> rel instanceof IgniteLogicalTableScan;
+            return HintPredicates.TABLE_SCAN;
         }
 
         /** {@inheritDoc} */
@@ -96,7 +95,94 @@ public enum HintDefinition {
         @Override public HintOptionsChecker optionsChecker() {
             return NO_INDEX.optionsChecker();
         }
+    },
+
+    /** Forces merge join. */
+    MERGE_JOIN {
+        /** {@inheritDoc} */
+        @Override public HintPredicate predicate() {
+            return joinHintPredicate();
+        }
+
+        /** {@inheritDoc} */
+        @Override public HintOptionsChecker optionsChecker() {
+            return HintsConfig.OPTS_CHECK_NO_KV;
+        }
+    },
+
+    /** Disables merge join. */
+    NO_MERGE_JOIN {
+        /** {@inheritDoc} */
+        @Override public HintPredicate predicate() {
+            return MERGE_JOIN.predicate();
+        }
+
+        /** {@inheritDoc} */
+        @Override public HintOptionsChecker optionsChecker() {
+            return MERGE_JOIN.optionsChecker();
+        }
+    },
+
+    /** Forces nested loop join. */
+    NL_JOIN {
+        /** {@inheritDoc} */
+        @Override public HintPredicate predicate() {
+            return joinHintPredicate();
+        }
+
+        /** {@inheritDoc} */
+        @Override public HintOptionsChecker optionsChecker() {
+            return HintsConfig.OPTS_CHECK_NO_KV;
+        }
+    },
+
+    /** Disables nested loop join. */
+    NO_NL_JOIN {
+        /** {@inheritDoc} */
+        @Override public HintPredicate predicate() {
+            return NL_JOIN.predicate();
+        }
+
+        /** {@inheritDoc} */
+        @Override public HintOptionsChecker optionsChecker() {
+            return NL_JOIN.optionsChecker();
+        }
+    },
+
+    /** Forces correlated nested loop join. */
+    CNL_JOIN {
+        /** {@inheritDoc} */
+        @Override public HintPredicate predicate() {
+            return joinHintPredicate();
+        }
+
+        /** {@inheritDoc} */
+        @Override public HintOptionsChecker optionsChecker() {
+            return HintsConfig.OPTS_CHECK_NO_KV;
+        }
+    },
+
+    /** Disables correlated nested loop join. */
+    NO_CNL_JOIN {
+        /** {@inheritDoc} */
+        @Override public HintPredicate predicate() {
+            return CNL_JOIN.predicate();
+        }
+
+        /** {@inheritDoc} */
+        @Override public HintOptionsChecker optionsChecker() {
+            return CNL_JOIN.optionsChecker();
+        }
     };
+
+    /**
+     * @return Hint predicate for join hints.
+     */
+    private static HintPredicate joinHintPredicate() {
+        // HintPredicates.VALUES might be mentioned too. But RelShuttleImpl#visit(LogicalValues) does nothing and ignores
+        // setting any hints.
+        return HintPredicates.or(HintPredicates.JOIN, HintPredicates.TABLE_SCAN);
+    }
 
     /**
      * @return Hint predicate which limits redundant hint copying and reduces mem/cpu consumption.
