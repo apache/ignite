@@ -1083,12 +1083,16 @@ public class GridCacheSharedContext<K, V> {
             IgniteInternalFuture<?> fut = holder.future();
 
             if (fut != null && !fut.isDone()) {
-                IgniteInternalFuture<IgniteInternalTx> f = new GridEmbeddedFuture<>(fut,
-                    (o, e) -> tx.commitNearTxLocalAsync());
+                if (tx.optimistic())
+                    holder.await();
+                else {
+                    IgniteInternalFuture<IgniteInternalTx> f = new GridEmbeddedFuture<>(fut,
+                        (o, e) -> tx.commitNearTxLocalAsync());
 
-                holder.saveFuture(f);
+                    holder.saveFuture(f);
 
-                return f;
+                    return f;
+                }
             }
 
             IgniteInternalFuture<IgniteInternalTx> f = tx.commitNearTxLocalAsync();
