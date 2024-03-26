@@ -58,7 +58,7 @@ import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 @RunWith(Parameterized.class)
 public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** */
-    protected static final String TEST_CACHE_NAME = PersistenceBasicCompatibilityTest.class.getSimpleName();
+    public static final String TEST_CACHE_NAME = PersistenceBasicCompatibilityTest.class.getSimpleName();
 
     /** */
     protected volatile boolean compactFooter;
