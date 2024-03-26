@@ -29,15 +29,20 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.dump.DumpEntry;
@@ -54,6 +59,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.util.AttributeNodeFilter;
 import org.junit.Test;
 
 import static java.lang.Boolean.FALSE;
@@ -63,6 +69,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 /** */
 public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
@@ -107,7 +114,54 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
                 ccfg.setExpiryPolicyFactory(() -> EXPIRY_POLICY);
         }
 
+        if (!igniteInstanceName.endsWith("0")) {
+            assert F.isEmpty(cfg.getUserAttributes());
+
+            cfg.setUserAttributes(Stream.of(DEFAULT_CACHE_NAME).collect(Collectors.toMap(Function.identity(), v -> "")));
+        }
+
         return cfg;
+    }
+
+    /** */
+    @Test
+    public void testDumpWithNodeFilterCache() throws Exception {
+        assumeTrue(nodes > 1);
+
+        configureDfltCaches = false;
+
+        startGridAndFillCaches();
+
+        cli.createCache(new CacheConfiguration<>()
+            .setName(DEFAULT_CACHE_NAME)
+            .setBackups(backups)
+            .setAtomicityMode(mode)
+            .setNodeFilter(new AttributeNodeFilter(DEFAULT_CACHE_NAME, ""))
+            .setAffinity(new RendezvousAffinityFunction().setPartitions(20)));
+
+        try (IgniteDataStreamer<Integer, Integer> ds = cli.dataStreamer(DEFAULT_CACHE_NAME)) {
+            IgniteCache<Integer, Integer> cache = cli.cache(DEFAULT_CACHE_NAME);
+
+            for (int i = 0; i < KEYS_CNT; ++i) {
+                if (useDataStreamer)
+                    ds.addData(i, i);
+                else
+                    cache.put(i, i);
+            }
+        }
+
+        createDump(cli, DMP_NAME, Collections.singleton(DEFAULT_CACHE_NAME));
+
+        checkDump(cli,
+            DMP_NAME,
+            new String[] {DEFAULT_CACHE_NAME},
+            Collections.singleton(DEFAULT_CACHE_NAME),
+            (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
+            0,
+            0,
+            false,
+            false
+        );
     }
 
     /** */

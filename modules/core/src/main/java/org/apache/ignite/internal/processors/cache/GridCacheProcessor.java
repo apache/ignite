@@ -4049,7 +4049,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return {@code True} if cache group {@code cacheGrpId} is encrypted. {@code False} otherwise.
      */
     public boolean isEncrypted(int cacheGrpId) {
-        return cacheGrpId != MetaStorage.METASTORAGE_CACHE_ID && cacheGroup(cacheGrpId).config().isEncryptionEnabled();
+        return cacheGrpId != MetaStorage.METASTORAGE_CACHE_ID && cacheGroupDescriptor(cacheGrpId).config().isEncryptionEnabled();
     }
 
     /**

@@ -31,12 +31,13 @@ import java.util.concurrent.ExecutionException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
+import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -113,19 +114,19 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
             int grpId = e.getKey();
             Set<Integer> grpParts = e.getValue();
 
-            CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
-
             Iterator<GridDhtLocalPartition> iter;
 
             if (grpParts == null)
-                iter = gctx.topology().currentLocalPartitions().iterator();
+                iter = cctx.cache().cacheGroup(grpId).topology().currentLocalPartitions().iterator();
             else {
                 if (grpParts.contains(INDEX_PARTITION)) {
                     throw new IgniteCheckedException("Index partition cannot be included into snapshot if " +
                         " set of cache group partitions has been explicitly provided [grpId=" + grpId + ']');
                 }
 
-                iter = F.iterator(grpParts, gctx.topology()::localPartition, false);
+                iter = grpParts.isEmpty()
+                    ? new GridEmptyIterator<>()
+                    : F.iterator(grpParts, cctx.cache().cacheGroup(grpId).topology()::localPartition, false);
             }
 
             Set<Integer> owning = new HashSet<>();
@@ -144,7 +145,9 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
                     missed.add(part.id());
             }
 
-            boolean affNode = gctx.nodeFilter() == null || gctx.nodeFilter().apply(cctx.localNode());
+            CacheGroupDescriptor grpDescr = cctx.cache().cacheGroupDescriptor(grpId);
+
+            boolean affNode = grpDescr.config().getNodeFilter() == null || grpDescr.config().getNodeFilter().apply(cctx.localNode());
 
             if (grpParts != null) {
                 // Partition has been provided for cache group, but some of them are not in OWNING state.

@@ -49,7 +49,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageWriteListener;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
@@ -252,16 +252,16 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                 false);
 
             for (Integer grpId : parts.keySet()) {
-                CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
+                CacheGroupDescriptor grpDescr = cctx.cache().cacheGroupDescriptor(grpId);
 
-                if (gctx == null)
+                if (grpDescr == null)
                     throw new IgniteCheckedException("Cache group context not found: " + grpId);
 
-                if (!CU.isPersistentCache(gctx.config(), cctx.kernalContext().config().getDataStorageConfiguration()))
+                if (!CU.isPersistentCache(grpDescr.config(), cctx.kernalContext().config().getDataStorageConfiguration()))
                     throw new IgniteCheckedException("In-memory cache groups are not allowed to be snapshot: " + grpId);
 
                 // Create cache group snapshot directory on start in a single thread.
-                U.ensureDirectory(cacheWorkDir(tmpConsIdDir, FilePageStoreManager.cacheDirName(gctx.config())),
+                U.ensureDirectory(cacheWorkDir(tmpConsIdDir, FilePageStoreManager.cacheDirName(grpDescr.config())),
                     "directory for snapshotting cache group",
                     log);
             }
@@ -345,13 +345,13 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
             for (Map.Entry<Integer, Set<Integer>> e : processed.entrySet()) {
                 int grpId = e.getKey();
 
-                CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
+                CacheGroupDescriptor grpDescr = cctx.cache().cacheGroupDescriptor(grpId);
 
-                if (gctx == null)
+                if (grpDescr == null)
                     throw new IgniteCheckedException("Cache group is stopped : " + grpId);
 
-                ccfgs.add(gctx.config());
-                addPartitionWriters(grpId, e.getValue(), FilePageStoreManager.cacheDirName(gctx.config()));
+                ccfgs.add(grpDescr.config());
+                addPartitionWriters(grpId, e.getValue(), FilePageStoreManager.cacheDirName(grpDescr.config()));
             }
 
             if (withMetaStorage) {

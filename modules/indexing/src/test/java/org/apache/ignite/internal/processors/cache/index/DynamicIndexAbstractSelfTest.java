@@ -46,6 +46,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;
+
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.CONC_DESTROY_MSG;
 
 /**

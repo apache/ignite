@@ -1042,12 +1042,12 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (grpId == MetaStorage.METASTORAGE_CACHE_ID)
             return MetaStorage.METASTORAGE_DIR_NAME;
 
-        CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
+        CacheGroupDescriptor grpDescr = cctx.cache().cacheGroupDescriptor(grpId);
 
-        if (gctx == null)
+        if (grpDescr == null)
             throw new IgniteCheckedException("Cache group context has not found due to the cache group is stopped.");
 
-        return cacheDirName(gctx.config());
+        return cacheDirName(grpDescr.config());
     }
 
     /**
