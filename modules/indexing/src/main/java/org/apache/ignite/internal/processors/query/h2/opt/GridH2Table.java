@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.QueryTable;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatistics;
 import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -76,6 +77,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
+import static org.apache.ignite.internal.processors.query.schema.SchemaOperationException.CODE_INDEX_EXISTS;
 
 /**
  * H2 Table implementation.
@@ -751,22 +753,16 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * Checks index presence, return {@link Index} if index with same name or same fields and search direction already
-     * exist or {@code null} othervise.
+     * Checks that equivalent fields collection index already present.
      *
      * @param curIdx Index to check.
-     * @return Index if equal or subset index exist.
-     * @throws IgniteCheckedException If failed.
      */
-    private @Nullable Index checkIndexPresence(Index curIdx) throws IgniteCheckedException {
+    private void checkEquivalentFieldsIndexIsPresent(Index curIdx) {
         IndexColumn[] curColumns = curIdx.getIndexColumns();
 
         Index registredIdx = null;
 
         for (Index idx : idxs) {
-            if (F.eq(curIdx.getName(), idx.getName()))
-                throw new IgniteCheckedException("Index already exists: " + idx.getName());
-
             if (!(curIdx instanceof H2TreeIndex) || !(idx instanceof H2TreeIndex))
                 continue;
 
@@ -789,11 +785,17 @@ public class GridH2Table extends TableBase {
                 }
             }
 
-            if (registredIdx != null)
-                return registredIdx;
-        }
+            if (registredIdx != null) {
+                String idxCols = Stream.of(registredIdx.getIndexColumns())
+                    .map(k -> k.columnName).collect(Collectors.joining(", "));
 
-        return null;
+                U.warn(log, "Index with the given set or subset of columns already exists " +
+                    "(consider dropping either new or existing index) [cacheName=" + cacheInfo.name() + ", " +
+                    "schemaName=" + getSchema().getName() + ", tableName=" + getName() +
+                    ", newIndexName=" + curIdx.getName() + ", existingIndexName=" + registredIdx.getName() +
+                    ", existingIndexColumns=[" + idxCols + "]]");
+            }
+        }
     }
 
     /**
@@ -811,18 +813,12 @@ public class GridH2Table extends TableBase {
         try {
             ensureNotDestroyed();
 
-            Index idxExist = checkIndexPresence(idx);
-
-            if (idxExist != null) {
-                String idxCols = Stream.of(idxExist.getIndexColumns())
-                    .map(k -> k.columnName).collect(Collectors.joining(", "));
-
-                U.warn(log, "Index with the given set or subset of columns already exists " +
-                    "(consider dropping either new or existing index) [cacheName=" + cacheInfo.name() + ", " +
-                    "schemaName=" + getSchema().getName() + ", tableName=" + getName() +
-                    ", newIndexName=" + idx.getName() + ", existingIndexName=" + idxExist.getName() +
-                    ", existingIndexColumns=[" + idxCols + "]]");
+            for (Index idx0 : idxs) {
+                if (F.eq(idx.getName(), idx0.getName()))
+                    throw new SchemaOperationException(CODE_INDEX_EXISTS, idx.getName());
             }
+
+            checkEquivalentFieldsIndexIsPresent(idx);
 
             Index oldTmpIdx = tmpIdxs.put(idx.getName(), (H2IndexCostedBase)idx);
 
