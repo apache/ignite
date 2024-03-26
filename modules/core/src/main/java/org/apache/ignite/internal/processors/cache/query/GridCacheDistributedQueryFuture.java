@@ -103,15 +103,19 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
         Map<UUID, NodePageStream<R>> streamsMap = Collections.unmodifiableMap(streams);
 
+        int limit = qry.query().limit();
+        int pageSize = qry.query().pageSize();
+
         if (qry.query().type() == INDEX) {
             idxQryMetaFut = new CompletableFuture<>();
 
-            reducer = new IndexQueryReducer<>(qry.query().idxQryDesc().valType(), streamsMap, cctx, idxQryMetaFut);
+            reducer = new IndexQueryReducer<>(qry.query().idxQryDesc().valType(), streamsMap, cctx, idxQryMetaFut, limit, pageSize);
         }
         else {
             idxQryMetaFut = null;
 
-            reducer = qry.query().type() == TEXT ? new TextQueryReducer<>(streamsMap) : new UnsortedCacheQueryReducer<>(streamsMap);
+            reducer = qry.query().type() == TEXT ?
+                new TextQueryReducer<>(streamsMap, limit, pageSize) : new UnsortedCacheQueryReducer<>(streamsMap, limit);
         }
 
         startTimeNanos = ctx.kernalContext().performanceStatistics().enabled() ? System.nanoTime() : 0;
@@ -168,14 +172,12 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
             }
         }
 
-        NodePageStream<R> stream = streams.get(nodeId);
+        // Variable can be true only for limited queries.
+        boolean remoteDone = reducer.addPage(nodeId, data, last);
 
-        if (stream == null)
-            return;
-
-        stream.addPage(data, last);
-
-        if (last) {
+        if (remoteDone)
+            onDone();
+        else if (last) {
             int cnt;
 
             do {
