@@ -196,7 +196,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Memory page size. */
     private int pageSize = IgniteSystemProperties.getInteger(
-        IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE, 0);
+        IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE, DFLT_PAGE_SIZE);
 
     /** Concurrency level. */
     private int concLvl;
@@ -439,7 +439,9 @@ public class DataStorageConfiguration implements Serializable {
      * @see #MAX_PAGE_SIZE
      */
     public DataStorageConfiguration setPageSize(int pageSize) {
-        if (pageSize != 0) {
+        if (pageSize == 0) {
+            pageSize = DFLT_PAGE_SIZE;
+        } else {
             A.ensure(pageSize >= MIN_PAGE_SIZE && pageSize <= MAX_PAGE_SIZE,
                 "Page size must be between 1kB and 16kB.");
             A.ensure(U.isPow2(pageSize), "Page size must be a power of 2.");

@@ -58,4 +58,19 @@ public class DataStorageConfigurationValidationTest {
         for (long i : F.asList(1L, 100L, Long.MAX_VALUE, HALF_MAX_WAL_ARCHIVE_SIZE))
             assertEquals(i, cfg.setMinWalArchiveSize(i).getMinWalArchiveSize());
     }
+
+    @Test
+    public void testPageSize() {
+        DataStorageConfiguration cfg = new DataStorageConfiguration();
+
+        //Trying to get pageSize with default value (4 Kbyte)
+        assertEquals(4096, cfg.getPageSize());
+
+        cfg.setPageSize(0);
+        //When trying to set pageSize to zero, it should be set to default value instead
+        assertEquals(4096, cfg.getPageSize());
+
+        cfg.setPageSize(2048); //Correct value
+        assertEquals(2048, cfg.getPageSize());
+    }
 }
