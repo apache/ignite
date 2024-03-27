@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -59,7 +60,7 @@ public class MetricUtils {
         assert names != null && names.length > 0 : "Metric name must consist of at least one element.";
 
         for (int i = 0; i < names.length; i++) {
-            if (names[i] == null || names[i].isEmpty() || !NAME_PATTERN.matcher(names[i]).matches()) {
+            if (F.isEmpty(names[i]) || !NAME_PATTERN.matcher(names[i]).matches()) {
                 throw new IllegalArgumentException("Illegal metric or registry name. Spaces, nulls or empty name " +
                     "parts are not allowed.");
             }
