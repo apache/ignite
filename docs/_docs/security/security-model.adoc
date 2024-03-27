@@ -1,0 +1,20 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Security Model
+
+When it comes to Apache Ignite security, it is very important to note that by having access to any Ignite cluster node (a server node or a thick client node) it is possible to perform malicious actions on the cluster. There are no mechanisms that could provide protection for the cluster in such scenarios.
+
+Therefore, all link:../clustering/network-configuration.adoc#_discovery[Discovery] and link:../clustering/network-configuration.adoc#_communication[Communication] ports for Ignite server and thick client nodes should only be available inside a protected subnetwork (the so-called demilitarized zone or DMZ). Should those ports be exposed outside of DMZ, it is advised to control access to them by using SSL certificates issued by a trusted Certification Authority (please see this link:ssl-tls.adoc[page] for more information on Apache Ignite SSL/TLS configuration).
+
