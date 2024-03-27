@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -365,12 +366,15 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
 
         // If on task node.
         if (ses.getJobId() == null) {
-            Set<String> keys = keyMap.remove(ses.getId());
+            keyMap.computeIfPresent(ses.getId(), (sesionId, keys) -> {
+                Iterator itr = keys.iterator();
+                while (itr.hasNext()) {
+                    getSpi(ses.getCheckpointSpi()).removeCheckpoint((String)itr.next());
+                    itr.remove();
+                }
 
-            if (keys != null) {
-                for (String key : keys)
-                    getSpi(ses.getCheckpointSpi()).removeCheckpoint(key);
-            }
+                return keys.isEmpty() ? null : keys;
+            });
         }
         // If on job node.
         else if (cleanup) {
@@ -471,30 +475,34 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
                 return;
             }
 
-            Set<String> keys = keyMap.get(sesId);
+            GridTaskSessionImpl ses = ctx.session().getSession(sesId);
 
-            if (keys == null) {
-                GridTaskSessionImpl ses = ctx.session().getSession(sesId);
+            if (ses == null && keyMap.get(sesId) == null) {
+                getSpi(req.getCheckpointSpi()).removeCheckpoint(req.getKey());
 
-                if (ses == null) {
-                    getSpi(req.getCheckpointSpi()).removeCheckpoint(req.getKey());
-
-                    return;
-                }
-
-                Set<String> old = keyMap.putIfAbsent(sesId, (CheckpointSet)(keys = new CheckpointSet(ses)));
-
-                if (old != null)
-                    keys = old;
+                return;
             }
 
-            keys.add(req.getKey());
+            keyMap.compute(sesId, (sessionId, keys) -> {
+                if (keys == null)
+                    keys = new CheckpointSet(ses);
+
+                keys.add(req.getKey());
+
+                return keys;
+            });
 
             // Double check.
             if (closedSess.contains(sesId)) {
-                keyMap.remove(sesId, keys);
+                keyMap.computeIfPresent(sesId, (sessionId, keys) -> {
+                    Iterator itr = keys.iterator();
+                    while (itr.hasNext()) {
+                        getSpi(ses.getCheckpointSpi()).removeCheckpoint((String)itr.next());
+                        itr.remove();
+                    }
 
-                getSpi(req.getCheckpointSpi()).removeCheckpoint(req.getKey());
+                    return keys.isEmpty() ? null : keys;
+                });
             }
         }
     }
