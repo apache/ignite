@@ -195,7 +195,9 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
         checkQuery("select * from Person");
         checkQuery("select distinct * from Person");
         checkQuery("select p.name, date from Person p");
-        checkQuery("select p.name, date from Person p for update");
+
+        assertParseThrows("select p.name, date from Person p for update", IgniteSQLException.class,
+            "SELECT FOR UPDATE is not supported.");
 
         checkQuery("select * from Person p, sch2.Address a");
         checkQuery("select * from Person, sch2.Address");

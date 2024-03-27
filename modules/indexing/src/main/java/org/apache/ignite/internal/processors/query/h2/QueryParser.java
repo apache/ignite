@@ -75,7 +75,7 @@ public class QueryParser {
     /** A pattern for commands having internal implementation in Ignite. */
     private static final Pattern INTERNAL_CMD_RE = Pattern.compile(
         "^(create|drop)\\s+index|^analyze\\s|^refresh\\sstatistics|^drop\\sstatistics|^alter\\s+table|^copy" +
-            "|^set|^begin|^commit|^rollback|^(create|alter|drop)\\s+user" +
+            "|^set|^begin|^start|^commit|^rollback|^(create|alter|drop)\\s+user" +
             "|^kill\\s+(query|scan|continuous|compute|service|transaction|client)|show|help|grant|revoke",
         Pattern.CASE_INSENSITIVE);
 
@@ -349,6 +349,8 @@ public class QueryParser {
                     throw new IgniteSQLException("Explains of update queries are not supported.",
                         IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
+                GridSqlQueryParser.failIfSelectForUpdateQuery(prepared);
+
                 // Get remaining query and check if it is allowed.
                 SqlFieldsQuery remainingQry = null;
 
@@ -476,10 +478,6 @@ public class QueryParser {
                 // over segmented PARTITIONED case. In this case multiple map queries will be executed against local
                 // node stripes in parallel and then merged through reduce process.
                 boolean splitNeeded = !loc || locSplit;
-
-                if (GridSqlQueryParser.isForUpdateQuery(prepared))
-                    throw new IgniteSQLException("SELECT FOR UPDATE queries are not supported.",
-                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
                 GridCacheTwoStepQuery twoStepQry = null;
 

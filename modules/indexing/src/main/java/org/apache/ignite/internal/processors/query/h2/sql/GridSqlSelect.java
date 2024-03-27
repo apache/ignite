@@ -60,9 +60,6 @@ public class GridSqlSelect extends GridSqlQuery {
     /** */
     private int havingCol = -1;
 
-    /** */
-    private boolean isForUpdate;
-
     /** Used only for SELECT based on UPDATE.
      * It cannot be lazy when updated columns are used in the conditions.
      * In this case index based on these columns may be chosen to scan and some rows may be updated
@@ -182,9 +179,6 @@ public class GridSqlSelect extends GridSqlQuery {
         }
 
         getSortLimitSQL(buff);
-
-        if (isForUpdate)
-            buff.append(delim).append("FOR UPDATE");
 
         return buff.toString();
     }
@@ -383,20 +377,6 @@ public class GridSqlSelect extends GridSqlQuery {
     }
 
     /**
-     * @return Whether this statement is {@code FOR UPDATE}.
-     */
-    public boolean isForUpdate() {
-        return isForUpdate;
-    }
-
-    /**
-     * @param forUpdate Whether this statement is {@code FOR UPDATE}.
-     */
-    public void forUpdate(boolean forUpdate) {
-        isForUpdate = forUpdate;
-    }
-
-    /**
      * @return Index of HAVING column.
      */
     public int havingColumn() {
@@ -423,30 +403,6 @@ public class GridSqlSelect extends GridSqlQuery {
         }
 
         aliases.add((GridSqlAlias)from);
-    }
-
-    /**
-     * @return Copy of this select for SELECT FOR UPDATE specific tasks.
-     */
-    public GridSqlSelect copySelectForUpdate() {
-        assert isForUpdate && !distinct && havingCol < 0 && grpCols == null; // Not supported by SFU.
-
-        GridSqlSelect copy = new GridSqlSelect();
-
-        copy.from(from())
-            .where(where());
-
-        int vis = visibleColumns();
-
-        for (int i = 0; i < columns(false).size(); i++)
-            copy.addColumn(column(i), i < vis);
-
-        if (!sort().isEmpty()) {
-            for (GridSqlSortColumn sortCol : sort())
-                copy.addSort(sortCol);
-        }
-
-        return copy;
     }
 
     /**
