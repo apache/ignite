@@ -59,6 +59,9 @@ public class DataStorageConfigurationValidationTest {
             assertEquals(i, cfg.setMinWalArchiveSize(i).getMinWalArchiveSize());
     }
 
+    /**
+     * Tests {@link DataStorageConfiguration#getPageSize} property assertion.
+     */
     @Test
     public void testPageSize() {
         DataStorageConfiguration cfg = new DataStorageConfiguration();
