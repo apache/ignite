@@ -277,6 +277,17 @@ public class ConverterUtils {
 
             if (fromPrimitive != null) {
                 // E.g. from "float" to "double"
+                // check overflow for 'integer' subtypes
+                if (fromPrimitive == Primitive.LONG && toPrimitive == Primitive.INT)
+                    return IgniteExpressions.convertToIntExact(operand);
+
+                if ((fromPrimitive == Primitive.LONG || fromPrimitive == Primitive.INT) && toPrimitive == Primitive.SHORT)
+                    return IgniteExpressions.convertToShortExact(operand);
+
+                if ((fromPrimitive == Primitive.LONG || fromPrimitive == Primitive.INT || fromPrimitive == Primitive.SHORT)
+                    && toPrimitive == Primitive.BYTE)
+                    return IgniteExpressions.convertToByteExact(operand);
+
                 return Expressions.convert_(
                     operand, toPrimitive.primitiveClass);
             }
