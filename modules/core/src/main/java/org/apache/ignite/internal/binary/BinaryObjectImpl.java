@@ -35,6 +35,8 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -287,11 +289,28 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
         int len = length();
 
-        byte[] arr0 = new byte[len];
+        byte[] detachedData;
 
-        U.arrayCopy(arr, start, arr0, 0, len);
+        CrossObjectReferenceDetector detector = new CrossObjectReferenceDetector(BinaryHeapInputStream.create(arr, start));
 
-        return new BinaryObjectImpl(ctx, arr0, 0);
+        boolean isCrossObjRefDetected = detector.checkObject();
+
+        if (isCrossObjRefDetected) {
+            try (BinaryOutputStream out = new BinaryHeapOutputStream(2 * len)) {
+                CrossObjectReferenceResolver resolver = new CrossObjectReferenceResolver(BinaryHeapInputStream.create(arr, start), out);
+
+                resolver.resolveCrossObjectReferences();
+
+                detachedData = out.arrayCopy();
+            }
+        }
+        else {
+            detachedData = new byte[len];
+
+            U.arrayCopy(arr, start, detachedData, 0, len);
+        }
+
+        return new BinaryObjectImpl(ctx, detachedData, 0);
     }
 
     /**
