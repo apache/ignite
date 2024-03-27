@@ -142,26 +142,6 @@ public class IndexRowImpl implements IndexRow {
     }
 
     /** {@inheritDoc} */
-    @Override public long mvccCoordinatorVersion() {
-        return cacheRow.mvccCoordinatorVersion();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long mvccCounter() {
-        return cacheRow.mvccCounter();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int mvccOperationCounter() {
-        return cacheRow.mvccOperationCounter();
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte mvccTxState() {
-        return cacheRow.mvccTxState();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean indexPlainRow() {
         return false;
     }

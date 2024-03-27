@@ -42,8 +42,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInl
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.LeafIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.MvccInnerIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.MvccLeafIO;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -90,7 +88,7 @@ public class IndexProcessor extends GridProcessorAdapter {
      * Register inline IOs for sorted indexes.
      */
     public static void registerIO() {
-        PageIO.registerH2(InnerIO.VERSIONS, LeafIO.VERSIONS, MvccInnerIO.VERSIONS, MvccLeafIO.VERSIONS);
+        PageIO.registerH2(InnerIO.VERSIONS, LeafIO.VERSIONS);
 
         AbstractInlineInnerIO.register();
         AbstractInlineLeafIO.register();
@@ -522,8 +520,8 @@ public class IndexProcessor extends GridProcessorAdapter {
             removeId,
             metaPageId,
             reuseList,
-            AbstractInlineInnerIO.versions(inlineSize, mvccEnabled),
-            AbstractInlineLeafIO.versions(inlineSize, mvccEnabled),
+            AbstractInlineInnerIO.versions(inlineSize),
+            AbstractInlineLeafIO.versions(inlineSize),
             PageIdAllocator.FLAG_IDX,
             ctx.failure(),
             ctx.cache().context().diagnostic().pageLockTracker()

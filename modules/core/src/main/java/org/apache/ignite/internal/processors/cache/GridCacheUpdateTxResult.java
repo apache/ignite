@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.List;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -40,9 +38,6 @@ public class GridCacheUpdateTxResult {
 
     /** */
     private WALPointer logPtr;
-
-    /** Mvcc history. */
-    private List<MvccLinkAwareSearchRow> mvccHistory;
 
     /** Previous value. */
     private CacheObject prevVal;
@@ -129,20 +124,6 @@ public class GridCacheUpdateTxResult {
      */
     @Nullable public IgniteInternalFuture<GridCacheUpdateTxResult> updateFuture() {
         return fut;
-    }
-
-    /**
-     * @return Mvcc history rows.
-     */
-    @Nullable public List<MvccLinkAwareSearchRow> mvccHistory() {
-        return mvccHistory;
-    }
-
-    /**
-     * @param mvccHistory Mvcc history rows.
-     */
-    public void mvccHistory(List<MvccLinkAwareSearchRow> mvccHistory) {
-        this.mvccHistory = mvccHistory;
     }
 
     /**

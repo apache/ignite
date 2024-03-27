@@ -101,7 +101,6 @@ import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingRow;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
@@ -1649,46 +1648,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         @Override public int cacheId() {
             return entry.cacheId();
         }
-
-        /** {@inheritDoc} */
-        @Override public long mvccCoordinatorVersion() {
-            return 0; // TODO IGNITE-7384
-        }
-
-        /** {@inheritDoc} */
-        @Override public long mvccCounter() {
-            return 0;  // TODO IGNITE-7384
-        }
-
-        /** {@inheritDoc} */
-        @Override public int mvccOperationCounter() {
-            return 0;  // TODO IGNITE-7384
-        }
-
-        /** {@inheritDoc} */
-        @Override public long newMvccCoordinatorVersion() {
-            return 0; // TODO IGNITE-7384
-        }
-
-        /** {@inheritDoc} */
-        @Override public long newMvccCounter() {
-            return 0; // TODO IGNITE-7384
-        }
-
-        /** {@inheritDoc} */
-        @Override public int newMvccOperationCounter() {
-            return 0;  // TODO IGNITE-7384
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte mvccTxState() {
-            return 0;  // TODO IGNITE-7384
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte newMvccTxState() {
-            return 0; // TODO IGNITE-7384
-        }
     }
 
     /**
@@ -2536,11 +2495,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public int cleanup(GridCacheContext cctx,
-            @Nullable List<MvccLinkAwareSearchRow> cleanupRows) throws IgniteCheckedException {
+        @Override public int cleanup(GridCacheContext cctx) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            return delegate.cleanup(cctx, cleanupRows);
+            return delegate.cleanup(cctx);
         }
 
         /** {@inheritDoc} */

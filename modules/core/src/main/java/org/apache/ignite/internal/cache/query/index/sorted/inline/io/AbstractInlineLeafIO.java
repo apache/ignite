@@ -57,25 +57,17 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
     }
 
     /**
-     * Register IOs for every available {@link #inlineSize} for MVCC and not.
+     * Register IOs for every available {@link #inlineSize}.
      */
     public static void register() {
-        register(false);
-        register(true);
-    }
-
-    /** */
-    private static void register(boolean mvcc) {
-        short type = mvcc ? PageIO.T_H2_EX_REF_MVCC_LEAF_START : PageIO.T_H2_EX_REF_LEAF_START;
-
         for (short payload = 1; payload <= PageIO.MAX_PAYLOAD_SIZE; payload++) {
-            short ioType = (short)(type + payload - 1);
+            short ioType = (short)(PageIO.T_H2_EX_REF_LEAF_START + payload - 1);
 
-            AbstractInlineLeafIO io = mvcc ? new MvccInlineLeafIO(ioType, payload) : new InlineLeafIO(ioType, payload);
+            AbstractInlineLeafIO io = new InlineLeafIO(ioType, payload);
 
             IOVersions<? extends AbstractInlineLeafIO> versions = new IOVersions<>(io);
 
-            PageIO.registerH2ExtraLeaf(versions, mvcc);
+            PageIO.registerH2ExtraLeaf(versions);
         }
     }
 
@@ -107,7 +99,7 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
             }
         }
 
-        IORowHandler.store(pageAddr, off + inlineSize, row, storeMvccInfo());
+        IORowHandler.store(pageAddr, off + inlineSize, row);
     }
 
     /** {@inheritDoc} */
@@ -117,14 +109,6 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
         long link = PageUtils.getLong(pageAddr, offset(idx) + inlineSize);
 
         assert link != 0;
-
-        if (storeMvccInfo()) {
-            long mvccCrdVer = mvccCoordinatorVersion(pageAddr, idx);
-            long mvccCntr = mvccCounter(pageAddr, idx);
-            int mvccOpCntr = mvccOperationCounter(pageAddr, idx);
-
-            return ((InlineIndexTree)tree).createMvccIndexRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
-        }
 
         return ((InlineIndexTree)tree).createIndexRow(link);
     }
@@ -141,7 +125,7 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
 
         PageUtils.putBytes(dstPageAddr, dstOff, payload);
 
-        IORowHandler.store(dstPageAddr, dstOff + inlineSize, (InlineIO)srcIo, srcPageAddr, srcIdx, storeMvccInfo());
+        IORowHandler.store(dstPageAddr, dstOff + inlineSize, (InlineIO)srcIo, srcPageAddr, srcIdx);
     }
 
     /** {@inheritDoc} */
@@ -156,15 +140,14 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
 
     /**
      * @param payload Payload size.
-     * @param mvccEnabled Whether MVCC is enabled.
      * @return IOVersions for given payload.
      */
-    public static IOVersions<? extends BPlusLeafIO<IndexRow>> versions(int payload, boolean mvccEnabled) {
+    public static IOVersions<? extends BPlusLeafIO<IndexRow>> versions(int payload) {
         assert payload >= 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
 
         if (payload == 0)
-            return mvccEnabled ? MvccLeafIO.VERSIONS : LeafIO.VERSIONS;
+            return LeafIO.VERSIONS;
         else
-            return (IOVersions<BPlusLeafIO<IndexRow>>)PageIO.getLeafVersions((short)(payload - 1), mvccEnabled);
+            return (IOVersions<BPlusLeafIO<IndexRow>>)PageIO.getLeafVersions((short)(payload - 1));
     }
 }
