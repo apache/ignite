@@ -113,7 +113,26 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
         if (lazy)
             iter = new LazyIterator<>(iter);
 
-        return iter;
+        int expSize = fieldsMeta != null ? fieldsMeta.size() : 0;
+
+        return new Iterator<T>() {
+            @Override public boolean hasNext() {
+                return iter.hasNext();
+            }
+
+            @Override public T next() {
+                T next = iter.next();
+
+                if (next instanceof List) {
+                    if (fieldsMeta != null && ((List<?>)next).size() != expSize) {
+                        throw new RuntimeException("MY TEST size=" + expSize +
+                            " next=" + ((List<?>)next).size() + " f=" + fieldsMeta + " n=" + next);
+                    }
+                }
+
+                return next;
+            }
+        };
     }
 
     /** {@inheritDoc} */
