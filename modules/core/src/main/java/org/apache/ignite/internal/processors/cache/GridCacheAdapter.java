@@ -37,12 +37,10 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.cache.Cache;
@@ -52,7 +50,6 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -74,7 +71,6 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
@@ -126,7 +122,6 @@ import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.CIX2;
@@ -251,13 +246,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
         };
 
-    /** Last asynchronous future. */
-    protected ThreadLocal<FutureHolder> lastFut = new ThreadLocal<FutureHolder>() {
-        @Override protected FutureHolder initialValue() {
-            return new FutureHolder();
-        }
-    };
-
     /** Cache configuration. */
     @GridToStringExclude
     protected GridCacheContext<K, V> ctx;
@@ -273,10 +261,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** Cache configuration. */
     @GridToStringExclude
     protected CacheConfiguration cacheCfg;
-
-    /** Grid configuration. */
-    @GridToStringExclude
-    private IgniteConfiguration gridCfg;
 
     /** Cache metrics. */
     protected CacheMetricsImpl metrics;
@@ -328,7 +312,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         this.ctx = ctx;
 
-        gridCfg = ctx.gridConfig();
         cacheCfg = ctx.config();
 
         locNodeId = ctx.gridConfig().getNodeId();
@@ -584,16 +567,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     protected final String startInfo() {
         return "Cache started: " + U.maskName(ctx.config().getName());
-    }
-
-    /**
-     * Stops this cache. Child classes should override this method
-     * to provide custom stop behavior.
-     */
-    public void stop() {
-        // Nulling thread local reference to ensure values will be eventually GCed
-        // no matter what references these futures are holding.
-        lastFut = null;
     }
 
     /**
@@ -3594,66 +3567,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * Asynchronously commits transaction after all previous asynchronous operations are completed.
-     *
-     * @param tx Transaction to commit.
-     * @return Transaction commit future.
-     */
-    @SuppressWarnings("unchecked")
-    IgniteInternalFuture<IgniteInternalTx> commitTxAsync(final GridNearTxLocal tx) {
-        FutureHolder holder = lastFut.get();
-
-        holder.lock();
-
-        try {
-            IgniteInternalFuture fut = holder.future();
-
-            if (fut != null && !fut.isDone()) {
-                IgniteInternalFuture<IgniteInternalTx> f = new GridEmbeddedFuture<>(fut,
-                    new C2<Object, Exception, IgniteInternalFuture<IgniteInternalTx>>() {
-                        @Override public IgniteInternalFuture<IgniteInternalTx> apply(Object o, Exception e) {
-                            return tx.commitNearTxLocalAsync();
-                        }
-                    });
-
-                saveFuture(holder, f, /*asyncOp*/false, /*retry*/false);
-
-                return f;
-            }
-
-            IgniteInternalFuture<IgniteInternalTx> f = tx.commitNearTxLocalAsync();
-
-            saveFuture(holder, f, /*asyncOp*/false, /*retry*/false);
-
-            ctx.tm().resetContext();
-
-            return f;
-        }
-        finally {
-            holder.unlock();
-        }
-    }
-
-    /**
-     * Awaits for previous async operation to be completed.
-     */
-    public void awaitLastFut() {
-        FutureHolder holder = lastFut.get();
-
-        IgniteInternalFuture fut = holder.future();
-
-        if (fut != null && !fut.isDone()) {
-            try {
-                // Ignore any exception from previous async operation as it should be handled by user.
-                fut.get();
-            }
-            catch (IgniteCheckedException ignored) {
-                // No-op.
-            }
-        }
-    }
-
-    /**
      * @param op Cache operation.
      * @param <T> Return type.
      * @return Operation result.
@@ -3663,11 +3576,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Nullable private <T> T syncOp(SyncOp<T> op) throws IgniteCheckedException {
         checkJta();
 
-        awaitLastFut();
-
         GridNearTxLocal tx = checkCurrentTx();
 
         if (tx == null || tx.implicit()) {
+            ctx.shared().lastFuture().await();
+
             TransactionConfiguration tCfg = CU.transactionConfiguration(ctx, ctx.kernalContext().config());
 
             CacheOperationContext opCtx = ctx.operationContextPerCall();
@@ -3760,8 +3673,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             // Should not happen.
             throw new IgniteCheckedException("Failed to perform cache operation (maximum number of retries exceeded).");
         }
-        else
+        else {
+            tx.txState().lastAsyncFuture(ctx.shared()).await();
+
             return op.op(tx);
+        }
     }
 
     /**
@@ -3836,12 +3752,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (fail != null)
             return fail;
 
-        FutureHolder holder = lastFut.get();
+        GridCacheSharedContext.FutureHolder holder = tx.implicit() ?
+            ctx.shared().lastFuture() : tx.txState().lastAsyncFuture(ctx.shared());
 
         holder.lock();
 
         try {
-            IgniteInternalFuture fut = holder.future();
+            IgniteInternalFuture<?> fut = holder.future();
 
             final GridNearTxLocal tx0 = tx;
 
@@ -3913,7 +3830,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         return resFut;
                     });
 
-                saveFuture(holder, f, /*asyncOp*/true, retry);
+                holder.saveFuture(f);
+
+                f.listen(f0 -> asyncOpRelease(retry));
 
                 return f;
             }
@@ -3923,7 +3842,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
              * See {@link GridDhtTxLocalAdapter#updateLockFuture(IgniteInternalFuture, IgniteInternalFuture)}
              */
             if (!tx0.txState().implicitSingle())
-                tx0.txState().awaitLastFuture(ctx.shared());
+                tx0.txState().lastAsyncFuture(ctx.shared()).await();
 
             IgniteInternalFuture<T> f;
 
@@ -3935,7 +3854,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 ctx.shared().txContextReset();
             }
 
-            saveFuture(holder, f, /*asyncOp*/true, retry);
+            holder.saveFuture(f);
+
+            f.listen(f0 -> asyncOpRelease(retry));
 
             if (tx.implicit())
                 ctx.tm().resetContext();
@@ -3944,49 +3865,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
         finally {
             holder.unlock();
-        }
-    }
-
-    /**
-     * Saves future in thread local holder and adds listener
-     * that will clear holder when future is finished.
-     *
-     * @param holder Future holder.
-     * @param fut Future to save.
-     * @param asyncOp Whether operation is instance of AsyncOp.
-     * @param retry {@code true} for retry operations.
-     */
-    protected void saveFuture(final FutureHolder holder, IgniteInternalFuture<?> fut, final boolean asyncOp, final boolean retry) {
-        assert holder != null;
-        assert fut != null;
-        assert holder.holdsLock();
-
-        holder.future(fut);
-
-        if (fut.isDone()) {
-            holder.future(null);
-
-            if (asyncOp)
-                asyncOpRelease(retry);
-        }
-        else {
-            fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> f) {
-                    if (asyncOp)
-                        asyncOpRelease(retry);
-
-                    if (!holder.tryLock())
-                        return;
-
-                    try {
-                        if (holder.future() == f)
-                            holder.future(null);
-                    }
-                    finally {
-                        holder.unlock();
-                    }
-                }
-            });
         }
     }
 
@@ -5541,66 +5419,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * Holder for last async operation future.
-     */
-    protected static class FutureHolder {
-        /** Lock. */
-        private final ReentrantLock lock = new ReentrantLock();
-
-        /** Future. */
-        private IgniteInternalFuture fut;
-
-        /**
-         * Tries to acquire lock.
-         *
-         * @return Whether lock was actually acquired.
-         */
-        public boolean tryLock() {
-            return lock.tryLock();
-        }
-
-        /**
-         * Acquires lock.
-         */
-        @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-        public void lock() {
-            lock.lock();
-        }
-
-        /**
-         * Releases lock.
-         */
-        public void unlock() {
-            lock.unlock();
-        }
-
-        /**
-         * @return Whether lock is held by current thread.
-         */
-        public boolean holdsLock() {
-            return lock.isHeldByCurrentThread();
-        }
-
-        /**
-         * Gets future.
-         *
-         * @return Future.
-         */
-        public IgniteInternalFuture future() {
-            return fut;
-        }
-
-        /**
-         * Sets future.
-         *
-         * @param fut Future.
-         */
-        public void future(@Nullable IgniteInternalFuture fut) {
-            this.fut = fut;
-        }
-    }
-
-    /**
      *
      */
     protected abstract static class CacheExpiryPolicy implements IgniteCacheExpiryPolicy {
@@ -5888,97 +5706,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         void onDone() {
             if (!col.isEmpty())
                 ldr.addDataInternal(col, false);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class LoadCacheClosure<K, V> implements Callable<Void>, Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private String cacheName;
-
-        /** */
-        private IgniteBiPredicate<K, V> p;
-
-        /** */
-        private Object[] args;
-
-        /** */
-        @IgniteInstanceResource
-        private Ignite ignite;
-
-        /** */
-        private ExpiryPolicy plc;
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public LoadCacheClosure() {
-            // No-op.
-        }
-
-        /**
-         * @param cacheName Cache name.
-         * @param p Predicate.
-         * @param args Arguments.
-         * @param plc Explicitly specified expiry policy.
-         */
-        private LoadCacheClosure(String cacheName,
-            IgniteBiPredicate<K, V> p,
-            Object[] args,
-            @Nullable ExpiryPolicy plc) {
-            this.cacheName = cacheName;
-            this.p = p;
-            this.args = args;
-            this.plc = plc;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Void call() throws Exception {
-            IgniteCache<K, V> cache = ignite.cache(cacheName);
-
-            assert cache != null : cacheName;
-
-            if (plc != null)
-                cache = cache.withExpiryPolicy(plc);
-
-            cache.localLoadCache(p, args);
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(p);
-
-            out.writeObject(args);
-
-            U.writeString(out, cacheName);
-
-            if (plc != null)
-                out.writeObject(new IgniteExternalizableExpiryPolicy(plc));
-            else
-                out.writeObject(null);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            p = (IgniteBiPredicate<K, V>)in.readObject();
-
-            args = (Object[])in.readObject();
-
-            cacheName = U.readString(in);
-
-            plc = (ExpiryPolicy)in.readObject();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(LoadCacheClosure.class, this);
         }
     }
 

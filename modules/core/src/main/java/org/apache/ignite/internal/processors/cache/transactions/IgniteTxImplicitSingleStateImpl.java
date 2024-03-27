@@ -76,11 +76,6 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheContext singleCacheContext(GridCacheSharedContext cctx) {
-        return cacheCtx;
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public Integer firstCacheId() {
         return cacheCtx != null ? cacheCtx.cacheId() : null;
     }
@@ -99,11 +94,8 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void awaitLastFuture(GridCacheSharedContext ctx) {
-        if (cacheCtx == null)
-            return;
-
-        cacheCtx.cache().awaitLastFut();
+    @Override public GridCacheSharedContext.FutureHolder lastAsyncFuture(GridCacheSharedContext<?, ?> ctx) {
+        return ctx.lastFuture();
     }
 
     /** {@inheritDoc} */

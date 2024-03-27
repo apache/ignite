@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.platform.client;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.ClientAsyncResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
@@ -47,7 +49,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     private final ClientConnectionContext ctx;
 
     /** Protocol context. */
-    private ClientProtocolContext protocolCtx;
+    private final ClientProtocolContext protocolCtx;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -81,7 +83,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
                         try {
                             txCtx.acquire(true);
 
-                            return ((ClientRequest)req).process(ctx);
+                            return handle0(req);
                         }
                         catch (IgniteCheckedException e) {
                             throw new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
@@ -98,7 +100,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
                 }
             }
 
-            return ((ClientRequest)req).process(ctx);
+            return handle0(req);
         }
         catch (SecurityException ex) {
             throw new IgniteClientException(
@@ -107,6 +109,29 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
                 ex
             );
         }
+    }
+
+    /** */
+    private ClientListenerResponse handle0(ClientListenerRequest req) {
+        ClientRequest req0 = (ClientRequest)req;
+
+        if (req0.isAsync(ctx)) {
+            IgniteInternalFuture<ClientResponse> fut = req0.processAsync(ctx);
+
+            if (fut.isDone()) {
+                try {
+                    // Some async operations can be already finished after processAsync. Shortcut for this case.
+                    return fut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
+                }
+            }
+
+            return new ClientAsyncResponse(req0.requestId(), fut);
+        }
+        else
+            return req0.process(ctx);
     }
 
     /** {@inheritDoc} */

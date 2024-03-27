@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSnapshot;
@@ -62,6 +63,7 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -185,6 +187,9 @@ public class GridCacheSharedContext<K, V> {
 
     /** Cluster is in read-only mode. */
     private volatile boolean readOnlyMode;
+
+    /** Last asynchronous future. */
+    private ThreadLocal<FutureHolder> lastFut = ThreadLocal.withInitial(FutureHolder::new);
 
     /** @return GridCacheSharedContext builder instance. */
     public static Builder builder() {
@@ -1058,7 +1063,7 @@ public class GridCacheSharedContext<K, V> {
         boolean clearThreadMap = txMgr.threadLocalTx(null) == tx;
 
         if (clearThreadMap)
-            tx.txState().awaitLastFuture(this);
+            tx.txState().lastAsyncFuture(this).await();
         else
             tx.state(MARKED_ROLLBACK);
 
@@ -1069,17 +1074,38 @@ public class GridCacheSharedContext<K, V> {
      * @param tx Transaction to commit.
      * @return Commit future.
      */
-    @SuppressWarnings("unchecked")
     public IgniteInternalFuture<IgniteInternalTx> commitTxAsync(GridNearTxLocal tx) {
-        GridCacheContext ctx = tx.txState().singleCacheContext(this);
+        FutureHolder holder = tx.txState().lastAsyncFuture(this);
 
-        if (ctx == null) {
-            tx.txState().awaitLastFuture(this);
+        holder.lock();
 
-            return tx.commitNearTxLocalAsync();
+        try {
+            IgniteInternalFuture<?> fut = holder.future();
+
+            if (fut != null && !fut.isDone()) {
+                if (tx.optimistic())
+                    holder.await();
+                else {
+                    IgniteInternalFuture<IgniteInternalTx> f = new GridEmbeddedFuture<>(fut,
+                        (o, e) -> tx.commitNearTxLocalAsync());
+
+                    holder.saveFuture(f);
+
+                    return f;
+                }
+            }
+
+            IgniteInternalFuture<IgniteInternalTx> f = tx.commitNearTxLocalAsync();
+
+            holder.saveFuture(f);
+
+            txMgr.resetContext();
+
+            return f;
         }
-        else
-            return ctx.cache().commitTxAsync(tx);
+        finally {
+            holder.unlock();
+        }
     }
 
     /**
@@ -1090,7 +1116,7 @@ public class GridCacheSharedContext<K, V> {
         boolean clearThreadMap = txMgr.threadLocalTx(null) == tx;
 
         if (clearThreadMap)
-            tx.txState().awaitLastFuture(this);
+            tx.txState().lastAsyncFuture(this).await();
         else
             tx.state(MARKED_ROLLBACK);
 
@@ -1104,7 +1130,7 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If suspension failed.
      */
     public void suspendTx(GridNearTxLocal tx) throws IgniteCheckedException {
-        tx.txState().awaitLastFuture(this);
+        tx.txState().lastAsyncFuture(this).await();
 
         tx.suspend();
     }
@@ -1116,7 +1142,7 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If resume failed.
      */
     public void resumeTx(GridNearTxLocal tx) throws IgniteCheckedException {
-        tx.txState().awaitLastFuture(this);
+        tx.txState().lastAsyncFuture(this).await();
 
         tx.resume();
     }
@@ -1202,6 +1228,13 @@ public class GridCacheSharedContext<K, V> {
      */
     public boolean isLazyMemoryAllocation(@Nullable DataRegion region) {
         return gridConfig().isClientMode() || region == null || region.config().isLazyMemoryAllocation();
+    }
+
+    /**
+     * Returns last async future holder.
+     */
+    public FutureHolder lastFuture() {
+        return lastFut.get();
     }
 
     /** Builder for {@link GridCacheSharedContext}. */
@@ -1407,6 +1440,112 @@ public class GridCacheSharedContext<K, V> {
             this.cdcMgr = cdcMgr;
 
             return this;
+        }
+    }
+
+    /**
+     * Holder for last async operation future.
+     */
+    public static class FutureHolder {
+        /** Lock. */
+        private final ReentrantLock lock = new ReentrantLock();
+
+        /** Future. */
+        private IgniteInternalFuture<?> fut;
+
+        /**
+         * Tries to acquire lock.
+         *
+         * @return Whether lock was actually acquired.
+         */
+        public boolean tryLock() {
+            return lock.tryLock();
+        }
+
+        /**
+         * Acquires lock.
+         */
+        @SuppressWarnings("LockAcquiredButNotSafelyReleased")
+        public void lock() {
+            lock.lock();
+        }
+
+        /**
+         * Releases lock.
+         */
+        public void unlock() {
+            lock.unlock();
+        }
+
+        /**
+         * @return Whether lock is held by current thread.
+         */
+        public boolean holdsLock() {
+            return lock.isHeldByCurrentThread();
+        }
+
+        /**
+         * Gets future.
+         *
+         * @return Future.
+         */
+        public IgniteInternalFuture<?> future() {
+            return fut;
+        }
+
+        /**
+         * Sets future.
+         *
+         * @param fut Future.
+         */
+        public void future(@Nullable IgniteInternalFuture<?> fut) {
+            this.fut = fut;
+        }
+
+        /**
+         * Awaits for previous async operation to be completed.
+         */
+        public void await() {
+            IgniteInternalFuture<?> fut = this.fut;
+
+            if (fut != null && !fut.isDone()) {
+                try {
+                    // Ignore any exception from previous async operation as it should be handled by user.
+                    fut.get();
+                }
+                catch (IgniteCheckedException ignored) {
+                    // No-op.
+                }
+            }
+        }
+
+        /**
+         * Saves future in the holder and adds listener that will clear holder when future is finished.
+         *
+         * @param fut Future to save.
+         */
+        public void saveFuture(IgniteInternalFuture<?> fut) {
+            assert fut != null;
+            assert holdsLock();
+
+            if (fut.isDone())
+                future(null);
+            else {
+                future(fut);
+
+                fut.listen(f -> {
+                    if (!tryLock())
+                        return;
+
+                    try {
+                        if (future() == f)
+                            future(null);
+                    }
+                    finally {
+                        unlock();
+                    }
+                });
+            }
         }
     }
 }

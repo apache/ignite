@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
@@ -46,7 +45,7 @@ public class ClientCacheGetConfigurationRequest extends ClientCacheRequest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        CacheConfiguration cfg = ((IgniteCache<Object, Object>)rawCache(ctx))
+        CacheConfiguration<Object, Object> cfg = rawCache(ctx)
                 .getConfiguration(CacheConfiguration.class);
 
         return new ClientCacheGetConfigurationResponse(requestId(), cfg, protocolCtx);
