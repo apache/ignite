@@ -21,11 +21,10 @@ import java.util.Iterator;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
- * Consumer of {@link Dump}.
+ * Consumer of a cache dump.
  * This consumer will receive all {@link DumpEntry} stored in cache dump during {@code IgniteDumpReader} application invocation.
  * The lifecycle of the consumer is the following:
  * <ul>

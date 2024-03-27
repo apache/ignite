@@ -297,4 +297,9 @@ public class TestTable implements IgniteCacheTable {
     @Override public String name() {
         return name;
     }
+
+    /** {@inheritDoc} */
+    @Override public void authorize(Operation op) {
+        // No-op.
+    }
 }

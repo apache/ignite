@@ -2554,7 +2554,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return {@code Set} of metrics methods that have forbidden return types.
      * @throws Exception If failed to obtain metrics.
      */
-    protected Set<String> getInvalidMbeansMethods(Ignite ignite) throws Exception {
+    protected Set<String> getInvalidMbeansMethods(Ignite ignite) {
         Set<String> sysMetricsPackages = new HashSet<>();
         sysMetricsPackages.add("sun.management");
         sysMetricsPackages.add("javax.management");
@@ -2571,7 +2571,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             if (sysMetricsPackages.stream().anyMatch(clsName::startsWith))
                 continue;
 
-            Class c;
+            Class<?> c;
 
             try {
                 c = Class.forName(clsName);
@@ -2582,7 +2582,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 continue;
             }
 
-            for (Class interf : c.getInterfaces()) {
+            for (Class<?> interf : c.getInterfaces()) {
                 for (Method m : interf.getMethods()) {
                     if (!m.isAnnotationPresent(MXBeanDescription.class))
                         continue;

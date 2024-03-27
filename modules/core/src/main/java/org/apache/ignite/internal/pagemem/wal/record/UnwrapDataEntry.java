@@ -33,8 +33,8 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
     /** Cache object value context. Context is used for unwrapping objects. */
     private final CacheObjectValueContext cacheObjValCtx;
 
-    /** Keep binary. This flag disables converting of non primitive types (BinaryObjects). */
-    private boolean keepBinary;
+    /** Keep binary. This flag disables converting of non-primitive types (BinaryObjects). */
+    private final boolean keepBinary;
 
     /**
      * @param cacheId Cache ID.
@@ -103,6 +103,7 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
         if (unwrapped instanceof BinaryObject) {
             if (keepBinary)
                 return unwrapped;
+
             unwrapped = ((BinaryObject)unwrapped).deserialize();
         }
 
