@@ -143,6 +143,9 @@ public class GridCacheUtils {
     /** */
     public static final int UNDEFINED_CACHE_ID = 0;
 
+    /** */
+    public static final int CACHE_NAME_MAX_LENGTH = 235;
+
     /*
      *
      */
@@ -1503,6 +1506,17 @@ public class GridCacheUtils {
      */
     public static void validateCacheName(String name) throws IllegalArgumentException {
         A.ensure(name != null && !name.isEmpty(), "Cache name must not be null or empty.");
+        A.ensure(name.length() <= CACHE_NAME_MAX_LENGTH, "Length of cache name can not exceed " + CACHE_NAME_MAX_LENGTH + ".");
+    }
+
+    /**
+     *
+     * @param name
+     * @throws IllegalArgumentException In case group name is not valid
+     */
+    public static void validateCacheGroupName(String name) throws IllegalArgumentException {
+        if (name != null)
+            A.ensure(name.length() <= CACHE_NAME_MAX_LENGTH, "Length of cache group name can not exceed " + CACHE_NAME_MAX_LENGTH + ".");
     }
 
     /**
@@ -1531,8 +1545,10 @@ public class GridCacheUtils {
      */
     public static void validateConfigurationCacheNames(Collection<CacheConfiguration> ccfgs)
         throws IllegalArgumentException {
-        for (CacheConfiguration ccfg : ccfgs)
+        for (CacheConfiguration ccfg : ccfgs) {
             validateNewCacheName(ccfg.getName());
+            validateCacheGroupName(ccfg.getGroupName());
+        }
     }
 
     /**
