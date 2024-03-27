@@ -35,8 +35,6 @@ import org.apache.ignite.internal.pagemem.wal.record.IndexRenameRootPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.MvccDataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.PartitionClearingStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
@@ -89,7 +87,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.SplitExistingPageReco
 import org.apache.ignite.internal.pagemem.wal.record.delta.TrackingPageDeltaRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.TrackingPageRepairDeltaRecord;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.tree.DataInnerIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -154,8 +151,6 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_PAGE_MARK_UPDATED_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_RECORD;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_TX_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.OUT_OF_ORDER_UPDATE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PAGES_LIST_ADD_PAGE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PAGES_LIST_INIT_NEW_PAGE;
@@ -262,8 +257,6 @@ public class RecordUtils {
         put(ENCRYPTED_RECORD_V2, buildUpsupportedWalRecord(ENCRYPTED_RECORD_V2));
         put(ENCRYPTED_DATA_RECORD_V2, buildUpsupportedWalRecord(ENCRYPTED_DATA_RECORD_V2));
         put(ENCRYPTED_DATA_RECORD_V3, buildUpsupportedWalRecord(ENCRYPTED_DATA_RECORD_V3));
-        put(MVCC_DATA_RECORD, RecordUtils::buildMvccDataRecord);
-        put(MVCC_TX_RECORD, RecordUtils::buildMvccTxRecord);
         put(CONSISTENT_CUT, buildUpsupportedWalRecord(CONSISTENT_CUT));
         put(BTREE_META_PAGE_INIT_ROOT_V3, buildUpsupportedWalRecord(BTREE_META_PAGE_INIT_ROOT_V3));
         put(OUT_OF_ORDER_UPDATE, buildUpsupportedWalRecord(OUT_OF_ORDER_UPDATE));
@@ -586,22 +579,6 @@ public class RecordUtils {
     /** **/
     public static DataPageMvccUpdateNewTxStateHintRecord buildDataPageMvccUpdateNewTxStateHintRecord() {
         return new DataPageMvccUpdateNewTxStateHintRecord(1, 1, 2, (byte)1);
-    }
-
-    /** **/
-    public static MvccDataRecord buildMvccDataRecord() {
-        return new MvccDataRecord(Collections.emptyList(), 1);
-    }
-
-    /** **/
-    public static MvccTxRecord buildMvccTxRecord() {
-        return new MvccTxRecord(
-            TransactionState.PREPARED,
-            new GridCacheVersion(),
-            new GridCacheVersion(),
-            new HashMap<>(),
-            new MvccVersionImpl()
-        );
     }
 
     /**
