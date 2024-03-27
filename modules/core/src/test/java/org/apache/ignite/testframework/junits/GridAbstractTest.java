@@ -774,10 +774,10 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     private ScheduledExecutorService scheduleThreadDumpOnAfterTestTimeOut(AtomicBoolean afterTestFinished) {
         // Compute class name as string to avoid holding reference to the test class instance in task.
-        String testClassName = getClass().getName();
+        String testClsName = getClass().getName();
 
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, task -> {
-            Thread thread = new Thread(task, "after-test-timeout-" + testClassName);
+            Thread thread = new Thread(task, "after-test-timeout-" + testClsName);
             thread.setDaemon(true);
             return thread;
         });
@@ -786,7 +786,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             scheduler.shutdownNow();
 
             if (!afterTestFinished.get()) {
-                log.info(testClassName +
+                log.info(testClsName +
                     ".afterTest() timed out, dumping threads (afterTest() still keeps running)");
 
                 dumpThreadsReliably();

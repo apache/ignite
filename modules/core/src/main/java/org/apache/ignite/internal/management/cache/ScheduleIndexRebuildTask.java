@@ -83,29 +83,29 @@ public class ScheduleIndexRebuildTask
 
         /** {@inheritDoc} */
         @Override protected ScheduleIndexRebuildJobRes run(CacheScheduleIndexesRebuildCommandArg arg) throws IgniteException {
-            Set<String> argCacheGroups = arg.groupNames() == null
+            Set<String> argCacheGrps = arg.groupNames() == null
                 ? null
                 : new HashSet<>(Arrays.asList(arg.groupNames()));
 
             assert (arg.cacheToIndexes() != null && !arg.cacheToIndexes().isEmpty())
-                || (argCacheGroups != null && !argCacheGroups.isEmpty()) : "Cache to indexes map or cache groups must be specified.";
+                || (argCacheGrps != null && !argCacheGrps.isEmpty()) : "Cache to indexes map or cache groups must be specified.";
 
             Map<String, Set<String>> argCacheToIndexes = arg.cacheToIndexes() != null ? arg.cacheToIndexes() : new HashMap<>();
 
             Set<String> notFoundCaches = new HashSet<>();
-            Set<String> notFoundGroups = new HashSet<>();
+            Set<String> notFoundGrps = new HashSet<>();
 
-            GridCacheProcessor cacheProcessor = ignite.context().cache();
+            GridCacheProcessor cacheProc = ignite.context().cache();
 
             Map<String, Set<String>> cacheToIndexes = new HashMap<>();
             Map<String, Set<String>> cacheToMissedIndexes = new HashMap<>();
 
-            if (argCacheGroups != null) {
-                argCacheGroups.forEach(groupName -> {
-                    CacheGroupContext grpCtx = cacheProcessor.cacheGroup(CU.cacheId(groupName));
+            if (argCacheGrps != null) {
+                argCacheGrps.forEach(groupName -> {
+                    CacheGroupContext grpCtx = cacheProc.cacheGroup(CU.cacheId(groupName));
 
                     if (grpCtx == null) {
-                        notFoundGroups.add(groupName);
+                        notFoundGrps.add(groupName);
                         return;
                     }
 
@@ -120,7 +120,7 @@ public class ScheduleIndexRebuildTask
                 Set<String> indexesArg = indexesByCache.getValue();
                 int cacheId = CU.cacheId(cache);
 
-                GridCacheContext<?, ?> cacheCtx = cacheProcessor.context().cacheContext(cacheId);
+                GridCacheContext<?, ?> cacheCtx = cacheProc.context().cacheContext(cacheId);
 
                 if (cacheCtx == null) {
                     notFoundCaches.add(cache);
@@ -170,7 +170,7 @@ public class ScheduleIndexRebuildTask
                 cacheToIndexes,
                 cacheToMissedIndexes,
                 notFoundCaches,
-                notFoundGroups
+                notFoundGrps
             );
         }
 

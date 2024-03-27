@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataUpdatedListener;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -377,4 +378,11 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public BinaryType registerClass(Class<?> cls) throws BinaryObjectException;
+
+    /**
+     * Add binary metadata update listener.
+     *
+     * @param lsnr Listener.
+     */
+    public void addBinaryMetadataUpdateListener(BinaryMetadataUpdatedListener lsnr);
 }

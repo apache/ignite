@@ -172,16 +172,16 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
     /** Check if filesystem actually supports punching holes. */
     private void checkPunchHole(Path storagePath, int fsBlockSz) throws IgniteException {
-        ByteBuffer buffer = null;
+        ByteBuffer buf = null;
         File testFile = null;
         try {
             testFile = File.createTempFile("punch_hole_", null, storagePath.toFile());
 
-            buffer = GridUnsafe.allocateBuffer(fsBlockSz * 2);
-            GridUnsafe.zeroMemory(GridUnsafe.bufferAddress(buffer), buffer.capacity());
+            buf = GridUnsafe.allocateBuffer(fsBlockSz * 2);
+            GridUnsafe.zeroMemory(GridUnsafe.bufferAddress(buf), buf.capacity());
 
             try (RandomAccessFileIO testFileIO = new RandomAccessFileIO(testFile, CREATE, WRITE)) {
-                testFileIO.writeFully(buffer);
+                testFileIO.writeFully(buf);
 
                 testFileIO.punchHole(fsBlockSz, fsBlockSz);
             }
@@ -190,8 +190,8 @@ public class CompressionProcessorImpl extends CompressionProcessor {
             throw new IgniteException("File system does not support punching holes on path " + storagePath, e);
         }
         finally {
-            if (buffer != null)
-                GridUnsafe.freeBuffer(buffer);
+            if (buf != null)
+                GridUnsafe.freeBuffer(buf);
 
             if (testFile != null)
                 testFile.delete();

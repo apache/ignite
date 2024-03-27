@@ -199,15 +199,7 @@ TV Get(TK key);
 Task<TV> GetAsync(TK key);
 
 ----
-tab:C++[]
-[source,cpp]
-----
-// a synchronous get
-V Get(K key);
-
-// an asynchronous get
-Future<V> GetAsync(K key);
-----
+tab:C++[unsupported]
 --
 
 The asynchronous operations return an object that represents the result of the operation. You can wait for the completion of the operation in either blocking or non-blocking manner.
@@ -238,11 +230,7 @@ tab:C#/.NET[]
 ----
 include::code-snippets/dotnet/BasicCacheOperations.cs[tag=asyncExec,indent=0]
 ----
-tab:C++[]
-[source,cpp]
-----
-include::code-snippets/cpp/src/cache_asynchronous_execution.cpp[tag=cache-asynchronous-execution,indent=0]
-----
+tab:C++[unsupported]
 --
 
 

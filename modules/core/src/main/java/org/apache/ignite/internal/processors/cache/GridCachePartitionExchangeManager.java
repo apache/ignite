@@ -454,9 +454,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             new MessageHandler<GridDhtPartitionsFullMessage>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsFullMessage msg) {
                     if (msg.exchangeId() == null) {
-                        GridDhtPartitionsExchangeFuture currentExchange = lastTopologyFuture();
+                        GridDhtPartitionsExchangeFuture curExchange = lastTopologyFuture();
 
-                        if (currentExchange != null && currentExchange.addOrMergeDelayedFullMessage(node, msg)) {
+                        if (curExchange != null && curExchange.addOrMergeDelayedFullMessage(node, msg)) {
                             if (log.isInfoEnabled()) {
                                 log.info("Delay process full message without exchange id (there is exchange in progress) " +
                                     "[nodeId=" + node.id() + "]");
@@ -2345,7 +2345,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             ClusterGroup nearNode = ignite.cluster().forNodeId(nearNodeId);
 
-            String txRequestInfo = String.format(
+            String txReqInfo = String.format(
                 "[xidVer=%s, nodeId=%s]",
                 tx.xidVersion().toString(),
                 nearNodeId.toString()
@@ -2369,13 +2369,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     U.error(
                                         diagnosticLog,
                                         "Could not get thread dump from transaction owner because near node " +
-                                                "is out of topology now. " + txRequestInfo
+                                                "is out of topology now. " + txReqInfo
                                     );
                                 }
                                 catch (Exception e) {
                                     U.error(
                                         diagnosticLog,
-                                        "Could not get thread dump from transaction owner near node " + txRequestInfo,
+                                        "Could not get thread dump from transaction owner near node " + txReqInfo,
                                         e
                                     );
                                 }
@@ -2385,7 +2385,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         diagnosticLog,
                                         String.format(
                                             "Dumping the near node thread that started transaction %s\n%s",
-                                            txRequestInfo,
+                                            txReqInfo,
                                             traceDump
                                         )
                                     );
@@ -2394,14 +2394,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         });
                 }
                 catch (Exception e) {
-                    U.error(diagnosticLog, "Could not send dump request to transaction owner near node " + txRequestInfo, e);
+                    U.error(diagnosticLog, "Could not send dump request to transaction owner near node " + txReqInfo, e);
                 }
             }
             else {
                 U.warn(
                     diagnosticLog,
                     "Could not send dump request to transaction owner near node: node does not support this feature. " +
-                        txRequestInfo
+                        txReqInfo
                 );
             }
         }
@@ -2588,8 +2588,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     affDumpCnt++;
             }
         }
-
-        cctx.kernalContext().coordinators().dumpDebugInfo(diagnosticLog, diagCtx);
     }
 
     /**
@@ -3860,8 +3858,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (warningsTotal > 0) {
                 U.warn(log, String.format(title, warningsLimit, warningsTotal));
 
-                for (String message : messages)
-                    U.warn(log, message);
+                for (String msg : messages)
+                    U.warn(log, msg);
             }
         }
     }

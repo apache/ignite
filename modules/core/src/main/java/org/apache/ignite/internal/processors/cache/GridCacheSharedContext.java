@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cdc.CdcManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -48,8 +49,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
@@ -115,6 +114,9 @@ public class GridCacheSharedContext<K, V> {
     /** Write ahead log manager for CDC. {@code Null} if persistence AND CDC is not enabled. */
     @Nullable private IgniteWriteAheadLogManager cdcWalMgr;
 
+    /** CDC manager. {@code null} if CDC isn't configured. */
+    @Nullable private CdcManager cdcMgr;
+
     /** Write ahead log state manager. */
     private WalStateManager walStateMgr;
 
@@ -135,9 +137,6 @@ public class GridCacheSharedContext<K, V> {
 
     /** Partitons evict manager. */
     private PartitionsEvictManager evictMgr;
-
-    /** Mvcc caching manager. */
-    private MvccCachingManager mvccCachingMgr;
 
     /** Cache contexts map. */
     private final ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;
@@ -209,7 +208,6 @@ public class GridCacheSharedContext<K, V> {
      * @param evictMgr Partitons evict manager.
      * @param jtaMgr JTA manager.
      * @param storeSesLsnrs Store session listeners.
-     * @param mvccCachingMgr Mvcc caching manager.
      */
     private GridCacheSharedContext(
         GridKernalContext kernalCtx,
@@ -229,8 +227,8 @@ public class GridCacheSharedContext<K, V> {
         PartitionsEvictManager evictMgr,
         CacheJtaManagerAdapter jtaMgr,
         Collection<CacheStoreSessionListener> storeSesLsnrs,
-        MvccCachingManager mvccCachingMgr,
-        CacheDiagnosticManager diagnosticMgr
+        CacheDiagnosticManager diagnosticMgr,
+        CdcManager cdcMgr
     ) {
         this.kernalCtx = kernalCtx;
 
@@ -252,8 +250,8 @@ public class GridCacheSharedContext<K, V> {
             ioMgr,
             ttlMgr,
             evictMgr,
-            mvccCachingMgr,
-            diagnosticMgr
+            diagnosticMgr,
+            cdcMgr
         );
 
         this.storeSesLsnrs = storeSesLsnrs;
@@ -430,8 +428,8 @@ public class GridCacheSharedContext<K, V> {
             ioMgr,
             ttlMgr,
             evictMgr,
-            mvccCachingMgr,
-            diagnosticMgr
+            diagnosticMgr,
+            cdcMgr
         );
 
         this.mgrs = mgrs;
@@ -479,8 +477,8 @@ public class GridCacheSharedContext<K, V> {
         GridCacheIoManager ioMgr,
         GridCacheSharedTtlCleanupManager ttlMgr,
         PartitionsEvictManager evictMgr,
-        MvccCachingManager mvccCachingMgr,
-        CacheDiagnosticManager diagnosticMgr
+        CacheDiagnosticManager diagnosticMgr,
+        CdcManager cdcMgr
     ) {
         this.diagnosticMgr = add(mgrs, diagnosticMgr);
         this.mvccMgr = add(mgrs, mvccMgr);
@@ -492,6 +490,7 @@ public class GridCacheSharedContext<K, V> {
         assert walMgr == null || walMgr == cdcWalMgr;
 
         this.cdcWalMgr = walMgr == null ? add(mgrs, cdcWalMgr) : cdcWalMgr;
+        this.cdcMgr = add(mgrs, cdcMgr);
         this.walStateMgr = add(mgrs, walStateMgr);
         this.dbMgr = add(mgrs, dbMgr);
         this.snapshotMgr = add(mgrs, snapshotMgr);
@@ -502,7 +501,6 @@ public class GridCacheSharedContext<K, V> {
         this.ioMgr = add(mgrs, ioMgr);
         this.ttlMgr = add(mgrs, ttlMgr);
         this.evictMgr = add(mgrs, evictMgr);
-        this.mvccCachingMgr = add(mgrs, mvccCachingMgr);
     }
 
     /**
@@ -761,6 +759,13 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * @return CDC manager.
+     */
+    public CdcManager cdc() {
+        return cdcMgr;
+    }
+
+    /**
      * @return WAL state manager.
      */
     public WalStateManager walState() {
@@ -845,24 +850,10 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * @return Cache mvcc coordinator manager.
-     */
-    public MvccProcessor coordinators() {
-        return kernalCtx.coordinators();
-    }
-
-    /**
      * @return Partition evict manager.
      */
     public PartitionsEvictManager evict() {
         return evictMgr;
-    }
-
-    /**
-     * @return Mvcc transaction enlist caching manager.
-     */
-    public MvccCachingManager mvccCaching() {
-        return mvccCachingMgr;
     }
 
     /**
@@ -950,10 +941,10 @@ public class GridCacheSharedContext<K, V> {
         f.add(mvcc().finishAtomicUpdates(topVer));
         f.add(mvcc().finishDataStreamerUpdates(topVer));
 
-        IgniteInternalFuture<?> finishLocalTxsFuture = tm().finishLocalTxs(topVer);
+        IgniteInternalFuture<?> finishLocTxsFut = tm().finishLocalTxs(topVer);
         // To properly track progress of finishing local tx updates we explicitly add this future to compound set.
-        f.add(finishLocalTxsFuture);
-        f.add(tm().finishAllTxs(finishLocalTxsFuture, topVer));
+        f.add(finishLocTxsFut);
+        f.add(tm().finishAllTxs(finishLocTxsFut, topVer));
 
         f.markInitialized();
 
@@ -1261,10 +1252,10 @@ public class GridCacheSharedContext<K, V> {
         private PartitionsEvictManager evictMgr;
 
         /** */
-        private MvccCachingManager mvccCachingMgr;
+        private CacheDiagnosticManager diagnosticMgr;
 
         /** */
-        private CacheDiagnosticManager diagnosticMgr;
+        private CdcManager cdcMgr;
 
         /** */
         private Builder() {
@@ -1294,8 +1285,8 @@ public class GridCacheSharedContext<K, V> {
                 evictMgr,
                 jtaMgr,
                 storeSesLsnrs,
-                mvccCachingMgr,
-                diagnosticMgr
+                diagnosticMgr,
+                cdcMgr
             );
         }
 
@@ -1405,15 +1396,15 @@ public class GridCacheSharedContext<K, V> {
         }
 
         /** */
-        public Builder setMvccCachingManager(MvccCachingManager mvccCachingMgr) {
-            this.mvccCachingMgr = mvccCachingMgr;
+        public Builder setDiagnosticManager(CacheDiagnosticManager diagnosticMgr) {
+            this.diagnosticMgr = diagnosticMgr;
 
             return this;
         }
 
         /** */
-        public Builder setDiagnosticManager(CacheDiagnosticManager diagnosticMgr) {
-            this.diagnosticMgr = diagnosticMgr;
+        public Builder setCdcManager(CdcManager cdcMgr) {
+            this.cdcMgr = cdcMgr;
 
             return this;
         }

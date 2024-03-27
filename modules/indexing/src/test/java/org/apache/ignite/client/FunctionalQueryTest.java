@@ -167,9 +167,9 @@ public class FunctionalQueryTest {
                 )).setSchema("PUBLIC")
             ).getAll();
 
-            final int KEY_COUNT = 10;
+            final int KEY_CNT = 10;
 
-            for (int i = 0; i < KEY_COUNT; ++i) {
+            for (int i = 0; i < KEY_CNT; ++i) {
                 int key = i;
                 Person val = new Person(key, "Person " + i);
 
@@ -192,7 +192,7 @@ public class FunctionalQueryTest {
                     .setPageSize(1)
             ).getAll();
 
-            assertEquals(KEY_COUNT, rows.size());
+            assertEquals(KEY_CNT, rows.size());
         }
     }
 

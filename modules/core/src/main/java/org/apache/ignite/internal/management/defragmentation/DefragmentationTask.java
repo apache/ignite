@@ -26,7 +26,6 @@ import org.apache.ignite.internal.management.defragmentation.DefragmentationComm
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationStatusCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -34,7 +33,6 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 @GridInternal
-@GridVisorManagementTask
 public class DefragmentationTask extends VisorMultiNodeTask
     <DefragmentationStatusCommandArg, DefragmentationTaskResult, DefragmentationTaskResult> {
     /** Serial version uid. */
@@ -122,19 +120,19 @@ public class DefragmentationTask extends VisorMultiNodeTask
                 return new DefragmentationTaskResult(false, e.getMessage());
             }
 
-            String message;
+            String msg;
 
             switch (scheduleResult) {
                 case SUCCESS_SUPERSEDED_PREVIOUS:
-                    message = "Scheduling completed successfully. Previously scheduled task has been removed.";
+                    msg = "Scheduling completed successfully. Previously scheduled task has been removed.";
                     break;
                 case SUCCESS:
                 default:
-                    message = "Scheduling completed successfully.";
+                    msg = "Scheduling completed successfully.";
                     break;
             }
 
-            return new DefragmentationTaskResult(true, message);
+            return new DefragmentationTaskResult(true, msg);
         }
 
         /** */
@@ -156,25 +154,25 @@ public class DefragmentationTask extends VisorMultiNodeTask
             try {
                 final IgniteDefragmentation.CancelResult cancelResult = defragmentation.cancel();
 
-                String message;
+                String msg;
 
                 switch (cancelResult) {
                     case SCHEDULED_NOT_FOUND:
-                        message = "Scheduled defragmentation task is not found.";
+                        msg = "Scheduled defragmentation task is not found.";
                         break;
                     case CANCELLED:
-                        message = "Defragmentation cancelled successfully.";
+                        msg = "Defragmentation cancelled successfully.";
                         break;
                     case COMPLETED_OR_CANCELLED:
-                        message = "Defragmentation is already completed or has been cancelled previously.";
+                        msg = "Defragmentation is already completed or has been cancelled previously.";
                         break;
                     case CANCELLED_SCHEDULED:
                     default:
-                        message = "Scheduled defragmentation task cancelled successfully.";
+                        msg = "Scheduled defragmentation task cancelled successfully.";
                         break;
                 }
 
-                return new DefragmentationTaskResult(true, message);
+                return new DefragmentationTaskResult(true, msg);
             }
             catch (IgniteCheckedException e) {
                 return new DefragmentationTaskResult(false, e.getMessage());

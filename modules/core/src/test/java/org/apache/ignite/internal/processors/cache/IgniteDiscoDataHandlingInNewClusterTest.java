@@ -204,24 +204,24 @@ public class IgniteDiscoDataHandlingInNewClusterTest extends GridCommonAbstractT
         assertTrue(caches.keySet().contains(GridCacheUtils.UTILITY_CACHE_NAME));
         assertTrue(caches.keySet().containsAll(cacheNames));
 
-        Map<Integer, CacheGroupDescriptor> groups = ignite.context().cache().cacheGroupDescriptors();
+        Map<Integer, CacheGroupDescriptor> grps = ignite.context().cache().cacheGroupDescriptors();
 
-        assertEquals(2, groups.size());
+        assertEquals(2, grps.size());
 
-        boolean defaultGroupFound = false;
-        boolean staticCachesGroupFound = false;
+        boolean dfltGrpFound = false;
+        boolean staticCachesGrpFound = false;
 
-        for (CacheGroupDescriptor grpDesc : groups.values()) {
+        for (CacheGroupDescriptor grpDesc : grps.values()) {
             if (grpDesc.cacheOrGroupName().equals(GridCacheUtils.UTILITY_CACHE_NAME))
-                defaultGroupFound = true;
+                dfltGrpFound = true;
             else if (grpDesc.cacheOrGroupName().equals(GROUP_WITH_STATIC_CACHES))
-                staticCachesGroupFound = true;
+                staticCachesGrpFound = true;
         }
 
         assertTrue(String.format("Default group found: %b, static group found: %b",
-            defaultGroupFound,
-            staticCachesGroupFound),
-            defaultGroupFound && staticCachesGroupFound);
+            dfltGrpFound,
+            staticCachesGrpFound),
+            dfltGrpFound && staticCachesGrpFound);
     }
 
     /** */

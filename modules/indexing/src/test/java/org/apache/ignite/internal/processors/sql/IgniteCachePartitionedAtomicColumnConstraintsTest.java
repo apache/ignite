@@ -109,16 +109,16 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends AbstractI
         jcache(grid(0), cacheConfiguration(new QueryEntity(String.class.getName(), String.class.getName())
             .setFieldsPrecision(strStrPrecision)), STR_CACHE_NAME);
 
-        Map<String, Integer> orgAddressPrecision = new HashMap<>();
+        Map<String, Integer> orgAddrPrecision = new HashMap<>();
 
-        orgAddressPrecision.put("name", 5);
-        orgAddressPrecision.put("address", 5);
+        orgAddrPrecision.put("name", 5);
+        orgAddrPrecision.put("address", 5);
 
         jcache(grid(0), cacheConfiguration(new QueryEntity(Organization.class.getName(), Address.class.getName())
             .setKeyFields(Collections.singleton("name"))
             .addQueryField("name", "java.lang.String", "name")
             .addQueryField("address", "java.lang.String", "address")
-            .setFieldsPrecision(orgAddressPrecision)), OBJ_CACHE_NAME);
+            .setFieldsPrecision(orgAddrPrecision)), OBJ_CACHE_NAME);
 
         Map<String, Integer> strOrgPrecision = new HashMap<>();
 
@@ -631,7 +631,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends AbstractI
 
         cache.put(k, okVal);
 
-        CacheEntryProcessor<K, V, ?> entryProcessor = (e, arguments) -> {
+        CacheEntryProcessor<K, V, ?> entryProc = (e, arguments) -> {
             e.setValue((V)arguments[0]);
 
             return null;
@@ -641,11 +641,11 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends AbstractI
             () -> cache.replace(k, v),
             () -> cache.getAndReplace(k, v),
             () -> cache.replace(k, okVal, v),
-            () -> cache.invoke(k, entryProcessor, v),
+            () -> cache.invoke(k, entryProc, v),
             () -> cache.replaceAsync(k, v).get(FUT_TIMEOUT),
             () -> cache.getAndReplaceAsync(k, v).get(FUT_TIMEOUT),
             () -> cache.replaceAsync(k, okVal, v).get(FUT_TIMEOUT),
-            () -> cache.invokeAsync(k, entryProcessor, v).get(FUT_TIMEOUT)
+            () -> cache.invokeAsync(k, entryProc, v).get(FUT_TIMEOUT)
         );
 
         ops.forEach(checker);
@@ -672,7 +672,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends AbstractI
 
     /** */
     private <K, V> void checkPutAll(Consumer<Runnable> checker, IgniteCache<K, V> cache, T2<K, V>... entries) {
-        CacheEntryProcessor<K, V, ?> entryProcessor = (e, arguments) -> {
+        CacheEntryProcessor<K, V, ?> entryProc = (e, arguments) -> {
             e.setValue(((Iterator<V>)arguments[0]).next());
 
             return null;
@@ -685,14 +685,14 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends AbstractI
             () -> cache.putAllAsync(vals).get(FUT_TIMEOUT),
             () -> {
                 Map<K, ? extends EntryProcessorResult<?>> map =
-                    cache.invokeAll(vals.keySet(), entryProcessor, vals.values().iterator());
+                    cache.invokeAll(vals.keySet(), entryProc, vals.values().iterator());
 
                 for (EntryProcessorResult<?> result : map.values())
                     log.info(">>> " + result.get());
             },
             () -> {
                 Map<K, ? extends EntryProcessorResult<?>> map =
-                    cache.invokeAllAsync(vals.keySet(), entryProcessor, vals.values().iterator()).get(FUT_TIMEOUT);
+                    cache.invokeAllAsync(vals.keySet(), entryProc, vals.values().iterator()).get(FUT_TIMEOUT);
 
                 for (EntryProcessorResult<?> result : map.values())
                     log.info(">>> " + result.get());

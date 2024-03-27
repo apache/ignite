@@ -234,7 +234,7 @@ public class CheckpointWorkflow {
 
         CheckpointPagesInfoHolder cpPagesHolder;
 
-        int dirtyPagesCount;
+        int dirtyPagesCnt;
 
         boolean hasPartitionsToDestroy;
 
@@ -280,11 +280,11 @@ public class CheckpointWorkflow {
 
             curr.currentCheckpointPagesCount(cpPagesHolder.pagesNum());
 
-            dirtyPagesCount = cpPagesHolder.pagesNum();
+            dirtyPagesCnt = cpPagesHolder.pagesNum();
 
             hasPartitionsToDestroy = !curr.getDestroyQueue().pendingReqs().isEmpty();
 
-            if (dirtyPagesCount > 0 || hasPartitionsToDestroy) {
+            if (dirtyPagesCnt > 0 || hasPartitionsToDestroy) {
                 // No page updates for this checkpoint are allowed from now on.
                 if (wal != null)
                     cpPtr = wal.log(cpRec);
@@ -306,7 +306,7 @@ public class CheckpointWorkflow {
         for (CheckpointListener lsnr : dbLsnrs)
             lsnr.onCheckpointBegin(ctx0);
 
-        if (dirtyPagesCount > 0 || hasPartitionsToDestroy) {
+        if (dirtyPagesCnt > 0 || hasPartitionsToDestroy) {
             tracker.onWalCpRecordFsyncStart();
 
             // Sync log outside the checkpoint write lock.

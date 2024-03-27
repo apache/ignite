@@ -111,6 +111,9 @@ public class SnapshotMetadata implements Serializable {
     /** If {@code true} cache group dump stored. */
     private boolean dump;
 
+    /** Encryption key. */
+    private @Nullable byte[] encKey;
+
     /**
      * @param rqId Unique request id.
      * @param snpName Snapshot name.
@@ -124,6 +127,7 @@ public class SnapshotMetadata implements Serializable {
      * @param masterKeyDigest Master key digest for encrypted caches.
      * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
      * @param dump If {@code true} cache group dump stored.
+     * @param encKey Encryption key. For dumps, only.
      */
     public SnapshotMetadata(
         UUID rqId,
@@ -139,7 +143,8 @@ public class SnapshotMetadata implements Serializable {
         @Nullable WALPointer snpRecPtr,
         @Nullable byte[] masterKeyDigest,
         boolean onlyPrimary,
-        boolean dump
+        boolean dump,
+        @Nullable byte[] encKey
     ) {
         this.rqId = rqId;
         this.snpName = snpName;
@@ -153,6 +158,7 @@ public class SnapshotMetadata implements Serializable {
         this.masterKeyDigest = masterKeyDigest;
         this.onlyPrimary = onlyPrimary;
         this.dump = dump;
+        this.encKey = encKey;
 
         if (!F.isEmpty(compGrpIds)) {
             hasComprGrps = true;
@@ -230,7 +236,7 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /** */
-    public boolean isGroupWithCompresion(int grpId) {
+    public boolean isGroupWithCompression(int grpId) {
         return hasComprGrps && comprGrpIds.contains(grpId);
     }
 
@@ -332,6 +338,11 @@ public class SnapshotMetadata implements Serializable {
         return masterKeyDigest;
     }
 
+    /** @return Encryption key. */
+    public byte[] encryptionKey() {
+        return encKey;
+    }
+
     /**
      * @param warnings Snapshot creation warnings.
      */
@@ -364,6 +375,7 @@ public class SnapshotMetadata implements Serializable {
             Objects.equals(grpIds, meta.grpIds) &&
             Objects.equals(bltNodes, meta.bltNodes) &&
             Arrays.equals(masterKeyDigest, meta.masterKeyDigest) &&
+            Arrays.equals(encKey, meta.encKey) &&
             Objects.equals(warnings, meta.warnings) &&
             Objects.equals(hasComprGrps, meta.hasComprGrps) &&
             Objects.equals(comprGrpIds, meta.comprGrpIds) &&

@@ -67,6 +67,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
@@ -220,7 +221,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     ) {
                         pageStore.init();
 
-                        if (punchHoleEnabled && meta.isGroupWithCompresion(grpId) && type() == SnapshotHandlerType.CREATE) {
+                        if (punchHoleEnabled && meta.isGroupWithCompression(grpId) && type() == SnapshotHandlerType.CREATE) {
                             byte pageType = partId == INDEX_PARTITION ? FLAG_IDX : FLAG_DATA;
 
                             checkPartitionsPageCrcSum(() -> pageStore, partId, pageType, (id, buffer) -> {
@@ -364,7 +365,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         try {
             String consistentId = cctx.kernalContext().pdsFolderResolver().resolveFolders().consistentId().toString();
 
-            try (Dump dump = new Dump(opCtx.snapshotDirectory(), consistentId, true, true, log)) {
+            EncryptionSpi encSpi = opCtx.metadata().encryptionKey() != null ? cctx.gridConfig().getEncryptionSpi() : null;
+
+            try (Dump dump = new Dump(opCtx.snapshotDirectory(), consistentId, true, true, encSpi, log)) {
                 Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
                     cctx.snapshotMgr().snapshotExecutorService(),
                     partFiles,
@@ -471,26 +474,26 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** */
     protected boolean isPunchHoleEnabled(SnapshotHandlerContext opCtx, Set<Integer> grpIds) {
         SnapshotMetadata meta = opCtx.metadata();
-        Path snapshotDirectory = opCtx.snapshotDirectory().toPath();
+        Path snapshotDir = opCtx.snapshotDirectory().toPath();
 
-        if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompresion)) {
+        if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompression)) {
             try {
                 cctx.kernalContext().compress().checkPageCompressionSupported();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Snapshot contains compressed cache groups " +
-                    "[grps=[" + grpIds.stream().filter(meta::isGroupWithCompresion).collect(Collectors.toList()) +
+                    "[grps=[" + grpIds.stream().filter(meta::isGroupWithCompression).collect(Collectors.toList()) +
                     "], snpName=" + meta.snapshotName() + "], but compression module is not enabled. " +
                     "Make sure that ignite-compress module is in classpath.");
             }
 
             try {
-                cctx.kernalContext().compress().checkPageCompressionSupported(snapshotDirectory, meta.pageSize());
+                cctx.kernalContext().compress().checkPageCompressionSupported(snapshotDir, meta.pageSize());
 
                 return true;
             }
             catch (Exception e) {
-                log.info("File system doesn't support page compression on snapshot directory: " + snapshotDirectory
+                log.info("File system doesn't support page compression on snapshot directory: " + snapshotDir
                     + ", snapshot may have larger size than expected.");
             }
         }

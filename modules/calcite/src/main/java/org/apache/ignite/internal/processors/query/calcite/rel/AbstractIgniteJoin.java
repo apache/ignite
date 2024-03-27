@@ -291,9 +291,9 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
 
     /** */
     protected boolean projectsLeft(RelCollation collation) {
-        int leftFieldCount = getLeft().getRowType().getFieldCount();
+        int leftFieldCnt = getLeft().getRowType().getFieldCount();
         for (int field : RelCollations.ordinals(collation)) {
-            if (field >= leftFieldCount)
+            if (field >= leftFieldCnt)
                 return false;
         }
         return true;
@@ -301,12 +301,12 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
 
     /** Creates mapping from left join keys to the right and vice versa with regards to {@code left2Right}. */
     protected Mappings.TargetMapping buildTransposeMapping(boolean left2Right) {
-        ImmutableIntList sourceKeys = left2Right ? joinInfo.leftKeys : joinInfo.rightKeys;
+        ImmutableIntList srcKeys = left2Right ? joinInfo.leftKeys : joinInfo.rightKeys;
         ImmutableIntList targetKeys = left2Right ? joinInfo.rightKeys : joinInfo.leftKeys;
 
         Map<Integer, Integer> keyMap = new HashMap<>();
         for (int i = 0; i < joinInfo.leftKeys.size(); i++)
-            keyMap.put(sourceKeys.get(i), targetKeys.get(i));
+            keyMap.put(srcKeys.get(i), targetKeys.get(i));
 
         return Mappings.target(
             keyMap,

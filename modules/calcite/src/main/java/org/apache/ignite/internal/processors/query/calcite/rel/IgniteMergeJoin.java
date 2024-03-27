@@ -176,11 +176,11 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
         if (joinType == FULL)
             return defaultCollationPair(required, left, right);
 
-        int leftInputFieldCount = this.left.getRowType().getFieldCount();
+        int leftInputFieldCnt = this.left.getRowType().getFieldCount();
 
         List<Integer> reqKeys = RelCollations.ordinals(collation);
         List<Integer> leftKeys = joinInfo.leftKeys.toIntegerList();
-        List<Integer> rightKeys = joinInfo.rightKeys.incr(leftInputFieldCount).toIntegerList();
+        List<Integer> rightKeys = joinInfo.rightKeys.incr(leftInputFieldCnt).toIntegerList();
 
         ImmutableBitSet reqKeySet = ImmutableBitSet.of(reqKeys);
         ImmutableBitSet leftKeySet = ImmutableBitSet.of(joinInfo.leftKeys);
@@ -208,7 +208,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
             leftCollation = extendCollation(collation, leftKeys);
             rightCollation = leftCollation.apply(buildTransposeMapping(true));
         }
-        else if (containsOrderless(collation, leftKeys) && reqKeys.stream().allMatch(i -> i < leftInputFieldCount)) {
+        else if (containsOrderless(collation, leftKeys) && reqKeys.stream().allMatch(i -> i < leftInputFieldCnt)) {
             if (joinType == RIGHT)
                 return defaultCollationPair(required, left, right);
 
@@ -223,7 +223,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
                 return defaultCollationPair(required, left, right);
 
             nodeCollation = collation;
-            rightCollation = RelCollations.shift(collation, -leftInputFieldCount);
+            rightCollation = RelCollations.shift(collation, -leftInputFieldCnt);
             leftCollation = rightCollation.apply(buildTransposeMapping(false));
         }
         else if (containsOrderless(rightKeys, collation)) {
@@ -231,7 +231,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
                 return defaultCollationPair(required, left, right);
 
             nodeCollation = collation;
-            rightCollation = RelCollations.shift(extendCollation(collation, rightKeys), -leftInputFieldCount);
+            rightCollation = RelCollations.shift(extendCollation(collation, rightKeys), -leftInputFieldCnt);
             leftCollation = rightCollation.apply(buildTransposeMapping(false));
         }
         else
@@ -250,17 +250,17 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
 
-        double leftCount = mq.getRowCount(getLeft());
+        double leftCnt = mq.getRowCount(getLeft());
 
-        if (Double.isInfinite(leftCount))
+        if (Double.isInfinite(leftCnt))
             return costFactory.makeInfiniteCost();
 
-        double rightCount = mq.getRowCount(getRight());
+        double rightCnt = mq.getRowCount(getRight());
 
-        if (Double.isInfinite(rightCount))
+        if (Double.isInfinite(rightCnt))
             return costFactory.makeInfiniteCost();
 
-        double rows = leftCount + rightCount;
+        double rows = leftCnt + rightCnt;
 
         return costFactory.makeCost(rows,
             rows * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0);

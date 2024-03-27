@@ -27,8 +27,6 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLogInnerIO;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLogLeafIO;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMap;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
@@ -113,10 +111,10 @@ public abstract class PageIO {
     public static final short MAX_PAYLOAD_SIZE = 2048;
 
     /** */
-    private static List<IOVersions<? extends BPlusInnerIO<?>>> h2ExtraInnerIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
+    private static final List<IOVersions<? extends BPlusInnerIO<?>>> h2ExtraInnerIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
 
     /** */
-    private static List<IOVersions<? extends BPlusLeafIO<?>>> h2ExtraLeafIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
+    private static final List<IOVersions<? extends BPlusLeafIO<?>>> h2ExtraLeafIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
 
     /** */
     private static List<IOVersions<? extends BPlusInnerIO<?>>> h2ExtraMvccInnerIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
@@ -249,12 +247,6 @@ public abstract class PageIO {
 
     /** */
     public static final short T_H2_MVCC_REF_INNER = 29;
-
-    /** */
-    public static final short T_TX_LOG_LEAF = 30;
-
-    /** */
-    public static final short T_TX_LOG_INNER = 31;
 
     /** */
     public static final short T_DATA_PART = 32;
@@ -640,12 +632,8 @@ public abstract class PageIO {
         )
             return true;
 
-        if ((T_H2_EX_REF_INNER_START <= pageType && pageType <= T_H2_EX_REF_INNER_END) ||
-            (T_H2_EX_REF_MVCC_INNER_START <= pageType && pageType <= T_H2_EX_REF_MVCC_INNER_END)
-        )
-            return true;
-
-        return false;
+        return (T_H2_EX_REF_INNER_START <= pageType && pageType <= T_H2_EX_REF_INNER_END) ||
+            (T_H2_EX_REF_MVCC_INNER_START <= pageType && pageType <= T_H2_EX_REF_MVCC_INNER_END);
     }
 
     /** {@inheritDoc} */
@@ -778,12 +766,6 @@ public abstract class PageIO {
 
                 return (Q)h2MvccLeafIOs.forVersion(ver);
 
-            case T_TX_LOG_INNER:
-                return (Q)TxLogInnerIO.VERSIONS.forVersion(ver);
-
-            case T_TX_LOG_LEAF:
-                return (Q)TxLogLeafIO.VERSIONS.forVersion(ver);
-
             case T_DATA_REF_INNER:
                 return (Q)DataInnerIO.VERSIONS.forVersion(ver);
 
@@ -855,7 +837,7 @@ public abstract class PageIO {
      * @return Index page type.
      */
     public static IndexPageType deriveIndexPageType(long pageAddr) {
-        int pageIoType = PageIO.getType(pageAddr);
+        int pageIoType = getType(pageAddr);
         switch (pageIoType) {
             case T_DATA_REF_INNER:
             case T_DATA_REF_MVCC_INNER:

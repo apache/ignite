@@ -66,17 +66,17 @@ public class LinkMapTest extends GridCommonAbstractTest {
      */
     @Test
     public void test() throws Exception {
-        int cacheGroupId = 1;
+        int cacheGrpId = 1;
 
-        String groupName = "test";
+        String grpName = "test";
 
-        FullPageId pageId = new FullPageId(pageMem.allocatePage(cacheGroupId, 0, PageIdAllocator.FLAG_DATA), cacheGroupId);
+        FullPageId pageId = new FullPageId(pageMem.allocatePage(cacheGrpId, 0, PageIdAllocator.FLAG_DATA), cacheGrpId);
 
-        PageLockTrackerManager pageLockTrackerManager = mock(PageLockTrackerManager.class);
+        PageLockTrackerManager pageLockTrackerMgr = mock(PageLockTrackerManager.class);
 
-        when(pageLockTrackerManager.createPageLockTracker(anyString())).thenReturn(PageLockTrackerManager.NOOP_LSNR);
+        when(pageLockTrackerMgr.createPageLockTracker(anyString())).thenReturn(PageLockTrackerManager.NOOP_LSNR);
 
-        LinkMap map = new LinkMap(cacheGroupId, groupName, pageMem, pageId.pageId(), true, pageLockTrackerManager);
+        LinkMap map = new LinkMap(cacheGrpId, grpName, pageMem, pageId.pageId(), true, pageLockTrackerMgr);
 
         for (int i = 0; i < 10_000; i++)
             map.put(i, i + 1);

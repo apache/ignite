@@ -291,7 +291,16 @@ public abstract class WALRecord {
         INCREMENTAL_SNAPSHOT_FINISH_RECORD(77, LOGICAL),
 
         /** CDC data record. */
-        CDC_DATA_RECORD(78, CUSTOM);
+        CDC_DATA_RECORD(78, CUSTOM),
+
+        /** CDC manager record. */
+        CDC_MANAGER_RECORD(79, CUSTOM),
+
+        /** CDC manager record. */
+        CDC_MANAGER_STOP_RECORD(80, CUSTOM),
+
+        /** Physical WAL record that represents a fragment of an entry update. (Placeholder) */
+        DATA_PAGE_FRAGMENTED_UPDATE_RECORD(81, PHYSICAL);
 
         /** Index for serialization. Should be consistent throughout all versions. */
         private final int idx;

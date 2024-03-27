@@ -198,14 +198,14 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
 
         /** {@inheritDoc} */
         @Override public int execute(List<String> value) {
-            String commandName = null;
+            String cmdName = null;
 
             try {
                 ArgumentParser parser = new ArgumentParser(log, new IgniteCommandRegistry());
 
                 ConnectionAndSslParameters<IgniteDataTransferObject> p = parser.parseAndValidate(value);
 
-                commandName = toFormattedCommandName(p.cmdPath().peekLast().getClass()).toUpperCase();
+                cmdName = toFormattedCommandName(p.cmdPath().peekLast().getClass()).toUpperCase();
 
                 Deque<Command<?, ?>> cmdPath = new ArrayDeque<>(p.cmdPath());
 
@@ -257,7 +257,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
                     IllegalArgumentException iae = X.cause(e, IllegalArgumentException.class);
 
                     log.error("Check arguments. " + errorMessage(iae));
-                    log.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
+                    log.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
 
                     return EXIT_CODE_INVALID_ARGUMENTS;
                 }

@@ -1541,8 +1541,8 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
      */
     @Test
     public void testSimpleNameLowerCaseMappers() throws Exception {
-        BinaryTypeConfiguration innerClassType = new BinaryTypeConfiguration(InnerMappedObject.class.getName());
-        BinaryTypeConfiguration publicClassType = new BinaryTypeConfiguration(TestMappedObject.class.getName());
+        BinaryTypeConfiguration innerClsType = new BinaryTypeConfiguration(InnerMappedObject.class.getName());
+        BinaryTypeConfiguration publicClsType = new BinaryTypeConfiguration(TestMappedObject.class.getName());
         BinaryTypeConfiguration typeWithCustomMapper = new BinaryTypeConfiguration(CustomMappedObject2.class.getName());
 
         typeWithCustomMapper.setIdMapper(new BinaryIdMapper() {
@@ -1565,7 +1565,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         });
 
         BinaryMarshaller marsh = binaryMarshaller(new BinaryBasicNameMapper(true), new BinaryBasicIdMapper(true),
-            Arrays.asList(innerClassType, publicClassType, typeWithCustomMapper));
+            Arrays.asList(innerClsType, publicClsType, typeWithCustomMapper));
 
         InnerMappedObject innerObj = new InnerMappedObject(10, "str1");
 
@@ -3476,15 +3476,15 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         BinaryMarshaller m1 = binaryMarshaller();
 
         Value obj = new Value(27);
-        ObjectWithRaw objectWithRaw = new ObjectWithRaw(27, 13);
-        ObjectRaw objectRaw = new ObjectRaw(27, 13);
+        ObjectWithRaw objWithRaw = new ObjectWithRaw(27, 13);
+        ObjectRaw objRaw = new ObjectRaw(27, 13);
 
         Value objOther = new Value(26);
-        ObjectWithRaw objectWithRawOther = new ObjectWithRaw(26, 13);
-        ObjectRaw objectRawOther = new ObjectRaw(26, 13);
+        ObjectWithRaw objWithRawOther = new ObjectWithRaw(26, 13);
+        ObjectRaw objRawOther = new ObjectRaw(26, 13);
 
         ArrayList collection = new ArrayList(Arrays.asList(
-            obj, objectWithRawOther, objectRaw, objectWithRaw, objectRawOther, objOther));
+            obj, objWithRawOther, objRaw, objWithRaw, objRawOther, objOther));
 
         marshalUnmarshal(collection, m0);
         marshalUnmarshal(collection, m1);
@@ -3504,19 +3504,19 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         BinaryMarshaller m1 = binaryMarshaller();
 
         Value obj = new Value(27);
-        ObjectWithRaw objectWithRaw = new ObjectWithRaw(27, 13);
-        ObjectRaw objectRaw = new ObjectRaw(27, 13);
+        ObjectWithRaw objWithRaw = new ObjectWithRaw(27, 13);
+        ObjectRaw objRaw = new ObjectRaw(27, 13);
 
         Value objOther = new Value(26);
-        ObjectWithRaw objectWithRawOther = new ObjectWithRaw(26, 13);
-        ObjectRaw objectRawOther = new ObjectRaw(26, 13);
+        ObjectWithRaw objWithRawOther = new ObjectWithRaw(26, 13);
+        ObjectRaw objRawOther = new ObjectRaw(26, 13);
 
         BinaryObjectImpl binObj0 = marshal(obj, m0);
         BinaryObjectImpl binObj1 = marshal(obj, m1);
-        BinaryObjectImpl binObjWithRaw0 = marshal(objectWithRaw, m0);
-        BinaryObjectImpl binObjWithRaw1 = marshal(objectWithRaw, m1);
-        BinaryObjectImpl binObjRaw0 = marshal(objectRaw, m0);
-        BinaryObjectImpl binObjRaw1 = marshal(objectRaw, m1);
+        BinaryObjectImpl binObjWithRaw0 = marshal(objWithRaw, m0);
+        BinaryObjectImpl binObjWithRaw1 = marshal(objWithRaw, m1);
+        BinaryObjectImpl binObjRaw0 = marshal(objRaw, m0);
+        BinaryObjectImpl binObjRaw1 = marshal(objRaw, m1);
 
         assertNotEquals(binObj0.array().length, binObj1.array().length);
         assertNotEquals(binObjWithRaw0.array().length, binObjWithRaw1.array().length);
@@ -3537,10 +3537,10 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         BinaryObjectImpl binObjOther0 = marshal(objOther, m0);
         BinaryObjectImpl binObjOther1 = marshal(objOther, m1);
-        BinaryObjectImpl binObjWithRawOther0 = marshal(objectWithRawOther, m0);
-        BinaryObjectImpl binObjWithRawOther1 = marshal(objectWithRawOther, m1);
-        BinaryObjectImpl binObjRawOther0 = marshal(objectRawOther, m0);
-        BinaryObjectImpl binObjRawOther1 = marshal(objectRawOther, m1);
+        BinaryObjectImpl binObjWithRawOther0 = marshal(objWithRawOther, m0);
+        BinaryObjectImpl binObjWithRawOther1 = marshal(objWithRawOther, m1);
+        BinaryObjectImpl binObjRawOther0 = marshal(objRawOther, m0);
+        BinaryObjectImpl binObjRawOther1 = marshal(objRawOther, m1);
 
         assertEquals(binObjOther0.length(), binObj0.length());
         assertEquals(binObjOther1.length(), binObj1.length());
@@ -5518,9 +5518,9 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
             if (!(o instanceof Value))
                 return false;
 
-            Value value = (Value)o;
+            Value val = (Value)o;
 
-            return val == value.val;
+            return this.val == val.val;
         }
 
         /** {@inheritDoc} */

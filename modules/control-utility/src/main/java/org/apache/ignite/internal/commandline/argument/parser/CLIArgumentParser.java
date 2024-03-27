@@ -61,8 +61,8 @@ public class CLIArgumentParser {
     ) {
         this.positionalArgCfg = positionalArgConfig;
 
-        for (CLIArgument<?> cliArgument : argConfiguration)
-            this.argConfiguration.put(cliArgument.name(), cliArgument);
+        for (CLIArgument<?> cliArg : argConfiguration)
+            this.argConfiguration.put(cliArg.name(), cliArg);
     }
 
     /**
@@ -86,11 +86,11 @@ public class CLIArgumentParser {
                 if (positionalIdx < positionalArgCfg.size()) {
                     cliArg = positionalArgCfg.get(positionalIdx);
 
-                    Object value = parseVal(arg, cliArg.type());
+                    Object val = parseVal(arg, cliArg.type());
 
-                    ((CLIArgument<Object>)cliArg).validator().accept(cliArg.name(), value);
+                    ((CLIArgument<Object>)cliArg).validator().accept(cliArg.name(), val);
 
-                    parsedPositionalArgs.add(value);
+                    parsedPositionalArgs.add(val);
 
                     positionalIdx++;
                 }
@@ -113,11 +113,11 @@ public class CLIArgumentParser {
                 throw new IllegalArgumentException("Unexpected value: " + strVal);
 
             try {
-                Object value = parseVal(strVal, cliArg.type());
+                Object val = parseVal(strVal, cliArg.type());
 
-                ((CLIArgument<Object>)cliArg).validator().accept(cliArg.name(), value);
+                ((CLIArgument<Object>)cliArg).validator().accept(cliArg.name(), val);
 
-                parsedArgs.put(cliArg.name(), value);
+                parsedArgs.put(cliArg.name(), val);
             }
             catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Failed to parse " + cliArg.name() + " command argument. "

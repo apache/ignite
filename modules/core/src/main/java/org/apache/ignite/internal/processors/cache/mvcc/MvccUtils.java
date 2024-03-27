@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -32,10 +31,8 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxUnexpectedStateCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.transactions.TransactionMixedModeException;
 import org.apache.ignite.transactions.TransactionState;
 import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -134,8 +131,7 @@ public class MvccUtils {
 
         byte state;
 
-        return cctx.kernalContext().coordinators().hasLocalTransaction(mvccCrd, mvccCntr) ||
-            (state = state(cctx, mvccCrd, mvccCntr, 0)) != TxState.COMMITTED && state != TxState.ABORTED;
+        return (state = state(cctx, mvccCrd, mvccCntr, 0)) != TxState.COMMITTED && state != TxState.ABORTED;
     }
 
     /**
@@ -147,7 +143,7 @@ public class MvccUtils {
      * @see TxState
      */
     public static byte state(GridCacheContext cctx, long mvccCrd, long mvccCntr, int mvccOpCntr) {
-        return state(cctx.kernalContext().coordinators(), mvccCrd, mvccCntr, mvccOpCntr);
+        return TxState.NA;
     }
 
     /**
@@ -159,33 +155,7 @@ public class MvccUtils {
      * @see TxState
      */
     public static byte state(CacheGroupContext grp, long mvccCrd, long mvccCntr, int mvccOpCntr) {
-        return state(grp.shared().coordinators(), mvccCrd, mvccCntr, mvccOpCntr);
-    }
-
-    /**
-     * @param proc Mvcc processor.
-     * @param mvccCrd Mvcc coordinator version.
-     * @param mvccCntr Mvcc counter.
-     * @return TxState
-     * @see TxState
-     */
-    public static byte state(MvccProcessor proc, long mvccCrd, long mvccCntr, int mvccOpCntr) {
-        if (compare(INITIAL_VERSION, mvccCrd, mvccCntr, mvccOpCntr) == 0)
-            return TxState.COMMITTED; // Initial version is always committed;
-
-        if ((mvccOpCntr & MVCC_HINTS_MASK) != 0)
-            return (byte)(mvccOpCntr >>> MVCC_HINTS_BIT_OFF);
-
-        MvccCoordinator crd = proc.currentCoordinator();
-
-        byte state = proc.state(mvccCrd, mvccCntr);
-
-        if ((state == TxState.NA || state == TxState.PREPARED)
-            && (crd.unassigned() // Recovery from WAL.
-            || (crd.initialized() && mvccCrd < crd.version()))) // Stale row.
-            state = TxState.ABORTED;
-
-        return state;
+        return TxState.NA;
     }
 
     /**
@@ -265,9 +235,6 @@ public class MvccUtils {
 
             return opCntr < snapshotOpCntr; // we don't see own pending updates
         }
-
-        if (snapshot.activeTransactions().contains(mvccCntr)) // we don't see of other transactions' pending updates
-            return false;
 
         if (!useTxLog)
             return true; // The checking row is expected to be committed.
@@ -550,13 +517,6 @@ public class MvccUtils {
     }
 
     /**
-     * @return Error.
-     */
-    public static ClusterTopologyServerNotFoundException noCoordinatorError() {
-        return new ClusterTopologyServerNotFoundException("Mvcc coordinator is not assigned.");
-    }
-
-    /**
      * @param cctx Cache context.
      * @param link Link to the row.
      * @param snapshot Mvcc snapshot.
@@ -651,7 +611,6 @@ public class MvccUtils {
      * @param ctx Grid kernal context.
      * @return Currently started user transaction, or {@code null} if none started.
      * @throws TransactionUnsupportedConcurrencyException If transaction mode is not supported when MVCC is enabled.
-     * @throws TransactionMixedModeException If started transaction spans non MVCC caches.
      */
     @Nullable public static GridNearTxLocal tx(GridKernalContext ctx) {
         return tx(ctx, null);
@@ -662,7 +621,6 @@ public class MvccUtils {
      * @param txId Transaction ID.
      * @return Currently started user transaction, or {@code null} if none started.
      * @throws TransactionUnsupportedConcurrencyException If transaction mode is not supported when MVCC is enabled.
-     * @throws TransactionMixedModeException If started transaction spans non MVCC caches.
      */
     @Nullable public static GridNearTxLocal tx(GridKernalContext ctx, @Nullable GridCacheVersion txId) {
         IgniteTxManager tm = ctx.cache().context().tm();
@@ -676,14 +634,6 @@ public class MvccUtils {
                 tx.setRollbackOnly();
 
                 throw new TransactionUnsupportedConcurrencyException("Only pessimistic transactions are supported when MVCC is enabled.");
-            }
-
-            if (!tx.isOperationAllowed(true)) {
-                tx.setRollbackOnly();
-
-                throw new TransactionMixedModeException(
-                    "Operations on MVCC caches are not permitted in transactions spanning non MVCC caches."
-                );
             }
         }
 
@@ -730,7 +680,6 @@ public class MvccUtils {
             REPEATABLE_READ,
             timeout,
             cctx == null || !cctx.skipStore(),
-            true,
             0,
             null
         );
@@ -738,44 +687,6 @@ public class MvccUtils {
         tx.syncMode(FULL_SYNC);
 
         return tx;
-    }
-
-    /**
-     * Initialises MVCC filter and returns MVCC query tracker if needed.
-     * @param cctx Cache context.
-     * @param tx Transaction.
-     * @return MVCC query tracker.
-     * @throws IgniteCheckedException If failed.
-     */
-    @NotNull public static MvccQueryTracker mvccTracker(GridCacheContext cctx,
-        GridNearTxLocal tx) throws IgniteCheckedException {
-        MvccQueryTracker tracker;
-
-        if (tx == null)
-            tracker = new MvccQueryTrackerImpl(cctx);
-        else
-            tracker = new StaticMvccQueryTracker(cctx, requestSnapshot(tx));
-
-        if (tracker.snapshot() == null)
-            // TODO IGNITE-7388
-            tracker.requestSnapshot().get();
-
-        return tracker;
-    }
-
-    /**
-     * @param tx Transaction.
-     * @throws IgniteCheckedException If failed.
-     * @return Mvcc snapshot.
-     */
-    public static MvccSnapshot requestSnapshot(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
-        MvccSnapshot snapshot = tx.mvccSnapshot();
-
-        if (snapshot == null)
-            // TODO IGNITE-7388
-            return tx.requestSnapshot().get();
-
-        return snapshot;
     }
 
     /** */

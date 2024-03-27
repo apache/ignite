@@ -45,11 +45,11 @@ public class OptimizedMarshallerEnumSelfTest {
     public void testEnumSerialisation() throws Exception {
         OptimizedMarshaller marsh = new OptimizedMarshaller();
 
-        MarshallerContextTestImpl context = new MarshallerContextTestImpl();
+        MarshallerContextTestImpl ctx = new MarshallerContextTestImpl();
 
-        context.onMarshallerProcessorStarted(newContext(), null);
+        ctx.onMarshallerProcessorStarted(newContext(), null);
 
-        marsh.setContext(context);
+        marsh.setContext(ctx);
 
         byte[] bytes = marsh.marshal(TestEnum.Bond);
 

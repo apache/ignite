@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientException;
@@ -52,8 +53,8 @@ import org.jetbrains.annotations.Nullable;
  * Implementation of {@link ClientServices}.
  */
 class ClientServicesImpl implements ClientServices {
-    /** Max service topology update period in mills. */
-    static final int SRV_TOP_UPDATE_PERIOD = 10_000;
+    /** Max service topology update period in millis. */
+    static final int SRV_TOP_UPDATE_PERIOD = 60_000;
 
     /** Channel. */
     private final ReliableChannel ch;
@@ -243,13 +244,14 @@ class ClientServicesImpl implements ClientServices {
                     return res;
                 }).whenComplete((nodes, err) -> {
                     if (err == null) {
-                        this.nodes = nodes;
+                        this.nodes = filterTopology(nodes);
                         lastAffTop = curAffTop;
                         lastUpdateRequestTime = System.nanoTime();
 
                         if (log.isDebugEnabled()) {
-                            log.debug("Topology of service '" + srvcName + "' has been updated. The " +
-                                "service instance nodes: " + nodes);
+                            log.debug("Topology of service '" + srvcName + "' has been updated. " +
+                                "The service instance nodes: " + nodes + ". " +
+                                "Effective topology with the cluster group is: " + this.nodes + '.');
                         }
                     }
                     else
@@ -257,6 +259,12 @@ class ClientServicesImpl implements ClientServices {
 
                     updateInProgress.set(false);
                 });
+        }
+
+        /** */
+        private List<UUID> filterTopology(List<UUID> nodes) {
+            return Collections.unmodifiableList(grp == null ? nodes : nodes.stream().filter(n -> grp.node(n) != null)
+                .collect(Collectors.toList()));
         }
 
         /**

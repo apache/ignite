@@ -74,6 +74,9 @@ public class RecordV2Serializer implements RecordSerializer {
     /** Skip position check flag. Should be set for reading compacted wal file with skipped physical records. */
     private final boolean skipPositionCheck;
 
+    /** Singleton instance of {@link FilteredRecord}  */
+    private final FilteredRecord filteredRecord = new FilteredRecord();
+
     /** Thread-local heap byte buffer. */
     private final ThreadLocal<ByteBuffer> heapTlb =
         ThreadLocal.withInitial(() -> ByteBuffer.allocate(4096).order(GridUnsafe.NATIVE_BYTE_ORDER));
@@ -143,7 +146,7 @@ public class RecordV2Serializer implements RecordSerializer {
                 if (in.skipBytes(toSkip) < toSkip)
                     throw new EOFException("Reached end of file while reading record: " + ptr);
 
-                return FilteredRecord.INSTANCE;
+                return filteredRecord;
             }
             else if (marshalledMode) {
                 ByteBuffer buf = heapTlb.get();

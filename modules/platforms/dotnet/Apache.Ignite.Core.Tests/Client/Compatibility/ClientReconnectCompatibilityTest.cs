@@ -37,6 +37,14 @@ namespace Apache.Ignite.Core.Tests.Client.Compatibility
         [Test]
         public void TestReconnectToOldNodeDisablesPartitionAwareness()
         {
+            TestUtils.EnsureJvmCreated();
+            if (TestUtilsJni.GetJavaMajorVersion() >= 11)
+            {
+                // Can't run old Ignite versions on Java 11+.
+                Console.WriteLine($"Skipping {nameof(TestReconnectToOldNodeDisablesPartitionAwareness)} on Java 11+");
+                return;
+            }
+
             IIgniteClient client = null;
             var clientConfiguration = new IgniteClientConfiguration(JavaServer.GetClientConfiguration())
             {

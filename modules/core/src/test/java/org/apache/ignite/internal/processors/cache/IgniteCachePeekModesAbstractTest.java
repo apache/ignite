@@ -725,19 +725,19 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     private T2<Integer, Integer> offheapKeysCount(int nodeIdx, int part) throws IgniteCheckedException {
         GridCacheContext ctx = ((IgniteEx)ignite(nodeIdx)).context().cache().internalCache(DEFAULT_CACHE_NAME).context();
         // Swap and offheap are disabled for near cache.
-        IgniteCacheOffheapManager offheapManager = ctx.isNear() ? ctx.near().dht().context().offheap() : ctx.offheap();
+        IgniteCacheOffheapManager offheapMgr = ctx.isNear() ? ctx.near().dht().context().offheap() : ctx.offheap();
         //First count entries...
-        int cnt = (int)offheapManager.cacheEntriesCount(ctx.cacheId(), part);
+        int cnt = (int)offheapMgr.cacheEntriesCount(ctx.cacheId(), part);
 
-        GridCacheAffinityManager affinity = ctx.affinity();
-        AffinityTopologyVersion topVer = affinity.affinityTopologyVersion();
+        GridCacheAffinityManager aff = ctx.affinity();
+        AffinityTopologyVersion topVer = aff.affinityTopologyVersion();
 
         //And then find out whether they are primary or backup ones.
         int primaryCnt = 0;
         int backupCnt = 0;
-        if (affinity.primaryByPartition(ctx.localNode(), part, topVer))
+        if (aff.primaryByPartition(ctx.localNode(), part, topVer))
             primaryCnt = cnt;
-        else if (affinity.backupByPartition(ctx.localNode(), part, topVer))
+        else if (aff.backupByPartition(ctx.localNode(), part, topVer))
             backupCnt = cnt;
         return new T2<>(primaryCnt, backupCnt);
     }

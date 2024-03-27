@@ -79,8 +79,8 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         MetricRegistry reg = ignite.context().metric().registry(PME_METRICS);
 
-        LongMetric currentPMEDuration = reg.findMetric(PME_DURATION);
-        LongMetric currentBlockingPMEDuration = reg.findMetric(PME_OPS_BLOCKED_DURATION);
+        LongMetric curPMEDuration = reg.findMetric(PME_DURATION);
+        LongMetric curBlockingPMEDuration = reg.findMetric(PME_OPS_BLOCKED_DURATION);
 
         HistogramMetricImpl durationHistogram = reg.findMetric(PME_DURATION_HISTOGRAM);
         HistogramMetricImpl blockindDurationHistogram = reg.findMetric(PME_OPS_BLOCKED_DURATION_HISTOGRAM);
@@ -95,8 +95,8 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         int timeout = 5000;
 
-        assertTrue(GridTestUtils.waitForCondition(() -> currentPMEDuration.value() == 0, timeout));
-        assertEquals(0, currentBlockingPMEDuration.value());
+        assertTrue(GridTestUtils.waitForCondition(() -> curPMEDuration.value() == 0, timeout));
+        assertEquals(0, curBlockingPMEDuration.value());
 
         // There was two blocking exchange: server node start and cache start.
         assertEquals(2, Arrays.stream(durationHistogram.value()).sum());
@@ -117,9 +117,9 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
             timeout));
 
         if (client)
-            assertEquals(0, currentBlockingPMEDuration.value());
+            assertEquals(0, curBlockingPMEDuration.value());
         else
-            assertTrue(currentBlockingPMEDuration.value() > 0);
+            assertTrue(curBlockingPMEDuration.value() > 0);
 
         lock.unlock();
 
@@ -128,8 +128,8 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        assertTrue(GridTestUtils.waitForCondition(() -> currentPMEDuration.value() == 0, timeout));
-        assertEquals(0, currentBlockingPMEDuration.value());
+        assertTrue(GridTestUtils.waitForCondition(() -> curPMEDuration.value() == 0, timeout));
+        assertEquals(0, curBlockingPMEDuration.value());
 
         if (client) {
             // There was non-blocking exchange: client node start.

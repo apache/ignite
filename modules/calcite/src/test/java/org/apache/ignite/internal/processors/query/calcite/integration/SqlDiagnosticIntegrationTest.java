@@ -359,7 +359,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         Set<UUID> dataNodesIds = new HashSet<>(F.asList(grid(0).localNode().id(), grid(1).localNode().id()));
         Set<UUID> readsNodes = new HashSet<>(dataNodesIds);
         Set<Long> readsQueries = new HashSet<>();
-        Map<Long, Long> rowsFetchedPerQuery = new HashMap<>();
+        Map<Long, Long> rowsFetchedPerQry = new HashMap<>();
         AtomicLong firstQryId = new AtomicLong(-1);
         AtomicLong lastQryId = new AtomicLong();
 
@@ -420,7 +420,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
                 }
                 else if ("Fetched".equals(action)) {
                     assertEquals(grid(0).localNode().id(), nodeId);
-                    assertNull(rowsFetchedPerQuery.put(id, rows));
+                    assertNull(rowsFetchedPerQry.put(id, rows));
                 }
             }
         });
@@ -428,8 +428,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         assertEquals(4, qryCnt.get());
         assertTrue("Query reads expected on nodes: " + readsNodes, readsNodes.isEmpty());
         assertEquals(Collections.singleton(lastQryId.get()), readsQueries);
-        assertEquals((Long)1000L, rowsFetchedPerQuery.get(firstQryId.get()));
-        assertEquals((Long)4L, rowsFetchedPerQuery.get(lastQryId.get()));
+        assertEquals((Long)1000L, rowsFetchedPerQry.get(firstQryId.get()));
+        assertEquals((Long)4L, rowsFetchedPerQry.get(lastQryId.get()));
         assertEquals(5L, rowsScanned.get());
     }
 
@@ -488,6 +488,72 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
         assertEquals(1, qryCnt.get());
         assertTrue(hasPlan.get());
+    }
+
+    /** */
+    @Test
+    public void testPerformanceStatisticsNestedScan() throws Exception {
+        sql(grid(0), "CREATE TABLE test_perf_stat_nested (a INT) WITH template=REPLICATED");
+        sql(grid(0), "INSERT INTO test_perf_stat_nested VALUES (0), (1), (2), (3), (4)");
+
+        cleanPerformanceStatisticsDir();
+        startCollectStatistics();
+
+        AtomicInteger finishQryCnt = new AtomicInteger();
+        grid(0).context().query().runningQueryManager().registerQueryFinishedListener(q -> finishQryCnt.incrementAndGet());
+
+        sql(grid(0), "SELECT * FROM test_perf_stat_nested UNION ALL SELECT * FROM test_perf_stat_nested");
+
+        assertTrue(GridTestUtils.waitForCondition(() -> finishQryCnt.get() == 1, 1_000L));
+
+        AtomicInteger qryCnt = new AtomicInteger();
+        AtomicInteger readsCnt = new AtomicInteger();
+        AtomicLong rowsCnt = new AtomicLong();
+
+        stopCollectStatisticsAndRead(new AbstractPerformanceStatisticsTest.TestHandler() {
+            @Override public void query(
+                UUID nodeId,
+                GridCacheQueryType type,
+                String text,
+                long id,
+                long qryStartTime,
+                long duration,
+                boolean success
+            ) {
+                qryCnt.incrementAndGet();
+                assertTrue(success);
+            }
+
+            @Override public void queryReads(
+                UUID nodeId,
+                GridCacheQueryType type,
+                UUID qryNodeId,
+                long id,
+                long logicalReads,
+                long physicalReads
+            ) {
+                readsCnt.incrementAndGet();
+                assertTrue(logicalReads > 0);
+            }
+
+            @Override public void queryRows(
+                UUID nodeId,
+                GridCacheQueryType type,
+                UUID qryNodeId,
+                long id,
+                String action,
+                long rows
+            ) {
+                if ("Fetched".equals(action))
+                    rowsCnt.addAndGet(rows);
+            }
+        });
+
+        assertEquals(1, qryCnt.get());
+        // The second scan is executed inside the first scan processNextBatch() method,
+        // after the first scan invoke downstream().end(), so here we have only one read record.
+        assertEquals(1, readsCnt.get());
+        assertEquals(10, rowsCnt.get());
     }
 
     /** */
@@ -595,7 +661,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
             // Test bounds hiding in index scans.
             sql(grid(0), "CREATE TABLE test_sens (id int, val varchar)");
-            sql(grid(0), "CREATE INDEX test_sens_idx ON test_sens(val)");
+            sql(grid(0), "CREATE INDEX test_sens_idx ON test_sens(val) INLINE_SIZE 10");
             sql(grid(0), "INSERT INTO test_sens (id, val) VALUES (0, 'sensitive0'), (1, 'sensitive1'), " +
                 "(2, 'sensitive2'), (3, 'sensitive3'), (4, 'sensitive4'), (5, 'sensitive5'), (6, 'sensitive6')");
             sql(grid(0), "SELECT * FROM test_sens WHERE val IN ('sensitive0', 'sensitive1')");

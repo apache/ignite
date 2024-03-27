@@ -41,6 +41,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
@@ -75,7 +77,7 @@ public class DumpReader implements Runnable {
     @Override public void run() {
         ackAsciiLogo();
 
-        try (Dump dump = new Dump(cfg.dumpRoot(), cfg.keepBinary(), false, log)) {
+        try (Dump dump = new Dump(cfg.dumpRoot(), null, cfg.keepBinary(), false, encryptionSpi(), log)) {
             DumpConsumer cnsmr = cfg.consumer();
 
             cnsmr.start();
@@ -90,13 +92,13 @@ public class DumpReader implements Runnable {
 
                 Map<Integer, List<String>> grpToNodes = new HashMap<>();
 
-                Set<Integer> cacheGroupIds = cfg.cacheGroupNames() != null 
+                Set<Integer> cacheGrpIds = cfg.cacheGroupNames() != null
                     ? Arrays.stream(cfg.cacheGroupNames()).map(CU::cacheId).collect(Collectors.toSet())
                     : null;
 
                 for (SnapshotMetadata meta : dump.metadata()) {
                     for (Integer grp : meta.cacheGroupIds()) {
-                        if (cacheGroupIds == null || cacheGroupIds.contains(grp))
+                        if (cacheGrpIds == null || cacheGrpIds.contains(grp))
                             grpToNodes.computeIfAbsent(grp, key -> new ArrayList<>()).add(meta.folderName());
                     }
                 }
@@ -109,17 +111,17 @@ public class DumpReader implements Runnable {
 
                 AtomicBoolean skip = new AtomicBoolean(false);
 
-                Map<Integer, Set<Integer>> groups = cfg.skipCopies() ? new HashMap<>() : null;
+                Map<Integer, Set<Integer>> grps = cfg.skipCopies() ? new HashMap<>() : null;
 
-                if (groups != null)
-                    grpToNodes.keySet().forEach(grpId -> groups.put(grpId, new HashSet<>()));
+                if (grps != null)
+                    grpToNodes.keySet().forEach(grpId -> grps.put(grpId, new HashSet<>()));
 
                 for (Map.Entry<Integer, List<String>> e : grpToNodes.entrySet()) {
                     int grp = e.getKey();
 
                     for (String node : e.getValue()) {
                         for (int part : dump.partitions(node, grp)) {
-                            if (groups != null && !groups.get(grp).add(part)) {
+                            if (grps != null && !grps.get(grp).add(part)) {
                                 log.info("Skip copy partition [node=" + node + ", grp=" + grp + ", part=" + part + ']');
 
                                 continue;
@@ -230,5 +232,20 @@ public class DumpReader implements Runnable {
                 "  ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or \"-v\" to ignite-cdc.{sh|bat}",
                 "");
         }
+    }
+
+    /** */
+    private EncryptionSpi encryptionSpi() {
+        EncryptionSpi encSpi = cfg.encryptionSpi();
+
+        if (encSpi == null)
+            return null;
+
+        if (encSpi instanceof IgniteSpiAdapter)
+            ((IgniteSpiAdapter)encSpi).onBeforeStart();
+
+        encSpi.spiStart("dump-reader");
+
+        return encSpi;
     }
 }

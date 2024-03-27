@@ -67,11 +67,11 @@ public class AtomicLongTest extends AbstractThinClientTest {
         try (IgniteClient client = startClient(0)) {
             ClientAtomicLong atomicLong = client.atomicLong(name, 42, true);
 
-            ClientAtomicLong atomicLongWithGroup = client.atomicLong(
+            ClientAtomicLong atomicLongWithGrp = client.atomicLong(
                     name, new ClientAtomicConfiguration().setGroupName("grp"), 43, true);
 
             assertEquals(42, atomicLong.get());
-            assertEquals(43, atomicLongWithGroup.get());
+            assertEquals(43, atomicLongWithGrp.get());
         }
     }
 
@@ -226,15 +226,15 @@ public class AtomicLongTest extends AbstractThinClientTest {
 
         IgniteInternalCache<?, ?> partitionedCache = caches.get(1);
         IgniteInternalCache<?, ?> replicatedCache = caches.get(2);
-        IgniteInternalCache<?, ?> defaultCache = caches.get(3);
+        IgniteInternalCache<?, ?> dfltCache = caches.get(3);
 
         assertEquals("ignite-sys-atomic-cache@atomic-long-group-partitioned", partitionedCache.name());
         assertEquals("ignite-sys-atomic-cache@atomic-long-group-replicated", replicatedCache.name());
-        assertEquals("ignite-sys-atomic-cache@default-ds-group", defaultCache.name());
+        assertEquals("ignite-sys-atomic-cache@default-ds-group", dfltCache.name());
 
         assertEquals(2, partitionedCache.configuration().getBackups());
         assertEquals(Integer.MAX_VALUE, replicatedCache.configuration().getBackups());
-        assertEquals(1, defaultCache.configuration().getBackups());
+        assertEquals(1, dfltCache.configuration().getBackups());
     }
 
     /**
@@ -242,15 +242,15 @@ public class AtomicLongTest extends AbstractThinClientTest {
      */
     @Test
     public void testSameNameDifferentOptionsDoesNotCreateSecondAtomic() {
-        String groupName = "testSameNameDifferentOptions";
+        String grpName = "testSameNameDifferentOptions";
 
         ClientAtomicConfiguration cfg1 = new ClientAtomicConfiguration()
                 .setCacheMode(CacheMode.REPLICATED)
-                .setGroupName(groupName);
+                .setGroupName(grpName);
 
         ClientAtomicConfiguration cfg2 = new ClientAtomicConfiguration()
                 .setCacheMode(CacheMode.PARTITIONED)
-                .setGroupName(groupName);
+                .setGroupName(grpName);
 
         String name = "testSameNameDifferentOptionsDoesNotCreateSecondAtomic";
 
@@ -265,7 +265,7 @@ public class AtomicLongTest extends AbstractThinClientTest {
         }
 
         List<IgniteInternalCache<?, ?>> caches = grid(0).cachesx().stream()
-                .filter(c -> c.name().contains(groupName))
+                .filter(c -> c.name().contains(grpName))
                 .collect(Collectors.toList());
 
         assertEquals(1, caches.size());

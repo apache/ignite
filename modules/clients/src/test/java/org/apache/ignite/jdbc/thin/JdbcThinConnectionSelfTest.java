@@ -2221,14 +2221,14 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             f.get();
 
-            boolean exceptionFound = false;
+            boolean exFound = false;
 
             for (SQLException e : exs) {
                 if (e != null && e.getMessage().contains("Concurrent access to JDBC connection is not allowed"))
-                    exceptionFound = true;
+                    exFound = true;
             }
 
-            assertTrue("Concurrent access to JDBC connection is not allowed", exceptionFound);
+            assertTrue("Concurrent access to JDBC connection is not allowed", exFound);
         }
     }
 

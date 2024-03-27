@@ -1977,10 +1977,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * @param name Instance name.
+     * @param consistentId Node consistentId.
      */
-    protected void cleanPersistenceDir(String name) throws Exception {
-        String dn2DirName = name.replace(".", "_");
+    protected void cleanPersistenceDir(String consistentId) throws Exception {
+        String dn2DirName = consistentId.replace(".", "_");
 
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/" + dn2DirName, true));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/wal/" + dn2DirName, true));
@@ -2554,7 +2554,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return {@code Set} of metrics methods that have forbidden return types.
      * @throws Exception If failed to obtain metrics.
      */
-    protected Set<String> getInvalidMbeansMethods(Ignite ignite) throws Exception {
+    protected Set<String> getInvalidMbeansMethods(Ignite ignite) {
         Set<String> sysMetricsPackages = new HashSet<>();
         sysMetricsPackages.add("sun.management");
         sysMetricsPackages.add("javax.management");
@@ -2571,7 +2571,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             if (sysMetricsPackages.stream().anyMatch(clsName::startsWith))
                 continue;
 
-            Class c;
+            Class<?> c;
 
             try {
                 c = Class.forName(clsName);
@@ -2582,7 +2582,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 continue;
             }
 
-            for (Class interf : c.getInterfaces()) {
+            for (Class<?> interf : c.getInterfaces()) {
                 for (Method m : interf.getMethods()) {
                     if (!m.isAnnotationPresent(MXBeanDescription.class))
                         continue;
@@ -2815,11 +2815,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Distributed property: {@code GridJobProcessor#computeJobWorkerInterruptTimeout}.
      */
     protected DistributedChangeableProperty<Serializable> computeJobWorkerInterruptTimeout(Ignite n) {
-        DistributedChangeableProperty<Serializable> timeoutProperty = ((IgniteEx)n).context().distributedConfiguration()
+        DistributedChangeableProperty<Serializable> timeoutProp = ((IgniteEx)n).context().distributedConfiguration()
             .property(GridJobProcessor.COMPUTE_JOB_WORKER_INTERRUPT_TIMEOUT);
 
-        assertThat(timeoutProperty, notNullValue());
+        assertThat(timeoutProp, notNullValue());
 
-        return timeoutProperty;
+        return timeoutProp;
     }
 }

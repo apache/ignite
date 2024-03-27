@@ -202,15 +202,15 @@ public class ReducePartitionMapper {
         Set<ClusterNode> nodes;
 
         // Explicit partitions mapping is not applicable to replicated cache.
-        final AffinityAssignment topologyAssignment = cctx.affinity().assignment(topVer);
+        final AffinityAssignment topAssignment = cctx.affinity().assignment(topVer);
 
         if (cctx.isReplicated()) {
             // Mutable collection needed for this particular case.
             nodes = isReplicatedOnly && cacheIds.size() > 1 ?
-                new HashSet<>(topologyAssignment.nodes()) : topologyAssignment.nodes();
+                new HashSet<>(topAssignment.nodes()) : topAssignment.nodes();
         }
         else
-            nodes = topologyAssignment.primaryPartitionNodes();
+            nodes = topAssignment.primaryPartitionNodes();
 
         return narrowToCaches(cctx, nodes, cacheIds, topVer, null, isReplicatedOnly);
     }
@@ -355,15 +355,15 @@ public class ReducePartitionMapper {
         final GridCacheContext<?, ?> cctx, @Nullable final int[] parts) {
 
         // Explicit partitions mapping is not applicable to replicated cache.
-        final AffinityAssignment topologyAssignment = cctx.affinity().assignment(topVer);
+        final AffinityAssignment topAssignment = cctx.affinity().assignment(topVer);
 
         if (cctx.isReplicated())
-            return topologyAssignment.nodes();
+            return topAssignment.nodes();
 
         if (parts == null)
-            return topologyAssignment.primaryPartitionNodes();
+            return topAssignment.primaryPartitionNodes();
 
-        List<List<ClusterNode>> assignment = topologyAssignment.assignment();
+        List<List<ClusterNode>> assignment = topAssignment.assignment();
 
         Set<ClusterNode> nodes = new HashSet<>();
 

@@ -301,24 +301,24 @@ public class FullPageIdTable implements LoadedPagesMap {
     private int getKey(int cacheId, long pageId, int tag, boolean refresh) {
         int step = 1;
 
-        int index = U.safeAbs(FullPageId.hashCode(cacheId, pageId)) % capacity;
+        int idx = U.safeAbs(FullPageId.hashCode(cacheId, pageId)) % capacity;
 
         do {
-            long res = testKeyAt(index, cacheId, pageId, tag);
+            long res = testKeyAt(idx, cacheId, pageId, tag);
 
             if (res == EQUAL)
-                return index;
+                return idx;
             else if (res == EMPTY)
                 return -1;
             else if (res == OUTDATED)
-                return !refresh ? -2 : index;
+                return !refresh ? -2 : idx;
             else
                 assert res == REMOVED || res == NOT_EQUAL;
 
-            index++;
+            idx++;
 
-            if (index >= capacity)
-                index -= capacity;
+            if (idx >= capacity)
+                idx -= capacity;
         }
         while (++step <= maxSteps);
 
@@ -513,7 +513,7 @@ public class FullPageIdTable implements LoadedPagesMap {
     public int distanceFromIdeal(int cacheId, long pageId, int tag) {
         int step = 1;
 
-        int index = U.safeAbs(FullPageId.hashCode(cacheId, pageId)) % capacity;
+        int idx = U.safeAbs(FullPageId.hashCode(cacheId, pageId)) % capacity;
 
         int scans = 0;
         boolean found = false;
@@ -521,7 +521,7 @@ public class FullPageIdTable implements LoadedPagesMap {
         do {
             scans++;
 
-            long res = testKeyAt(index, cacheId, pageId, tag);
+            long res = testKeyAt(idx, cacheId, pageId, tag);
 
             if (res == EQUAL || res == OUTDATED) {
                 found = true;
@@ -533,10 +533,10 @@ public class FullPageIdTable implements LoadedPagesMap {
             else
                 assert res == REMOVED || res == NOT_EQUAL;
 
-            index++;
+            idx++;
 
-            if (index >= capacity)
-                index -= capacity;
+            if (idx >= capacity)
+                idx -= capacity;
         }
         while (++step <= maxSteps);
 

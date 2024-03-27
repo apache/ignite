@@ -97,7 +97,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
         self.start_async(**kwargs)
         self.await_started()
 
-    def await_started(self):
+    def await_started(self, nodes=None):
         """
         Awaits start finished.
         """
@@ -106,7 +106,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
 
         self.logger.info("Waiting for IgniteAware(s) to start ...")
 
-        self.await_event("Topology snapshot", self.startup_timeout_sec, from_the_beginning=True)
+        self.await_event("Topology snapshot", self.startup_timeout_sec, nodes=nodes, from_the_beginning=True)
 
     def start_node(self, node, **kwargs):
         self.init_shared(node)
@@ -254,17 +254,22 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
                                err_msg="Event [%s] was not triggered on '%s' in %d seconds" % (evt_message, node.name,
                                                                                                timeout_sec))
 
-    def await_event(self, evt_message, timeout_sec, from_the_beginning=False, backoff_sec=.1, log_file=None):
+    def await_event(self, evt_message, timeout_sec, nodes=None, from_the_beginning=False, backoff_sec=.1,
+                    log_file=None):
         """
         Await for specific event messages on all nodes.
         :param evt_message: Event message.
         :param timeout_sec: Number of seconds to check the condition for before failing.
+        :param nodes: Nodes to await event or None, for all nodes.
         :param from_the_beginning: If True, search for message from the beggining of log file.
         :param backoff_sec: Number of seconds to back off between each failure to meet the condition
                 before checking again.
         :param log_file: Explicit log file.
         """
-        for node in self.nodes:
+        if nodes is None:
+            nodes = self.nodes
+
+        for node in nodes:
             self.await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=from_the_beginning,
                                      backoff_sec=backoff_sec, log_file=log_file)
 

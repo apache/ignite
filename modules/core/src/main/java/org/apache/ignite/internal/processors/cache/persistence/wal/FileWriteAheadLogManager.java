@@ -518,8 +518,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                                     name, oldVal, newVal));
                             }
 
-                            if (newVal != null && newVal)
+                            if (newVal != null && newVal) {
                                 log.warning("CDC was disabled.");
+
+                                if (cctx.cdc() != null)
+                                    cctx.cdc().stop(true);
+                            }
                         });
 
                         dispatcher.registerProperty(cdcDisabled);

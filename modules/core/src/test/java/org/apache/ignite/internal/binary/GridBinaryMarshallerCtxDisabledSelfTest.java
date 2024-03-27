@@ -49,9 +49,9 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        BinaryContext context = new BinaryContext(BinaryCachingMetadataHandler.create(), cfg, new NullLogger());
+        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), cfg, new NullLogger());
 
-        marsh.setBinaryContext(context, cfg);
+        marsh.setBinaryContext(ctx, cfg);
 
         SimpleObject simpleObj = new SimpleObject();
 
@@ -188,29 +188,29 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            SimpleObject object = (SimpleObject)o;
+            SimpleObject obj = (SimpleObject)o;
 
-            if (b != object.b)
+            if (b != obj.b)
                 return false;
 
-            if (c != object.c)
+            if (c != obj.c)
                 return false;
 
-            if (!Arrays.equals(bArr, object.bArr))
-                return false;
-
-            // Probably incorrect - comparing Object[] arrays with Arrays.equals
-            if (!Arrays.equals(objArr, object.objArr))
-                return false;
-
-            if (enumVal != object.enumVal)
+            if (!Arrays.equals(bArr, obj.bArr))
                 return false;
 
             // Probably incorrect - comparing Object[] arrays with Arrays.equals
-            if (!Arrays.equals(enumArr, object.enumArr))
+            if (!Arrays.equals(objArr, obj.objArr))
                 return false;
 
-            return !(otherObj != null ? !otherObj.equals(object.otherObj) : object.otherObj != null);
+            if (enumVal != obj.enumVal)
+                return false;
+
+            // Probably incorrect - comparing Object[] arrays with Arrays.equals
+            if (!Arrays.equals(enumArr, obj.enumArr))
+                return false;
+
+            return !(otherObj != null ? !otherObj.equals(obj.otherObj) : obj.otherObj != null);
         }
     }
 

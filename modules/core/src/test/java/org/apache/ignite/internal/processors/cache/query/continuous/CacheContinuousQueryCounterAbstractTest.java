@@ -31,9 +31,11 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.CacheQueryEntryEvent;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -42,6 +44,9 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -56,6 +61,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Continuous queries counter tests.
@@ -75,6 +81,8 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
         cfg.setPeerClassLoadingEnabled(peerClassLoadingEnabled());
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
+
+        cfg.setDataStreamerThreadPoolSize(2);
 
         return cfg;
     }
@@ -225,6 +233,75 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
             assertEquals(3, (int)vals.get(0).get1());
             assertEquals(1L, (long)vals.get(0).get2());
         }
+    }
+
+    /**
+     * The main idea of the test is to emulate entries reordering after update counter is already defined.
+     * Thus we can obtain situation when entries from equal partition already obtained update counter but finally registered in different
+     * order due to some pauses in data streamer striped pool threads. Sprecial latch on event is for race emulation.
+     * This test use assumption that {@link org.apache.ignite.internal.processors.cache.GridCacheMapEntry#innerSet} raises
+     * {@code EVT_CACHE_OBJECT_PUT} after update counter was invoked.
+     */
+    @Test
+    public void testDataStreamerItemsReordered() throws IgniteInterruptedCheckedException {
+        AtomicInteger partitionWithSlowThread = new AtomicInteger(-1);
+        CountDownLatch partLatch = new CountDownLatch(1);
+
+        CacheConfiguration cacheCfg = new CacheConfiguration("ds-cq-test");
+        cacheCfg.setAffinity(new RendezvousAffinityFunction(false, 2));
+        IgniteCache<Integer, Integer> cache = grid(0).getOrCreateCache(cacheCfg);
+
+        grid(0).events().enableLocal(EventType.EVT_CACHE_OBJECT_PUT);
+
+        grid(0).events().localListen(e -> {
+            CacheEvent ce = (CacheEvent)e;
+            if (partitionWithSlowThread.compareAndSet(-1, ce.partition())) {
+                try {
+                    partLatch.await();
+                }
+                catch (InterruptedException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+
+            if (partitionWithSlowThread.get() == ce.partition()) {
+                partLatch.countDown();
+            }
+
+            return true;
+        }, EventType.EVT_CACHE_OBJECT_PUT);
+
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
+
+        ConcurrentHashMap<Integer, Integer> itemsHolder = new ConcurrentHashMap<>();
+
+        qry.setLocalListener(events -> {
+            for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : events) {
+                itemsHolder.put(evt.getKey(), evt.getValue());
+            }
+        });
+
+        cache.query(qry);
+
+        int itemsToProc = gridCount() * 5000;
+
+        try (IgniteDataStreamer<Integer, Integer> stmr = grid(0).dataStreamer("ds-cq-test")) {
+            stmr.allowOverwrite(true);
+            stmr.perNodeBufferSize(1024);
+            stmr.autoFlushFrequency(500);
+
+            // Stream entries.
+            for (int i = 0; i < itemsToProc; i++) {
+                stmr.addData(i, i);
+
+                if (i == 1024)
+                    stmr.tryFlush();
+            }
+
+            stmr.flush();
+        }
+
+        assertTrue(waitForCondition(() -> itemsToProc == itemsHolder.size(), 2000));
     }
 
     /**

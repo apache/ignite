@@ -30,22 +30,22 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
 import static java.lang.Math.min;
 import static org.apache.ignite.cache.query.Query.DFLT_PAGE_SIZE;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
 
 /**
  * Task that scan cache entries.
  */
 @GridInternal
-@GridVisorManagementTask
 public class CacheScanTask extends VisorOneNodeTask<CacheScanCommandArg, CacheScanTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -103,6 +103,13 @@ public class CacheScanTask extends VisorOneNodeTask<CacheScanCommandArg, CacheSc
             }
 
             return new CacheScanTaskResult(titles, entries);
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecurityPermissionSet requiredPermissions() {
+            // This task does nothing but delegates the call to the Ignite public API.
+            // Therefore, it is safe to execute task without any additional permissions check.
+            return NO_PERMISSIONS;
         }
 
         /**

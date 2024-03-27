@@ -156,9 +156,9 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
 
         executeContinuousQuery(ignite0.cache(DEFAULT_CACHE_NAME));
 
-        ListeningTestLogger listeningLogger = new ListeningTestLogger();
+        ListeningTestLogger listeningLog = new ListeningTestLogger();
 
-        log = listeningLogger;
+        log = listeningLog;
 
         LogListener lsnr = LogListener.matches(logStr ->
             logStr.contains("class org.apache.ignite.IgniteCheckedException: " +
@@ -166,7 +166,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
                 || logStr.contains("Failed to unmarshal continuous routine handler"
             )).build();
 
-        listeningLogger.registerListener(lsnr);
+        listeningLog.registerListener(lsnr);
 
         setExternalLoader = false;
 
@@ -259,10 +259,10 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
 
         qry.setLocalListener(
             new CacheEntryUpdatedListener<Integer, String>() {
-                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> events)
+                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> evts)
                     throws CacheEntryListenerException {
-                    for (CacheEntryEvent<? extends Integer, ? extends String> event : events)
-                        System.out.println("Key = " + event.getKey() + ", Value = " + event.getValue());
+                    for (CacheEntryEvent<? extends Integer, ? extends String> evt : evts)
+                        System.out.println("Key = " + evt.getKey() + ", Value = " + evt.getValue());
                 }
             }
         );

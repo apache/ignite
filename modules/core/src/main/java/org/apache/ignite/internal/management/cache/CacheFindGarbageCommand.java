@@ -60,12 +60,12 @@ public class CacheFindGarbageCommand
 
             printer.accept("Garbage found on node " + nodeEntry.getKey() + ":");
 
-            FindAndDeleteGarbageInPersistenceJobResult value = nodeEntry.getValue();
+            FindAndDeleteGarbageInPersistenceJobResult val = nodeEntry.getValue();
 
-            Map<Integer, Map<Integer, Long>> grpPartErrorsCount = value.checkResult();
+            Map<Integer, Map<Integer, Long>> grpPartErrorsCnt = val.checkResult();
 
-            if (!grpPartErrorsCount.isEmpty()) {
-                for (Map.Entry<Integer, Map<Integer, Long>> entry : grpPartErrorsCount.entrySet()) {
+            if (!grpPartErrorsCnt.isEmpty()) {
+                for (Map.Entry<Integer, Map<Integer, Long>> entry : grpPartErrorsCnt.entrySet()) {
                     for (Map.Entry<Integer, Long> e : entry.getValue().entrySet()) {
                         printer.accept(INDENT + "Group=" + entry.getKey() +
                             ", partition=" + e.getKey() +
