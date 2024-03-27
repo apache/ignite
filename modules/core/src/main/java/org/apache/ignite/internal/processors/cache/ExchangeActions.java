@@ -234,6 +234,13 @@ public class ExchangeActions {
     }
 
     /**
+     * @return {@code true} if activation is on full baseline topology.
+     */
+    public boolean activateFullBaseline() {
+        return activate() && stateChangeReq.fullBaseline();
+    }
+
+    /**
      * @return {@code True} if cluster state was changed.
      */
     public boolean changedClusterState() {
