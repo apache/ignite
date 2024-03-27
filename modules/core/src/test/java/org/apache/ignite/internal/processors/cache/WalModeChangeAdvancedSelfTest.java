@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -44,6 +45,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Concurrent and advanced tests for WAL state change.
@@ -287,6 +289,127 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         assertEquals(30, cache1.size());
         assertEquals(0, cache2.size());
+    }
+
+    /**
+     * Test cache cleanup on restart.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheGroupCleanup() throws Exception {
+        Ignite srv = startGrid(config(SRV_1, false, false));
+
+        srv.cluster().state(ACTIVE);
+
+        IgniteCache cache1 = srv.getOrCreateCache(cacheConfig(CACHE_NAME, CACHE_GROUP, PARTITIONED, TRANSACTIONAL));
+        IgniteCache cache2 = srv.getOrCreateCache(cacheConfig(CACHE_NAME_2, CACHE_GROUP, PARTITIONED, TRANSACTIONAL));
+
+        assertForAllNodes(CACHE_NAME, true);
+        assertForAllNodes(CACHE_NAME_2, true);
+
+        for (int i = 0; i < 10; i++) {
+            cache1.put(i, i);
+            cache2.put(i, i);
+        }
+
+        final Ignite finalSrv = srv;
+        assertThrowsWithCause(() -> finalSrv.cluster().disableWal(CACHE_NAME), IgniteException.class);
+        srv.cluster().disableWal(Arrays.asList(CACHE_NAME,CACHE_NAME_2));
+
+        assertForAllNodes(CACHE_NAME, false);
+        assertForAllNodes(CACHE_NAME_2, false);
+
+        for (int i = 10; i < 20; i++) {
+            cache1.put(i, i);
+            cache2.put(i, i);
+        }
+
+        assertEquals(cache1.size(), 20);
+        assertEquals(cache2.size(), 20);
+
+        assertThrowsWithCause(()-> finalSrv.cluster().enableWal(CACHE_NAME), IgniteException.class);
+        srv.cluster().enableWal(Arrays.asList(CACHE_NAME,CACHE_NAME_2));
+
+        assertForAllNodes(CACHE_NAME, true);
+        assertForAllNodes(CACHE_NAME_2, true);
+
+        assertEquals(cache1.size(), 20);
+        assertEquals(cache2.size(), 20);
+
+        stopAllGrids(true);
+
+        srv = startGrid(config(SRV_1, false, false));
+
+        srv.cluster().active(true);
+
+        cache1 = srv.cache(CACHE_NAME);
+        cache2 = srv.cache(CACHE_NAME_2);
+
+        assertForAllNodes(CACHE_NAME, true);
+        assertForAllNodes(CACHE_NAME_2, true);
+
+        assertEquals(20, cache1.size());
+        assertEquals(20, cache2.size());
+    }
+
+    /**
+     * Test cache cleanup on restart.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheAllCleanup() throws Exception {
+        Ignite srv = startGrid(config(SRV_1, false, false));
+
+        srv.cluster().active(true);
+
+        IgniteCache cache1 = srv.getOrCreateCache(cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL));
+        IgniteCache cache2 = srv.getOrCreateCache(cacheConfig(CACHE_NAME_2, PARTITIONED, TRANSACTIONAL));
+
+        assertForAllNodes(CACHE_NAME, true);
+        assertForAllNodes(CACHE_NAME_2, true);
+
+        for (int i = 0; i < 10; i++) {
+            cache1.put(i, i);
+            cache2.put(i, i);
+        }
+
+        srv.cluster().disableWal();
+
+        assertForAllNodes(CACHE_NAME, false);
+        assertForAllNodes(CACHE_NAME_2, false);
+
+        for (int i = 10; i < 20; i++) {
+            cache1.put(i, i);
+            cache2.put(i, i);
+        }
+
+        assertEquals(cache1.size(), 20);
+        assertEquals(cache2.size(), 20);
+
+        srv.cluster().enableWal();
+
+        assertForAllNodes(CACHE_NAME, true);
+        assertForAllNodes(CACHE_NAME_2, true);
+
+        assertEquals(cache1.size(), 20);
+        assertEquals(cache2.size(), 20);
+
+        stopAllGrids(true);
+
+        srv = startGrid(config(SRV_1, false, false));
+
+        srv.cluster().state(ACTIVE);
+
+        cache1 = srv.cache(CACHE_NAME);
+        cache2 = srv.cache(CACHE_NAME_2);
+
+        assertForAllNodes(CACHE_NAME, true);
+        assertForAllNodes(CACHE_NAME_2, true);
+
+        assertEquals(20, cache1.size());
+        assertEquals(20, cache2.size());
     }
 
     /** */

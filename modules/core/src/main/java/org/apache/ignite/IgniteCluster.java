@@ -545,6 +545,28 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public boolean disableWal(String cacheName) throws IgniteException;
 
     /**
+     * Disables write logging for specified caches from the one cache group.
+     *
+     * @param cacheNames Cache names.
+     * @return Whether WAL disabled by this call.
+     * @throws IgniteException If error occurs.
+     * @see #disableWal(String)
+     * @see #enableWal(String)
+     * @see #isWalEnabled(String)
+     */
+    public boolean disableWal(Collection<String> cacheNames) throws IgniteException;
+
+    /**
+     * Disables write-ahead logging for all caches.
+     *
+     * @throws IgniteException If error occurs.
+     * @see #disableWal(String)
+     * @see #enableWal(String)
+     * @see #isWalEnabled(String)
+     */
+    public Map<String,Boolean> disableWal() throws IgniteException;
+
+    /**
      * Enables write-ahead logging for specified cache. Restoring crash-recovery guarantees of a previous call to
      * {@link #disableWal(String)}.
      * <p>
@@ -567,6 +589,28 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @see #isWalEnabled(String)
      */
     public boolean enableWal(String cacheName) throws IgniteException;
+
+    /**
+     * Enables write logging for specified caches from the one cache group.
+     *
+     * @param cacheNames Cache names.
+     * @return Whether WAL disabled by this call.
+     * @throws IgniteException If error occurs.
+     * @see #disableWal(String)
+     * @see #enableWal(String)
+     * @see #isWalEnabled(String)
+     */
+    public boolean enableWal(Collection<String> cacheNames) throws IgniteException;
+
+    /**
+     * Enables write-ahead logging for all caches.
+     *
+     * @throws IgniteException If error occurs.
+     * @see #disableWal(String)
+     * @see #enableWal(String)
+     * @see #isWalEnabled(String)
+     */
+    public Map<String, Boolean> enableWal() throws IgniteException;
 
     /**
      * Checks if write-ahead logging is enabled for specified cache.
