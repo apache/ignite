@@ -1,0 +1,1 @@
+Automatic-Module-Name: org.apache.ignite.kubernetes
