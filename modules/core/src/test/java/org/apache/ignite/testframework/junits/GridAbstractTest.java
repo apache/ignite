@@ -733,6 +733,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         U.quietAndInfo(log(), ">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
         printJvmMemoryStatistic();
 
+        // Stop all threads started by runMultithreaded() methods.
+        GridTestUtils.stopThreads(log);
+
         try {
             runAfterTest();
         }
@@ -2217,9 +2220,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         U.quietAndInfo(log(), ">>> Stopping test class: " + testClassDescription() + " <<<");
 
         Exception err = null;
-
-        // Stop all threads started by runMultithreaded() methods.
-        GridTestUtils.stopThreads(log);
 
         // Safety.
         getTestResources().stopThreads();

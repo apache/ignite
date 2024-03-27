@@ -18,8 +18,9 @@
 package org.apache.ignite.common;
 
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -32,9 +33,6 @@ public class ClientSideCacheCreationDestructionWileTopologyChangeTest extends Cl
     /** **/
     IgniteInternalFuture topChangeProcFut;
 
-    /** **/
-    AtomicBoolean procTopChanges = new AtomicBoolean(true);
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -44,8 +42,6 @@ public class ClientSideCacheCreationDestructionWileTopologyChangeTest extends Cl
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        procTopChanges.set(false);
-
         topChangeProcFut.get();
 
         super.afterTest();
@@ -56,12 +52,15 @@ public class ClientSideCacheCreationDestructionWileTopologyChangeTest extends Cl
      */
     private IgniteInternalFuture asyncTopologyChanges() {
         return GridTestUtils.runAsync(() -> {
-            while (procTopChanges.get()) {
+            while (!Thread.interrupted()) {
                 try {
                     if (srv.cluster().nodes().size() < MAX_NODES_CNT)
                         startGrid(UUID.randomUUID().toString());
                 }
                 catch (Exception e) {
+                    if (X.hasCause(e, InterruptedException.class, IgniteInterruptedCheckedException.class))
+                        return;
+
                     fail("Unable to add or remove node: " + e);
                 }
             }

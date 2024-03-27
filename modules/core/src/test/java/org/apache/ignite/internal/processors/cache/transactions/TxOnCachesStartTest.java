@@ -90,7 +90,7 @@ public class TxOnCachesStartTest extends GridCommonAbstractTest {
 
         GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
-                while (true) {
+                while (!Thread.interrupted()) {
                     try (Transaction tx = client1.transactions().txStart()) {
                         /** Empty transaction, just testing {@link TransactionProxyImpl#leave} */
                     }

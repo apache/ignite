@@ -97,6 +97,7 @@ import org.apache.ignite.testframework.MemorizingAppenderTest;
 import org.apache.ignite.testframework.MessageOrderLogListenerTest;
 import org.apache.ignite.testframework.test.ConfigVariationsExecutionTest;
 import org.apache.ignite.testframework.test.ConfigVariationsTestSuiteBuilderTest;
+import org.apache.ignite.testframework.test.GridTestSafeThreadTest;
 import org.apache.ignite.testframework.test.ListeningTestLoggerTest;
 import org.apache.ignite.testframework.test.ParametersTest;
 import org.apache.ignite.testframework.test.VariationsIteratorTest;
@@ -174,6 +175,7 @@ import org.junit.runners.Suite;
     RebalanceWithDifferentThreadPoolSizeTest.class,
 
     ListeningTestLoggerTest.class,
+    GridTestSafeThreadTest.class,
     GridLongRunningInitNewCrdFutureDiagnosticsTest.class,
 
     MessageOrderLogListenerTest.class,
