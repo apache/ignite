@@ -159,8 +159,8 @@ import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.resource.GridInjectResourceContext;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
-import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
@@ -416,8 +416,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** Kernal start timestamp. */
     private long startTime = U.currentTimeMillis();
 
-    /** Spring context, potentially {@code null}. */
-    private GridSpringResourceContext rsrcCtx;
+    /** Injection context, potentially {@code null}. */
+    private final GridInjectResourceContext injectCtx;
 
     /**
      * The instance of scheduled thread pool starvation checker. {@code null} if starvation checks have been
@@ -460,10 +460,10 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     }
 
     /**
-     * @param rsrcCtx Optional Spring application context.
+     * @param injectCtx Optional injection context.
      */
-    public IgniteKernal(@Nullable GridSpringResourceContext rsrcCtx) {
-        this.rsrcCtx = rsrcCtx;
+    public IgniteKernal(@Nullable GridInjectResourceContext injectCtx) {
+        this.injectCtx = injectCtx;
     }
 
     /** {@inheritDoc} */
@@ -950,7 +950,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             // by all other managers and processors.
             GridResourceProcessor rsrcProc = new GridResourceProcessor(ctx);
 
-            rsrcProc.setSpringContext(rsrcCtx);
+            rsrcProc.setInjectionContext(injectCtx);
 
             scheduler = new IgniteSchedulerImpl(ctx);
 
