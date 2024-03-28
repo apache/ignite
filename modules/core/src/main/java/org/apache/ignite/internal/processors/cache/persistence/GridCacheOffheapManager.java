@@ -101,7 +101,6 @@ import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingRow;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
@@ -2533,21 +2532,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             CacheDataStore delegate = init0(false);
 
             delegate.insertRows(rows, initPred);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int cleanup(GridCacheContext cctx,
-            @Nullable List<MvccLinkAwareSearchRow> cleanupRows) throws IgniteCheckedException {
-            CacheDataStore delegate = init0(false);
-
-            return delegate.cleanup(cctx, cleanupRows);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void updateTxState(GridCacheContext cctx, CacheSearchRow row) throws IgniteCheckedException {
-            CacheDataStore delegate = init0(false);
-
-            delegate.updateTxState(cctx, row);
         }
 
         /** {@inheritDoc} */

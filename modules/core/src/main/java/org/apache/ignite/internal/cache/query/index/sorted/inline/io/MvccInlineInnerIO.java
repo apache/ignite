@@ -46,10 +46,5 @@ public class MvccInlineInnerIO extends AbstractInlineInnerIO {
     @Override public int mvccOperationCounter(long pageAddr, int idx) {
         return PageUtils.getInt(pageAddr, offset(idx) + inlineSize() + 24);
     }
-
-    /** {@inheritDoc} */
-    @Override public boolean storeMvccInfo() {
-        return true;
-    }
 }
 

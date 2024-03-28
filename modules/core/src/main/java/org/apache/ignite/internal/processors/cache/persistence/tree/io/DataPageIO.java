@@ -23,14 +23,12 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateResult;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_BIT_OFF;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_MASK;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_KEY_ABSENT_BEFORE_OFF;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.EntryPart.CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.EntryPart.EXPIRE_TIME;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.EntryPart.KEY;
@@ -74,14 +72,10 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
             if (mvccInfoSize > 0) {
                 assert MvccUtils.mvccVersionIsValid(row.mvccCoordinatorVersion(), row.mvccCounter(), row.mvccOperationCounter());
 
-                final int keyAbsentBeforeFlag = (row instanceof MvccUpdateResult) &&
-                    ((MvccUpdateResult)row).isKeyAbsentBefore() ? (1 << MVCC_KEY_ABSENT_BEFORE_OFF) : 0;
-
                 // xid_min.
                 PageUtils.putLong(addr, 0, row.mvccCoordinatorVersion());
                 PageUtils.putLong(addr, 8, row.mvccCounter());
-                PageUtils.putInt(addr, 16, row.mvccOperationCounter() | (row.mvccTxState() << MVCC_HINTS_BIT_OFF) |
-                    ((row.newMvccCoordinatorVersion() == MVCC_CRD_COUNTER_NA) ? keyAbsentBeforeFlag : 0));
+                PageUtils.putInt(addr, 16, row.mvccOperationCounter() | (row.mvccTxState() << MVCC_HINTS_BIT_OFF));
 
                 assert row.newMvccCoordinatorVersion() == MVCC_CRD_COUNTER_NA
                     || MvccUtils.mvccVersionIsValid(row.newMvccCoordinatorVersion(), row.newMvccCounter(), row.newMvccOperationCounter());
@@ -89,8 +83,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
                 // xid_max.
                 PageUtils.putLong(addr, 20, row.newMvccCoordinatorVersion());
                 PageUtils.putLong(addr, 28, row.newMvccCounter());
-                PageUtils.putInt(addr, 36, row.newMvccOperationCounter() | (row.newMvccTxState() << MVCC_HINTS_BIT_OFF) |
-                    ((row.newMvccCoordinatorVersion() == MVCC_CRD_COUNTER_NA) ? 0 : keyAbsentBeforeFlag));
+                PageUtils.putInt(addr, 36, row.newMvccOperationCounter() | (row.newMvccTxState() << MVCC_HINTS_BIT_OFF));
 
                 addr += mvccInfoSize;
             }
@@ -216,9 +209,6 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
 
         final int len = Math.min(curLen - rowOff, payloadSize);
 
-        final int keyAbsentBeforeFlag = (row instanceof MvccUpdateResult) &&
-            ((MvccUpdateResult)row).isKeyAbsentBefore() ? (1 << MVCC_KEY_ABSENT_BEFORE_OFF) : 0;
-
         if (type == EXPIRE_TIME)
             writeExpireTimeFragment(buf, row.expireTime(), rowOff, len, prevLen);
         else if (type == CACHE_ID)
@@ -227,12 +217,10 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
             writeMvccInfoFragment(buf,
                 row.mvccCoordinatorVersion(),
                 row.mvccCounter(),
-                row.mvccOperationCounter() | (row.mvccTxState() << MVCC_HINTS_BIT_OFF) |
-                    ((row.newMvccCoordinatorVersion() == MVCC_CRD_COUNTER_NA) ? keyAbsentBeforeFlag : 0),
+                row.mvccOperationCounter() | (row.mvccTxState() << MVCC_HINTS_BIT_OFF),
                 row.newMvccCoordinatorVersion(),
                 row.newMvccCounter(),
-                row.newMvccOperationCounter() | (row.newMvccTxState() << MVCC_HINTS_BIT_OFF) |
-                    ((row.newMvccCoordinatorVersion() == MVCC_CRD_COUNTER_NA) ? 0 : keyAbsentBeforeFlag),
+                row.newMvccOperationCounter() | (row.newMvccTxState() << MVCC_HINTS_BIT_OFF),
                 len);
         else if (type != VERSION) {
             // Write key or value.
@@ -244,23 +232,6 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
             writeVersionFragment(buf, row.version(), rowOff, len, prevLen);
 
         return len;
-    }
-
-    /**
-     * @param pageAddr Page address.
-     * @param dataOff Data offset.
-     * @param mvccCrd Mvcc coordinator.
-     * @param mvccCntr Mvcc counter.
-     * @param mvccOpCntr Operation counter.
-     * @param txState Tx state hint.
-     */
-    public void updateNewVersion(long pageAddr, int dataOff, long mvccCrd, long mvccCntr, int mvccOpCntr, byte txState) {
-        assertPageType(pageAddr);
-
-        long addr = pageAddr + dataOff;
-
-        updateNewVersion(addr, mvccCrd, mvccCntr,
-            (mvccOpCntr & ~MVCC_HINTS_MASK) | ((int)txState << MVCC_HINTS_BIT_OFF));
     }
 
     /**
