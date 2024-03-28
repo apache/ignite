@@ -343,11 +343,7 @@ public class DefragIndexFactory extends InlineIndexFactory {
             long newLink,
             DefragIndexRowImpl oldValue
         ) {
-            CacheDataRow newDataRow;
-
-            newDataRow = new CacheDataRowAdapter(newLink);
-
-            return new DefragIndexRowImpl(rowHnd, newDataRow, oldValue.values);
+            return new DefragIndexRowImpl(rowHnd, new CacheDataRowAdapter(newLink), oldValue.values);
         }
     }
 }
