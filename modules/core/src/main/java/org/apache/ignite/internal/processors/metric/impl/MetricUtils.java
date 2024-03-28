@@ -47,8 +47,14 @@ public class MetricUtils {
     /** Histogram name divider. */
     public static final char HISTOGRAM_NAME_DIVIDER = '_';
 
-    /** Metric name pattern. Permits empty string, spaces, tabs, dot at the start or end, consiquent dots. */
-    private static final Pattern NAME_PATTERN = Pattern.compile("(?!\\.)(?!.*\\.$)(?!.*\\.\\.)(?!.*[\\s]+.*).+");
+    /** Custom metrics registry name. */
+    public static final String CUSTOM_METRICS = "custom";
+
+    /** Name prefix of a custom metric. */
+    public static final String CUSTOM_METRICS_PREF = CUSTOM_METRICS + SEPARATOR;
+
+    /** Custom metric name pattern. Permits empty string, spaces, tabs, dot at the start or end, consiquent dots. */
+    private static final Pattern CUSTOM_NAME_PATTERN = Pattern.compile("(?!\\.)(?!.*\\.$)(?!.*\\.\\.)(?!.*[\\s]+.*).+");
 
     /**
      * Chechs and builds metric name.
@@ -59,14 +65,26 @@ public class MetricUtils {
     public static String metricName(String... names) {
         assert names != null && names.length > 0 : "Metric name must consist of at least one element.";
 
+        boolean custom = false;
+
         for (int i = 0; i < names.length; i++) {
-            if (F.isEmpty(names[i]) || !NAME_PATTERN.matcher(names[i]).matches()) {
+            if (i == 0)
+                custom = isCustomPref(names[i]);
+
+            if (F.isEmpty(names[i]) || (custom && !CUSTOM_NAME_PATTERN.matcher(names[i]).matches())) {
                 throw new IllegalArgumentException("Illegal metric or registry name: '" + names[i] + "'. Spaces, " +
                     "nulls, empty name or name parts are not allowed.");
             }
         }
 
         return String.join(SEPARATOR, names);
+    }
+
+    /**
+     * @return {@code True} if {@code name} is or start with the custom metric prefix.
+     */
+    public static boolean isCustomPref(String name) {
+        return name != null && (name.startsWith(CUSTOM_METRICS_PREF) || name.equals(CUSTOM_METRICS));
     }
 
     /**

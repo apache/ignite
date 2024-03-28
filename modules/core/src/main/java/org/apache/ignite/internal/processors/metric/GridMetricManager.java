@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMeta
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
@@ -62,8 +63,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.CUSTOM_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.fromFullName;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.isCustomPref;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
 
@@ -136,12 +138,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
     /** Whether cluster is in fully rebalanced state metric name. */
     public static final String REBALANCED = "Rebalanced";
-
-    /** Custom metrics registry name. */
-    public static final String CUSTOM_METRICS = "custom";
-
-    /** Custom metrics registry name. */
-    public static final String CUSTOM_METRICS_PREF = CUSTOM_METRICS + SEPARATOR;
 
     /** JVM interface to memory consumption info */
     private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
@@ -789,12 +785,12 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             return F.viewReadOnly(registries.values(), r -> r, r -> r.name().startsWith(CUSTOM_METRICS)).iterator();
         }
 
-        /** Ensures that {@code name} starts with {@link #CUSTOM_METRICS}. */
+        /** Ensures that {@code name} starts with {@link MetricUtils#CUSTOM_METRICS}. */
         private String customName(String name) {
             if (name == null)
                 return metricName(name);
 
-            if (name.startsWith(CUSTOM_METRICS_PREF) || name.equals(CUSTOM_METRICS))
+            if (isCustomPref(name))
                 return metricName(name);
 
             return metricName(CUSTOM_METRICS, name);

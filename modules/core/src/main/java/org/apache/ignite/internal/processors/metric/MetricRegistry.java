@@ -51,9 +51,9 @@ import org.apache.ignite.spi.metric.ObjectMetric;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CUSTOM_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.HitRateMetric.DFLT_SIZE;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.fromFullName;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.isCustomPref;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.lang.GridFunc.nonThrowableSupplier;
 
@@ -287,7 +287,7 @@ public class MetricRegistry implements IgniteMetricRegistry {
             return (T)old;
         }
 
-        if (!name().startsWith(CUSTOM_METRICS))
+        if (!isCustomPref(name()))
             configureMetrics(metric);
 
         return metric;
@@ -297,7 +297,7 @@ public class MetricRegistry implements IgniteMetricRegistry {
      * Assigns metric settings if {@code metric} is configurable.
      */
     private void configureMetrics(Metric metric) {
-        assert !name().startsWith(CUSTOM_METRICS) : "Custom metrics cannot be configured yet";
+        assert !isCustomPref(name()) : "Custom metrics cannot be configured yet";
 
         if (metric instanceof HistogramMetricImpl) {
             long[] cfgBounds = histogramCfgProvider.apply(metric.name());
