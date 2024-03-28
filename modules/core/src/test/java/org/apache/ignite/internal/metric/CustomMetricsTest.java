@@ -216,7 +216,7 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
 
         AtomicInteger val = new AtomicInteger();
 
-        String errTxt = "Illegal metric or registry name. Spaces, nulls or empty name parts are not allowed";
+        String errTxt = "Spaces, nulls, empty name or name parts are not allowed";
 
         assertThrows(
             null,

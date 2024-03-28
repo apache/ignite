@@ -61,8 +61,8 @@ public class MetricUtils {
 
         for (int i = 0; i < names.length; i++) {
             if (F.isEmpty(names[i]) || !NAME_PATTERN.matcher(names[i]).matches()) {
-                throw new IllegalArgumentException("Illegal metric or registry name. Spaces, nulls or empty name " +
-                    "parts are not allowed.");
+                throw new IllegalArgumentException("Illegal metric or registry name: '" + names[i] + "'. Spaces, " +
+                    "nulls, empty name or name parts are not allowed.");
             }
         }
 
