@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.metric.impl;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -45,20 +47,44 @@ public class MetricUtils {
     /** Histogram name divider. */
     public static final char HISTOGRAM_NAME_DIVIDER = '_';
 
+    /** Custom metrics registry name. */
+    public static final String CUSTOM_METRICS = "custom";
+
+    /** Name prefix of a custom metric. */
+    public static final String CUSTOM_METRICS_PREF = CUSTOM_METRICS + SEPARATOR;
+
+    /** Custom metric name pattern. Permits empty string, spaces, tabs, dot at the start or end, consiquent dots. */
+    private static final Pattern CUSTOM_NAME_PATTERN = Pattern.compile("(?!\\.)(?!.*\\.$)(?!.*\\.\\.)(?!.*[\\s]+.*).+");
+
     /**
-     * Builds metric name. Each parameter will separated by '.' char.
+     * Chechs and builds metric name.
      *
      * @param names Metric name parts.
      * @return Metric name.
      */
     public static String metricName(String... names) {
-        assert names != null;
-        assert ensureAllNamesNotEmpty(names);
+        assert names != null && names.length > 0 : "Metric name must consist of at least one element.";
 
-        if (names.length == 1)
-            return names[0];
+        boolean custom = false;
+
+        for (int i = 0; i < names.length; i++) {
+            if (i == 0)
+                custom = isCustomPref(names[i]);
+
+            if (F.isEmpty(names[i]) || (custom && !CUSTOM_NAME_PATTERN.matcher(names[i]).matches())) {
+                throw new IllegalArgumentException("Illegal metric or registry name: '" + names[i] + "'. Spaces, " +
+                    "nulls, empty name or name parts are not allowed.");
+            }
+        }
 
         return String.join(SEPARATOR, names);
+    }
+
+    /**
+     * @return {@code True} if {@code name} is or start with the custom metric prefix.
+     */
+    public static boolean isCustomPref(String name) {
+        return name != null && (name.startsWith(CUSTOM_METRICS_PREF) || name.equals(CUSTOM_METRICS));
     }
 
     /**
@@ -143,19 +169,6 @@ public class MetricUtils {
 
         while (v < update && !AtomicLongMetric.updater.compareAndSet(m, v, update))
             v = m.value();
-    }
-
-    /**
-     * Asserts all arguments are not empty.
-     *
-     * @param names Names.
-     * @return True.
-     */
-    private static boolean ensureAllNamesNotEmpty(String... names) {
-        for (int i = 0; i < names.length; i++)
-            assert names[i] != null && !names[i].isEmpty() : i + " element is empty [" + String.join(".", names) + "]";
-
-        return true;
     }
 
     /**
