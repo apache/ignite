@@ -909,9 +909,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             }
 
             @Override protected boolean onHasNext() throws IgniteCheckedException {
-                if (cur == null)
-                    cur = data.cursor(CacheDataRowAdapter.RowData.FULL_WITH_HINTS);
-
                 if (next != null)
                     return true;
 
@@ -941,7 +938,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     @Override public IgniteRebalanceIterator rebalanceIterator(IgniteDhtDemandedPartitionsMap parts,
         AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
-
         TreeMap<Integer, GridCloseableIterator<CacheDataRow>> iterators = new TreeMap<>();
 
         Set<Integer> missing = new HashSet<>();
@@ -1565,37 +1561,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public int cleanup(GridCacheContext cctx)
-            throws IgniteCheckedException {
-
-            if (!busyLock.enterBusy())
-                throw operationCancelledException();
-
-            try {
-                return cleanup0(cctx);
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-
-        /**
-         * @param cctx Cache context.
-         * @return Cleaned rows count.
-         */
-        private int cleanup0(GridCacheContext cctx) {
-            int res = 0;
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void updateTxState(GridCacheContext cctx, CacheSearchRow row)
-            throws IgniteCheckedException {
-            assert false; // ex mvcc code.
-        }
-
-        /** {@inheritDoc} */
         @Override public void update(GridCacheContext cctx,
             KeyCacheObject key,
             CacheObject val,
@@ -1819,7 +1784,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor(MvccSnapshot mvccSnapshot)
             throws IgniteCheckedException {
-
             return dataTree.find(null, null);
         }
 

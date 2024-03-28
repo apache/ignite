@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.tree;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -48,15 +46,6 @@ public class DataRow extends CacheDataRowAdapter {
 
         this.hash = hash;
         this.part = part;
-
-        try {
-            // We can not init data row lazily outside of entry lock because underlying buffer can be concurrently cleared.
-            if (rowData != RowData.LINK_ONLY)
-                initFromLink(grp, rowData, skipVer);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
 
         if (key != null)
             key.partition(part);

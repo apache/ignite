@@ -154,7 +154,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                 && upper == null
                 && grp.persistenceEnabled()
                 && dataPageScanEnabled.get()
-                && (c == null))
+                && c == null)
             return scanDataPages(asRowData(x));
 
         lastFindWithDataPageScan = FALSE;
@@ -250,11 +250,6 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                                 rows = new CacheDataRow[rowsCnt];
                             else
                                 clearTail(rows, rowsCnt);
-
-                            int r = 0;
-
-                            if (r == 0)
-                                continue; // No rows fetched in this page.
 
                             curRow = 0;
                             return true;
