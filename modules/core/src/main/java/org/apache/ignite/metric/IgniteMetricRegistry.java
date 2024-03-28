@@ -27,6 +27,7 @@ import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
@@ -98,6 +99,6 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
      */
     void remove(String name);
 
-    /** Resets all metrics of this metric registry. */
+    /** Calls {@link Metric#reset()} for all the registered metrics. */
     void reset();
 }
