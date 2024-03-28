@@ -125,6 +125,15 @@ public class ObjectSizeCalculator<Row> {
         long intArrOffset = GridUnsafe.arrayBaseOffset(int[].class);
         addSysClsSize(BigInteger.class, (c, bi) -> align( intArrOffset + ((bi.bitLength() + 31) >> 5) << 2));
         SYS_CLS_SIZE.put(Class.class, (c, v) -> 0);
+        long objArrOffset = GridUnsafe.arrayBaseOffset(Object[].class);
+        addSysClsSize(ArrayList.class, (c, l) -> {
+            long res = align(objArrOffset + l.size() * OBJ_REF_SIZE);
+
+            for (int i = 0; i < l.size(); i++)
+                res += c.sizeOf0(l.get(i), true);
+
+            return res;
+        });
     }
 
     /** */

@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTr
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.PerformanceStatisticsIoTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.QueryMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
@@ -611,6 +612,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             execPlan.target(fragment),
             execPlan.remotes(fragment));
 
+        MemoryTracker qryMemoryTracker = qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota());
+
         ExecutionContext<Row> ectx = new ExecutionContext<>(
             qry.context(),
             taskExecutor(),
@@ -620,7 +623,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             mapCtx.topologyVersion(),
             fragmentDesc,
             handler,
-            qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
+            qryMemoryTracker,
             createIoTracker(locNodeId, qry.localQueryId()),
             timeout,
             qryParams);
@@ -752,7 +755,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         Iterator<List<?>> it = new ConvertingClosableIterator<>(iteratorsHolder().iterator(qry.iterator()), ectx,
             fieldConverter, rowConverter, onClose);
 
-        return new ListFieldsQueryCursor<>(plan, it, ectx);
+        // Make yet another tracking layer for cursor.getAll(), so tracking hierarchy will look like:
+        // Row tracker -> Cursor memory tracker -> Query memory tracker -> Global memory tracker.
+        // It's required, since query memory tracker can be closed concurrently during getAll() and
+        // tracked data for cursor can be lost without additional tracker.
+        MemoryTracker curMemoryTracker = QueryMemoryTracker.create(qryMemoryTracker, cfg.getQueryMemoryQuota());
+
+        return new ListFieldsQueryCursor<>(plan, it, ectx, curMemoryTracker);
     }
 
     /** */

@@ -25,6 +25,10 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.ExecutionNodeMemoryTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.ObjectSizeCalculator;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.RowTracker;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
@@ -42,19 +46,28 @@ public class ListFieldsQueryCursor<Row> implements FieldsQueryCursor<List<?>>, Q
     private final List<GridQueryFieldMetadata> fieldsMeta;
 
     /** */
+    private final MemoryTracker qryMemoryTracker;
+
+    /** */
     private final boolean isQry;
 
     /**
      * @param plan Query plan.
      * @param it Iterator.
      * @param ectx Row converter.
+     * @param qryMemoryTracker Query memory tracker.
      */
-    public ListFieldsQueryCursor(MultiStepPlan plan, Iterator<List<?>> it, ExecutionContext<Row> ectx) {
+    public ListFieldsQueryCursor(
+        MultiStepPlan plan,
+        Iterator<List<?>> it,
+        ExecutionContext<Row> ectx,
+        MemoryTracker qryMemoryTracker
+    ) {
         FieldsMetadata metadata0 = plan.fieldsMetadata();
         assert metadata0 != null;
         fieldsMeta = metadata0.queryFieldsMetadata(ectx.getTypeFactory());
         isQry = plan.type() == QueryPlan.Type.QUERY;
-
+        this.qryMemoryTracker = qryMemoryTracker;
         this.it = it;
     }
 
@@ -67,11 +80,20 @@ public class ListFieldsQueryCursor<Row> implements FieldsQueryCursor<List<?>>, Q
     @Override public List<List<?>> getAll() {
         ArrayList<List<?>> res = new ArrayList<>();
 
+        RowTracker<List<?>> rowTracker = ExecutionNodeMemoryTracker.create(qryMemoryTracker,
+            ObjectSizeCalculator.OBJ_REF_SIZE);
+
         try {
-            getAll(res::add);
+            getAll(row -> {
+                rowTracker.onRowAdded(row);
+                res.add(row);
+            });
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
+        }
+        finally {
+            qryMemoryTracker.reset();
         }
 
         return res;

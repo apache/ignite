@@ -35,8 +35,14 @@ public class QueryMemoryTracker implements MemoryTracker {
     /** Currently allocated. */
     private final AtomicLong allocated = new AtomicLong();
 
+    /** Factory method. */
+    public static MemoryTracker create(MemoryTracker parent, long quota) {
+        return quota > 0 || parent != NoOpMemoryTracker.INSTANCE ?
+            new QueryMemoryTracker(parent, quota) : NoOpMemoryTracker.INSTANCE;
+    }
+
     /** */
-    public QueryMemoryTracker(MemoryTracker parent, long quota) {
+    QueryMemoryTracker(MemoryTracker parent, long quota) {
         this.parent = parent;
         this.quota = quota;
     }

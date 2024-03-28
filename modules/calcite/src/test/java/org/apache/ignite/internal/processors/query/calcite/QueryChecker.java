@@ -288,6 +288,9 @@ public abstract class QueryChecker {
     private boolean ordered;
 
     /** */
+    private boolean withRowsIterator;
+
+    /** */
     private Object[] params = X.EMPTY_OBJECT_ARRAY;
 
     /** */
@@ -301,6 +304,13 @@ public abstract class QueryChecker {
     /** */
     public QueryChecker ordered() {
         ordered = true;
+
+        return this;
+    }
+
+    /** */
+    public QueryChecker withRowsIterator(boolean flag) {
+        withRowsIterator = flag;
 
         return this;
     }
@@ -388,7 +398,14 @@ public abstract class QueryChecker {
             assertThat("Column names don't match", colNames, equalTo(expectedColumnNames));
         }
 
-        List<List<?>> res = cur.getAll();
+        List<List<?>> res;
+        if (withRowsIterator) {
+            res = new ArrayList<>();
+            for (Iterator<List<?>> it = cur.iterator(); it.hasNext(); )
+                res.add(it.next());
+        }
+        else
+            res = cur.getAll();
 
         if (expectedResultSize >= 0)
             assertEquals("Unexpected result size", expectedResultSize, res.size());
