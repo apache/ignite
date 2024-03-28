@@ -59,14 +59,21 @@ public class CrossObjectReferenceResolver {
     private BinaryWriterSchemaHolder schema;
 
     /** */
-    public CrossObjectReferenceResolver(BinaryInputStream in, BinaryOutputStream out) {
+    private CrossObjectReferenceResolver(BinaryInputStream in, BinaryOutputStream out) {
         reader = new RawBytesObjectReader(in);
 
         writer = out;
     }
 
     /** */
-    public void resolveCrossObjectReferences() {
+    public static void resolveCrossObjectReferences(BinaryInputStream in, BinaryOutputStream out) {
+        CrossObjectReferenceResolver resolver = new CrossObjectReferenceResolver(in, out);
+
+        resolver.resolveCrossObjectReferences();
+    }
+
+    /** */
+    private void resolveCrossObjectReferences() {
         leftBoundPos = reader.position();
 
         schema = new BinaryWriterSchemaHolder();
@@ -101,7 +108,7 @@ public class CrossObjectReferenceResolver {
 
                 copyBytes(Byte.BYTES); // Object type.
 
-                reader.readTypeId(writer);
+                reader.copyTypeId(writer);
 
                 int size = readAndCopyInt();
 
@@ -139,7 +146,7 @@ public class CrossObjectReferenceResolver {
             }
 
             default:
-                reader.readObject(writer);
+                reader.copyObject(writer);
         }
     }
 
@@ -278,7 +285,10 @@ public class CrossObjectReferenceResolver {
 
         reader.position(readerPos);
 
-        reader.readObject(writer);
+        if (CrossObjectReferenceDetector.isCrossObjectReferencesDetected(reader.getSource()))
+            resolveCrossObjectReferences(reader.getSource(), writer);
+        else
+            reader.copyObject(writer);
 
         reader.position(retPos);
     }
@@ -294,7 +304,7 @@ public class CrossObjectReferenceResolver {
 
     /** */
     private void copyBytes(int cnt) {
-        reader.readBytes(cnt, writer);
+        reader.copyBytes(cnt, writer);
     }
 
     /** */

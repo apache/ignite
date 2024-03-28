@@ -291,15 +291,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
         byte[] detachedData;
 
-        CrossObjectReferenceDetector detector = new CrossObjectReferenceDetector(BinaryHeapInputStream.create(arr, start));
+        BinaryHeapInputStream in = BinaryHeapInputStream.create(arr, start);
 
-        boolean isCrossObjRefDetected = detector.checkObject();
-
-        if (isCrossObjRefDetected) {
+        if (CrossObjectReferenceDetector.isCrossObjectReferencesDetected(in)) {
             try (BinaryOutputStream out = new BinaryHeapOutputStream(2 * len)) {
-                CrossObjectReferenceResolver resolver = new CrossObjectReferenceResolver(BinaryHeapInputStream.create(arr, start), out);
-
-                resolver.resolveCrossObjectReferences();
+                CrossObjectReferenceResolver.resolveCrossObjectReferences(in, out);
 
                 detachedData = out.arrayCopy();
             }

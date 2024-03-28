@@ -235,6 +235,22 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
     }
 
     /** */
+    @Test
+    public void testConsecutiveCrossObjectReferences() {
+        Object outerObj = createObject(outerObjType);
+
+        Object holder = createReferencesHolder(outerObj);
+
+        Object enclosingHolder = createReferencesHolder(holder);
+
+        Object doubleEnclosingHolder = createReferencesHolder(enclosingHolder);
+
+        Object[] arr = new Object[] {createReferencesHolder(outerObj), holder, enclosingHolder, doubleEnclosingHolder};
+
+        checkPutGetRemove(arr, arr);
+    }
+
+    /** */
     private Object createReferencesHolder(Object outerObj) {
         switch (serializationMode) {
             case RAW:

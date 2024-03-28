@@ -45,7 +45,7 @@ public class RawBytesObjectReader implements BinaryPositionReadable {
     }
 
     /** */
-    public void readObject(BinaryOutputStream out) {
+    public void copyObject(BinaryOutputStream out) {
         int startPos = in.position();
 
         skipObject();
@@ -54,7 +54,7 @@ public class RawBytesObjectReader implements BinaryPositionReadable {
     }
 
     /** */
-    public void readTypeId(BinaryOutputStream out) {
+    public void copyTypeId(BinaryOutputStream out) {
         int startPos = in.position();
 
         skipTypeId();
@@ -63,7 +63,7 @@ public class RawBytesObjectReader implements BinaryPositionReadable {
     }
 
     /** */
-    public void readBytes(int cnt, BinaryOutputStream out) {
+    public void copyBytes(int cnt, BinaryOutputStream out) {
         assert cnt >= 0;
 
         if (cnt == 0)
@@ -320,6 +320,11 @@ public class RawBytesObjectReader implements BinaryPositionReadable {
 
             skipBytes(in.readInt());
         }
+    }
+
+    /** */
+    public BinaryInputStream getSource() {
+        return in;
     }
 
     /** */

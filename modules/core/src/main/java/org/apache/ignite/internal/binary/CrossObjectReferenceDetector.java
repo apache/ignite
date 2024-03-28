@@ -32,17 +32,26 @@ class CrossObjectReferenceDetector {
     private int objLeftBoundaryPos;
 
     /** */
-    CrossObjectReferenceDetector(BinaryInputStream in) {
+    private CrossObjectReferenceDetector(BinaryInputStream in) {
         reader = new RawBytesObjectReader(in);
     }
 
     /** */
-    boolean checkObject() {
-        assert reader.peekByte() == GridBinaryMarshaller.OBJ;
+    static boolean isCrossObjectReferencesDetected(BinaryInputStream inputStream) {
+        CrossObjectReferenceDetector detector = new CrossObjectReferenceDetector(inputStream);
 
+        return detector.checkObject();
+    }
+
+    /** */
+    private boolean checkObject() {
         objLeftBoundaryPos = reader.position();
 
-        return findInNextObject();
+        boolean res = findInNextObject();
+
+        reader.position(objLeftBoundaryPos);
+
+        return res;
     }
 
     /** */
