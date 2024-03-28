@@ -19,7 +19,6 @@ package org.apache.ignite.metric;
 
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Allows to manage custom metrics.
@@ -47,18 +46,7 @@ public interface IgniteMetrics extends Iterable<ReadOnlyMetricRegistry> {
      * @param registryName name part to add to the prefix "custom.".
      * @return {@link IgniteMetricRegistry} registry.
      */
-    IgniteMetricRegistry customRegistry(String registryName);
-
-
-    /**
-     * Gets custom metric registry.
-     * <p>
-     * Note: Names of custom metric registries always start with 'custom.'.
-     *
-     * @param registryName Registry name.
-     * @return Certain read-only metric registry. {@code Null} if registry is not found.
-     */
-    @Nullable ReadOnlyMetricRegistry findRegistry(String registryName);
+    IgniteMetricRegistry getOrCreate(String registryName);
 
     /**
      * Removes custom metric registry.
@@ -67,5 +55,5 @@ public interface IgniteMetrics extends Iterable<ReadOnlyMetricRegistry> {
      *
      * @param registryName Registry name starting with 'custom.'.
      */
-    void removeCustomRegistry(String registryName);
+    void remove(String registryName);
 }

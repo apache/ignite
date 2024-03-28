@@ -42,12 +42,7 @@ import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
 import org.apache.ignite.metric.IgniteMetricRegistry;
-import org.apache.ignite.spi.metric.BooleanMetric;
-import org.apache.ignite.spi.metric.DoubleMetric;
-import org.apache.ignite.spi.metric.IntMetric;
-import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
-import org.apache.ignite.spi.metric.ObjectMetric;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -95,8 +90,8 @@ public class MetricRegistry implements IgniteMetricRegistry {
         return (M)metrics.get(name);
     }
 
-    /** {@inheritDoc} */
-    @Override public void reset() {
+    /** Resets state of this metric registry. */
+    public void reset() {
         for (Metric m : metrics.values())
             m.reset();
     }
@@ -138,28 +133,28 @@ public class MetricRegistry implements IgniteMetricRegistry {
 
 
     /** {@inheritDoc} */
-    @Override public BooleanMetric register(String name, BooleanSupplier supplier, @Nullable String desc) {
-        return addMetric(name, new BooleanGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
+    @Override public void register(String name, BooleanSupplier supplier, @Nullable String desc) {
+        addMetric(name, new BooleanGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /** {@inheritDoc} */
-    @Override public DoubleMetric register(String name, DoubleSupplier supplier, @Nullable String desc) {
-        return addMetric(name, new DoubleGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
+    @Override public void register(String name, DoubleSupplier supplier, @Nullable String desc) {
+        addMetric(name, new DoubleGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /** {@inheritDoc} */
-    @Override public IntMetric register(String name, IntSupplier supplier, @Nullable String desc) {
-        return addMetric(name, new IntGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
+    @Override public void register(String name, IntSupplier supplier, @Nullable String desc) {
+        addMetric(name, new IntGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /** {@inheritDoc} */
-    @Override public LongMetric register(String name, LongSupplier supplier, @Nullable String desc) {
-        return addMetric(name, new LongGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
+    @Override public void register(String name, LongSupplier supplier, @Nullable String desc) {
+        addMetric(name, new LongGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /** {@inheritDoc} */
-    @Override public <T> ObjectMetric register(String name, Supplier<T> supplier, Class<T> type, @Nullable String desc) {
-        return addMetric(name, new ObjectGauge<>(metricName(regName, name), desc, nonThrowableSupplier(supplier, log), type));
+    @Override public <T> void register(String name, Supplier<T> supplier, Class<T> type, @Nullable String desc) {
+        addMetric(name, new ObjectGauge<>(metricName(regName, name), desc, nonThrowableSupplier(supplier, log), type));
     }
 
     /**

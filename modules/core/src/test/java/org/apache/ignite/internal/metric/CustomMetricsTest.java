@@ -69,7 +69,7 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
                 customRegs.add(r.name());
         });
 
-        customRegs.forEach(r -> grid(0).metrics().removeCustomRegistry(r));
+        customRegs.forEach(r -> grid(0).metrics().remove(r));
 
         grid(0).services().cancelAll();
 
@@ -81,13 +81,15 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testWithService() {
-        assertNull(grid(0).metrics().findRegistry(TestCustomMetricsService.regName("svc")));
+        assertFalse(grid(0).metrics().getOrCreate(TestCustomMetricsService.regName("svc")).iterator().hasNext());
+
+        grid(0).metrics().remove("svc");
 
         grid(0).services().deployNodeSingleton("svc", new TestCustomMetricsService());
 
         TestService svc = grid(0).services().serviceProxy("svc", TestService.class, true);
 
-        IgniteMetricRegistry svcReg = grid(0).metrics().customRegistry(TestCustomMetricsService.regName("svc"));
+        IgniteMetricRegistry svcReg = grid(0).metrics().getOrCreate(TestCustomMetricsService.regName("svc"));
 
         IntMetric intMetric = svcReg.findMetric(TestCustomMetricsService.COUNTER_METRIC_NAME);
         BooleanMetric boolMetric = svcReg.findMetric(TestCustomMetricsService.LOAD_THRESHOLD_METRIC_NAME);
@@ -138,7 +140,9 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
 
         AtomicInteger metric = new AtomicInteger();
 
-        IntMetric read = metrics.customRegistry("admin").register("intMetric", metric::get, null);
+        metrics.getOrCreate("admin").register("intMetric", metric::get, null);
+
+        IntMetric read = metrics.getOrCreate("admin").findMetric("intMetric");
 
         metric.set(1);
         assertEquals(1, read.value());
@@ -172,17 +176,17 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
 
         AtomicInteger val = new AtomicInteger();
 
-        customMetrics.customRegistry(GridMetricManager.SYS_METRICS).register(name, val::get, null);
+        customMetrics.getOrCreate(GridMetricManager.SYS_METRICS).register(name, val::get, null);
 
-        customMetrics.customRegistry(CUSTOM_METRICS).register(fullName, val::get, null);
+        customMetrics.getOrCreate(CUSTOM_METRICS).register(fullName, val::get, null);
 
         assertNull(sysMetrics.registry(GridMetricManager.SYS_METRICS).findMetric(name));
 
         String fullCustomName = MetricUtils.metricName(CUSTOM_METRICS, fullName);
 
-        assertEquals(fullCustomName, customMetrics.customRegistry(GridMetricManager.SYS_METRICS).findMetric(name).name());
+        assertEquals(fullCustomName, customMetrics.getOrCreate(GridMetricManager.SYS_METRICS).findMetric(name).name());
 
-        assertEquals(fullCustomName, customMetrics.customRegistry(CUSTOM_METRICS).findMetric(fullName).name());
+        assertEquals(fullCustomName, customMetrics.getOrCreate(CUSTOM_METRICS).findMetric(fullName).name());
 
         for (ReadOnlyMetricRegistry r : customMetrics)
             assertTrue(r.name().startsWith(CUSTOM_METRICS));
@@ -199,11 +203,13 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
         AtomicInteger intGauge = new AtomicInteger();
         LongAdder longGauge = new LongAdder();
 
-        assertNotNull(metrics.customRegistry("test").register("intMetric", intGauge::get, null));
+        metrics.getOrCreate("test").register("intMetric", intGauge::get, null);
+
+        assertNotNull(metrics.getOrCreate("test").findMetric("intMetric"));
 
         assertThrows(
             null,
-            () -> metrics.customRegistry("test").register("intMetric", longGauge::sum, null),
+            () -> metrics.getOrCreate("test").register("intMetric", longGauge::sum, null),
             IgniteException.class,
             "Other metric with name 'intMetric' is already registered"
         );
@@ -220,121 +226,154 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
 
         assertThrows(
             null,
-            () -> metrics.customRegistry("").register("intMetric1", val::get, "intMetric1Desc"),
+            () -> {
+                metrics.getOrCreate("").register("intMetric1", val::get, "intMetric1Desc");
+                return null;
+            },
             IllegalArgumentException.class,
             errTxt
         );
 
         assertThrows(
             null,
-            () -> metrics.customRegistry(null).register("intMetric1", val::get, "intMetric1Desc"),
+            () -> {
+                metrics.getOrCreate(null).register("intMetric1", val::get, "intMetric1Desc");
+                return null;
+            },
             IllegalArgumentException.class,
             errTxt
         );
 
         assertThrows(
             null,
-            () -> metrics.customRegistry("myreg").register(null, val::get, "intMetric1Desc"),
+            () -> {
+                metrics.getOrCreate("myreg").register(null, val::get, "intMetric1Desc");
+                return null;
+            },
             IllegalArgumentException.class,
             errTxt
         );
 
         assertThrows(
             null,
-            () -> metrics.customRegistry(CUSTOM_METRICS + ' ').register("intMetric1", val::get, "intMetric1Desc"),
+            () -> {
+                metrics.getOrCreate(CUSTOM_METRICS + ' ').register("intMetric1", val::get, "intMetric1Desc");
+                return null;
+            },
             IllegalArgumentException.class,
             errTxt
         );
 
         assertThrows(
             null,
-            () -> metrics.customRegistry(" \t myreg ").register("intMetric1", val::get, "intMetric1Desc"),
+            () -> {
+                metrics.getOrCreate(" \t myreg ").register("intMetric1", val::get, "intMetric1Desc");
+                return null;
+            },
             IllegalArgumentException.class,
             errTxt
         );
 
         assertThrows(
             null,
-            () -> metrics.customRegistry(" \t ").register("intMetric1", val::get, "intMetric1Desc"),
+            () -> {
+                metrics.getOrCreate(" \t ").register("intMetric1", val::get, "intMetric1Desc");
+                return null;
+            },
             IllegalArgumentException.class,
             errTxt
         );
 
         assertThrows(
             null,
-            () -> metrics.customRegistry("a.b").register(" \t  c . \t d \t .  \t intMetric", val::get, null),
+            () -> {
+                metrics.getOrCreate("a.b").register(" \t  c . \t d \t .  \t intMetric", val::get, null);
+                return null;
+            },
             IllegalArgumentException.class,
             errTxt
         );
 
-        assertNotNull(metrics.findRegistry(CUSTOM_METRICS + ".a.b"));
+        assertNotNull(metrics.getOrCreate(CUSTOM_METRICS + ".a.b"));
 
         assertThrows(
             null,
-            () -> metrics.customRegistry("myreg").register("intValues..intMetric1", val::get, "intMetric1Desc"),
-            IllegalArgumentException.class,
-            errTxt
-        );
-
-        assertThrows(
-            null,
-            () -> metrics.customRegistry("myreg.").register("intValues.intMetric1", val::get, "intMetric1Desc"),
-            IllegalArgumentException.class,
-            errTxt
-        );
-
-        assertThrows(
-            null,
-            () -> metrics.customRegistry(".myreg.").register("intValues.intMetric1", val::get, "intMetric1Desc"),
+            () -> {
+                metrics.getOrCreate("myreg").register("intValues..intMetric1", val::get, "intMetric1Desc");
+                return null;
+            },
             IllegalArgumentException.class,
             errTxt
         );
 
         assertThrows(
             null,
-            () -> metrics.customRegistry("myreg..reg2").register("intValues.intMetric1", val::get, "intMetric1Desc"),
+            () -> {
+                metrics.getOrCreate("myreg.").register("intValues.intMetric1", val::get, "intMetric1Desc");
+                return null;
+            },
             IllegalArgumentException.class,
             errTxt
         );
 
-        metrics.customRegistry(CUSTOM_METRICS).register("intMetric1", val::get, "intMetric1Desc");
+        assertThrows(
+            null,
+            () -> {
+                metrics.getOrCreate(".myreg.").register("intValues.intMetric1", val::get, "intMetric1Desc");
+                return null;
+            },
+            IllegalArgumentException.class,
+            errTxt
+        );
+
+        assertThrows(
+            null,
+            () -> {
+                metrics.getOrCreate("myreg..reg2").register("intValues.intMetric1", val::get, "intMetric1Desc");
+                return null;
+            },
+            IllegalArgumentException.class,
+            errTxt
+        );
+
+        metrics.getOrCreate(CUSTOM_METRICS).register("intMetric1", val::get, "intMetric1Desc");
 
         assertEquals(CUSTOM_METRICS + ".intMetric1",
-            metrics.findRegistry(CUSTOM_METRICS).findMetric("intMetric1").name());
-        assertEquals("intMetric1Desc", metrics.findRegistry(CUSTOM_METRICS).findMetric("intMetric1").description());
+            metrics.getOrCreate(CUSTOM_METRICS).findMetric("intMetric1").name());
+        assertEquals("intMetric1Desc", metrics.getOrCreate(CUSTOM_METRICS).findMetric("intMetric1").description());
 
-        metrics.customRegistry("abc").register("intMetric1", val::get, null);
-        metrics.customRegistry(CUSTOM_METRICS + ".abc").register("intMetric1", val::get, null);
-        metrics.customRegistry("abc").register("intMetric2", val::get, null);
-        metrics.customRegistry(CUSTOM_METRICS + ".abc").register("intMetric2", val::get, null);
+        metrics.getOrCreate("abc").register("intMetric1", val::get, null);
+        metrics.getOrCreate(CUSTOM_METRICS + ".abc").register("intMetric1", val::get, null);
+        metrics.getOrCreate("abc").register("intMetric2", val::get, null);
+        metrics.getOrCreate(CUSTOM_METRICS + ".abc").register("intMetric2", val::get, null);
 
         assertEquals(CUSTOM_METRICS + ".abc.intMetric2",
-            metrics.findRegistry(CUSTOM_METRICS + ".abc").findMetric("intMetric2").name());
+            metrics.getOrCreate(CUSTOM_METRICS + ".abc").findMetric("intMetric2").name());
         assertEquals(CUSTOM_METRICS + ".abc.intMetric1",
-            metrics.findRegistry(CUSTOM_METRICS + ".abc").findMetric("intMetric1").name());
+            metrics.getOrCreate(CUSTOM_METRICS + ".abc").findMetric("intMetric1").name());
 
-        assertNull(metrics.findRegistry(CUSTOM_METRICS + ".custom.abc"));
+        assertFalse(metrics.getOrCreate(CUSTOM_METRICS + ".custom.abc").iterator().hasNext());
 
-        metrics.customRegistry(CUSTOM_METRICS + ".custom").register("intMetric10", val::get, null);
+        metrics.getOrCreate(CUSTOM_METRICS + ".custom").register("intMetric10", val::get, null);
         assertEquals(CUSTOM_METRICS + ".custom.intMetric10",
-            metrics.findRegistry(CUSTOM_METRICS + ".custom").findMetric("intMetric10").name());
+            metrics.getOrCreate(CUSTOM_METRICS + ".custom").findMetric("intMetric10").name());
 
-        metrics.customRegistry("abc").register("cde.intMetric1", val::get, null);
-
-        assertEquals(CUSTOM_METRICS + ".abc.cde.intMetric1",
-            metrics.findRegistry(CUSTOM_METRICS + ".abc").findMetric("cde.intMetric1").name());
-
-        metrics.customRegistry("abc.cde").register("intMetric1", val::get, null);
+        metrics.getOrCreate("abc").register("cde.intMetric1", val::get, null);
 
         assertEquals(CUSTOM_METRICS + ".abc.cde.intMetric1",
-            metrics.findRegistry(CUSTOM_METRICS + ".abc").findMetric("cde.intMetric1").name());
+            metrics.getOrCreate(CUSTOM_METRICS + ".abc").findMetric("cde.intMetric1").name());
 
-        assertNotNull(metrics.findRegistry(CUSTOM_METRICS + ".a.b"));
+        metrics.getOrCreate("abc.cde").register("intMetric1", val::get, null);
 
-        metrics.customRegistry("CuStOm").register("intMetric300", val::get, null);
+        assertEquals(CUSTOM_METRICS + ".abc.cde.intMetric1",
+            metrics.getOrCreate(CUSTOM_METRICS + ".abc").findMetric("cde.intMetric1").name());
+
+        assertNotNull(metrics.getOrCreate(CUSTOM_METRICS + ".a.b"));
+
+        metrics.getOrCreate("CuStOm").register("intMetric300", val::get, null);
 
         assertEquals(CUSTOM_METRICS + ".CuStOm.intMetric300",
-            metrics.findRegistry(CUSTOM_METRICS + ".CuStOm").findMetric("intMetric300").name());
+            metrics.getOrCreate(CUSTOM_METRICS + ".CuStOm").findMetric("intMetric300").name());
     }
 
     /** Tests null supplier metric. */
@@ -342,9 +381,11 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
     public void testNullSupplier() {
         IgniteMetrics metrics = grid(0).metrics();
 
-        assertNotNull(metrics.customRegistry("test").register("intMetric", (IntSupplier)null, "intMetric1Desc"));
+        metrics.getOrCreate("test").register("intMetric", (IntSupplier)null, "intMetric1Desc");
 
-        IntMetric read = metrics.customRegistry("test").findMetric("intMetric");
+        assertNotNull(metrics.getOrCreate("test").findMetric("intMetric"));
+
+        IntMetric read = metrics.getOrCreate("test").findMetric("intMetric");
 
         assertEquals(0, read.value());
     }
@@ -380,13 +421,13 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
         @Override public void init() throws Exception {
             remoteId = new AtomicReference<>();
 
-            ignite.metrics().customRegistry(regName(ctx.name())).register(COUNTER_METRIC_NAME,
+            ignite.metrics().getOrCreate(regName(ctx.name())).register(COUNTER_METRIC_NAME,
                 metricValue::get, "Counter of speceific service invocation.");
 
-            ignite.metrics().customRegistry(regName(ctx.name())).register(LOAD_THRESHOLD_METRIC_NAME,
+            ignite.metrics().getOrCreate(regName(ctx.name())).register(LOAD_THRESHOLD_METRIC_NAME,
                 () -> metricValue.get() >= 100, "Load flag.");
 
-            ignite.metrics().customRegistry(regName(ctx.name())).register(LOAD_REMOTE_SYSTEM_CLASS_ID,
+            ignite.metrics().getOrCreate(regName(ctx.name())).register(LOAD_REMOTE_SYSTEM_CLASS_ID,
                 () -> remoteId.get(), UUID.class, "Remote system class id.");
         }
 
@@ -394,7 +435,7 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
         @Override public void cancel() {
             refresh();
 
-            ignite.metrics().customRegistry(regName(ctx.name())).remove(COUNTER_METRIC_NAME);
+            ignite.metrics().getOrCreate(regName(ctx.name())).remove(COUNTER_METRIC_NAME);
         }
 
         /** {@inheritDoc} */

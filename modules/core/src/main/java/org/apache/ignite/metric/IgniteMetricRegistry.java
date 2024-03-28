@@ -23,12 +23,6 @@ import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.lang.IgniteExperimental;
-import org.apache.ignite.spi.metric.BooleanMetric;
-import org.apache.ignite.spi.metric.DoubleMetric;
-import org.apache.ignite.spi.metric.IntMetric;
-import org.apache.ignite.spi.metric.LongMetric;
-import org.apache.ignite.spi.metric.Metric;
-import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,9 +40,8 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
      * @param name Metric name.
      * @param supplier Metric value supplier.
      * @param desc Metric description.
-     * @return New or previously registered {@link IntMetric}.
      */
-    IntMetric register(String name, IntSupplier supplier, @Nullable String desc);
+    void register(String name, IntSupplier supplier, @Nullable String desc);
 
     /**
      * Registers a long which value will be queried from the specified supplier.
@@ -56,9 +49,8 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
      * @param name Metric name.
      * @param supplier Metric value supplier.
      * @param desc Metric description.
-     * @return New or previously registered {@link LongMetric}.
      */
-    LongMetric register(String name, LongSupplier supplier, @Nullable String desc);
+    void register(String name, LongSupplier supplier, @Nullable String desc);
 
     /**
      * Registers a double metric which value will be queried from the specified supplier.
@@ -66,9 +58,8 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
      * @param name Metric name.
      * @param supplier Metric value supplier.
      * @param desc Metric description.
-     * @return New or previously registered {@link DoubleMetric}.
      */
-    DoubleMetric register(String name, DoubleSupplier supplier, @Nullable String desc);
+    void register(String name, DoubleSupplier supplier, @Nullable String desc);
 
     /**
      * Registers an object metric which value will be queried from the specified supplier.
@@ -78,9 +69,8 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
      * @param type Metric value type.
      * @param desc Metric description.
      * @param <T> Metric value type.
-     * @return New or previously registered {@link ObjectMetric}.
      */
-    <T> ObjectMetric<T> register(String name, Supplier<T> supplier, Class<T> type, @Nullable String desc);
+    <T> void register(String name, Supplier<T> supplier, Class<T> type, @Nullable String desc);
 
     /**
      * Registers a boolean metric which value will be queried from the specified supplier.
@@ -88,9 +78,8 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
      * @param name Metric name.
      * @param supplier Metric value supplier.
      * @param desc Metric description.
-     * @return New or previously registered {@link BooleanMetric}.
      */
-    BooleanMetric register(String name, BooleanSupplier supplier, @Nullable String desc);
+    void register(String name, BooleanSupplier supplier, @Nullable String desc);
 
     /**
      * Removes metrics with the {@code name}.
@@ -98,7 +87,4 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
      * @param name Metric name..
      */
     void remove(String name);
-
-    /** Calls {@link Metric#reset()} for all the registered metrics. */
-    void reset();
 }

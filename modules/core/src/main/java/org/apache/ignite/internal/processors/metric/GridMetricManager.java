@@ -766,18 +766,13 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Custom metrics impl. */
     private class CustomMetricsImpl implements IgniteMetrics {
         /** {@inheritDoc} */
-        @Override public @Nullable ReadOnlyMetricRegistry findRegistry(String registryName) {
-            return registries.get(customName(registryName));
+        @Override public IgniteMetricRegistry getOrCreate(String registryName) {
+            return registry(customName(registryName));
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteMetricRegistry customRegistry(String registryName) {
-            return GridMetricManager.this.registry(customName(registryName));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void removeCustomRegistry(String registryName) {
-            remove(customName(registryName), false);
+        @Override public void remove(String registryName) {
+            GridMetricManager.this.remove(customName(registryName), false);
         }
 
         /** {@inheritDoc} */

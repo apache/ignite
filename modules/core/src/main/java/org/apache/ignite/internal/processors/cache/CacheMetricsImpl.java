@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -44,7 +43,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -58,10 +56,6 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Rebalance rate interval. */
     private static final int REBALANCE_RATE_INTERVAL = IgniteSystemProperties.getInteger(
         IgniteSystemProperties.IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL, 60000);
-
-    /** Onheap peek modes. */
-    private static final CachePeekMode[] ONHEAP_PEEK_MODES = new CachePeekMode[] {
-        CachePeekMode.ONHEAP, CachePeekMode.PRIMARY, CachePeekMode.BACKUP, CachePeekMode.NEAR};
 
     /** */
     private static final long NANOS_IN_MICROSECOND = 1000L;
@@ -227,21 +221,6 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Tx collisions info. */
     private volatile Supplier<List<Map.Entry</* Colliding keys. */ GridCacheMapEntry, /* Collisions queue size. */ Integer>>>
         txKeyCollisionInfo;
-
-    /** Offheap entries count. */
-    private final LongMetric offHeapEntriesCnt;
-
-    /** Offheap primary entries count. */
-    private final LongMetric offHeapPrimaryEntriesCnt;
-
-    /** Offheap backup entries count. */
-    private final LongMetric offHeapBackupEntriesCnt;
-
-    /** Onheap entries count. */
-    private final LongMetric heapEntriesCnt;
-
-    /** Cache size. */
-    private final LongMetric cacheSize;
 
     /** Number of keys processed during index rebuilding. */
     private final LongAdderMetric idxRebuildKeyProcessed;
@@ -418,20 +397,15 @@ public class CacheMetricsImpl implements CacheMetrics {
             "Show keys and collisions queue size. Due transactional payload some keys become hot. Metric shows " +
             "corresponding keys.");
 
-        offHeapEntriesCnt = mreg.register("OffHeapEntriesCount",
-            () -> getEntriesStat().offHeapEntriesCount(), "Offheap entries count.");
+        mreg.register("OffHeapEntriesCount", this::getOffHeapEntriesCount, "Offheap entries count.");
 
-        offHeapPrimaryEntriesCnt = mreg.register("OffHeapPrimaryEntriesCount",
-            () -> getEntriesStat().offHeapPrimaryEntriesCount(), "Offheap primary entries count.");
+        mreg.register("OffHeapPrimaryEntriesCount", this::getOffHeapPrimaryEntriesCount, "Offheap primary entries count.");
 
-        offHeapBackupEntriesCnt = mreg.register("OffHeapBackupEntriesCount",
-            () -> getEntriesStat().offHeapBackupEntriesCount(), "Offheap backup entries count.");
+        mreg.register("OffHeapBackupEntriesCount", this::getOffHeapBackupEntriesCount, "Offheap backup entries count.");
 
-        heapEntriesCnt = mreg.register("HeapEntriesCount",
-            () -> getEntriesStat().heapEntriesCount(), "Onheap entries count.");
+        mreg.register("HeapEntriesCount", this::getHeapEntriesCount, "Onheap entries count.");
 
-        cacheSize = mreg.register("CacheSize",
-            () -> getEntriesStat().cacheSize(), "Local cache size.");
+        mreg.register("CacheSize", this::getCacheSize, "Local cache size.");
 
         idxRebuildKeyProcessed = mreg.longAdderMetric("IndexRebuildKeyProcessed",
             "Number of keys processed during the index rebuilding.");
@@ -508,22 +482,22 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getOffHeapEntriesCount() {
-        return offHeapEntriesCnt.value();
+        return getEntriesStat().offHeapEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getHeapEntriesCount() {
-        return heapEntriesCnt.value();
+        return getEntriesStat().heapEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapPrimaryEntriesCount() {
-        return offHeapPrimaryEntriesCnt.value();
+        return getEntriesStat().offHeapPrimaryEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapBackupEntriesCount() {
-        return offHeapBackupEntriesCnt.value();
+        return getEntriesStat().offHeapBackupEntriesCount();
     }
 
     /** {@inheritDoc} */
@@ -540,7 +514,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getCacheSize() {
-        return cacheSize.value();
+        return getEntriesStat().cacheSize();
     }
 
     /** {@inheritDoc} */

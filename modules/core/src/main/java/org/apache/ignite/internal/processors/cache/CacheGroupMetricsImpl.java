@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetri
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
@@ -58,20 +57,15 @@ public class CacheGroupMetricsImpl {
     /** Cache group context. */
     private final CacheGroupContext ctx;
 
-    /** */
-    private final LongMetric storageSize;
-
-    /** */
-    private final LongMetric sparseStorageSize;
-
     /** Number of local partitions initialized on current node. */
     private final AtomicLongMetric initLocPartitionsNum;
 
-    /**
-     * Memory page metrics. Will be {@code null} on client nodes.
-     */
+    /** Memory page metrics. Will be {@code null} on client nodes. */
     @Nullable
     private final PageMetrics pageMetrics;
+
+    /** Enabled persistence flag. */
+    private final boolean persistenceEnabled;
 
     /** Interface describing a predicate of two integers. */
     private interface IntBiPredicate {
@@ -94,18 +88,15 @@ public class CacheGroupMetricsImpl {
 
         DataStorageConfiguration dsCfg = kernalCtx.config().getDataStorageConfiguration();
 
-        boolean persistenceEnabled = !kernalCtx.clientNode() && CU.isPersistentCache(cacheCfg, dsCfg);
+        persistenceEnabled = !kernalCtx.clientNode() && CU.isPersistentCache(cacheCfg, dsCfg);
 
         MetricRegistry mreg = kernalCtx.metric().registry(metricGroupName());
 
         mreg.register("Caches", this::getCaches, List.class, null);
 
-        storageSize = mreg.register("StorageSize",
-            () -> persistenceEnabled ? database().forGroupPageStores(ctx, PageStore::size) : 0,
-            "Storage space allocated for group, in bytes.");
+        mreg.register("StorageSize", this::getSparseStorageSize, "Storage space allocated for group, in bytes.");
 
-        sparseStorageSize = mreg.register("SparseStorageSize",
-            () -> persistenceEnabled ? database().forGroupPageStores(ctx, PageStore::getSparseSize) : 0,
+        mreg.register("SparseStorageSize", this::getSparseStorageSize,
             "Storage space allocated for group adjusted for possible sparsity, in bytes.");
 
         mreg.register(
@@ -481,12 +472,12 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public long getStorageSize() {
-        return storageSize == null ? 0 : storageSize.value();
+        return persistenceEnabled ? database().forGroupPageStores(ctx, PageStore::size) : 0;
     }
 
     /** */
     public long getSparseStorageSize() {
-        return sparseStorageSize == null ? 0 : sparseStorageSize.value();
+        return persistenceEnabled ? database().forGroupPageStores(ctx, PageStore::getSparseSize) : 0;
     }
 
     /**
