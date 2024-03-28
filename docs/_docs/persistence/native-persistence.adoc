@@ -298,6 +298,10 @@ To enable it, set the compression algorithm and compression level in the data st
 [tabs]
 --
 tab:XML[]
+[source, xml]
+----
+include::code-snippets/xml/wal-compress.xml[tags=ignite-config,indent=0]
+----
 
 tab:Java[]
 [source, java]

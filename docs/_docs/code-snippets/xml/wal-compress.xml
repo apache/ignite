@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- tag::ignite-config[] -->
+	<bean class="org.apache.ignite.configuration.IgniteConfiguration" id="ignite.cfg">
+
+		<property name="dataStorageConfiguration">
+			<bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+
+				<!-- WAL page compression parameters -->
+				<property name="walPageCompression" value="LZ4"/>
+				<property name="walPageCompressionLevel" value="8"/>
+
+				<property name="defaultDataRegionConfiguration">
+					<bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+						<property name="persistenceEnabled" value="true"/>
+					</bean>
+				</property>
+
+			</bean>
+		</property>
+	</bean>
+<!-- end::ignite-config[] -->
