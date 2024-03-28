@@ -142,9 +142,9 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
     public void testInnerArray() {
         Object outerObj = createObject(outerObjType);
 
-        Object[] innerArr = new Object[] {new TestObjectAllTypes(), outerObj};
+        Object[] innerArr = new Object[] {new TestObject(), createReferencesHolder(outerObj)};
 
-        Object[] arr = new Object[] {createReferencesHolder(outerObj), createReferencesHolder(innerArr)};
+        Object[] arr = new Object[] {createReferencesHolder(outerObj), innerArr};
 
         checkPutGetRemove(arr, arr);
     }
@@ -171,11 +171,11 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
 
         Collection<Object> innerCol = new ArrayList<>();
 
-        innerCol.add(new TestObjectAllTypes());
-        innerCol.add(outerObj);
+        innerCol.add(new TestObject());
+        innerCol.add(createReferencesHolder(outerObj));
 
         col.add(createReferencesHolder(outerObj));
-        col.add(createReferencesHolder(innerCol));
+        col.add(innerCol);
 
         checkPutGetRemove(col, col);
     }
@@ -252,17 +252,17 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
     private Object createObject(ObjectType type) {
         switch (type) {
             case OBJECT: {
-                return new TestObjectAllTypes();
+                return new TestObject();
             }
 
             case ARRAY: {
-                TestObjectAllTypes obj = new TestObjectAllTypes();
+                TestObjectAllTypes obj = new TestObject();
 
                 return new Object[] {obj, obj};
             }
 
             case COLLECTION: {
-                TestObjectAllTypes obj = new TestObjectAllTypes();
+                TestObjectAllTypes obj = new TestObject();
 
                 Collection<Object> col = new ArrayList<>();
 
@@ -273,7 +273,7 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
             }
 
             case MAP: {
-                TestObjectAllTypes obj = new TestObjectAllTypes();
+                TestObjectAllTypes obj = new TestObject();
 
                 Map<Object, Object> map = new HashMap<>();
 
@@ -519,9 +519,17 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
             return res;
         }
     }
+    
+    /** */
+    private static class TestObject extends TestObjectAllTypes {
+        /** */
+        public TestObject() {
+            setDefaultData();
+        }
+    }
 
     /** */
-    public static class ComplexWrapper extends TestObjectAllTypes {
+    public static class ComplexWrapper extends TestObject {
         /** */
         private final Object data;
 
