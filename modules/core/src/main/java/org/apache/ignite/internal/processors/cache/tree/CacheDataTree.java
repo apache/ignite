@@ -231,6 +231,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                     long page = pageMem.acquirePage(grpId, pageId);
 
                     try {
+                        boolean skipVer = CacheDataRowStore.getSkipVersion();
+
                         long pageAddr = ((PageMemoryEx)pageMem).readLock(page, pageId, true, false);
 
                         try {
@@ -250,6 +252,28 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                                 rows = new CacheDataRow[rowsCnt];
                             else
                                 clearTail(rows, rowsCnt);
+
+                            int r = 0;
+
+                            for (int i = 0; i < rowsCnt; i++) {
+                                DataRow row = new DataRow();
+
+                                row.initFromDataPage(
+                                    io,
+                                    pageAddr,
+                                    i,
+                                    grp,
+                                    shared,
+                                    pageMem,
+                                    rowData,
+                                    skipVer
+                                );
+
+                                rows[r++] = row;
+                            }
+
+                            if (r == 0)
+                                continue; // No rows fetched in this page.
 
                             curRow = 0;
                             return true;
