@@ -60,9 +60,9 @@ public class CacheFindGarbageCommand
 
             printer.accept("Garbage found on node " + nodeEntry.getKey() + ":");
 
-            FindAndDeleteGarbageInPersistenceJobResult value = nodeEntry.getValue();
+            FindAndDeleteGarbageInPersistenceJobResult val = nodeEntry.getValue();
 
-            Map<Integer, Map<Integer, Long>> grpPartErrorsCnt = value.checkResult();
+            Map<Integer, Map<Integer, Long>> grpPartErrorsCnt = val.checkResult();
 
             if (!grpPartErrorsCnt.isEmpty()) {
                 for (Map.Entry<Integer, Map<Integer, Long>> entry : grpPartErrorsCnt.entrySet()) {

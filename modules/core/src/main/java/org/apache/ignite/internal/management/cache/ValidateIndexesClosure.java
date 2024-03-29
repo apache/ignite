@@ -231,9 +231,9 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
             }
         }
         else {
-            Collection<CacheGroupContext> groups = ignite.context().cache().cacheGroups();
+            Collection<CacheGroupContext> grps = ignite.context().cache().cacheGroups();
 
-            for (CacheGroupContext grp : groups) {
+            for (CacheGroupContext grp : grps) {
                 if (!grp.systemCache() && grp.affinityNode())
                     grpIds.add(grp.groupId());
             }
@@ -842,18 +842,18 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
             }
         }
 
-        CacheGroupContext group = ctx.group();
+        CacheGroupContext grp = ctx.group();
 
         String uniqueIdxName = String.format(
             "[cacheGroup=%s, cacheGroupId=%s, cache=%s, cacheId=%s, idx=%s]",
-            group.name(),
-            group.groupId(),
+            grp.name(),
+            grp.groupId(),
             ctx.name(),
             ctx.cacheId(),
             idx.name()
         );
 
-        idleChecker.apply(group.groupId());
+        idleChecker.apply(grp.groupId());
 
         processedIndexes.incrementAndGet();
 

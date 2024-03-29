@@ -640,28 +640,30 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override protected void putAll0(Map<? extends K, ? extends V> m) throws IgniteCheckedException {
-        updateAll0(m,
+        updateAll0(
+            m,
             null,
             null,
             null,
             null,
-            false,
             false,
             UPDATE,
-            false).get();
+            false
+        ).get();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllAsync0(Map<? extends K, ? extends V> m) {
-        return updateAll0(m,
+        return updateAll0(
+            m,
             null,
             null,
             null,
             null,
-            false,
             false,
             UPDATE,
-            true).chain(RET2NULL);
+            true
+        ).chain(RET2NULL);
     }
 
     /** {@inheritDoc} */
@@ -676,12 +678,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         warnIfUnordered(conflictMap, BulkOperation.PUT);
 
-        return updateAll0(null,
+        return updateAll0(
+            null,
             null,
             null,
             conflictMap,
             null,
-            false,
             false,
             UPDATE,
             true);
@@ -700,12 +702,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override protected void removeAll0(Collection<? extends K> keys) throws IgniteCheckedException {
-        removeAllAsync0(keys, null, false, false, false).get();
+        removeAllAsync0(keys, null, false, false).get();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Object> removeAllAsync0(Collection<? extends K> keys) {
-        return removeAllAsync0(keys, null, false, false, true).chain(RET2NULL);
+        return removeAllAsync0(keys, null, false, true).chain(RET2NULL);
     }
 
     /** {@inheritDoc} */
@@ -729,7 +731,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, GridCacheVersion> conflictMap) {
         ctx.dr().onReceiveCacheEntriesReceived(conflictMap.size());
 
-        return removeAllAsync0(null, conflictMap, false, false, true);
+        return removeAllAsync0(null, conflictMap, false, true);
     }
 
     /**
@@ -898,12 +900,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
-        IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> resFut = updateAll0(null,
+        IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> resFut = updateAll0(
+            null,
             invokeMap,
             args,
             null,
             null,
-            false,
             false,
             TRANSFORM,
             async);
@@ -935,12 +937,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        Map<K, EntryProcessorResult<T>> updateResults = (Map<K, EntryProcessorResult<T>>)updateAll0(null,
+        Map<K, EntryProcessorResult<T>> updateResults = (Map<K, EntryProcessorResult<T>>)updateAll0(
+            null,
             map,
             args,
             null,
             null,
-            false,
             false,
             TRANSFORM,
             false).get();
@@ -964,12 +966,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        IgniteInternalFuture updateResults = updateAll0(null,
+        IgniteInternalFuture updateResults = updateAll0(
+            null,
             map,
             args,
             null,
             null,
-            false,
             false,
             TRANSFORM,
             true);
@@ -989,7 +991,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param conflictPutMap Conflict put map.
      * @param conflictRmvMap Conflict remove map.
      * @param retval Return value required flag.
-     * @param rawRetval Return {@code GridCacheReturn} instance.
      * @param async Async operation flag.
      * @return Completion future.
      */
@@ -1001,7 +1002,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable Map<KeyCacheObject, GridCacheDrInfo> conflictPutMap,
         @Nullable Map<KeyCacheObject, GridCacheVersion> conflictRmvMap,
         final boolean retval,
-        final boolean rawRetval,
         final GridCacheOperation op,
         boolean async
     ) {
@@ -1065,7 +1065,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             (Collection)(conflictPutMap != null ? conflictPutMap.values() : null),
             conflictRmvMap != null ? conflictRmvMap.values() : null,
             retval,
-            rawRetval,
             opCtx != null ? opCtx.expiry() : null,
             CU.filterArray(null),
             taskNameHash,
@@ -1252,7 +1251,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 val0,
                 invokeArgs,
                 retval,
-                false,
                 opCtx != null ? opCtx.expiry() : null,
                 filters,
                 ctx.kernalContext().job().currentTaskNameHash(),
@@ -1274,7 +1272,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 conflictPutVal != null ? Collections.singleton(conflictPutVal) : null,
                 conflictRmvVer != null ? Collections.singleton(conflictRmvVer) : null,
                 retval,
-                false,
                 opCtx != null ? opCtx.expiry() : null,
                 filters,
                 ctx.kernalContext().job().currentTaskNameHash(),
@@ -1291,14 +1288,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param keys Keys to remove.
      * @param conflictMap Conflict map.
      * @param retval Return value required flag.
-     * @param rawRetval Return {@code GridCacheReturn} instance.
      * @return Completion future.
      */
     private IgniteInternalFuture removeAllAsync0(
         @Nullable Collection<? extends K> keys,
         @Nullable Map<KeyCacheObject, GridCacheVersion> conflictMap,
         final boolean retval,
-        boolean rawRetval,
         boolean async
     ) {
         assert ctx.updatesAllowed();
@@ -1334,7 +1329,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             drVers != null ? drVers : (keys != null ? null : conflictMap.values()),
             retval,
-            rawRetval,
             opCtx != null ? opCtx.expiry() : null,
             CU.filterArray(null),
             taskNameHash,
@@ -3128,7 +3122,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             drPutVals,
             drRmvVals,
             req.returnValue(),
-            false,
             req.expiry(),
             req.filter(),
             req.taskNameHash(),

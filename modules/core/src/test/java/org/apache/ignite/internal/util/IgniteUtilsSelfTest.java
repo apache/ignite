@@ -1520,9 +1520,9 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     public void testIsLambdaOnLambdas() {
         Runnable someLambda = () -> {};
 
-        int localVar = 0;
-        Runnable capturingLocalLambda = () -> {
-            System.out.println(localVar);
+        int locVar = 0;
+        Runnable capturingLocLambda = () -> {
+            System.out.println(locVar);
         };
 
         Runnable capturingOuterClsLambda = () -> {
@@ -1532,7 +1532,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         Runnable methodRef = this::testIsLambdaOnLambdas;
 
         assertTrue(IgniteUtils.isLambda(someLambda.getClass()));
-        assertTrue(IgniteUtils.isLambda(capturingLocalLambda.getClass()));
+        assertTrue(IgniteUtils.isLambda(capturingLocLambda.getClass()));
         assertTrue(IgniteUtils.isLambda(capturingOuterClsLambda.getClass()));
         assertTrue(IgniteUtils.isLambda(methodRef.getClass()));
     }
@@ -1586,21 +1586,21 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     private void testAddressResolveWithLocalHostDefined() throws Exception {
         try {
-            boolean ignoreLocalHostname = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME);
+            boolean ignoreLocHostname = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME);
             String userDefinedHost = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_LOCAL_HOST);
 
             InetSocketAddress inetSockAddr = new InetSocketAddress(userDefinedHost, 0);
             InetAddress addr = inetSockAddr.getAddress();
-            IgniteBiTuple<Collection<String>, Collection<String>> localAddrs = IgniteUtils.resolveLocalAddresses(addr);
+            IgniteBiTuple<Collection<String>, Collection<String>> locAddrs = IgniteUtils.resolveLocalAddresses(addr);
 
-            if (ignoreLocalHostname) {
+            if (ignoreLocHostname) {
                 // If local hostname is ignored, then no hostname should be resolved.
-                assertTrue(localAddrs.get2().isEmpty());
+                assertTrue(locAddrs.get2().isEmpty());
             }
             else {
                 // If local hostname is not ignored, then we should receive example.com.
-                assertFalse(localAddrs.get2().isEmpty());
-                assertEquals("example.com", F.first(localAddrs.get2()));
+                assertFalse(locAddrs.get2().isEmpty());
+                assertEquals("example.com", F.first(locAddrs.get2()));
             }
         }
         finally {

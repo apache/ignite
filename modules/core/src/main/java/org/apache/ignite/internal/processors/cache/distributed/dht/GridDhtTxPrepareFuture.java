@@ -67,7 +67,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -1394,12 +1393,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         final long timeout = timeoutObj != null ? timeoutObj.timeout : 0;
 
-        // Do not need process active transactions on backups.
-        MvccSnapshot mvccSnapshot = tx.mvccSnapshot();
-
-        if (mvccSnapshot != null)
-            mvccSnapshot = mvccSnapshot.withoutActiveTransactions();
-
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : tx.dhtMap().values()) {
             assert !dhtMapping.empty() || dhtMapping.queryUpdate();
@@ -1439,7 +1432,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 tx.activeCachesDeploymentEnabled(),
                 tx.storeWriteThrough(),
                 retVal,
-                mvccSnapshot,
+                null,
                 cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
 
             req.queryUpdate(dhtMapping.queryUpdate());
@@ -1553,7 +1546,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     tx.activeCachesDeploymentEnabled(),
                     tx.storeWriteThrough(),
                     retVal,
-                    mvccSnapshot,
+                    null,
                     null);
 
                 for (IgniteTxEntry entry : nearMapping.entries()) {

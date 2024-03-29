@@ -152,12 +152,12 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(null, "PUBLIC",
             "INSERT INTO DEVELOPER(_key, name, projectId) VALUES (?, ?, ?)", 0, "Igor", 1);
 
-        assertEquals(1, query.size());
+        assertEquals(1, qry.size());
 
-        List<List<?>> rows = query.get(0).getAll();
+        List<List<?>> rows = qry.get(0).getAll();
 
         assertEquals(1, rows.size());
 
@@ -167,11 +167,11 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
 
         assertEqualsCollections(F.asList(1L), row);
 
-        query = engine.query(null, "PUBLIC", "select _key, * from DEVELOPER");
+        qry = engine.query(null, "PUBLIC", "select _key, * from DEVELOPER");
 
-        assertEquals(1, query.size());
+        assertEquals(1, qry.size());
 
-        row = F.first(query.get(0).getAll());
+        row = F.first(qry.get(0).getAll());
 
         assertNotNull(row);
 
@@ -192,61 +192,61 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC", "INSERT INTO DEVELOPER VALUES (?, ?, ?, ?)", 0, 0, "Igor", 1);
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(null, "PUBLIC", "INSERT INTO DEVELOPER VALUES (?, ?, ?, ?)", 0, 0, "Igor", 1);
 
-        assertEquals(1, query.size());
+        assertEquals(1, qry.size());
 
-        List<?> row = F.first(query.get(0).getAll());
+        List<?> row = F.first(qry.get(0).getAll());
 
         assertNotNull(row);
 
         assertEqualsCollections(F.asList(1L), row);
 
-        query = engine.query(null, "PUBLIC", "select * from DEVELOPER");
+        qry = engine.query(null, "PUBLIC", "select * from DEVELOPER");
 
-        assertEquals(1, query.size());
+        assertEquals(1, qry.size());
 
-        row = F.first(query.get(0).getAll());
+        row = F.first(qry.get(0).getAll());
 
         assertNotNull(row);
 
         assertEqualsCollections(F.asList(0, 0, "Igor", 1), row);
 
-        query = engine.query(null, "PUBLIC", "UPDATE DEVELOPER d SET name = name || 'Roman' WHERE id = ?", 0);
+        qry = engine.query(null, "PUBLIC", "UPDATE DEVELOPER d SET name = name || 'Roman' WHERE id = ?", 0);
 
-        assertEquals(1, query.size());
+        assertEquals(1, qry.size());
 
-        row = F.first(query.get(0).getAll());
+        row = F.first(qry.get(0).getAll());
 
         assertNotNull(row);
 
         assertEqualsCollections(F.asList(1L), row);
 
-        query = engine.query(null, "PUBLIC", "select * from DEVELOPER");
+        qry = engine.query(null, "PUBLIC", "select * from DEVELOPER");
 
-        assertEquals(1, query.size());
+        assertEquals(1, qry.size());
 
-        row = F.first(query.get(0).getAll());
+        row = F.first(qry.get(0).getAll());
 
         assertNotNull(row);
 
         assertEqualsCollections(F.asList(0, 0, "IgorRoman", 1), row);
 
-        query = engine.query(null, "PUBLIC", "DELETE FROM DEVELOPER WHERE id = ?", 0);
+        qry = engine.query(null, "PUBLIC", "DELETE FROM DEVELOPER WHERE id = ?", 0);
 
-        assertEquals(1, query.size());
+        assertEquals(1, qry.size());
 
-        row = F.first(query.get(0).getAll());
+        row = F.first(qry.get(0).getAll());
 
         assertNotNull(row);
 
         assertEqualsCollections(F.asList(1L), row);
 
-        query = engine.query(null, "PUBLIC", "select * from DEVELOPER");
+        qry = engine.query(null, "PUBLIC", "select * from DEVELOPER");
 
-        assertEquals(1, query.size());
+        assertEquals(1, qry.size());
 
-        row = F.first(query.get(0).getAll());
+        row = F.first(qry.get(0).getAll());
 
         assertNull(row);
     }

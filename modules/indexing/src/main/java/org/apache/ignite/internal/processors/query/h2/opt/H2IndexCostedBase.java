@@ -131,8 +131,8 @@ public abstract class H2IndexCostedBase extends BaseIndex {
                         break;
                     }
                     // Estimate by is null
-                    Value equalValue = getEqualValue(ses, column, filter);
-                    Boolean equalNull = (equalValue == null) ? null : equalValue.getType() == Value.NULL;
+                    Value equalVal = getEqualValue(ses, column, filter);
+                    Boolean equalNull = (equalVal == null) ? null : equalVal.getType() == Value.NULL;
                     rowCount = getColumnSize(colStats, rowCount, equalNull);
 
                     if (colStats != null && equalNull == Boolean.TRUE) {
@@ -223,7 +223,7 @@ public abstract class H2IndexCostedBase extends BaseIndex {
      * @return "Equal" value or {@code null} if there are no equal clause with constant expression.
      */
     private Value getEqualValue(Session ses, Column column, TableFilter filter) {
-        Value maxValue = null;
+        Value maxVal = null;
         for (IndexCondition cond : filter.getIndexConditions()) {
             if (!column.equals(cond.getColumn()))
                 continue;
@@ -233,12 +233,12 @@ public abstract class H2IndexCostedBase extends BaseIndex {
                 Expression expr = cond.getExpression();
                 if (expr != null && expr.isConstant()) {
                     Value curVal = cond.getCurrentValue(ses);
-                    if (null == maxValue || (curVal != null || filter.getTable().compareTypeSafe(curVal, maxValue) < 0))
-                        maxValue = curVal;
+                    if (null == maxVal || (curVal != null || filter.getTable().compareTypeSafe(curVal, maxVal) < 0))
+                        maxVal = curVal;
                 }
             }
         }
-        return maxValue;
+        return maxVal;
     }
 
     /**
@@ -252,7 +252,7 @@ public abstract class H2IndexCostedBase extends BaseIndex {
     private Value getStartValue(Session ses, Column column, TableFilter filter) {
         if (filter == null)
             return null;
-        Value maxValue = null;
+        Value maxVal = null;
         for (IndexCondition cond : filter.getIndexConditions()) {
             if (!column.equals(cond.getColumn()))
                 continue;
@@ -264,12 +264,12 @@ public abstract class H2IndexCostedBase extends BaseIndex {
                 Expression expr = cond.getExpression();
                 if (expr != null && expr.isConstant()) {
                     Value curVal = cond.getCurrentValue(ses);
-                    if (null == maxValue || (curVal != null || filter.getTable().compareTypeSafe(curVal, maxValue) < 0))
-                        maxValue = curVal;
+                    if (null == maxVal || (curVal != null || filter.getTable().compareTypeSafe(curVal, maxVal) < 0))
+                        maxVal = curVal;
                 }
             }
         }
-        return maxValue;
+        return maxVal;
     }
 
     /**
@@ -283,7 +283,7 @@ public abstract class H2IndexCostedBase extends BaseIndex {
     private Value getEndValue(Session ses, Column column, TableFilter filter) {
         if (filter == null)
             return null;
-        Value minValue = null;
+        Value minVal = null;
         for (IndexCondition cond : filter.getIndexConditions()) {
             if (!column.equals(cond.getColumn()))
                 continue;
@@ -294,12 +294,12 @@ public abstract class H2IndexCostedBase extends BaseIndex {
                 Expression expr = cond.getExpression();
                 if (expr != null && expr.isConstant()) {
                     Value curVal = cond.getCurrentValue(ses);
-                    if (null == minValue || (curVal != null || filter.getTable().compareTypeSafe(minValue, curVal) < 0))
-                        minValue = curVal;
+                    if (null == minVal || (curVal != null || filter.getTable().compareTypeSafe(minVal, curVal) < 0))
+                        minVal = curVal;
                 }
             }
         }
-        return minValue;
+        return minVal;
     }
 
     /**
@@ -368,10 +368,10 @@ public abstract class H2IndexCostedBase extends BaseIndex {
             // Fall back to previous behaviour without statistics, even without min/max testing
             return estimatePercentFallback(min, max);
 
-        BigDecimal minValue = (min == null) ? null : getComparableValue(min);
-        BigDecimal maxValue = (max == null) ? null : getComparableValue(max);
+        BigDecimal minVal = (min == null) ? null : getComparableValue(min);
+        BigDecimal maxVal = (max == null) ? null : getComparableValue(max);
 
-        if (minValue == null && maxValue == null)
+        if (minVal == null && maxVal == null)
             return estimatePercentFallback(min, max);
 
         BigDecimal minStat = colStat.min();
@@ -380,8 +380,8 @@ public abstract class H2IndexCostedBase extends BaseIndex {
         if (minStat == null || maxStat == null)
             return estimatePercentFallback(min, max);
 
-        BigDecimal start = (minValue == null || minValue.compareTo(minStat) < 0) ? minStat : minValue;
-        BigDecimal end = (maxValue == null || maxValue.compareTo(maxStat) > 0) ? maxStat : maxValue;
+        BigDecimal start = (minVal == null || minVal.compareTo(minStat) < 0) ? minStat : minVal;
+        BigDecimal end = (maxVal == null || maxVal.compareTo(maxStat) > 0) ? maxStat : maxVal;
 
         BigDecimal actual = end.subtract(start);
 

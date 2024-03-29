@@ -178,13 +178,13 @@ public class CdcCacheDataResendTask extends VisorMultiNodeTask<CdcResendCommandA
 
             GridCacheContext<?, ?> cctx = cache.context();
 
-            GridIterator<CacheDataRow> localRows = cctx.offheap()
+            GridIterator<CacheDataRow> locRows = cctx.offheap()
                 .cacheIterator(cctx.cacheId(), true, false, AffinityTopologyVersion.NONE, null, null);
 
             long cnt = 0;
             Set<Integer> parts = new TreeSet<>();
 
-            for (CacheDataRow row : localRows) {
+            for (CacheDataRow row : locRows) {
                 if (isCancelled())
                     break;
 

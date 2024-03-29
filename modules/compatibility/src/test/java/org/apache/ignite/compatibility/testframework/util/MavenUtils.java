@@ -102,7 +102,7 @@ public class MavenUtils {
 
         assert names.length >= 3;
 
-        String groupId = names[0];
+        String grpId = names[0];
         String artifactId = names[1];
         String ver = names[2];
         String packaging = names.length > 3 ? names[3] : null;
@@ -116,7 +116,7 @@ public class MavenUtils {
         );
 
         String pathToArtifact = getMavenLocalRepositoryPath() + File.separator +
-            groupId.replace(".", File.separator) + File.separator +
+            grpId.replace(".", File.separator) + File.separator +
             artifactId.replace(".", File.separator) + File.separator +
             ver + File.separator + jarFileName;
 
@@ -188,17 +188,17 @@ public class MavenUtils {
         X.println("Downloading artifact... Identifier: " + artifact);
 
         // Default platform independ path for maven settings file.
-        Path localProxyMavenSettings = Paths.get(System.getProperty("user.home"), ".m2", "local-proxy.xml");
+        Path locProxyMavenSettings = Paths.get(System.getProperty("user.home"), ".m2", "local-proxy.xml");
 
-        String localProxyMavenSettingsFromEnv = System.getenv("LOCAL_PROXY_MAVEN_SETTINGS");
+        String locProxyMavenSettingsFromEnv = System.getenv("LOCAL_PROXY_MAVEN_SETTINGS");
 
         GridStringBuilder mavenCmdArgs = new SB(" ").a(MAVEN_DEPENDENCY_PLUGIN).a(":get -Dartifact=" + artifact);
 
-        if (!isEmpty(localProxyMavenSettingsFromEnv))
-            localProxyMavenSettings = Paths.get(localProxyMavenSettingsFromEnv);
+        if (!isEmpty(locProxyMavenSettingsFromEnv))
+            locProxyMavenSettings = Paths.get(locProxyMavenSettingsFromEnv);
 
-        if (Files.exists(localProxyMavenSettings))
-            mavenCmdArgs.a(" -s " + localProxyMavenSettings.toString());
+        if (Files.exists(locProxyMavenSettings))
+            mavenCmdArgs.a(" -s " + locProxyMavenSettings.toString());
         else {
             Collection<String> repos = new ArrayList<>();
 

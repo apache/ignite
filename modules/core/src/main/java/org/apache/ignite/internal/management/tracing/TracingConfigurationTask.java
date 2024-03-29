@@ -26,7 +26,6 @@ import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationResetAllCommandArg;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationResetCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -40,7 +39,6 @@ import org.jetbrains.annotations.Nullable;
  * Task that will collect and update tracing configuration.
  */
 @GridInternal
-@GridVisorManagementTask
 public class TracingConfigurationTask
     extends VisorOneNodeTask<TracingConfigurationCommandArg, TracingConfigurationTaskResult> {
     /** */

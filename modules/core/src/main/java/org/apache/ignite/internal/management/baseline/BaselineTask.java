@@ -30,7 +30,6 @@ import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.management.baseline.BaselineCommand.BaselineTaskArg;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -41,7 +40,6 @@ import org.jetbrains.annotations.Nullable;
  * Task that will collect information about baseline topology and can change its state.
  */
 @GridInternal
-@GridVisorManagementTask
 public class BaselineTask extends VisorOneNodeTask<BaselineTaskArg, BaselineTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -86,7 +84,7 @@ public class BaselineTask extends VisorOneNodeTask<BaselineTaskArg, BaselineTask
             BaselineAutoAdjustStatus adjustStatus = cluster.baselineAutoAdjustStatus();
 
             return new BaselineTaskResult(
-                ignite.cluster().state().active(),
+                ignite.cluster().state(),
                 cluster.topologyVersion(),
                 F.isEmpty(baseline) ? null : baseline,
                 srvrs,

@@ -336,7 +336,6 @@ public class GridSqlQuerySplitter {
             replicatedOnly,
             splitter.extractor.mergeMapQueries(splitter.mapSqlQrys),
             cacheIds,
-            false,
             locSplit,
             treatReplicatedAsPartitioned
         );

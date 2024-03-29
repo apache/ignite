@@ -62,11 +62,6 @@ public class MvccSnapshotWithoutTxs implements MvccSnapshot {
     }
 
     /** {@inheritDoc} */
-    @Override public MvccLongList activeTransactions() {
-        return MvccEmptyLongList.INSTANCE;
-    }
-
-    /** {@inheritDoc} */
     @Override public long coordinatorVersion() {
         return crdVer;
     }

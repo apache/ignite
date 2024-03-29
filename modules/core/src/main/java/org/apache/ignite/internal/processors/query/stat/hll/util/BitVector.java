@@ -157,7 +157,7 @@ public class BitVector implements Cloneable {
      *         with index zero. This will never be <code>null</code>.
      */
     public LongIterator registerIterator() {
-        LongIterator longIterator = new LongIterator() {
+        LongIterator longIter = new LongIterator() {
             final int registerWidth = BitVector.this.registerWidth;
             final long[] words = BitVector.this.words;
             final long registerMask = BitVector.this.registerMask;
@@ -197,7 +197,7 @@ public class BitVector implements Cloneable {
             }
         };
 
-        return longIterator;
+        return longIter;
     }
 
     // ------------------------------------------------------------------------
@@ -228,16 +228,16 @@ public class BitVector implements Cloneable {
         final int bitRemainder = (int)(bitIdx & BITS_PER_WORD_MASK)/*aka (bitIndex % BITS_PER_WORD)*/;
 
         // NOTE:  matches getRegister()
-        final long registerValue;
+        final long registerVal;
         final long words[] = this.words/*for convenience/performance*/;
         if (firstWordIdx == secondWordIdx)
-            registerValue = ((words[firstWordIdx] >>> bitRemainder) & registerMask);
+            registerVal = ((words[firstWordIdx] >>> bitRemainder) & registerMask);
         else /*register spans words*/
-            registerValue = (words[firstWordIdx] >>> bitRemainder)/*no need to mask since at top of word*/
+            registerVal = (words[firstWordIdx] >>> bitRemainder)/*no need to mask since at top of word*/
                 | (words[secondWordIdx] << (BITS_PER_WORD - bitRemainder)) & registerMask;
 
         // determine which is the larger and update as necessary
-        if (value > registerValue) {
+        if (value > registerVal) {
             // NOTE:  matches setRegister()
             if (firstWordIdx == secondWordIdx) {
                 // clear then set
@@ -255,7 +255,7 @@ public class BitVector implements Cloneable {
             }
         } /* else -- the register value is greater (or equal) so nothing needs to be done */
 
-        return (value >= registerValue);
+        return (value >= registerVal);
     }
 
     // ========================================================================

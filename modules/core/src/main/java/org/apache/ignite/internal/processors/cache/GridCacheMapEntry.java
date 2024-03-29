@@ -44,12 +44,9 @@ import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.MvccDataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
@@ -57,10 +54,7 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheMvccEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheTtlEntryExtras;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -72,9 +66,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
-import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateResult;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.ResultType;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -83,7 +74,6 @@ import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
-import org.apache.ignite.internal.transactions.IgniteTxDuplicateKeyCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedException;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridClosureException;
@@ -100,9 +90,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.getLong;
@@ -112,7 +100,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
@@ -120,8 +107,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 import static org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome.INVOKE_NO_OP;
 import static org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome.REMOVE_NO_VAL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_MAX_SNAPSHOT;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compareIgnoreOpCounter;
 import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx.addConflictVersion;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 
@@ -986,334 +971,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     protected void recordNodeId(UUID nodeId, AffinityTopologyVersion topVer) {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public final GridCacheUpdateTxResult mvccSet(
-        IgniteInternalTx tx,
-        UUID affNodeId,
-        CacheObject val,
-        EntryProcessor entryProc,
-        Object[] invokeArgs,
-        long ttl0,
-        AffinityTopologyVersion topVer,
-        MvccSnapshot mvccVer,
-        GridCacheOperation op,
-        boolean needHistory,
-        boolean noCreate,
-        boolean needOldVal,
-        CacheEntryPredicate filter,
-        boolean retVal,
-        boolean keepBinary) throws IgniteCheckedException, GridCacheEntryRemovedException {
-        assert tx != null;
-
-        final boolean valid = valid(tx.topologyVersion());
-
-        final boolean invoke = entryProc != null;
-
-        final GridCacheVersion newVer;
-
-        WALPointer logPtr = null;
-
-        ensureFreeSpace();
-
-        lockEntry();
-
-        MvccUpdateResult res;
-
-        try {
-            checkObsolete();
-
-            newVer = tx.writeVersion();
-
-            assert newVer != null : "Failed to get write version for tx: " + tx;
-
-            // Determine new ttl and expire time.
-            long expireTime, ttl = ttl0;
-
-            if (ttl == -1L) {
-                ttl = ttlExtras();
-                expireTime = expireTimeExtras();
-            }
-            else
-                expireTime = CU.toExpireTime(ttl);
-
-            assert ttl >= 0 : ttl;
-            assert expireTime >= 0 : expireTime;
-
-            // Detach value before index update.
-            val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
-
-            assert val != null || invoke;
-
-            res = cctx.offheap().mvccUpdate(this, val, newVer, expireTime, mvccVer, tx.local(), needHistory,
-                noCreate, needOldVal, filter, retVal, keepBinary, entryProc, invokeArgs);
-
-            assert res != null;
-
-            // VERSION_FOUND is possible only on primary node when inserting the same key, or on backup when
-            // updating the key which just has been rebalanced.
-            assert res.resultType() != ResultType.VERSION_FOUND || op == CREATE && tx.local() || !tx.local();
-
-            // PREV_NOT_NULL on CREATE is possible only on primary.
-            assert res.resultType() != ResultType.PREV_NOT_NULL || op != CREATE || tx.local();
-
-            if (res.resultType() == ResultType.VERSION_MISMATCH)
-                throw serializationError();
-            else if (res.resultType() == ResultType.FILTERED) {
-                GridCacheUpdateTxResult updRes = new GridCacheUpdateTxResult(invoke);
-
-                assert !invoke || res.invokeResult() != null;
-
-                if (invoke) // No-op invoke happened.
-                    updRes.invokeResult(res.invokeResult());
-
-                updRes.filtered(true);
-
-                if (retVal)
-                    updRes.prevValue(res.oldValue());
-
-                return updRes;
-            }
-            else if (noCreate && !invoke && res.resultType() == ResultType.PREV_NULL)
-                return new GridCacheUpdateTxResult(false);
-            else if (res.resultType() == ResultType.LOCKED) {
-                unlockEntry();
-
-                return null;
-            }
-            else if (op == CREATE && tx.local() && (res.resultType() == ResultType.PREV_NOT_NULL ||
-                res.resultType() == ResultType.VERSION_FOUND))
-                throw new IgniteTxDuplicateKeyCheckedException("Duplicate key during INSERT [key=" + key + ']');
-
-            if (cctx.deferredDelete() && deletedUnlocked() && !detached())
-                deletedUnlocked(false);
-
-            if (res.resultType() == ResultType.PREV_NULL) {
-                TxCounters counters = tx.txCounters(true);
-
-                if (compareIgnoreOpCounter(res.resultVersion(), mvccVer) == 0) {
-                    if (res.isKeyAbsentBefore())
-                        counters.incrementUpdateCounter(cctx.cacheId(), partition());
-                }
-                else
-                    counters.incrementUpdateCounter(cctx.cacheId(), partition());
-
-                counters.accumulateSizeDelta(cctx.cacheId(), partition(), 1);
-            }
-            else if (res.resultType() == ResultType.PREV_NOT_NULL && compareIgnoreOpCounter(res.resultVersion(), mvccVer) != 0) {
-                TxCounters counters = tx.txCounters(true);
-
-                counters.incrementUpdateCounter(cctx.cacheId(), partition());
-            }
-            else if (res.resultType() == ResultType.REMOVED_NOT_NULL) {
-                TxCounters counters = tx.txCounters(true);
-
-                if (compareIgnoreOpCounter(res.resultVersion(), mvccVer) == 0) {
-                    if (res.isKeyAbsentBefore()) // Do not count own update removal.
-                        counters.decrementUpdateCounter(cctx.cacheId(), partition());
-                }
-                else
-                    counters.incrementUpdateCounter(cctx.cacheId(), partition());
-
-                counters.accumulateSizeDelta(cctx.cacheId(), partition(), -1);
-            }
-
-            if (cctx.group().logDataRecords()) {
-                logPtr = cctx.group().wal().log(new MvccDataRecord(new MvccDataEntry(
-                    cctx.cacheId(),
-                    key,
-                    val,
-                    res.resultType() == ResultType.PREV_NULL ? CREATE :
-                        (res.resultType() == ResultType.REMOVED_NOT_NULL) ? DELETE : UPDATE,
-                    tx.nearXidVersion(),
-                    newVer,
-                    expireTime,
-                    key.partition(),
-                    0L,
-                    mvccVer)
-                ));
-            }
-
-            update(val, expireTime, ttl, newVer, true);
-
-            recordNodeId(affNodeId, topVer);
-        }
-        finally {
-            if (lockedByCurrentThread()) {
-                unlockEntry();
-
-                cctx.evicts().touch(this);
-            }
-        }
-
-        onUpdateFinished(0L);
-
-        GridCacheUpdateTxResult updRes = valid ? new GridCacheUpdateTxResult(true, 0L, logPtr) :
-            new GridCacheUpdateTxResult(false, logPtr);
-
-        if (retVal && (res.resultType() == ResultType.PREV_NOT_NULL || res.resultType() == ResultType.VERSION_FOUND))
-            updRes.prevValue(res.oldValue());
-
-        if (needOldVal && compareIgnoreOpCounter(res.resultVersion(), mvccVer) != 0 && (
-            res.resultType() == ResultType.PREV_NOT_NULL || res.resultType() == ResultType.REMOVED_NOT_NULL))
-            updRes.oldValue(res.oldValue());
-
-        updRes.newValue(res.newValue());
-
-        if (invoke && res.resultType() != ResultType.VERSION_FOUND) {
-            assert res.invokeResult() != null;
-
-            updRes.invokeResult(res.invokeResult());
-        }
-
-        updRes.mvccHistory(res.history());
-
-        return updRes;
-    }
-
-    /** {@inheritDoc} */
-    @Override public final GridCacheUpdateTxResult mvccRemove(
-        IgniteInternalTx tx,
-        UUID affNodeId,
-        AffinityTopologyVersion topVer,
-        MvccSnapshot mvccVer,
-        boolean needHistory,
-        boolean needOldVal,
-        @Nullable CacheEntryPredicate filter,
-        boolean retVal) throws IgniteCheckedException, GridCacheEntryRemovedException {
-        assert tx != null;
-        assert mvccVer != null;
-
-        final boolean valid = valid(tx.topologyVersion());
-
-        final GridCacheVersion newVer;
-
-        WALPointer logPtr = null;
-
-        lockEntry();
-
-        MvccUpdateResult res;
-
-        try {
-            checkObsolete();
-
-            newVer = tx.writeVersion();
-
-            assert newVer != null : "Failed to get write version for tx: " + tx;
-
-            res = cctx.offheap().mvccRemove(this, mvccVer, tx.local(), needHistory, needOldVal, filter, retVal);
-
-            assert res != null;
-
-            if (res.resultType() == ResultType.VERSION_MISMATCH)
-                throw serializationError();
-            else if (res.resultType() == ResultType.PREV_NULL)
-                return new GridCacheUpdateTxResult(false);
-            else if (res.resultType() == ResultType.FILTERED) {
-                GridCacheUpdateTxResult updRes = new GridCacheUpdateTxResult(false);
-
-                updRes.filtered(true);
-
-                return updRes;
-            }
-            else if (res.resultType() == ResultType.LOCKED) {
-                unlockEntry();
-
-                return null;
-            }
-
-            if (cctx.deferredDelete() && deletedUnlocked() && !detached())
-                deletedUnlocked(false);
-
-            if (res.resultType() == ResultType.PREV_NOT_NULL) {
-                TxCounters counters = tx.txCounters(true);
-
-                if (compareIgnoreOpCounter(res.resultVersion(), mvccVer) == 0) {
-                    if (res.isKeyAbsentBefore()) // Do not count own update removal.
-                        counters.decrementUpdateCounter(cctx.cacheId(), partition());
-                }
-                else
-                    counters.incrementUpdateCounter(cctx.cacheId(), partition());
-
-                counters.accumulateSizeDelta(cctx.cacheId(), partition(), -1);
-            }
-
-            update(null, 0, 0, newVer, true);
-
-            recordNodeId(affNodeId, topVer);
-        }
-        finally {
-            if (lockedByCurrentThread()) {
-                unlockEntry();
-
-                cctx.evicts().touch(this);
-            }
-        }
-
-        onUpdateFinished(0L);
-
-        GridCacheUpdateTxResult updRes = valid ? new GridCacheUpdateTxResult(true, 0L, logPtr) :
-            new GridCacheUpdateTxResult(false, logPtr);
-
-        if (retVal && (res.resultType() == ResultType.PREV_NOT_NULL || res.resultType() == ResultType.VERSION_FOUND))
-            updRes.prevValue(res.oldValue());
-
-        if (needOldVal && compareIgnoreOpCounter(res.resultVersion(), mvccVer) != 0 &&
-            (res.resultType() == ResultType.PREV_NOT_NULL || res.resultType() == ResultType.REMOVED_NOT_NULL))
-            updRes.oldValue(res.oldValue());
-
-        updRes.mvccHistory(res.history());
-
-        return updRes;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheUpdateTxResult mvccLock(GridDhtTxLocalAdapter tx, MvccSnapshot mvccVer)
-        throws GridCacheEntryRemovedException, IgniteCheckedException {
-        assert tx != null;
-        assert mvccVer != null;
-
-        final boolean valid = valid(tx.topologyVersion());
-
-        final GridCacheVersion newVer;
-
-        WALPointer logPtr = null;
-
-        lockEntry();
-
-        try {
-            checkObsolete();
-
-            newVer = tx.writeVersion();
-
-            assert newVer != null : "Failed to get write version for tx: " + tx;
-
-            assert tx.local();
-
-            MvccUpdateResult res = cctx.offheap().mvccLock(this, mvccVer);
-
-            assert res != null;
-
-            if (res.resultType() == ResultType.VERSION_MISMATCH)
-                throw serializationError();
-            else if (res.resultType() == ResultType.LOCKED) {
-                unlockEntry();
-
-                return null;
-            }
-        }
-        finally {
-            if (lockedByCurrentThread()) {
-                unlockEntry();
-
-                cctx.evicts().touch(this);
-            }
-        }
-
-        onUpdateFinished(0L);
-
-        return new GridCacheUpdateTxResult(valid, logPtr);
     }
 
     /** {@inheritDoc} */
@@ -2656,26 +2313,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     int hash() {
         return hash;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public CacheObject mvccPeek(boolean onheapOnly)
-        throws GridCacheEntryRemovedException, IgniteCheckedException {
-        if (onheapOnly)
-            return null;
-
-        lockEntry();
-
-        try {
-            checkObsolete();
-
-            CacheDataRow row = cctx.offheap().mvccRead(cctx, key, MVCC_MAX_SNAPSHOT);
-
-            return row != null ? row.value() : null;
-        }
-        finally {
-            unlockEntry();
-        }
     }
 
     /** {@inheritDoc} */
@@ -5775,198 +5412,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         @Override public String toString() {
             return S.toString(AtomicCacheUpdateClosure.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheUpdateTxResult mvccUpdateRowsWithPreloadInfo(
-        IgniteInternalTx tx,
-        UUID affNodeId,
-        AffinityTopologyVersion topVer,
-        List<GridCacheEntryInfo> entries,
-        GridCacheOperation op,
-        MvccSnapshot mvccVer,
-        IgniteUuid futId,
-        int batchNum)
-        throws IgniteCheckedException, GridCacheEntryRemovedException {
-        assert mvccVer != null &&
-            MvccUtils.mvccVersionIsValid(mvccVer.coordinatorVersion(), mvccVer.counter(), mvccVer.operationCounter());
-        assert !F.isEmpty(entries);
-
-        WALPointer logPtr = null;
-
-        ensureFreeSpace();
-
-        CacheObject val = null;
-        CacheObject oldVal = null;
-
-        lockEntry();
-
-        try {
-            checkObsolete();
-
-            boolean logDataRecs = cctx.group().logDataRecords();
-
-            List<DataEntry> walEntries = logDataRecs ? new ArrayList<>(entries.size() + 1) : Collections.EMPTY_LIST;
-
-            // Apply updates in reverse order (oldest is last) until any of previous versions found.
-            // If we found prev version then it means history has been actualized either with previous update
-            // or via rebalance.
-            for (int i = 0; i < entries.size(); i++) {
-                GridCacheMvccEntryInfo info = (GridCacheMvccEntryInfo)entries.get(i);
-
-                assert info.mvccTxState() == TxState.COMMITTED ||
-                    MvccUtils.compare(info, mvccVer.coordinatorVersion(), mvccVer.counter()) == 0;
-                assert info.newMvccTxState() == TxState.COMMITTED ||
-                    MvccUtils.compareNewVersion(info, mvccVer.coordinatorVersion(), mvccVer.counter()) == 0 ||
-                    info.newMvccCoordinatorVersion() == MvccUtils.MVCC_CRD_COUNTER_NA;
-
-                boolean added = cctx.offheap().mvccUpdateRowWithPreloadInfo(this,
-                    info.value(),
-                    info.version(),
-                    info.expireTime(),
-                    info.mvccVersion(),
-                    info.newMvccVersion(),
-                    info.mvccTxState(),
-                    info.newMvccTxState());
-
-                if (logDataRecs)
-                    walEntries.add(toMvccDataEntry(info, tx));
-
-                if (oldVal == null
-                    && MvccUtils.compare(info.mvccVersion(),
-                    mvccVer.coordinatorVersion(),
-                    mvccVer.counter()) != 0
-                    && MvccUtils.compareNewVersion(info,
-                    mvccVer.coordinatorVersion(),
-                    mvccVer.counter()) == 0)
-                    oldVal = info.value(); // Old means a value before current transaction.
-
-                if (!added)
-                    break;
-            }
-
-            GridCacheMvccEntryInfo last = (GridCacheMvccEntryInfo)entries.get(0);
-
-            if (logDataRecs)
-                Collections.reverse(walEntries);
-
-            if (op == DELETE) {
-                assert MvccUtils.compareNewVersion(last, mvccVer) == 0;
-
-                if (logDataRecs)
-                    walEntries.add(new MvccDataEntry(
-                        cctx.cacheId(),
-                        key,
-                        null,
-                        DELETE,
-                        tx.nearXidVersion(),
-                        last.version(),
-                        last.expireTime(),
-                        key.partition(),
-                        0,
-                        last.mvccVersion()));
-            }
-            else {
-                assert last.newMvccCoordinatorVersion() == MvccUtils.MVCC_CRD_COUNTER_NA;
-                assert MvccUtils.compare(last, mvccVer) == 0;
-
-                val = last.value();
-            }
-
-            if (logDataRecs)
-                logPtr = cctx.group().wal().log(new MvccDataRecord(walEntries));
-        }
-        finally {
-            if (lockedByCurrentThread()) {
-                unlockEntry();
-
-                cctx.evicts().touch(this);
-            }
-        }
-
-        GridCacheUpdateTxResult res = new GridCacheUpdateTxResult(true, logPtr);
-
-        res.newValue(val);
-        res.oldValue(oldVal);
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean mvccPreloadEntry(List<GridCacheMvccEntryInfo> entryHist)
-        throws IgniteCheckedException, GridCacheEntryRemovedException {
-        assert !entryHist.isEmpty();
-
-        WALPointer logPtr = null;
-
-        ensureFreeSpace();
-
-        boolean updated = false;
-
-        lockEntry();
-
-        try {
-            checkObsolete();
-
-            key.valueBytes(cctx.cacheObjectContext());
-
-            if (cctx.offheap().mvccApplyHistoryIfAbsent(this, entryHist)) {
-                updated = true;
-
-                if (!cctx.isNear() && cctx.group().logDataRecords()) {
-                    MvccDataRecord rec;
-
-                    if (entryHist.size() == 1) {
-                        GridCacheMvccEntryInfo info = entryHist.get(0);
-
-                        rec = new MvccDataRecord(toMvccDataEntry(info, null));
-                    }
-                    else {
-                        // Batched WAL update.
-                        List<DataEntry> dataEntries = new ArrayList<>(entryHist.size());
-
-                        for (GridCacheMvccEntryInfo info : entryHist)
-                            dataEntries.add(toMvccDataEntry(info, null));
-
-                        rec = new MvccDataRecord(dataEntries);
-                    }
-
-                    logPtr = cctx.group().wal().log(rec);
-                }
-            }
-        }
-        finally {
-            if (lockedByCurrentThread()) {
-                unlockEntry();
-
-                cctx.evicts().touch(this);
-            }
-        }
-
-        if (logPtr != null)
-            cctx.shared().wal().flush(logPtr, false);
-
-        return updated;
-    }
-
-    /**
-     * Converts mvcc entry info to WAL record entry.
-     * @param info Mvcc entry info.
-     * @return Mvcc data entry.
-     */
-    private @NotNull MvccDataEntry toMvccDataEntry(@NotNull GridCacheMvccEntryInfo info, @Nullable IgniteInternalTx tx) {
-        return new MvccDataEntry(
-            cctx.cacheId(),
-            key,
-            info.value(),
-            CREATE,
-            tx == null ? null : tx.nearXidVersion(),
-            info.version(),
-            info.expireTime(),
-            key.partition(),
-            0,
-            info.mvccVersion()
-        );
     }
 
     /**

@@ -2023,10 +2023,10 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             ignite(0).getOrCreateCache(cacheConfig(cacheName, true, Integer.class, AvgDataTypes.class));
 
         // avg 13.125; int avg 13
-        double value[] = new double[] {1, 5, 7, 8, 10.5, 13.5, 20, 40};
+        double val[] = new double[] {1, 5, 7, 8, 10.5, 13.5, 20, 40};
 
-        for (int i = 0; i < value.length; i++) {
-            Number v = value[i];
+        for (int i = 0; i < val.length; i++) {
+            Number v = val[i];
 
             cache.put(i, new AvgDataTypes(
                 v.byteValue(),

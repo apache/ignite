@@ -290,18 +290,18 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     @Test
     public void testSemaphoreClosing() throws Exception {
         IgniteConfiguration cfg;
-        GridStringLogger stringLog;
+        GridStringLogger strLog;
 
-        stringLog = new GridStringLogger();
+        strLog = new GridStringLogger();
 
         cfg = optimize(getConfiguration("npeGrid"));
-        cfg.setGridLogger(stringLog);
+        cfg.setGridLogger(strLog);
 
         try (Ignite ignite = startGrid(cfg.getIgniteInstanceName(), cfg)) {
             ignite.semaphore("semaphore", 1, true, true);
         }
 
-        assertFalse(stringLog.toString().contains(NullPointerException.class.getName()));
+        assertFalse(strLog.toString().contains(NullPointerException.class.getName()));
     }
 
     /**

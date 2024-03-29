@@ -1262,8 +1262,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @param node Node.
      * @return {@link LinkedHashSet} of internal and external addresses of provided node.
      *      Internal addresses placed before external addresses.
+     * @see #getEffectiveNodeAddresses(TcpDiscoveryNode)
      */
-    LinkedHashSet<InetSocketAddress> getNodeAddresses(TcpDiscoveryNode node) {
+    LinkedHashSet<InetSocketAddress> getAllNodeAddresses(TcpDiscoveryNode node) {
         LinkedHashSet<InetSocketAddress> res = new LinkedHashSet<>(node.socketAddresses());
 
         Collection<InetSocketAddress> extAddrs = node.attribute(createSpiAttributeName(ATTR_EXT_ADDRS));
@@ -1276,15 +1277,35 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /**
      * @param node Node.
-     * @param sameHost Same host flag.
-     * @return {@link LinkedHashSet} of internal and external addresses of provided node.
+     * @return {@link LinkedHashSet} of internal and external addresses of provided node except loopback addresses if
+     * current node has the same ones.
      *      Internal addresses placed before external addresses.
      *      Internal addresses will be sorted with {@code inetAddressesComparator(sameHost)}.
+     * @see #getAllNodeAddresses(TcpDiscoveryNode)
      */
-    LinkedHashSet<InetSocketAddress> getNodeAddresses(TcpDiscoveryNode node, boolean sameHost) {
+    LinkedHashSet<InetSocketAddress> getEffectiveNodeAddresses(TcpDiscoveryNode node) {
+        return getEffectiveNodeAddresses(node, U.sameMacs(locNode, node));
+    }
+
+    /**
+     * Gives node addresses with a preferable order.
+     *
+     * @param node Node.
+     * @param sameHost If {@code True}, loopback addresses go first. Otherwise, last.
+     * @return {@link LinkedHashSet} of internal and external addresses of provided node except loopback addresses if
+     * current node has the same ones.
+     *      Internal addresses placed before external addresses.
+     *      Internal addresses will be sorted with {@code inetAddressesComparator(sameHost)}.
+     * @see #getAllNodeAddresses(TcpDiscoveryNode)
+     */
+    LinkedHashSet<InetSocketAddress> getEffectiveNodeAddresses(TcpDiscoveryNode node, boolean sameHost) {
         List<InetSocketAddress> addrs = U.arrayList(node.socketAddresses());
 
-        Collections.sort(addrs, U.inetAddressesComparator(sameHost));
+        // Do not give own loopback to avoid requesting current node.
+        if (!node.equals(locNode))
+            addrs.removeIf(addr -> addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr));
+
+        addrs.sort(U.inetAddressesComparator(sameHost));
 
         LinkedHashSet<InetSocketAddress> res = new LinkedHashSet<>();
 
@@ -2209,11 +2230,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /**
      *
      */
-    private void initializeImpl() {
+    protected void initializeImpl() {
         if (impl != null)
             return;
 
-        sslEnable = ignite().configuration().getSslContextFactory() != null;
+        sslEnable = ignite.configuration().getSslContextFactory() != null;
 
         initFailureDetectionTimeout();
 
@@ -2235,7 +2256,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             if (sockTimeout == 0)
                 sockTimeout = DFLT_SOCK_TIMEOUT;
 
-            impl = new ServerImpl(this);
+            impl = new ServerImpl(this, 4);
         }
 
         metricsUpdateFreq = ignite.configuration().getMetricsUpdateFrequency();
@@ -2261,7 +2282,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         if (isSslEnabled()) {
             try {
-                SSLContext sslCtx = ignite().configuration().getSslContextFactory().create();
+                SSLContext sslCtx = ignite.configuration().getSslContextFactory().create();
 
                 sslSockFactory = sslCtx.getSocketFactory();
                 sslSrvSockFactory = sslCtx.getServerSocketFactory();

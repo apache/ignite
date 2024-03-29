@@ -5518,9 +5518,9 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
             if (!(o instanceof Value))
                 return false;
 
-            Value value = (Value)o;
+            Value val = (Value)o;
 
-            return val == value.val;
+            return this.val == val.val;
         }
 
         /** {@inheritDoc} */

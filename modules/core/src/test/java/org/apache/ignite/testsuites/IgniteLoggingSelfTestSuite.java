@@ -34,5 +34,4 @@ public class IgniteLoggingSelfTestSuite {
     public static void setUpClass() {
         JUnitTeamcityReporter.suite = IgniteLoggingSelfTestSuite.class.getName();
     }
-
 }
