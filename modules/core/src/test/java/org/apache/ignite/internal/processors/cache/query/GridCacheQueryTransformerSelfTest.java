@@ -607,10 +607,10 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
                     }
                 };
 
-            ScanQuery<Integer, Value> query = new ScanQuery<>();
-            query.setPageSize(pageSize);
+            ScanQuery<Integer, Value> qry = new ScanQuery<>();
+            qry.setPageSize(pageSize);
 
-            List<Integer> res = cache.query(query, transformer).getAll();
+            List<Integer> res = cache.query(qry, transformer).getAll();
 
             assertEquals(numEntries, res.size());
 

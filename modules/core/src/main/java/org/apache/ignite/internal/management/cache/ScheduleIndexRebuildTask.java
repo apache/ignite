@@ -83,29 +83,29 @@ public class ScheduleIndexRebuildTask
 
         /** {@inheritDoc} */
         @Override protected ScheduleIndexRebuildJobRes run(CacheScheduleIndexesRebuildCommandArg arg) throws IgniteException {
-            Set<String> argCacheGroups = arg.groupNames() == null
+            Set<String> argCacheGrps = arg.groupNames() == null
                 ? null
                 : new HashSet<>(Arrays.asList(arg.groupNames()));
 
             assert (arg.cacheToIndexes() != null && !arg.cacheToIndexes().isEmpty())
-                || (argCacheGroups != null && !argCacheGroups.isEmpty()) : "Cache to indexes map or cache groups must be specified.";
+                || (argCacheGrps != null && !argCacheGrps.isEmpty()) : "Cache to indexes map or cache groups must be specified.";
 
             Map<String, Set<String>> argCacheToIndexes = arg.cacheToIndexes() != null ? arg.cacheToIndexes() : new HashMap<>();
 
             Set<String> notFoundCaches = new HashSet<>();
-            Set<String> notFoundGroups = new HashSet<>();
+            Set<String> notFoundGrps = new HashSet<>();
 
             GridCacheProcessor cacheProc = ignite.context().cache();
 
             Map<String, Set<String>> cacheToIndexes = new HashMap<>();
             Map<String, Set<String>> cacheToMissedIndexes = new HashMap<>();
 
-            if (argCacheGroups != null) {
-                argCacheGroups.forEach(groupName -> {
+            if (argCacheGrps != null) {
+                argCacheGrps.forEach(groupName -> {
                     CacheGroupContext grpCtx = cacheProc.cacheGroup(CU.cacheId(groupName));
 
                     if (grpCtx == null) {
-                        notFoundGroups.add(groupName);
+                        notFoundGrps.add(groupName);
                         return;
                     }
 
@@ -170,7 +170,7 @@ public class ScheduleIndexRebuildTask
                 cacheToIndexes,
                 cacheToMissedIndexes,
                 notFoundCaches,
-                notFoundGroups
+                notFoundGrps
             );
         }
 

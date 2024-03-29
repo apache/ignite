@@ -685,7 +685,7 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
 
         ClusterMetrics m = ignite.cluster().localNode().metrics();
 
-        int localCpus = m.getTotalCpus();
+        int locCpus = m.getTotalCpus();
         double cpuLoadPct = m.getCurrentCpuLoad() * 100;
         double avgCpuLoadPct = m.getAverageCpuLoad() * 100;
         double gcPct = m.getCurrentGcCpuLoad() * 100;
@@ -745,7 +745,7 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
             .a(", clients=").a(clients).a(", topVer=").a(topVer.topologyVersion())
             .a(", minorTopVer=").a(topVer.minorTopologyVersion()).a("]").nl()
             .a("    ^-- Network [addrs=").a(locNode.addresses()).a(netDetails).a("]").nl()
-            .a("    ^-- CPU [CPUs=").a(localCpus).a(", curLoad=").a(dblFmt.format(cpuLoadPct))
+            .a("    ^-- CPU [CPUs=").a(locCpus).a(", curLoad=").a(dblFmt.format(cpuLoadPct))
             .a("%, avgLoad=").a(dblFmt.format(avgCpuLoadPct)).a("%, GC=").a(dblFmt.format(gcPct)).a("%]").nl()
             .a("    ^-- Heap [used=").a(dblFmt.format(heapUsedInMBytes))
             .a("MB, free=").a(dblFmt.format(freeHeapPct))

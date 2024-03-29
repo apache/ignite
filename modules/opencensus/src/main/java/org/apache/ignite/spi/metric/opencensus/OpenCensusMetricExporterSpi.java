@@ -292,8 +292,10 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         super.onContextInitialized0(spiCtx);
 
-        consistenIdValue = TagValue.create(
-            ((IgniteEx)ignite()).context().discovery().localNode().consistentId().toString());
+        if (sendConsistentId) {
+            consistenIdValue = TagValue.create(
+                ((IgniteEx)ignite()).context().discovery().localNode().consistentId().toString());
+        }
     }
 
     /**

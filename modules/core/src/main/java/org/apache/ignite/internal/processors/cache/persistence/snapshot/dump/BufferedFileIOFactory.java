@@ -15,35 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
-import org.apache.ignite.lang.IgniteReducer;
-import org.jetbrains.annotations.Nullable;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.OpenOption;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 
 /**
- * Vacuum metrics reducer.
+ * File I/O factory which provides {@link BufferedFileIO} implementation of FileIO.
  */
-public class VacuumMetricsReducer implements IgniteReducer<VacuumMetrics, VacuumMetrics> {
+public class BufferedFileIOFactory implements FileIOFactory {
     /** */
-    private static final long serialVersionUID = 7063457745963917386L;
+    private static final long serialVersionUID = 0L;
 
     /** */
-    private final VacuumMetrics m = new VacuumMetrics();
+    protected final FileIOFactory factory;
 
-    /** {@inheritDoc} */
-    @Override public boolean collect(@Nullable VacuumMetrics metrics) {
-        assert metrics != null;
-
-        m.addCleanupRowsCnt(metrics.cleanupRowsCount());
-        m.addScannedRowsCount(metrics.scannedRowsCount());
-        m.addSearchNanoTime(metrics.searchNanoTime());
-        m.addCleanupNanoTime(metrics.cleanupNanoTime());
-
-        return true;
+    /** */
+    public BufferedFileIOFactory(FileIOFactory factory) {
+        this.factory = factory;
     }
 
     /** {@inheritDoc} */
-    @Override public VacuumMetrics reduce() {
-        return m;
+    @Override public BufferedFileIO create(File file, OpenOption... modes) throws IOException {
+        return new BufferedFileIO(factory.create(file, modes));
     }
 }

@@ -14,25 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package java.net;
 
-package org.apache.ignite.internal.processors.task;
+/** */
+public class BlockingDnsInet4AddressImpl extends Inet4AddressImpl {
+    /** {@inheritDoc} */
+    @Override public InetAddress[] lookupAllHostAddr(String hostname) throws UnknownHostException {
+        DnsBlocker.INSTANCE.onHostResolve(this, hostname);
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+        return super.lookupAllHostAddr(hostname);
+    }
 
-/**
- * Indicates that annotated task is a visor task that was invoked by user. They can be handled by event listeners.
- *
- * This annotation intended for internal use only.
- */
-@Documented
-@Inherited
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE})
-public @interface GridVisorManagementTask {
-    // No-op.
+    /** {@inheritDoc} */
+    @Override public String getHostByAddr(byte[] addr) throws UnknownHostException {
+        DnsBlocker.INSTANCE.onAddrResolve(this, addr);
+
+        return super.getHostByAddr(addr);
+    }
 }

@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -383,6 +384,7 @@ public class PlannerTest extends AbstractPlannerTest {
         UUID nodeId
     ) throws IgniteCheckedException {
         GridTestKernalContext kernal = newContext();
+        kernal.add(new NoOpIgniteSecurityProcessor(kernal));
 
         QueryTaskExecutorImpl taskExecutor = new QueryTaskExecutorImpl(kernal);
         taskExecutor.stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(

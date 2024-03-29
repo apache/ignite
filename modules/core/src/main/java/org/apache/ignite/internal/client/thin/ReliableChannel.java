@@ -139,7 +139,12 @@ final class ReliableChannel implements AutoCloseable {
 
         partitionAwarenessEnabled = clientCfg.isPartitionAwarenessEnabled();
 
-        affinityCtx = new ClientCacheAffinityContext(binary, clientCfg.getPartitionAwarenessMapperFactory());
+        affinityCtx = new ClientCacheAffinityContext(
+            binary,
+            clientCfg.getPartitionAwarenessMapperFactory(),
+            this::isConnectionEstablished
+        );
+
         discoveryCtx = new ClientDiscoveryContext(clientCfg);
 
         connMgr = new GridNioClientConnectionMultiplexer(clientCfg);
@@ -956,6 +961,18 @@ final class ReliableChannel implements AutoCloseable {
      */
     ClientCacheAffinityContext affinityContext() {
         return affinityCtx;
+    }
+
+    /** */
+    private boolean isConnectionEstablished(UUID node) {
+        ClientChannelHolder chHolder = nodeChannels.get(node);
+
+        if (chHolder == null || chHolder.isClosed())
+            return false;
+
+        ClientChannel ch = chHolder.ch;
+
+        return ch != null && !ch.closed();
     }
 
     /**

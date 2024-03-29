@@ -84,7 +84,7 @@ public class GridCacheQueueClientDisconnectTest extends GridCommonAbstractTest {
             GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {
                     try {
-                        Object value = queue.take();
+                        Object val = queue.take();
                     }
                     catch (IgniteClientDisconnectedException icd) {
                         latch.countDown();

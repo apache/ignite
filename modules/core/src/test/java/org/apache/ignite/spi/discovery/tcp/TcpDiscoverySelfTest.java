@@ -280,7 +280,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             assertNotNull(node);
             assertNotNull(node.lastSuccessfulAddress());
 
-            LinkedHashSet<InetSocketAddress> addrs = spi1.getNodeAddresses(node);
+            LinkedHashSet<InetSocketAddress> addrs = spi1.getEffectiveNodeAddresses(node);
 
             assertEquals(addrs.iterator().next(), node.lastSuccessfulAddress());
 
@@ -291,7 +291,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             assertNotNull(node);
             assertNotNull(node.lastSuccessfulAddress());
 
-            addrs = spi1.getNodeAddresses(node);
+            addrs = spi1.getEffectiveNodeAddresses(node);
             assertEquals(addrs.iterator().next(), node.lastSuccessfulAddress());
 
             node = (TcpDiscoveryNode)spi2.getNode(ignite1.localNode().id());

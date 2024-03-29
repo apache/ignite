@@ -52,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.Key;
+import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -463,6 +464,12 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
         checkDumpCleared(ign);
 
         ign.cache(DEFAULT_CACHE_NAME).put(KEYS_CNT, KEYS_CNT);
+
+        IntStream.range(0, KEYS_CNT).forEach(i -> {
+            assertEquals(i, ign.cache(DEFAULT_CACHE_NAME).get(i));
+            assertEquals(USER_FACTORY.apply(i), ign.cache(CACHE_0).get(i));
+            assertEquals(new Value(String.valueOf(i)), ign.cache(CACHE_1).get(new Key(i)));
+        });
     }
 
     /** */
@@ -507,14 +514,14 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
                 if (file.getName().endsWith(DUMP_FILE_EXT)) {
                     return new FileIODecorator(delegate.create(file, modes)) {
                         /** {@inheritDoc} */
-                        @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
+                        @Override public int writeFully(ByteBuffer srcBuf, long position) throws IOException {
                             if (findValToFail(srcBuf)) {
                                 keyToFailFound.set(true);
 
                                 throw new IOException("Val to fail found");
                             }
 
-                            return super.writeFully(srcBuf);
+                            return super.writeFully(srcBuf, position);
                         }
 
                         private boolean findValToFail(ByteBuffer srcBuf) {
@@ -656,7 +663,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
         public DumpFailingFactory(IgniteEx ign, boolean failOnWrite) {
             this.delegate = ign.context().cache().context().snapshotMgr().ioFactory();
             this.failOnWrite = failOnWrite;
-            this.errorAfter = new AtomicInteger(KEYS_CNT / 20);
+            this.errorAfter = new AtomicInteger(1);
         }
 
         /** {@inheritDoc} */
@@ -664,9 +671,9 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             if (failOnWrite) {
                 return new FileIODecorator(delegate.create(file, modes)) {
                     /** {@inheritDoc} */
-                    @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
+                    @Override public int writeFully(ByteBuffer srcBuf, long position) throws IOException {
                         if (errorAfter.decrementAndGet() > 0)
-                            return super.writeFully(srcBuf);
+                            return super.writeFully(srcBuf, position);
 
                         throw new IOException("Test write error");
                     }

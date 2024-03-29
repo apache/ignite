@@ -14,17 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package java.net;
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+/** */
+public class BlockingDnsInet6AddressImpl extends Inet6AddressImpl {
+    /** {@inheritDoc} */
+    @Override public InetAddress[] lookupAllHostAddr(String hostname) throws UnknownHostException {
+        DnsBlocker.INSTANCE.onHostResolve(this, hostname);
 
-import org.jetbrains.annotations.Nullable;
+        return super.lookupAllHostAddr(hostname);
+    }
 
-/**
- *
- */
-public interface ExceptionAware {
-    /**
-     * @return Exception.
-     */
-    @Nullable Throwable error();
+    /** {@inheritDoc} */
+    @Override public String getHostByAddr(byte[] addr) throws UnknownHostException {
+        DnsBlocker.INSTANCE.onAddrResolve(this, addr);
+
+        return super.getHostByAddr(addr);
+    }
 }

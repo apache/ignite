@@ -94,10 +94,10 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
 
                         assertNotNull(mapping);
 
-                        List<ColocationGroup> groups = mapping.colocationGroups();
+                        List<ColocationGroup> grps = mapping.colocationGroups();
 
-                        for (ColocationGroup group: groups) {
-                            int[] parts = group.partitions(node.id());
+                        for (ColocationGroup grp: grps) {
+                            int[] parts = grp.partitions(node.id());
 
                             if (!F.isEmpty(parts)) {
                                 for (int part : parts)
@@ -401,29 +401,29 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
         assertTrue(sz >= 1);
         int[] values = ThreadLocalRandom.current().ints(0, ENTRIES_COUNT).distinct().limit(sz).toArray();
 
-        StringBuilder query;
+        StringBuilder qry;
 
         if (!withIn || sz == 1)
-            query = new StringBuilder("select * from T1 where ");
+            qry = new StringBuilder("select * from T1 where ");
         else
-            query = new StringBuilder("select * from T1 where T1.").append(column).append(" in (");
+            qry = new StringBuilder("select * from T1 where T1.").append(column).append(" in (");
 
         for (int i = 0; i < sz; ++i) {
             if (!withIn || sz == 1)
-                query.append("T1.").append(column).append("= ?");
+                qry.append("T1.").append(column).append("= ?");
             else
-                query.append('?');
+                qry.append('?');
 
             if (sz == 1)
                 break;
 
             if (i == sz - 1)
-                query.append(!withIn ? "" : ")");
+                qry.append(!withIn ? "" : ")");
             else
-                query.append(!withIn ? " OR " : ", ");
+                qry.append(!withIn ? " OR " : ", ");
         }
 
-        execute(query.toString(),
+        execute(qry.toString(),
             res -> {
                 assertPartitions(IntStream.of(values).map(i -> partition("T1_CACHE", i)).toArray());
                 assertNodes(IntStream.of(values).mapToObj(i -> node("T1_CACHE", i)).toArray(ClusterNode[]::new));

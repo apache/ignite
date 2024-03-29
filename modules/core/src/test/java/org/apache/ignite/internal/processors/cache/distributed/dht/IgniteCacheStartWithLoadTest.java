@@ -101,9 +101,9 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
                 try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     for (int it = 0; it < keys; it++) {
                         int key = rnd.nextInt(keysSpace);
-                        byte[] value = new byte[2048];
+                        byte[] val = new byte[2048];
 
-                        cache.put(key, value);
+                        cache.put(key, val);
                     }
                     tx.commit();
 

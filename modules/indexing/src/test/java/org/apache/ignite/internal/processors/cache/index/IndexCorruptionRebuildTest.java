@@ -163,14 +163,14 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             int counter = i;
 
-            String value = "test" + i;
+            String val = "test" + i;
 
-            String query = "insert into %s(col1, col2, col3, col4) values (?1, ?2, ?3, ?4)";
+            String insertQry = "insert into %s(col1, col2, col3, col4) values (?1, ?2, ?3, ?4)";
 
             Stream.of(TABLE_NAME_1, TABLE_NAME_2)
                 .map(tableName ->
-                    new SqlFieldsQuery(String.format(query, tableName))
-                        .setArgs(String.valueOf(counter), value, value, value)
+                    new SqlFieldsQuery(String.format(insertQry, tableName))
+                        .setArgs(String.valueOf(counter), val, val, val)
                 ).forEach(cache::query);
         }
 

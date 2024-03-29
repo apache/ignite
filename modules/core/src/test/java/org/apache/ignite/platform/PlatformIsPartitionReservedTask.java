@@ -42,10 +42,10 @@ public class PlatformIsPartitionReservedTask extends ComputeTaskAdapter<Object[]
     @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Object[] arg) {
         //noinspection OptionalGetWithoutIsPresent
-        ClusterNode localNode = subgrid.stream().filter(ClusterNode::isLocal).findFirst().get();
+        ClusterNode locNode = subgrid.stream().filter(ClusterNode::isLocal).findFirst().get();
 
         return Collections.singletonMap(
-                new PlatformIsPartitionReservedJob((String)arg[0], (Integer)arg[1]), localNode);
+                new PlatformIsPartitionReservedJob((String)arg[0], (Integer)arg[1]), locNode);
     }
 
     /** {@inheritDoc} */

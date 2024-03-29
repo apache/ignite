@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -25,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -37,14 +39,22 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.zip.ZipInputStream;
+import org.apache.commons.io.IOUtils;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.dump.DumpConsumer;
 import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.dump.DumpReader;
 import org.apache.ignite.dump.DumpReaderConfiguration;
@@ -61,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.TestDumpConsumer;
@@ -120,6 +131,9 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     /** */
     private LogListener lsnr;
 
+    /** */
+    private boolean persistence;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -132,6 +146,11 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             cfg.setGridLogger(testLog);
         }
 
+        if (persistence) {
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
+        }
+
         return cfg;
     }
 
@@ -139,9 +158,96 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /** Checks a dump when it is created with the data streamer just after a restart. */
+    @Test
+    public void testDumpAfterRestartWithStreamer() throws Exception {
+        doTestDumpAfterRestart(true);
+    }
+
+    /** Checks a dump when it is created just after a restart. */
+    @Test
+    public void testDumpAfterRestart() throws Exception {
+        doTestDumpAfterRestart(false);
+    }
+
+    /** Doest dump test when it is created just after restart. */
+    private void doTestDumpAfterRestart(boolean useDataStreamer) throws Exception {
+        persistence = true;
+
+        int nodes = 2;
+
+        IgniteEx ign0 = startGrids(nodes);
+
+        ign0.cluster().state(ClusterState.ACTIVE);
+
+        ign0.createCache(defaultCacheConfiguration());
+
+        try (IgniteDataStreamer<Integer, String> ds = ign0.dataStreamer(DEFAULT_CACHE_NAME)) {
+            IgniteCache<Integer, String> cache = ign0.cache(DEFAULT_CACHE_NAME);
+
+            for (int i = 0; i < KEYS_CNT; ++i) {
+                if (useDataStreamer)
+                    ds.addData(i, "" + i);
+                else
+                    cache.put(i, "" + i);
+            }
+        }
+
+        stopAllGrids(false);
+        IgniteEx ign1 = startGrids(nodes);
+        ign1.cluster().state(ClusterState.ACTIVE);
+
+        ign1.snapshot().createDump(DMP_NAME, Collections.singletonList(DEFAULT_CACHE_NAME)).get(getTestTimeout());
+
+        ign1.destroyCache(DEFAULT_CACHE_NAME);
+
+        new DumpReader(new DumpReaderConfiguration(dumpDirectory(ign1, DMP_NAME), new DumpConsumer() {
+            @Override public void start() {
+                // No-op.
+            }
+
+            @Override public void onMappings(Iterator<TypeMapping> mappings) {
+                // No-op.
+            }
+
+            @Override public void onTypes(Iterator<BinaryType> types) {
+                // No-op.
+            }
+
+            @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
+                caches.forEachRemaining(cacheData -> ign1.createCache(cacheData.config()));
+            }
+
+            @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
+                data.forEachRemaining(de ->
+                    ign1.cache(ign1.context().cache().cacheDescriptor(de.cacheId()).cacheName()).put(de.key(), de.value())
+                );
+            }
+
+            @Override public void stop() {
+                // No-op.
+            }
+        }), log).run();
+
+        IgniteCache<Integer, String> cache = ign1.cache(DEFAULT_CACHE_NAME);
+
+        assertNotNull(cache);
+        assertEquals(KEYS_CNT, cache.size());
+
+        for (int i = 0; i < KEYS_CNT; ++i)
+            assertEquals(i + "", cache.get(i));
     }
 
     /** */
@@ -502,6 +608,10 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         ign.context().cache().context().snapshotMgr()
             .createSnapshot(zipDump, null, null, false, true, true, true, false).get();
 
+        assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, rawDump));
+
+        assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, zipDump));
+
         stopAllGrids();
 
         Map<Integer, Long> rawSizes = Arrays
@@ -528,11 +638,35 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         assertEquals("Different set of partitions", rawSizes.keySet(), zipSizes.keySet());
 
+        zipSizes.keySet().forEach( p -> assertTrue("Compressed partition " + p + " file size should not be zero", zipSizes.get(p) > 0));
+
         rawSizes.keySet().forEach( p ->
-            assertTrue("Compressed size " + rawSizes.get(p) + " should be smaller than compressed " + zipSizes.get(p),
+            assertTrue("Compressed size " + zipSizes.get(p) + " should be smaller than raw size " + rawSizes.get(p),
                 rawSizes.get(p) > zipSizes.get(p)
             )
         );
+
+        IntStream.range(0, parts).forEach(i -> {
+            try {
+                String entryName = PART_FILE_PREFIX + i + DUMP_FILE_EXT;
+
+                File rawFile = new File(dumpDirectory(ign, rawDump) + "/db/" + id + "/cache-" + CACHE_0 + "/" + entryName);
+                File zipFile = new File(dumpDirectory(ign, zipDump) + "/db/" + id + "/cache-" + CACHE_0 + "/" + entryName + ZIP_SUFFIX);
+
+                byte[] rawFileContent = Files.readAllBytes(rawFile.toPath());
+
+                ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile));
+
+                assertEquals(entryName, zis.getNextEntry().getName());
+
+                byte[] zipFileContent = IOUtils.toByteArray(zis);
+
+                assertEqualsArraysAware("Files should have same data " + rawFile + " and " + zipFile, rawFileContent, zipFileContent);
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     /** */

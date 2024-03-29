@@ -260,28 +260,28 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                 if (configuration.getQueryEntities() != null) {
                     Collection<QueryEntity> entries = configuration.getQueryEntities();
 
-                    for (QueryEntity queryEntity : entries) {
+                    for (QueryEntity qryEntity : entries) {
                         try {
-                            if (queryEntity.getKeyType() != null) {
-                                Class keyCls = Class.forName(queryEntity.getKeyType());
+                            if (qryEntity.getKeyType() != null) {
+                                Class keyCls = Class.forName(qryEntity.getKeyType());
 
                                 if (ModelUtil.canCreateInstance(keyCls))
                                     keys.add(keyCls);
                                 else
                                     throw new IgniteException("Class is unknown for the load test. Make sure you " +
-                                        "specified its full name [cache=" + cacheName + ", clsName=" + queryEntity.getKeyType() + ']');
+                                        "specified its full name [cache=" + cacheName + ", clsName=" + qryEntity.getKeyType() + ']');
                             }
 
-                            if (queryEntity.getValueType() != null) {
-                                Class valCls = Class.forName(queryEntity.getValueType());
+                            if (qryEntity.getValueType() != null) {
+                                Class valCls = Class.forName(qryEntity.getValueType());
 
                                 if (ModelUtil.canCreateInstance(valCls))
                                     values.add(valCls);
                                 else
                                     throw new IgniteException("Class is unknown for the load test. Make sure you " +
-                                        "specified its full name [cache=" + cacheName + ", clsName=" + queryEntity.getValueType() + ']');
+                                        "specified its full name [cache=" + cacheName + ", clsName=" + qryEntity.getValueType() + ']');
 
-                                configureCacheSqlDescriptor(cacheName, queryEntity, valCls);
+                                configureCacheSqlDescriptor(cacheName, qryEntity, valCls);
                             }
                         }
                         catch (ClassNotFoundException e) {

@@ -167,10 +167,10 @@ public class PlatformDotNetSessionData implements Binarylizable {
 
         for (Map.Entry<String, byte[]> e : items.entrySet()) {
             String key = e.getKey();
-            byte[] value = e.getValue();
+            byte[] val = e.getValue();
 
-            if (value != null)
-                this.items.put(key, value);
+            if (val != null)
+                this.items.put(key, val);
             else
                 this.items.remove(key);   // Null value indicates removed key.
         }

@@ -359,7 +359,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         Set<UUID> dataNodesIds = new HashSet<>(F.asList(grid(0).localNode().id(), grid(1).localNode().id()));
         Set<UUID> readsNodes = new HashSet<>(dataNodesIds);
         Set<Long> readsQueries = new HashSet<>();
-        Map<Long, Long> rowsFetchedPerQuery = new HashMap<>();
+        Map<Long, Long> rowsFetchedPerQry = new HashMap<>();
         AtomicLong firstQryId = new AtomicLong(-1);
         AtomicLong lastQryId = new AtomicLong();
 
@@ -420,7 +420,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
                 }
                 else if ("Fetched".equals(action)) {
                     assertEquals(grid(0).localNode().id(), nodeId);
-                    assertNull(rowsFetchedPerQuery.put(id, rows));
+                    assertNull(rowsFetchedPerQry.put(id, rows));
                 }
             }
         });
@@ -428,8 +428,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         assertEquals(4, qryCnt.get());
         assertTrue("Query reads expected on nodes: " + readsNodes, readsNodes.isEmpty());
         assertEquals(Collections.singleton(lastQryId.get()), readsQueries);
-        assertEquals((Long)1000L, rowsFetchedPerQuery.get(firstQryId.get()));
-        assertEquals((Long)4L, rowsFetchedPerQuery.get(lastQryId.get()));
+        assertEquals((Long)1000L, rowsFetchedPerQry.get(firstQryId.get()));
+        assertEquals((Long)4L, rowsFetchedPerQry.get(lastQryId.get()));
         assertEquals(5L, rowsScanned.get());
     }
 

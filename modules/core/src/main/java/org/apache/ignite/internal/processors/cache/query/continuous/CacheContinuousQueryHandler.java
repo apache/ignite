@@ -1212,10 +1212,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             else if (initUpdCntrs != null)
                 partCntrs = initUpdCntrs.get(partId);
 
-            rec = new CacheContinuousQueryPartitionRecovery(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY), topVer,
-                partCntrs != null ? partCntrs.get2() : null);
-
-            CacheContinuousQueryPartitionRecovery oldRec = rcvs.putIfAbsent(partId, rec);
+            T2<Long, Long> partCntrs0 = partCntrs;
+            CacheContinuousQueryPartitionRecovery oldRec = rcvs.computeIfAbsent(partId, k ->
+                    new CacheContinuousQueryPartitionRecovery(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY), topVer,
+                            partCntrs0 != null ? partCntrs0.get2() : null));
 
             if (oldRec != null)
                 rec = oldRec;
@@ -1616,23 +1616,23 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         EventType type = evt.entry().eventType();
 
-        CacheObject oldValue;
-        CacheObject newValue;
+        CacheObject oldVal;
+        CacheObject newVal;
 
         if (type == EXPIRED || type == REMOVED) {
-            newValue = null;
-            oldValue = cacheObj;
+            newVal = null;
+            oldVal = cacheObj;
         }
         else {
-            newValue = cacheObj;
-            oldValue = null;
+            newVal = cacheObj;
+            oldVal = null;
         }
 
         return new CacheContinuousQueryEntry(evt.entry().cacheId(),
             evt.entry().eventType(),
             null,
-            newValue,
-            oldValue,
+            newVal,
+            oldVal,
             evt.entry().isKeepBinary(),
             evt.entry().partition(),
             evt.entry().updateCounter(),

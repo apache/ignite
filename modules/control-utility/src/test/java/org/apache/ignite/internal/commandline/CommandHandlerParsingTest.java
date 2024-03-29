@@ -227,13 +227,13 @@ public class CommandHandlerParsingTest {
     public void testFindAndDeleteGarbage() {
         String nodeId = UUID.randomUUID().toString();
         String delete = "--delete";
-        String groups = "group1,grpoup2,group3";
+        String grps = "group1,grpoup2,group3";
 
         List<List<String>> lists = generateArgumentList(
             "find_garbage",
             new T2<>(nodeId, false),
             new T2<>(delete, false),
-            new T2<>(groups, false)
+            new T2<>(grps, false)
         );
 
         for (List<String> list : lists) {
@@ -248,7 +248,7 @@ public class CommandHandlerParsingTest {
 
             assertEquals(list.contains(delete), arg.delete());
 
-            if (list.contains(groups))
+            if (list.contains(grps))
                 assertEquals(3, arg.groups().length);
             else
                 assertNull(arg.groups());

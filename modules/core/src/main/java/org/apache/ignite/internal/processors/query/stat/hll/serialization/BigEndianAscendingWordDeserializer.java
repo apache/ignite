@@ -118,7 +118,7 @@ public class BigEndianAscendingWordDeserializer implements IWordDeserializer {
             throw new ArrayIndexOutOfBoundsException("Word out of bounds of backing array.");
 
         // Accumulator
-        long value = 0;
+        long val = 0;
 
         // --------------------------------------------------------------------
         // First byte
@@ -132,11 +132,11 @@ public class BigEndianAscendingWordDeserializer implements IWordDeserializer {
         // Right-align relevant bits of first byte.
         firstByte >>>= (bitsRemainingInFirstByte - bitsToConsumeInFirstByte);
 
-        value |= firstByte;
+        val |= firstByte;
 
         // If the first byte contains the whole word, short-circuit.
         if (firstByteIdx == lastByteIdx)
-            return value;
+            return val;
 
         // --------------------------------------------------------------------
         // Middle bytes
@@ -145,18 +145,18 @@ public class BigEndianAscendingWordDeserializer implements IWordDeserializer {
         for (int i = 0; i < middleByteCnt; i++) {
             final long middleByte = (bytes[firstByteIdx + i + 1] & BYTE_MASK);
             // Push middle byte onto accumulator.
-            value <<= BITS_PER_BYTE;
-            value |= middleByte;
+            val <<= BITS_PER_BYTE;
+            val |= middleByte;
         }
 
         // --------------------------------------------------------------------
         // Last byte
         long lastByte = (bytes[lastByteIdx] & BYTE_MASK);
         lastByte >>= (BITS_PER_BYTE - lastByteBitsToConsume);
-        value <<= lastByteBitsToConsume;
-        value |= lastByte;
+        val <<= lastByteBitsToConsume;
+        val |= lastByte;
 
-        return value;
+        return val;
     }
 
     /* (non-Javadoc)
