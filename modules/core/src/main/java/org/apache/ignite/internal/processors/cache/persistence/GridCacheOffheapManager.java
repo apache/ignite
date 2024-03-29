@@ -2535,20 +2535,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public int cleanup(GridCacheContext cctx) throws IgniteCheckedException {
-            CacheDataStore delegate = init0(false);
-
-            return delegate.cleanup(cctx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void updateTxState(GridCacheContext cctx, CacheSearchRow row) throws IgniteCheckedException {
-            CacheDataStore delegate = init0(false);
-
-            delegate.updateTxState(cctx, row);
-        }
-
-        /** {@inheritDoc} */
         @Override public void invoke(GridCacheContext cctx, KeyCacheObject key, OffheapInvokeClosure c)
             throws IgniteCheckedException {
             assert grp.shared().database().checkpointLockIsHeldByThread();

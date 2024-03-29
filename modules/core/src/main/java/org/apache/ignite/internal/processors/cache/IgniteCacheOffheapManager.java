@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Ign
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRowCacheAware;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
@@ -567,23 +566,6 @@ public interface IgniteCacheOffheapManager {
          */
         public void insertRows(Collection<DataRowCacheAware> rows,
             IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException;
-
-        /**
-         * @param cctx Cache context.
-         * @throws IgniteCheckedException If failed.
-         * @return Cleaned rows count.
-         */
-        public int cleanup(GridCacheContext cctx)
-            throws IgniteCheckedException;
-
-        /**
-         *
-         * @param cctx Cache context.
-         * @param row Row.
-         * @throws IgniteCheckedException
-         */
-        public void updateTxState(GridCacheContext cctx, CacheSearchRow row)
-            throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.
