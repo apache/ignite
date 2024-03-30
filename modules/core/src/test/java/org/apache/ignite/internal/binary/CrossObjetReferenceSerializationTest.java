@@ -251,6 +251,20 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
     }
 
     /** */
+    @Test
+    public void testMultipleCrossObjectReferences() {
+        Object firstOuterObj = createObject(outerObjType);
+        Object secondOuterObj = createObject(outerObjType);
+
+        Object[] arr = new Object[] {
+            createReferencesHolder(new Object[] {firstOuterObj, secondOuterObj}),
+            createReferencesHolder(new Object[] {firstOuterObj, secondOuterObj})
+        };
+
+        checkPutGetRemove(arr, arr);
+    }
+
+    /** */
     private Object createReferencesHolder(Object outerObj) {
         switch (serializationMode) {
             case RAW:
@@ -520,7 +534,8 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
             return deepEquals(aWrapperOfOuterRefToReplaceWithObj, that.aWrapperOfOuterRefToReplaceWithObj)
                 && deepEquals(bInnerObj, that.bInnerObj)
                 && deepEquals(cRefToOuterObjToReplaceWithInnerRef, that.cRefToOuterObjToReplaceWithInnerRef)
-                && deepEquals(dRefToInnerObjToRecalculate, that.dRefToInnerObjToRecalculate);
+                && deepEquals(dRefToInnerObjToRecalculate, that.dRefToInnerObjToRecalculate)
+                && eInnerBytePrimitive == that.eInnerBytePrimitive;
         }
 
         /** {@inheritDoc} */
@@ -531,6 +546,7 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
             res = 31 * res + hashCodeArraysAware(bInnerObj);
             res = 31 * res + hashCodeArraysAware(cRefToOuterObjToReplaceWithInnerRef);
             res = 31 * res + hashCodeArraysAware(dRefToInnerObjToRecalculate);
+            res = 31 * res + hashCodeArraysAware(eInnerBytePrimitive);
 
             return res;
         }
