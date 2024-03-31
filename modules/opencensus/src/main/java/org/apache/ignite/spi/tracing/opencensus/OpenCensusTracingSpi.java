@@ -24,10 +24,13 @@ import io.opencensus.trace.Tracing;
 import io.opencensus.trace.export.SpanExporter;
 import io.opencensus.trace.samplers.Samplers;
 import org.apache.ignite.internal.tracing.TracingSpiType;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
+import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.spi.tracing.TracingSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -54,6 +57,7 @@ import org.jetbrains.annotations.Nullable;
 @IgniteSpiConsistencyChecked(optional = true)
 public class OpenCensusTracingSpi extends IgniteSpiAdapter implements TracingSpi<OpenCensusSpanAdapter> {
     /** Configured exporters. */
+    @GridToStringInclude
     private final List<OpenCensusTraceExporter> exporters;
 
     /** Flag indicates that external Tracing is used in environment. In this case no exporters will be started. */
@@ -150,5 +154,10 @@ public class OpenCensusTracingSpi extends IgniteSpiAdapter implements TracingSpi
     /** {@inheritDoc} */
     @Override public byte type() {
         return TracingSpiType.OPEN_CENSUS_TRACING_SPI.index();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(OpenCensusTracingSpi.class, this);
     }
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.spi.eventstorage;
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -49,5 +50,10 @@ public class NoopEventStorageSpi extends IgniteSpiAdapter implements EventStorag
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(NoopEventStorageSpi.class, this);
     }
 }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -31,5 +33,10 @@ public class UnzipFileIOFactory implements FileIOFactory {
     /** {@inheritDoc} */
     @Override public UnzipFileIO create(File file, OpenOption... modes) throws IOException {
         return new UnzipFileIO(file);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(UnzipFileIOFactory.class, this);
     }
 }

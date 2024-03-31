@@ -21,6 +21,7 @@ import java.io.Serializable;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
@@ -105,5 +106,10 @@ public class ConnectGateway implements Serializable {
         err = new IgniteException("Failed to connect, node stopped.");
 
         lock.readUnlock();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ConnectGateway.class, this);
     }
 }
