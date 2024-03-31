@@ -16,67 +16,59 @@
  */
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import org.apache.ignite.metric.MetricRegistry;
 
 /**
  * Zookeeper discovery statistics.
  */
 public class ZookeeperDiscoveryStatistics {
     /** */
-    private final LongAdderMetric joinedNodesCnt = new LongAdderMetric(metricName(DISCO_METRICS, "JoinedNodes"),
-        "Joined nodes count");
+    private final LongAdder joinedNodesCnt = new LongAdder();
 
     /** */
-    private final LongAdderMetric failedNodesCnt = new LongAdderMetric(metricName(DISCO_METRICS, "FailedNodes"),
-        "Failed nodes count");
+    private final LongAdder failedNodesCnt = new LongAdder();
 
     /** */
-    private final LongAdderMetric leftNodesCnt = new LongAdderMetric(metricName(DISCO_METRICS, "LeftNodes"),
-        "Left nodes count");
+    private final LongAdder leftNodesCnt = new LongAdder();
 
     /** Communication error count. */
-    private final LongAdderMetric commErrCnt = new LongAdderMetric(metricName(DISCO_METRICS, "CommunicationErrors"),
-        "Communication errors count");
+    private final LongAdder commErrCnt = new LongAdder();
 
     /** Current topology version */
-    private final AtomicLongMetric topVer = new AtomicLongMetric(metricName(DISCO_METRICS, "CurrentTopologyVersion"),
-        "Current topology version");
+    private final AtomicLong topVer = new AtomicLong();
 
     /**
      * @param discoReg Discovery metric registry.
      */
     public void registerMetrics(MetricRegistry discoReg) {
-        discoReg.register(joinedNodesCnt);
-        discoReg.register(failedNodesCnt);
-        discoReg.register(leftNodesCnt);
-        discoReg.register(commErrCnt);
-        discoReg.register(topVer);
+        discoReg.register("JoinedNodes", this::joinedNodesCnt, "Joined nodes count");
+        discoReg.register("FailedNodes", this::failedNodesCnt, "Failed nodes count");
+        discoReg.register("LeftNodes", this::leftNodesCnt, "Left nodes count");
+        discoReg.register("CommunicationErrors", this::commErrorCount, "Communication errors count");
+        discoReg.register("CurrentTopologyVersion", topVer::get, "Current topology version");
     }
 
     /** */
     public long joinedNodesCnt() {
-        return joinedNodesCnt.value();
+        return joinedNodesCnt.sum();
     }
 
     /** */
     public long failedNodesCnt() {
-        return failedNodesCnt.value();
+        return failedNodesCnt.sum();
     }
 
     /** */
     public long leftNodesCnt() {
-        return leftNodesCnt.value();
+        return leftNodesCnt.sum();
     }
 
     /** */
     public long commErrorCount() {
-        return commErrCnt.value();
+        return commErrCnt.sum();
     }
 
     /** */
@@ -101,7 +93,7 @@ public class ZookeeperDiscoveryStatistics {
 
     /** */
     public void onTopologyChanged(long topVer) {
-        this.topVer.value(topVer);
+        this.topVer.set(topVer);
     }
 
     /** {@inheritDoc} */

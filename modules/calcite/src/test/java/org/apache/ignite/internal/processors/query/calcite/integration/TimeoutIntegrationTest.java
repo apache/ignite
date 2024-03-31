@@ -29,7 +29,7 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.query.DistributedSqlConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -129,7 +129,7 @@ public class TimeoutIntegrationTest extends AbstractBasicIntegrationTest {
      *
      */
     private void checkTimeout(IgniteEx node, IgniteClosureX<String, List<List<?>>> qryExecutor) {
-        MetricRegistry mreg = node.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        MetricRegistryImpl mreg = node.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
         mreg.reset();
 
         sql("CREATE TABLE person (id int, val varchar)");

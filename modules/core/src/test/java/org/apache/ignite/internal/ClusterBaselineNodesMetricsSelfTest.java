@@ -24,7 +24,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;

@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
  * @see ReadOnlyMetricRegistry
  */
 @IgniteExperimental
-public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
+public interface MetricRegistry extends ReadOnlyMetricRegistry {
     /**
      * Registers an int metric which value will be queried from the specified supplier.
      *

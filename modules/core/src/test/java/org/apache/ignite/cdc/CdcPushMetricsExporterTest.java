@@ -29,7 +29,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -197,7 +197,7 @@ public class CdcPushMetricsExporterTest extends AbstractCdcTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void start(MetricRegistry mreg) {
+        @Override public void start(MetricRegistryImpl mreg) {
             Ignite ignite = Ignition.start(destClusterCliCfg);
 
             super.start(mreg);

@@ -36,7 +36,7 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
  * Examples of custom metric registry names: "custom.admin.sessions", "custom.processes", "custom.processes.proc_1", etc.
  *
  * @see ReadOnlyMetricRegistry
- * @see IgniteMetricRegistry
+ * @see MetricRegistry
  */
 @IgniteExperimental
 public interface IgniteMetrics extends Iterable<ReadOnlyMetricRegistry> {
@@ -44,9 +44,9 @@ public interface IgniteMetrics extends Iterable<ReadOnlyMetricRegistry> {
      * Gets or creates custom metric registry named "custom." + {@code registryName}.
      *
      * @param registryName name part to add to the prefix "custom.".
-     * @return {@link IgniteMetricRegistry} registry.
+     * @return {@link MetricRegistry} registry.
      */
-    IgniteMetricRegistry getOrCreate(String registryName);
+    MetricRegistry getOrCreate(String registryName);
 
     /**
      * Removes custom metric registry.

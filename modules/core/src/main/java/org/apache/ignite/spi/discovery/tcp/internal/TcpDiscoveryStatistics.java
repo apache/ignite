@@ -19,15 +19,15 @@ package org.apache.ignite.spi.discovery.tcp.internal;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashMap;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
@@ -41,13 +41,19 @@ public class TcpDiscoveryStatistics {
     private final AtomicLong crdSinceTs = new AtomicLong();
 
     /** Joined nodes count. */
-    private final IntMetricImpl joinedNodesCnt;
+    private final AtomicInteger joinedNodesCnt = new AtomicInteger();
 
     /** Failed nodes count. */
-    private final IntMetricImpl failedNodesCnt;
+    private final AtomicInteger failedNodesCnt = new AtomicInteger();
 
     /** Left nodes count. */
-    private final IntMetricImpl leftNodesCnt;
+    private final AtomicInteger leftNodesCnt = new AtomicInteger();
+
+    /** Pending messages registered count. */
+    private final AtomicInteger pendingMsgsRegistered = new AtomicInteger();
+
+    /** Metric that indicates connections count that were rejected due to SSL errors. */
+    private final AtomicInteger rejectedSslConnectionsCnt = new AtomicInteger();
 
     /** Received messages. */
     @GridToStringInclude
@@ -70,29 +76,6 @@ public class TcpDiscoveryStatistics {
     /** Max message processing time. */
     private long maxMsgProcTime;
 
-    /** Pending messages registered count. */
-    private final IntMetricImpl pendingMsgsRegistered;
-
-    /** Metric that indicates connections count that were rejected due to SSL errors. */
-    private final IntMetricImpl rejectedSslConnectionsCnt;
-
-    /** */
-    public TcpDiscoveryStatistics() {
-        joinedNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "JoinedNodes"), "Joined nodes count");
-
-        failedNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "FailedNodes"), "Failed nodes count");
-
-        leftNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "LeftNodes"), "Left nodes count");
-
-        pendingMsgsRegistered = new IntMetricImpl(metricName(DISCO_METRICS, "PendingMessagesRegistered"),
-            "Pending messages registered count");
-
-        rejectedSslConnectionsCnt = new IntMetricImpl(
-            metricName(DISCO_METRICS, "RejectedSslConnectionsCount"),
-            "TCP discovery connections count that were rejected due to SSL errors."
-        );
-    }
-
     /**
      * @param discoReg Discovery metric registry.
      */
@@ -101,32 +84,34 @@ public class TcpDiscoveryStatistics {
 
         discoReg.register("TotalReceivedMessages", this::totalReceivedMessages, "Total received messages count");
 
-        discoReg.register(joinedNodesCnt);
-        discoReg.register(failedNodesCnt);
-        discoReg.register(leftNodesCnt);
-        discoReg.register(pendingMsgsRegistered);
-        discoReg.register(rejectedSslConnectionsCnt);
+        discoReg.register(metricName(DISCO_METRICS, "JoinedNodes"), this::joinedNodesCount, "Joined nodes count");
+        discoReg.register(metricName(DISCO_METRICS, "FailedNodes"), this::failedNodesCount, "Failed nodes count");
+        discoReg.register(metricName(DISCO_METRICS, "LeftNodes"), this::leftNodesCount, "Left nodes count");
+        discoReg.register(metricName(DISCO_METRICS, "PendingMessagesRegistered"), this::pendingMessagesRegistered,
+            "Pending messages registered count");
+        discoReg.register(metricName(DISCO_METRICS, "RejectedSslConnectionsCount"), rejectedSslConnectionsCnt::get,
+            "TCP discovery connections count that were rejected due to SSL errors.");
     }
 
     /**
      * Increments joined nodes count.
      */
     public void onNodeJoined() {
-        joinedNodesCnt.increment();
+        joinedNodesCnt.incrementAndGet();
     }
 
     /**
      * Increments left nodes count.
      */
     public void onNodeLeft() {
-        leftNodesCnt.increment();
+        leftNodesCnt.incrementAndGet();
     }
 
     /**
      * Increments failed nodes count.
      */
     public void onNodeFailed() {
-        failedNodesCnt.increment();
+        failedNodesCnt.incrementAndGet();
     }
 
     /**
@@ -138,7 +123,7 @@ public class TcpDiscoveryStatistics {
 
     /** Increments connections count that were rejected due to SSL errors. */
     public void onSslConnectionRejected() {
-        rejectedSslConnectionsCnt.increment();
+        rejectedSslConnectionsCnt.incrementAndGet();
     }
 
     /**
@@ -210,7 +195,7 @@ public class TcpDiscoveryStatistics {
      * Increments pending messages registered count.
      */
     public void onPendingMessageRegistered() {
-        pendingMsgsRegistered.increment();
+        pendingMsgsRegistered.incrementAndGet();
     }
 
     /**
@@ -280,7 +265,7 @@ public class TcpDiscoveryStatistics {
      * @return Pending messages registered count.
      */
     public long pendingMessagesRegistered() {
-        return pendingMsgsRegistered.value();
+        return pendingMsgsRegistered.get();
     }
 
     /**
@@ -289,7 +274,7 @@ public class TcpDiscoveryStatistics {
      * @return Nodes joined count.
      */
     public int joinedNodesCount() {
-        return joinedNodesCnt.value();
+        return joinedNodesCnt.get();
     }
 
     /**
@@ -298,7 +283,7 @@ public class TcpDiscoveryStatistics {
      * @return Nodes left count.
      */
     public int leftNodesCount() {
-        return leftNodesCnt.value();
+        return leftNodesCnt.get();
     }
 
     /**
@@ -307,7 +292,7 @@ public class TcpDiscoveryStatistics {
      * @return Failed nodes count.
      */
     public int failedNodesCount() {
-        return failedNodesCnt.value();
+        return failedNodesCnt.get();
     }
 
     /**
@@ -325,15 +310,15 @@ public class TcpDiscoveryStatistics {
     public synchronized void clear() {
         avgMsgProcTime = 0;
         crdSinceTs.set(0);
-        failedNodesCnt.reset();
-        joinedNodesCnt.reset();
-        leftNodesCnt.reset();
+        failedNodesCnt.set(0);
+        joinedNodesCnt.set(0);
+        leftNodesCnt.set(0);
         maxMsgProcTime = 0;
-        pendingMsgsRegistered.reset();
+        pendingMsgsRegistered.set(0);
         procMsgs.clear();
         rcvdMsgs.clear();
         sentMsgs.clear();
-        rejectedSslConnectionsCnt.reset();
+        rejectedSslConnectionsCnt.set(0);
     }
 
     /** {@inheritDoc} */

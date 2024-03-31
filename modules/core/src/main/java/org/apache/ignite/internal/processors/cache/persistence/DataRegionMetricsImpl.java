@@ -28,7 +28,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetricsImpl;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.systemview.view.PagesTimestampHistogramView;
 import org.jetbrains.annotations.Nullable;
@@ -216,7 +217,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         subInts = dataRegionCfg.getMetricsSubIntervalCount();
 
-        MetricRegistry mreg = metricRegistry();
+        MetricRegistryImpl mreg = metricRegistry();
 
         allocRate = mreg.hitRateMetric("AllocationRate",
             "Allocation rate (pages per second) averaged across rateTimeInterval.",
@@ -314,7 +315,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /**
      * Retrieves the {@link MetricRegistry} for this data region.
      */
-    private MetricRegistry metricRegistry() {
+    private MetricRegistryImpl metricRegistry() {
         String registryName = MetricUtils.metricName(DATAREGION_METRICS_PREFIX, dataRegionCfg.getName());
         return kernalCtx.metric().registry(registryName);
     }
@@ -630,7 +631,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      */
     private PageMetrics createCacheGrpPageMetrics(String cacheGrpName) {
         String registryName = MetricUtils.cacheGroupMetricsRegistryName(cacheGrpName);
-        MetricRegistry registry = kernalCtx.metric().registry(registryName);
+        MetricRegistryImpl registry = kernalCtx.metric().registry(registryName);
 
         return PageMetricsImpl.builder(registry)
             .totalPagesCallback(delegate(dataRegionPageMetrics.totalPages()))

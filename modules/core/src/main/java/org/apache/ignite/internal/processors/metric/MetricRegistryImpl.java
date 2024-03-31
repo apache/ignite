@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMe
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
-import org.apache.ignite.metric.IgniteMetricRegistry;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.Metric;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -55,7 +55,7 @@ import static org.apache.ignite.internal.util.lang.GridFunc.nonThrowableSupplier
 /**
  * Metric registry.
  */
-public class MetricRegistry implements IgniteMetricRegistry {
+public class MetricRegistryImpl implements MetricRegistry {
     /** Registry name. */
     private String regName;
 
@@ -77,7 +77,7 @@ public class MetricRegistry implements IgniteMetricRegistry {
      * @param histogramCfgProvider Histogram config provider.
      * @param log Logger.
      */
-    public MetricRegistry(String regName, Function<String, Long> hitRateCfgProvider,
+    public MetricRegistryImpl(String regName, Function<String, Long> hitRateCfgProvider,
         Function<String, long[]> histogramCfgProvider, IgniteLogger log) {
         this.regName = regName;
         this.log = log;
