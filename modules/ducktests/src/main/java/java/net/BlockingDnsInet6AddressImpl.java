@@ -14,36 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package java.net;
 
-package org.apache.ignite.internal.processors.cache.mvcc;
-
-import org.apache.ignite.lang.IgniteReducer;
-import org.jetbrains.annotations.Nullable;
-
-/**
- * Vacuum metrics reducer.
- */
-public class VacuumMetricsReducer implements IgniteReducer<VacuumMetrics, VacuumMetrics> {
-    /** */
-    private static final long serialVersionUID = 7063457745963917386L;
-
-    /** */
-    private final VacuumMetrics m = new VacuumMetrics();
-
+/** */
+public class BlockingDnsInet6AddressImpl extends Inet6AddressImpl {
     /** {@inheritDoc} */
-    @Override public boolean collect(@Nullable VacuumMetrics metrics) {
-        assert metrics != null;
+    @Override public InetAddress[] lookupAllHostAddr(String hostname) throws UnknownHostException {
+        DnsBlocker.INSTANCE.onHostResolve(this, hostname);
 
-        m.addCleanupRowsCnt(metrics.cleanupRowsCount());
-        m.addScannedRowsCount(metrics.scannedRowsCount());
-        m.addSearchNanoTime(metrics.searchNanoTime());
-        m.addCleanupNanoTime(metrics.cleanupNanoTime());
-
-        return true;
+        return super.lookupAllHostAddr(hostname);
     }
 
     /** {@inheritDoc} */
-    @Override public VacuumMetrics reduce() {
-        return m;
+    @Override public String getHostByAddr(byte[] addr) throws UnknownHostException {
+        DnsBlocker.INSTANCE.onAddrResolve(this, addr);
+
+        return super.getHostByAddr(addr);
     }
 }

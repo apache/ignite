@@ -14,32 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package java.net;
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+/** */
+public class BlockingDnsInet4AddressImpl extends Inet4AddressImpl {
+    /** {@inheritDoc} */
+    @Override public InetAddress[] lookupAllHostAddr(String hostname) throws UnknownHostException {
+        DnsBlocker.INSTANCE.onHostResolve(this, hostname);
 
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.LongPredicate;
+        return super.lookupAllHostAddr(hostname);
+    }
 
-/**
- *
- */
-public interface MvccCoordinatorChangeAware {
-    /** */
-    AtomicLong ID_CNTR = new AtomicLong();
+    /** {@inheritDoc} */
+    @Override public String getHostByAddr(byte[] addr) throws UnknownHostException {
+        DnsBlocker.INSTANCE.onAddrResolve(this, addr);
 
-    /** */
-    long MVCC_TRACKER_ID_NA = -1;
-
-    /** */
-    LongPredicate ID_FILTER = id -> id != MVCC_TRACKER_ID_NA;
-
-    /**
-     * Mvcc coordinator change callback.
-     *
-     * @param newCrd New mvcc coordinator.
-     * @return Query id if exists.
-     */
-    default long onMvccCoordinatorChange(MvccCoordinator newCrd) {
-        return MVCC_TRACKER_ID_NA;
+        return super.getHostByAddr(addr);
     }
 }

@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTran
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearReadRepairCheckOnlyFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -71,7 +70,6 @@ import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.C2;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -234,14 +232,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             }, opCtx, /*retry*/false);
         }
 
-        MvccQueryTracker mvccTracker = null;
-
         AffinityTopologyVersion topVer;
 
         if (tx != null)
             topVer = tx.topologyVersion();
-        else if (mvccTracker != null)
-            topVer = mvccTracker.topologyVersion();
         else
             topVer = ctx.affinity().affinityTopologyVersion();
 
@@ -278,17 +272,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             null);
 
         fut.init();
-
-        if (mvccTracker != null) {
-            final MvccQueryTracker mvccTracker0 = mvccTracker;
-
-            fut.listen(new CI1<IgniteInternalFuture<Object>>() {
-                @Override public void apply(IgniteInternalFuture<Object> future) {
-                    if (future.isDone())
-                        mvccTracker0.onDone();
-                }
-            });
-        }
 
         return (IgniteInternalFuture<V>)fut;
     }
@@ -335,14 +318,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             }, opCtx, /*retry*/false);
         }
 
-        MvccQueryTracker mvccTracker = null;
-
         AffinityTopologyVersion topVer;
 
         if (tx != null)
             topVer = tx.topologyVersion();
-        else if (mvccTracker != null)
-            topVer = mvccTracker.topologyVersion();
         else
             topVer = ctx.affinity().affinityTopologyVersion();
 
@@ -378,18 +357,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             null,
             null
         );
-
-        if (mvccTracker != null) {
-            final MvccQueryTracker mvccTracker0 = mvccTracker;
-
-            fut.listen(new CI1<IgniteInternalFuture<Map<K, V>>>() {
-                /** {@inheritDoc} */
-                @Override public void apply(IgniteInternalFuture<Map<K, V>> future) {
-                    if (future.isDone())
-                        mvccTracker0.onDone();
-                }
-            });
-        }
 
         return fut;
     }

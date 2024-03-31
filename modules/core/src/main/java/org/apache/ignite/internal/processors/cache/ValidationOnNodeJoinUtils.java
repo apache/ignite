@@ -629,7 +629,7 @@ public class ValidationOnNodeJoinUtils {
     ) {
         if (!node.isClient()) {
             for (DynamicCacheDescriptor desc : map.values()) {
-                CacheConfiguration cfg = desc.cacheConfiguration();
+                CacheConfiguration<?, ?> cfg = desc.cacheConfiguration();
 
                 if (cfg.getAffinity() instanceof RendezvousAffinityFunction) {
                     RendezvousAffinityFunction aff = (RendezvousAffinityFunction)cfg.getAffinity();

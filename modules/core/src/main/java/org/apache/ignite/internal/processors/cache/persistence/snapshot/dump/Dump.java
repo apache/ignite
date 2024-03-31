@@ -78,7 +78,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.reader
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 
 /**
- * This class provides ability to work with saved cache dump.
+ * This class provides the ability to work with saved cache dump.
  */
 public class Dump implements AutoCloseable {
     /** Snapshot meta. */
@@ -200,7 +200,7 @@ public class Dump implements AutoCloseable {
 
     /** @return List of snapshot metadata saved in {@link #dumpDir}. */
     public List<SnapshotMetadata> metadata() throws IOException, IgniteCheckedException {
-        return metadata;
+        return Collections.unmodifiableList(metadata);
     }
 
     /** @return List of snapshot metadata saved in {@link #dumpDir}. */
@@ -228,13 +228,13 @@ public class Dump implements AutoCloseable {
 
     /**
      * @param node Node directory name.
-     * @param group Group id.
+     * @param grp Group id.
      * @return List of cache configs saved in dump for group.
      */
-    public List<StoredCacheData> configs(String node, int group) {
+    public List<StoredCacheData> configs(String node, int grp) {
         JdkMarshaller marsh = MarshallerUtils.jdkMarshaller(cctx.igniteInstanceName());
 
-        return Arrays.stream(FilePageStoreManager.cacheDataFiles(dumpGroupDirectory(node, group))).map(f -> {
+        return Arrays.stream(FilePageStoreManager.cacheDataFiles(dumpGroupDirectory(node, grp))).map(f -> {
             try {
                 return readCacheData(f, marsh, cctx.config());
             }
@@ -246,13 +246,13 @@ public class Dump implements AutoCloseable {
 
     /**
      * @param node Node directory name.
-     * @param group Group id.
+     * @param grp Group id.
      * @return Dump iterator.
      */
-    public List<Integer> partitions(String node, int group) {
+    public List<Integer> partitions(String node, int grp) {
         String suffix = comprParts ? DUMP_FILE_EXT + ZIP_SUFFIX : DUMP_FILE_EXT;
 
-        File[] parts = dumpGroupDirectory(node, group)
+        File[] parts = dumpGroupDirectory(node, grp)
             .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(suffix));
 
         if (parts == null)
@@ -265,10 +265,10 @@ public class Dump implements AutoCloseable {
 
     /**
      * @param node Node directory name.
-     * @param group Group id.
+     * @param grp Group id.
      * @return Dump iterator.
      */
-    public DumpedPartitionIterator iterator(String node, int group, int part) {
+    public DumpedPartitionIterator iterator(String node, int grp, int part) {
         FileIOFactory ioFactory = comprParts
             ? (file, modes) -> new ReadOnlyUnzipFileIO(file)
             : (file, modes) -> new ReadOnlyBufferedFileIO(file);
@@ -276,7 +276,7 @@ public class Dump implements AutoCloseable {
         FileIO dumpFile;
 
         try {
-            dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, group), dumpPartFileName(part, comprParts)));
+            dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, grp), dumpPartFileName(part, comprParts)));
         }
         catch (IOException e) {
             throw new RuntimeException(e);
@@ -333,7 +333,7 @@ public class Dump implements AutoCloseable {
                     return;
 
                 try {
-                    next = serializer.read(dumpFile, group, part);
+                    next = serializer.read(dumpFile, grp, part);
                 }
                 catch (IOException | IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -362,7 +362,7 @@ public class Dump implements AutoCloseable {
     }
 
     /** */
-    private File dumpGroupDirectory(String node, int groupId) {
+    private File dumpGroupDirectory(String node, int grpId) {
         File nodeDir = Paths.get(dumpDir.getAbsolutePath(), DFLT_STORE_DIR, node).toFile();
 
         assert nodeDir.exists() && nodeDir.isDirectory();
@@ -377,7 +377,7 @@ public class Dump implements AutoCloseable {
                 ? f.getName().replaceFirst(CACHE_DIR_PREFIX, "")
                 : f.getName().replaceFirst(CACHE_GRP_DIR_PREFIX, "");
 
-            return groupId == CU.cacheId(grpName);
+            return grpId == CU.cacheId(grpName);
         });
 
         if (grpDirs.length != 1)

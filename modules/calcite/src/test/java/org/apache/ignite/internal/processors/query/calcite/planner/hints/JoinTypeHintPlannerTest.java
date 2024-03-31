@@ -167,6 +167,18 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
             "t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3", schema);
 
         assertTrue(!lsnr.check());
+
+        // Next check: ensures that joins missing table scan inputs are processed correctly too.
+        lsnrLog.clearListeners();
+
+        lsnr = LogListener.matches("Skipped hint '" + NL_JOIN + '\'').build();
+
+        lsnrLog.registerListener(lsnr);
+
+        physicalPlan("SELECT /*+ " + MERGE_JOIN + ',' + NL_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 " +
+            "on t1.v3=t2.v3 where t2.v1 in (SELECT t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)", schema);
+
+        assertTrue(lsnr.check());
     }
 
     /**
@@ -362,6 +374,37 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
     }
 
     /**
+     * Test table join hints.
+     */
+    @Test
+    public void testTableHints() throws Exception {
+        String sqlTpl = "SELECT %s A2.A, T3.V3, T1.V2 FROM (SELECT 1 AS A, 2 AS B) A2 JOIN TBL3 %s T3 ON A2.B=A2.B " +
+            "JOIN TBL1 %s T1 on T3.V3=T1.V1 where T1.V2=5";
+
+        assertPlan(String.format(sqlTpl, "", "/*+ " + NL_JOIN + " */", "/*+ " + MERGE_JOIN + " */"), schema,
+            nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class).and(input(1, isTableScan("TBL3"))))
+                .and(nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
+                    .and(input(1, nodeOrAnyChild(isTableScan("TBL1")))))), CORE_JOIN_REORDER_RULES);
+
+        // Table hint has a bigger priority. Leading CNL_JOIN is ignored.
+        assertPlan(String.format(sqlTpl, "/*+ " + CNL_JOIN + " */", "/*+ " + NL_JOIN + " */", "/*+ " + MERGE_JOIN + " */"),
+            schema, nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class).and(input(1, isTableScan("TBL3"))))
+                .and(nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
+                    .and(input(1, nodeOrAnyChild(isTableScan("TBL1")))))), CORE_JOIN_REORDER_RULES);
+
+        // Leading query hint works only for the second join.
+        assertPlan(String.format(sqlTpl, "/*+ " + CNL_JOIN + " */", "/*+ " + NL_JOIN + " */", ""), schema,
+            nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class).and(input(1, isTableScan("TBL3"))))
+                .and(nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+                    .and(input(1, nodeOrAnyChild(isTableScan("TBL1")))))), CORE_JOIN_REORDER_RULES);
+
+        // Table hint with wrong table name is ignored.
+        assertPlan(String.format(sqlTpl, "", "/*+ " + NL_JOIN + "(TBL1), " + CNL_JOIN + " */", ""), schema,
+            nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+                .and(input(1, isTableScan("TBL3")))), CORE_JOIN_REORDER_RULES);
+    }
+
+    /**
      * Tests disable-join-hint works for a sub-query.
      */
     @Test
@@ -403,17 +446,47 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testNestedHintOverrides() throws Exception {
-        assertPlan("SELECT /*+ " + MERGE_JOIN + "(TBL1) */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
+        assertPlan("SELECT /*+ " + MERGE_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
                 "where t2.v1 in (SELECT t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)", schema,
             nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class)).negate()
-                .and(nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class))), CORE_JOIN_REORDER_RULES);
+                .and(nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)).negate()), CORE_JOIN_REORDER_RULES);
 
-        assertPlan("SELECT /*+ " + MERGE_JOIN + "(TBL1) */ t1.v1, t2.v2 FROM TBL1 " +
-            "t1 JOIN TBL2 t2 on t1.v3=t2.v3 where t2.v1 in " +
-            "(SELECT /*+ " + CNL_JOIN + "(TBL1) */ t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)", schema,
-            nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class).and(hasNestedTableScan("TBL1")))
-                .and(nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
-                    .and(hasNestedTableScan("TBL3")).and(hasNestedTableScan("TBL1")))), CORE_JOIN_REORDER_RULES);
+        assertPlan("SELECT /*+ " + CNL_JOIN + "(TBL1)," + MERGE_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 " +
+                "JOIN TBL2 t2 on t1.v3=t2.v3 where t2.v1 in (SELECT t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)",
+            schema, predicateForNestedHintOverrides(false), CORE_JOIN_REORDER_RULES);
+
+        assertPlan("SELECT /*+ " + MERGE_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
+                "where t2.v1 in (SELECT /*+ " + CNL_JOIN + "(TBL1) */ t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)",
+            schema, predicateForNestedHintOverrides(true), CORE_JOIN_REORDER_RULES);
+
+        assertPlan("SELECT /*+ " + MERGE_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
+                "where t2.v1 in (SELECT t3.v3 from TBL3 /*+ " + CNL_JOIN + " */ t3 JOIN TBL1 t4 on t3.v2=t4.v2)",
+            schema, predicateForNestedHintOverrides(true), CORE_JOIN_REORDER_RULES);
+
+        assertPlan("SELECT /*+ " + MERGE_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
+                "where t2.v1 in (SELECT t3.v3 from TBL3 t3 JOIN TBL1 /*+ " + CNL_JOIN + " */ t4 on t3.v2=t4.v2)",
+            schema, predicateForNestedHintOverrides(true), CORE_JOIN_REORDER_RULES);
+    }
+
+    /**
+     * @return A {@link Predicate} for {@link #testNestedHintOverrides()}
+     */
+    private Predicate<RelNode> predicateForNestedHintOverrides(boolean t1MergeT2) {
+        Predicate<RelNode> res = nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class)).negate()
+            .and(nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+                .and(hasNestedTableScan("TBL3")).and(hasNestedTableScan("TBL1"))));
+
+        Predicate<RelNode> t1MergeT2Pred = nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
+            .and(input(0, nodeOrAnyChild(isTableScan("TBL1")))
+                .and(input(1, nodeOrAnyChild(isTableScan("TBL2"))))));
+
+        Predicate<RelNode> t1CnlT2Pred = nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+            .and(input(0, nodeOrAnyChild(isTableScan("TBL1")))
+                .and(input(1, nodeOrAnyChild(isTableScan("TBL2"))))));
+
+        return t1MergeT2
+            ? res.and(t1MergeT2Pred).and(t1CnlT2Pred.negate())
+            : res.and(t1MergeT2Pred.negate()).and(t1CnlT2Pred);
     }
 
     /**
@@ -461,14 +534,13 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
                     .and(hasNestedTableScan("TBL2")))), CORE_JOIN_REORDER_RULES);
 
         // Check many duplicated disables doesn't erase other disables.
-        sqlTpl = "SELECT %s t1.v1, t2.v2, t3.v3, t4.v1 FROM TBL1 t1, TBL2 t2, TBL3 t3, TBL4 t4 where " +
-            "t1.v1=t2.v1 and t1.v2=t2.v2 and t1.v3=t3.v3 and t1.v1=t4.v1";
+        sqlTpl = "SELECT %s t1.v1, t2.v2 FROM TBL1 t1, TBL2 t2 where t1.v1=t2.v1";
 
-        String hints = "/*+ " + NO_CNL_JOIN + ',' + NO_CNL_JOIN + "(TBL1), " + NO_CNL_JOIN + "(TBL1,TBL2), " + NO_CNL_JOIN
-            + "(TBL1,TBL4), " + NO_MERGE_JOIN + "(TBL1) */";
+        String hints = "/*+ " + NO_CNL_JOIN + ',' + NO_CNL_JOIN + "(TBL1), " + NO_CNL_JOIN + "(TBL1,TBL2), "
+            + NO_NL_JOIN + "(TBL1) */";
 
         assertPlan(String.format(sqlTpl, hints), schema,
-            nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class).and(hasChildThat(isTableScan("TBL1")))).negate()
+            nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class).and(hasChildThat(isTableScan("TBL1")))).negate()
                 .and(nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
                     .and(hasChildThat(isTableScan("TBL1")))).negate()),
             CORE_JOIN_REORDER_RULES);
