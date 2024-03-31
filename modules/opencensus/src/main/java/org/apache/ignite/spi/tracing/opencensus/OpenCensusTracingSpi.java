@@ -30,7 +30,6 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
-import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.spi.tracing.TracingSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

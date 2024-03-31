@@ -532,6 +532,8 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(KeystoreEncryptionSpi.class, this, "keyStorePwd", keyStorePwd != null ? "*" : null, "masterKey", masterKey != null ? "*" : null );
+        return S.toString(KeystoreEncryptionSpi.class, this,
+                "keyStorePwd", keyStorePwd != null ? "*" : null,
+                "masterKey", masterKey != null ? "*" : null);
     }
 }

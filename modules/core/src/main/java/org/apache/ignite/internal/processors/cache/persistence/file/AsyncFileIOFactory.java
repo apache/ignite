@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.file.OpenOption;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * File I/O factory which uses {@link AsynchronousFileChannel} based implementation of FileIO.
