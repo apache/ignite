@@ -36,7 +36,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -1339,16 +1338,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Nullable @Override public Object readObjectDetached(boolean deserialize) throws BinaryObjectException {
-        byte objType = in.readBytePositioned(in.position());
-
-        return BinaryUtils.unmarshal(
-            objType == OBJ ? new BinaryHeapInputStream(new RawBytesObjectReader(in).readObject()) : in,
-            ctx,
-            ldr,
-            this,
-            true,
-            deserialize
-        );
+        return BinaryUtils.unmarshal(in, ctx, ldr, new BinaryReaderHandlesHolderImpl(), true, deserialize);
     }
 
     /** {@inheritDoc} */
@@ -2377,6 +2367,11 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     /** {@inheritDoc} */
     @Override public int available() throws IOException {
         return in.remaining();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isEmpty() {
+        return hnds == null || hnds.isEmpty();
     }
 
     /** {@inheritDoc} */

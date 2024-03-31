@@ -183,7 +183,7 @@ import org.junit.runners.Suite;
     BinaryContextPredefinedTypesTest.class,
 
     RawBytesObjectReaderTest.class,
-    CrossObjetReferenceSerializationTest.class
+    CrossObjetReferenceSerializationTest.class,
 })
 public class IgniteBinaryObjectsTestSuite {
 }

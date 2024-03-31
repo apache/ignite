@@ -1947,7 +1947,7 @@ public class BinaryUtils {
 
                     binObj.detachAllowed(true);
 
-                    po = binObj.detach();
+                    po = binObj.detach(!handles.isEmpty());
                 }
                 else {
                     if (in.offheapPointer() == 0)

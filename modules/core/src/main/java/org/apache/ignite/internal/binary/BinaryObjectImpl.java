@@ -284,27 +284,33 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @return Detached binary object.
      */
     public BinaryObjectImpl detach() {
+        return detach(true);
+    }
+
+    /**
+     * @return Detached binary object.
+     */
+    public BinaryObjectImpl detach(boolean checkCrossObjectReferences) {
         if (!detachAllowed || detached())
             return this;
 
         int len = length();
 
-        byte[] detachedData;
+        if (checkCrossObjectReferences) {
+            BinaryHeapInputStream in = BinaryHeapInputStream.create(arr, start);
 
-        BinaryHeapInputStream in = BinaryHeapInputStream.create(arr, start);
+            if (CrossObjectReferenceDetector.isCrossObjectReferencesDetected(in)) {
+                try (BinaryOutputStream out = new BinaryHeapOutputStream(2 * len)) {
+                    CrossObjectReferenceResolver.resolveCrossObjectReferences(in, out);
 
-        if (CrossObjectReferenceDetector.isCrossObjectReferencesDetected(in)) {
-            try (BinaryOutputStream out = new BinaryHeapOutputStream(2 * len)) {
-                CrossObjectReferenceResolver.resolveCrossObjectReferences(in, out);
-
-                detachedData = out.arrayCopy();
+                    return new BinaryObjectImpl(ctx, out.arrayCopy(), 0);
+                }
             }
         }
-        else {
-            detachedData = new byte[len];
 
-            U.arrayCopy(arr, start, detachedData, 0, len);
-        }
+        byte[] detachedData = new byte[len];
+
+        U.arrayCopy(arr, start, detachedData, 0, len);
 
         return new BinaryObjectImpl(ctx, detachedData, 0);
     }
