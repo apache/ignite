@@ -37,16 +37,16 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
     /**
      * Registers an int metric which value will be queried from the specified supplier.
      *
-     * @param name Metric name.
+     * @param name Metric short name. Doesn't include registry name.
      * @param supplier Metric value supplier.
      * @param desc Metric description.
      */
     void register(String name, IntSupplier supplier, @Nullable String desc);
 
     /**
-     * Registers a long which value will be queried from the specified supplier.
+     * Registers a long metric which value will be queried from the specified supplier.
      *
-     * @param name Metric name.
+     * @param name Metric short name. Doesn't include registry name.
      * @param supplier Metric value supplier.
      * @param desc Metric description.
      */
@@ -55,7 +55,7 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
     /**
      * Registers a double metric which value will be queried from the specified supplier.
      *
-     * @param name Metric name.
+     * @param name Metric short name. Doesn't include the registry name.
      * @param supplier Metric value supplier.
      * @param desc Metric description.
      */
@@ -64,7 +64,7 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
     /**
      * Registers an object metric which value will be queried from the specified supplier.
      *
-     * @param name Metric name.
+     * @param name Metric short name. Doesn't include registry name.
      * @param supplier Metric value supplier.
      * @param type Metric value type.
      * @param desc Metric description.
@@ -75,7 +75,7 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
     /**
      * Registers a boolean metric which value will be queried from the specified supplier.
      *
-     * @param name Metric name.
+     * @param name Metric short name. Doesn't include registry name.
      * @param supplier Metric value supplier.
      * @param desc Metric description.
      */
@@ -84,7 +84,7 @@ public interface IgniteMetricRegistry extends ReadOnlyMetricRegistry {
     /**
      * Removes metrics with the {@code name}.
      *
-     * @param name Metric name..
+     * @param name Metric short name. Doesn't include registry name.
      */
     void remove(String name);
 }

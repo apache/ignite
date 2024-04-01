@@ -42,6 +42,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.CUSTOM_METRICS;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** */
@@ -171,27 +172,23 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
 
         assertNotNull(sysMetrics.registry(GridMetricManager.SYS_METRICS).findMetric(GridMetricManager.GC_CPU_LOAD));
 
-        String name = MetricUtils.metricName(GridMetricManager.GC_CPU_LOAD + '2');
-        String fullName = MetricUtils.metricName(GridMetricManager.SYS_METRICS, name);
+        String customShortName = MetricUtils.metricName(GridMetricManager.GC_CPU_LOAD + '2');
+        String unexpectedSysFullName = MetricUtils.metricName(GridMetricManager.SYS_METRICS, customShortName);
 
         AtomicInteger val = new AtomicInteger();
 
-        customMetrics.getOrCreate(GridMetricManager.SYS_METRICS).register(name, val::get, null);
+        customMetrics.getOrCreate(GridMetricManager.SYS_METRICS).register(customShortName, val::get, null);
 
-        customMetrics.getOrCreate(CUSTOM_METRICS).register(fullName, val::get, null);
+        assertNull(sysMetrics.registry(GridMetricManager.SYS_METRICS).findMetric(unexpectedSysFullName));
 
-        assertNull(sysMetrics.registry(GridMetricManager.SYS_METRICS).findMetric(name));
+        String fullCustomName = MetricUtils.metricName(CUSTOM_METRICS, GridMetricManager.SYS_METRICS, customShortName);
 
-        String fullCustomName = MetricUtils.metricName(CUSTOM_METRICS, fullName);
-
-        assertEquals(fullCustomName, customMetrics.getOrCreate(GridMetricManager.SYS_METRICS).findMetric(name).name());
-
-        assertEquals(fullCustomName, customMetrics.getOrCreate(CUSTOM_METRICS).findMetric(fullName).name());
+        assertEquals(fullCustomName, customMetrics.getOrCreate(GridMetricManager.SYS_METRICS).findMetric(customShortName).name());
 
         for (ReadOnlyMetricRegistry r : customMetrics)
             assertTrue(r.name().startsWith(CUSTOM_METRICS));
 
-        assertNotNull(sysMetrics.find(MetricUtils.metricName(CUSTOM_METRICS, GridMetricManager.SYS_METRICS, name),
+        assertNotNull(sysMetrics.find(MetricUtils.metricName(CUSTOM_METRICS, GridMetricManager.SYS_METRICS, customShortName),
             IntMetric.class));
     }
 
@@ -336,11 +333,11 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
             errTxt
         );
 
-        metrics.getOrCreate(CUSTOM_METRICS).register("intMetric1", val::get, "intMetric1Desc");
+        metrics.getOrCreate("numbers").register("intMetric1", val::get, "intMetric1Desc");
 
-        assertEquals(CUSTOM_METRICS + ".intMetric1",
-            metrics.getOrCreate(CUSTOM_METRICS).findMetric("intMetric1").name());
-        assertEquals("intMetric1Desc", metrics.getOrCreate(CUSTOM_METRICS).findMetric("intMetric1").description());
+        assertEquals(metricName(CUSTOM_METRICS, "numbers", "intMetric1"),
+            metrics.getOrCreate("numbers").findMetric("intMetric1").name());
+        assertEquals("intMetric1Desc", metrics.getOrCreate("numbers").findMetric("intMetric1").description());
 
         metrics.getOrCreate("abc").register("intMetric1", val::get, null);
         metrics.getOrCreate(CUSTOM_METRICS + ".abc").register("intMetric1", val::get, null);
@@ -348,32 +345,32 @@ public class CustomMetricsTest extends GridCommonAbstractTest {
         metrics.getOrCreate(CUSTOM_METRICS + ".abc").register("intMetric2", val::get, null);
 
         assertEquals(CUSTOM_METRICS + ".abc.intMetric2",
-            metrics.getOrCreate(CUSTOM_METRICS + ".abc").findMetric("intMetric2").name());
+            metrics.getOrCreate("abc").findMetric("intMetric2").name());
         assertEquals(CUSTOM_METRICS + ".abc.intMetric1",
-            metrics.getOrCreate(CUSTOM_METRICS + ".abc").findMetric("intMetric1").name());
+            metrics.getOrCreate("abc").findMetric("intMetric1").name());
 
         assertFalse(metrics.getOrCreate(CUSTOM_METRICS + ".custom.abc").iterator().hasNext());
 
-        metrics.getOrCreate(CUSTOM_METRICS + ".custom").register("intMetric10", val::get, null);
+        metrics.getOrCreate("custom").register("intMetric10", val::get, null);
         assertEquals(CUSTOM_METRICS + ".custom.intMetric10",
-            metrics.getOrCreate(CUSTOM_METRICS + ".custom").findMetric("intMetric10").name());
+            metrics.getOrCreate("custom").findMetric("intMetric10").name());
 
         metrics.getOrCreate("abc").register("cde.intMetric1", val::get, null);
 
         assertEquals(CUSTOM_METRICS + ".abc.cde.intMetric1",
-            metrics.getOrCreate(CUSTOM_METRICS + ".abc").findMetric("cde.intMetric1").name());
+            metrics.getOrCreate("abc").findMetric("cde.intMetric1").name());
 
         metrics.getOrCreate("abc.cde").register("intMetric1", val::get, null);
 
         assertEquals(CUSTOM_METRICS + ".abc.cde.intMetric1",
-            metrics.getOrCreate(CUSTOM_METRICS + ".abc").findMetric("cde.intMetric1").name());
+            metrics.getOrCreate("abc").findMetric("cde.intMetric1").name());
 
-        assertNotNull(metrics.getOrCreate(CUSTOM_METRICS + ".a.b"));
+        assertNotNull(metrics.getOrCreate("a.b"));
 
         metrics.getOrCreate("CuStOm").register("intMetric300", val::get, null);
 
         assertEquals(CUSTOM_METRICS + ".CuStOm.intMetric300",
-            metrics.getOrCreate(CUSTOM_METRICS + ".CuStOm").findMetric("intMetric300").name());
+            metrics.getOrCreate("CuStOm").findMetric("intMetric300").name());
     }
 
     /** Tests null supplier metric. */
