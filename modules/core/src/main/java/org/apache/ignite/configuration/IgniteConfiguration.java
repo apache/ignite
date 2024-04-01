@@ -3603,6 +3603,7 @@ public class IgniteConfiguration {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteConfiguration.class, this, "mbeanSrvCls", mbeanSrv.getClass().getName());
+        return S.toString(IgniteConfiguration.class, this,
+                "mbeanSrvCls", mbeanSrv != null ? mbeanSrv.getClass().getName() : null);
     }
 }
