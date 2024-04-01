@@ -87,7 +87,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -2903,56 +2902,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 "from 'optional' to 'libs' folder or configuring any query engine with " +
                 "IgniteConfiguration.SqlConfiguration.QueryEnginesConfiguration property).");
         }
-    }
-
-    /**
-     * Execute update on DHT node (i.e. when it is possible to execute and update on all nodes independently).
-     *
-     * @param cctx Cache context.
-     * @param cacheIds Involved cache ids.
-     * @param parts Partitions.
-     * @param schema Schema name.
-     * @param qry Query string.
-     * @param params Query parameters.
-     * @param flags Flags.
-     * @param pageSize Fetch page size.
-     * @param timeout Timeout.
-     * @param topVer Topology version.
-     * @param mvccSnapshot MVCC snapshot.
-     * @param cancel Query cancel object.
-     * @return Cursor over entries which are going to be changed.
-     * @throws IgniteCheckedException If failed.
-     */
-    public UpdateSourceIterator<?> executeUpdateOnDataNodeTransactional(
-        GridCacheContext<?, ?> cctx,
-        int[] cacheIds,
-        int[] parts,
-        String schema,
-        String qry,
-        Object[] params,
-        int flags,
-        int pageSize,
-        int timeout,
-        AffinityTopologyVersion topVer,
-        MvccSnapshot mvccSnapshot,
-        GridQueryCancel cancel
-    ) throws IgniteCheckedException {
-        checkxIndexingEnabled();
-
-        return idx.executeUpdateOnDataNodeTransactional(
-            cctx,
-            cacheIds,
-            parts,
-            schema,
-            qry,
-            params,
-            flags,
-            pageSize,
-            timeout,
-            topVer,
-            mvccSnapshot,
-            cancel
-        );
     }
 
     /**

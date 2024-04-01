@@ -575,7 +575,7 @@ public class GridAffinityAssignmentCache {
 
         Map.Entry<AffinityTopologyVersion, HistoryAffinityAssignment> prevHistEntry = affCache.floorEntry(prevVer);
 
-        HistoryAffinityAssignment newHistEntry = (prevHistEntry == null) ?
+        HistoryAffinityAssignment newHistEntry = (prevHistEntry == null || shouldCleanupShallows()) ?
             new HistoryAffinityAssignmentImpl(assignmentCpy, backups) :
             new HistoryAffinityAssignmentShallowCopy(prevHistEntry.getValue().origin(), topVer);
 
@@ -1017,6 +1017,11 @@ public class GridAffinityAssignmentCache {
             return false;
 
         return nonShallowSize > MAX_NON_SHALLOW_HIST_SIZE || totalSize > MAX_TOTAL_HIST_SIZE;
+    }
+
+    /** */
+    private boolean shouldCleanupShallows() {
+        return nonShallowHistSize.get() <= MIN_NON_SHALLOW_HIST_SIZE && affCache.size() > MAX_TOTAL_HIST_SIZE;
     }
 
     /**

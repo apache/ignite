@@ -9692,67 +9692,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Returns tha list of resolved inet addresses. First addresses are resolved by host names,
-     * if this attempt fails then the addresses are resolved by ip addresses.
-     *
-     * @param node Grid node.
-     * @return Inet addresses for given addresses and host names.
-     * @throws IgniteCheckedException If non of addresses can be resolved.
-     */
-    public static Collection<InetAddress> toInetAddresses(ClusterNode node) throws IgniteCheckedException {
-        return toInetAddresses(node.addresses(), node.hostNames());
-    }
-
-    /**
-     * Returns tha list of resolved inet addresses. First addresses are resolved by host names,
-     * if this attempt fails then the addresses are resolved by ip addresses.
-     *
-     * @param addrs Addresses.
-     * @param hostNames Host names.
-     * @return Inet addresses for given addresses and host names.
-     * @throws IgniteCheckedException If non of addresses can be resolved.
-     */
-    public static Collection<InetAddress> toInetAddresses(Collection<String> addrs,
-        Collection<String> hostNames) throws IgniteCheckedException {
-        Set<InetAddress> res = new HashSet<>(addrs.size());
-
-        Iterator<String> hostNamesIt = hostNames.iterator();
-
-        for (String addr : addrs) {
-            String hostName = hostNamesIt.hasNext() ? hostNamesIt.next() : null;
-
-            InetAddress inetAddr = null;
-
-            if (!F.isEmpty(hostName)) {
-                try {
-                    inetAddr = InetAddress.getByName(hostName);
-                }
-                catch (UnknownHostException ignored) {
-                }
-            }
-
-            if (inetAddr == null || inetAddr.isLoopbackAddress()) {
-                try {
-                    inetAddr = InetAddress.getByName(addr);
-                }
-                catch (UnknownHostException ignored) {
-                }
-            }
-
-            if (inetAddr != null)
-                res.add(inetAddr);
-        }
-
-        if (res.isEmpty())
-            throw new IgniteCheckedException("Addresses can not be resolved [addr=" + addrs +
-                ", hostNames=" + hostNames + ']');
-
-        return res;
-    }
-
-    /**
-     * Returns tha list of resolved socket addresses. First addresses are resolved by host names,
-     * if this attempt fails then the addresses are resolved by ip addresses.
+     * Returns the list of resolved socket addresses.
      *
      * @param node Grid node.
      * @param port Port.
@@ -9763,37 +9703,38 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Returns tha list of resolved socket addresses. First addresses are resolved by host names,
-     * if this attempt fails then the addresses are resolved by ip addresses.
+     * Returns the list of resolved socket addresses.
      *
      * @param addrs Addresses.
      * @param hostNames Host names.
      * @param port Port.
      * @return Socket addresses for given addresses and host names.
      */
-    public static Collection<InetSocketAddress> toSocketAddresses(Collection<String> addrs,
-        Collection<String> hostNames, int port) {
+    public static Collection<InetSocketAddress> toSocketAddresses(
+        Collection<String> addrs,
+        Collection<String> hostNames,
+        int port
+    ) {
         Set<InetSocketAddress> res = new HashSet<>(addrs.size());
 
-        Iterator<String> hostNamesIt = hostNames.iterator();
+        boolean hasAddr = false;
 
         for (String addr : addrs) {
-            String hostName = hostNamesIt.hasNext() ? hostNamesIt.next() : null;
+            InetSocketAddress inetSockAddr = createResolved(addr, port);
+            res.add(inetSockAddr);
 
-            if (!F.isEmpty(hostName)) {
-                InetSocketAddress inetSockAddr = createResolved(hostName, port);
+            if (!inetSockAddr.isUnresolved() && !inetSockAddr.getAddress().isLoopbackAddress())
+                hasAddr = true;
+        }
 
-                if (inetSockAddr.isUnresolved() ||
-                    (!inetSockAddr.isUnresolved() && inetSockAddr.getAddress().isLoopbackAddress())
-                )
-                    inetSockAddr = createResolved(addr, port);
+        // Try to resolve addresses from host names if no external addresses found.
+        if (!hasAddr) {
+            for (String host : hostNames) {
+                InetSocketAddress inetSockAddr = createResolved(host, port);
 
-                res.add(inetSockAddr);
+                if (!inetSockAddr.isUnresolved())
+                    res.add(inetSockAddr);
             }
-
-            // Always append address because local and remote nodes may have the same hostname
-            // therefore remote hostname will always be resolved to local address.
-            res.add(createResolved(addr, port));
         }
 
         return res;
