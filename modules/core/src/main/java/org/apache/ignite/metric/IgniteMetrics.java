@@ -21,19 +21,18 @@ import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 
 /**
- * Allows to manage custom metrics.
+ * Allows managing the custom metrics.
  * <p>
- * Metrics are grouped into registries (groups). Every metric has full name which is the conjunction of registry name
+ * Metrics are grouped into registries (groups). Every metric has a full name which is the conjunction of registry name
  * and the metric short name. Within a registry metric has only its own short name.
  * <p>
- * Note: Names of custom metric registries are required to start with 'custom.' (lower case) and may have additional
- * dot-separated qualifiers. The prefix is automatically added if missed. For example, if provided custom registry name
+ * Note: The prefix 'custom.' is automatically added to the registry name. For example, if provided registry name
  * is "a.b.c.mname", it is automatically extended to "custom.a.b.c.mname".
  * <p>
- * Note: Custom metric are registered on demand and aren't stored. If node restarts, the metrics require registration anew.
+ * Note: Custom metrics are registered on demand and aren't stored. If node restarts, the metrics require registration anew.
  * <p>
  * Any name or dot-separated name part must not be empty and cannot have spaces.
- * Examples of custom metric registry names: "custom.admin.sessions", "custom.processes", "custom.processes.proc_1", etc.
+ * Examples of custom metric registry names: "admin.sessions", "processes.management", "monitoring.load.idle", etc.
  *
  * @see ReadOnlyMetricRegistry
  * @see MetricRegistry
@@ -43,15 +42,13 @@ public interface IgniteMetrics extends Iterable<ReadOnlyMetricRegistry> {
     /**
      * Gets or creates custom metric registry named "custom." + {@code registryName}.
      *
-     * @param registryName name part to add to the prefix "custom.".
+     * @param registryName Registry name part to add to the prefix "custom.".
      * @return {@link MetricRegistry} registry.
      */
     MetricRegistry getOrCreate(String registryName);
 
     /**
      * Removes custom metric registry.
-     * <p>
-     * Note: The registry name have to follow the name convention as described at {@link IgniteMetrics}.
      *
      * @param registryName Registry name starting with 'custom.'.
      */

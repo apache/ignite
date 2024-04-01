@@ -131,7 +131,6 @@ public class MetricRegistryImpl implements MetricRegistry {
         metrics.remove(name);
     }
 
-
     /** {@inheritDoc} */
     @Override public void register(String name, BooleanSupplier supplier, @Nullable String desc) {
         addMetric(name, new BooleanGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));

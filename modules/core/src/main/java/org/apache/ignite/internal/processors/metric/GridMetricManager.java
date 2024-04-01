@@ -65,7 +65,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.CUSTOM_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.fromFullName;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.isCustomPref;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
 
@@ -780,14 +779,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             return F.viewReadOnly(registries.values(), r -> r, r -> r.name().startsWith(CUSTOM_METRICS)).iterator();
         }
 
-        /** Ensures that {@code name} starts with {@link MetricUtils#CUSTOM_METRICS}. */
+        /** Adds {@link MetricUtils#CUSTOM_METRICS} to {@code name}. */
         private String customName(String name) {
-            if (name == null)
-                return metricName(name);
-
-            if (isCustomPref(name))
-                return metricName(name);
-
             return metricName(CUSTOM_METRICS, name);
         }
     }
