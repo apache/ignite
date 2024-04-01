@@ -74,11 +74,11 @@ public abstract class AbstractFileIO implements FileIO {
                             + U.millisToNanos(MAX_IO_TIMEOUT_MS) + " ms); failed to extend file.";
                     else if (write)
                         errorMsg = "Write operation unsuccessful, write timeout exceeds the maximum IO timeout ("
-                            + U.millisToNanos(MAX_IO_TIMEOUT_MS) + " ms)";
+                            + U.millisToNanos(MAX_IO_TIMEOUT_MS) + " ms).";
                     else
                         errorMsg = "Read operation unsuccessful, read timeout exceeds the maximum IO timeout ("
                             + U.millisToNanos(MAX_IO_TIMEOUT_MS) +
-                            " ms); disk might be too busy, please check your device";
+                            " ms); disk might be too busy, please check your device.";
                     throw new IOException(errorMsg);
                 }
             }
