@@ -128,9 +128,9 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     public void testDumpWithNodeFilterCache() throws Exception {
         assumeTrue(nodes > 1);
 
-        configureDfltCaches = false;
-
         startGridAndFillCaches();
+
+        cli.destroyCache(DEFAULT_CACHE_NAME);
 
         cli.createCache(new CacheConfiguration<>()
             .setName(DEFAULT_CACHE_NAME)
