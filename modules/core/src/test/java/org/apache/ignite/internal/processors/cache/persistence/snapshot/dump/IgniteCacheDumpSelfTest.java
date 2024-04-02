@@ -29,10 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.MutableEntry;
@@ -42,7 +39,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryProcessor;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.dump.DumpEntry;
@@ -114,12 +111,6 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
                 ccfg.setExpiryPolicyFactory(() -> EXPIRY_POLICY);
         }
 
-        if (!igniteInstanceName.endsWith("0")) {
-            assert F.isEmpty(cfg.getUserAttributes());
-
-            cfg.setUserAttributes(Stream.of(DEFAULT_CACHE_NAME).collect(Collectors.toMap(Function.identity(), v -> "")));
-        }
-
         return cfg;
     }
 
@@ -128,16 +119,26 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     public void testDumpWithNodeFilterCache() throws Exception {
         assumeTrue(nodes > 1);
 
-        startGridAndFillCaches();
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
+
+        cfg.setUserAttributes(F.asMap(DEFAULT_CACHE_NAME, ""));
+
+        startGrid(cfg);
+
+        for (int i = 1; i < nodes; ++i)
+            startGrid(i);
+
+        cli = startClientGrid(nodes);
+
+        cli.cluster().state(ClusterState.ACTIVE);
+
+        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(
+            cli.cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class));
+        ccfg.setNodeFilter(new AttributeNodeFilter(DEFAULT_CACHE_NAME, null));
 
         cli.destroyCache(DEFAULT_CACHE_NAME);
 
-        cli.createCache(new CacheConfiguration<>()
-            .setName(DEFAULT_CACHE_NAME)
-            .setBackups(backups)
-            .setAtomicityMode(mode)
-            .setNodeFilter(new AttributeNodeFilter(DEFAULT_CACHE_NAME, ""))
-            .setAffinity(new RendezvousAffinityFunction().setPartitions(20)));
+        cli.createCache(ccfg);
 
         try (IgniteDataStreamer<Integer, Integer> ds = cli.dataStreamer(DEFAULT_CACHE_NAME)) {
             IgniteCache<Integer, Integer> cache = cli.cache(DEFAULT_CACHE_NAME);
@@ -156,7 +157,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             DMP_NAME,
             new String[] {DEFAULT_CACHE_NAME},
             Collections.singleton(DEFAULT_CACHE_NAME),
-            (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
+            KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
             0,
             0,
             false,
