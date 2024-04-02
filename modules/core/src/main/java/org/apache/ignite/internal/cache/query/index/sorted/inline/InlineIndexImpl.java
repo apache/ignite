@@ -44,7 +44,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition
 import org.apache.ignite.internal.cache.query.index.sorted.ThreadLocalRowHandlerHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -477,13 +476,11 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         IndexingQueryCacheFilter cacheFilter = qryCtx.cacheFilter() == null ? null
             : qryCtx.cacheFilter().forCache(cctx.cache().name());
 
-        MvccSnapshot v = qryCtx.mvccSnapshot();
-
-        if (cacheFilter == null && v == null && qryCtx.rowFilter() == null)
+        if (cacheFilter == null && qryCtx.rowFilter() == null)
             return null;
 
         return new InlineTreeFilterClosure(
-            cacheFilter, qryCtx.rowFilter(), v, cctx, cctx.kernalContext().config().getGridLogger());
+            cacheFilter, qryCtx.rowFilter(), cctx, cctx.kernalContext().config().getGridLogger());
     }
 
     /** {@inheritDoc} */
