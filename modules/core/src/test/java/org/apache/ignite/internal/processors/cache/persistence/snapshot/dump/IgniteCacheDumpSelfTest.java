@@ -119,24 +119,32 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     public void testDumpWithNodeFilterCache() throws Exception {
         assumeTrue(nodes > 1);
 
-        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
+        CacheConfiguration<?, ?> ccfg = null;
 
-        cfg.setUserAttributes(F.asMap(DEFAULT_CACHE_NAME, ""));
+        for (int i = 0; i <= nodes; ++i) {
+            IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(i));
 
-        startGrid(cfg);
+            if (i == 0) {
+                cfg.setUserAttributes(F.asMap(DEFAULT_CACHE_NAME, ""));
 
-        for (int i = 1; i < nodes; ++i)
-            startGrid(i);
+                ccfg = new CacheConfiguration<>(Arrays.stream(cfg.getCacheConfiguration())
+                    .filter(c -> c.getName().equals(DEFAULT_CACHE_NAME)).findFirst().get());
 
-        cli = startClientGrid(nodes);
+                ccfg.setNodeFilter(new AttributeNodeFilter(DEFAULT_CACHE_NAME, null));
+            }
+
+            cfg.setCacheConfiguration(null);
+
+            if (i < nodes)
+                startGrid(cfg);
+            else {
+                cfg.setClientMode(true);
+
+                cli = startClientGrid(cfg);
+            }
+        }
 
         cli.cluster().state(ClusterState.ACTIVE);
-
-        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(
-            cli.cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class));
-        ccfg.setNodeFilter(new AttributeNodeFilter(DEFAULT_CACHE_NAME, null));
-
-        cli.destroyCache(DEFAULT_CACHE_NAME);
 
         cli.createCache(ccfg);
 

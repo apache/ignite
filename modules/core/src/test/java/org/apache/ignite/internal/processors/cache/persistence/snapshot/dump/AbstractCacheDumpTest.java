@@ -534,8 +534,10 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
         gctx = ign.context().cache().cacheGroup(CU.cacheId(GRP));
 
-        for (GridCacheContext<?, ?> cctx : gctx.caches())
-            assertNull(cctx.dumpListener());
+        if (gctx != null) {
+            for (GridCacheContext<?, ?> cctx : gctx.caches())
+                assertNull(cctx.dumpListener());
+        }
 
         assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, name));
     }
