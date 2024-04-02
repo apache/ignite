@@ -111,7 +111,8 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
         IgniteCache<?, ?> cache = grid(0).getOrCreateCache(CACHE_NAME);
 
         cache.query(new SqlFieldsQuery("CREATE TABLE t1(id INT PRIMARY KEY, str VARCHAR) " +
-                "WITH \"cache_name=" + DEFAULT_CACHE_NAME + ", key_type=CUSTOM_SQL_KEY_TYPE, value_type=CUSTOM_SQL_VALUE_TYPE\"").setSchema("PUBLIC")).getAll();
+                "WITH \"cache_name=" + DEFAULT_CACHE_NAME + ", key_type=CUSTOM_SQL_KEY_TYPE, value_type=CUSTOM_SQL_VALUE_TYPE\"")
+                .setSchema("PUBLIC")).getAll();
 
         cache.query(new SqlFieldsQuery("INSERT INTO PUBLIC.t1 VALUES(1, '1')")).getAll();
 
@@ -121,7 +122,8 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
         assertEquals(EXIT_CODE_OK, execute("--meta", "remove", "--typeName", "CUSTOM_SQL_VALUE_TYPE"));
 
         cache.query(new SqlFieldsQuery("CREATE TABLE t1(id INT PRIMARY KEY, str VARCHAR) " +
-                "WITH \"cache_name=" + DEFAULT_CACHE_NAME + ", key_type=CUSTOM_SQL_KEY_TYPE, value_type=CUSTOM_SQL_VALUE_type\"").setSchema("PUBLIC")).getAll();
+                "WITH \"cache_name=" + DEFAULT_CACHE_NAME + ", key_type=CUSTOM_SQL_KEY_TYPE, value_type=CUSTOM_SQL_VALUE_type\"")
+                .setSchema("PUBLIC")).getAll();
 
         for (int i = 0; i < 10; ++i) {
             cache.query(new SqlFieldsQuery("INSERT INTO PUBLIC.t1 VALUES(" + i + ", '1')")).getAll();
