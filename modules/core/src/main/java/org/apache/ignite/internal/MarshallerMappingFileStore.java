@@ -81,7 +81,7 @@ final class MarshallerMappingFileStore {
         byte[] allPlatforms = otherPlatforms((byte)-1);
 
         for (byte platformId : allPlatforms) {
-            String fileName = getFileName(platformId, typeId);
+            String fileName = BinaryUtils.mappingFileName(platformId, typeId);
 
             File file = new File(mappingDir, fileName);
 
