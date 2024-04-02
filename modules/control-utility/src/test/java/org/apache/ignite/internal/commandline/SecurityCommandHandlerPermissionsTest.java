@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -80,6 +81,25 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
         super.afterTest();
 
         stopAllGrids();
+    }
+
+    /** */
+    @Test
+    public void testClusterTag() throws Exception {
+        Ignite ignite = startGrid(0, userData(TEST_NO_PERMISSIONS_LOGIN, NO_PERMISSIONS));
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute(enrichWithConnectionArguments(Collections.singleton("--state"), TEST_NO_PERMISSIONS_LOGIN))
+        );
+
+        String out = testOut.toString();
+
+        UUID clId = ignite.cluster().id();
+        String clTag = ignite.cluster().tag();
+
+        assertTrue(out.contains("Cluster  ID: " + clId));
+        assertTrue(out.contains("Cluster tag: " + clTag));
     }
 
     /** */
