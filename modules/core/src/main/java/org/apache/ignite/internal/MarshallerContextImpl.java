@@ -329,6 +329,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         return true;
     }
 
+    /** Remove mapping for appropriate type locally. */
     public void unregisterClassNameLocally(int typeId) {
         byte[] allPlatforms = otherPlatforms((byte)-1);
 
