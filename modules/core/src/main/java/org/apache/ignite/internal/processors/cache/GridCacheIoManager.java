@@ -1128,20 +1128,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         if (mvcc != null)
             mvcc.contextReset();
-
-        // Unwind eviction notifications.
-        if (msg instanceof IgniteTxStateAware) {
-            IgniteTxState txState = ((IgniteTxStateAware)msg).txState();
-
-            if (txState != null)
-                txState.unwindEvicts(cctx);
-        }
-        else if (msg instanceof GridCacheIdMessage) {
-            GridCacheContext ctx = cctx.cacheContext(((GridCacheIdMessage)msg).cacheId());
-
-            if (ctx != null)
-                CU.unwindEvicts(ctx);
-        }
     }
 
     /**
