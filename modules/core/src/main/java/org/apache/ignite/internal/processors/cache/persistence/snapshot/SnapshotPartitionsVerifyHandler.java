@@ -174,14 +174,12 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         // This will throw if compression disabled. Calculation before other checks.
         boolean punchHoleEnabled = isPunchHoleEnabled(opCtx, grpDirs.keySet());
 
-        if (!opCtx.check()) {
-            log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
+        if (!opCtx.check() || F.isEmpty(partFiles)) {
+            log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']'
+                + (F.isEmpty(partFiles) ? ". No cache partitions exists for this node. Possible due to cache node filter." : ""));
 
             return Collections.emptyMap();
         }
-
-        if (F.isEmpty(partFiles))
-            return Collections.emptyMap();
 
         return meta.dump() ? checkDumpFiles(opCtx, partFiles) : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles, punchHoleEnabled);
     }

@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -149,7 +150,7 @@ public class Dump implements AutoCloseable {
         this.cctx = standaloneKernalContext(dumpDir, log);
         this.raw = raw;
         this.encSpi = encSpi;
-        this.comprParts = metadata.get(0).compressPartitions();
+        this.comprParts = F.first(metadata).compressPartitions();
 
         for (SnapshotMetadata meta : metadata) {
             if (meta.encryptionKey() != null && encSpi == null)
@@ -163,12 +164,15 @@ public class Dump implements AutoCloseable {
      * @return Standalone kernal context.
      */
     private GridKernalContext standaloneKernalContext(File dumpDir, IgniteLogger log) {
-        SnapshotMetadata meta = metadata.stream().filter(m -> !m.partitions().isEmpty()).findFirst().orElse(F.first(metadata));
+        Collection<SnapshotMetadata> metas = F.viewReadOnly(metadata, m->m, m->!m.partitions().isEmpty());
 
-        File binaryMeta = CacheObjectBinaryProcessorImpl.binaryWorkDir(dumpDir.getAbsolutePath(), meta.folderName());
+        if (metas.isEmpty())
+            throw new IllegalStateException("Node " + consistentId + " has no mapped cache partitions.");
+
+        File binaryMeta = CacheObjectBinaryProcessorImpl.binaryWorkDir(dumpDir.getAbsolutePath(), F.first(metas).folderName());
         File marshaller = new File(dumpDir, DFLT_MARSHALLER_PATH);
 
-        A.ensure(meta.partitions().isEmpty() || binaryMeta.exists(), "binary metadata directory not exists");
+        A.ensure(binaryMeta.exists(), "binary metadata directory not exists");
         A.ensure(marshaller.exists(), "marshaller directory not exists");
 
         try {
