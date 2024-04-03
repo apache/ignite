@@ -180,6 +180,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             return Collections.emptyMap();
         }
 
+        if (F.isEmpty(partFiles))
+            return Collections.emptyMap();
+
         return meta.dump() ? checkDumpFiles(opCtx, partFiles) : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles, punchHoleEnabled);
     }
 
@@ -362,9 +365,6 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         SnapshotHandlerContext opCtx,
         Set<File> partFiles
     ) {
-        if (F.isEmpty(partFiles))
-            return Collections.emptyMap();
-
         try {
             String consistentId = cctx.kernalContext().pdsFolderResolver().resolveFolders().consistentId().toString();
 
