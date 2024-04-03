@@ -163,10 +163,12 @@ public class Dump implements AutoCloseable {
      * @return Standalone kernal context.
      */
     private GridKernalContext standaloneKernalContext(File dumpDir, IgniteLogger log) {
-        File binaryMeta = CacheObjectBinaryProcessorImpl.binaryWorkDir(dumpDir.getAbsolutePath(), F.first(metadata).folderName());
+        SnapshotMetadata meta = metadata.stream().filter(m -> !m.partitions().isEmpty()).findFirst().orElse(F.first(metadata));
+
+        File binaryMeta = CacheObjectBinaryProcessorImpl.binaryWorkDir(dumpDir.getAbsolutePath(), meta.folderName());
         File marshaller = new File(dumpDir, DFLT_MARSHALLER_PATH);
 
-        A.ensure(binaryMeta.exists(), "binary metadata directory not exists");
+        A.ensure(meta.partitions().isEmpty() || binaryMeta.exists(), "binary metadata directory not exists");
         A.ensure(marshaller.exists(), "marshaller directory not exists");
 
         try {

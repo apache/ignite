@@ -333,16 +333,21 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         assertNotNull(metadata);
         assertEquals(nodes, metadata.size());
 
+        int nodesWithParts = 0;
+
         for (SnapshotMetadata meta : metadata) {
             assertEquals(name, meta.snapshotName());
             assertTrue(meta.dump());
             assertFalse(meta.cacheGroupIds().contains(CU.cacheId(UTILITY_CACHE_NAME)));
             assertEquals(expectedComprParts, meta.compressPartitions());
+
+            if (!F.isEmpty(meta.partitions()))
+                ++nodesWithParts;
         }
 
         List<String> nodesDirs = dump.nodesDirectories();
 
-        assertEquals(nodes, nodesDirs.size());
+        assertEquals(nodesWithParts, nodesDirs.size());
 
         TestDumpConsumer cnsmr = new TestDumpConsumer() {
             final Set<Integer> keys = new HashSet<>();
