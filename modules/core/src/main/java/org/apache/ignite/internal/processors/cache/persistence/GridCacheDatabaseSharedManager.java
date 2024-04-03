@@ -2792,7 +2792,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 return true;
 
             case DELETE:
-                cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), locPart.id(), locPart, true);
+                cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), locPart.id(), locPart);
 
                 return true;
 

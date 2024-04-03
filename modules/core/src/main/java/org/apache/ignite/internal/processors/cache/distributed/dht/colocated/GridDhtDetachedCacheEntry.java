@@ -101,11 +101,6 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected void removeExpiredValue() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean detached() {
         return true;
     }

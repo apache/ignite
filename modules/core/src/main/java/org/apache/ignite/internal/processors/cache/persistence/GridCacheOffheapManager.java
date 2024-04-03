@@ -2561,13 +2561,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheContext cctx, KeyCacheObject key, int partId, boolean needPLCleanup)
+        @Override public void remove(GridCacheContext cctx, KeyCacheObject key, int partId)
             throws IgniteCheckedException {
             assert grp.shared().database().checkpointLockIsHeldByThread();
 
             CacheDataStore delegate = init0(false);
 
-            delegate.remove(cctx, key, partId, needPLCleanup);
+            delegate.remove(cctx, key, partId);
         }
 
         /** {@inheritDoc} */

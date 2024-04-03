@@ -465,12 +465,6 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         // No-op.
     }
 
-
-    /** {@inheritDoc} */
-    @Override protected void removeExpiredValue() {
-        // No-op.
-    }
-
     /** {@inheritDoc} */
     @Override protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion ver, long expireTime,
         long updCntr, boolean primary) {

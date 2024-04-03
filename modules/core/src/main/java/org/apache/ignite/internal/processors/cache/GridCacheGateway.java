@@ -240,9 +240,6 @@ public class GridCacheGateway<K, V> {
         ctx.tm().resetContext();
         ctx.mvcc().contextReset();
 
-        // Unwind eviction notifications.
-        CU.unwindEvicts(ctx);
-
         ctx.tm().leaveNearTxSystemSection();
 
         // Return back previous thread local operation context per call.
