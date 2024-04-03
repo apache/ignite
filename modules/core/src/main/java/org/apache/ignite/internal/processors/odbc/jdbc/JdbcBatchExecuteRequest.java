@@ -38,6 +38,9 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     @GridToStringInclude(sensitive = true)
     private List<JdbcQuery> queries;
 
+    /** Client auto commit flag state. */
+    private boolean autoCommit;
+
     /**
      * Last stream batch flag - whether open streamers on current connection
      * must be flushed and closed after this batch.
@@ -62,15 +65,18 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     /**
      * @param schemaName Schema name.
      * @param queries Queries.
+     * @param autoCommit Client auto commit flag state.
      * @param lastStreamBatch {@code true} in case the request is the last batch at the stream.
      */
-    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries, boolean lastStreamBatch) {
+    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries, boolean autoCommit,
+        boolean lastStreamBatch) {
         super(BATCH_EXEC);
 
         assert lastStreamBatch || !F.isEmpty(queries);
 
         this.schemaName = schemaName;
         this.queries = queries;
+        this.autoCommit = autoCommit;
         this.lastStreamBatch = lastStreamBatch;
     }
 
@@ -80,15 +86,18 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
      * @param type Request type.
      * @param schemaName Schema name.
      * @param queries Queries.
+     * @param autoCommit Client auto commit flag state.
      * @param lastStreamBatch {@code true} in case the request is the last batch at the stream.
      */
-    protected JdbcBatchExecuteRequest(byte type, String schemaName, List<JdbcQuery> queries, boolean lastStreamBatch) {
+    protected JdbcBatchExecuteRequest(byte type, String schemaName, List<JdbcQuery> queries, boolean autoCommit,
+        boolean lastStreamBatch) {
         super(type);
 
         assert lastStreamBatch || !F.isEmpty(queries);
 
         this.schemaName = schemaName;
         this.queries = queries;
+        this.autoCommit = autoCommit;
         this.lastStreamBatch = lastStreamBatch;
     }
 
@@ -104,6 +113,13 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
      */
     public List<JdbcQuery> queries() {
         return queries;
+    }
+
+    /**
+     * @return Auto commit flag.
+     */
+    boolean autoCommit() {
+        return autoCommit;
     }
 
     /**
@@ -134,6 +150,9 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
 
         if (protoCtx.isStreamingSupported())
             writer.writeBoolean(lastStreamBatch);
+
+        if (protoCtx.isAutoCommitSupported())
+            writer.writeBoolean(autoCommit);
     }
 
     /** {@inheritDoc} */
@@ -159,6 +178,9 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
 
         if (protoCtx.isStreamingSupported())
             lastStreamBatch = reader.readBoolean();
+
+        if (protoCtx.isAutoCommitSupported())
+            autoCommit = reader.readBoolean();
     }
 
     /** {@inheritDoc} */

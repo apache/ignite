@@ -369,7 +369,7 @@ public class JdbcThinConnection implements Connection {
                 streamState = new StreamState((SqlSetStreamingCommand)cmd, cliIo);
 
                 sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
-                    schema, 1, 1, stmt.explicitTimeout, sql, null), stmt, cliIo);
+                    schema, 1, 1, autoCommit, stmt.explicitTimeout, sql, null), stmt, cliIo);
 
                 streamState.start();
             }
@@ -1475,7 +1475,7 @@ public class JdbcThinConnection implements Connection {
                 respSem.acquire();
 
                 sendRequestNotWaitResponse(
-                    new JdbcOrderedBatchExecuteRequest(schema, streamBatch, lastBatch, order),
+                    new JdbcOrderedBatchExecuteRequest(schema, streamBatch, autoCommit, lastBatch, order),
                     streamingStickyIo);
 
                 streamBatch = null;

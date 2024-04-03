@@ -603,6 +603,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             setupQuery(qry, prepareSchemaName(req.schemaName()));
 
             qry.setArgs(req.arguments());
+            qry.setAutoCommit(req.autoCommit());
 
             if (req.explicitTimeout()) {
                 // Timeout is handled on a client side, do not handle it on a server side.
@@ -948,6 +949,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     qry = new SqlFieldsQueryEx(q.sql(), false);
 
                     setupQuery(qry, schemaName);
+
+                    qry.setAutoCommit(req.autoCommit());
                 }
 
                 assert qry != null;

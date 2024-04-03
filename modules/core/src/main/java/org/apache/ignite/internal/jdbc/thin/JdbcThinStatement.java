@@ -229,7 +229,7 @@ public class JdbcThinStatement implements Statement {
         }
 
         JdbcQueryExecuteRequest req = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
-            maxRows, explicitTimeout, sql, args == null ? null : args.toArray(new Object[args.size()]));
+            maxRows, conn.getAutoCommit(), explicitTimeout, sql, args == null ? null : args.toArray(new Object[args.size()]));
 
         JdbcResultWithIo resWithIo = conn.sendRequest(req, this, null);
 
@@ -713,7 +713,7 @@ public class JdbcThinStatement implements Statement {
         if (F.isEmpty(batch))
             return new int[0];
 
-        JdbcBatchExecuteRequest req = new JdbcBatchExecuteRequest(conn.getSchema(), batch, false);
+        JdbcBatchExecuteRequest req = new JdbcBatchExecuteRequest(conn.getSchema(), batch, conn.getAutoCommit(), false);
 
         try {
             JdbcBatchExecuteResult res = conn.sendRequest(req, this, null).response();

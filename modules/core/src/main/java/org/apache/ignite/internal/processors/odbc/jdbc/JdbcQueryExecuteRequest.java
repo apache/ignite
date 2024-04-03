@@ -51,6 +51,9 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     /** Expected statement type. */
     private JdbcStatementType stmtType;
 
+    /** Client auto commit flag state. */
+    private boolean autoCommit;
+
     /** Flag, that signals, that query expects partition response in response. */
     private boolean partResReq;
 
@@ -60,6 +63,8 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     /** */
     JdbcQueryExecuteRequest() {
         super(QRY_EXEC);
+
+        autoCommit = true;
     }
 
     /**
@@ -67,11 +72,12 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
      * @param schemaName Cache name.
      * @param pageSize Fetch size.
      * @param maxRows Max rows.
+     * @param autoCommit Connection auto commit flag state.
      * @param sqlQry SQL query.
      * @param args Arguments list.
      */
     public JdbcQueryExecuteRequest(JdbcStatementType stmtType, String schemaName, int pageSize, int maxRows,
-        boolean explicitTimeout, String sqlQry, Object[] args) {
+        boolean autoCommit, boolean explicitTimeout, String sqlQry, Object[] args) {
         super(QRY_EXEC);
 
         this.schemaName = F.isEmpty(schemaName) ? null : schemaName;
@@ -80,6 +86,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         this.sqlQry = sqlQry;
         this.args = args;
         this.stmtType = stmtType;
+        this.autoCommit = autoCommit;
         this.explicitTimeout = explicitTimeout;
     }
 
@@ -125,6 +132,13 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         return stmtType;
     }
 
+    /**
+     * @return Auto commit flag.
+     */
+    boolean autoCommit() {
+        return autoCommit;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(
         BinaryWriterExImpl writer,
@@ -143,6 +157,9 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
             for (Object arg : args)
                 JdbcUtils.writeObject(writer, arg, protoCtx);
         }
+
+        if (protoCtx.isAutoCommitSupported())
+            writer.writeBoolean(autoCommit);
 
         writer.writeByte((byte)stmtType.ordinal());
 
@@ -171,6 +188,9 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
 
         for (int i = 0; i < argsNum; ++i)
             args[i] = JdbcUtils.readObject(reader, protoCtx);
+
+        if (protoCtx.isAutoCommitSupported())
+            autoCommit = reader.readBoolean();
 
         try {
             if (reader.available() > 0)
