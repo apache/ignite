@@ -164,7 +164,7 @@ public class Dump implements AutoCloseable {
      * @return Standalone kernal context.
      */
     private GridKernalContext standaloneKernalContext(File dumpDir, IgniteLogger log) {
-        Collection<SnapshotMetadata> metas = F.viewReadOnly(metadata, m->m, m->!m.partitions().isEmpty());
+        Collection<SnapshotMetadata> metas = F.viewReadOnly(metadata, m -> m, m -> !m.partitions().isEmpty());
 
         if (metas.isEmpty())
             throw new IllegalStateException("Node " + consistentId + " has no mapped cache partitions.");

@@ -363,8 +363,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         Set<File> partFiles
     ) {
         if (F.isEmpty(partFiles)) {
-            log.info("Dump data integrity check skipped [snpName=" + opCtx.metadata().snapshotName()
-                + "]. No cache partitions exist for this node. Possible due to a cache node filter.");
+            log.info("Dump data integrity check skipped [dumpName=" + opCtx.metadata().snapshotName()
+                + "]. No cache partitions exist for node " + opCtx.metadata().consistentId()
+                + ". Possible due to a cache node filter.");
 
             return Collections.emptyMap();
         }
