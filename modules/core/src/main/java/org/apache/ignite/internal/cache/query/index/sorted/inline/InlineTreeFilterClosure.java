@@ -18,11 +18,9 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -40,25 +38,13 @@ public class InlineTreeFilterClosure implements BPlusTree.TreeRowClosure<IndexRo
     /** */
     private final BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter;
 
-    /** */
-    private final GridCacheContext<?, ?> cctx;
-
-    /** */
-    private final IgniteLogger log;
-
     /** Constructor. */
-    public InlineTreeFilterClosure(
-        IndexingQueryCacheFilter cacheFilter,
-        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter,
-        GridCacheContext<?, ?> cctx,
-        IgniteLogger log
-    ) {
-        assert (cacheFilter != null || rowFilter != null) && cctx != null;
+    public InlineTreeFilterClosure(IndexingQueryCacheFilter cacheFilter,
+        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter) {
+        assert cacheFilter != null || rowFilter != null;
 
         this.cacheFilter = cacheFilter;
         this.rowFilter = rowFilter;
-        this.cctx = cctx;
-        this.log = log;
     }
 
     /** {@inheritDoc} */
