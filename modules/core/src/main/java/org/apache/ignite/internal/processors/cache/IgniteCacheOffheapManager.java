@@ -209,13 +209,15 @@ public interface IgniteCacheOffheapManager {
      * @param key Key.
      * @param partId Partition number.
      * @param part Partition.
+     * @param needPLCleanup need pending list cleanup.
      * @throws IgniteCheckedException If failed.
      */
     public void remove(
         GridCacheContext cctx,
         KeyCacheObject key,
         int partId,
-        GridDhtLocalPartition part
+        GridDhtLocalPartition part,
+        boolean needPLCleanup
     ) throws IgniteCheckedException;
 
     /**
@@ -617,9 +619,10 @@ public interface IgniteCacheOffheapManager {
          * @param cctx Cache context.
          * @param key Key.
          * @param partId Partition number.
+         * @param needPLCleanup need pending list cleanup.
          * @throws IgniteCheckedException If failed.
          */
-        public void remove(GridCacheContext cctx, KeyCacheObject key, int partId) throws IgniteCheckedException;
+        public void remove(GridCacheContext cctx, KeyCacheObject key, int partId, boolean needPLCleanup) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

@@ -404,9 +404,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         GridCacheContext cctx,
         KeyCacheObject key,
         int partId,
-        GridDhtLocalPartition part
+        GridDhtLocalPartition part,
+        boolean needPLCleanup
     ) throws IgniteCheckedException {
-        dataStore(part).remove(cctx, key, partId);
+        dataStore(part).remove(cctx, key, partId, needPLCleanup);
     }
 
     /** {@inheritDoc} */
@@ -1481,7 +1482,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 case REMOVE: {
                     CacheDataRow oldRow = c.oldRow();
 
-                    finishRemove(cctx, row.key(), oldRow);
+                    finishRemove(cctx, row.key(), oldRow, true);
 
                     break;
                 }
@@ -1757,7 +1758,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheContext cctx, KeyCacheObject key, int partId) throws IgniteCheckedException {
+        @Override public void remove(GridCacheContext cctx, KeyCacheObject key, int partId, boolean needPLCleanup)
+            throws IgniteCheckedException {
             if (!busyLock.enterBusy())
                 throw operationCancelledException();
 
@@ -1768,7 +1770,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 CacheDataRow oldRow = dataTree.remove(new SearchRow(cacheId, key));
 
-                finishRemove(cctx, key, oldRow);
+                finishRemove(cctx, key, oldRow, needPLCleanup);
             }
             finally {
                 busyLock.leaveBusy();
@@ -1779,11 +1781,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param cctx Cache context.
          * @param key Key.
          * @param oldRow Removed row.
+         * @param needPLCleanup need pending list cleanup
          * @throws IgniteCheckedException If failed.
          */
-        private void finishRemove(GridCacheContext cctx, KeyCacheObject key, @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
+        private void finishRemove(GridCacheContext cctx, KeyCacheObject key, @Nullable CacheDataRow oldRow, boolean needPLCleanup)
+            throws IgniteCheckedException {
             if (oldRow != null) {
-                clearPendingEntries(cctx, oldRow);
+                if (needPLCleanup)
+                    clearPendingEntries(cctx, oldRow);
 
                 decrementSize(cctx.cacheId());
             }

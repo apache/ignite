@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Map;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.TouchedExpiryPolicy;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -82,10 +84,14 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
         try {
             final String key = "key";
 
+            assertEquals(0, pendingSize(g));
+
             g.cache(DEFAULT_CACHE_NAME).withExpiryPolicy(
                     new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000))).put(key, 1);
 
             assertEquals(1, g.cache(DEFAULT_CACHE_NAME).get(key));
+
+            assertEquals(1, pendingSize(g));
 
             U.sleep(1100);
 
@@ -99,9 +105,18 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
                             g.internalCache(DEFAULT_CACHE_NAME).context().toCacheKeyObject(key)));
                 }
             });
+
+            assertEquals(0, pendingSize(g));
         }
         finally {
             stopAllGrids();
         }
+    }
+
+    /** */
+    private static long pendingSize(IgniteKernal g) throws IgniteCheckedException {
+        Map<Integer, GridCacheTtlManager> ttlMgrs = U.field(g.context().cache().context().ttl(), "mgrs");
+
+        return ttlMgrs.get(GridCacheUtils.cacheId(DEFAULT_CACHE_NAME)).pendingSize();
     }
 }

@@ -3243,7 +3243,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (log.isTraceEnabled())
             log.trace("onExpired clear [key=" + key + ", entry=" + System.identityHashCode(this) + ']');
 
-        removeValue();
+        removeExpiredValue();
 
         if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
             cctx.events().addEvent(partition(),
@@ -3552,7 +3552,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert lock.isHeldByCurrentThread();
 
         // Removals are possible from RENTING partition on clearing/evicting.
-        cctx.offheap().remove(cctx, key, partition(), localPartition());
+        cctx.offheap().remove(cctx, key, partition(), localPartition(), true);
+    }
+
+    /**
+     * Removes value from offheap without doing cleanup of pending list of ttl manager.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void removeExpiredValue() throws IgniteCheckedException {
+        assert lock.isHeldByCurrentThread();
+
+        cctx.offheap().remove(cctx, key, partition(), localPartition(), false);
     }
 
     /** {@inheritDoc} */
