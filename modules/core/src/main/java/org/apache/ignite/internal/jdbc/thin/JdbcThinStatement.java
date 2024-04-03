@@ -713,7 +713,8 @@ public class JdbcThinStatement implements Statement {
         if (F.isEmpty(batch))
             return new int[0];
 
-        JdbcBatchExecuteRequest req = new JdbcBatchExecuteRequest(conn.getSchema(), batch, conn.getAutoCommit(), false);
+        JdbcBatchExecuteRequest req = new JdbcBatchExecuteRequest(conn.getSchema(), batch,
+            conn.getAutoCommit(), false);
 
         try {
             JdbcBatchExecuteResult res = conn.sendRequest(req, this, null).response();
