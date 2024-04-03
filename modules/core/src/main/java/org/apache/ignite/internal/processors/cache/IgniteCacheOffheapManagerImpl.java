@@ -1783,7 +1783,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          */
         private void finishRemove(GridCacheContext cctx, KeyCacheObject key, @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
             if (oldRow != null) {
-                clearPendingEntries(cctx, oldRow);
+                if (!(key instanceof TtlExpiredKeyCacheObject))
+                    clearPendingEntries(cctx, oldRow);
 
                 decrementSize(cctx.cacheId());
             }

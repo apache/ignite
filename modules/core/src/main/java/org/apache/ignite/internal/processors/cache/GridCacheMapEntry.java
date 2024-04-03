@@ -140,6 +140,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** */
     private static final byte IS_EVICT_DISABLED = 0x04;
 
+    /** */
+    private static final byte IS_TTL_EXPIRED = 0x08;
+
     /**
      * NOTE
      * <br/>
@@ -3166,6 +3169,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (expiredVal == null)
                 return false;
 
+            flags |= IS_TTL_EXPIRED;
+
             if (onExpired(expiredVal, obsoleteVer)) {
                 if (cctx.deferredDelete()) {
                     deferred = true;
@@ -3552,7 +3557,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert lock.isHeldByCurrentThread();
 
         // Removals are possible from RENTING partition on clearing/evicting.
-        cctx.offheap().remove(cctx, key, partition(), localPartition());
+        cctx.offheap().remove(cctx,
+            ((flags & IS_TTL_EXPIRED) != 0 && this.key instanceof KeyCacheObjectImpl)
+                ? new TtlExpiredKeyCacheObject((KeyCacheObjectImpl)this.key)
+                : this.key,
+            partition(),
+            localPartition()
+        );
     }
 
     /** {@inheritDoc} */
@@ -5465,5 +5476,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         GridCacheAdapter cache = cctx.cache();
 
         return cache != null && cache.cacheCfg.getPlatformCacheConfiguration() != null;
+    }
+}
+
+/** */
+class TtlExpiredKeyCacheObject extends KeyCacheObjectImpl {
+    /** */
+    TtlExpiredKeyCacheObject(KeyCacheObjectImpl keyCacheObj) {
+        super(keyCacheObj.val, keyCacheObj.valBytes, keyCacheObj.partition());
     }
 }
