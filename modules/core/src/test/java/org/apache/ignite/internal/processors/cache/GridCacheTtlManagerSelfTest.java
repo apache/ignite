@@ -21,6 +21,7 @@ import java.util.Map;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.TouchedExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -93,7 +94,7 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
 
             assertEquals(1, pendingSize(g));
 
-            U.sleep(1100);
+            U.sleep(2000);
 
             GridTestUtils.retryAssert(log, 10, 100, new CAX() {
                 @Override public void applyx() {
@@ -103,10 +104,10 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
                     if (!g.internalCache(DEFAULT_CACHE_NAME).context().deferredDelete())
                         assertNull(g.internalCache(DEFAULT_CACHE_NAME).map().getEntry(g.internalCache(DEFAULT_CACHE_NAME).context(),
                             g.internalCache(DEFAULT_CACHE_NAME).context().toCacheKeyObject(key)));
+
+                    assertEquals(0, pendingSize(g));
                 }
             });
-
-            assertEquals(0, pendingSize(g));
         }
         finally {
             stopAllGrids();
@@ -114,9 +115,15 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static long pendingSize(IgniteKernal g) throws IgniteCheckedException {
-        Map<Integer, GridCacheTtlManager> ttlMgrs = U.field(g.context().cache().context().ttl(), "mgrs");
+    private static long pendingSize(IgniteKernal g) {
+        try {
+            Map<Integer, GridCacheTtlManager> ttlMgrs = U.field(g.context().cache().context().ttl(), "mgrs");
 
-        return ttlMgrs.get(GridCacheUtils.cacheId(DEFAULT_CACHE_NAME)).pendingSize();
+            return ttlMgrs.get(GridCacheUtils.cacheId(DEFAULT_CACHE_NAME)).pendingSize();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+
     }
 }
