@@ -22,7 +22,6 @@ import java.util.Objects;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_4_0;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_7_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
 
 /**
@@ -57,13 +56,6 @@ public class JdbcProtocolContext {
      */
     public boolean isStreamingSupported() {
         return ver.compareTo(VER_2_4_0) >= 0;
-    }
-
-    /**
-     * @return {@code true} if JDBC streaming supported.
-     */
-    public boolean isAutoCommitSupported() {
-        return ver.compareTo(VER_2_7_0) >= 0;
     }
 
     /**
