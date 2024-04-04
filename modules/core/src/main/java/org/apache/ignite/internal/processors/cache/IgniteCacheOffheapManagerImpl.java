@@ -1140,7 +1140,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         obsoleteVer = cctx.cache().nextVersion();
 
                     GridCacheEntryEx entry = cctx.cache().entryEx(row.key instanceof KeyCacheObjectImpl
-                        ? new ExpiredKeyCacheObject((KeyCacheObjectImpl)row.key) : row.key);
+                        ? new ExpiredKeyCacheObject((KeyCacheObjectImpl)row.key, row.expireTime, row.link) : row.key);
 
                     if (entry != null)
                         c.apply(entry, obsoleteVer);
@@ -1784,7 +1784,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          */
         private void finishRemove(GridCacheContext cctx, KeyCacheObject key, @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
             if (oldRow != null) {
-                if (!(key instanceof ExpiredKeyCacheObject))
+                if (!(key instanceof ExpiredKeyCacheObject)
+                    || ((ExpiredKeyCacheObject)key).expireTime != oldRow.expireTime()
+                    || ((ExpiredKeyCacheObject)key).link != oldRow.link()
+                )
                     clearPendingEntries(cctx, oldRow);
 
                 decrementSize(cctx.cacheId());
@@ -2054,8 +2057,18 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private static final long serialVersionUID = 0L;
 
         /** */
-        private ExpiredKeyCacheObject(KeyCacheObjectImpl keyCacheObj) {
+        private long expireTime;
+
+        /** */
+        private long link;
+
+        /** */
+        private ExpiredKeyCacheObject(KeyCacheObjectImpl keyCacheObj, long expireTime, long link) {
             super(keyCacheObj.val, keyCacheObj.valBytes, keyCacheObj.partition());
+
+            this.expireTime = expireTime;
+
+            this.link = link;
         }
 
         /** */
