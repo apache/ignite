@@ -5481,8 +5481,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
 /** */
 class TtlExpiredKeyCacheObject extends KeyCacheObjectImpl {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
     /** */
     TtlExpiredKeyCacheObject(KeyCacheObjectImpl keyCacheObj) {
         super(keyCacheObj.val, keyCacheObj.valBytes, keyCacheObj.partition());
+    }
+
+    /** */
+    public TtlExpiredKeyCacheObject() {
     }
 }
