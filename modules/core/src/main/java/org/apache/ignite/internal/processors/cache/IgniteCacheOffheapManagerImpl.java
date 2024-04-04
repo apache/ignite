@@ -100,21 +100,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  *
  */
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
-    /** */
-    private static class RemovedFromPendingEntries extends KeyCacheObjectImpl {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private RemovedFromPendingEntries(KeyCacheObjectImpl keyCacheObj) {
-            super(keyCacheObj.val, keyCacheObj.valBytes, keyCacheObj.partition());
-        }
-
-        /** */
-        public RemovedFromPendingEntries() {
-        }
-    }
-
     /** The maximum number of entries that can be preloaded under checkpoint read lock. */
     public static final int PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK = 100;
 
@@ -1155,7 +1140,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         obsoleteVer = cctx.cache().nextVersion();
 
                     GridCacheEntryEx entry = cctx.cache().entryEx(row.key instanceof KeyCacheObjectImpl
-                        ? new RemovedFromPendingEntries((KeyCacheObjectImpl)row.key) : row.key);
+                        ? new ExpiredKeyCacheObject((KeyCacheObjectImpl)row.key) : row.key);
 
                     if (entry != null)
                         c.apply(entry, obsoleteVer);
@@ -1799,7 +1784,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          */
         private void finishRemove(GridCacheContext cctx, KeyCacheObject key, @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
             if (oldRow != null) {
-                if (!(key instanceof RemovedFromPendingEntries))
+                if (!(key instanceof ExpiredKeyCacheObject))
                     clearPendingEntries(cctx, oldRow);
 
                 decrementSize(cctx.cacheId());
@@ -2057,6 +2042,24 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public PartitionMetaStorage<SimpleDataRow> partStorage() {
             return null;
+        }
+    }
+
+    /**
+     * This entry key is used to indicate that an expired entry has already been deleted from
+     * PendingEntriesTree and doesn't need to participate in PendingEntriesTree cleanup again.
+     * */
+    private static class ExpiredKeyCacheObject extends KeyCacheObjectImpl {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private ExpiredKeyCacheObject(KeyCacheObjectImpl keyCacheObj) {
+            super(keyCacheObj.val, keyCacheObj.valBytes, keyCacheObj.partition());
+        }
+
+        /** */
+        public ExpiredKeyCacheObject() {
         }
     }
 }
