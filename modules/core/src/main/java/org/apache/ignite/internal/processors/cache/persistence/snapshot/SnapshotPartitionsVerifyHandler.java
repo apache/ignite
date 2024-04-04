@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
@@ -70,9 +71,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.MarshallerContextImpl.resolveMappingFileStoreWorkDir;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.resolveBinaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
@@ -180,12 +183,19 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             return Collections.emptyMap();
         }
 
-        return meta.dump() ? checkDumpFiles(opCtx, partFiles) : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles, punchHoleEnabled);
+        // Uniformly creates the directories.
+        File binaryDir = resolveBinaryWorkDir(opCtx.snapshotDirectory().getAbsolutePath(), meta.folderName());
+        File mappingDir = resolveMappingFileStoreWorkDir(opCtx.snapshotDirectory().getAbsolutePath());
+
+        return meta.dump()
+            ? checkDumpFiles(opCtx, partFiles)
+            : checkSnapshotFiles(binaryDir, mappingDir, grpDirs, meta, partFiles, punchHoleEnabled);
     }
 
     /** */
     private Map<PartitionKeyV2, PartitionHashRecordV2> checkSnapshotFiles(
-        SnapshotHandlerContext opCtx,
+        File binaryDir,
+        File mappingDir,
         Map<Integer, File> grpDirs,
         SnapshotMetadata meta,
         Set<File> partFiles,
@@ -195,10 +205,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
             .order(ByteOrder.nativeOrder()));
 
-        IgniteSnapshotManager snpMgr = cctx.snapshotMgr();
+        GridKernalContext snpCtx = new StandaloneGridKernalContext(log, cctx.kernalContext().compress(), binaryDir, mappingDir);
 
-        GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(cctx.kernalContext().compress(),
-            opCtx.snapshotDirectory(), meta.folderName());
+        IgniteSnapshotManager snpMgr = cctx.snapshotMgr();
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
 
