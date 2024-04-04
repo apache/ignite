@@ -122,33 +122,25 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     public void testDumpWithNodeFilterCache() throws Exception {
         assumeTrue(nodes > 1);
 
-        CacheConfiguration<?, ?> ccfg0 = null;
-        CacheConfiguration<?, ?> ccfg1 = null;
+        CacheConfiguration<?, ?> ccfg0 = cacheConfiguration(getConfiguration(getTestIgniteInstanceName()), DEFAULT_CACHE_NAME)
+            .setNodeFilter(new AttributeNodeFilter(DEFAULT_CACHE_NAME, null));
+
+        CacheConfiguration<?, ?> ccfg1 = cacheConfiguration(getConfiguration(getTestIgniteInstanceName()), CACHE_0)
+            .setNodeFilter(ccfg0.getNodeFilter());
 
         for (int i = 0; i <= nodes; ++i) {
             IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(i));
 
-            if (i == 0) {
+            if (i == 0)
                 cfg.setUserAttributes(F.asMap(DEFAULT_CACHE_NAME, ""));
-
-                ccfg0 = new CacheConfiguration<>(Arrays.stream(cfg.getCacheConfiguration())
-                    .filter(c -> c.getName().equals(DEFAULT_CACHE_NAME)).findFirst().get());
-                ccfg0.setNodeFilter(new AttributeNodeFilter(DEFAULT_CACHE_NAME, null));
-
-                ccfg1 = new CacheConfiguration<>(Arrays.stream(cfg.getCacheConfiguration())
-                    .filter(c -> c.getName().equals(CACHE_0)).findFirst().get());
-                ccfg1.setNodeFilter(ccfg0.getNodeFilter());
-            }
 
             cfg.setCacheConfiguration(null);
 
-            if (i < nodes)
-                startGrid(cfg);
-            else {
-                cfg.setClientMode(true);
+            cfg.setClientMode(i == nodes);
 
-                cli = startClientGrid(cfg);
-            }
+            IgniteEx ig = startGrid(cfg);
+
+            cli = i == nodes ? ig : null;
         }
 
         cli.cluster().state(ClusterState.ACTIVE);
