@@ -362,14 +362,6 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         SnapshotHandlerContext opCtx,
         Set<File> partFiles
     ) {
-        if (F.isEmpty(partFiles)) {
-            log.info("Dump data integrity check skipped [dumpName=" + opCtx.metadata().snapshotName()
-                + "]. No cache partitions exist for node " + opCtx.metadata().consistentId()
-                + ". Possible due to a cache node filter.");
-
-            return Collections.emptyMap();
-        }
-
         try {
             String consistentId = cctx.kernalContext().pdsFolderResolver().resolveFolders().consistentId().toString();
 
