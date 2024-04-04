@@ -29,7 +29,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.MutableEntry;
@@ -54,6 +56,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.Key;
+import org.apache.ignite.platform.model.User;
 import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.util.AttributeNodeFilter;
@@ -119,7 +122,8 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     public void testDumpWithNodeFilterCache() throws Exception {
         assumeTrue(nodes > 1);
 
-        CacheConfiguration<?, ?> ccfg = null;
+        CacheConfiguration<?, ?> ccfg0 = null;
+        CacheConfiguration<?, ?> ccfg1 = null;
 
         for (int i = 0; i <= nodes; ++i) {
             IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(i));
@@ -127,10 +131,13 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             if (i == 0) {
                 cfg.setUserAttributes(F.asMap(DEFAULT_CACHE_NAME, ""));
 
-                ccfg = new CacheConfiguration<>(Arrays.stream(cfg.getCacheConfiguration())
+                ccfg0 = new CacheConfiguration<>(Arrays.stream(cfg.getCacheConfiguration())
                     .filter(c -> c.getName().equals(DEFAULT_CACHE_NAME)).findFirst().get());
+                ccfg0.setNodeFilter(new AttributeNodeFilter(DEFAULT_CACHE_NAME, null));
 
-                ccfg.setNodeFilter(new AttributeNodeFilter(DEFAULT_CACHE_NAME, null));
+                ccfg1 = new CacheConfiguration<>(Arrays.stream(cfg.getCacheConfiguration())
+                    .filter(c -> c.getName().equals(CACHE_0)).findFirst().get());
+                ccfg1.setNodeFilter(ccfg0.getNodeFilter());
             }
 
             cfg.setCacheConfiguration(null);
@@ -146,27 +153,34 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
         cli.cluster().state(ClusterState.ACTIVE);
 
-        cli.createCache(ccfg);
+        cli.createCache(ccfg0);
+        cli.createCache(ccfg1);
 
-        try (IgniteDataStreamer<Integer, Integer> ds = cli.dataStreamer(DEFAULT_CACHE_NAME)) {
-            IgniteCache<Integer, Integer> cache = cli.cache(DEFAULT_CACHE_NAME);
+        try (IgniteDataStreamer<Integer, Integer> ds0 = cli.dataStreamer(DEFAULT_CACHE_NAME);
+             IgniteDataStreamer<Integer, User> ds1 = cli.dataStreamer(CACHE_0)) {
+            IgniteCache<Integer, Integer> cache0 = cli.cache(DEFAULT_CACHE_NAME);
+            IgniteCache<Integer, User> cache1 = cli.cache(CACHE_0);
 
             for (int i = 0; i < KEYS_CNT; ++i) {
-                if (useDataStreamer)
-                    ds.addData(i, i);
-                else
-                    cache.put(i, i);
+                if (useDataStreamer) {
+                    ds0.addData(i, i);
+                    ds1.addData(i, USER_FACTORY.apply(i));
+                }
+                else {
+                    cache0.put(i, i);
+                    cache1.put(i, USER_FACTORY.apply(i));
+                }
             }
         }
 
-        createDump(cli, DMP_NAME, Collections.singleton(DEFAULT_CACHE_NAME));
+        createDump(cli, DMP_NAME, null);
 
         checkDump(cli,
             DMP_NAME,
-            new String[] {DEFAULT_CACHE_NAME},
-            Collections.singleton(DEFAULT_CACHE_NAME),
+            new String[] {DEFAULT_CACHE_NAME, GRP},
+            Stream.of(DEFAULT_CACHE_NAME, CACHE_0).collect(Collectors.toSet()),
             KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
-            0,
+            KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
             0,
             false,
             false
