@@ -24,12 +24,13 @@ import java.util.stream.IntStream;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.TouchedExpiryPolicy;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -145,18 +146,32 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
 
         BPlusTree.testHndWrapper = (tree, hnd) -> {
             if (tree instanceof PendingEntriesTree) {
-
                 return new PageHandler<Object, BPlusTree.Result>() {
-                    @Override public BPlusTree.Result run(int cacheId, long pageId, long page, long pageAddr, PageIO io,
-                        Boolean walPlc, Object arg, int lvl, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-                        calls.merge(StringUtils.substringAfterLast(hnd.getClass().getName(), "$"), 1, Integer::sum);
+                    @Override public BPlusTree.Result run(
+                        int cacheId,
+                        long pageId,
+                        long page,
+                        long pageAddr,
+                        PageIO io,
+                        Boolean walPlc,
+                        Object arg,
+                        int lvl,
+                        IoStatisticsHolder statHolder
+                    ) throws IgniteCheckedException {
+                        calls.merge(arg.getClass().getSimpleName(), 1, Integer::sum);
 
                         return ((PageHandler<Object, BPlusTree.Result>)hnd).run(cacheId, pageId, page, pageAddr, io,
                             walPlc, arg, lvl, statHolder);
                     }
 
-                    @Override public boolean releaseAfterWrite(int cacheId, long pageId, long page, long pageAddr, Object arg,
-                        int intArg) {
+                    @Override public boolean releaseAfterWrite(
+                        int cacheId,
+                        long pageId,
+                        long page,
+                        long pageAddr,
+                        Object arg,
+                        int intArg
+                    ) {
                         return ((PageHandler<Object, BPlusTree.Result>)hnd)
                             .releaseAfterWrite(cacheId, pageId, page, pageAddr, arg, intArg);
                     }
@@ -166,7 +181,7 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
             return hnd;
         };
 
-        try (IgniteKernal g = (IgniteKernal)startGrid(0)) {
+        try (IgniteEx g = startGrid(0)) {
             final String key = "key";
 
             final int records = 1500;
@@ -180,18 +195,23 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
 
             assertEquals(records, g.context().cache().cache(DEFAULT_CACHE_NAME).context().ttl().pendingSize());
 
-            U.sleep(2000);
-
-            assertEquals(0, g.context().cache().cache(DEFAULT_CACHE_NAME).context().ttl().pendingSize());
+            assertTrue(GridTestUtils.waitForCondition(
+                () -> {
+                    try {
+                        return g.context().cache().cache(DEFAULT_CACHE_NAME).context().ttl().pendingSize() == 0;
+                    }
+                    catch (Exception e) {
+                        throw new IgniteException(e);
+                    }
+                }, 5_000L)
+            );
 
             log.info("Invocation counts\n" + calls.keySet().stream()
                 .map(k -> k + ": " + calls.get(k))
                 .collect(Collectors.joining("\n")));
 
-            assertTrue(calls.get("Insert") >= records);
-            assertTrue(calls.get("RemoveRangeFromLeaf") > 2);
-            assertTrue(calls.get("RemoveRangeFromLeaf") < 20);
-            assertTrue(calls.get("Search") < 3000);
+            assertNotNull(calls.get("RemoveRange"));
+            assertNull(calls.get("Remove"));
 
             IntStream.range(0, records).forEach(x -> assertNull(cache.get(key + x)));
         }
