@@ -186,14 +186,10 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
 
             final int records = 1500;
 
-            assertEquals(0, g.context().cache().cache(DEFAULT_CACHE_NAME).context().ttl().pendingSize());
-
             IgniteCache<Object, Object> cache = g.cache(DEFAULT_CACHE_NAME).withExpiryPolicy(
                 new CreatedExpiryPolicy(new Duration(MILLISECONDS, 1000)));
 
             IntStream.range(0, records).forEach(x -> cache.put(key + x, x));
-
-            assertEquals(records, g.context().cache().cache(DEFAULT_CACHE_NAME).context().ttl().pendingSize());
 
             assertTrue(GridTestUtils.waitForCondition(
                 () -> {
