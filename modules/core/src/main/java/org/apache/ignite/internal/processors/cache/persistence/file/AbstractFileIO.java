@@ -67,19 +67,19 @@ public abstract class AbstractFileIO implements FileIO {
                 if (time == 0)
                     time = System.nanoTime();
                 else if ((System.nanoTime() - time) >= U.millisToNanos(MAX_IO_TIMEOUT_MS)) {
-                    String errorMsg;
-
-                    if (write && (position + i) == size())
-                        errorMsg = "Write operation unsuccessful, write timeout exceeds the maximum IO timeout ("
-                            + U.millisToNanos(MAX_IO_TIMEOUT_MS) + " ms); failed to extend file.";
-                    else if (write)
-                        errorMsg = "Write operation unsuccessful, write timeout exceeds the maximum IO timeout ("
-                            + U.millisToNanos(MAX_IO_TIMEOUT_MS) + " ms).";
-                    else
-                        errorMsg = "Read operation unsuccessful, read timeout exceeds the maximum IO timeout ("
-                            + U.millisToNanos(MAX_IO_TIMEOUT_MS) +
-                            " ms); disk might be too busy, please check your device.";
-                    throw new IOException(errorMsg);
+                    if (write && (position + i) == size()) {
+                        throw new IOException("Write operation unsuccessful, write timeout exceeds the maximum IO " +
+                            "timeout (" + U.millisToNanos(MAX_IO_TIMEOUT_MS) + " ms); failed to extend file.");
+                    }
+                    else if (write) {
+                        throw new IOException("Write operation unsuccessful, write timeout exceeds the maximum IO " +
+                            "timeout (" + U.millisToNanos(MAX_IO_TIMEOUT_MS) + " ms).");
+                    }
+                    else {
+                        throw new IOException("Read operation unsuccessful, read timeout exceeds the maximum IO " +
+                            "timeout (" + U.millisToNanos(MAX_IO_TIMEOUT_MS) +
+                            " ms); disk might be too busy, please check your device.");
+                    }
                 }
             }
             else
