@@ -146,8 +146,8 @@ public class Dump implements AutoCloseable {
         this.consistentId = consistentId == null ? null : U.maskForFileName(consistentId);
         this.metadata = metadata(dumpDir, this.consistentId);
         this.keepBinary = keepBinary;
-        this.cctx = standaloneKernalContext(dumpDir, log);
         this.raw = raw;
+        this.cctx = standaloneKernalContext(dumpDir, log);
         this.encSpi = encSpi;
         this.comprParts = metadata.get(0).compressPartitions();
 
@@ -307,6 +307,11 @@ public class Dump implements AutoCloseable {
             DumpEntry next;
 
             /** {@inheritDoc} */
+            @Override public String nodeDataPath() {
+                return node;
+            }
+
+            /** {@inheritDoc} */
             @Override public boolean hasNext() {
                 advance();
 
@@ -398,7 +403,8 @@ public class Dump implements AutoCloseable {
      * Closeable dump iterator.
      */
     public interface DumpedPartitionIterator extends Iterator<DumpEntry>, AutoCloseable {
-        // No-op.
+        /** Path to current node's data. */
+        String nodeDataPath();
     }
 
     /** */

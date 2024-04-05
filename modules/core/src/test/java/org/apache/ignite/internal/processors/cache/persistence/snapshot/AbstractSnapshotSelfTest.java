@@ -755,7 +755,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @param grids Grids to block snapshot executors.
      * @return Wrapped snapshot executor list.
      */
-    protected static List<BlockingExecutor> setBlockingSnapshotExecutor(List<? extends Ignite> grids) {
+    public static List<BlockingExecutor> setBlockingSnapshotExecutor(List<? extends Ignite> grids) {
         List<BlockingExecutor> execs = new ArrayList<>();
 
         for (Ignite grid : grids) {
@@ -1079,7 +1079,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected static class BlockingExecutor implements Executor {
+    public static class BlockingExecutor implements Executor {
         /** Delegate executor. */
         private final Executor delegate;
 
