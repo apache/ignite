@@ -1138,7 +1138,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     if (obsoleteVer == null)
                         obsoleteVer = cctx.cache().nextVersion();
 
-                    GridCacheEntryEx entry = cctx.cache().entryEx(row.key);
+                    GridCacheEntryEx entry = cctx.cache().entryEx(row.key instanceof KeyCacheObjectImpl
+                        ? new ExpiredKeyCacheObject((KeyCacheObjectImpl)row.key, row.expireTime, row.link) : row.key);
 
                     if (entry != null)
                         c.apply(entry, obsoleteVer);
@@ -1718,7 +1719,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          */
         private void finishRemove(GridCacheContext cctx, KeyCacheObject key, @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
             if (oldRow != null) {
-                clearPendingEntries(cctx, oldRow);
+                if (!(key instanceof ExpiredKeyCacheObject)
+                    || ((ExpiredKeyCacheObject)key).expireTime != oldRow.expireTime()
+                    || ((ExpiredKeyCacheObject)key).link != oldRow.link()
+                )
+                    clearPendingEntries(cctx, oldRow);
 
                 decrementSize(cctx.cacheId());
             }
@@ -1975,6 +1980,34 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public PartitionMetaStorage<SimpleDataRow> partStorage() {
             return null;
+        }
+    }
+
+    /**
+     * This entry key is used to indicate that an expired entry has already been deleted from
+     * PendingEntriesTree and doesn't need to participate in PendingEntriesTree cleanup again.
+     */
+    private static class ExpiredKeyCacheObject extends KeyCacheObjectImpl {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private long expireTime;
+
+        /** */
+        private long link;
+
+        /** */
+        private ExpiredKeyCacheObject(KeyCacheObjectImpl keyCacheObj, long expireTime, long link) {
+            super(keyCacheObj.val, keyCacheObj.valBytes, keyCacheObj.partition());
+
+            this.expireTime = expireTime;
+
+            this.link = link;
+        }
+
+        /** */
+        public ExpiredKeyCacheObject() {
         }
     }
 }
