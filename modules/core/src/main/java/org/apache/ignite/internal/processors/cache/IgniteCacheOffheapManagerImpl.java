@@ -2051,7 +2051,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /**
      * This entry key is used to indicate that an expired entry has already been deleted from
      * PendingEntriesTree and doesn't need to participate in PendingEntriesTree cleanup again.
-     * */
+     */
     private static class ExpiredKeyCacheObject extends KeyCacheObjectImpl {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
