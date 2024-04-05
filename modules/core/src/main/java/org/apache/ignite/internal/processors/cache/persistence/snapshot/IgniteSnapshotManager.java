@@ -1181,27 +1181,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 parts.put(grpId, null);
         }
 
-        IgniteInternalFuture<?> task0;
+        IgniteInternalFuture<?> task0 = registerSnapshotTask(req.snapshotName(),
+            req.snapshotPath(),
+            req.operationalNodeId(),
+            req.requestId(),
+            parts,
+            withMetaStorage,
+            req.dump(),
+            req.compress(),
+            req.encrypt(),
+            locSndrFactory.apply(req.snapshotName(), req.snapshotPath())
+        );
 
-        if (parts.isEmpty() && !withMetaStorage)
-            task0 = new GridFinishedFuture<>(Collections.emptySet());
-        else {
-            task0 = registerSnapshotTask(req.snapshotName(),
-                req.snapshotPath(),
-                req.operationalNodeId(),
-                req.requestId(),
-                parts,
-                withMetaStorage,
-                req.dump(),
-                req.compress(),
-                req.encrypt(),
-                locSndrFactory.apply(req.snapshotName(), req.snapshotPath())
-            );
+        if (withMetaStorage) {
+            assert task0 instanceof SnapshotFutureTask;
 
-            if (withMetaStorage && task0 instanceof SnapshotFutureTask) {
-                ((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage())
-                    .suspend(((SnapshotFutureTask)task0).started());
-            }
+            ((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage())
+                .suspend(((SnapshotFutureTask)task0).started());
         }
 
         return task0.chain(() -> {
