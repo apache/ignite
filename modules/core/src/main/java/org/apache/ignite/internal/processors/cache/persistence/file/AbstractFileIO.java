@@ -44,6 +44,8 @@ public abstract class AbstractFileIO implements FileIO {
      * @param operation IO operation.
      *
      * @param num Number of bytes to operate.
+     *
+     * @return Number of bytes operated.
      */
     private int fully(IOOperation operation, long position, int num, boolean write) throws IOException {
         if (num > 0) {
@@ -57,28 +59,23 @@ public abstract class AbstractFileIO implements FileIO {
                     time = 0;
                 }
                 else if (n == 0 || i > 0) {
-                /* Condition for reaching the end of file while there's still space in buffer
-                  OR for the case when the buffer is full but there's still data to read from file */
                     if (!write && available(num - i, position + i) == 0)
                         return i;
 
                     if (time == 0)
                         time = System.nanoTime();
                     else if ((System.nanoTime() - time) >= U.millisToNanos(MAX_IO_TIMEOUT_MS)) {
-                        if (write && (position + i) == size()) {
-                            throw new IOException("Write operation unsuccessful, write timeout exceeds the maximum " +
-                                "IO timeout (" + U.millisToNanos(MAX_IO_TIMEOUT_MS) + " ms); failed to extend file.");
-                        }
-                        else if (write) {
-                            throw new IOException("Write operation unsuccessful, write timeout exceeds the maximum " +
-                                "IO timeout (" + U.millisToNanos(MAX_IO_TIMEOUT_MS) +
-                                " ms); disk might be too busy, please check your device.");
-                        }
-                        else {
-                            throw new IOException("Read operation unsuccessful, read timeout exceeds the maximum " +
-                                "IO timeout (" + U.millisToNanos(MAX_IO_TIMEOUT_MS) +
-                                " ms); disk might be too busy, please check your device.");
-                        }
+                        String errMsg = " operation unsuccessful, write timeout exceeds the maximum IO timeout ("
+                            + U.millisToNanos(MAX_IO_TIMEOUT_MS) + " ms); ";
+
+                        if (write && (position + i) == size())
+                            errMsg = "Write" + errMsg + "failed to extend file.";
+                        else if (write)
+                            errMsg = "Write" + errMsg + "disk might be too busy, please check your device.";
+                        else
+                            errMsg = "Read" + errMsg + "disk might be too busy, please check your device.";
+
+                        throw new IOException(errMsg);
                     }
                 }
                 else
