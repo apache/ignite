@@ -3388,7 +3388,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      */
     public final void prepare(boolean awaitLastFut) throws IgniteCheckedException {
         if (awaitLastFut)
-            txState().lastAsyncFuture(cctx).await();
+            txState().awaitLastFuture();
 
         prepareNearTxLocal().get();
     }

@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -94,8 +95,16 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheSharedContext.FutureHolder lastAsyncFuture(GridCacheSharedContext<?, ?> ctx) {
-        return ctx.lastFuture();
+    @Override public void awaitLastFuture() {
+        if (cacheCtx == null)
+            return;
+
+        cacheCtx.cache().lastAsyncFuture().await();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheAdapter.FutureHolder lastAsyncFuture() {
+        return cacheCtx != null ? cacheCtx.cache().lastAsyncFuture() : null;
     }
 
     /** {@inheritDoc} */

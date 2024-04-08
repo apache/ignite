@@ -31,6 +31,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -75,7 +76,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** Async future. */
     @GridToStringExclude
-    private final GridCacheSharedContext.FutureHolder lastAsyncFut = new GridCacheSharedContext.FutureHolder();
+    private final GridCacheAdapter.FutureHolder lastAsyncFut = new GridCacheAdapter.FutureHolder();
 
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
@@ -105,7 +106,12 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheSharedContext.FutureHolder lastAsyncFuture(GridCacheSharedContext<?, ?> ctx) {
+    @Override public void awaitLastFuture() {
+        lastAsyncFut.await();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheAdapter.FutureHolder lastAsyncFuture() {
         return lastAsyncFut;
     }
 
