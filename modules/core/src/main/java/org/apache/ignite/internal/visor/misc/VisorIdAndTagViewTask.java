@@ -22,7 +22,10 @@ import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
 
 /**
  *
@@ -62,6 +65,11 @@ public class VisorIdAndTagViewTask extends VisorOneNodeTask<Void, VisorIdAndTagV
             IgniteClusterEx cl = ignite.cluster();
 
             return new VisorIdAndTagViewTaskResult(cl.id(), cl.tag());
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecurityPermissionSet requiredPermissions() {
+            return NO_PERMISSIONS;
         }
     }
 }

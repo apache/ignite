@@ -97,7 +97,7 @@ public class DumpReader implements Runnable {
                     : null;
 
                 for (SnapshotMetadata meta : dump.metadata()) {
-                    for (Integer grp : meta.cacheGroupIds()) {
+                    for (Integer grp : meta.partitions().keySet()) {
                         if (cacheGrpIds == null || cacheGrpIds.contains(grp))
                             grpToNodes.computeIfAbsent(grp, key -> new ArrayList<>()).add(meta.folderName());
                     }

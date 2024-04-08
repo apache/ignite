@@ -44,10 +44,6 @@ import org.apache.ignite.internal.processors.cache.tree.DataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.DataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntryInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntryLeafIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataInnerIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataLeafIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataInnerIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
@@ -111,10 +107,10 @@ public abstract class PageIO {
     public static final short MAX_PAYLOAD_SIZE = 2048;
 
     /** */
-    private static List<IOVersions<? extends BPlusInnerIO<?>>> h2ExtraInnerIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
+    private static final List<IOVersions<? extends BPlusInnerIO<?>>> h2ExtraInnerIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
 
     /** */
-    private static List<IOVersions<? extends BPlusLeafIO<?>>> h2ExtraLeafIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
+    private static final List<IOVersions<? extends BPlusLeafIO<?>>> h2ExtraLeafIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
 
     /** */
     private static List<IOVersions<? extends BPlusInnerIO<?>>> h2ExtraMvccInnerIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
@@ -229,18 +225,6 @@ public abstract class PageIO {
 
     /** */
     public static final short T_DATA_REF_METASTORAGE_LEAF = 23;
-
-    /** */
-    public static final short T_DATA_REF_MVCC_INNER = 24;
-
-    /** */
-    public static final short T_DATA_REF_MVCC_LEAF = 25;
-
-    /** */
-    public static final short T_CACHE_ID_DATA_REF_MVCC_INNER = 26;
-
-    /** */
-    public static final short T_CACHE_ID_DATA_REF_MVCC_LEAF = 27;
 
     /** */
     public static final short T_H2_MVCC_REF_LEAF = 28;
@@ -632,12 +616,8 @@ public abstract class PageIO {
         )
             return true;
 
-        if ((T_H2_EX_REF_INNER_START <= pageType && pageType <= T_H2_EX_REF_INNER_END) ||
-            (T_H2_EX_REF_MVCC_INNER_START <= pageType && pageType <= T_H2_EX_REF_MVCC_INNER_END)
-        )
-            return true;
-
-        return false;
+        return (T_H2_EX_REF_INNER_START <= pageType && pageType <= T_H2_EX_REF_INNER_END) ||
+            (T_H2_EX_REF_MVCC_INNER_START <= pageType && pageType <= T_H2_EX_REF_MVCC_INNER_END);
     }
 
     /** {@inheritDoc} */
@@ -782,18 +762,6 @@ public abstract class PageIO {
             case T_CACHE_ID_AWARE_DATA_REF_LEAF:
                 return (Q)CacheIdAwareDataLeafIO.VERSIONS.forVersion(ver);
 
-            case T_CACHE_ID_DATA_REF_MVCC_INNER:
-                return (Q)MvccCacheIdAwareDataInnerIO.VERSIONS.forVersion(ver);
-
-            case T_CACHE_ID_DATA_REF_MVCC_LEAF:
-                return (Q)MvccCacheIdAwareDataLeafIO.VERSIONS.forVersion(ver);
-
-            case T_DATA_REF_MVCC_INNER:
-                return (Q)MvccDataInnerIO.VERSIONS.forVersion(ver);
-
-            case T_DATA_REF_MVCC_LEAF:
-                return (Q)MvccDataLeafIO.VERSIONS.forVersion(ver);
-
             case T_METASTORE_INNER:
                 return (Q)IndexStorageImpl.MetaStoreInnerIO.VERSIONS.forVersion(ver);
 
@@ -841,22 +809,18 @@ public abstract class PageIO {
      * @return Index page type.
      */
     public static IndexPageType deriveIndexPageType(long pageAddr) {
-        int pageIoType = PageIO.getType(pageAddr);
+        int pageIoType = getType(pageAddr);
         switch (pageIoType) {
             case T_DATA_REF_INNER:
-            case T_DATA_REF_MVCC_INNER:
             case T_H2_REF_INNER:
             case T_H2_MVCC_REF_INNER:
             case T_CACHE_ID_AWARE_DATA_REF_INNER:
-            case T_CACHE_ID_DATA_REF_MVCC_INNER:
                 return IndexPageType.INNER;
 
             case T_DATA_REF_LEAF:
-            case T_DATA_REF_MVCC_LEAF:
             case T_H2_REF_LEAF:
             case T_H2_MVCC_REF_LEAF:
             case T_CACHE_ID_AWARE_DATA_REF_LEAF:
-            case T_CACHE_ID_DATA_REF_MVCC_LEAF:
                 return IndexPageType.LEAF;
 
             default:

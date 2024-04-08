@@ -89,7 +89,7 @@
         <guava.version>32.1.2-jre</guava.version>
         <guava14.version>14.0.1</guava14.version>
         <guava16.version>16.0.1</guava16.version>
-        <grpc-context.version>1.61.0</grpc-context.version>
+        <grpc-context.version>1.62.2</grpc-context.version>
         <h2.version>1.4.197</h2.version>
         <hadoop.version>2.9.1</hadoop.version>
         <hamcrest.version>2.2</hamcrest.version>

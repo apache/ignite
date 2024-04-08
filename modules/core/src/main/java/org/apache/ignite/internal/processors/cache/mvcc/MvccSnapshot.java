@@ -27,11 +27,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public interface MvccSnapshot extends MvccVersion, Message {
     /**
-     * @return Active transactions.
-     */
-    public MvccLongList activeTransactions();
-
-    /**
      * @return Cleanup version (all smaller versions are safe to remove).
      */
     public long cleanupVersion();

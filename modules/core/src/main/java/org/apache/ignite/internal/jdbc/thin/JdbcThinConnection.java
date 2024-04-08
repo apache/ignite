@@ -493,17 +493,18 @@ public class JdbcThinConnection implements Connection {
     @Override public void setAutoCommit(boolean autoCommit) throws SQLException {
         ensureNotClosed();
 
-        // Do nothing if resulting value doesn't actually change.
-        if (autoCommit != this.autoCommit) {
-            doCommit();
+        this.autoCommit = autoCommit;
 
-            this.autoCommit = autoCommit;
-        }
+        if (!autoCommit)
+            LOG.warning("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean getAutoCommit() throws SQLException {
         ensureNotClosed();
+
+        if (!autoCommit)
+            LOG.warning("Transactions are not supported.");
 
         return autoCommit;
     }
@@ -515,7 +516,7 @@ public class JdbcThinConnection implements Connection {
         if (autoCommit)
             throw new SQLException("Transaction cannot be committed explicitly in auto-commit mode.");
 
-        doCommit();
+        LOG.warning("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -525,20 +526,7 @@ public class JdbcThinConnection implements Connection {
         if (autoCommit)
             throw new SQLException("Transaction cannot be rolled back explicitly in auto-commit mode.");
 
-        try (Statement s = createStatement()) {
-            s.execute("ROLLBACK");
-        }
-    }
-
-    /**
-     * Send to the server {@code COMMIT} command.
-     *
-     * @throws SQLException if failed.
-     */
-    private void doCommit() throws SQLException {
-        try (Statement s = createStatement()) {
-            s.execute("COMMIT");
-        }
+        LOG.warning("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */

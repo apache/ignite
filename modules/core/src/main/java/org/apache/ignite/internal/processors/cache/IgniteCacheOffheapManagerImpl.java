@@ -66,7 +66,6 @@ import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingRow;
 import org.apache.ignite.internal.processors.cache.tree.SearchRow;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -1139,7 +1138,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     if (obsoleteVer == null)
                         obsoleteVer = cctx.cache().nextVersion();
 
-                    GridCacheEntryEx entry = cctx.cache().entryEx(row.key);
+                    GridCacheEntryEx entry = cctx.cache().entryEx(row.key instanceof KeyCacheObjectImpl
+                        ? new ExpiredKeyCacheObject((KeyCacheObjectImpl)row.key, row.expireTime, row.link) : row.key);
 
                     if (entry != null)
                         c.apply(entry, obsoleteVer);
@@ -1566,70 +1566,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public int cleanup(GridCacheContext cctx, @Nullable List<MvccLinkAwareSearchRow> cleanupRows)
-            throws IgniteCheckedException {
-            if (F.isEmpty(cleanupRows))
-                return 0;
-
-            if (!busyLock.enterBusy())
-                throw operationCancelledException();
-
-            try {
-                return cleanup0(cctx, cleanupRows);
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-
-        /**
-         * @param cctx Cache context.
-         * @param cleanupRows Rows to cleanup.
-         * @throws IgniteCheckedException If failed.
-         * @return Cleaned rows count.
-         */
-        private int cleanup0(GridCacheContext cctx, @Nullable List<MvccLinkAwareSearchRow> cleanupRows)
-             throws IgniteCheckedException {
-            if (F.isEmpty(cleanupRows))
-                 return 0;
-
-            int res = 0;
-
-            GridCacheQueryManager qryMgr = cctx.queries();
-
-            for (int i = 0; i < cleanupRows.size(); i++) {
-                MvccLinkAwareSearchRow cleanupRow = cleanupRows.get(i);
-
-                assert cleanupRow.link() != 0 : cleanupRow;
-
-                assert cctx.shared().database().checkpointLockIsHeldByThread();
-
-                CacheDataRow oldRow = dataTree.remove(cleanupRow);
-
-                if (oldRow != null) { // oldRow == null means it was cleaned by another cleanup process.
-                    assert oldRow.mvccCounter() == cleanupRow.mvccCounter();
-
-                    if (qryMgr.enabled())
-                        qryMgr.remove(oldRow.key(), oldRow);
-
-                    clearPendingEntries(cctx, oldRow);
-
-                    rowStore.removeRow(cleanupRow.link(), grp.statisticsHolderData());
-
-                    res++;
-                }
-            }
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void updateTxState(GridCacheContext cctx, CacheSearchRow row)
-            throws IgniteCheckedException {
-            assert false; // ex mvcc code.
-        }
-
-        /** {@inheritDoc} */
         @Override public void update(GridCacheContext cctx,
             KeyCacheObject key,
             CacheObject val,
@@ -1783,7 +1719,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          */
         private void finishRemove(GridCacheContext cctx, KeyCacheObject key, @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
             if (oldRow != null) {
-                clearPendingEntries(cctx, oldRow);
+                if (!(key instanceof ExpiredKeyCacheObject)
+                    || ((ExpiredKeyCacheObject)key).expireTime != oldRow.expireTime()
+                    || ((ExpiredKeyCacheObject)key).link != oldRow.link()
+                )
+                    clearPendingEntries(cctx, oldRow);
 
                 decrementSize(cctx.cacheId());
             }
@@ -2040,6 +1980,34 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public PartitionMetaStorage<SimpleDataRow> partStorage() {
             return null;
+        }
+    }
+
+    /**
+     * This entry key is used to indicate that an expired entry has already been deleted from
+     * PendingEntriesTree and doesn't need to participate in PendingEntriesTree cleanup again.
+     */
+    private static class ExpiredKeyCacheObject extends KeyCacheObjectImpl {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private long expireTime;
+
+        /** */
+        private long link;
+
+        /** */
+        private ExpiredKeyCacheObject(KeyCacheObjectImpl keyCacheObj, long expireTime, long link) {
+            super(keyCacheObj.val, keyCacheObj.valBytes, keyCacheObj.partition());
+
+            this.expireTime = expireTime;
+
+            this.link = link;
+        }
+
+        /** */
+        public ExpiredKeyCacheObject() {
         }
     }
 }
