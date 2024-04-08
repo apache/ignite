@@ -126,6 +126,12 @@ public enum ClientOperation {
     /** Cache remove all conflict. */
     CACHE_REMOVE_ALL_CONFLICT(1023),
 
+    /** Cache invoke. */
+    CACHE_INVOKE(1024),
+
+    /** Cache invoke all. */
+    CACHE_INVOKE_ALL(1025),
+
     /** Cache partitions. */
     CACHE_PARTITIONS(1101),
 
