@@ -54,7 +54,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CO
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.KEY_ONLY;
-import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.LINK_WITH_HEADER;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
 import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
 
@@ -393,9 +392,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
             // Assume that row header is always located entirely on the very first page.
             hdrLen = readHeader(sharedCtx, pageAddr, data.offset(), rowData);
-
-            if (rowData == LINK_WITH_HEADER)
-                return null;
         }
 
         ByteBuffer buf = wrapPointer(pageAddr, pageSize);
@@ -538,9 +534,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         off += readHeader(sharedCtx, addr, off, rowData);
 
-        if (rowData == LINK_WITH_HEADER)
-            return;
-
         if (readCacheId) {
             cacheId = PageUtils.getInt(addr, off);
 
@@ -553,7 +546,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         int len = PageUtils.getInt(addr, off);
         off += 4;
 
-        if (rowData != RowData.NO_KEY && rowData != RowData.NO_KEY_WITH_HINTS) {
+        if (rowData != RowData.NO_KEY) {
             byte type = PageUtils.getByte(addr, off);
             off++;
 
@@ -981,17 +974,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
         /** */
         NO_KEY,
 
-        /** */
-        LINK_ONLY,
-
-        /** */
-        LINK_WITH_HEADER,
-
         /** Force instant hints actualization for rebalance (to avoid races with vacuum). */
-        FULL_WITH_HINTS,
-
-        /** Force instant hints actualization for update operation with history (to avoid races with vacuum). */
-        NO_KEY_WITH_HINTS
+        FULL_WITH_HINTS
     }
 
     /** {@inheritDoc} */
