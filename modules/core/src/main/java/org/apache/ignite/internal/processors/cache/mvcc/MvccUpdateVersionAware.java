@@ -22,32 +22,9 @@ package org.apache.ignite.internal.processors.cache.mvcc;
  */
 public interface MvccUpdateVersionAware {
     /**
-     * @return New mvcc coordinator version.
-     */
-    public long newMvccCoordinatorVersion();
-
-    /**
-     * @return New mvcc counter.
-     */
-    public long newMvccCounter();
-
-    /**
-     * @return New mvcc operation counter.
-     */
-    public int newMvccOperationCounter();
-
-    /**
      * @return New Tx state.
      */
     public byte newMvccTxState();
-
-    /**
-     * Copies new MVCC version
-     * @param other Object to copy version from.
-     */
-    public default void newMvccVersion(MvccUpdateVersionAware other) {
-        newMvccVersion(other.newMvccCoordinatorVersion(), other.newMvccCounter(), other.newMvccOperationCounter());
-    }
 
     /**
      * Sets new MVCC version
@@ -65,12 +42,5 @@ public interface MvccUpdateVersionAware {
      */
     public default void newMvccVersion(long crd, long cntr, int opCntr) {
         throw new UnsupportedOperationException();
-    }
-
-    /**
-     * @return New mvcc version.
-     */
-    public default MvccVersion newMvccVersion() {
-        return new MvccVersionImpl(newMvccCoordinatorVersion(), newMvccCounter(), newMvccOperationCounter());
     }
 }

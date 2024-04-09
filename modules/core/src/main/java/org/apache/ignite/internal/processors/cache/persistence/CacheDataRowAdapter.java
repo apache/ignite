@@ -50,9 +50,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.KEY_ONLY;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
 import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
@@ -922,38 +919,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
-    @Override public long mvccCoordinatorVersion() {
-        return MVCC_CRD_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long mvccCounter() {
-        return MVCC_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int mvccOperationCounter() {
-        return MVCC_OP_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
     @Override public byte mvccTxState() {
         return TxState.NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long newMvccCoordinatorVersion() {
-        return MVCC_CRD_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long newMvccCounter() {
-        return MVCC_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int newMvccOperationCounter() {
-        return MVCC_OP_COUNTER_NA;
     }
 
     /** {@inheritDoc} */

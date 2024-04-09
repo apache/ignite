@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -43,41 +41,6 @@ public class MvccUtils {
     /** Mask for operation counter bits. (Excludes hints and flags) */
     public static final int MVCC_OP_COUNTER_MASK = ~(Integer.MIN_VALUE >> 2);
 
-    /** */
-    public static final long MVCC_CRD_COUNTER_NA = 0L;
-
-    /** */
-    public static final long MVCC_COUNTER_NA = 0L;
-
-    /** */
-    public static final int MVCC_OP_COUNTER_NA = 0;
-
-    /**
-     * @param cctx Cache context.
-     * @param mvccCrd Mvcc coordinator version.
-     * @param mvccCntr Mvcc counter.
-     * @param mvccOpCntr Mvcc operation counter.
-     * @return TxState
-     * @see TxState
-     */
-    public static byte state(GridCacheContext cctx, long mvccCrd, long mvccCntr, int mvccOpCntr) {
-        return TxState.NA;
-    }
-
-    /**
-     * Compares to pairs of coordinator/counter versions. See {@link Comparable}.
-     *
-     * @param mvccCrdLeft First coordinator version.
-     * @param mvccCntrLeft First counter version.
-     * @param mvccOpCntrLeft First operation counter.
-     * @param other The object to compare with.
-     * @return Comparison result, see {@link Comparable}.
-     */
-    public static int compare(long mvccCrdLeft, long mvccCntrLeft, int mvccOpCntrLeft, MvccVersionAware other) {
-        return compare(mvccCrdLeft, mvccCntrLeft, mvccOpCntrLeft,
-            other.mvccCoordinatorVersion(), other.mvccCounter(), other.mvccOperationCounter());
-    }
-
     /**
      * Compares to pairs of coordinator/counter versions. See {@link Comparable}.
      *
@@ -99,25 +62,6 @@ public class MvccUtils {
             return cmp;
 
         return 0;
-    }
-
-    /**
-     * @param crdVer Mvcc coordinator version.
-     * @param cntr Counter.
-     * @param opCntr Operation counter.
-     * @return Always {@code true}.
-     */
-    public static boolean mvccVersionIsValid(long crdVer, long cntr, int opCntr) {
-        return mvccVersionIsValid(crdVer, cntr) && (opCntr & MVCC_OP_COUNTER_MASK) != MVCC_OP_COUNTER_NA;
-    }
-
-    /**
-     * @param crdVer Mvcc coordinator version.
-     * @param cntr Counter.
-     * @return {@code True} if version is valid.
-     */
-    public static boolean mvccVersionIsValid(long crdVer, long cntr) {
-        return crdVer > MVCC_CRD_COUNTER_NA && cntr > MVCC_COUNTER_NA;
     }
 
     /**

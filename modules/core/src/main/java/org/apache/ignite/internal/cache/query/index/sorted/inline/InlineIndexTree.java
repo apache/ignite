@@ -37,14 +37,12 @@ import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition
 import org.apache.ignite.internal.cache.query.index.sorted.ThreadLocalRowHandlerHolder;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineInnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.MvccIO;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
@@ -265,7 +263,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
             int cmp = compareFullRows(currRow, row, 0);
 
-            return cmp == 0 ? mvccCompare(currRow, row) : cmp;
+            return cmp;
         }
 
         int fieldOff = 0;
@@ -321,7 +319,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                 return ret;
         }
 
-        return mvccCompare((MvccIO)io, pageAddr, idx, row);
+        return 0;
     }
 
     /** */
@@ -595,46 +593,6 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
      */
     public InlineIndexRowHandler rowHandler() {
         return rowHnd != null ? rowHnd : ThreadLocalRowHandlerHolder.rowHandler();
-    }
-
-    /**
-     * @param io IO.
-     * @param pageAddr Page address.
-     * @param idx Item index.
-     * @param row Search row.
-     * @return Comparison result.
-     */
-    private int mvccCompare(MvccIO io, long pageAddr, int idx, IndexRow row) {
-        if (!mvccEnabled || row.indexPlainRow())
-            return 0;
-
-        long crd = io.mvccCoordinatorVersion(pageAddr, idx);
-        long cntr = io.mvccCounter(pageAddr, idx);
-        int opCntr = io.mvccOperationCounter(pageAddr, idx);
-
-        assert MvccUtils.mvccVersionIsValid(crd, cntr, opCntr);
-
-        return -MvccUtils.compare(crd, cntr, opCntr, row);  // descending order
-    }
-
-    /**
-     * @param r1 First row.
-     * @param r2 Second row.
-     * @return Comparison result.
-     */
-    private int mvccCompare(IndexRow r1, IndexRow r2) {
-        if (!mvccEnabled || r2.indexPlainRow() || r1 == r2)
-            return 0;
-
-        long crdVer1 = r1.mvccCoordinatorVersion();
-        long crdVer2 = r2.mvccCoordinatorVersion();
-
-        int c = -Long.compare(crdVer1, crdVer2);
-
-        if (c != 0)
-            return c;
-
-        return -Long.compare(r1.mvccCounter(), r2.mvccCounter());
     }
 
     /** {@inheritDoc} */
