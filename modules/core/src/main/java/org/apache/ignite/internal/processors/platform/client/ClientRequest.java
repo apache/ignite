@@ -71,7 +71,7 @@ public class ClientRequest implements ClientListenerRequest {
 
     /**
      * @param ctx Client connection context.
-     * @return {@code True} if requiest should be processed asynchronously.
+     * @return {@code True} if request should be processed asynchronously.
      */
     public boolean isAsync(ClientConnectionContext ctx) {
         return false;

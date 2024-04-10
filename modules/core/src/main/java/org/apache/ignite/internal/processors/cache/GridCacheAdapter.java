@@ -3584,7 +3584,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return mgr != null ? mgr.offHeapAllocatedSize() : -1;
     }
 
-    /** Last async operation future. */
+    /**
+     * Last async operation future for implicit transactions. For explicit transactions future is
+     * bound to the transaction and stored inside the transaction.
+     * These futures are required to linearize async operations made by the same thread.
+     */
     public FutureHolder lastAsyncFuture() {
         return lastFut.get();
     }
@@ -5441,6 +5445,112 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
+     * Holder for last async operation future.
+     */
+    public static class FutureHolder {
+        /** Lock. */
+        private final ReentrantLock lock = new ReentrantLock();
+
+        /** Future. */
+        private IgniteInternalFuture<?> fut;
+
+        /**
+         * Tries to acquire lock.
+         *
+         * @return Whether lock was actually acquired.
+         */
+        public boolean tryLock() {
+            return lock.tryLock();
+        }
+
+        /**
+         * Acquires lock.
+         */
+        @SuppressWarnings("LockAcquiredButNotSafelyReleased")
+        public void lock() {
+            lock.lock();
+        }
+
+        /**
+         * Releases lock.
+         */
+        public void unlock() {
+            lock.unlock();
+        }
+
+        /**
+         * @return Whether lock is held by current thread.
+         */
+        public boolean holdsLock() {
+            return lock.isHeldByCurrentThread();
+        }
+
+        /**
+         * Gets future.
+         *
+         * @return Future.
+         */
+        public IgniteInternalFuture<?> future() {
+            return fut;
+        }
+
+        /**
+         * Sets future.
+         *
+         * @param fut Future.
+         */
+        public void future(@Nullable IgniteInternalFuture<?> fut) {
+            this.fut = fut;
+        }
+
+        /**
+         * Awaits for previous async operation to be completed.
+         */
+        public void await() {
+            IgniteInternalFuture<?> fut = this.fut;
+
+            if (fut != null && !fut.isDone()) {
+                try {
+                    // Ignore any exception from previous async operation as it should be handled by user.
+                    fut.get();
+                }
+                catch (IgniteCheckedException ignored) {
+                    // No-op.
+                }
+            }
+        }
+
+        /**
+         * Saves future in the holder and adds listener that will clear holder when future is finished.
+         *
+         * @param fut Future to save.
+         */
+        public void saveFuture(IgniteInternalFuture<?> fut) {
+            assert fut != null;
+            assert holdsLock();
+
+            if (fut.isDone())
+                future(null);
+            else {
+                future(fut);
+
+                fut.listen(f -> {
+                    if (!tryLock())
+                        return;
+
+                    try {
+                        if (future() == f)
+                            future(null);
+                    }
+                    finally {
+                        unlock();
+                    }
+                });
+            }
+        }
+    }
+
+    /**
      *
      */
     protected abstract static class CacheExpiryPolicy implements IgniteCacheExpiryPolicy {
@@ -6577,112 +6687,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             GridCacheMapEntry entry = map.getEntry(ctx, ctx.toCacheKeyObject(o));
 
             return entry != null && internalSet.contains(entry);
-        }
-    }
-
-    /**
-     * Holder for last async operation future.
-     */
-    public static class FutureHolder {
-        /** Lock. */
-        private final ReentrantLock lock = new ReentrantLock();
-
-        /** Future. */
-        private IgniteInternalFuture<?> fut;
-
-        /**
-         * Tries to acquire lock.
-         *
-         * @return Whether lock was actually acquired.
-         */
-        public boolean tryLock() {
-            return lock.tryLock();
-        }
-
-        /**
-         * Acquires lock.
-         */
-        @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-        public void lock() {
-            lock.lock();
-        }
-
-        /**
-         * Releases lock.
-         */
-        public void unlock() {
-            lock.unlock();
-        }
-
-        /**
-         * @return Whether lock is held by current thread.
-         */
-        public boolean holdsLock() {
-            return lock.isHeldByCurrentThread();
-        }
-
-        /**
-         * Gets future.
-         *
-         * @return Future.
-         */
-        public IgniteInternalFuture<?> future() {
-            return fut;
-        }
-
-        /**
-         * Sets future.
-         *
-         * @param fut Future.
-         */
-        public void future(@Nullable IgniteInternalFuture<?> fut) {
-            this.fut = fut;
-        }
-
-        /**
-         * Awaits for previous async operation to be completed.
-         */
-        public void await() {
-            IgniteInternalFuture<?> fut = this.fut;
-
-            if (fut != null && !fut.isDone()) {
-                try {
-                    // Ignore any exception from previous async operation as it should be handled by user.
-                    fut.get();
-                }
-                catch (IgniteCheckedException ignored) {
-                    // No-op.
-                }
-            }
-        }
-
-        /**
-         * Saves future in the holder and adds listener that will clear holder when future is finished.
-         *
-         * @param fut Future to save.
-         */
-        public void saveFuture(IgniteInternalFuture<?> fut) {
-            assert fut != null;
-            assert holdsLock();
-
-            if (fut.isDone())
-                future(null);
-            else {
-                future(fut);
-
-                fut.listen(f -> {
-                    if (!tryLock())
-                        return;
-
-                    try {
-                        if (future() == f)
-                            future(null);
-                    }
-                    finally {
-                        unlock();
-                    }
-                });
-            }
         }
     }
 }

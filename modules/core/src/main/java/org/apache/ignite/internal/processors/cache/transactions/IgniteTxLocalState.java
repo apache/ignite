@@ -56,8 +56,6 @@ public interface IgniteTxLocalState extends IgniteTxState {
 
     /**
      * Awaits for previous async operations on active caches to be completed.
-     *
-     * @param cctx Cache shared context.
      */
     public void awaitLastFuture();
 
