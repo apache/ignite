@@ -230,10 +230,10 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             }
         };
 
-        for (boolean[] binaryRaw : Arrays.asList(new boolean[] {false, true}, new boolean[] {false, false},
+        for (boolean[] rawBinary : Arrays.asList(new boolean[] {false, true}, new boolean[] {false, false},
             new boolean[] {true, true}, new boolean[] {true, false})) {
-            keepRaw.set(binaryRaw[0]);
-            keepBinary.set(binaryRaw[1]);
+            keepRaw.set(rawBinary[0]);
+            keepBinary.set(rawBinary[1]);
 
             new DumpReader(
                 new DumpReaderConfiguration(
