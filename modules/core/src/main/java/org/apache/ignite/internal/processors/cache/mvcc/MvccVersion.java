@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import org.jetbrains.annotations.NotNull;
-
 /**
  * MVCC version. This is unique version allowing to order all reads and writes within a cluster. Consists of two parts:
  * - coordinator version - number which increases on every coordinator change;
  * - counter - local coordinator counter which is increased on every update.
  */
-public interface MvccVersion extends Comparable<MvccVersion> {
+public interface MvccVersion {
     /**
      * @return Coordinator version.
      */
@@ -39,10 +37,4 @@ public interface MvccVersion extends Comparable<MvccVersion> {
      * @return Operation id in scope of current transaction.
      */
     public int operationCounter();
-
-    /** {@inheritDoc} */
-    @Override default int compareTo(@NotNull MvccVersion another) {
-        return MvccUtils.compare(coordinatorVersion(), counter(), operationCounter(),
-            another.coordinatorVersion(), another.counter(), another.operationCounter());
-    }
 }

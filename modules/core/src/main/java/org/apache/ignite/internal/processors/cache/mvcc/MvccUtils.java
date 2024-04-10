@@ -30,29 +30,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class MvccUtils {
     /**
-     * Compares to pairs of coordinator/counter versions. See {@link Comparable}.
-     *
-     * @param mvccCrdLeft First coordinator version.
-     * @param mvccCntrLeft First counter version.
-     * @param mvccOpCntrLeft First operation counter.
-     * @param mvccCrdRight Second coordinator version.
-     * @param mvccCntrRight Second counter version.
-     * @param mvccOpCntrRight Second operation counter.
-     * @return Comparison result, see {@link Comparable}.
-     */
-    public static int compare(long mvccCrdLeft, long mvccCntrLeft, int mvccOpCntrLeft, long mvccCrdRight,
-        long mvccCntrRight, int mvccOpCntrRight) {
-        int cmp;
-
-        if ((cmp = Long.compare(mvccCrdLeft, mvccCrdRight)) != 0
-            || (cmp = Long.compare(mvccCntrLeft, mvccCntrRight)) != 0
-            || (cmp = Integer.compare(mvccOpCntrLeft, mvccOpCntrRight)) != 0)
-            return cmp;
-
-        return 0;
-    }
-
-    /**
      * @param ctx Grid kernal context.
      * @return Currently started user transaction, or {@code null} if none started.
      * @throws TransactionUnsupportedConcurrencyException If transaction mode is not supported when MVCC is enabled.
