@@ -25,8 +25,6 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_BIT_OFF;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_MASK;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.EntryPart.CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.EntryPart.EXPIRE_TIME;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.EntryPart.KEY;
@@ -223,7 +221,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
 
         int opCntr = rawMvccOperationCounter(addr, 0);
 
-        rawMvccOperationCounter(addr, 0, (opCntr & ~MVCC_HINTS_MASK) | ((int)txState << MVCC_HINTS_BIT_OFF));
+        rawMvccOperationCounter(addr, 0, opCntr | (int)txState);
     }
 
     /**
@@ -241,7 +239,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
 
         int opCntr = rawNewMvccOperationCounter(addr, 0);
 
-        rawNewMvccOperationCounter(addr, 0, (opCntr & ~MVCC_HINTS_MASK) | ((int)txState << MVCC_HINTS_BIT_OFF));
+        rawNewMvccOperationCounter(addr, 0, opCntr | (int)txState );
     }
 
     /**

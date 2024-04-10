@@ -29,18 +29,6 @@ import org.jetbrains.annotations.Nullable;
  * Utils for MVCC.
  */
 public class MvccUtils {
-    /** */
-    public static final int MVCC_KEY_ABSENT_BEFORE_OFF = 29;
-
-    /** */
-    public static final int MVCC_HINTS_BIT_OFF = MVCC_KEY_ABSENT_BEFORE_OFF + 1;
-
-    /** Mask for tx hints. (2 highest bits)  */
-    public static final int MVCC_HINTS_MASK = Integer.MIN_VALUE >> 1;
-
-    /** Mask for operation counter bits. (Excludes hints and flags) */
-    public static final int MVCC_OP_COUNTER_MASK = ~(Integer.MIN_VALUE >> 2);
-
     /**
      * Compares to pairs of coordinator/counter versions. See {@link Comparable}.
      *
@@ -58,7 +46,7 @@ public class MvccUtils {
 
         if ((cmp = Long.compare(mvccCrdLeft, mvccCrdRight)) != 0
             || (cmp = Long.compare(mvccCntrLeft, mvccCntrRight)) != 0
-            || (cmp = Integer.compare(mvccOpCntrLeft & MVCC_OP_COUNTER_MASK, mvccOpCntrRight & MVCC_OP_COUNTER_MASK)) != 0)
+            || (cmp = Integer.compare(mvccOpCntrLeft, mvccOpCntrRight)) != 0)
             return cmp;
 
         return 0;
