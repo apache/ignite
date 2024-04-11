@@ -63,9 +63,7 @@ public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexRow> imple
         for (short payload = 1; payload <= PageIO.MAX_PAYLOAD_SIZE; payload++) {
             short ioType = (short)(PageIO.T_H2_EX_REF_INNER_START + payload - 1);
 
-            AbstractInlineInnerIO io = new InlineInnerIO(ioType, payload);
-
-            IOVersions<? extends AbstractInlineInnerIO> versions = new IOVersions<>(io);
+            IOVersions<? extends AbstractInlineInnerIO> versions = new IOVersions<>(new InlineInnerIO(ioType, payload));
 
             PageIO.registerH2ExtraInner(versions);
         }
@@ -145,9 +143,7 @@ public abstract class AbstractInlineInnerIO extends BPlusInnerIO<IndexRow> imple
     public static IOVersions<? extends BPlusInnerIO<IndexRow>> versions(int payload) {
         assert payload >= 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
 
-        if (payload == 0)
-            return InnerIO.VERSIONS;
-        else
-            return (IOVersions<BPlusInnerIO<IndexRow>>)PageIO.getInnerVersions((short)(payload - 1));
+        return payload == 0 ? InnerIO.VERSIONS :
+            (IOVersions<BPlusInnerIO<IndexRow>>)PageIO.getInnerVersions((short)(payload - 1));
     }
 }

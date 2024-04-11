@@ -63,9 +63,7 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
         for (short payload = 1; payload <= PageIO.MAX_PAYLOAD_SIZE; payload++) {
             short ioType = (short)(PageIO.T_H2_EX_REF_LEAF_START + payload - 1);
 
-            AbstractInlineLeafIO io = new InlineLeafIO(ioType, payload);
-
-            IOVersions<? extends AbstractInlineLeafIO> versions = new IOVersions<>(io);
+            IOVersions<? extends AbstractInlineLeafIO> versions = new IOVersions<>(new InlineLeafIO(ioType, payload));
 
             PageIO.registerH2ExtraLeaf(versions);
         }
@@ -145,9 +143,7 @@ public abstract class AbstractInlineLeafIO extends BPlusLeafIO<IndexRow> impleme
     public static IOVersions<? extends BPlusLeafIO<IndexRow>> versions(int payload) {
         assert payload >= 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
 
-        if (payload == 0)
-            return LeafIO.VERSIONS;
-        else
-            return (IOVersions<BPlusLeafIO<IndexRow>>)PageIO.getLeafVersions((short)(payload - 1));
+        return payload == 0 ? LeafIO.VERSIONS :
+            (IOVersions<BPlusLeafIO<IndexRow>>)PageIO.getLeafVersions((short)(payload - 1));
     }
 }

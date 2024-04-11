@@ -256,9 +256,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         if (inlineSize == 0) {
             IndexRow currRow = getRow(io, pageAddr, idx);
 
-            int cmp = compareFullRows(currRow, row, 0);
-
-            return cmp == 0 && (row.indexPlainRow() || currRow == row) ? 0 : cmp;
+            return compareFullRows(currRow, row, 0);
         }
 
         int fieldOff = 0;
