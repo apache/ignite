@@ -65,7 +65,7 @@ public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
     private static final ClusterNode REMOTE_NODE = new GridTestNode(UUID.randomUUID());
 
     /** Local node. */
-    private static final  ClusterNode LOCAL_NODE = new GridTestNode(UUID.randomUUID());
+    private static final ClusterNode LOCAL_NODE = new GridTestNode(UUID.randomUUID());
 
     /** Retry count. */
     @Parameter
