@@ -76,17 +76,11 @@ public class EntriesRemoveOnShutdownTest extends GridCommonAbstractTest {
         ignite.getOrCreateCache(new CacheConfiguration<Integer, String>("cache2").setGroupName("grp"));
 
         for (String cacheName : ignite.cacheNames()) {
-            if (!cacheName.startsWith("cache"))
-                continue;
-
             for (int i = 0; i < 1000; i++)
                 ignite.cache(cacheName).put(i, "Test" + i);
         }
 
         for (String cacheName : ignite.cacheNames()) {
-            if (!cacheName.startsWith("cache"))
-                continue;
-
             // Inject row cleaner to know about physical rows removal.
             IgniteCacheOffheapManager offheap = ignite.context().cache().cache(cacheName).context().offheap();
             for (IgniteCacheOffheapManager.CacheDataStore ds : offheap.cacheDataStores())
@@ -102,7 +96,7 @@ public class EntriesRemoveOnShutdownTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testShutdown() throws Exception {
+    public void testShutdown() {
         ignite.close();
 
         assertFalse(removed.get());
@@ -110,7 +104,7 @@ public class EntriesRemoveOnShutdownTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testDeactivate() throws Exception {
+    public void testDeactivate() {
         ignite.cluster().state(ClusterState.INACTIVE);
 
         assertFalse(removed.get());

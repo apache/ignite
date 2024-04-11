@@ -216,7 +216,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return;
         }
 
-        // In other cases perform destroy with data deletion (through tree iteration).
+        // In other cases (cache stop, for example) perform destroy with data deletion (through tree iteration).
         try {
             for (CacheDataStore store : cacheDataStores())
                 destroyCacheDataStore(store);
