@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,7 +46,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SEND_RETRY_CNT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -53,12 +59,25 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 /**
  *
  */
+@RunWith(Parameterized.class)
 public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
     /** Remote node. */
     private static final ClusterNode REMOTE_NODE = new GridTestNode(UUID.randomUUID());
 
     /** Local node. */
     private static final  ClusterNode LOCAL_NODE = new GridTestNode(UUID.randomUUID());
+
+    /** Retry count. */
+    @Parameter
+    public int retryCnt;
+
+    /**
+     *
+     */
+    @Parameters(name = "retryCnt={0}")
+    public static Iterable<Integer> parameters() {
+        return Arrays.asList(0, 1, DFLT_SEND_RETRY_CNT, 10);
+    }
 
     /**
      *
@@ -90,8 +109,6 @@ public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
      *
      */
     private void doTest(Function<GridKernalContext, RunnableX> action) throws Exception {
-        int retryCnt = 1;
-
         GridTestKernalContext ctx = kernalContext(retryCnt);
 
         // Actual send count. Must be equal to retry count + 1.
@@ -164,8 +181,9 @@ public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
         ctx.config().setDeploymentSpi(new LocalDeploymentSpi());
         ctx.config().setCommunicationSpi(new TcpCommunicationSpi());
 
-        // Configure retry count, which will be used by GridCacheIoManager to send messages.
-        ctx.config().setNetworkSendRetryCount(retryCnt);
+        // Configure non-default retry count, which will be used by GridCacheIoManager to send messages.
+        if (retryCnt != DFLT_SEND_RETRY_CNT)
+            ctx.config().setNetworkSendRetryCount(retryCnt);
 
         // Discovery returns remote and local nodes and successfully pings remote node.
         ctx.config().setDiscoverySpi(new TcpDiscoverySpi() {
