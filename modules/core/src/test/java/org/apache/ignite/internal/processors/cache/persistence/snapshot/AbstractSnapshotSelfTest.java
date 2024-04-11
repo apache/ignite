@@ -778,7 +778,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @param cache Persisted cache.
      * @param snpCanceller Snapshot cancel closure.
      */
-    protected static void doSnapshotCancellationTest(
+    public static void doSnapshotCancellationTest(
         IgniteEx startCli,
         List<IgniteEx> srvs,
         IgniteCache<?, ?> cache,
@@ -1079,7 +1079,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static class BlockingExecutor implements Executor {
+    protected static class BlockingExecutor implements Executor {
         /** Delegate executor. */
         private final Executor delegate;
 
