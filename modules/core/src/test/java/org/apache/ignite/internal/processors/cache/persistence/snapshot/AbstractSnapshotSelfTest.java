@@ -755,7 +755,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @param grids Grids to block snapshot executors.
      * @return Wrapped snapshot executor list.
      */
-    public static List<BlockingExecutor> setBlockingSnapshotExecutor(List<? extends Ignite> grids) {
+    protected static List<BlockingExecutor> setBlockingSnapshotExecutor(List<? extends Ignite> grids) {
         List<BlockingExecutor> execs = new ArrayList<>();
 
         for (Ignite grid : grids) {
@@ -778,7 +778,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @param cache Persisted cache.
      * @param snpCanceller Snapshot cancel closure.
      */
-    public static void doSnapshotCancellationTest(
+    protected static void doSnapshotCancellationTest(
         IgniteEx startCli,
         List<IgniteEx> srvs,
         IgniteCache<?, ?> cache,

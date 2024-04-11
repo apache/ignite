@@ -146,8 +146,8 @@ public class Dump implements AutoCloseable {
         this.consistentId = consistentId == null ? null : U.maskForFileName(consistentId);
         this.metadata = metadata(dumpDir, this.consistentId);
         this.keepBinary = keepBinary;
-        this.raw = raw;
         this.cctx = standaloneKernalContext(dumpDir, log);
+        this.raw = raw;
         this.encSpi = encSpi;
         this.comprParts = metadata.get(0).compressPartitions();
 
