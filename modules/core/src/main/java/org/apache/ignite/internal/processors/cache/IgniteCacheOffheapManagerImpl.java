@@ -37,8 +37,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -197,6 +200,22 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** {@inheritDoc} */
     @Override public void stop() {
+        GridKernalContext kctx = ctx.kernalContext();
+
+        // For in-memory mode, if we stop caches on grid stopping or cluster deactivation, skip data deletion from
+        // the trees and just close trees to release resources.
+        if (kctx.gateway().getState() == GridKernalState.STOPPING
+            || kctx.state().clusterState().state() == ClusterState.INACTIVE) {
+            for (CacheDataStore store : cacheDataStores())
+                store.tree().close();
+
+            if (pendingEntries != null)
+                pendingEntries.close();
+
+            return;
+        }
+
+        // In other cases (cache stop, for example) perform destroy with data deletion (through tree iteration).
         try {
             for (CacheDataStore store : cacheDataStores())
                 destroyCacheDataStore(store);
