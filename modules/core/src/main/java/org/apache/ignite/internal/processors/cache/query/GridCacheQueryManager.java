@@ -1525,7 +1525,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             IndexQueryResult<K, V> idxQryRes = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(),
                 qry.scanFilter(), filter(qry, parts, parts != null), qry.keepBinary());
 
-            return idxQryRes.iter();
+            return new IndexQueryIterator(idxQryRes.iter());
         }
         catch (Exception e) {
             throw e;
@@ -3461,6 +3461,45 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          */
         IgniteBiPredicate<K, V> scanFilter() {
             return scanFilter;
+        }
+    }
+
+    public static final class IndexQueryIterator<K, V> extends GridCloseableIteratorAdapter<Object> {
+        private static final long serialVersionUID = 0L;
+        private GridCloseableIterator<IgniteBiTuple<K, V>> iterator;
+        private CacheEntryImpl<K, V> currVal;
+
+        IndexQueryIterator (GridCloseableIterator<IgniteBiTuple<K, V>> iterator) {
+            this.iterator = iterator;
+        }
+
+        @Override protected Object onNext() throws IgniteCheckedException {
+            if (currVal == null) {
+                if (!hasNext())
+                    throw new NoSuchElementException();
+            }
+
+            CacheEntryImpl<K, V> element = currVal;
+
+            currVal = null;
+
+            return element;
+        }
+
+        @Override protected boolean onHasNext() throws IgniteCheckedException {
+            if (currVal != null)
+                return true;
+
+            while (currVal == null && iterator.hasNext()) {
+                IgniteBiTuple<K, V> entry = iterator.nextX();
+
+                K key = entry.getKey();
+                V val = entry.getValue();
+
+                currVal = new CacheEntryImpl<>(key, val);
+            }
+
+            return currVal != null;
         }
     }
 }

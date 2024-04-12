@@ -639,11 +639,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         taskHash = cctx.kernalContext().job().currentTaskNameHash();
 
-        final GridCacheQueryManager qryMgr = cctx.queries();
-
-        GridCloseableIterator it = qryMgr.indexQueryLocal(this);
-
-        return it;
+        return cctx.queries().indexQueryLocal(this);
     }
 
     /**
