@@ -26,12 +26,12 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -74,6 +74,10 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     @GridToStringInclude
     private Boolean recovery;
 
+    /** Async future. */
+    @GridToStringExclude
+    private final GridCacheAdapter.FutureHolder lastAsyncFut = new GridCacheAdapter.FutureHolder();
+
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
         return false;
@@ -102,26 +106,13 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheContext singleCacheContext(GridCacheSharedContext cctx) {
-        if (activeCacheIds.size() == 1) {
-            int cacheId = activeCacheIds.get(0);
-
-            return cctx.cacheContext(cacheId);
-        }
-
-        return null;
+    @Override public void awaitLastFuture() {
+        lastAsyncFut.await();
     }
 
     /** {@inheritDoc} */
-    @Override public void awaitLastFuture(GridCacheSharedContext cctx) {
-        for (int i = 0; i < activeCacheIds.size(); i++) {
-            int cacheId = activeCacheIds.get(i);
-
-            if (cctx.cacheContext(cacheId) == null)
-                throw new IgniteException("Cache is stopped, id=" + cacheId);
-
-            cctx.cacheContext(cacheId).cache().awaitLastFut();
-        }
+    @Override public GridCacheAdapter.FutureHolder lastAsyncFuture() {
+        return lastAsyncFut;
     }
 
     /** {@inheritDoc} */
