@@ -18,11 +18,17 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Cache data manipulation request.
  */
-class ClientCacheDataRequest extends ClientCacheRequest {
+abstract class ClientCacheDataRequest extends ClientCacheRequest {
     /** Transaction ID. Only available if request was made under a transaction. */
     private final int txId;
 
@@ -47,5 +53,24 @@ class ClientCacheDataRequest extends ClientCacheRequest {
     /** {@inheritDoc} */
     @Override public boolean isTransactional() {
         return super.isTransactional();
+    }
+
+    /** Chain cache operation future to return response when operation is completed. */
+    protected static <T> IgniteInternalFuture<ClientResponse> chainFuture(
+        IgniteFuture<T> fut,
+        IgniteClosure<T, ClientResponse> clo
+    ) {
+        // IgniteFuture for cache operations executes chaining/listening block via task to external executor,
+        // we don't need this additional step here, so use internal future.
+        IgniteInternalFuture<T> fut0 = ((IgniteFutureImpl<T>)fut).internalFuture();
+
+        return fut0.chain(f -> {
+            try {
+                return clo.apply(f.get());
+            }
+            catch (Exception e) {
+                throw new GridClosureException(e);
+            }
+        });
     }
 }

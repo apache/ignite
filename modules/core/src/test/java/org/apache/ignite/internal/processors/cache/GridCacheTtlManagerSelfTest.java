@@ -17,12 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.TouchedExpiryPolicy;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -102,6 +116,103 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
         }
         finally {
             stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPartitionedRemove() throws Exception {
+        checkRemove(PARTITIONED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReplicatedRemove() throws Exception {
+        checkRemove(REPLICATED);
+    }
+
+    /**
+     * @param mode Cache mode.
+     * @throws Exception If failed.
+     */
+    private void checkRemove(CacheMode mode) throws Exception {
+        cacheMode = mode;
+
+        Map<String, Integer> calls = new ConcurrentHashMap<>();
+
+        BPlusTree.testHndWrapper = (tree, hnd) -> {
+            if (tree instanceof PendingEntriesTree) {
+                return new PageHandler<Object, BPlusTree.Result>() {
+                    @Override public BPlusTree.Result run(
+                        int cacheId,
+                        long pageId,
+                        long page,
+                        long pageAddr,
+                        PageIO io,
+                        Boolean walPlc,
+                        Object arg,
+                        int lvl,
+                        IoStatisticsHolder statHolder
+                    ) throws IgniteCheckedException {
+                        calls.merge(arg.getClass().getSimpleName(), 1, Integer::sum);
+
+                        return ((PageHandler<Object, BPlusTree.Result>)hnd).run(cacheId, pageId, page, pageAddr, io,
+                            walPlc, arg, lvl, statHolder);
+                    }
+
+                    @Override public boolean releaseAfterWrite(
+                        int cacheId,
+                        long pageId,
+                        long page,
+                        long pageAddr,
+                        Object arg,
+                        int intArg
+                    ) {
+                        return ((PageHandler<Object, BPlusTree.Result>)hnd)
+                            .releaseAfterWrite(cacheId, pageId, page, pageAddr, arg, intArg);
+                    }
+                };
+            }
+
+            return hnd;
+        };
+
+        try (IgniteEx g = startGrid(0)) {
+            final String key = "key";
+
+            final int records = 1500;
+
+            IgniteCache<Object, Object> cache = g.cache(DEFAULT_CACHE_NAME).withExpiryPolicy(
+                new CreatedExpiryPolicy(new Duration(MILLISECONDS, 1000)));
+
+            IntStream.range(0, records).forEach(x -> cache.put(key + x, x));
+
+            assertTrue(GridTestUtils.waitForCondition(
+                () -> {
+                    try {
+                        return g.context().cache().cache(DEFAULT_CACHE_NAME).context().ttl().pendingSize() == 0;
+                    }
+                    catch (Exception e) {
+                        throw new IgniteException(e);
+                    }
+                }, 5_000L)
+            );
+
+            log.info("Invocation counts\n" + calls.keySet().stream()
+                .map(k -> k + ": " + calls.get(k))
+                .collect(Collectors.joining("\n")));
+
+            assertNotNull(calls.get("RemoveRange"));
+            assertNull(calls.get("Remove"));
+
+            IntStream.range(0, records).forEach(x -> assertNull(cache.get(key + x)));
+        }
+        finally {
+            BPlusTree.testHndWrapper = null;
         }
     }
 }

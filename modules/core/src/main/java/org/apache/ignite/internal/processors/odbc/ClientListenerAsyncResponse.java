@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.tree.mvcc.search;
+package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.IgniteInternalFuture;
 
 /**
- * Common interface for MVCC search row closures (no-op, only to have clear inheritance hierarchy).
+ * Client listener async response.
  */
-public interface MvccTreeClosure extends BPlusTree.TreeRowClosure<CacheSearchRow, CacheDataRow> {
-    // No-op.
+public interface ClientListenerAsyncResponse {
+    /** Future for response. */
+    public IgniteInternalFuture<? extends ClientListenerResponse> future();
 }
