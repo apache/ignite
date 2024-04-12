@@ -215,9 +215,11 @@ public abstract class WALRecord {
         ENCRYPTED_DATA_RECORD(53, LOGICAL),
 
         /** Mvcc data record. */
+        @Deprecated
         MVCC_DATA_RECORD(54, LOGICAL),
 
         /** Mvcc Tx state change record. */
+        @Deprecated
         MVCC_TX_RECORD(55, LOGICAL),
 
         /** Consistent cut record. */
