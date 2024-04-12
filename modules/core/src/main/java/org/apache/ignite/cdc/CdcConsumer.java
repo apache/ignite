@@ -25,8 +25,8 @@ import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.systemview.view.CacheView;
 
@@ -35,7 +35,7 @@ import org.apache.ignite.spi.systemview.view.CacheView;
  * This consumer will receive data change events during {@link CdcMain} application invocation.
  * The lifecycle of the consumer is the following:
  * <ul>
- *     <li>Start of the consumer {@link #start(MetricRegistryImpl)}.</li>
+ *     <li>Start of the consumer {@link #start(MetricRegistry)}.</li>
  *     <li>Notification of the consumer by the {@link #onEvents(Iterator)} call.</li>
  *     <li>Stop of the consumer {@link #stop()}.</li>
  * </ul>
@@ -71,7 +71,7 @@ public interface CdcConsumer {
      * Starts the consumer.
      * @param mreg Metric registry for consumer specific metrics.
      */
-    public void start(MetricRegistryImpl mreg);
+    public void start(MetricRegistry mreg);
 
     /**
      * Handles entry changes events.
@@ -135,7 +135,7 @@ public interface CdcConsumer {
 
     /**
      * Stops the consumer.
-     * This method can be invoked only after {@link #start(MetricRegistryImpl)}.
+     * This method can be invoked only after {@link #start(MetricRegistry)}.
      */
     public void stop();
 

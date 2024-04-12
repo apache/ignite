@@ -65,12 +65,9 @@ public class MetricUtils {
     public static String metricName(String... names) {
         assert names != null && names.length > 0 : "Metric name must consist of at least one element.";
 
-        boolean custom = false;
+        boolean custom = customMetric(names[0]);
 
         for (int i = 0; i < names.length; i++) {
-            if (i == 0)
-                custom = isCustomPref(names[i]);
-
             if (F.isEmpty(names[i]) || (custom && !CUSTOM_NAME_PATTERN.matcher(names[i]).matches())) {
                 throw new IllegalArgumentException("Illegal metric or registry name: '" + names[i] + "'. Spaces, " +
                     "nulls, empty name or name parts are not allowed.");
@@ -83,7 +80,7 @@ public class MetricUtils {
     /**
      * @return {@code True} if {@code name} is or start with the custom metric prefix.
      */
-    public static boolean isCustomPref(String name) {
+    public static boolean customMetric(String name) {
         return name != null && (name.startsWith(CUSTOM_METRICS_PREF) || name.equals(CUSTOM_METRICS));
     }
 

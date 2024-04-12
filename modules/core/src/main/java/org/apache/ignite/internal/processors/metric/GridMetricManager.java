@@ -776,7 +776,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         /** {@inheritDoc} */
         @NotNull @Override public Iterator<ReadOnlyMetricRegistry> iterator() {
-            return F.viewReadOnly(registries.values(), r -> r, r -> r.name().startsWith(CUSTOM_METRICS)).iterator();
+            return F.viewReadOnly(registries.values(), r -> r, r -> MetricUtils.customMetric(r.name())).iterator();
         }
 
         /** Adds {@link MetricUtils#CUSTOM_METRICS} to {@code name}. */
