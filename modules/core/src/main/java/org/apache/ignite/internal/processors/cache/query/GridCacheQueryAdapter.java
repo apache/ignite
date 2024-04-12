@@ -620,6 +620,32 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         return it;
     }
 
+    /** {@inheritDoc} */
+    @Override public GridCloseableIterator executeIndexQueryLocal() throws IgniteCheckedException {
+        assert type == INDEX : "Wrong processing of query: " + type;
+
+        Collection<ClusterNode> nodes = new ArrayList<>(nodes());
+
+        cctx.checkSecurity(SecurityPermission.CACHE_READ);
+
+        if (nodes.isEmpty())
+            return new GridEmptyCloseableIterator();
+
+        if (log.isDebugEnabled())
+            log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');
+
+        if (cctx.deploymentEnabled())
+            cctx.deploy().registerClasses(filter);
+
+        taskHash = cctx.kernalContext().job().currentTaskNameHash();
+
+        final GridCacheQueryManager qryMgr = cctx.queries();
+
+        GridCloseableIterator it = qryMgr.indexQueryLocal(this);
+
+        return it;
+    }
+
     /**
      * @return Nodes to execute on.
      */

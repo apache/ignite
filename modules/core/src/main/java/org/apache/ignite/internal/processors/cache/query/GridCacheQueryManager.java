@@ -1500,6 +1500,42 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
+     * Process local index query.
+     *
+     * @param qry Query.
+     *
+     * @return Index query iterator.
+     */
+    @SuppressWarnings({"unchecked"})
+    protected GridCloseableIterator indexQueryLocal(final GridCacheQueryAdapter qry) throws IgniteCheckedException {
+        if (!enterBusy())
+            throw new IllegalStateException("Failed to process query request (grid is stopping).");
+
+        try {
+            assert qry.type() == INDEX;
+
+            if (log.isDebugEnabled())
+                log.debug("Running local INDEX query: " + qry);
+
+            int[] parts = null;
+
+            if (qry.partition() != null)
+                parts = new int[] {qry.partition()};
+
+            IndexQueryResult<K, V> idxQryRes = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(),
+                qry.scanFilter(), filter(qry, parts, parts != null), qry.keepBinary());
+
+            return idxQryRes.iter();
+        }
+        catch (Exception e) {
+            throw e;
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
      * @param qryInfo Info.
      * @param taskName Task name.
      * @return Iterator.

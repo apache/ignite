@@ -497,6 +497,41 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /**
+     * @param idxQryLocal local Index Query.
+     * @param grp Optional cluster group.
+     * @return Cursor.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private <T, R> QueryCursor<R> query(
+        final IndexQuery idxQryLocal,
+        @Nullable ClusterGroup grp
+    ) throws IgniteCheckedException {
+        GridCacheContext<K, V> ctx = getContextSafe();
+
+        CacheOperationContext opCtxCall = ctx.operationContextPerCall();
+
+        boolean isKeepBinary = opCtxCall != null && opCtxCall.isKeepBinary();
+
+        final CacheQuery<R> qry = ctx.queries().createIndexQuery(idxQryLocal, isKeepBinary);
+
+        if (idxQryLocal.getPageSize() > 0)
+            qry.pageSize(idxQryLocal.getPageSize());
+
+        if (grp != null)
+            qry.projection(grp);
+
+        final GridCloseableIterator<R> iter = ctx.kernalContext().query().executeQuery(GridCacheQueryType.INDEX,
+            idxQryLocal.getValueType(), ctx, new IgniteOutClosureX<GridCloseableIterator<R>>() {
+                @Override public GridCloseableIterator<R> applyx() throws IgniteCheckedException {
+                    return qry.executeIndexQueryLocal();
+                }
+            }, true);
+
+        return new QueryCursorImpl<>(iter);
+    }
+
+    /**
      * @param query Query.
      * @param grp Optional cluster group.
      * @return Cursor.
@@ -820,6 +855,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
             if (qry instanceof ScanQuery)
                 return query((ScanQuery)qry, null, projection(qry.isLocal()));
+
+            if (qry instanceof IndexQuery && qry.isLocal())
+                return query((IndexQuery)qry, projection(qry.isLocal()));
 
             return (QueryCursor<R>)query(qry, projection(qry.isLocal()));
         }
