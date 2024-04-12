@@ -46,9 +46,6 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdatedRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateNewTxStateHintRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateTxStateHintRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageSetFreeListPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
@@ -148,9 +145,6 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_SNAPSHOT_ID;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.META_PAGE_UPDATE_LAST_SUCCESSFUL_SNAPSHOT_ID;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.META_PAGE_UPDATE_NEXT_SNAPSHOT_ID;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_PAGE_MARK_UPDATED_RECORD;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.OUT_OF_ORDER_UPDATE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PAGES_LIST_ADD_PAGE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PAGES_LIST_INIT_NEW_PAGE;
@@ -249,9 +243,6 @@ public class RecordUtils {
         put(MASTER_KEY_CHANGE_RECORD_V2, RecordUtils::buildMasterKeyChangeRecordV2);
         put(REENCRYPTION_START_RECORD, RecordUtils::buildEncryptionStatusRecord);
         put(ROTATED_ID_PART_RECORD, RecordUtils::buildRotatedIdPartRecord);
-        put(MVCC_DATA_PAGE_MARK_UPDATED_RECORD, RecordUtils::buildDataPageMvccMarkUpdatedRecord);
-        put(MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD, RecordUtils::buildDataPageMvccUpdateTxStateHintRecord);
-        put(MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD, RecordUtils::buildDataPageMvccUpdateNewTxStateHintRecord);
         put(ENCRYPTED_RECORD, buildUpsupportedWalRecord(ENCRYPTED_RECORD));
         put(ENCRYPTED_DATA_RECORD, buildUpsupportedWalRecord(ENCRYPTED_DATA_RECORD));
         put(ENCRYPTED_RECORD_V2, buildUpsupportedWalRecord(ENCRYPTED_RECORD_V2));
@@ -564,21 +555,6 @@ public class RecordUtils {
     /** **/
     public static RotatedIdPartRecord buildRotatedIdPartRecord() {
         return new RotatedIdPartRecord(1, 1, 2);
-    }
-
-    /** **/
-    public static DataPageMvccMarkUpdatedRecord buildDataPageMvccMarkUpdatedRecord() {
-        return new DataPageMvccMarkUpdatedRecord(1, 1, 2, 1, 1, 1);
-    }
-
-    /** **/
-    public static DataPageMvccUpdateTxStateHintRecord buildDataPageMvccUpdateTxStateHintRecord() {
-        return new DataPageMvccUpdateTxStateHintRecord(1, 1, 2, (byte)1);
-    }
-
-    /** **/
-    public static DataPageMvccUpdateNewTxStateHintRecord buildDataPageMvccUpdateNewTxStateHintRecord() {
-        return new DataPageMvccUpdateNewTxStateHintRecord(1, 1, 2, (byte)1);
     }
 
     /**
