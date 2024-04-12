@@ -430,15 +430,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case DATA_PAGE_SET_FREE_LIST_PAGE:
                 return 4 + 8 + 8;
 
-            case MVCC_DATA_PAGE_MARK_UPDATED_RECORD:
-                return 4 + 8 + 4 + 8 + 8 + 4;
-
-            case MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD:
-                return 4 + 8 + 4 + 1;
-
-            case MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD:
-                return 4 + 8 + 4 + 1;
-
             case INIT_NEW_PAGE_RECORD:
                 return 4 + 8 + 2 + 2 + 8;
 

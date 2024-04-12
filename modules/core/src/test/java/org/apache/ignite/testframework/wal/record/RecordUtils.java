@@ -145,6 +145,11 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_SNAPSHOT_ID;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.META_PAGE_UPDATE_LAST_SUCCESSFUL_SNAPSHOT_ID;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.META_PAGE_UPDATE_NEXT_SNAPSHOT_ID;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_PAGE_MARK_UPDATED_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_TX_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.OUT_OF_ORDER_UPDATE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PAGES_LIST_ADD_PAGE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PAGES_LIST_INIT_NEW_PAGE;
@@ -260,6 +265,14 @@ public class RecordUtils {
         put(CDC_MANAGER_RECORD, RecordUtils::buildCdcManagerStopRecord);
         put(CDC_MANAGER_STOP_RECORD, RecordUtils::buildCdcManagerStopRecord);
         put(DATA_PAGE_FRAGMENTED_UPDATE_RECORD, buildUpsupportedWalRecord(DATA_PAGE_FRAGMENTED_UPDATE_RECORD));
+
+        put(MVCC_DATA_RECORD, buildUpsupportedWalRecord(MVCC_DATA_RECORD));
+        put(MVCC_TX_RECORD, buildUpsupportedWalRecord(MVCC_TX_RECORD));
+        put(MVCC_DATA_PAGE_MARK_UPDATED_RECORD, buildUpsupportedWalRecord(MVCC_DATA_PAGE_MARK_UPDATED_RECORD));
+        put(MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD,
+            buildUpsupportedWalRecord(MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD));
+        put(MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD,
+            buildUpsupportedWalRecord(MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD));
     }
 
     /** */
