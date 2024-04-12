@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,9 +42,11 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.ZipInputStream;
 import org.apache.commons.io.IOUtils;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryVersion;
@@ -83,6 +86,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEnt
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -168,6 +172,86 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /** */
+    @Test
+    public void testDumpRawData() throws Exception {
+        IgniteEx ign = startGrids(3);
+
+        Ignite cli = startClientGrid(G.allGrids().size());
+
+        cli.createCache(defaultCacheConfiguration());
+
+        for (int i = 0; i < KEYS_CNT; ++i)
+            cli.cache(DEFAULT_CACHE_NAME).put(i, USER_FACTORY.apply(i));
+
+        cli.snapshot().createDump(DMP_NAME, null).get();
+
+        AtomicBoolean keepRaw = new AtomicBoolean();
+        AtomicBoolean keepBinary = new AtomicBoolean();
+
+        DumpConsumer cnsmr = new DumpConsumer() {
+            @Override public void start() {
+                // No-op.
+            }
+
+            @Override public void onMappings(Iterator<TypeMapping> mappings) {
+                // No-op.
+            }
+
+            @Override public void onTypes(Iterator<BinaryType> types) {
+                // No-op.
+            }
+
+            @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
+                // No-op.
+            }
+
+            @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
+                data.forEachRemaining(de -> {
+                    if (keepRaw.get()) {
+                        assertTrue(de.key() instanceof KeyCacheObject);
+                        assertTrue(de.value() instanceof CacheObject);
+                    }
+                    else {
+                        assertTrue(de.key() instanceof Integer);
+
+                        if (keepBinary.get())
+                            assertTrue(de.value() instanceof BinaryObject);
+                        else
+                            assertTrue(de.value() instanceof User);
+                    }
+                });
+            }
+
+            @Override public void stop() {
+                // No-op.
+            }
+        };
+
+        for (boolean raw : Arrays.asList(true, false)) {
+            for (boolean binary : Arrays.asList(true, false)) {
+                keepRaw.set(raw);
+                keepBinary.set(binary);
+
+                new DumpReader(
+                    new DumpReaderConfiguration(
+                        dumpDirectory(ign, DMP_NAME),
+                        cnsmr,
+                        DFLT_THREAD_CNT,
+                        DFLT_TIMEOUT,
+                        true,
+                        keepBinary.get(),
+                        keepRaw.get(),
+                        null,
+                        false,
+                        null
+                    ),
+                    log
+                ).run();
+            }
+        }
     }
 
     /** Checks a dump when it is created with the data streamer just after a restart. */
@@ -748,6 +832,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 DFLT_TIMEOUT,
                 true,
                 false,
+                false,
                 null,
                 false,
                 null
@@ -812,6 +897,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 DFLT_TIMEOUT,
                 true,
                 false,
+                false,
                 null,
                 false,
                 null
@@ -839,6 +925,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                         DFLT_THREAD_CNT,
                         DFLT_TIMEOUT,
                         true,
+                        false,
                         false,
                         null,
                         false,
@@ -870,6 +957,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 DFLT_THREAD_CNT,
                 DFLT_TIMEOUT,
                 true,
+                false,
                 false,
                 null,
                 false,
