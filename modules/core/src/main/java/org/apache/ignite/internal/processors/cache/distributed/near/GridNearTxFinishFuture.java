@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.tracing.MTC;
@@ -853,11 +852,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                 CheckRemoteTxMiniFuture fut = (CheckRemoteTxMiniFuture)f;
 
                 return "CheckRemoteTxMiniFuture[nodes=" + fut.nodes() + ", done=" + f.isDone() + "]";
-            }
-            else if (f instanceof MvccFuture) {
-                MvccFuture fut = (MvccFuture)f;
-
-                return "WaitPreviousTxsFut[mvccCrd=" + fut.coordinatorNodeId() + ", done=" + f.isDone() + "]";
             }
             else
                 return "[loc=true, done=" + f.isDone() + "]";
