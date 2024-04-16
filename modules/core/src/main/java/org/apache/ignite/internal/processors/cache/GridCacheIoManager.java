@@ -1208,8 +1208,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             try {
                 cctx.gridIO().sendToGridTopic(node, TOPIC_CACHE, msg, plc);
 
-                cnt++;
-
                 return;
             }
             catch (ClusterTopologyCheckedException e) {
@@ -1270,8 +1268,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         while (cnt <= retryCnt) {
             try {
                 cctx.gridIO().sendOrderedMessage(node, topic, msg, plc, timeout, false);
-
-                cnt++;
 
                 if (log.isDebugEnabled())
                     log.debug("Sent ordered cache message [topic=" + topic + ", msg=" + msg +
