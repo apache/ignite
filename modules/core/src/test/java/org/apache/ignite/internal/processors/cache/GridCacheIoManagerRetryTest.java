@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -29,15 +30,20 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
+import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestNode;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -103,10 +109,12 @@ public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
      *
      */
     private void doTest(Function<GridKernalContext, RunnableX> action) throws Exception {
+        GridTestKernalContext ctx = kernalContext(retryCnt);
+
         // Actual send count. Must be equal to retry count + 1.
         AtomicInteger sendCnt = new AtomicInteger();
 
-        GridKernalContext ctx = kernalContext(retryCnt, sendCnt);
+        configureGridIoManager(ctx, sendCnt);
 
         Throwable actionRes = assertThrows(log(), action.apply(ctx), IgniteException.class, "Test cause");
 
@@ -118,12 +126,36 @@ public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Configure GridIoManager, which throws exception and counts sending attempts.
+     *
+     * @param ctx Context.
+     * @param sendCnt Send attempts counter.
+     */
+    private void configureGridIoManager(GridTestKernalContext ctx, AtomicInteger sendCnt) {
+        ctx.add(new GridIoManager(ctx) {
+            @Override public void sendToGridTopic(ClusterNode node, GridTopic topic, Message msg, byte plc)
+                throws IgniteCheckedException {
+                sendCnt.incrementAndGet();
+
+                throw new IgniteCheckedException("Test cause");
+            }
+
+            @Override public void sendOrderedMessage(ClusterNode node, Object topic, Message msg, byte plc,
+                long timeout, boolean skipOnTimeout) throws IgniteCheckedException {
+                sendCnt.incrementAndGet();
+
+                throw new IgniteCheckedException("Test cause");
+            }
+        });
+    }
+
+    /**
      * Initialize GridCacheIoManager and GridCacheSharedContext.
      *
      * @param ctx Kernal context.
      */
     @SuppressWarnings("unchecked")
-    private GridCacheIoManager gridCacheIoManager(GridKernalContext ctx) throws IgniteCheckedException {
+    @NotNull private static GridCacheIoManager gridCacheIoManager(GridKernalContext ctx) throws IgniteCheckedException {
         GridCacheIoManager cacheIoMgr = new GridCacheIoManager();
 
         GridCacheSharedContext<?, ?> cctx = GridCacheSharedContext.builder()
@@ -140,55 +172,18 @@ public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
      * Configure and initalize GridKernalContext.
      *
      * @param retryCnt Reconnect count.
-     * @param sendCntr Send counter.
      */
-    private GridKernalContext kernalContext(int retryCnt, AtomicInteger sendCntr) throws IgniteCheckedException {
-        GridKernalContext ctx = new StandaloneGridKernalContext(log, null, null) {
-            @Override public GridIoManager io() {
-                return new GridIoManager(this) {
-                    @Override public void sendToGridTopic(ClusterNode node, GridTopic topic, Message msg, byte plc)
-                        throws IgniteCheckedException {
-                        sendCntr.incrementAndGet();
-
-                        throw new IgniteCheckedException("Test cause");
-                    }
-
-                    @Override public void sendOrderedMessage(ClusterNode node, Object topic, Message msg, byte plc,
-                        long timeout, boolean skipOnTimeout) throws IgniteCheckedException {
-                        sendCntr.incrementAndGet();
-
-                        throw new IgniteCheckedException("Test cause");
-                    }
-                };
-            }
-
-            @Override public GridDiscoveryManager discovery() {
-                return new GridDiscoveryManager(this) {
-                    @Override public @Nullable ClusterNode node(UUID nodeId) {
-                        return nodeId.equals(REMOTE_NODE.id()) ? REMOTE_NODE :
-                            nodeId.equals(LOCAL_NODE.id()) ? LOCAL_NODE : null;
-                    }
-                };
-            }
-
-            @Override public GridDeploymentManager deploy() {
-                return new GridDeploymentManager(this);
-            }
-
-            @Override public UUID localNodeId() {
-                return LOCAL_NODE.id();
-            }
-        };
+    private GridTestKernalContext kernalContext(int retryCnt) throws IgniteCheckedException {
+        GridTestKernalContext ctx = newContext();
 
         // Necessary to init GridKernalContext.
         ctx.config().setPeerClassLoadingEnabled(true);
         ctx.config().setDeploymentSpi(new LocalDeploymentSpi());
+        ctx.config().setCommunicationSpi(new TcpCommunicationSpi());
 
         // Configure non-default retry count, which will be used by GridCacheIoManager to send messages.
         if (retryCnt != DFLT_SEND_RETRY_CNT)
             ctx.config().setNetworkSendRetryCount(retryCnt);
-
-        ctx.config().setNetworkSendRetryDelay(1);
 
         // Discovery returns remote and local nodes and successfully pings remote node.
         ctx.config().setDiscoverySpi(new TcpDiscoverySpi() {
@@ -199,6 +194,23 @@ public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
 
             @Override public boolean pingNode(UUID nodeId) {
                 return nodeId.equals(REMOTE_NODE.id());
+            }
+
+            @Override public ClusterNode getLocalNode() {
+                return LOCAL_NODE;
+            }
+        });
+
+        // Necessary to init GridKernalContext.
+        ctx.add(new PoolProcessor(ctx));
+        ctx.add(new GridSystemViewManager(ctx));
+        ctx.add(new IgnitePluginProcessor(ctx, ctx.config(), Collections.emptyList()));
+        ctx.add(new GridDeploymentManager(ctx));
+
+        ctx.add(new GridDiscoveryManager(ctx) {
+            @Override public @Nullable ClusterNode node(UUID nodeId) {
+                return nodeId.equals(REMOTE_NODE.id()) ? REMOTE_NODE :
+                    nodeId.equals(LOCAL_NODE.id()) ? LOCAL_NODE : null;
             }
         });
 
