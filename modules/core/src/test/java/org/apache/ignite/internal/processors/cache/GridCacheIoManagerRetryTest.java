@@ -205,5 +205,4 @@ public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
             }
         });
     }
-
 }
