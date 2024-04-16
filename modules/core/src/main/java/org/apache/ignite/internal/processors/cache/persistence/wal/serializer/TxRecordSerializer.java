@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -35,38 +33,6 @@ import org.apache.ignite.transactions.TransactionState;
  * {@link TxRecord} WAL serializer.
  */
 public class TxRecordSerializer {
-    /** Mvcc version record size. */
-    static final int MVCC_VERSION_SIZE = 8 + 8 + 4;
-
-    /**
-     * Reads {@link MvccVersion} from given input.
-     *
-     * @param in Data input to read from.
-     * @return Mvcc version.
-     */
-    public MvccVersion readMvccVersion(ByteBufferBackedDataInput in) throws IOException {
-        in.ensure(MVCC_VERSION_SIZE);
-
-        long coordVer = in.readLong();
-        long cntr = in.readLong();
-        int opCntr = in.readInt();
-
-        return new MvccVersionImpl(coordVer, cntr, opCntr);
-    }
-
-    /**
-     * Writes {@link MvccVersion} to given buffer.
-     *
-     * @param buf Buffer to write.
-     * @param mvccVer Mvcc version.
-     */
-    public void putMvccVersion(ByteBuffer buf, MvccVersion mvccVer) {
-        buf.putLong(mvccVer.coordinatorVersion());
-        buf.putLong(mvccVer.counter());
-
-        buf.putInt(mvccVer.operationCounter());
-    }
-
     /**
      * Writes {@link TxRecord} to given buffer.
      *
