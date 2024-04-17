@@ -624,6 +624,21 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     @Override public GridCloseableIterator executeIndexQueryLocal() throws IgniteCheckedException {
         assert type == INDEX : "Wrong processing of query: " + type;
 
+        GridDhtCacheAdapter<?, ?> cacheAdapter = cctx.isNear() ? cctx.near().dht() : cctx.dht();
+
+        Set<Integer> lostParts = cacheAdapter.topology().lostPartitions();
+
+        if (!lostParts.isEmpty()) {
+            if (part == null || lostParts.contains(part)) {
+                throw new CacheException(new CacheInvalidStateException("Failed to execute query because cache " +
+                    "partition has been lost [cacheName=" + cctx.name() +
+                    ", part=" + (part == null ? lostParts.iterator().next() : part) + ']'));
+            }
+        }
+
+        if (part != null && (part < 0 || part >= cctx.affinity().partitions()))
+            throw new IgniteCheckedException("Invalid partition number: " + part);
+
         Collection<ClusterNode> nodes = new ArrayList<>(nodes());
 
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
@@ -639,7 +654,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         taskHash = cctx.kernalContext().job().currentTaskNameHash();
 
-        return cctx.queries().indexQueryLocal(this);
+        final GridCacheQueryManager qryMgr = cctx.queries();
+
+        return qryMgr.indexQueryLocal(this);
     }
 
     /**

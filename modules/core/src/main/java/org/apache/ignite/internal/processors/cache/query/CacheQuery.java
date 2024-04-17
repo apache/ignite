@@ -271,7 +271,7 @@ public interface CacheQuery<T> {
     public GridCloseableIterator executeScanQuery() throws IgniteCheckedException;
 
     /**
-     * @return Index query iterator.
+     * @return GridCloseableIterator with Index query results.
      */
     public GridCloseableIterator executeIndexQueryLocal() throws IgniteCheckedException;
 }

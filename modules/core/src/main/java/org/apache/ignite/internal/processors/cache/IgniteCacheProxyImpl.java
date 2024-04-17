@@ -103,6 +103,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -503,7 +504,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private <T, R> QueryCursor<R> query(
+    private QueryCursor<Cache.Entry<K, V>> query(
         final IndexQuery idxQryLocal,
         @Nullable ClusterGroup grp
     ) throws IgniteCheckedException {
@@ -513,7 +514,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         boolean isKeepBinary = opCtxCall != null && opCtxCall.isKeepBinary();
 
-        final CacheQuery<R> qry = ctx.queries().createIndexQuery(idxQryLocal, isKeepBinary);
+        final CacheQuery qry = ctx.queries().createIndexQuery(idxQryLocal, isKeepBinary);
 
         if (idxQryLocal.getPageSize() > 0)
             qry.pageSize(idxQryLocal.getPageSize());
@@ -521,14 +522,49 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         if (grp != null)
             qry.projection(grp);
 
-        final GridCloseableIterator<R> iter = ctx.kernalContext().query().executeQuery(GridCacheQueryType.INDEX,
-            idxQryLocal.getValueType(), ctx, new IgniteOutClosureX<GridCloseableIterator<R>>() {
-                @Override public GridCloseableIterator<R> applyx() throws IgniteCheckedException {
+        if (idxQryLocal.getLimit() > 0)
+            qry.limit(idxQryLocal.getLimit());
+
+        final GridCloseableIterator<IgniteBiTuple<K, V>> iter = ctx.kernalContext().query().executeQuery(GridCacheQueryType.INDEX,
+            idxQryLocal.getValueType(), ctx, new IgniteOutClosureX<GridCloseableIterator<IgniteBiTuple<K, V>>>() {
+                @Override public GridCloseableIterator<IgniteBiTuple<K, V>> applyx() throws IgniteCheckedException {
                     return qry.executeIndexQueryLocal();
                 }
             }, true);
 
-        return new QueryCursorImpl<>(iter);
+        return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Cache.Entry<K, V>>() {
+            private Cache.Entry<K, V> currVal;
+
+            @Override protected Cache.Entry<K, V> onNext() {
+                if (currVal == null) {
+                    if (!onHasNext())
+                        throw new NoSuchElementException();
+                }
+
+                Cache.Entry<K, V> entry = currVal;
+
+                currVal = null;
+
+                return entry;
+            }
+
+            @Override protected boolean onHasNext() {
+                if (currVal != null)
+                    return true;
+
+                while (currVal == null && iter.hasNext()) {
+                    IgniteBiTuple<K, V> entry = iter.next();
+
+                    currVal = new CacheEntryImpl<>(entry.getKey(), entry.getValue());
+                }
+
+                return currVal != null;
+            }
+
+            @Override protected void onClose() throws IgniteCheckedException {
+                iter.close();
+            }
+        });
     }
 
     /**
@@ -857,7 +893,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 return query((ScanQuery)qry, null, projection(qry.isLocal()));
 
             if (qry instanceof IndexQuery && qry.isLocal())
-                return query((IndexQuery)qry, projection(qry.isLocal()));
+                return (QueryCursor<R>)query((IndexQuery)qry, projection(qry.isLocal()));
 
             return (QueryCursor<R>)query(qry, projection(qry.isLocal()));
         }
