@@ -108,7 +108,7 @@ public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
         // RunnableX rethrows IgniteCheckedException as IgniteException.
         assertTrue(X.hasCause(actionRes, IgniteCheckedException.class));
 
-        assertEquals("Send count is less, than expected", retryCnt + 1 /* first send + retry */,
+        assertEquals("Unexpected send count", retryCnt + 1 /* first send + retries */,
             sendCnt.get());
     }
 
