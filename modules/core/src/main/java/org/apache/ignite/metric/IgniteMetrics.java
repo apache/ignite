@@ -40,7 +40,7 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 @IgniteExperimental
 public interface IgniteMetrics extends Iterable<ReadOnlyMetricRegistry> {
     /**
-     * Gets or creates custom metric registry named "custom." + {@code registryName}.
+     * Gets or creates custom metric registry.
      *
      * @param registryName Registry name part to add to the prefix "custom.".
      * @return {@link MetricRegistry} registry.
@@ -50,7 +50,7 @@ public interface IgniteMetrics extends Iterable<ReadOnlyMetricRegistry> {
     /**
      * Removes custom metric registry.
      *
-     * @param registryName Registry name starting with 'custom.'.
+     * @param registryName Registry name part to add to the prefix "custom.".
      */
     void remove(String registryName);
 }
