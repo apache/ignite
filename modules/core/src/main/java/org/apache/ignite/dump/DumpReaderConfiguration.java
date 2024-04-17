@@ -19,6 +19,7 @@ package org.apache.ignite.dump;
 
 import java.io.File;
 import java.time.Duration;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -53,8 +54,17 @@ public class DumpReaderConfiguration {
     /** Stop processing partitions if consumer fail to process one. */
     private final boolean failFast;
 
-    /** If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}. */
+    /**
+     * If {@code true} and if {@link #keepRaw} is {@code false} then keeps {@link DumpEntry#key()} and
+     * {@link DumpEntry#value()} as {@link BinaryObject}.
+     */
     private final boolean keepBinary;
+
+    /**
+     * If {@code true}, doesn't deserialize cache data and keeps {@link DumpEntry#key()} as {@link KeyCacheObject} and
+     * {@link DumpEntry#value()} as {@link CacheObject}. If {@code true}, disables {@link #keepBinary}.
+     */
+    private final boolean keepRaw;
 
     /** Cache group names. */
     private final String[] cacheGrpNames;
@@ -70,7 +80,7 @@ public class DumpReaderConfiguration {
      * @param cnsmr Dump consumer.
      */
     public DumpReaderConfiguration(File dir, DumpConsumer cnsmr) {
-        this(dir, cnsmr, DFLT_THREAD_CNT, DFLT_TIMEOUT, true, true, null, false, null);
+        this(dir, cnsmr, DFLT_THREAD_CNT, DFLT_TIMEOUT, true, true, false, null, false, null);
     }
 
     /**
@@ -79,7 +89,11 @@ public class DumpReaderConfiguration {
      * @param thCnt Count of threads to consume dumped partitions.
      * @param timeout Timeout of dump reader invocation.
      * @param failFast Stop processing partitions if consumer fail to process one.
-     * @param keepBinary If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}.
+     * @param keepBinary If {@code true} and if {@link #keepRaw} is {@code false} then keeps {@link DumpEntry#key()} and
+     *                   {@link DumpEntry#value()} as {@link BinaryObject}.
+     * @param keepRaw If {@code true}, doesn't deserialize cache data and keeps {@link DumpEntry#key()} as
+     *                {@link KeyCacheObject} and {@link DumpEntry#value()} as {@link CacheObject}. If {@code true},
+     *                disables {@link #keepBinary}.
      * @param cacheGrpNames Cache group names.
      * @param skipCopies Skip copies.
      * @param encSpi Encryption SPI.
@@ -91,6 +105,7 @@ public class DumpReaderConfiguration {
         Duration timeout,
         boolean failFast,
         boolean keepBinary,
+        boolean keepRaw,
         String[] cacheGrpNames,
         boolean skipCopies,
         EncryptionSpi encSpi
@@ -101,6 +116,7 @@ public class DumpReaderConfiguration {
         this.timeout = timeout;
         this.failFast = failFast;
         this.keepBinary = keepBinary;
+        this.keepRaw = keepRaw;
         this.cacheGrpNames = cacheGrpNames;
         this.skipCopies = skipCopies;
         this.encSpi = encSpi;
@@ -131,9 +147,21 @@ public class DumpReaderConfiguration {
         return failFast;
     }
 
-    /** @return If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}. */
+    /**
+     * Actual only if {@link #keepRaw} is {@code false}.
+     *
+     * @return {@code True} if {@link DumpEntry#key()} and {@link DumpEntry#value()} are kept as {@link BinaryObject}.
+     */
     public boolean keepBinary() {
         return keepBinary;
+    }
+
+    /**
+     * @return {@code True} if {@link DumpEntry#key()} and {@link DumpEntry#value()} are kept as {@link KeyCacheObject}
+     * and {@link CacheObject} respectively.
+     */
+    public boolean keepRaw() {
+        return keepRaw;
     }
 
     /** @return Cache group names. */
