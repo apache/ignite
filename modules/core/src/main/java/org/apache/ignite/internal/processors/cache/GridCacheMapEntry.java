@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheMvccEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheTtlEntryExtras;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -2499,8 +2498,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @Override public boolean initialValue(
         CacheObject val,
         GridCacheVersion ver,
-        MvccVersion mvccVer,
-        MvccVersion newMvccVer,
         byte mvccTxState,
         byte newMvccTxState,
         long ttl,

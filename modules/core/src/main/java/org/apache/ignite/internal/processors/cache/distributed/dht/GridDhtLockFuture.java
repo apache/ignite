@@ -1349,8 +1349,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             try {
                                 if (entry.initialValue(info.value(),
                                     info.version(),
-                                    null,
-                                    null,
                                     TxState.NA,
                                     TxState.NA,
                                     info.ttl(),
