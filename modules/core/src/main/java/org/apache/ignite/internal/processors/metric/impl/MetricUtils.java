@@ -84,6 +84,12 @@ public class MetricUtils {
         return name != null && (name.startsWith(CUSTOM_METRICS_PREF) || name.equals(CUSTOM_METRICS));
     }
 
+
+    /** Adds {@link MetricUtils#CUSTOM_METRICS} to {@code name}. */
+    public static String customName(String name) {
+        return metricName(CUSTOM_METRICS, name);
+    }
+
     /**
      * Splits full metric name to registry name and metric name.
      *
