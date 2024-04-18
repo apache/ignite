@@ -50,7 +50,6 @@ import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.PartitionClearingStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
@@ -61,9 +60,6 @@ import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdatedRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateNewTxStateHintRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateTxStateHintRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageSetFreeListPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
@@ -433,15 +429,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case DATA_PAGE_SET_FREE_LIST_PAGE:
                 return 4 + 8 + 8;
-
-            case MVCC_DATA_PAGE_MARK_UPDATED_RECORD:
-                return 4 + 8 + 4 + 8 + 8 + 4;
-
-            case MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD:
-                return 4 + 8 + 4 + 1;
-
-            case MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD:
-                return 4 + 8 + 4 + 1;
 
             case INIT_NEW_PAGE_RECORD:
                 return 4 + 8 + 2 + 2 + 8;
@@ -818,41 +805,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 long freeListPage = in.readLong();
 
                 res = new DataPageSetFreeListPageRecord(cacheId, pageId, freeListPage);
-
-                break;
-
-            case MVCC_DATA_PAGE_MARK_UPDATED_RECORD:
-                cacheId = in.readInt();
-                pageId = in.readLong();
-
-                itemId = in.readInt();
-                long newMvccCrd = in.readLong();
-                long newMvccCntr = in.readLong();
-                int newMvccOpCntr = in.readInt();
-
-                res = new DataPageMvccMarkUpdatedRecord(cacheId, pageId, itemId, newMvccCrd, newMvccCntr, newMvccOpCntr);
-
-                break;
-
-            case MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD:
-                cacheId = in.readInt();
-                pageId = in.readLong();
-
-                itemId = in.readInt();
-                byte txState = in.readByte();
-
-                res = new DataPageMvccUpdateTxStateHintRecord(cacheId, pageId, itemId, txState);
-
-                break;
-
-            case MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD:
-                cacheId = in.readInt();
-                pageId = in.readLong();
-
-                itemId = in.readInt();
-                byte newTxState = in.readByte();
-
-                res = new DataPageMvccUpdateNewTxStateHintRecord(cacheId, pageId, itemId, newTxState);
 
                 break;
 
@@ -1530,41 +1482,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
-            case MVCC_DATA_PAGE_MARK_UPDATED_RECORD:
-                DataPageMvccMarkUpdatedRecord rmvRec = (DataPageMvccMarkUpdatedRecord)rec;
-
-                buf.putInt(rmvRec.groupId());
-                buf.putLong(rmvRec.pageId());
-
-                buf.putInt(rmvRec.itemId());
-                buf.putLong(rmvRec.newMvccCrd());
-                buf.putLong(rmvRec.newMvccCntr());
-                buf.putInt(rmvRec.newMvccOpCntr());
-
-                break;
-
-            case MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD:
-                DataPageMvccUpdateTxStateHintRecord txStRec = (DataPageMvccUpdateTxStateHintRecord)rec;
-
-                buf.putInt(txStRec.groupId());
-                buf.putLong(txStRec.pageId());
-
-                buf.putInt(txStRec.itemId());
-                buf.put(txStRec.txState());
-
-                break;
-
-            case MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD:
-                DataPageMvccUpdateNewTxStateHintRecord newTxStRec = (DataPageMvccUpdateNewTxStateHintRecord)rec;
-
-                buf.putInt(newTxStRec.groupId());
-                buf.putLong(newTxStRec.pageId());
-
-                buf.putInt(newTxStRec.itemId());
-                buf.put(newTxStRec.txState());
-
-                break;
-
             case INIT_NEW_PAGE_RECORD:
                 InitNewPageRecord inpRec = (InitNewPageRecord)rec;
 
@@ -2102,8 +2019,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         buf.putLong(entry.partitionCounter());
         buf.putLong(entry.expireTime());
 
-        if (!(entry instanceof MvccDataEntry))
-            buf.put(entry.flags());
+        buf.put(entry.flags());
     }
 
     /**
@@ -2412,7 +2328,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             /*part ID*/4 +
             /*expire Time*/8 +
             /*part cnt*/8 +
-            /*flags*/(entry instanceof MvccDataEntry ? 0 : 1);
+            /*flags*/1;
     }
 
     /**

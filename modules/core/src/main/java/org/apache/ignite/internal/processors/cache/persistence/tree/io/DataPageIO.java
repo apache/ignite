@@ -25,8 +25,6 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_BIT_OFF;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_MASK;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.EntryPart.CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.EntryPart.EXPIRE_TIME;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.EntryPart.KEY;
@@ -194,76 +192,6 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     }
 
     /**
-     * @param pageAddr Page address.
-     * @param itemId Item ID.
-     * @param pageSize Page size.
-     * @param mvccCrd Mvcc coordinator.
-     * @param mvccCntr Mvcc counter.
-     * @param mvccOpCntr Operation counter.
-     */
-    public void updateNewVersion(long pageAddr, int itemId, int pageSize, long mvccCrd, long mvccCntr, int mvccOpCntr) {
-        assertPageType(pageAddr);
-
-        int dataOff = getDataOffset(pageAddr, itemId, pageSize);
-
-        long addr = pageAddr + dataOff + (isFragmented(pageAddr, dataOff) ? 10 : 2);
-
-        updateNewVersion(addr, mvccCrd, mvccCntr, mvccOpCntr);
-    }
-
-    /**
-     * @param pageAddr Page address.
-     * @param itemId Item ID.
-     * @param pageSize Page size.
-     * @param txState Tx state hint.
-     */
-    public void updateTxState(long pageAddr, int itemId, int pageSize, byte txState) {
-        assertPageType(pageAddr);
-
-        int dataOff = getDataOffset(pageAddr, itemId, pageSize);
-
-        long addr = pageAddr + dataOff + (isFragmented(pageAddr, dataOff) ? 10 : 2);
-
-        int opCntr = rawMvccOperationCounter(addr, 0);
-
-        rawMvccOperationCounter(addr, 0, (opCntr & ~MVCC_HINTS_MASK) | ((int)txState << MVCC_HINTS_BIT_OFF));
-    }
-
-    /**
-     * @param pageAddr Page address.
-     * @param itemId Item ID.
-     * @param pageSize Page size.
-     * @param txState Tx state hint.
-     */
-    public void updateNewTxState(long pageAddr, int itemId, int pageSize, byte txState) {
-        assertPageType(pageAddr);
-
-        int dataOff = getDataOffset(pageAddr, itemId, pageSize);
-
-        long addr = pageAddr + dataOff + (isFragmented(pageAddr, dataOff) ? 10 : 2);
-
-        int opCntr = rawNewMvccOperationCounter(addr, 0);
-
-        rawNewMvccOperationCounter(addr, 0, (opCntr & ~MVCC_HINTS_MASK) | ((int)txState << MVCC_HINTS_BIT_OFF));
-    }
-
-    /**
-     * Marks row removed.
-     *
-     * @param addr Address.
-     * @param mvccCrd Mvcc coordinator.
-     * @param mvccCntr Mvcc counter.
-     */
-    private void updateNewVersion(long addr, long mvccCrd, long mvccCntr, int mvccOpCntr) {
-        // Skip xid_min.
-        addr += 20;
-
-        PageUtils.putLong(addr, 0, mvccCrd);
-        PageUtils.putLong(addr, 8, mvccCntr);
-        PageUtils.putInt(addr, 16, mvccOpCntr);
-    }
-
-    /**
      * Returns MVCC coordinator number.
      *
      * @param pageAddr Page address.
@@ -300,21 +228,6 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
         long addr = pageAddr + dataOff;
 
         return PageUtils.getInt(addr, 16);
-    }
-
-    /**
-     * Sets MVCC operation counter raw value (with hints and flags).
-     *
-     * @param pageAddr Page address.
-     * @param dataOff Data offset.
-     * @param opCntr MVCC counter value.
-     */
-    public void rawMvccOperationCounter(long pageAddr, int dataOff, int opCntr) {
-        assertPageType(pageAddr);
-
-        long addr = pageAddr + dataOff;
-
-        PageUtils.putInt(addr, 16, opCntr);
     }
 
     /**
@@ -363,24 +276,6 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
         addr += 20;
 
         return PageUtils.getInt(addr, 16);
-    }
-
-    /**
-     * Sets MVCC new operation counter raw value (with hints and flags).
-     *
-     * @param pageAddr Page address.
-     * @param dataOff Data offset.
-     * @param opCntr MVCC operation counter value.
-     */
-    public void rawNewMvccOperationCounter(long pageAddr, int dataOff, int opCntr) {
-        assertPageType(pageAddr);
-
-        long addr = pageAddr + dataOff;
-
-        // Skip xid_min.
-        addr += 20;
-
-        PageUtils.putInt(addr, 16, opCntr);
     }
 
     /**
