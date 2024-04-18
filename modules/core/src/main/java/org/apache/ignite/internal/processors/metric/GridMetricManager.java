@@ -63,7 +63,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.CUSTOM_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.customName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.fromFullName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -138,6 +137,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
     /** Whether cluster is in fully rebalanced state metric name. */
     public static final String REBALANCED = "Rebalanced";
+
+    /** Custom metrics registry name. */
+    public static final String CUSTOM_METRICS = "custom";
 
     /** JVM interface to memory consumption info */
     private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();

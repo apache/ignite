@@ -30,6 +30,7 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CUSTOM_METRICS;
 
 /**
  * Utility class to build or parse metric name in dot notation.
@@ -47,11 +48,8 @@ public class MetricUtils {
     /** Histogram name divider. */
     public static final char HISTOGRAM_NAME_DIVIDER = '_';
 
-    /** Custom metrics registry name. */
-    public static final String CUSTOM_METRICS = "custom";
-
     /** Name prefix of a custom metric. */
-    public static final String CUSTOM_METRICS_PREF = CUSTOM_METRICS + SEPARATOR;
+    private static final String CUSTOM_METRICS_PREF = CUSTOM_METRICS + SEPARATOR;
 
     /** Custom metric name pattern. Permits empty string, spaces, tabs, dot at the start or end, consiquent dots. */
     private static final Pattern CUSTOM_NAME_PATTERN = Pattern.compile("(?!\\.)(?!.*\\.$)(?!.*\\.\\.)(?!.*[\\s]+.*).+");
@@ -84,8 +82,7 @@ public class MetricUtils {
         return name != null && (name.startsWith(CUSTOM_METRICS_PREF) || name.equals(CUSTOM_METRICS));
     }
 
-
-    /** Adds {@link MetricUtils#CUSTOM_METRICS} to {@code name}. */
+    /** Adds {@link GridMetricManager#CUSTOM_METRICS} to {@code name}. */
     public static String customName(String name) {
         return metricName(CUSTOM_METRICS, name);
     }
