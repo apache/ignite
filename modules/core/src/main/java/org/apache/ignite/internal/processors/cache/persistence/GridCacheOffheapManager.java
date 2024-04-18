@@ -2778,28 +2778,37 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-                    List<PendingRow> rows = pendingTree.remove(new PendingRow(cacheId, Long.MIN_VALUE, 0),
-                        new PendingRow(cacheId, now, 0), amount);
+                    int cleared = 0;
 
-                    for (PendingRow row : rows) {
-                        if (row.key.partition() == -1)
-                            row.key.partition(cctx.affinity().partition(row.key));
+                    do {
+                        List<PendingRow> rows = pendingTree.remove(new PendingRow(cacheId, Long.MIN_VALUE, 0),
+                            new PendingRow(cacheId, now, 0), amount - cleared);
 
-                        assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
+                        if (rows.isEmpty())
+                            break;
 
-                        GridCacheVersion obsoleteVer = null;
+                        for (PendingRow row : rows) {
+                            row.key.partition(partId);
 
-                        if (obsoleteVer == null)
-                            obsoleteVer = cctx.cache().nextVersion();
+                            assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
 
-                        GridCacheEntryEx entry = cctx.cache().entryEx(row.key instanceof KeyCacheObjectImpl
-                            ? new ExpiredKeyCacheObject((KeyCacheObjectImpl)row.key, row.expireTime, row.link) : row.key);
+                            GridCacheVersion obsoleteVer = null;
 
-                        if (entry != null)
-                            c.apply(entry, obsoleteVer);
+                            if (obsoleteVer == null)
+                                obsoleteVer = cctx.cache().nextVersion();
+
+                            GridCacheEntryEx entry = cctx.cache().entryEx(row.key instanceof KeyCacheObjectImpl
+                                ? new ExpiredKeyCacheObject((KeyCacheObjectImpl)row.key, row.expireTime, row.link) : row.key);
+
+                            if (entry != null)
+                                c.apply(entry, obsoleteVer);
+                        }
+
+                        cleared += rows.size();
                     }
+                    while (amount < 0 || cleared < amount);
 
-                    return rows.size();
+                    return cleared;
                 }
                 finally {
                     if (part != null)
