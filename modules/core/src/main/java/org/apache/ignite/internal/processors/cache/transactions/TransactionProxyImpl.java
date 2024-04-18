@@ -26,10 +26,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.Span;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -144,7 +146,16 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
      */
     private void leave() {
         try {
-            CU.unwindEvicts(cctx);
+            GridIntList cacheIds = tx.txState().cacheIds();
+
+            for (int i = 0; i < cacheIds.size(); i++) {
+                int cacheId = cacheIds.get(i);
+
+                GridCacheContext<K, V> ctx = cctx.cacheContext(cacheId);
+
+                if (ctx != null)
+                    CU.unwindEvicts(ctx);
+            }
 
             tx.leaveSystemSection();
         }

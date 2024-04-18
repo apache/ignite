@@ -724,7 +724,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             // Search row should point to the rightmost element, otherwise we won't find it on the inner node.
             if (res == FOUND && r.needReplaceInner == TRUE)
-                r.row = getRow(io, leafAddr, highIdx);
+                r.row = getRow(io, leafAddr, highIdx, r.x);
 
             return res;
         }
@@ -2160,13 +2160,27 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         assert canGetRowFromInner : "Not supported";
         assert limit >= 0 : limit;
 
-        RemoveRange rmvOp = new RemoveRange(lower, upper, true, limit);
+        RemoveRange rmvOp = new RemoveRange(lower, upper, true, null, limit);
 
         doRemove(rmvOp);
 
         assert rmvOp.isDone();
 
         return Collections.unmodifiableList(rmvOp.removedRows);
+    }
+
+    /**
+     * @param lower Lower bound (inclusive).
+     * @param upper Upper bound (inclusive).
+     * @param x Implementation specific argument.
+     * @param limit Limit of processed entries by single call, {@code 0} for no limit.
+     * @return {@code True} if removed at least one row.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected boolean removex(L lower, L upper, Object x, int limit) throws IgniteCheckedException {
+        Boolean res = (Boolean)doRemove(new RemoveRange(lower, upper, false, x, limit));
+
+        return res != null ? res : false;
     }
 
     /** {@inheritDoc} */
@@ -4717,6 +4731,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         final boolean needOld;
 
         /** */
+        final Object x;
+
+        /** */
         final PageHandler<Remove, Result> rmvFromLeafHnd;
 
         /**
@@ -4724,18 +4741,20 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param needOld {@code True} If need return old value.
          */
         private Remove(L row, boolean needOld) {
-            this(row, needOld, rmvFromLeaf);
+            this(row, needOld, null, rmvFromLeaf);
         }
 
         /**
          * @param row Row.
          * @param needOld {@code True} If need return old value.
+         * @param x Implementation specific argument.
          * @param rmvFromLeaf Remove from leaf page handler.
          */
-        private Remove(L row, boolean needOld, PageHandler<Remove, Result> rmvFromLeaf) {
+        private Remove(L row, boolean needOld, Object x, PageHandler<Remove, Result> rmvFromLeaf) {
             super(row);
 
             this.needOld = needOld;
+            this.x = x;
 
             rmvFromLeafHnd = rmvFromLeaf;
         }
@@ -5193,7 +5212,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             assert !isRemoved() : "already removed";
 
             // Detach the row.
-            rmvd = needOld ? getRow(io, pageAddr, idx) : (T)Boolean.TRUE;
+            rmvd = needOld ? getRow(io, pageAddr, idx, x) : (T)Boolean.TRUE;
 
             doRemove(pageId, page, pageAddr, walPlc, io, cnt, idx);
 
@@ -6602,9 +6621,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param lower Lower bound (inclusive).
          * @param upper Upper bound (inclusive).
          * @param needOld {@code True} If need return old value.
+         * @param x Implementation specific argument, {@code null} always means that we need a full detached data row.
+         * @param limit Limit of processed entries by single call, {@code 0} for no limit.
          */
-        protected RemoveRange(L lower, L upper, boolean needOld, int limit) {
-            super(lower, needOld, rmvRangeFromLeaf);
+        protected RemoveRange(L lower, L upper, boolean needOld, Object x, int limit) {
+            super(lower, needOld, x, rmvRangeFromLeaf);
 
             this.lower = lower;
             this.upper = upper;
@@ -6667,7 +6688,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             // Delete from right to left to reduce the number of items moved during the delete operation.
             for (int i = highIdx; i >= idx; i--) {
                 if (needOld)
-                    removedRows.add(getRow(io, pageAddr, i));
+                    removedRows.add(getRow(io, pageAddr, i, x));
 
                 doRemove(pageId, page, pageAddr, walPlc, io, cnt - highIdx + i, i);
 
