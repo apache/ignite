@@ -95,7 +95,7 @@ public class CacheGroupMetricsImpl {
 
         mreg.register("Caches", this::getCaches, List.class, null);
 
-        mreg.register("StorageSize", this::getSparseStorageSize, "Storage space allocated for group, in bytes.");
+        mreg.register("StorageSize", this::getStorageSize, "Storage space allocated for group, in bytes.");
 
         mreg.register("SparseStorageSize", this::getSparseStorageSize,
             "Storage space allocated for group adjusted for possible sparsity, in bytes.");
