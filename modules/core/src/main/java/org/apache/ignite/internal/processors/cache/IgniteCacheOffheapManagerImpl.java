@@ -272,7 +272,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (pendingEntries != null) {
                     PendingRow row = new PendingRow(cacheId);
 
-                    while (pendingEntries.removex(row, row, 1_000));
+                    while (pendingEntries.removex(row, row, -1));
                 }
             }
         }

@@ -1307,54 +1307,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         );
     }
 
-    /** Iterator with random shift. */
-    private <T> Iterator<T> randomShiftIterator(Iterable<T> iterable) {
-        // Ideally, we should use size of iterable to calculate shift, but it needs yet another iteration.
-        //int shift = ThreadLocalRandom.current().nextInt(Runtime.getRuntime().availableProcessors());
-        int shift = ThreadLocalRandom.current().nextInt(F.size(iterable.iterator()));
-
-        Iterator<T> it = iterable.iterator();
-
-        if (shift == 0)
-            return it;
-
-        for (int i = 0; i < shift && it.hasNext(); i++) // Skip <shift> items.
-            it.next();
-
-        if (!it.hasNext()) // We've tried to shift more items than iterator contains.
-            return iterable.iterator();
-
-        return F.concat(it, new LimitedIterator<>(iterable.iterator(), shift));
-    }
-
-    /** */
-    private static class LimitedIterator<T> implements Iterator<T> {
-        /** */
-        private final Iterator<T> delegate;
-
-        /** */
-        private int limit;
-
-        /** */
-        LimitedIterator(Iterator<T> delegate, int limit) {
-            this.delegate = delegate;
-            this.limit = limit;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean hasNext() {
-            return limit > 0 && delegate.hasNext();
-        }
-
-        /** {@inheritDoc} */
-        @Override public T next() {
-            if (limit-- <= 0)
-                throw new NoSuchElementException();
-
-            return delegate.next();
-        }
-    }
-
     /**
      *
      */
@@ -2736,7 +2688,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (pendingTree != null) {
                 PendingRow row = new PendingRow(cacheId);
 
-                while (pendingTree.removex(row, row, 1_000));
+                while (pendingTree.removex(row, row, -1));
             }
 
             delegate0.clear(cacheId);
