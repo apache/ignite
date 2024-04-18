@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -619,7 +618,7 @@ public interface GridCacheEntryEx {
         GridDrType drType,
         boolean fromStore,
         boolean primary) throws IgniteCheckedException, GridCacheEntryRemovedException {
-        return initialValue(val, ver, null, null, TxState.NA, TxState.NA,
+        return initialValue(val, ver, TxState.NA, TxState.NA,
             ttl, expireTime, preload, topVer, drType, fromStore, primary);
     }
 
@@ -628,8 +627,6 @@ public interface GridCacheEntryEx {
      *
      * @param val New value.
      * @param ver Version to use.
-     * @param mvccVer Mvcc version.
-     * @param newMvccVer New mvcc version.
      * @param mvccTxState Tx state hint for mvcc version.
      * @param newMvccTxState Tx state hint for new mvcc version.
      * @param ttl Time to live.
@@ -645,8 +642,6 @@ public interface GridCacheEntryEx {
      */
     default boolean initialValue(CacheObject val,
         GridCacheVersion ver,
-        @Nullable MvccVersion mvccVer,
-        @Nullable MvccVersion newMvccVer,
         byte mvccTxState,
         byte newMvccTxState,
         long ttl,
@@ -656,7 +651,7 @@ public interface GridCacheEntryEx {
         GridDrType drType,
         boolean fromStore,
         boolean primary) throws IgniteCheckedException, GridCacheEntryRemovedException {
-        return initialValue(val, ver, null, null, TxState.NA, TxState.NA,
+        return initialValue(val, ver, TxState.NA, TxState.NA,
             ttl, expireTime, preload, topVer, drType, fromStore, primary, null);
     }
 
@@ -665,8 +660,6 @@ public interface GridCacheEntryEx {
      *
      * @param val New value.
      * @param ver Version to use.
-     * @param mvccVer Mvcc version.
-     * @param newMvccVer New mvcc version.
      * @param mvccTxState Tx state hint for mvcc version.
      * @param newMvccTxState Tx state hint for new mvcc version.
      * @param ttl Time to live.
@@ -683,8 +676,6 @@ public interface GridCacheEntryEx {
      */
     public boolean initialValue(CacheObject val,
         GridCacheVersion ver,
-        @Nullable MvccVersion mvccVer,
-        @Nullable MvccVersion newMvccVer,
         byte mvccTxState,
         byte newMvccTxState,
         long ttl,

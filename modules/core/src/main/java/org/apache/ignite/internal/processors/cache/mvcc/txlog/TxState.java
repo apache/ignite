@@ -28,9 +28,6 @@ public final class TxState {
     public static final byte PREPARED = 0x1;
 
     /** */
-    public static final byte ABORTED = 0x2;
-
-    /** */
     public static final byte COMMITTED = 0x3;
 
     /**
