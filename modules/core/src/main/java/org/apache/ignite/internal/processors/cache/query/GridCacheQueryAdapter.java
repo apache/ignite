@@ -50,7 +50,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnrese
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
-import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -567,8 +566,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCloseableIterator executeScanQuery() throws IgniteCheckedException {
-        assert type == SCAN : "Wrong processing of query: " + type;
+    @Override public GridCloseableIterator executeQueryWithIterator() throws IgniteCheckedException {
+        assert type == SCAN || type == INDEX : "Wrong processing of query: " + type;
 
         GridDhtCacheAdapter<?, ?> cacheAdapter = cctx.isNear() ? cctx.near().dht() : cctx.dht();
 
@@ -576,11 +575,14 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         if (!lostParts.isEmpty()) {
             if (part == null || lostParts.contains(part)) {
-                throw new CacheException(new CacheInvalidStateException("Failed to execute query because cache partition " +
-                    "has been lostParts [cacheName=" + cctx.name() +
+                throw new CacheException(new CacheInvalidStateException("Failed to execute query because cache " +
+                    "partition has been lost [cacheName=" + cctx.name() +
                     ", part=" + (part == null ? lostParts.iterator().next() : part) + ']'));
             }
         }
+
+        if (part != null && (part < 0 || part >= cctx.affinity().partitions()))
+            throw new IgniteCheckedException("Invalid partition number: " + part);
 
         // Affinity nodes snapshot.
         Collection<ClusterNode> nodes = new ArrayList<>(nodes());
@@ -595,7 +597,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 }
             }
 
-            return new GridEmptyCloseableIterator();
+            throw new IgniteException(new ClusterGroupEmptyException());
         }
 
         if (log.isDebugEnabled())
@@ -613,52 +615,13 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         GridCloseableIterator it;
 
         if (loc)
-            it = qryMgr.scanQueryLocal(this, true);
+            it = qryMgr.queryWithIteratorLocal(this, true);
         else if (part != null)
             it = new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
         else
             it = qryMgr.scanQueryDistributed(this, nodes);
 
         return it;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCloseableIterator executeIndexQueryLocal() throws IgniteCheckedException {
-        assert type == INDEX : "Wrong processing of query: " + type;
-
-        GridDhtCacheAdapter<?, ?> cacheAdapter = cctx.isNear() ? cctx.near().dht() : cctx.dht();
-
-        Set<Integer> lostParts = cacheAdapter.topology().lostPartitions();
-
-        if (!lostParts.isEmpty()) {
-            if (part == null || lostParts.contains(part)) {
-                throw new CacheException(new CacheInvalidStateException("Failed to execute query because cache " +
-                    "partition has been lost [cacheName=" + cctx.name() +
-                    ", part=" + (part == null ? lostParts.iterator().next() : part) + ']'));
-            }
-        }
-
-        if (part != null && (part < 0 || part >= cctx.affinity().partitions()))
-            throw new IgniteCheckedException("Invalid partition number: " + part);
-
-        Collection<ClusterNode> nodes = new ArrayList<>(nodes());
-
-        cctx.checkSecurity(SecurityPermission.CACHE_READ);
-
-        if (nodes.isEmpty())
-            throw new IgniteException(new ClusterGroupEmptyException());
-
-        if (log.isDebugEnabled())
-            log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');
-
-        if (cctx.deploymentEnabled())
-            cctx.deploy().registerClasses(filter);
-
-        taskHash = cctx.kernalContext().job().currentTaskNameHash();
-
-        final GridCacheQueryManager qryMgr = cctx.queries();
-
-        return qryMgr.indexQueryLocal(this);
     }
 
     /**
@@ -840,7 +803,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
             if (node.isLocal()) {
                 try {
-                    GridCloseableIterator it = qryMgr.scanQueryLocal(qry, true);
+                    GridCloseableIterator it = qryMgr.queryWithIteratorLocal(qry, true);
 
                     tuple = new T2(it, null);
                 }

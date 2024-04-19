@@ -103,7 +103,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -458,7 +457,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /**
-     * @param scanQry ScanQry.
+     * @param qry Query.
      * @param transformer Transformer
      * @param grp Optional cluster group.
      * @return Cursor.
@@ -466,7 +465,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      */
     @SuppressWarnings("unchecked")
     private <T, R> QueryCursor<R> query(
-        final ScanQuery scanQry,
+        final Query qry,
         @Nullable final IgniteClosure<T, R> transformer,
         @Nullable ClusterGroup grp
     ) throws IgniteCheckedException {
@@ -476,95 +475,47 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         boolean isKeepBinary = opCtxCall != null && opCtxCall.isKeepBinary();
 
-        IgniteBiPredicate<K, V> p = scanQry.getFilter();
+        GridCacheQueryType qryType = null;
 
-        final CacheQuery<R> qry = ctx.queries().createScanQuery(
-            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal(), null);
+        CacheQuery cacheQry = null;
 
-        if (scanQry.getPageSize() > 0)
-            qry.pageSize(scanQry.getPageSize());
+        if (qry instanceof ScanQuery) {
+            ScanQuery scanQry = (ScanQuery)qry;
+
+            qryType = GridCacheQueryType.SCAN;
+
+            IgniteBiPredicate<K, V> p = scanQry.getFilter();
+
+            cacheQry = ctx.queries().createScanQuery(
+                p, transformer, scanQry.getPartition(), isKeepBinary, qry.isLocal(), null);
+        }
+        else {
+            IndexQuery idxQryLoc = (IndexQuery)qry;
+
+            qryType = GridCacheQueryType.INDEX;
+
+            cacheQry = ctx.queries().createIndexQuery(idxQryLoc, isKeepBinary);
+
+            if (idxQryLoc.getLimit() > 0)
+                cacheQry.limit(idxQryLoc.getLimit());
+        }
+
+        if (qry.getPageSize() > 0)
+            cacheQry.pageSize(qry.getPageSize());
 
         if (grp != null)
-            qry.projection(grp);
+            cacheQry.projection(grp);
 
-        final GridCloseableIterator<R> iter = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SCAN,
-            cacheName, ctx, new IgniteOutClosureX<GridCloseableIterator<R>>() {
-                @Override public GridCloseableIterator<R> applyx() throws IgniteCheckedException {
-                    return qry.executeScanQuery();
-                }
-            }, true);
+        CacheQuery finalCacheQry = cacheQry;
+
+        final GridCloseableIterator<R> iter = ctx.kernalContext().query().executeQuery(qryType,
+                cacheName, ctx, new IgniteOutClosureX<GridCloseableIterator<R>>() {
+                    @Override public GridCloseableIterator<R> applyx() throws IgniteCheckedException {
+                        return finalCacheQry.executeQueryWithIterator();
+                    }
+                }, true);
 
         return new QueryCursorImpl<>(iter);
-    }
-
-    /**
-     * @param idxQryLocal local Index Query.
-     * @param grp Optional cluster group.
-     * @return Cursor.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("unchecked")
-    private QueryCursor<Cache.Entry<K, V>> query(
-        final IndexQuery idxQryLocal,
-        @Nullable ClusterGroup grp
-    ) throws IgniteCheckedException {
-        GridCacheContext<K, V> ctx = getContextSafe();
-
-        CacheOperationContext opCtxCall = ctx.operationContextPerCall();
-
-        boolean isKeepBinary = opCtxCall != null && opCtxCall.isKeepBinary();
-
-        final CacheQuery qry = ctx.queries().createIndexQuery(idxQryLocal, isKeepBinary);
-
-        if (idxQryLocal.getPageSize() > 0)
-            qry.pageSize(idxQryLocal.getPageSize());
-
-        if (grp != null)
-            qry.projection(grp);
-
-        if (idxQryLocal.getLimit() > 0)
-            qry.limit(idxQryLocal.getLimit());
-
-        final GridCloseableIterator<IgniteBiTuple<K, V>> iter = ctx.kernalContext().query().executeQuery(GridCacheQueryType.INDEX,
-            idxQryLocal.getValueType(), ctx, new IgniteOutClosureX<GridCloseableIterator<IgniteBiTuple<K, V>>>() {
-                @Override public GridCloseableIterator<IgniteBiTuple<K, V>> applyx() throws IgniteCheckedException {
-                    return qry.executeIndexQueryLocal();
-                }
-            }, true);
-
-        return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Cache.Entry<K, V>>() {
-            private Cache.Entry<K, V> currVal;
-
-            @Override protected Cache.Entry<K, V> onNext() {
-                if (currVal == null) {
-                    if (!onHasNext())
-                        throw new NoSuchElementException();
-                }
-
-                Cache.Entry<K, V> entry = currVal;
-
-                currVal = null;
-
-                return entry;
-            }
-
-            @Override protected boolean onHasNext() {
-                if (currVal != null)
-                    return true;
-
-                while (currVal == null && iter.hasNext()) {
-                    IgniteBiTuple<K, V> entry = iter.next();
-
-                    currVal = new CacheEntryImpl<>(entry.getKey(), entry.getValue());
-                }
-
-                return currVal != null;
-            }
-
-            @Override protected void onClose() throws IgniteCheckedException {
-                iter.close();
-            }
-        });
     }
 
     /**
@@ -889,11 +840,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 return (FieldsQueryCursor<R>)ctx.kernalContext().query().querySqlFields(ctx, (SqlFieldsQuery)qry,
                     null, keepBinary, true).get(0);
 
-            if (qry instanceof ScanQuery)
-                return query((ScanQuery)qry, null, projection(qry.isLocal()));
-
-            if (qry instanceof IndexQuery && qry.isLocal())
-                return (QueryCursor<R>)query((IndexQuery)qry, projection(qry.isLocal()));
+            if (qry instanceof ScanQuery || (qry instanceof IndexQuery && qry.isLocal()))
+                return query(qry, null, projection(qry.isLocal()));
 
             return (QueryCursor<R>)query(qry, projection(qry.isLocal()));
         }
