@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.CacheClearAsyncDeadlockTest;
 import org.apache.ignite.internal.processors.cache.CacheDistributedGetLongRunningFutureDumpTest;
 import org.apache.ignite.internal.processors.cache.EntriesRemoveOnShutdownTest;
 import org.apache.ignite.internal.processors.cache.GridCacheDataTypesCoverageTest;
+import org.apache.ignite.internal.processors.cache.GridCacheIoManagerRetryTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLongRunningTransactionDiagnosticsTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionGenerationWithCacheStorageTest;
 import org.apache.ignite.internal.processors.cache.distributed.FailBackupOnAtomicOperationTest;
@@ -117,6 +118,8 @@ public class IgniteCacheTestSuite13 {
 
         GridTestUtils.addTestIfNeeded(suite, CacheDistributedGetLongRunningFutureDumpTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, EntriesRemoveOnShutdownTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, GridCacheIoManagerRetryTest.class, ignoredTests);
 
         return suite;
     }
