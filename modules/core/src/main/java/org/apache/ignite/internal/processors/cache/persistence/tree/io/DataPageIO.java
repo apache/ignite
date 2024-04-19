@@ -36,9 +36,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Da
  */
 public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     /** */
-    public static final int MVCC_INFO_SIZE = 40;
-
-    /** */
     public static final IOVersions<DataPageIO> VERSIONS = new IOVersions<>(
         new DataPageIO(1)
     );
@@ -189,93 +186,6 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
             writeVersionFragment(buf, row.version(), rowOff, len, prevLen);
 
         return len;
-    }
-
-    /**
-     * Returns MVCC coordinator number.
-     *
-     * @param pageAddr Page address.
-     * @param dataOff Data offset.
-     * @return MVCC coordinator number.
-     */
-    public long mvccCoordinator(long pageAddr, int dataOff) {
-        long addr = pageAddr + dataOff;
-
-        return PageUtils.getLong(addr, 0);
-    }
-
-    /**
-     * Returns MVCC counter value.
-     *
-     * @param pageAddr Page address.
-     * @param dataOff Data offset.
-     * @return MVCC counter value.
-     */
-    public long mvccCounter(long pageAddr, int dataOff) {
-        long addr = pageAddr + dataOff;
-
-        return PageUtils.getLong(addr, 8);
-    }
-
-    /**
-     * Returns MVCC operation counter raw value (with hints and flags).
-     *
-     * @param pageAddr Page address.
-     * @param dataOff Data offset.
-     * @return MVCC counter value.
-     */
-    public int rawMvccOperationCounter(long pageAddr, int dataOff) {
-        long addr = pageAddr + dataOff;
-
-        return PageUtils.getInt(addr, 16);
-    }
-
-    /**
-     * Returns new MVCC coordinator number.
-     *
-     * @param pageAddr Page address.
-     * @param dataOff Data offset.
-     * @return New MVCC coordinator number.
-     */
-    public long newMvccCoordinator(long pageAddr, int dataOff) {
-        long addr = pageAddr + dataOff;
-
-        // Skip xid_min.
-        addr += 20;
-
-        return PageUtils.getLong(addr, 0);
-    }
-
-    /**
-     * Returns new MVCC counter value.
-     *
-     * @param pageAddr Page address.
-     * @param dataOff Data offset.
-     * @return New MVCC counter value.
-     */
-    public long newMvccCounter(long pageAddr, int dataOff) {
-        long addr = pageAddr + dataOff;
-
-        // Skip xid_min.
-        addr += 20;
-
-        return PageUtils.getLong(addr, 8);
-    }
-
-    /**
-     * Returns MVCC operation counter raw value (with hints and flags).
-     *
-     * @param pageAddr Page address.
-     * @param dataOff Data offset.
-     * @return MVCC counter value.
-     */
-    public int rawNewMvccOperationCounter(long pageAddr, int dataOff) {
-        long addr = pageAddr + dataOff;
-
-        // Skip xid_min.
-        addr += 20;
-
-        return PageUtils.getInt(addr, 16);
     }
 
     /**

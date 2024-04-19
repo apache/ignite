@@ -73,7 +73,6 @@ import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
-import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedException;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
@@ -5409,15 +5408,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         @Override public String toString() {
             return S.toString(AtomicCacheUpdateClosure.class, this);
         }
-    }
-
-    /**
-     * @return Common serialization error.
-     */
-    private static IgniteTxSerializationCheckedException serializationError() {
-        return new IgniteTxSerializationCheckedException(
-            "Cannot serialize transaction due to write conflict (transaction is marked for rollback)"
-        );
     }
 
     /**
