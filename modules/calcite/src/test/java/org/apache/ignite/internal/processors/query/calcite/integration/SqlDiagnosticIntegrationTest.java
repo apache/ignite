@@ -52,7 +52,7 @@ import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecuto
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -160,8 +161,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testParserMetrics() {
-        MetricRegistry mreg0 = grid(0).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
-        MetricRegistry mreg1 = grid(1).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
+        MetricRegistryImpl mreg0 = grid(0).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
+        MetricRegistryImpl mreg1 = grid(1).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
         mreg0.reset();
         mreg1.reset();
 
@@ -200,8 +201,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     public void testBatchParserMetrics() throws Exception {
         withSecurityContextOnAllNodes(secCtxDflt);
 
-        MetricRegistry mreg0 = grid(0).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
-        MetricRegistry mreg1 = grid(1).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
+        MetricRegistryImpl mreg0 = grid(0).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
+        MetricRegistryImpl mreg1 = grid(1).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
         mreg0.reset();
         mreg1.reset();
 
@@ -269,8 +270,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     public void testUserQueriesMetrics() throws Exception {
         sql(grid(0), "CREATE TABLE test_metric (a INT)");
 
-        MetricRegistry mreg0 = grid(0).context().metric().registry(SQL_USER_QUERIES_REG_NAME);
-        MetricRegistry mreg1 = grid(1).context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        MetricRegistryImpl mreg0 = grid(0).context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        MetricRegistryImpl mreg1 = grid(1).context().metric().registry(SQL_USER_QUERIES_REG_NAME);
         mreg0.reset();
         mreg1.reset();
 

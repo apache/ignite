@@ -114,7 +114,7 @@ import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvid
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -130,6 +130,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -3434,7 +3435,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
 
-        MetricRegistry metrics = ig.context().metric().registry(SNAPSHOT_RESTORE_METRICS);
+        MetricRegistryImpl metrics = ig.context().metric().registry(SNAPSHOT_RESTORE_METRICS);
         Metric operIdMetric = metrics.findMetric("requestId");
         assertNotNull(operIdMetric);
 

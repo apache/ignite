@@ -23,9 +23,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 import org.apache.ignite.spi.metric.IntMetric;
 

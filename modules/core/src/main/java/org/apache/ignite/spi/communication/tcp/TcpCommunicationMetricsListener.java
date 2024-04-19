@@ -28,11 +28,12 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -72,7 +73,7 @@ public class TcpCommunicationMetricsListener {
     private final Ignite ignite;
 
     /** Metrics registry. */
-    private final MetricRegistry mreg;
+    private final MetricRegistryImpl mreg;
 
     /** All registered metrics. */
     private final Set<ThreadMetrics> allMetrics = Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -121,7 +122,7 @@ public class TcpCommunicationMetricsListener {
         this.ignite = ignite;
         this.spiCtx = spiCtx;
 
-        mreg = (MetricRegistry)spiCtx.getOrCreateMetricRegistry(COMMUNICATION_METRICS_GROUP_NAME);
+        mreg = (MetricRegistryImpl)spiCtx.getOrCreateMetricRegistry(COMMUNICATION_METRICS_GROUP_NAME);
 
         msgCntrsByType = createMessageCounters((IgniteMessageFactory)spiCtx.messageFactory());
 
@@ -150,12 +151,12 @@ public class TcpCommunicationMetricsListener {
             if (!mreg.name().startsWith(COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR))
                 return;
 
-            ((MetricRegistry)mreg).longAdderMetric(
+            ((MetricRegistryImpl)mreg).longAdderMetric(
                     SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME,
                     SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_DESC
             );
 
-            ((MetricRegistry)mreg).longAdderMetric(
+            ((MetricRegistryImpl)mreg).longAdderMetric(
                     RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME,
                     RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_DESC
             );
