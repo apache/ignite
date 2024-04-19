@@ -1110,13 +1110,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         try {
             int cleared = 0;
 
-            Iterable<CacheDataStore> cacheDataStores = cacheDataStores();
-
             // Use random shift to reduce contention.
-            int shift = ThreadLocalRandom.current().nextInt(F.size(cacheDataStores.iterator()));
+            int shift = ThreadLocalRandom.current().nextInt(F.size(cacheDataStores().iterator()));
 
             int cnt = 0;
-            for (CacheDataStore store : cacheDataStores) {
+            for (CacheDataStore store : cacheDataStores()) {
                 if (cnt++ < shift) // On the first iteration skip entries before <shift>.
                     continue;
 
@@ -1130,7 +1128,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 return false;
 
             cnt = 0;
-            for (CacheDataStore store : cacheDataStores) {
+            for (CacheDataStore store : cacheDataStores()) {
                 if (cnt++ >= shift) // On the second iteration skip entries after <shift>.
                     break;
 
