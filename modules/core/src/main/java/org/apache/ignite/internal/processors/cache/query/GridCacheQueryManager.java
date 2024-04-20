@@ -3457,7 +3457,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /**
          * @param iter Iterator.
          */
-        IndexQueryIterator (GridCloseableIterator<IgniteBiTuple<K, V>> iter) {
+        IndexQueryIterator(GridCloseableIterator<IgniteBiTuple<K, V>> iter) {
             this.iter = iter;
         }
 
