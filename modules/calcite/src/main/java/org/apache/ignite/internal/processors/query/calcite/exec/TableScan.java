@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
@@ -65,9 +64,6 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
     private final int[] parts;
 
     /** */
-    private final MvccSnapshot mvccSnapshot;
-
-    /** */
     private volatile List<GridDhtLocalPartition> reserved;
 
     /** Participating colunms. */
@@ -90,7 +86,6 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
 
         factory = this.ectx.rowHandler().factory(this.ectx.getTypeFactory(), rowType);
         topVer = ectx.topologyVersion();
-        mvccSnapshot = ectx.mvccSnapshot();
     }
 
     /** {@inheritDoc} */
@@ -241,7 +236,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
                     if (part == null)
                         break;
 
-                    cur = part.dataStore().cursor(cctx.cacheId(), mvccSnapshot);
+                    cur = part.dataStore().cursor(cctx.cacheId(), null);
                 }
 
                 if (cur.next()) {

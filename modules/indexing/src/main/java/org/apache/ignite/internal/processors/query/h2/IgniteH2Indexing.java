@@ -405,7 +405,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             filter,
             null,
             null,
-            null,
             true
         );
 
