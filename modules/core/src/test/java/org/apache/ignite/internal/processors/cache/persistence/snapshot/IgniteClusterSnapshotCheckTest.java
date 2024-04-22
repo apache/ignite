@@ -63,7 +63,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
@@ -436,8 +435,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                         new GridCacheVersion(row0.version().topologyVersion(),
                             row0.version().nodeOrder(),
                             row0.version().order() + 1),
-                        TxState.NA,
-                        TxState.NA,
                         TTL_ETERNAL,
                         row0.expireTime(),
                         true,
