@@ -1431,7 +1431,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 tx.activeCachesDeploymentEnabled(),
                 tx.storeWriteThrough(),
                 retVal,
-                null,
                 cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
 
             req.queryUpdate(dhtMapping.queryUpdate());
@@ -1545,7 +1544,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     tx.activeCachesDeploymentEnabled(),
                     tx.storeWriteThrough(),
                     retVal,
-                    null,
                     null);
 
                 for (IgniteTxEntry entry : nearMapping.entries()) {

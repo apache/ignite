@@ -110,7 +110,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotAwareMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesFailureMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesRequestMessage;
@@ -316,7 +315,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)133, ClusterMetricsUpdateMessage::new);
         factory.register((short)134, ContinuousRoutineStartResultMessage::new);
         factory.register((short)135, LatchAckMessage::new);
-        factory.register((short)150, MvccSnapshotWithoutTxs::new);
         factory.register((short)157, PartitionUpdateCountersMessage::new);
         factory.register((short)158, GridDhtPartitionSupplyMessageV2::new);
         factory.register((short)162, GenerateEncryptionKeyRequest::new);
