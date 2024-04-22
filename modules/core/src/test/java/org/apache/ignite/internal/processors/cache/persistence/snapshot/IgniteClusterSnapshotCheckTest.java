@@ -436,8 +436,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                         new GridCacheVersion(row0.version().topologyVersion(),
                             row0.version().nodeOrder(),
                             row0.version().order() + 1),
-                        null,
-                        null,
                         TxState.NA,
                         TxState.NA,
                         TTL_ETERNAL,

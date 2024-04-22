@@ -823,8 +823,6 @@ public class GridDhtPartitionDemander {
             if (cached.initialValue(
                 row.value(),
                 row.version(),
-                null,
-                null,
                 TxState.NA,
                 TxState.NA,
                 TTL_ETERNAL,

@@ -25,7 +25,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * - List of active transactions which should not be visible to current transaction
  * - Cleanup version which is used to help vacuum process.
  */
-public interface MvccSnapshot extends MvccVersion, Message {
+public interface MvccSnapshot extends Message {
     /**
      * @return Cleanup version (all smaller versions are safe to remove).
      */

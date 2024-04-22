@@ -62,23 +62,8 @@ public class MvccSnapshotWithoutTxs implements MvccSnapshot {
     }
 
     /** {@inheritDoc} */
-    @Override public long coordinatorVersion() {
-        return crdVer;
-    }
-
-    /** {@inheritDoc} */
     @Override public long cleanupVersion() {
         return cleanupVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long counter() {
-        return cntr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int operationCounter() {
-        return opCntr;
     }
 
     /** {@inheritDoc} */
