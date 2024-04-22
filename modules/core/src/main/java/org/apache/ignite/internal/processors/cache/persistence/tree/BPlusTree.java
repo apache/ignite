@@ -2173,7 +2173,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param lower Lower bound (inclusive).
      * @param upper Upper bound (inclusive).
      * @param x Implementation specific argument.
-     * @param limit Limit of processed entries by single call, {@code 0} for no limit.
+     * @param limit Limit of processed entries by single call, {@code 0} or negative value for no limit.
      * @return {@code True} if removed at least one row.
      * @throws IgniteCheckedException If failed.
      */
@@ -6622,7 +6622,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param upper Upper bound (inclusive).
          * @param needOld {@code True} If need return old value.
          * @param x Implementation specific argument, {@code null} always means that we need a full detached data row.
-         * @param limit Limit of processed entries by single call, {@code 0} for no limit.
+         * @param limit Limit of processed entries by single call, {@code 0} or negative value for no limit.
          */
         protected RemoveRange(L lower, L upper, boolean needOld, Object x, int limit) {
             super(lower, needOld, x, rmvRangeFromLeaf);

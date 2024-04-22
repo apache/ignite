@@ -123,7 +123,7 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
     /**
      * @param lower Lower bound (inclusive).
      * @param upper Upper bound (inclusive).
-     * @param limit Limit of processed entries by single call, {@code 0} for no limit.
+     * @param limit Limit of processed entries by single call, {@code 0} or negative value for no limit.
      * @return {@code True} if removed at least one row.
      * @throws IgniteCheckedException If failed.
      */
