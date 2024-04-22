@@ -53,7 +53,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersion
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
@@ -140,9 +139,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     @GridToStringInclude
     private ClusterNode node;
 
-    /** */
-    protected final MvccSnapshot mvccSnapshot;
-
     /** Deployment class loader id which will be used for deserialization of entries on a distributed task. */
     @GridToStringExclude
     protected final IgniteUuid deploymentLdrId;
@@ -186,11 +182,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         boolean needVer,
         boolean keepCacheObjects,
         boolean recovery,
-        String txLbl,
-        @Nullable MvccSnapshot mvccSnapshot
+        String txLbl
     ) {
         assert key != null;
-        assert mvccSnapshot == null;
 
         AffinityTopologyVersion lockedTopVer = cctx.shared().lockedTopologyVersion(null);
 
@@ -214,7 +208,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         this.keepCacheObjects = keepCacheObjects;
         this.recovery = recovery;
         this.topVer = topVer;
-        this.mvccSnapshot = mvccSnapshot;
         deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         this.txLbl = txLbl;
@@ -300,9 +293,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                     expiryPlc,
                     skipVals,
                     recovery,
-                    txLbl,
-                    mvccSnapshot
-                );
+                    txLbl);
 
             Collection<Integer> invalidParts = fut0.invalidPartitions();
 
@@ -365,8 +356,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 needVer,
                 cctx.deploymentEnabled(),
                 recovery,
-                txLbl,
-                mvccSnapshot
+                txLbl
             );
 
             try {

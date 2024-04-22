@@ -1411,7 +1411,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             needVer,
             false,
             recovery,
-            null,
             null);
 
         fut.init();
@@ -1642,7 +1641,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             skipVals,
             needVer,
             false,
-            null,
             null,
             null);
 

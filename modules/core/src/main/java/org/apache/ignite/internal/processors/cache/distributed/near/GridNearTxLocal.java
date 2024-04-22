@@ -2763,7 +2763,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     needVer,
                     /*keepCacheObject*/true,
                     recovery,
-                    null,
                     label()
                 ).chain(f -> {
                     try {
@@ -2793,8 +2792,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     skipVals,
                     needVer,
                     /*keepCacheObject*/true,
-                    label(),
-                    null
+                    label()
                 ).chain(f -> {
                     try {
                         Map<Object, Object> map = f.get();
