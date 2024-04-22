@@ -236,7 +236,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
                     if (part == null)
                         break;
 
-                    cur = part.dataStore().cursor(cctx.cacheId(), null);
+                    cur = part.dataStore().cursor(cctx.cacheId());
                 }
 
                 if (cur.next()) {

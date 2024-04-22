@@ -853,7 +853,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 locPart = locPart0;
 
-                it = cctx.offheap().cachePartitionIterator(cctx.cacheId(), part, null,
+                it = cctx.offheap().cachePartitionIterator(cctx.cacheId(), part,
                     qry.isDataPageScanEnabled());
             }
             else {
@@ -868,7 +868,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         "has been lost [cacheName=" + cctx.name() + ", part=" + lostParts.iterator().next() + "]");
                 }
 
-                it = cctx.offheap().cacheIterator(cctx.cacheId(), true, backups, topVer, null,
+                it = cctx.offheap().cacheIterator(cctx.cacheId(), true, backups, topVer,
                     qry.isDataPageScanEnabled());
             }
 
