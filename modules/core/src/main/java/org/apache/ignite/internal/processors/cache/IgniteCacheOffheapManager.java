@@ -267,7 +267,6 @@ public interface IgniteCacheOffheapManager {
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
      */
-    // TODO: MVCC>
     public IgniteRebalanceIterator rebalanceIterator(IgniteDhtDemandedPartitionsMap parts, AffinityTopologyVersion topVer)
         throws IgniteCheckedException;
 
@@ -296,7 +295,6 @@ public interface IgniteCacheOffheapManager {
      * @return Iterator.
      * @throws IgniteCheckedException If failed.
      */
-    // TODO: MVCC>
     public GridCloseableIterator<KeyCacheObject> cacheKeysIterator(int cacheId, final int part)
         throws IgniteCheckedException;
 
@@ -307,7 +305,6 @@ public interface IgniteCacheOffheapManager {
      * @param topVer Topology version.
      * @return Entries count.
      */
-    // TODO: MVCC>
     public long cacheEntriesCount(int cacheId, boolean primary, boolean backup, AffinityTopologyVersion topVer);
 
     /**

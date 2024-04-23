@@ -293,7 +293,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                     expiryPlc,
                     skipVals,
                     recovery,
-                    txLbl);
+                    txLbl
+                );
 
             Collection<Integer> invalidParts = fut0.invalidPartitions();
 
