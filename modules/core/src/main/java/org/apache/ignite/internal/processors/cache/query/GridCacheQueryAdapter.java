@@ -615,7 +615,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         GridCloseableIterator it;
 
         if (loc)
-            it = qryMgr.queryWithIteratorLocal(this, true);
+            it = qryMgr.queryLocal(this, true);
         else if (part != null)
             it = new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
         else
@@ -803,7 +803,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
             if (node.isLocal()) {
                 try {
-                    GridCloseableIterator it = qryMgr.queryWithIteratorLocal(qry, true);
+                    GridCloseableIterator it = qryMgr.queryLocal(qry, true);
 
                     tuple = new T2(it, null);
                 }

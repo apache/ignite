@@ -551,7 +551,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         for (ClusterNode node : nodes) {
             if (node.isLocal()) {
-                locIter0 = queryWithIteratorLocal(qry, false);
+                locIter0 = queryLocal(qry, false);
 
                 Collection<ClusterNode> rmtNodes = new ArrayList<>(nodes.size() - 1);
 

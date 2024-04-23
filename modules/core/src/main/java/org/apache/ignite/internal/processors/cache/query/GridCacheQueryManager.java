@@ -808,7 +808,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             true,
             qry.isDataPageScanEnabled());
 
-        return queryWithIteratorLocal(qry0, false);
+        return queryLocal(qry0, false);
     }
 
     /**
@@ -1433,10 +1433,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param updateStatistics Update statistics flag.
      */
     @SuppressWarnings({"unchecked"})
-    protected GridCloseableIterator queryWithIteratorLocal(final GridCacheQueryAdapter qry,
+    protected GridCloseableIterator queryLocal(final GridCacheQueryAdapter qry,
         boolean updateStatistics) throws IgniteCheckedException {
         if (!enterBusy())
             throw new IllegalStateException("Failed to process query request (grid is stopping).");
+
+        final GridCacheQueryType qryType = qry.type();
 
         final boolean statsEnabled = cctx.statisticsEnabled();
 
@@ -1450,40 +1452,41 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             new InternalScanFilter<>(qry.scanFilter()) : null;
 
         try {
-            assert qry.type() == SCAN || qry.type() == INDEX;
+            assert qryType == SCAN || qryType == INDEX;
 
             if (log.isDebugEnabled())
-                log.debug("Running local " + (qry.type() == SCAN ? "SCAN" : "INDEX") + " query: " + qry);
+                log.debug("Running local " + (qryType == SCAN ? "SCAN" : "INDEX") + " query: " + qry);
 
-            GridCloseableIterator it = null;
+            final String taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
 
-            if (qry.type() == SCAN) {
-                final String taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
-                final ClusterNode locNode = cctx.localNode();
+            final ClusterNode locNode = cctx.localNode();
 
-                if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                    cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
-                        locNode,
-                        "Scan query executed.",
-                        EVT_CACHE_QUERY_EXECUTED,
-                        CacheQueryType.SCAN.name(),
-                        namex,
-                        null,
-                        null,
-                        intFilter != null ? intFilter.scanFilter() : null,
-                        null,
-                        null,
-                        securitySubjectId(cctx),
-                        taskName));
-                }
+            final String clsName = qry.queryClassName();
 
+            if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
+                    locNode,
+                    (qryType == SCAN ? "Scan" : "Index") + " query executed.",
+                    EVT_CACHE_QUERY_EXECUTED,
+                    qryType == SCAN ? CacheQueryType.SCAN.name() : CacheQueryType.INDEX.name(),
+                    namex,
+                    clsName,
+                    null,
+                    intFilter != null ? intFilter.scanFilter() : null,
+                    null,
+                    null,
+                    securitySubjectId(cctx),
+                    taskName));
+            }
+
+            GridCloseableIterator it;
+
+            if (qryType == SCAN) {
                 IgniteClosure transformer = qry.transform();
 
                 injectResources(transformer);
 
                 it = scanIterator(qry, transformer, true);
-
-                updateStatistics = false;
             }
             else {
                 int[] parts = null;
@@ -1497,15 +1500,22 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 it = new IndexQueryIterator(idxQryRes.iter());
             }
 
+            updateStatistics = false;
+
             return it;
         }
         catch (Exception e) {
             if (intFilter != null)
                 intFilter.close();
 
-            if (updateStatistics && qry.type() == SCAN)
-                cctx.queries().collectMetrics(GridCacheQueryType.SCAN, namex, startTime,
-                    U.currentTimeMillis() - startTime, true);
+            if (updateStatistics) {
+                cctx.queries().collectMetrics(
+                    qryType == SCAN ? GridCacheQueryType.SCAN : GridCacheQueryType.INDEX,
+                    namex,
+                    startTime,
+                    U.currentTimeMillis() - startTime,
+                    true);
+            }
 
             throw e;
         }
