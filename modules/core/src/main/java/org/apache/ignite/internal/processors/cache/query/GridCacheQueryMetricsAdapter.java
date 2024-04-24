@@ -60,7 +60,7 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
         MetricRegistryImpl mreg = mmgr.registry(MetricUtils.cacheMetricsRegistryName(cacheName, isNear));
 
         minTime = mreg.longMetric("QueryMinimalTime", null);
-        minTime.value(Long.MAX_VALUE);
+        minTime.set(Long.MAX_VALUE);
 
         maxTime = mreg.longMetric("QueryMaximumTime", null);
         sumTime = mreg.longAdderMetric("QuerySumTime", null);
@@ -134,7 +134,7 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
 
     /** Resets query metrics. */
     public void reset() {
-        minTime.value(Long.MAX_VALUE);
+        minTime.set(Long.MAX_VALUE);
         maxTime.reset();
         sumTime.reset();
         execs.reset();

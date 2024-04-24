@@ -229,7 +229,7 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Metrics
         mreg.register("PoolSize", this::poolSize, POOL_SIZE_DESC);
         mreg.register("TaskCount", this::taskCount, TASK_COUNT_DESC);
         mreg.register("QueueSize", this::queueSize, QUEUE_SIZE_DESC);
-        mreg.longMetric("KeepAliveTime", KEEP_ALIVE_TIME_DESC).value(execs[0].getKeepAliveTime(TimeUnit.MILLISECONDS));
+        mreg.longMetric("KeepAliveTime", KEEP_ALIVE_TIME_DESC).set(execs[0].getKeepAliveTime(TimeUnit.MILLISECONDS));
         mreg.register("Shutdown", this::isShutdown, IS_SHUTDOWN_DESC);
         mreg.register("Terminated", this::isTerminated, IS_TERMINATED_DESC);
         mreg.register("Terminating", this::terminating, IS_TERMINATING_DESC);

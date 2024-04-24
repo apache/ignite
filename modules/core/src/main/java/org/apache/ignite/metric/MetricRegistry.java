@@ -53,6 +53,15 @@ public interface MetricRegistry extends ReadOnlyMetricRegistry {
     void register(String name, LongSupplier supplier, @Nullable String desc);
 
     /**
+     * Registers a long metric.
+     *
+     * @param name Metric short name. Doesn't include registry name.
+     * @param desc Metric description.
+     * @return {@link LongValueMetric}
+     */
+    LongValueMetric longMetric(String name, @Nullable String desc);
+
+    /**
      * Registers a double metric which value will be queried from the specified supplier.
      *
      * @param name Metric short name. Doesn't include the registry name.

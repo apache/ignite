@@ -203,7 +203,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
      * Transaction commit callback.
      */
     public void onTxCommit() {
-        commitTime.value(U.currentTimeMillis());
+        commitTime.set(U.currentTimeMillis());
 
         txCommits.increment();
     }
@@ -212,7 +212,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
      * Transaction rollback callback.
      */
     public void onTxRollback() {
-        rollbackTime.value(U.currentTimeMillis());
+        rollbackTime.set(U.currentTimeMillis());
 
         txRollbacks.increment();
     }
