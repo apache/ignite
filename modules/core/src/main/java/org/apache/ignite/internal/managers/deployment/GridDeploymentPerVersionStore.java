@@ -382,7 +382,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 if (deps != null && meta.deploymentMode() == SHARED) {
                     assert !deps.isEmpty();
 
-                    dep = (SharedDeployment) searchDeploymentCache(meta);
+                    dep = (SharedDeployment)searchDeploymentCache(meta);
 
                     if (dep == null) {
                         for (SharedDeployment dep0 : deps) {
