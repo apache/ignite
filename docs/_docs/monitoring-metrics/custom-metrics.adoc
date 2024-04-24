@@ -1,0 +1,63 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Custom Metrics
+
+WARNING: This feature is experimental and may change in future releases.
+
+Ignite provides various internal link:monitoring-metrics/new-metrics.adoc[metrics]. However, these metrics might
+not be enough. User can design and publish own, custom metrics. Cusom Metrics are based on
+link:monitoring-metrics/new-metrics-system.adoc[Metric System] too. To register a custom metric, you need to add new
+custom link:monitoring-metrics/new-metrics-system#registry[registry] first. After that, metrics can be added to the registry.
+
+
+== Custom metric registry.
+
+You can create custom metric registries via `IgniteMetrics` interface whixh is obtained by `Ignite.metrics()`.
+
+The `IgniteMetric` interface has only a couple of methods:
+
+* `MetricRegistry getOrCreate(String registryName)` provides new or existing custom metric registry.
+* `void remove(String registryName)` removes entire custom metric registry.
+
+
+== Custom metrics creation.
+
+To register new own metric, use `MetricRegistry` interface which is obtained by `IgniteMetrics.getOrCreate(...)`.
+
+The `MetricRegistry` interface has several methods to put new metrics like:
+
+* `void register(String metricName, IntSupplier valueSupplier, @Nullable String description);` registers an integer-value metric.
+* `void register(String metricName, DoubleSupplier valueSupplier, @Nullable String description);` registers a double-value metric.
+
+
+== Naming convention.
+Names of a custom metric (and its registry) are similar to names of the internal metrics. The name can have dot-separated
+parts like 'process.status.suspended'.
+
+Prefix 'custom.' is always added to the registry name in `IgniteMetrics`. For instance, if the passed registry name is
+'process.status.suspended', it is automatically extended to  'custom.process.status.suspended'.
+
+
+== Limitations
+* It is impossible to affect the internal metrics.
+* Custom metrics are registered on-demand and aren't persistent. After node restarts, they have to be registered anew.
+* Custom metrics configuration isn't supported.
+* The names must not be empty, cannot have spaces or empty dot-separated parts.
+
+
+
+
+
+

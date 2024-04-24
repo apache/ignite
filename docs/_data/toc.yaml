@@ -440,6 +440,8 @@
           url: monitoring-metrics/configuring-metrics
         - title: Metrics
           url: monitoring-metrics/new-metrics
+    - title: Custom Metrics
+      url: monitoring-metrics/custom-metrics
     - title: System Views
       url: monitoring-metrics/system-views
     - title: Performance Statistics
