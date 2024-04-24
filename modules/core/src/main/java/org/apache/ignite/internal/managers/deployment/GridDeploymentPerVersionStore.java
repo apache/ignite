@@ -322,32 +322,12 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
         while (true) {
             List<SharedDeployment> depsToCheck = null;
 
-            SharedDeployment dep;
+            SharedDeployment dep = null;
 
             synchronized (mux) {
                 // Check obsolete request.
                 if (isDeadClassLoader(meta))
                     return null;
-
-                Collection<GridDeployment> created = getDeployments();
-
-                boolean skipSearchDeployment = false;
-
-                // Check already exist deployment.
-                if (meta.deploymentMode() == SHARED) {
-                    for (GridDeployment dep0 : created) {
-                        // hot redeploy from same node
-                        if (dep0.participants().containsKey(meta.senderNodeId()) || dep0.undeployed())
-                            continue;
-
-                        IgniteBiTuple<Class<?>, Throwable> cls = dep0.deployedClass(meta.className(), meta.alias());
-
-                        if (cls.getKey() != null && cls.getValue() == null) {
-                            addParticipant((SharedDeployment)dep0, meta);
-                            skipSearchDeployment = true;
-                        }
-                    }
-                }
 
                 if (!F.isEmpty(meta.participants())) {
                     Map<UUID, IgniteUuid> participants = new LinkedHashMap<>();
@@ -358,9 +338,9 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                             // Warn only if mode is not CONTINUOUS.
                             if (meta.deploymentMode() != CONTINUOUS)
                                 LT.warn(log, "Local node is in participants (most probably, " +
-                                    "IgniteConfiguration.getPeerClassLoadingLocalClassPathExclude() " +
-                                    "is not used properly " +
-                                    "[locNodeId=" + ctx.localNodeId() + ", meta=" + meta + ']');
+                                        "IgniteConfiguration.getPeerClassLoadingLocalClassPathExclude() " +
+                                        "is not used properly " +
+                                        "[locNodeId=" + ctx.localNodeId() + ", meta=" + meta + ']');
 
                             continue;
                         }
@@ -396,14 +376,33 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                     return null;
                 }
 
-                if (!skipSearchDeployment)
-                    dep = (SharedDeployment)searchDeploymentCache(meta);
-                else
-                    dep = null;
+                List<SharedDeployment> deps = cache.get(meta.userVersion());
+
+                // Check already exist deployment.
+                if (deps != null && meta.deploymentMode() == SHARED) {
+                    assert !deps.isEmpty();
+
+                    dep = (SharedDeployment) searchDeploymentCache(meta);
+
+                    if (dep == null) {
+                        for (SharedDeployment dep0 : deps) {
+                            // hot redeploy from same node
+                            if (dep0.participants().containsKey(meta.senderNodeId()) || dep0.undeployed())
+                                continue;
+
+                            IgniteBiTuple<Class<?>, Throwable> cls = dep0.deployedClass(meta.className(), meta.alias());
+
+                            if (cls.getKey() != null && cls.getValue() == null) {
+                                addParticipant(dep0, meta);
+                                dep = dep0;
+
+                                break;
+                            }
+                        }
+                    }
+                }
 
                 if (dep == null) {
-                    List<SharedDeployment> deps = cache.get(meta.userVersion());
-
                     if (deps != null) {
                         assert !deps.isEmpty();
 
