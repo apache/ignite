@@ -355,11 +355,11 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
                             cache.put(key, i);
                         }
                         catch (CacheException e) {
-                            log.error("It couldn't put a value [cache=" + cacheName +
-                                ", key=" + key +
-                                ", val=" + i + ']', e);
-
-                            CacheConfiguration ccfg = cache.getConfiguration(CacheConfiguration.class);
+                            fail("It couldn't put a value [cache=" + cacheName +
+                                    ", key=" + key +
+                                    ", val=" + i + ']' +
+                                    "\nAssert violated because exception was thrown [e=" +
+                                    e.getMessage() + ']');
                         }
                     }
                 }
