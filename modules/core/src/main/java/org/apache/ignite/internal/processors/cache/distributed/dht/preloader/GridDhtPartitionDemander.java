@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.WalStateManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -823,8 +822,6 @@ public class GridDhtPartitionDemander {
             if (cached.initialValue(
                 row.value(),
                 row.version(),
-                TxState.NA,
-                TxState.NA,
                 TTL_ETERNAL,
                 row.expireTime(),
                 true,

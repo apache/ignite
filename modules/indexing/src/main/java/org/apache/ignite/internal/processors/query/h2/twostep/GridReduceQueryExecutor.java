@@ -496,7 +496,6 @@ public class GridReduceQueryExecutor {
                             null,
                             null,
                             null,
-                            null,
                             true);
 
                         H2Utils.setupConnection(conn, qctx, false, enforceJoinOrder);

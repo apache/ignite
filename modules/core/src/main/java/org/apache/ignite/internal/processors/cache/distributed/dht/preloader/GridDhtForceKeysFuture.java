@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -534,8 +533,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                         if (entry.initialValue(
                             info.value(),
                             info.version(),
-                            TxState.NA,
-                            TxState.NA,
                             info.ttl(),
                             info.expireTime(),
                             true,

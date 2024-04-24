@@ -380,7 +380,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.activeCachesDeploymentEnabled(),
                 false,
                 false,
-                null,
                 cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
 
             try {
@@ -479,7 +478,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 null,
                 false,
                 false,
-                null,
                 commit ? null : cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
@@ -556,7 +554,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     tx.activeCachesDeploymentEnabled(),
                     false,
                     false,
-                    null,
                     null);
 
                 req.writeVersion(tx.writeVersion());
