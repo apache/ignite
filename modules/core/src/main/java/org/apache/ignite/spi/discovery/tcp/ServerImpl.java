@@ -7287,10 +7287,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     sock.connect(addr, perAddrTimeout);
 
                                     liveAddrHolder.compareAndSet(null, addr);
+
+                                    if (log.isInfoEnabled())
+                                        log.info("Successful connection to the server [address=" + addr + "]");
+                                }
+                                else if (log.isInfoEnabled()) {
+                                    log.info("Connection to the server [address=" + addr + "] is ignored. " +
+                                        "Alive address is found at [address=" + liveAddrHolder.get() + "]");
                                 }
                             }
                             catch (Exception ignored) {
-                                // No-op.
+                                U.warn(log, "Failed to connect the socket to the server [address=" + addr +
+                                    ", timeout=" + perAddrTimeout + ", cause=" + ignored.getMessage() + "]");
                             }
                             finally {
                                 latch.countDown();
