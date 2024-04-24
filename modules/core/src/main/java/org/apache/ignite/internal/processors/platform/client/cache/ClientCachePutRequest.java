@@ -36,13 +36,8 @@ public class ClientCachePutRequest extends ClientCacheKeyValueRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isAsync(ClientConnectionContext ctx) {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public ClientResponse process0(ClientConnectionContext ctx) {
-        cache(ctx).putAsync(key(), val()).get();
+        cache(ctx).put(key(), val());
 
         return new ClientResponse(requestId());
     }

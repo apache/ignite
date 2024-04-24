@@ -3821,7 +3821,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     (IgniteOutClosure<IgniteInternalFuture>)() -> {
                         GridFutureAdapter resFut = new GridFutureAdapter();
 
-                        ctx.kernalContext().closure().runLocalSafe((GridPlainRunnable)() -> {
+                        GridPlainRunnable r = () -> {
+                            //ctx.kernalContext().closure().runLocalSafe((GridPlainRunnable)() -> {
                             IgniteInternalFuture fut0;
 
                             if (ctx.kernalContext().isStopping())
@@ -3851,7 +3852,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                     resFut.onDone(ex);
                                 }
                             });
-                        }, true);
+                        //}, true);
+                        };
+                        r.run();
 
                         return resFut;
                     });
