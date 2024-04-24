@@ -58,7 +58,7 @@ public class AtomicLongMetric extends AbstractMetric implements LongValueMetric 
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        updater.set(this, 0);
+        set(0);
     }
 
     /** {@inheritDoc} */
@@ -68,6 +68,6 @@ public class AtomicLongMetric extends AbstractMetric implements LongValueMetric 
 
     /** {@inheritDoc} */
     @Override public void set(long val) {
-        this.val = val;
+        updater.set(this, val);
     }
 }
