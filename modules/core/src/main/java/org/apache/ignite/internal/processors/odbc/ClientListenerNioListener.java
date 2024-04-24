@@ -215,6 +215,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
             if (resp != null) {
                 if (resp instanceof ClientListenerAsyncResponse) {
+                    handleResponse(req, ((ClientListenerAsyncResponse)resp).future().get(), startTime, ses, parser);
+/*
                     ((ClientListenerAsyncResponse)resp).future().listen(
                         fut -> ctx.pools().getThinClientExecutorService().execute(() -> {
                             try {
@@ -225,6 +227,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
                             }
                         })
                     );
+*/
                 }
                 else
                     handleResponse(req, resp, startTime, ses, parser);
