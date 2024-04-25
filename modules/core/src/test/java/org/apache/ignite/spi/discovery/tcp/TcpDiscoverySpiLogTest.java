@@ -97,8 +97,8 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
     public void testMultipleSocketConnectionLogMessage() throws Exception {
         LogListener lsnr = LogListener.matches(s ->
             s.contains("Successful connection to the server [address=") ||
-            s.contains("Failed to connect the socket to the server [address=") ||
-            s.contains("Connection to the server [address=")).build();
+                s.contains("Failed to connect the socket to the server [address=") ||
+                s.contains("Connection to the server [address=")).build();
 
         testLog.registerListener(lsnr);
 
@@ -111,7 +111,7 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
 
             startGrid(2);
 
-            ((TcpDiscoverySpi) ignite(0).configuration().getDiscoverySpi()).brakeConnection();
+            ((TcpDiscoverySpi)ignite(0).configuration().getDiscoverySpi()).brakeConnection();
 
             assertTrue(waitForCondition(lsnr::check, 10_000L));
         }
@@ -136,7 +136,7 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
 
         try {
             startGridsMultiThreaded(3);
-            ((TcpDiscoverySpi) ignite(0).configuration().getDiscoverySpi()).brakeConnection();
+            ((TcpDiscoverySpi)ignite(0).configuration().getDiscoverySpi()).brakeConnection();
             assertTrue(waitForCondition(lsnr::check, 10_000L));
         }
         finally {
@@ -160,7 +160,7 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
 
         try {
             startGridsMultiThreaded(3);
-            ((TcpDiscoverySpi) ignite(0).configuration().getDiscoverySpi()).simulateNodeFailure();
+            ((TcpDiscoverySpi)ignite(0).configuration().getDiscoverySpi()).simulateNodeFailure();
 
             assertTrue(waitForCondition(lsnr::check, 10_000L));
         }
@@ -212,7 +212,7 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
 
             ignite1.configuration().getDiscoverySpi().failNode(coordId, null);
 
-            assertTrue(waitForCondition(lsnr::check, 10_000L));;
+            assertTrue(waitForCondition(lsnr::check, 10_000L));
         }
         finally {
             stopAllGrids();
@@ -283,8 +283,10 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
         }
     }
 
+    /** {@inheritDoc} */
     private static class TestCustomEffectiveNodeAddressesSpi extends TcpDiscoverySpi {
-        private final static LinkedHashSet<InetSocketAddress> customAddrs = new LinkedHashSet<>();
+        /** {@inheritDoc} */
+        private static final LinkedHashSet<InetSocketAddress> customAddrs = new LinkedHashSet<>();
 
         static {
             customAddrs.add(new InetSocketAddress("127.0.0.1", 47505));
@@ -295,13 +297,14 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override LinkedHashSet<InetSocketAddress> getEffectiveNodeAddresses(TcpDiscoveryNode node) {
-            if(node.discoveryPort() == 47501)
+            if (node.discoveryPort() == 47501)
                 return customAddrs;
 
             return super.getEffectiveNodeAddresses(node);
         }
     }
 
+    /** {@inheritDoc} */
     private static class TestCustomEventLogSocketSpi extends TcpDiscoverySpi {
         /** */
         private volatile CountDownLatch nodeAdded1;
