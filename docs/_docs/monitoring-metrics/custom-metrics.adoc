@@ -17,8 +17,13 @@
 WARNING: This feature is experimental and may change in future releases.
 
 Ignite provides various internal link:monitoring-metrics/new-metrics.adoc[metrics]. However, these metrics might
-not be enough. User can design and publish own, custom metrics. Cusom Metrics base on
+not be enough. User can design and publish own, custom metrics. Custom Metrics base on
 link:monitoring-metrics/new-metrics-system.adoc[Metric System].
+
+[NOTE]
+====
+Custom Metrics are local and are bound only to the local node.
+====
 
 == Custom metric creation.
 
@@ -48,7 +53,7 @@ To register new own metric, use `MetricRegistry` interface which is obtained by 
 
 == Naming convention.
 Names of a custom metrics (and its registries) are similar to names of the internal metrics. The name can have dot-separated
-parts like 'proces`s.status.suspended'.
+parts like 'process.status.suspended'.
 
 Prefix 'custom.' is always added to the custom registry name in `IgniteMetrics`. For instance, if the passed registry name is
 'process.status.suspended', it is automatically extended to  'custom.process.status.suspended'.
@@ -59,9 +64,3 @@ Prefix 'custom.' is always added to the custom registry name in `IgniteMetrics`.
 * Custom metrics are registered on-demand and aren't persistent. After node restarts, they have to be registered anew.
 * Configuration of a custom metric isn't supported.
 * The names must not be empty, cannot have spaces or empty dot-separated parts.
-
-
-
-
-
-
