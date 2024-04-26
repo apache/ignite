@@ -118,6 +118,16 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
         if (req0.isAsync(ctx)) {
             IgniteInternalFuture<ClientResponse> fut = req0.processAsync(ctx);
 
+            if (!fut.isDone()) {
+                try {
+                    // Give request another chance.
+                    fut.get(10);
+                }
+                catch (IgniteCheckedException ignore) {
+                    // Ignore exception, will be handled later.
+                }
+            }
+
             if (fut.isDone()) {
                 try {
                     // Some async operations can be already finished after processAsync. Shortcut for this case.
