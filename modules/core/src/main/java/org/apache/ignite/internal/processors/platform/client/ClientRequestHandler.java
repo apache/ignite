@@ -45,6 +45,9 @@ import static org.apache.ignite.internal.processors.platform.client.ClientProtoc
  * Thin client request handler.
  */
 public class ClientRequestHandler implements ClientListenerRequestHandler {
+    /** Timeout to wait for async requests completion, to handle them as regular sync requests. */
+    private static final long ASYNC_REQUEST_WAIT_TIMEOUT = 10L;
+
     /** Client context. */
     private final ClientConnectionContext ctx;
 
@@ -120,17 +123,18 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
 
             if (!fut.isDone()) {
                 try {
-                    // Give request another chance.
-                    fut.get(10);
+                    // Give request a chance to be executed and response processed by the current thread,
+                    // so we can avoid any performance drops caused by async requests execution.
+                    fut.get(ASYNC_REQUEST_WAIT_TIMEOUT);
                 }
                 catch (IgniteCheckedException ignore) {
-                    // Ignore exception, will be handled later.
+                    // Ignore exception. If it isn't a timeout exception - will be handled later.
                 }
             }
 
             if (fut.isDone()) {
                 try {
-                    // Some async operations can be already finished after processAsync. Shortcut for this case.
+                    // Some async operations can be already finished. Shortcut for this case.
                     return fut.get();
                 }
                 catch (IgniteCheckedException e) {
