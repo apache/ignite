@@ -3816,6 +3816,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 }
             };
 
+            holder.await();
+
             if (fut != null && !fut.isDone()) {
                 IgniteInternalFuture<T> f = new GridEmbeddedFuture(fut,
                     (IgniteOutClosure<IgniteInternalFuture>)() -> {
