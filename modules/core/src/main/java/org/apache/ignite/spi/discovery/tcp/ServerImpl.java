@@ -7288,10 +7288,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                     liveAddrHolder.compareAndSet(null, addr);
                                 }
-                                else if (log.isInfoEnabled()) {
-                                    log.info("Connection to the server [address=" + addr + "] is ignored. " +
-                                        "Alive address is found at [address=" + liveAddrHolder.get() + "]");
-                                }
                             }
                             catch (Exception ignored) {
                                 log.info("Failed to connect the socket to the server [address=" + addr +

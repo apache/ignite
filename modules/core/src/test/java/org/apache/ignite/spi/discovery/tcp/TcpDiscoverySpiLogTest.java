@@ -114,8 +114,7 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
     public void testMultipleSocketConnectionLogMessage() throws Exception {
         LogListener lsnr = LogListener.matches(s ->
             s.contains("Connection check to previous node done: [liveAddr=/") ||
-                s.contains("Failed to connect the socket to the server [address=") ||
-                s.contains("Connection to the server [address=")).build();
+                s.contains("Failed to connect the socket to the server [address=")).build();
 
         testLog.registerListener(lsnr);
 
