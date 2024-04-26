@@ -17,7 +17,7 @@
 WARNING: This feature is experimental and may change in future releases.
 
 Ignite provides various internal link:monitoring-metrics/new-metrics.adoc[metrics]. However, these metrics might
-not be enough. Users can design and publish their own, custom metrics. Custom Metrics base on
+not be enough. Users can design and publish their own custom metrics. Custom Metrics are based on
 link:monitoring-metrics/new-metrics-system.adoc[Metric System].
 
 [NOTE]
@@ -44,7 +44,7 @@ You can create custom metric registries via the `IgniteMetrics` interface which 
 
 To register a new custom metric, use the `MetricRegistry` interface which is obtained by `IgniteMetrics.getOrCreate(...)`.
 
-`MetricRegistry` has several methods to put or remove metrics like:
+`MetricRegistry` has several methods to add or remove metrics like:
 
 * `void register(String metricName, IntSupplier valueSupplier, @Nullable String description);` registers an integer-value metric.
 * `void register(String metricName, DoubleSupplier valueSupplier, @Nullable String description);` registers a double-value metric.
@@ -52,7 +52,7 @@ To register a new custom metric, use the `MetricRegistry` interface which is obt
 
 
 == Naming convention.
-Names of the custom metrics (and its registries) are similar to names of the internal metrics. The name can have dot-separated
+Names of the custom metrics (and its registries) are similar to the names of internal metrics. The name can have dot-separated
 parts like 'process.status.suspended'.
 
 Prefix 'custom.' is always added to the custom registry name in `IgniteMetrics`. For instance, if the passed registry name is
@@ -61,6 +61,6 @@ Prefix 'custom.' is always added to the custom registry name in `IgniteMetrics`.
 
 == Limitations
 * It is impossible to affect the internal metrics.
-* Custom metrics are registered on-demand and aren't persistent. After a node's restarts, they have to be registered anew.
+* Custom metrics are registered on-demand and aren't persistent. After a node restarts, they have to be registered anew.
 * Configuration of a custom metric isn't supported.
-* The names must not be empty, cannot have spaces or empty dot-separated parts.
+* The names must not be empty and cannot have spaces or empty dot-separated parts.
