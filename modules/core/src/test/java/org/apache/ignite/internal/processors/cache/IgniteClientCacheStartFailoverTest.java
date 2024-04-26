@@ -356,8 +356,8 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
                         }
                         catch (CacheException e) {
                             log.error("It couldn't put a value [cache=" + cacheName +
-                                    ", key=" + key +
-                                    ", val=" + i + ']', e);
+                                ", key=" + key +
+                                ", val=" + i + ']', e);
 
                             fail();
                         }
