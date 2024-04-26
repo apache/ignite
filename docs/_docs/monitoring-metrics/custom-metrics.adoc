@@ -32,7 +32,7 @@ After that, metrics can be added to this registry.
 
 === Custom metric registry.
 
-You can create custom metric registries via `IgniteMetrics` interface which is obtained by `Ignite.metrics()`.
+You can create custom metric registries via the `IgniteMetrics` interface which is obtained by `Ignite.metrics()`.
 
 `IgniteMetric` interface has the following methods:
 
