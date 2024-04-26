@@ -17,7 +17,7 @@
 WARNING: This feature is experimental and may change in future releases.
 
 Ignite provides various internal link:monitoring-metrics/new-metrics.adoc[metrics]. However, these metrics might
-not be enough. User can design and publish own, custom metrics. Custom Metrics base on
+not be enough. Users can design and publish their own, custom metrics. Custom Metrics base on
 link:monitoring-metrics/new-metrics-system.adoc[Metric System].
 
 [NOTE]
@@ -27,40 +27,40 @@ Custom Metrics are local and are bound only to the local node.
 
 == Custom metric creation.
 
-To register a custom metric, you need to add new link:monitoring-metrics/new-metrics-system#registry[registry] first.
+To register a custom metric, you need to add a new link:monitoring-metrics/new-metrics-system#registry[registry] first.
 After that, metrics can be added to this registry.
 
 === Custom metric registry.
 
 You can create custom metric registries via `IgniteMetrics` interface which is obtained by `Ignite.metrics()`.
 
-`IgniteMetric` interface has only a couple of methods:
+`IgniteMetric` interface has the following methods:
 
-* `MetricRegistry getOrCreate(String registryName)` provides new or existing custom metric registry.
-* `void remove(String registryName)` removes entire custom metric registry.
+* `MetricRegistry getOrCreate(String registryName)` provides a new or existing custom metric registry.
+* `void remove(String registryName)` removes the entire custom metric registry.
 
 
 === Custom metric creation.
 
-To register new own metric, use `MetricRegistry` interface which is obtained by `IgniteMetrics.getOrCreate(...)`.
+To register a new custom metric, use the `MetricRegistry` interface which is obtained by `IgniteMetrics.getOrCreate(...)`.
 
 `MetricRegistry` has several methods to put or remove metrics like:
 
 * `void register(String metricName, IntSupplier valueSupplier, @Nullable String description);` registers an integer-value metric.
 * `void register(String metricName, DoubleSupplier valueSupplier, @Nullable String description);` registers a double-value metric.
-* `void remove(String name);` removes metric.
+* `void remove(String name);` removes a metric.
 
 
 == Naming convention.
-Names of a custom metrics (and its registries) are similar to names of the internal metrics. The name can have dot-separated
+Names of the custom metrics (and its registries) are similar to names of the internal metrics. The name can have dot-separated
 parts like 'process.status.suspended'.
 
 Prefix 'custom.' is always added to the custom registry name in `IgniteMetrics`. For instance, if the passed registry name is
-'process.status.suspended', it is automatically extended to  'custom.process.status.suspended'.
+'process.status.suspended', it is automatically extended to 'custom.process.status.suspended'.
 
 
 == Limitations
 * It is impossible to affect the internal metrics.
-* Custom metrics are registered on-demand and aren't persistent. After node restarts, they have to be registered anew.
+* Custom metrics are registered on-demand and aren't persistent. After a node's restarts, they have to be registered anew.
 * Configuration of a custom metric isn't supported.
 * The names must not be empty, cannot have spaces or empty dot-separated parts.

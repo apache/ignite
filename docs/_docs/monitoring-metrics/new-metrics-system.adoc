@@ -49,7 +49,7 @@ The full name of a specific metric within the registry consists of the registry 
 For example, the registry for data storage metrics is called `io.datastorage`.
 The metric that return the storage size is called `io.datastorage.StorageSize`.
 
-The list of all registries and the metrics  they contain are described link:monitoring-metrics/new-metrics[here].
+The list of all registries and the metrics they contain are described link:monitoring-metrics/new-metrics[here].
 
 == Metric Exporters
 
