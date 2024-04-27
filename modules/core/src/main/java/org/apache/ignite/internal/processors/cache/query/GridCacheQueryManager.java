@@ -1427,7 +1427,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Process local SCAN query with results returned in an iterator.
+     * Process local scan query.
      *
      * @param qry Query.
      * @param updateStatistics Update statistics flag.
@@ -1485,7 +1485,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Process local INDEX query with results returned in an iterator.
+     * Process local index query.
      *
      * @param qry Query.
      * @param updateStatistics Update statistics flag.
