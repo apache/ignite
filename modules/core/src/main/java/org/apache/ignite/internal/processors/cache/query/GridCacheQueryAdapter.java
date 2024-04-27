@@ -575,8 +575,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         if (!lostParts.isEmpty()) {
             if (part == null || lostParts.contains(part)) {
-                throw new CacheException(new CacheInvalidStateException("Failed to execute query because cache " +
-                    "partition has been lost [cacheName=" + cctx.name() +
+                throw new CacheException(new CacheInvalidStateException("Failed to execute query because cache partition " +
+                    "has been lost [cacheName=" + cctx.name() +
                     ", part=" + (part == null ? lostParts.iterator().next() : part) + ']'));
             }
         }
@@ -615,7 +615,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         GridCloseableIterator it;
 
         if (loc)
-            it = qryMgr.queryLocal(this, true);
+            it = (type == SCAN) ? qryMgr.scanQueryLocal(this, true) : qryMgr.indexQueryLocal(this, true);
         else if (part != null)
             it = new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
         else
@@ -803,7 +803,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
             if (node.isLocal()) {
                 try {
-                    GridCloseableIterator it = qryMgr.queryLocal(qry, true);
+                    GridCloseableIterator it = qryMgr.scanQueryLocal(qry, true);
 
                     tuple = new T2(it, null);
                 }

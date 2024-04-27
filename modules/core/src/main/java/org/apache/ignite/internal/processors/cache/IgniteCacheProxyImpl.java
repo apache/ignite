@@ -457,7 +457,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /**
-     * @param qry Query.
+     * @param scanQry ScanQry.
      * @param transformer Transformer
      * @param grp Optional cluster group.
      * @return Cursor.
@@ -465,7 +465,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      */
     @SuppressWarnings("unchecked")
     private <T, R> QueryCursor<R> query(
-        final Query qry,
+        final ScanQuery scanQry,
         @Nullable final IgniteClosure<T, R> transformer,
         @Nullable ClusterGroup grp
     ) throws IgniteCheckedException {
@@ -475,45 +475,23 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         boolean isKeepBinary = opCtxCall != null && opCtxCall.isKeepBinary();
 
-        GridCacheQueryType qryType = null;
+        IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
-        CacheQuery cacheQry = null;
+        final CacheQuery<R> qry = ctx.queries().createScanQuery(
+            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal(), null);
 
-        if (qry instanceof ScanQuery) {
-            ScanQuery scanQry = (ScanQuery)qry;
-
-            qryType = GridCacheQueryType.SCAN;
-
-            IgniteBiPredicate<K, V> p = scanQry.getFilter();
-
-            cacheQry = ctx.queries().createScanQuery(
-                p, transformer, scanQry.getPartition(), isKeepBinary, qry.isLocal(), null);
-        }
-        else {
-            IndexQuery idxQryLoc = (IndexQuery)qry;
-
-            qryType = GridCacheQueryType.INDEX;
-
-            cacheQry = ctx.queries().createIndexQuery(idxQryLoc, isKeepBinary);
-
-            if (idxQryLoc.getLimit() > 0)
-                cacheQry.limit(idxQryLoc.getLimit());
-        }
-
-        if (qry.getPageSize() > 0)
-            cacheQry.pageSize(qry.getPageSize());
+        if (scanQry.getPageSize() > 0)
+            qry.pageSize(scanQry.getPageSize());
 
         if (grp != null)
-            cacheQry.projection(grp);
+            qry.projection(grp);
 
-        CacheQuery finalCacheQry = cacheQry;
-
-        final GridCloseableIterator<R> iter = ctx.kernalContext().query().executeQuery(qryType,
-                cacheName, ctx, new IgniteOutClosureX<GridCloseableIterator<R>>() {
-                    @Override public GridCloseableIterator<R> applyx() throws IgniteCheckedException {
-                        return finalCacheQry.executeQueryWithIterator();
-                    }
-                }, true);
+        final GridCloseableIterator<R> iter = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SCAN,
+            cacheName, ctx, new IgniteOutClosureX<GridCloseableIterator<R>>() {
+                @Override public GridCloseableIterator<R> applyx() throws IgniteCheckedException {
+                    return qry.executeQueryWithIterator();
+                }
+            }, true);
 
         return new QueryCursorImpl<>(iter);
     }
@@ -578,6 +556,17 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
             if (q.getLimit() > 0)
                 qry.limit(q.getLimit());
+
+            if (query.isLocal()) {
+                final GridCloseableIterator iter = ctx.kernalContext().query().executeQuery(GridCacheQueryType.INDEX,
+                    cacheName, ctx, new IgniteOutClosureX<GridCloseableIterator>() {
+                        @Override public GridCloseableIterator applyx() throws IgniteCheckedException {
+                            return qry.executeQueryWithIterator();
+                        }
+                    }, true);
+
+                return new QueryCursorImpl<>(iter);
+            }
 
             fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.INDEX, q.getValueType(), ctx,
                 new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
@@ -840,8 +829,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 return (FieldsQueryCursor<R>)ctx.kernalContext().query().querySqlFields(ctx, (SqlFieldsQuery)qry,
                     null, keepBinary, true).get(0);
 
-            if (qry instanceof ScanQuery || (qry instanceof IndexQuery && qry.isLocal()))
-                return query(qry, null, projection(qry.isLocal()));
+            if (qry instanceof ScanQuery)
+                return query((ScanQuery)qry, null, projection(qry.isLocal()));
 
             return (QueryCursor<R>)query(qry, projection(qry.isLocal()));
         }
