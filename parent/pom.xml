@@ -811,7 +811,6 @@
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.pom</exclude>
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/maven-metadata-local.xml</exclude>
                                         <exclude>src/test/resources/org/apache/ignite/internal/managers/discovery/Wrapper.ser</exclude>
-                                        <exclude>**/maven-wrapper.properties</exclude>
                                     <!--platforms-->
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.jar</exclude>
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test2/1.1/test2-1.1.jar</exclude>
@@ -863,9 +862,6 @@
                                         <exclude>docs/_docs/images/**</exclude>
                                         <exclude>docs/Gemfile</exclude>
                                         <exclude>docs/assets/js/anchor.min.js</exclude><!-- Distributed under the MIT license. The original license header is badly formatted. -->
-                                        <!-- Abbreviations -->
-                                        <exclude>modules/checkstyle/src/main/resources/abbrevations.csv</exclude>
-                                        <exclude>modules/checkstyle/src/main/resources/abbrevations-exclude.txt</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>
