@@ -42,6 +42,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -1427,15 +1428,18 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Process local scan query.
+     * Function for processing queries.
      *
+     * @param qrySupplier Query supplier.
      * @param qry Query.
      * @param updateStatistics Update statistics flag.
      * @return GridCloseableIterator.
      */
     @SuppressWarnings({"unchecked"})
-    protected GridCloseableIterator scanQueryLocal(final GridCacheQueryAdapter qry,
-        boolean updateStatistics) throws IgniteCheckedException {
+    public GridCloseableIterator queryFunc(
+        Supplier<GridCloseableIterator> qrySupplier,
+        final GridCacheQueryAdapter qry,
+        boolean updateStatistics) {
         if (!enterBusy())
             throw new IllegalStateException("Failed to process query request (grid is stopping).");
 
@@ -1451,19 +1455,34 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             new InternalScanFilter<>(qry.scanFilter()) : null;
 
         try {
-            assert qry.type() == SCAN;
+            assert qry.type() == SCAN || qry.type() == INDEX;
 
             if (log.isDebugEnabled())
-                log.debug("Running local SCAN query: " + qry);
+                log.debug("Running local " + qry.type() + " query: " + qry);
 
-            if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED))
-                recordQueryEvent(qry, namex, intFilter);
+            if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                final String taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
 
-            IgniteClosure transformer = qry.transform();
+                final ClusterNode locNode = cctx.localNode();
 
-            injectResources(transformer);
+                final String clsName = qry.queryClassName();
 
-            GridCloseableIterator it = scanIterator(qry, transformer, true);
+                cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
+                    locNode,
+                    qry.type() + " query executed.",
+                    EVT_CACHE_QUERY_EXECUTED,
+                    qry.type() == SCAN ? CacheQueryType.SCAN.name() : CacheQueryType.INDEX.name(),
+                    namex,
+                    clsName,
+                    null,
+                    intFilter != null ? intFilter.scanFilter() : null,
+                    null,
+                    null,
+                    securitySubjectId(cctx),
+                    taskName));
+            }
+
+            GridCloseableIterator it = qrySupplier.get();
 
             updateStatistics = false;
 
@@ -1485,6 +1504,30 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
+     * Process local scan query.
+     *
+     * @param qry Query.
+     * @param updateStatistics Update statistics flag.
+     * @return GridCloseableIterator.
+     */
+    @SuppressWarnings({"unchecked"})
+    protected GridCloseableIterator scanQueryLocal(final GridCacheQueryAdapter qry,
+        boolean updateStatistics) throws IgniteCheckedException {
+        return queryFunc(() -> {
+            try {
+                IgniteClosure transformer = qry.transform();
+
+                injectResources(transformer);
+
+                return scanIterator(qry, transformer, true);
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }, qry, updateStatistics);
+    }
+
+    /**
      * Process local index query.
      *
      * @param qry Query.
@@ -1492,87 +1535,28 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return GridCloseableIterator.
      */
     @SuppressWarnings({"unchecked"})
-    protected GridCloseableIterator indexQueryLocal(final GridCacheQueryAdapter qry,
-        boolean updateStatistics) throws IgniteCheckedException {
-        if (!enterBusy())
-            throw new IllegalStateException("Failed to process query request (grid is stopping).");
+    protected GridCloseableIterator indexQueryLocal(final GridCacheQueryAdapter qry, boolean updateStatistics) {
+        return queryFunc(() -> {
+            try {
+                Integer part = qry.partition();
 
-        final boolean statsEnabled = cctx.statisticsEnabled();
+                if (part != null && (part < 0 || part >= cctx.affinity().partitions()))
+                    throw new IgniteCheckedException("Invalid partition number: " + part);
 
-        updateStatistics &= statsEnabled;
+                int[] parts = null;
 
-        long startTime = U.currentTimeMillis();
+                if (part != null)
+                    parts = new int[] {part};
 
-        final String namex = cctx.name();
+                IndexQueryResult<K, V> idxQryRes = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(),
+                    qry.scanFilter(), filter(qry, parts, parts != null), qry.keepBinary());
 
-        final InternalScanFilter<K, V> intFilter = qry.scanFilter() != null ?
-            new InternalScanFilter<>(qry.scanFilter()) : null;
-
-        try {
-            assert qry.type() == INDEX;
-
-            if (log.isDebugEnabled())
-                log.debug("Running local INDEX query: " + qry);
-
-            if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED))
-                recordQueryEvent(qry, namex, intFilter);
-
-            int[] parts = null;
-
-            if (qry.partition() != null)
-                parts = new int[] {qry.partition()};
-
-            IndexQueryResult<K, V> idxQryRes = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(),
-                qry.scanFilter(), filter(qry, parts, parts != null), qry.keepBinary());
-
-            GridCloseableIterator it = new IndexQueryIterator(idxQryRes.iter());
-
-            updateStatistics = false;
-
-            return it;
-        }
-        catch (Exception e) {
-            if (intFilter != null)
-                intFilter.close();
-
-            if (updateStatistics)
-                cctx.queries().collectMetrics(GridCacheQueryType.INDEX, namex, startTime,
-                    U.currentTimeMillis() - startTime, true);
-
-            throw e;
-        }
-        finally {
-            leaveBusy();
-        }
-    }
-
-    /**
-     * Record Query Event.
-     *
-     * @param qry Query.
-     * @param namex Cache name.
-     * @param intFilter Query filter.
-     */
-    private void recordQueryEvent(GridCacheQueryAdapter qry, String namex, InternalScanFilter<K, V> intFilter) {
-        final String taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
-
-        final ClusterNode locNode = cctx.localNode();
-
-        final String clsName = qry.queryClassName();
-
-        cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
-            locNode,
-            qry.type() + " query executed.",
-            EVT_CACHE_QUERY_EXECUTED,
-            qry.type() == SCAN ? CacheQueryType.SCAN.name() : CacheQueryType.INDEX.name(),
-            namex,
-            clsName,
-            null,
-            intFilter != null ? intFilter.scanFilter() : null,
-            null,
-            null,
-            securitySubjectId(cctx),
-            taskName));
+                return new IndexQueryIterator(idxQryRes.iter());
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }, qry, updateStatistics);
     }
 
     /**

@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnrese
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -576,13 +577,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         if (!lostParts.isEmpty()) {
             if (part == null || lostParts.contains(part)) {
                 throw new CacheException(new CacheInvalidStateException("Failed to execute query because cache partition " +
-                    "has been lost [cacheName=" + cctx.name() +
+                    "has been lostParts [cacheName=" + cctx.name() +
                     ", part=" + (part == null ? lostParts.iterator().next() : part) + ']'));
             }
         }
-
-        if (part != null && (part < 0 || part >= cctx.affinity().partitions()))
-            throw new IgniteCheckedException("Invalid partition number: " + part);
 
         // Affinity nodes snapshot.
         Collection<ClusterNode> nodes = new ArrayList<>(nodes());
@@ -597,7 +595,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 }
             }
 
-            throw new IgniteException(new ClusterGroupEmptyException());
+            if (type == INDEX)
+                throw new IgniteException(new ClusterGroupEmptyException());
+
+            return new GridEmptyCloseableIterator();
         }
 
         if (log.isDebugEnabled())
@@ -612,10 +613,16 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 
+        if (type == INDEX) {
+            assert loc;
+
+            return qryMgr.indexQueryLocal(this, true);
+        }
+
         GridCloseableIterator it;
 
         if (loc)
-            it = (type == SCAN) ? qryMgr.scanQueryLocal(this, true) : qryMgr.indexQueryLocal(this, true);
+            it = qryMgr.scanQueryLocal(this, true);
         else if (part != null)
             it = new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
         else
