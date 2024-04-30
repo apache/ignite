@@ -68,8 +68,19 @@ public class SecurityTest {
     /** Test SSL/TLS encryption. */
     @Test
     public void testEncryption() throws Exception {
-        for (SslProtocol protocol : SslProtocol.values()) {
-            testEncryption(protocol);
+        // Do not test old protocols.
+        SslProtocol[] protocols = new SslProtocol[] {
+                SslProtocol.TLS,
+                SslProtocol.TLSv1_2,
+                SslProtocol.TLSv1_3
+        };
+
+        for (SslProtocol protocol : protocols) {
+            try {
+                testEncryption(protocol);
+            } catch (Throwable t) {
+                throw new Exception("Failed for protocol: " + protocol, t);
+            }
         }
     }
 
