@@ -70,21 +70,23 @@ public class SecurityTest {
     public void testEncryption() throws Exception {
         // Do not test old protocols.
         SslProtocol[] protocols = new SslProtocol[] {
-                SslProtocol.TLS,
-                SslProtocol.TLSv1_2,
-                SslProtocol.TLSv1_3
+            SslProtocol.TLS,
+            SslProtocol.TLSv1_2,
+            SslProtocol.TLSv1_3
         };
 
         for (SslProtocol protocol : protocols) {
             try {
                 testEncryption(protocol);
-            } catch (Throwable t) {
+            }
+            catch (Throwable t) {
                 throw new Exception("Failed for protocol: " + protocol, t);
             }
         }
     }
 
-    private void testEncryption(SslProtocol protocol) throws Exception {
+    /** Test SSL/TLS encryption. */
+    private void testEncryption(SslProtocol protocol) {
         // Server-side security configuration
         IgniteConfiguration srvCfg = Config.getServerConfiguration();
 
