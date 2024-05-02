@@ -62,6 +62,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySnapshotHistoryTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiConfigSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiFailureTimeoutSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiLogTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiMBeanTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiReconnectDelayTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiSelfTest;
@@ -107,6 +108,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
     TcpDiscoverySpiMBeanTest.class,
     TcpDiscoverySpiStartStopSelfTest.class,
     TcpDiscoverySpiConfigSelfTest.class,
+    TcpDiscoverySpiLogTest.class,
     TcpDiscoveryMarshallerCheckSelfTest.class,
     TcpDiscoverySnapshotHistoryTest.class,
     TcpDiscoveryNodeJoinAndFailureTest.class,
