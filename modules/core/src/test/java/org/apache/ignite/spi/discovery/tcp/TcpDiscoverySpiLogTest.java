@@ -113,8 +113,10 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
     @Test
     public void testMultipleSocketConnectionLogMessage() throws Exception {
         LogListener lsnr = LogListener.matches(s ->
-            s.contains("Connection check to previous node done: [liveAddr=/") ||
-                s.contains("Failed to connect the socket to the server [address=")).build();
+                (s.contains("Connection check to node") && s.contains("result=success")) ||
+                    (s.contains("Connection check to node") && s.contains("result=skipped")) ||
+                    (s.contains("Connection check to node") && s.contains("result=failed")))
+            .build();
 
         testLog.registerListener(lsnr);
 
@@ -144,8 +146,8 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
      * */
     @Test
     public void testCheckBrakeConnectionSuccessSocketConnectionLogMessage() throws Exception {
-        LogListener lsnr = LogListener.matches("Connection check to previous node done: [liveAddr=/")
-            .atLeast(1)
+        LogListener lsnr = LogListener.matches(s ->
+                (s.contains("Connection check to node") && s.contains("result=success")))
             .build();
 
         testLog.registerListener(lsnr);
@@ -169,8 +171,9 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
     @Test
     public void testCheckNodeFailureSocketConnectionLogMessage() throws Exception {
         LogListener lsnr = LogListener.matches(s ->
-            s.contains("Connection check to previous node done: [liveAddr=null") ||
-                s.contains("Failed to connect the socket to the server [address=")).build();
+                s.contains("Connection check to previous node done: [liveAddr=null") ||
+                    (s.contains("Connection check to node") && s.contains("result=failed")))
+            .build();
 
         testLog.registerListener(lsnr);
 
@@ -197,8 +200,9 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
     @Test
     public void testCheckSocketConnectionFailureLogMessage() throws Exception {
         LogListener lsnr = LogListener.matches(s ->
-            s.contains("Connection check to previous node done: [liveAddr=null") ||
-                s.contains("Failed to connect the socket to the server [address=")).build();
+                s.contains("Connection check to previous node done: [liveAddr=null") ||
+                    (s.contains("Connection check to node") && s.contains("result=failed")))
+            .build();
 
         testLog.registerListener(lsnr);
 
@@ -248,8 +252,8 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCheckSocketConnectionSuccessLogMessage() throws Exception {
-        LogListener lsnr = LogListener.matches("Connection check to previous node done: [liveAddr=/")
-            .atLeast(1)
+        LogListener lsnr = LogListener.matches(s ->
+                (s.contains("Connection check to node") && s.contains("result=success")))
             .build();
 
         testLog.registerListener(lsnr);
