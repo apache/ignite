@@ -784,6 +784,23 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         IgniteCache<?, ?> cache,
         Consumer<String> snpCanceller
     ) {
+        doSnapshotCancellationTest(startCli, srvs, cache, snpCanceller);
+    }
+
+    /**
+     * @param dump Dump flag.
+     * @param startCli Client node to start snapshot.
+     * @param srvs Server nodes.
+     * @param cache Persisted cache.
+     * @param snpCanceller Snapshot cancel closure.
+     */
+    public static void doSnapshotCancellationTest(
+        boolean dump,
+        IgniteEx startCli,
+        List<IgniteEx> srvs,
+        IgniteCache<?, ?> cache,
+        Consumer<String> snpCanceller
+    ) {
         IgniteEx srv = srvs.get(0);
 
         CacheConfiguration<?, ?> ccfg = cache.getConfiguration(CacheConfiguration.class);
@@ -795,7 +812,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         List<BlockingExecutor> execs = setBlockingSnapshotExecutor(srvs);
 
-        IgniteFuture<Void> fut = startCli.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut = snp(startCli).createSnapshot(SNAPSHOT_NAME, null, null, false,
+            false, dump, false, false);
 
         for (BlockingExecutor exec : execs)
             exec.waitForBlocked(30_000L);
