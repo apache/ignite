@@ -17,33 +17,16 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.LinkedHashSet;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -112,13 +95,26 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
      * */
     @Test
     public void testMultipleSocketConnectionLogMessage() throws Exception {
-        LogListener lsnr = LogListener.matches(s ->
-                (s.contains("Connection check to node") && s.contains("result=success")) ||
-                    (s.contains("Connection check to node") && s.contains("result=skipped")) ||
-                    (s.contains("Connection check to node") && s.contains("result=failed")))
+        LogListener lsnr0 = LogListener.matches(s ->
+                s.contains("Connection check to node") && s.contains("result=success"))
             .build();
 
-        testLog.registerListener(lsnr);
+        LogListener lsnr1 = LogListener.matches(s ->
+                    s.contains("Connection check to node") && s.contains("result=skipped"))
+            .build();
+
+        LogListener lsnr2 = LogListener.matches(s ->
+                    s.contains("Connection check to node") && s.contains("result=failed"))
+            .build();
+
+        LogListener lsnr3 = LogListener.matches(s ->
+                s.contains("Connection check to previous node done"))
+            .build();
+
+        testLog.registerListener(lsnr0);
+        testLog.registerListener(lsnr1);
+        testLog.registerListener(lsnr2);
+        testLog.registerListener(lsnr3);
 
         try {
             startGrid(0);
@@ -131,7 +127,10 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
 
             ((TcpDiscoverySpi)ignite(0).configuration().getDiscoverySpi()).brakeConnection();
 
-            assertTrue(waitForCondition(lsnr::check, 10_000L));
+            assertTrue(waitForCondition(lsnr0::check, 10_000L));
+            assertTrue(waitForCondition(lsnr1::check, 10_000L));
+            assertTrue(waitForCondition(lsnr2::check, 10_000L));
+            assertTrue(waitForCondition(lsnr3::check, 10_000L));
         }
         finally {
             stopAllGrids();
@@ -146,16 +145,24 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
      * */
     @Test
     public void testCheckBrakeConnectionSuccessSocketConnectionLogMessage() throws Exception {
-        LogListener lsnr = LogListener.matches(s ->
+        LogListener lsnr0 = LogListener.matches(s ->
                 (s.contains("Connection check to node") && s.contains("result=success")))
             .build();
 
-        testLog.registerListener(lsnr);
+        LogListener lsnr1 = LogListener.matches(s ->
+                s.contains("Connection check to previous node done"))
+            .build();
+
+        testLog.registerListener(lsnr0);
+        testLog.registerListener(lsnr1);
 
         try {
             startGridsMultiThreaded(3);
+
             ((TcpDiscoverySpi)ignite(0).configuration().getDiscoverySpi()).brakeConnection();
-            assertTrue(waitForCondition(lsnr::check, 10_000L));
+
+            assertTrue(waitForCondition(lsnr0::check, 10_000L));
+            assertTrue(waitForCondition(lsnr1::check, 10_000L));
         }
         finally {
             stopAllGrids();
@@ -170,133 +177,23 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
      * */
     @Test
     public void testCheckNodeFailureSocketConnectionLogMessage() throws Exception {
-        LogListener lsnr = LogListener.matches(s ->
-                s.contains("Connection check to previous node done: [liveAddr=null") ||
-                    (s.contains("Connection check to node") && s.contains("result=failed")))
+        LogListener lsnr0 = LogListener.matches(s ->
+                s.contains("Connection check to node") && s.contains("result=failed"))
             .build();
 
-        testLog.registerListener(lsnr);
+        LogListener lsnr1 = LogListener.matches(s ->
+                s.contains("Connection check to previous node failed"))
+            .build();
+
+        testLog.registerListener(lsnr0);
+        testLog.registerListener(lsnr1);
 
         try {
             startGridsMultiThreaded(3);
             ((TcpDiscoverySpi)ignite(0).configuration().getDiscoverySpi()).simulateNodeFailure();
 
-            assertTrue(waitForCondition(lsnr::check, 10_000L));
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * Simulates coordinator's {@code NODE_FAILED} event
-     * <p>
-     * Coordinator's (node-0) {@code NODE_FAILED} event is forced on the second in line node in the ring (node-1).
-     * This event leads the cluster to fall apart into 2 parts: coordinator and others nodes. As the previously known
-     * coordinator node (node-0) is not accessible anymore, the log should contain 'Failed to connect the socket
-     * to the server', when trying to check the connection from node-1.
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testCheckSocketConnectionFailureLogMessage() throws Exception {
-        LogListener lsnr = LogListener.matches(s ->
-                s.contains("Connection check to previous node done: [liveAddr=null") ||
-                    (s.contains("Connection check to node") && s.contains("result=failed")))
-            .build();
-
-        testLog.registerListener(lsnr);
-
-        try {
-            IgniteEx coord = (IgniteEx)startGridsMultiThreaded(3);
-
-            UUID coordId = coord.localNode().id();
-
-            IgniteEx ignite1 = grid(1);
-
-            CountDownLatch failedLatch = new CountDownLatch(2);
-
-            IgnitePredicate<Event> failLsnr = evt -> {
-                assertEquals(EVT_NODE_FAILED, evt.type());
-
-                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
-
-                if (coordId.equals(nodeId))
-                    failedLatch.countDown();
-
-                return true;
-            };
-
-            ignite1.events().localListen(failLsnr, EVT_NODE_FAILED);
-
-            grid(2).events().localListen(failLsnr, EVT_NODE_FAILED);
-
-            ignite1.configuration().getDiscoverySpi().failNode(coordId, null);
-
-            assertTrue(waitForCondition(lsnr::check, 10_000L));
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * Emulates coordinator's {@code NODE_FAILED} event in {@link TcpDiscoveryNodeAddedMessage} while new node joins
-     * the cluster with following coordinator shutdown.
-     * <p>
-     * Coordinator's (node-0) {@code NODE_FAILED} event, happening on {@link TcpDiscoveryNodeAddedMessage} processing
-     * with following coordinator's shutdown, prompts the new node (node-2) to check previous node's addresses (node-1).
-     * As the previous node (node-1) is already established in new topology after the coordinator (node-0) shutdown,
-     * the log should contain 'Success connection to the server' message, which describes successful connection
-     * between new node (node-2) and previous surviving node (node-1).
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testCheckSocketConnectionSuccessLogMessage() throws Exception {
-        LogListener lsnr = LogListener.matches(s ->
-                (s.contains("Connection check to node") && s.contains("result=success")))
-            .build();
-
-        testLog.registerListener(lsnr);
-
-        try {
-            TestCustomEventLogSocketSpi spi0 = new TestCustomEventLogSocketSpi();
-
-            nodeSpi.set(spi0);
-
-            final Ignite ignite0 = startGrid(0);
-
-            TcpDiscoverySpi spi1 = new TcpDiscoverySpi();
-
-            nodeSpi.set(spi1);
-
-            startGrid(1);
-
-            CountDownLatch latch1 = new CountDownLatch(1);
-            CountDownLatch latch2 = new CountDownLatch(1);
-
-            spi0.nodeAdded1 = latch1;
-            spi0.nodeAdded2 = latch2;
-            spi0.debug = true;
-
-            IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    startGrid(2);
-
-                    return null;
-                }
-            });
-
-            latch1.await();
-
-            spi0.stop = true;
-
-            latch2.countDown();
-
-            ignite0.close();
-
-            fut1.get();
-
-            assertTrue(waitForCondition(lsnr::check, 10_000L));
+            assertTrue(waitForCondition(lsnr0::check, 10_000L));
+            assertTrue(waitForCondition(lsnr1::check, 10_000L));
         }
         finally {
             stopAllGrids();
@@ -321,41 +218,6 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
                 return customAddrs;
 
             return super.getEffectiveNodeAddresses(node);
-        }
-    }
-
-    /** {@inheritDoc} */
-    private static class TestCustomEventLogSocketSpi extends TcpDiscoverySpi {
-        /** */
-        private volatile CountDownLatch nodeAdded1;
-
-        /** */
-        private volatile CountDownLatch nodeAdded2;
-
-        /** */
-        private volatile boolean stop;
-
-        /** */
-        private boolean debug;
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
-            long timeout) throws IOException, IgniteCheckedException {
-            if (msg instanceof TcpDiscoveryNodeAddedMessage) {
-                if (nodeAdded1 != null) {
-                    nodeAdded1.countDown();
-
-                    if (debug)
-                        log.info("--- Wait node added: " + msg);
-
-                    U.await(nodeAdded2);
-
-                    if (stop)
-                        return;
-                }
-            }
-
-            super.writeToSocket(sock, out, msg, timeout);
         }
     }
 }

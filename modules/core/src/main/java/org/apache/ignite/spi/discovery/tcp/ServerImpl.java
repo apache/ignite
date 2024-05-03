@@ -6782,7 +6782,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 liveAddr = checkConnection(previous, backwardCheckTimeout);
 
-                                if (log.isInfoEnabled()) {
+                                if (liveAddr == null) {
+                                    U.warn(log, "Connection check to previous node failed: [previousNode="
+                                        + U.toShortString(previous) + ", connectingNodeId=" + nodeId + ']');
+                                }
+                                else if (log.isInfoEnabled()) {
                                     log.info("Connection check to previous node done: [liveAddr=" + liveAddr
                                         + ", previousNode=" + U.toShortString(previous) + ", connectingNodeId="
                                         + nodeId + ']');
@@ -7283,28 +7287,39 @@ class ServerImpl extends TcpDiscoveryImpl {
                         for (int i = 0; i < addrsToCheck; ++i) {
                             InetSocketAddress addr = addrs.get(addrIdx.getAndIncrement());
 
+                            StringBuilder logMessageBuilder = new StringBuilder("Connection check to node: [addressToCheck=")
+                                .append(addr)
+                                .append(", result=");
+
                             try (Socket sock = new Socket()) {
                                 if (liveAddrHolder.get() == null) {
                                     sock.connect(addr, perAddrTimeout);
 
                                     liveAddrHolder.compareAndSet(null, addr);
 
-                                    if (log.isInfoEnabled()) {
-                                        log.info("Connection check to node: [addressToCheck=" + addr
-                                            + ", result=success, node=" + U.toShortString(node) + ']');
-                                    }
+                                    logMessageBuilder.append("success");
                                 }
-                                else if (log.isInfoEnabled()) {
-                                    log.info("Connection check to node: [addressToCheck=" + addr
-                                        + ", result=skipped, node=" + U.toShortString(node) + ']');
-                                }
+                                else
+                                    logMessageBuilder.append("skipped");
                             }
                             catch (Exception ignored) {
-                                log.info("Connection check to node: [addressToCheck=" + addr
-                                    + ", result=failed, cause=" + ignored.getMessage() + ", node="
-                                    + U.toShortString(node) + ']');
+                                logMessageBuilder
+                                    .append("failed, cause=")
+                                    .append(ignored.getMessage());
                             }
                             finally {
+                                logMessageBuilder
+                                    .append(", node=")
+                                    .append(U.toShortString(node))
+                                    .append(']');
+
+                                String logMessage = logMessageBuilder.toString();
+
+                                if(logMessage.contains("failed"))
+                                    U.warn(log, logMessage);
+                                else
+                                    log.info(logMessage);
+
                                 latch.countDown();
                             }
                         }
