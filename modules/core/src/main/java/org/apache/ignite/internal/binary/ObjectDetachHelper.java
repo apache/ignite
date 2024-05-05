@@ -137,7 +137,7 @@ public class ObjectDetachHelper {
                 int handleObjPos = objStartPos - offset;
 
                 if (handleObjPos < rootObjStartPos)
-                   saveCrossObjectReferenceData(handleObjPos, objStartPos);
+                    saveCrossObjectReferenceData(handleObjPos, objStartPos);
 
                 break;
             }
