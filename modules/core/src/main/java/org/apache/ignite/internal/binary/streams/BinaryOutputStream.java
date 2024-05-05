@@ -36,6 +36,15 @@ public interface BinaryOutputStream extends BinaryStream, AutoCloseable {
     public void writeByteArray(byte[] val);
 
     /**
+     * Write byte array.
+     *
+     * @param val Byte array.
+     * @param off Offset.
+     * @param len Array length.
+     */
+    public void writeByteArray(byte[] val, int off, int len);
+
+    /**
      * Write boolean value.
      *
      * @param val Boolean value.
