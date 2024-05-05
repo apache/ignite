@@ -323,8 +323,8 @@ public class RawBytesObjectReader implements BinaryPositionReadable {
     }
 
     /** */
-    public BinaryInputStream getSource() {
-        return in;
+    public byte[] array() {
+        return in.array();
     }
 
     /** */

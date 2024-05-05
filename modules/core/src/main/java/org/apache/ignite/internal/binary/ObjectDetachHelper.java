@@ -17,41 +17,56 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 
 import static org.apache.ignite.internal.binary.BinaryUtils.dataStartRelative;
 import static org.apache.ignite.internal.binary.BinaryUtils.length;
 import static org.apache.ignite.internal.binary.BinaryUtils.rawOffsetAbsolute;
 
 /** */
-class CrossObjectReferenceDetector {
+class ObjectDetachHelper {
     /** */
     private final RawBytesObjectReader reader;
 
     /** */
-    private int objLeftBoundaryPos;
+    private final int rootObjStartPos;
+    
+    /** */
+    private boolean isCrossObjReferenceDetected;
 
     /** */
-    private CrossObjectReferenceDetector(BinaryInputStream in) {
+    private ObjectDetachHelper(BinaryInputStream in) {
         reader = new RawBytesObjectReader(in);
+
+        rootObjStartPos = in.position();
     }
 
     /** */
-    static boolean isCrossObjectReferencesDetected(BinaryInputStream inputStream) {
-        CrossObjectReferenceDetector detector = new CrossObjectReferenceDetector(inputStream);
+    static ObjectDetachHelper create(byte[] data, int offset) {
+        ObjectDetachHelper res = new ObjectDetachHelper(BinaryHeapInputStream.create(data, offset));
 
-        return detector.checkObject();
-    }
-
-    /** */
-    private boolean checkObject() {
-        objLeftBoundaryPos = reader.position();
-
-        boolean res = findInNextObject();
-
-        reader.position(objLeftBoundaryPos);
+        res.findCrossObjectReferences();
 
         return res;
+    }
+
+    /** */
+    public boolean isCrossObjectReferencesPresent() {
+        return isCrossObjReferenceDetected;
+    } 
+    
+    /** */
+    public void detach(BinaryOutputStream out) {
+        reader.position(rootObjStartPos);
+
+        CrossObjectReferenceResolver.copyObject(reader, out);
+    }
+
+    /** */
+    private void findCrossObjectReferences() {
+        isCrossObjReferenceDetected = findInNextObject();
     }
 
     /** */
@@ -88,7 +103,7 @@ class CrossObjectReferenceDetector {
 
                 int offset = reader.readInt();
 
-                return objStartPos - offset < objLeftBoundaryPos;
+                return objStartPos - offset < rootObjStartPos;
             }
 
             case GridBinaryMarshaller.OBJ_ARR: {

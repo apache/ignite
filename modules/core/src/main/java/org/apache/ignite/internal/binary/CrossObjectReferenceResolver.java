@@ -19,7 +19,6 @@ package org.apache.ignite.internal.binary;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 
 import static org.apache.ignite.internal.binary.BinaryArrayIdentityResolver.instance;
@@ -50,37 +49,28 @@ public class CrossObjectReferenceResolver {
     private final BinaryOutputStream writer;
 
     /** */
-    private int leftBoundPos;
+    private final int readerRootObjStartPos;
 
     /** */
-    private Map<Integer, Integer> objPosTranslation;
+    private final Map<Integer, Integer> objPosTranslation = new HashMap<>();
 
     /** */
-    private BinaryWriterSchemaHolder schema;
+    private final BinaryWriterSchemaHolder schema = new BinaryWriterSchemaHolder();
 
     /** */
-    private CrossObjectReferenceResolver(BinaryInputStream in, BinaryOutputStream out) {
-        reader = new RawBytesObjectReader(in);
+    private CrossObjectReferenceResolver(RawBytesObjectReader reader, BinaryOutputStream out) {
+        this.reader = reader;
+
+        readerRootObjStartPos = reader.position();
 
         writer = out;
     }
 
     /** */
-    public static void resolveCrossObjectReferences(BinaryInputStream in, BinaryOutputStream out) {
-        CrossObjectReferenceResolver resolver = new CrossObjectReferenceResolver(in, out);
+    static void copyObject(RawBytesObjectReader reader, BinaryOutputStream out) {
+        CrossObjectReferenceResolver resolver = new CrossObjectReferenceResolver(reader, out);
 
-        resolver.resolveCrossObjectReferences();
-    }
-
-    /** */
-    private void resolveCrossObjectReferences() {
-        leftBoundPos = reader.position();
-
-        schema = new BinaryWriterSchemaHolder();
-
-        objPosTranslation = new HashMap<>();
-
-        reassembleNextObject();
+        resolver.reassembleNextObject();
     }
 
     /** */
@@ -92,13 +82,13 @@ public class CrossObjectReferenceResolver {
 
         switch (objType) {
             case GridBinaryMarshaller.OBJ: {
-                processObject();
+                doObjectProcessing();
 
                 break;
             }
 
             case GridBinaryMarshaller.HANDLE: {
-                processHandle();
+                doHandleProcessing();
 
                 break;
             }
@@ -110,7 +100,7 @@ public class CrossObjectReferenceResolver {
 
                 reader.copyTypeId(writer);
 
-                int size = readAndCopyInt();
+                int size = copyInt();
 
                 reassembleNextCortege(size);
 
@@ -122,7 +112,7 @@ public class CrossObjectReferenceResolver {
 
                 copyBytes(Byte.BYTES); // Object type.
 
-                int size = readAndCopyInt();
+                int size = copyInt();
 
                 copyBytes(Byte.BYTES); // Collection type.
 
@@ -136,7 +126,7 @@ public class CrossObjectReferenceResolver {
 
                 copyBytes(Byte.BYTES); // Object type.
 
-                int size = readAndCopyInt() * 2;
+                int size = copyInt() * 2;
 
                 copyBytes(Byte.BYTES); // Map type.
 
@@ -151,7 +141,7 @@ public class CrossObjectReferenceResolver {
     }
 
     /** */
-    private void processObject() {
+    private void doObjectProcessing() {
         int readerObjStartPos = reader.position();
         int writerObjStartPos = writer.position();
 
@@ -212,7 +202,7 @@ public class CrossObjectReferenceResolver {
     }
 
     /** */
-    private void processHandle() {
+    private void doHandleProcessing() {
         int readerObjStartPos = reader.position();
 
         reader.skipBytes(1); // Object type.
@@ -230,7 +220,7 @@ public class CrossObjectReferenceResolver {
             writer.writeInt(offset(writerObjPos, writerObjStartPos));
         }
         else {
-            assert readerHandleObjPos < leftBoundPos;
+            assert readerHandleObjPos < readerRootObjStartPos;
 
             objPosTranslation.put(readerHandleObjPos, writer.position());
 
@@ -281,20 +271,22 @@ public class CrossObjectReferenceResolver {
 
     /** */
     private void copyObjectPositioned(int readerPos) {
-        int retPos = reader.position();
+        int readerRetPos = reader.position();
 
         reader.position(readerPos);
 
-        if (CrossObjectReferenceDetector.isCrossObjectReferencesDetected(reader.getSource()))
-            resolveCrossObjectReferences(reader.getSource(), writer);
+        ObjectDetachHelper detachHelper = ObjectDetachHelper.create(reader.array(), readerPos);
+
+        if (detachHelper.isCrossObjectReferencesPresent())
+            detachHelper.detach(writer);
         else
             reader.copyObject(writer);
 
-        reader.position(retPos);
+        reader.position(readerRetPos);
     }
 
     /** */
-    private int readAndCopyInt() {
+    private int copyInt() {
         int res = reader.peekInt();
 
         copyBytes(Integer.BYTES);

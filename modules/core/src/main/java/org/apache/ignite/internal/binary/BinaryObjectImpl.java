@@ -297,11 +297,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         int len = length();
 
         if (checkCrossObjectReferences) {
-            BinaryHeapInputStream in = BinaryHeapInputStream.create(arr, start);
+            ObjectDetachHelper detachHelper = ObjectDetachHelper.create(arr, start);
 
-            if (CrossObjectReferenceDetector.isCrossObjectReferencesDetected(in)) {
+            if (detachHelper.isCrossObjectReferencesPresent()) {
                 try (BinaryOutputStream out = new BinaryHeapOutputStream(2 * len)) {
-                    CrossObjectReferenceResolver.resolveCrossObjectReferences(in, out);
+                    detachHelper.detach(out);
 
                     return new BinaryObjectImpl(ctx, out.arrayCopy(), 0);
                 }
