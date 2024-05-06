@@ -25,6 +25,7 @@ import java.util.function.Function;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.BooleanGauge;
@@ -40,15 +41,13 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMe
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.metric.BooleanMetric;
-import org.apache.ignite.spi.metric.IntMetric;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.Metric;
-import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.HitRateMetric.DFLT_SIZE;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.customMetric;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.fromFullName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.lang.GridFunc.nonThrowableSupplier;
@@ -56,7 +55,7 @@ import static org.apache.ignite.internal.util.lang.GridFunc.nonThrowableSupplier
 /**
  * Metric registry.
  */
-public class MetricRegistry implements ReadOnlyMetricRegistry {
+public class MetricRegistryImpl implements MetricRegistry {
     /** Registry name. */
     private String regName;
 
@@ -78,7 +77,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @param histogramCfgProvider Histogram config provider.
      * @param log Logger.
      */
-    public MetricRegistry(String regName, Function<String, Long> hitRateCfgProvider,
+    public MetricRegistryImpl(String regName, Function<String, Long> hitRateCfgProvider,
         Function<String, long[]> histogramCfgProvider, IgniteLogger log) {
         this.regName = regName;
         this.log = log;
@@ -127,71 +126,34 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
         addMetric(fromFullName(metric.name()).get2(), metric);
     }
 
-    /**
-     * Removes metrics with the {@code name}.
-     *
-     * @param name Metric name.
-     */
-    public void remove(String name) {
+    /** {@inheritDoc} */
+    @Override public void remove(String name) {
         metrics.remove(name);
     }
 
-    /**
-     * Registers {@link BooleanMetric} which value will be queried from the specified supplier.
-     *
-     * @param name Name.
-     * @param supplier Supplier.
-     * @param desc Description.
-     */
-    public void register(String name, BooleanSupplier supplier, @Nullable String desc) {
+    /** {@inheritDoc} */
+    @Override public void register(String name, BooleanSupplier supplier, @Nullable String desc) {
         addMetric(name, new BooleanGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
-    /**
-     * Registers {@link DoubleSupplier} which value will be queried from the specified supplier.
-     *
-     * @param name Name.
-     * @param supplier Supplier.
-     * @param desc Description.
-     */
-    public void register(String name, DoubleSupplier supplier, @Nullable String desc) {
+    /** {@inheritDoc} */
+    @Override public void register(String name, DoubleSupplier supplier, @Nullable String desc) {
         addMetric(name, new DoubleGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
-    /**
-     * Registers {@link IntMetric} which value will be queried from the specified supplier.
-     *
-     * @param name Name.
-     * @param supplier Supplier.
-     * @param desc Description.
-     */
-    public void register(String name, IntSupplier supplier, @Nullable String desc) {
+    /** {@inheritDoc} */
+    @Override public void register(String name, IntSupplier supplier, @Nullable String desc) {
         addMetric(name, new IntGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
-    /**
-     * Registers {@link LongGauge} which value will be queried from the specified supplier.
-     *
-     * @param name Name.
-     * @param supplier Supplier.
-     * @param desc Description.
-     * @return Metric of type {@link LongGauge}.
-     */
-    public LongGauge register(String name, LongSupplier supplier, @Nullable String desc) {
-        return addMetric(name, new LongGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
+    /** {@inheritDoc} */
+    @Override public void register(String name, LongSupplier supplier, @Nullable String desc) {
+        addMetric(name, new LongGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
-    /**
-     * Registers {@link ObjectGauge} which value will be queried from the specified {@link Supplier}.
-     *
-     * @param name Name.
-     * @param supplier Supplier.
-     * @param type Type.
-     * @param desc Description.
-     */
-    public <T> void register(String name, Supplier<T> supplier, Class<T> type, @Nullable String desc) {
-        addMetric(name, new ObjectGauge<>(metricName(regName, name), desc,
-            nonThrowableSupplier(supplier, log), type));
+    /** {@inheritDoc} */
+    @Override public <T> void register(String name, Supplier<T> supplier, Class<T> type, @Nullable String desc) {
+        addMetric(name, new ObjectGauge<>(metricName(regName, name), desc, nonThrowableSupplier(supplier, log), type));
     }
 
     /**
@@ -302,17 +264,25 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @param name Name.
      * @param metric Metric
      * @param <T> Type of metric.
-     * @return Registered metric.
+     * @return {@code metric} if there were no other metric with the same name. Previous metric if can be cast to
+     * {@code metric}.
+     * @throws IgniteException if a metric of incompatible type is already registered.
      */
-    private <T extends Metric> T addMetric(String name, T metric) {
-        assert !F.isEmpty(name);
+    private <T extends Metric> T addMetric(String name, T metric) throws IgniteException {
+        if (metric == null)
+            throw new IllegalArgumentException("Null metric passed with name '" + name + "'.");
 
-        T old = (T)metrics.putIfAbsent(name, metric);
+        Metric old = metrics.putIfAbsent(metricName(name), metric);
 
-        if (old != null)
-            return old;
+        if (old != null) {
+            if (!metric.getClass().isAssignableFrom(old.getClass()))
+                throw new IgniteException("Other metric with name '" + name + "' is already registered.");
 
-        configureMetrics(metric);
+            return (T)old;
+        }
+
+        if (!customMetric(name()))
+            configureMetrics(metric);
 
         return metric;
     }
@@ -321,6 +291,8 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * Assigns metric settings if {@code metric} is configurable.
      */
     private void configureMetrics(Metric metric) {
+        assert !customMetric(name()) : "Custom metrics cannot be configured yet";
+
         if (metric instanceof HistogramMetricImpl) {
             long[] cfgBounds = histogramCfgProvider.apply(metric.name());
 

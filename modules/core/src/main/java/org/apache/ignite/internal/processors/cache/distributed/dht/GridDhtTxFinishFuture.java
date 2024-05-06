@@ -34,7 +34,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -381,7 +380,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.activeCachesDeploymentEnabled(),
                 false,
                 false,
-                null,
                 cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
 
             try {
@@ -480,7 +478,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 null,
                 false,
                 false,
-                null,
                 commit ? null : cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
@@ -557,7 +554,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     tx.activeCachesDeploymentEnabled(),
                     false,
                     false,
-                    null,
                     null);
 
                 req.writeVersion(tx.writeVersion());
@@ -621,17 +617,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                             return;
                         }
                     }
-                    else if (fut instanceof MvccFuture) {
-                        MvccFuture f = (MvccFuture)fut;
-
-                        if (!cctx.localNodeId().equals(f.coordinatorNodeId())) {
-                            ctx.basicInfo(f.coordinatorNodeId(), "GridDhtTxFinishFuture " +
-                                "waiting for mvcc coordinator reply [mvccCrdNode=" + f.coordinatorNodeId() +
-                                ", loc=" + f.coordinatorNodeId().equals(cctx.localNodeId()) + ']');
-
-                            return;
-                        }
-                    }
                 }
             }
         }
@@ -643,13 +628,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             if (f.getClass() == MiniFuture.class) {
                 return "[node=" + ((MiniFuture)f).node().id() +
                     ", loc=" + ((MiniFuture)f).node().isLocal() +
-                    ", done=" + f.isDone() + "]";
-            }
-            else if (f instanceof MvccFuture) {
-                MvccFuture crdFut = (MvccFuture)f;
-
-                return "[mvccCrdNode=" + crdFut.coordinatorNodeId() +
-                    ", loc=" + crdFut.coordinatorNodeId().equals(cctx.localNodeId()) +
                     ", done=" + f.isDone() + "]";
             }
             else

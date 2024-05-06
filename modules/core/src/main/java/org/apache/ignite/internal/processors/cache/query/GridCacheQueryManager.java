@@ -853,7 +853,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 locPart = locPart0;
 
-                it = cctx.offheap().cachePartitionIterator(cctx.cacheId(), part, qry.mvccSnapshot(),
+                it = cctx.offheap().cachePartitionIterator(cctx.cacheId(), part,
                     qry.isDataPageScanEnabled());
             }
             else {
@@ -869,7 +869,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
 
                 it = cctx.offheap().cacheIterator(cctx.cacheId(), true, backups, topVer,
-                    qry.mvccSnapshot(), qry.isDataPageScanEnabled());
+                    qry.isDataPageScanEnabled());
             }
 
             ScanQueryIterator iter = new ScanQueryIterator(it, qry, topVer, locPart,

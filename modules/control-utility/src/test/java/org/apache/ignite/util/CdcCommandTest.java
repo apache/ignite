@@ -46,18 +46,19 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.Test;
+
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.cdc.AbstractCdcTest.KEYS_CNT;
 import static org.apache.ignite.cdc.CdcSelfTest.addData;

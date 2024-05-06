@@ -15,26 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc.txlog;
-
 /**
- *
+ * <!-- Package description. -->
+ * Contains interfaces for updatable custom and read-only internal metrics.
  */
-public final class TxState {
-    /** */
-    public static final byte NA = 0x0;
 
-    /** */
-    public static final byte PREPARED = 0x1;
-
-    /** */
-    public static final byte ABORTED = 0x2;
-
-    /** */
-    public static final byte COMMITTED = 0x3;
-
-    /**
-     * Private constructor.
-     */
-    private TxState() {}
-}
+package org.apache.ignite.metric;

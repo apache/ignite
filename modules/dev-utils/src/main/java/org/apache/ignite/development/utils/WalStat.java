@@ -128,10 +128,9 @@ public class WalStat {
         if (type == WALRecord.RecordType.PAGE_RECORD)
             registerPageSnapshot((PageSnapshot)record);
         else if (type == WALRecord.RecordType.DATA_RECORD
-            || type == WALRecord.RecordType.DATA_RECORD_V2
-            || type == WALRecord.RecordType.MVCC_DATA_RECORD)
+            || type == WALRecord.RecordType.DATA_RECORD_V2)
             registerDataRecord((DataRecord)record);
-        else if (type == WALRecord.RecordType.TX_RECORD || type == WALRecord.RecordType.MVCC_TX_RECORD)
+        else if (type == WALRecord.RecordType.TX_RECORD)
             registerTxRecord((TxRecord)record);
 
         incrementStat(type.toString(), record, recTypeSizes);

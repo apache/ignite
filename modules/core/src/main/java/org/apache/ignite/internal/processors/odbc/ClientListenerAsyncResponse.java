@@ -15,22 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.transactions;
+package org.apache.ignite.internal.processors.odbc;
+
+import org.apache.ignite.internal.IgniteInternalFuture;
 
 /**
- * Exception thrown whenever Mvcc transaction has been finished before operation finished.
- * E.g. rollback due to some reason.
+ * Client listener async response.
  */
-public class IgniteTxAlreadyCompletedCheckedException extends TransactionCheckedException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * Creates new exception with given error message.
-     *
-     * @param msg Error message.
-     */
-    public IgniteTxAlreadyCompletedCheckedException(String msg) {
-        super(msg);
-    }
+public interface ClientListenerAsyncResponse {
+    /** Future for response. */
+    public IgniteInternalFuture<? extends ClientListenerResponse> future();
 }

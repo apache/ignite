@@ -68,6 +68,25 @@ public class SecurityTest {
     /** Test SSL/TLS encryption. */
     @Test
     public void testEncryption() throws Exception {
+        // Do not test old protocols.
+        SslProtocol[] protocols = new SslProtocol[] {
+            SslProtocol.TLS,
+            SslProtocol.TLSv1_2,
+            SslProtocol.TLSv1_3
+        };
+
+        for (SslProtocol protocol : protocols) {
+            try {
+                testEncryption(protocol);
+            }
+            catch (Throwable t) {
+                throw new Exception("Failed for protocol: " + protocol, t);
+            }
+        }
+    }
+
+    /** Test SSL/TLS encryption. */
+    private void testEncryption(SslProtocol protocol) {
         // Server-side security configuration
         IgniteConfiguration srvCfg = Config.getServerConfiguration();
 
@@ -123,7 +142,7 @@ public class SecurityTest {
                 .setSslTrustCertificateKeyStorePassword("123456")
                 .setSslKeyAlgorithm(DFLT_KEY_ALGORITHM)
                 .setSslTrustAll(false)
-                .setSslProtocol(SslProtocol.TLS)
+                .setSslProtocol(protocol)
             )) {
                 client.<Integer, String>cache(Config.DEFAULT_CACHE_NAME).put(1, "1");
             }

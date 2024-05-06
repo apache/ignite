@@ -63,7 +63,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneSpiContext;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
@@ -190,7 +190,7 @@ public class CdcMain implements Runnable {
     private final GridSpringResourceContext ctx;
 
     /** CDC metrics registry. */
-    private MetricRegistry mreg;
+    private MetricRegistryImpl mreg;
 
     /** Current segment index metric. */
     private AtomicLongMetric curSegmentIdx;

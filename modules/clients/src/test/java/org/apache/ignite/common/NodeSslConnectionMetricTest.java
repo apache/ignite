@@ -35,7 +35,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.HistogramMetric;

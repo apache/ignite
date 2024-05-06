@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRowCacheAware;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
@@ -226,7 +225,6 @@ public interface IgniteCacheOffheapManager {
      * @param primary Primary entries flag.
      * @param backup Backup entries flag.
      * @param topVer Topology version.
-     * @param mvccSnapshot MVCC snapshot.
      * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Rows iterator.
      * @throws IgniteCheckedException If failed.
@@ -235,20 +233,18 @@ public interface IgniteCacheOffheapManager {
         boolean primary,
         boolean backup,
         AffinityTopologyVersion topVer,
-        @Nullable MvccSnapshot mvccSnapshot,
         Boolean dataPageScanEnabled
     ) throws IgniteCheckedException;
 
     /**
      * @param cacheId Cache ID.
      * @param part Partition.
-     * @param mvccSnapshot MVCC snapshot.
      * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
      */
     public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, final int part,
-        @Nullable MvccSnapshot mvccSnapshot, Boolean dataPageScanEnabled) throws IgniteCheckedException;
+        Boolean dataPageScanEnabled) throws IgniteCheckedException;
 
     /**
      * @param part Partition number.
@@ -271,7 +267,6 @@ public interface IgniteCacheOffheapManager {
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
      */
-    // TODO: MVCC>
     public IgniteRebalanceIterator rebalanceIterator(IgniteDhtDemandedPartitionsMap parts, AffinityTopologyVersion topVer)
         throws IgniteCheckedException;
 
@@ -281,7 +276,6 @@ public interface IgniteCacheOffheapManager {
      * @param backup {@code True} if need to return backup entries.
      * @param topVer Topology version.
      * @param keepBinary Keep binary flag.
-     * @param mvccSnapshot MVCC snapshot.
      * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Entries iterator.
      * @throws IgniteCheckedException If failed.
@@ -292,7 +286,6 @@ public interface IgniteCacheOffheapManager {
         final boolean backup,
         final AffinityTopologyVersion topVer,
         final boolean keepBinary,
-        @Nullable final MvccSnapshot mvccSnapshot,
         Boolean dataPageScanEnabled
     ) throws IgniteCheckedException;
 
@@ -302,7 +295,6 @@ public interface IgniteCacheOffheapManager {
      * @return Iterator.
      * @throws IgniteCheckedException If failed.
      */
-    // TODO: MVCC>
     public GridCloseableIterator<KeyCacheObject> cacheKeysIterator(int cacheId, final int part)
         throws IgniteCheckedException;
 
@@ -313,7 +305,6 @@ public interface IgniteCacheOffheapManager {
      * @param topVer Topology version.
      * @return Entries count.
      */
-    // TODO: MVCC>
     public long cacheEntriesCount(int cacheId, boolean primary, boolean backup, AffinityTopologyVersion topVer);
 
     /**
@@ -622,27 +613,11 @@ public interface IgniteCacheOffheapManager {
         public GridCursor<? extends CacheDataRow> cursor(Object x) throws IgniteCheckedException;
 
         /**
-         * @param mvccSnapshot MVCC snapshot.
-         * @return Data cursor.
-         * @throws IgniteCheckedException If failed.
-         */
-        public GridCursor<? extends CacheDataRow> cursor(MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
-
-        /**
          * @param cacheId Cache ID.
          * @return Data cursor.
          * @throws IgniteCheckedException If failed.
          */
         public GridCursor<? extends CacheDataRow> cursor(int cacheId) throws IgniteCheckedException;
-
-        /**
-         * @param cacheId Cache ID.
-         * @param mvccSnapshot Mvcc snapshot.
-         * @return Data cursor.
-         * @throws IgniteCheckedException If failed.
-         */
-        public GridCursor<? extends CacheDataRow> cursor(int cacheId, MvccSnapshot mvccSnapshot)
-            throws IgniteCheckedException;
 
         /**
          * @param cacheId Cache ID.
@@ -664,18 +639,6 @@ public interface IgniteCacheOffheapManager {
          */
         public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower,
             KeyCacheObject upper, Object x) throws IgniteCheckedException;
-
-        /**
-         * @param cacheId Cache ID.
-         * @param lower Lower bound.
-         * @param upper Upper bound.
-         * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
-         * @param snapshot Mvcc snapshot.
-         * @return Data cursor.
-         * @throws IgniteCheckedException If failed.
-         */
-        public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower,
-            KeyCacheObject upper, Object x, MvccSnapshot snapshot) throws IgniteCheckedException;
 
         /**
          * Destroys the tree associated with the store.

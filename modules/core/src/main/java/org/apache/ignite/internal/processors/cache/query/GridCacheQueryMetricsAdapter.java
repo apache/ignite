@@ -23,7 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
@@ -57,7 +57,7 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
      * @param isNear Is near flag.
      */
     public GridCacheQueryMetricsAdapter(GridMetricManager mmgr, String cacheName, boolean isNear) {
-        MetricRegistry mreg = mmgr.registry(MetricUtils.cacheMetricsRegistryName(cacheName, isNear));
+        MetricRegistryImpl mreg = mmgr.registry(MetricUtils.cacheMetricsRegistryName(cacheName, isNear));
 
         minTime = mreg.longMetric("QueryMinimalTime", null);
         minTime.value(Long.MAX_VALUE);

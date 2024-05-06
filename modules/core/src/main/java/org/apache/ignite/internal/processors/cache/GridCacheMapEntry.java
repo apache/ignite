@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheMvccEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheTtlEntryExtras;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -74,7 +73,6 @@ import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
-import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedException;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
@@ -2499,10 +2497,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @Override public boolean initialValue(
         CacheObject val,
         GridCacheVersion ver,
-        MvccVersion mvccVer,
-        MvccVersion newMvccVer,
-        byte mvccTxState,
-        byte newMvccTxState,
         long ttl,
         long expireTime,
         boolean preload,
@@ -5412,15 +5406,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         @Override public String toString() {
             return S.toString(AtomicCacheUpdateClosure.class, this);
         }
-    }
-
-    /**
-     * @return Common serialization error.
-     */
-    private static IgniteTxSerializationCheckedException serializationError() {
-        return new IgniteTxSerializationCheckedException(
-            "Cannot serialize transaction due to write conflict (transaction is marked for rollback)"
-        );
     }
 
     /**
