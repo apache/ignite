@@ -209,7 +209,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 23;
+        return 22;
     }
 
     /** {@inheritDoc} */
