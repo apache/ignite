@@ -89,10 +89,10 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
      * <p>
      * By manipulating the collection order we can check the failing, successful and ignored connection logs at once.
      *
+     * @throws Exception If failed.
      * @see TcpDiscoverySpi#getEffectiveNodeAddresses(TcpDiscoveryNode)
      * @see TestCustomEffectiveNodeAddressesSpi
-     * @throws Exception If failed.
-     * */
+     */
     @Test
     public void testMultipleSocketConnectionLogMessage() throws Exception {
         LogListener lsnr0 = LogListener.matches(s ->
@@ -100,11 +100,11 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
             .build();
 
         LogListener lsnr1 = LogListener.matches(s ->
-                    s.contains("Connection check to node") && s.contains("result=skipped"))
+                s.contains("Connection check to node") && s.contains("result=skipped"))
             .build();
 
         LogListener lsnr2 = LogListener.matches(s ->
-                    s.contains("Connection check to node") && s.contains("result=failed"))
+                s.contains("Connection check to node") && s.contains("result=failed"))
             .build();
 
         LogListener lsnr3 = LogListener.matches(s ->
@@ -140,9 +140,10 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
     /**
      * This test uses quiet closure of given {@link Socket} ignoring possible checked exception, which triggers
      * the previous node to check the connection to the following surviving one.
-     * @see TcpDiscoverySpi#brakeConnection()
+     *
      * @throws Exception If failed.
-     * */
+     * @see TcpDiscoverySpi#brakeConnection()
+     */
     @Test
     public void testCheckBrakeConnectionSuccessSocketConnectionLogMessage() throws Exception {
         LogListener lsnr0 = LogListener.matches(s ->
@@ -172,9 +173,10 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
     /**
      * This test uses node failure by stopping service threads, which makes the node unresponsive and results in
      * failing connection to the server.
-     * @see TcpDiscoverySpi#simulateNodeFailure()
+     *
      * @throws Exception If failed.
-     * */
+     * @see TcpDiscoverySpi#simulateNodeFailure()
+     */
     @Test
     public void testCheckNodeFailureSocketConnectionLogMessage() throws Exception {
         LogListener lsnr0 = LogListener.matches(s ->

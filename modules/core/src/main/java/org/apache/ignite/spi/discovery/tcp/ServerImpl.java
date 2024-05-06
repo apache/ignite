@@ -7315,7 +7315,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 String logMessage = logMessageBuilder.toString();
 
-                                if(logMessage.contains("failed"))
+                                if (logMessage.contains("failed"))
                                     U.warn(log, logMessage);
                                 else
                                     log.info(logMessage);
