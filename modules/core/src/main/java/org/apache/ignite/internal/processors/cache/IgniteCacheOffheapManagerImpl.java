@@ -271,13 +271,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (pendingEntries != null) {
                     PendingRow row = new PendingRow(cacheId);
 
-                    GridCursor<PendingRow> cursor = pendingEntries.find(row, row, PendingEntriesTree.WITHOUT_KEY);
-
-                    while (cursor.next()) {
-                        boolean res = pendingEntries.removex(cursor.get());
-
-                        assert res;
-                    }
+                    while (pendingEntries.removex(row, row, -1));
                 }
             }
         }
@@ -1135,26 +1129,36 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 return 0;
 
             try {
-                List<PendingRow> rows = pendingEntries.remove(
-                    new PendingRow(cacheId, Long.MIN_VALUE, 0), new PendingRow(cacheId, U.currentTimeMillis(), 0), amount);
+                int cleared = 0;
 
-                for (PendingRow row : rows) {
-                    if (row.key.partition() == -1)
-                        row.key.partition(cctx.affinity().partition(row.key));
+                do {
+                    List<PendingRow> rows = pendingEntries.remove(new PendingRow(cacheId, Long.MIN_VALUE, 0),
+                        new PendingRow(cacheId, U.currentTimeMillis(), 0), amount - cleared);
 
-                    assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
+                    if (rows.isEmpty())
+                        break;
 
-                    if (obsoleteVer == null)
-                        obsoleteVer = cctx.cache().nextVersion();
+                    for (PendingRow row : rows) {
+                        if (row.key.partition() == -1)
+                            row.key.partition(cctx.affinity().partition(row.key));
 
-                    GridCacheEntryEx entry = cctx.cache().entryEx(row.key instanceof KeyCacheObjectImpl
-                        ? new ExpiredKeyCacheObject((KeyCacheObjectImpl)row.key, row.expireTime, row.link) : row.key);
+                        assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
 
-                    if (entry != null)
-                        c.apply(entry, obsoleteVer);
+                        if (obsoleteVer == null)
+                            obsoleteVer = cctx.cache().nextVersion();
+
+                        GridCacheEntryEx entry = cctx.cache().entryEx(row.key instanceof KeyCacheObjectImpl
+                            ? new ExpiredKeyCacheObject((KeyCacheObjectImpl)row.key, row.expireTime, row.link) : row.key);
+
+                        if (entry != null)
+                            c.apply(entry, obsoleteVer);
+                    }
+
+                    cleared += rows.size();
                 }
+                while (amount < 0 || cleared < amount);
 
-                return rows.size();
+                return cleared;
             }
             finally {
                 busyLock.leaveBusy();
@@ -1977,7 +1981,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * This entry key is used to indicate that an expired entry has already been deleted from
      * PendingEntriesTree and doesn't need to participate in PendingEntriesTree cleanup again.
      */
-    private static class ExpiredKeyCacheObject extends KeyCacheObjectImpl {
+    protected static class ExpiredKeyCacheObject extends KeyCacheObjectImpl {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -1988,7 +1992,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private long link;
 
         /** */
-        private ExpiredKeyCacheObject(KeyCacheObjectImpl keyCacheObj, long expireTime, long link) {
+        public ExpiredKeyCacheObject(KeyCacheObjectImpl keyCacheObj, long expireTime, long link) {
             super(keyCacheObj.val, keyCacheObj.valBytes, keyCacheObj.partition());
 
             this.expireTime = expireTime;
