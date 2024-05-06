@@ -784,7 +784,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         IgniteCache<?, ?> cache,
         Consumer<String> snpCanceller
     ) {
-        doSnapshotCancellationTest(startCli, srvs, cache, snpCanceller);
+        doSnapshotCancellationTest(false, startCli, srvs, cache, snpCanceller);
     }
 
     /**
