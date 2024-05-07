@@ -160,6 +160,8 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
         }
 
+        cfg.setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT);
+
         return cfg;
     }
 
