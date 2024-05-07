@@ -641,6 +641,9 @@ public class CdcMain implements Runnable {
                     case CDC_MANAGER_STOP_RECORD:
                         state.saveCdcMode((cdcModeState = CdcMode.CDC_UTILITY_ACTIVE));
 
+                        if (log.isInfoEnabled())
+                            log.info("CDC mode switched [mode=" + cdcModeState + ']');
+
                         return true;
 
                     default:
