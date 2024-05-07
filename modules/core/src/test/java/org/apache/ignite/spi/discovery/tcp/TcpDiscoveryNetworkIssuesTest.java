@@ -56,6 +56,8 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -110,6 +112,9 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     private TcpDiscoverySpi specialSpi;
 
     /** */
+    private ListeningTestLogger testLog;
+
+    /** */
     private boolean usePortFromNodeName;
 
     /** */
@@ -152,6 +157,11 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         cfg.setSystemWorkerBlockedTimeout(10_000);
 
         cfg.setLocalHost(localhost);
+
+        if (testLog != null) {
+            cfg.setGridLogger(testLog);
+            testLog = null;
+        }
 
         return cfg;
     }
@@ -234,7 +244,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBackwardNodeCheckWithSameLoopbackSingleLocalAddress() throws Exception {
-        doTestBackwardNodeCheckWithSameLoopback("127.0.0.1");
+        doTestBackwardNodeCheckWithSameLoopback("127.0.0.1", null);
     }
 
     /**
@@ -243,14 +253,31 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBackwardNodeCheckWithSameLoopbackSeveralLocalAddresses() throws Exception {
-        doTestBackwardNodeCheckWithSameLoopback("0.0.0.0");
+        ListeningTestLogger testMethodLog = new ListeningTestLogger(log);
+
+        String startLogMsg = "Checking connection to node";
+
+        Collection<LogListener> lsnrs = new ArrayList<>();
+
+        lsnrs.add(LogListener.matches(startLogMsg).andMatches("result=success").times(1).build());
+        lsnrs.add(LogListener.matches(startLogMsg).andMatches("result=skipped").times(3).build());
+        lsnrs.add(LogListener.matches("Connection check to previous node done").times(1).build());
+
+        lsnrs.forEach(testMethodLog::registerListener);
+
+        doTestBackwardNodeCheckWithSameLoopback("0.0.0.0", testMethodLog);
+
+        for (LogListener lsnr : lsnrs)
+            waitForCondition(lsnr::check, getTestTimeout());
+
+        testMethodLog.clearListeners();
     }
 
     /**
      * Performs Tests backward node ping if {@link TcpDiscoveryNode#socketAddresses()} contains same loopback address as of local node.
      * Assumes several local address are resolved.
      */
-    private void doTestBackwardNodeCheckWithSameLoopback(String localhost) throws Exception {
+    private void doTestBackwardNodeCheckWithSameLoopback(String localhost, ListeningTestLogger testMethodLog) throws Exception {
         this.localhost = localhost;
 
         specialSpi = new TestDiscoverySpi();
@@ -262,6 +289,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         Ignite node1 = startGrid(1);
 
         specialSpi = new TestDiscoverySpi();
+        testLog = testMethodLog;
 
         Ignite node2 = startGrid(2);
 
@@ -381,6 +409,54 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
             if (!failedNodes.contains(i))
                 assertFalse(segmentedNodes.contains(i));
         }
+    }
+
+    /**
+     * This test uses node failure by stopping service threads, which makes the node unresponsive and results in
+     * failing connection to the server.
+     *
+     * @throws Exception If failed.
+     * @see TcpDiscoverySpi#simulateNodeFailure()
+     */
+    @Test
+    public void testCheckNodeFailureSocketConnectionLogMessage() throws Exception {
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
+
+        Collection<LogListener> lsnrs = new ArrayList<>();
+
+        lsnrs.add(LogListener.matches("Checking connection to node").andMatches("result=failed").times(1).build());
+        lsnrs.add(LogListener.matches("Connection check to previous node failed").times(1).build());
+
+        lsnrs.forEach(testLog::registerListener);
+
+        TcpDiscoverySpi spi0 = new TcpDiscoverySpi();
+
+        startGrid(getTestConfigWithSpi(spi0, "ignite-0"));
+
+        IgniteConfiguration cfg1 = getTestConfigWithSpi(new TcpDiscoverySpi(), "ignite-1");
+        cfg1.setGridLogger(testLog);
+
+        startGrid(cfg1);
+
+        startGrid(getTestConfigWithSpi(new TcpDiscoverySpi(), "ignite-2"));
+
+        spi0.simulateNodeFailure();
+
+        for (LogListener lsnr : lsnrs)
+            waitForCondition(lsnr::check, getTestTimeout());
+
+        testLog.clearListeners();
+    }
+
+    /**
+     * Returns default {@link IgniteConfiguration} with specified ignite instance name and {@link TcpDiscoverySpi}.
+     * @param spi {@link TcpDiscoverySpi}
+     * @param igniteInstanceName ignite instance name
+     * @return {@link IgniteConfiguration}
+     * @throws Exception If failed.
+     */
+    private IgniteConfiguration getTestConfigWithSpi(TcpDiscoverySpi spi, String igniteInstanceName) throws Exception {
+        return getConfiguration(igniteInstanceName).setDiscoverySpi(spi);
     }
 
     /**
