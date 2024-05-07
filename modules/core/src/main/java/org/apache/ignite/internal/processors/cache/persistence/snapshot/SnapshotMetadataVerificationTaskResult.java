@@ -38,13 +38,18 @@ public class SnapshotMetadataVerificationTaskResult extends IgniteDataTransferOb
     /** Errors happened during snapshot metadata verification. */
     private Map<ClusterNode, Exception> exceptions;
 
+    /** If {@code true}, all the {@link #exceptions()} are known and should be processed as a validation result. */
+    private boolean validationExceptions;
+
     /** */
     public SnapshotMetadataVerificationTaskResult(
         Map<ClusterNode, List<SnapshotMetadata>> meta,
-        Map<ClusterNode, Exception> exceptions
+        Map<ClusterNode, Exception> exceptions,
+        boolean knownExceptions
     ) {
         this.meta = Collections.unmodifiableMap(meta);
         this.exceptions = Collections.unmodifiableMap(exceptions);
+        this.validationExceptions = knownExceptions;
     }
 
     /** */
@@ -59,6 +64,11 @@ public class SnapshotMetadataVerificationTaskResult extends IgniteDataTransferOb
     /** @return Full snapshot metadata. */
     public Map<ClusterNode, List<SnapshotMetadata>> meta() {
         return Collections.unmodifiableMap(meta);
+    }
+
+    /** @return {@code True} if all the {@link #exceptions()} are known and should be processed as a validation result. */
+    public boolean validationExceptions() {
+        return validationExceptions;
     }
 
     /** {@inheritDoc} */

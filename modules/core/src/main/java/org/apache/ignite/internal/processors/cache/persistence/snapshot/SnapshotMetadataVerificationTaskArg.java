@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Collection;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
@@ -40,6 +41,9 @@ public class SnapshotMetadataVerificationTaskArg extends VisorDataTransferObject
     /** Incremental snapshot index. */
     private int incIdx;
 
+    /** Cache group ids. */
+    private Collection<Integer> grpIds;
+
     /** Default constructor. */
     public SnapshotMetadataVerificationTaskArg() {
         // No-op.
@@ -49,10 +53,11 @@ public class SnapshotMetadataVerificationTaskArg extends VisorDataTransferObject
      * @param snpName Snapshot name.
      * @param snpPath Snapshot directory path.
      */
-    public SnapshotMetadataVerificationTaskArg(String snpName, @Nullable String snpPath, int incIdx) {
+    public SnapshotMetadataVerificationTaskArg(String snpName, @Nullable String snpPath, int incIdx, Collection<Integer> grpIds) {
         this.snpName = snpName;
         this.snpPath = snpPath;
         this.incIdx = incIdx;
+        this.grpIds = grpIds;
     }
 
     /**
@@ -76,11 +81,20 @@ public class SnapshotMetadataVerificationTaskArg extends VisorDataTransferObject
         return incIdx;
     }
 
+    /**
+     * @return Cache group ids.
+     */
+    public Collection<Integer> grpIds() {
+        return grpIds;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, snpName);
         U.writeString(out, snpPath);
         out.writeInt(incIdx);
+        U.writeCollection(out, grpIds);
+
     }
 
     /** {@inheritDoc} */
@@ -88,6 +102,8 @@ public class SnapshotMetadataVerificationTaskArg extends VisorDataTransferObject
         snpName = U.readString(in);
         snpPath = U.readString(in);
         incIdx = in.readInt();
+        grpIds = U.readCollection(in);
+
     }
 
     /** {@inheritDoc} */

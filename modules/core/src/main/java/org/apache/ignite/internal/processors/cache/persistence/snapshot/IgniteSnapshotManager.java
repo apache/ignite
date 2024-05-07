@@ -1903,86 +1903,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
             (node) -> CU.baselineNode(node, kctx0.state().clusterState()));
 
-        SnapshotMetadataVerificationTaskArg taskArg = new SnapshotMetadataVerificationTaskArg(name, snpPath, incIdx);
+        Collection<Integer> grpIds = grps == null ? Collections.emptySet() : F.viewReadOnly(grps, CU::cacheId);
+
+        SnapshotMetadataVerificationTaskArg taskArg = new SnapshotMetadataVerificationTaskArg(name, snpPath, incIdx, grpIds);
 
         kctx0.task().execute(
             SnapshotMetadataVerificationTask.class,
             taskArg,
             options(bltNodes)
         ).listen(f0 -> {
-            if (f0.error() == null && F.isEmpty(f0.result().exceptions())) {
-                Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result().meta();
+            SnapshotMetadataVerificationTaskResult taskRes = f0.result();
 
-                Map<Integer, String> grpIds = grps == null ? Collections.emptyMap() :
-                    grps.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
-
-                byte[] masterKeyDigest = kctx0.config().getEncryptionSpi().masterKeyDigest();
-
-                for (List<SnapshotMetadata> nodeMetas : metas.values()) {
-                    for (SnapshotMetadata meta : nodeMetas) {
-                        byte[] snpMasterKeyDigest = meta.masterKeyDigest();
-
-                        if (masterKeyDigest == null && snpMasterKeyDigest != null) {
-                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
-                                Collections.singletonMap(cctx.localNode(), new IllegalArgumentException("Snapshot '" +
-                                    meta.snapshotName() + "' has encrypted caches while encryption is disabled. To " +
-                                    "restore this snapshot, start Ignite with configured encryption and the same " +
-                                    "master key.")))));
-
-                            return;
-                        }
-
-                        if (snpMasterKeyDigest != null && !Arrays.equals(snpMasterKeyDigest, masterKeyDigest)) {
-                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
-                                Collections.singletonMap(cctx.localNode(), new IllegalArgumentException("Snapshot '" +
-                                    meta.snapshotName() + "' has different master key digest. To restore this " +
-                                    "snapshot, start Ignite with the same master key.")))));
-
-                            return;
-                        }
-
-                        if (meta.hasCompressedGroups() && grpIds.keySet().stream().anyMatch(meta::isGroupWithCompression)) {
-                            try {
-                                kctx0.compress().checkPageCompressionSupported();
-                            }
-                            catch (IgniteCheckedException e) {
-                                String grpWithCompr = grpIds.entrySet().stream()
-                                    .filter(grp -> meta.isGroupWithCompression(grp.getKey()))
-                                    .map(Map.Entry::getValue).collect(Collectors.joining(", "));
-
-                                String msg = "Requested cache groups [" + grpWithCompr + "] for check " +
-                                    "from snapshot '" + meta.snapshotName() + "' are compressed while " +
-                                    "disk page compression is disabled. To check these groups please " +
-                                    "start Ignite with ignite-compress module in classpath";
-
-                                res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
-                                    Collections.singletonMap(cctx.localNode(), new IllegalArgumentException(msg)))));
-
-                                return;
-                            }
-                        }
-
-                        grpIds.keySet().removeAll(meta.partitions().keySet());
-                    }
-                }
-
-                if (!grpIds.isEmpty()) {
-                    res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
-                        new IdleVerifyResultV2(Collections.singletonMap(cctx.localNode(),
-                            new IllegalArgumentException("Cache group(s) was not " +
-                                "found in the snapshot [groups=" + grpIds.values() + ", snapshot=" + name + ']')))));
-
-                    return;
-                }
-
-                if (metas.isEmpty()) {
-                    res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
-                        new IdleVerifyResultV2(Collections.singletonMap(cctx.localNode(),
-                            new IllegalArgumentException("Snapshot does not exists [snapshot=" + name +
-                                (snpPath != null ? ", baseDir=" + snpPath : "") + ']')))));
-
-                    return;
-                }
+            if (f0.error() == null && F.isEmpty(taskRes.exceptions())) {
+                Map<ClusterNode, List<SnapshotMetadata>> metas = taskRes.meta();
 
                 Class<? extends AbstractSnapshotVerificationTask> cls;
 
@@ -2006,8 +1939,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     });
             }
             else {
-                if (f0.error() == null)
-                    res.onDone(new IgniteSnapshotVerifyException(f0.result().exceptions()));
+                if (f0.error() == null) {
+                    if (taskRes.validationExceptions())
+                        res.onDone(new SnapshotPartitionsVerifyTaskResult(taskRes.meta(), new IdleVerifyResultV2(taskRes.exceptions())));
+                    else
+                        res.onDone(new IgniteSnapshotVerifyException(taskRes.exceptions()));
+                }
                 else if (f0.error() instanceof IgniteSnapshotVerifyException)
                     res.onDone(new SnapshotPartitionsVerifyTaskResult(null,
                         new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f0.error()).exceptions())));

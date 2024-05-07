@@ -67,6 +67,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
@@ -132,11 +133,32 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             ).collect(Collectors.toSet());
         }
 
-        Set<File> partFiles = new HashSet<>();
+        IgniteBiTuple<Map<Integer, File>, Set<File>> partFiles = checkSnapshotFiles(meta, grps, opCtx.snapshotDirectory());
 
+        // This will throw if compression disabled. Calculation before other checks.
+        boolean punchHoleEnabled = isPunchHoleEnabled(opCtx, partFiles.get1().keySet());
+
+        if (!opCtx.check()) {
+            log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
+
+            return Collections.emptyMap();
+        }
+
+        return meta.dump()
+            ? checkDumpFiles(opCtx, partFiles.get2())
+            : checkSnapshotFiles(opCtx, partFiles.get1(), meta, partFiles.get2(), punchHoleEnabled);
+    }
+
+    /** @return Map of group directories and partition files. */
+    public static IgniteBiTuple<Map<Integer, File>, Set<File>> checkSnapshotFiles(
+        SnapshotMetadata meta,
+        Set<Integer> grps,
+        File snpDir
+    ) {
+        Set<File> partFiles = new HashSet<>();
         Map<Integer, File> grpDirs = new HashMap<>();
 
-        for (File dir : cacheDirectories(new File(opCtx.snapshotDirectory(), databaseRelativePath(meta.folderName())), name -> true)) {
+        for (File dir : cacheDirectories(new File(snpDir, databaseRelativePath(meta.folderName())), name -> true)) {
             int grpId = CU.cacheId(cacheGroupName(dir));
 
             if (!grps.remove(grpId))
@@ -171,16 +193,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 ", meta=" + meta + ']');
         }
 
-        // This will throw if compression disabled. Calculation before other checks.
-        boolean punchHoleEnabled = isPunchHoleEnabled(opCtx, grpDirs.keySet());
-
-        if (!opCtx.check()) {
-            log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
-
-            return Collections.emptyMap();
-        }
-
-        return meta.dump() ? checkDumpFiles(opCtx, partFiles) : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles, punchHoleEnabled);
+        return new IgniteBiTuple<>(grpDirs, partFiles);
     }
 
     /** */
@@ -405,32 +418,42 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             String node = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
 
             try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part)) {
-                long size = 0;
-
-                VerifyPartitionContext ctx = new VerifyPartitionContext();
-
-                while (iter.hasNext()) {
-                    DumpEntry e = iter.next();
-
-                    ctx.update((KeyCacheObject)e.key(), (CacheObject)e.value(), e.version());
-
-                    size++;
-                }
-
-                return new PartitionHashRecordV2(
-                    new PartitionKeyV2(CU.cacheId(grpName), part, grpName),
-                    false,
-                    cctx.localNode().consistentId(),
-                    null,
-                    size,
-                    PartitionHashRecordV2.PartitionState.OWNING,
-                    ctx
-                );
+                return calculateDumpPartitionHash(iter, grpName, part, cctx.localNode().consistentId());
             }
         }
         catch (Exception e) {
             throw new IgniteException(e);
         }
+    }
+
+    /** */
+    public static PartitionHashRecordV2 calculateDumpPartitionHash(
+        Dump.DumpedPartitionIterator iter,
+        String grpName,
+        int part,
+        Object consistentId
+    ) throws IgniteCheckedException {
+        long size = 0;
+
+        VerifyPartitionContext ctx = new VerifyPartitionContext();
+
+        while (iter.hasNext()) {
+            DumpEntry e = iter.next();
+
+            ctx.update((KeyCacheObject)e.key(), (CacheObject)e.value(), e.version());
+
+            size++;
+        }
+
+        return new PartitionHashRecordV2(
+            new PartitionKeyV2(CU.cacheId(grpName), part, grpName),
+            false,
+            consistentId,
+            null,
+            size,
+            PartitionHashRecordV2.PartitionState.OWNING,
+            ctx
+        );
     }
 
     /** {@inheritDoc} */
