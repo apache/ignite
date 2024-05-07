@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
@@ -586,7 +588,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         IgniteEx srv = startGrids(3);
 
-        List<Integer> locEvts = new ArrayList<>();
+        Collection<Integer> locEvts = ConcurrentHashMap.newKeySet();
 
         srv.events().localListen(e -> locEvts.add(e.type()), EVTS_CLUSTER_SNAPSHOT);
 
