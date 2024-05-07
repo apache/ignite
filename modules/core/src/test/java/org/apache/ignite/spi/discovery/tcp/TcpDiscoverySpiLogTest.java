@@ -130,7 +130,6 @@ public class TcpDiscoverySpiLogTest extends GridCommonAbstractTest {
         testLog.clearListeners();
     }
 
-
     /**
      * Returns default {@link IgniteConfiguration} with specified ignite instance name and {@link TcpDiscoverySpi}.
      * @param spi {@link TcpDiscoverySpi}
