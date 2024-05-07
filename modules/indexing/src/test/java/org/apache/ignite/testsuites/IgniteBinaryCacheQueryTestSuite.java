@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.cache.AffinityAliasKeyTest;
 import org.apache.ignite.internal.processors.cache.AffinityKeyNameAndValueFieldNameConflictTest;
 import org.apache.ignite.internal.processors.cache.CacheOffheapBatchIndexingMultiTypeTest;
 import org.apache.ignite.internal.processors.cache.CacheQueryBuildValueTest;
-import org.apache.ignite.internal.processors.cache.DdlTransactionSelfTest;
+import org.apache.ignite.internal.processors.cache.DdlTransactionIndexingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheCrossCacheQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLazyQueryPartitionsReleaseTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexDisabledSelfTest;
@@ -339,7 +339,7 @@ import org.junit.runners.Suite;
     H2DynamicIndexingComplexServerTransactionalPartitionedNoBackupsTest.class,
     H2DynamicIndexingComplexServerTransactionalReplicatedTest.class,
 
-    DdlTransactionSelfTest.class,
+    DdlTransactionIndexingSelfTest.class,
 
 })
 public class IgniteBinaryCacheQueryTestSuite {

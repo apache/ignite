@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.processors.cache.DdlTransactionCalciteSelfTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.CancelTest;
 import org.apache.ignite.internal.processors.query.calcite.DateTimeTest;
@@ -133,6 +134,7 @@ import org.junit.runners.Suite;
     JoinRehashIntegrationTest.class,
     IndexWithSameNameCalciteTest.class,
     AuthorizationIntegrationTest.class,
+    DdlTransactionCalciteSelfTest.class,
 })
 public class IntegrationTestSuite {
 }
