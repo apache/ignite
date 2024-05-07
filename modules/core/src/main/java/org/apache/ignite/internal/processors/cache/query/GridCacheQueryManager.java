@@ -629,6 +629,22 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     break;
 
                 case INDEX:
+                    if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                        cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
+                            cctx.localNode(),
+                            "Index query executed.",
+                            EVT_CACHE_QUERY_EXECUTED,
+                            CacheQueryType.INDEX.name(),
+                            cctx.name(),
+                            qry.queryClassName(),
+                            null,
+                            qry.scanFilter(),
+                            null,
+                            null,
+                            securitySubjectId(cctx),
+                            taskName));
+                    }
+
                     int[] parts = null;
 
                     if (qry.partition() != null)
@@ -1203,7 +1219,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         break;
                     }
 
-                    if (type == SCAN || type == INDEX)
+                    if (type == SCAN)
                         // Scan iterator may return already transformed entry
                         data.add(row0);
                     else {
@@ -1289,6 +1305,27 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                         null));
 
                                     break;
+
+                                case INDEX:
+                                    cctx.gridEvents().record(new CacheQueryReadEvent<>(
+                                        cctx.localNode(),
+                                        "Index query entry read.",
+                                        EVT_CACHE_QUERY_OBJECT_READ,
+                                        CacheQueryType.INDEX.name(),
+                                        cctx.name(),
+                                        qry.queryClassName(),
+                                        null,
+                                        qry.scanFilter(),
+                                        null,
+                                        null,
+                                        securitySubjectId(cctx),
+                                        taskName,
+                                        key0,
+                                        val0,
+                                        null,
+                                        null));
+
+                                    break;
                             }
                         }
 
@@ -1312,7 +1349,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                 continue;
                         }
                         else {
-                            if (type == TEXT)
+                            if (type == TEXT || type == INDEX)
                                 // (K, V, score). Value transfers as BinaryObject.
                                 data.add(row0);
                             else
