@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.client;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -46,7 +47,7 @@ import static org.apache.ignite.internal.processors.platform.client.ClientProtoc
  */
 public class ClientRequestHandler implements ClientListenerRequestHandler {
     /** Timeout to wait for async requests completion, to handle them as regular sync requests. */
-    private static final long ASYNC_REQUEST_WAIT_TIMEOUT = 10L;
+    private static final long ASYNC_REQUEST_WAIT_TIMEOUT_MILLIS = 10L;
 
     /** Client context. */
     private final ClientConnectionContext ctx;
@@ -121,28 +122,17 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
         if (req0.isAsync(ctx)) {
             IgniteInternalFuture<ClientResponse> fut = req0.processAsync(ctx);
 
-            if (!fut.isDone()) {
-                try {
-                    // Give request a chance to be executed and response processed by the current thread,
-                    // so we can avoid any performance drops caused by async requests execution.
-                    fut.get(ASYNC_REQUEST_WAIT_TIMEOUT);
-                }
-                catch (IgniteCheckedException ignore) {
-                    // Ignore exception. If it isn't a timeout exception - will be handled later.
-                }
+            try {
+                // Give request a chance to be executed and response processed by the current thread,
+                // so we can avoid any performance drops caused by async requests execution.
+                return fut.get(ASYNC_REQUEST_WAIT_TIMEOUT_MILLIS);
             }
-
-            if (fut.isDone()) {
-                try {
-                    // Some async operations can be already finished. Shortcut for this case.
-                    return fut.get();
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
-                }
+            catch (IgniteFutureTimeoutCheckedException ignored) {
+                return new ClientAsyncResponse(req0.requestId(), fut);
             }
-
-            return new ClientAsyncResponse(req0.requestId(), fut);
+            catch (IgniteCheckedException e) {
+                throw new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
+            }
         }
         else
             return req0.process(ctx);
