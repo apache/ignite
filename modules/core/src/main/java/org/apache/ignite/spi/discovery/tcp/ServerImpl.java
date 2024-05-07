@@ -6782,15 +6782,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 liveAddr = checkConnection(previous, backwardCheckTimeout);
 
-                                if (liveAddr == null) {
-                                    U.warn(log, "Connection check to previous node failed: [previousNode="
-                                        + U.toShortString(previous) + ", connectingNodeId=" + nodeId + ']');
-                                }
-                                else if (log.isInfoEnabled()) {
-                                    log.info("Connection check to previous node done: [liveAddr=" + liveAddr
-                                        + ", previousNode=" + U.toShortString(previous) + ", connectingNodeId="
-                                        + nodeId + ']');
-                                }
+                                String logMsg = "Connection check to previous node " + (liveAddr == null ? "failed" : "done")
+                                    + ". ConnectingNodeId=" + nodeId + ". PreviousNode=" + U.toShortString(previous)
+                                    + ", aliveAddr=" + liveAddr + "].";
+
+                                if (liveAddr == null)
+                                    U.warn(log, logMsg);
+                                else if (log.isInfoEnabled())
+                                    log.info(logMsg);
                             }
 
                             ok = liveAddr != null;
@@ -7287,9 +7286,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         for (int i = 0; i < addrsToCheck; ++i) {
                             InetSocketAddress addr = addrs.get(addrIdx.getAndIncrement());
 
-                            StringBuilder logMessageBuilder = new StringBuilder("Connection check to node: [addressToCheck=")
-                                .append(addr)
-                                .append(", result=");
+                            String logMsg = "Checking connection to node: [nodeId=" + node.id() + ", address=" + addr + ", result=";
+                            String failReason = null;
 
                             try (Socket sock = new Socket()) {
                                 if (liveAddrHolder.get() == null) {
@@ -7297,28 +7295,19 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                     liveAddrHolder.compareAndSet(null, addr);
 
-                                    logMessageBuilder.append("success");
+                                    logMsg += "success].";
                                 }
                                 else
-                                    logMessageBuilder.append("skipped");
+                                    logMsg += "skipped, another alive address is already found].";
                             }
-                            catch (Exception ignored) {
-                                logMessageBuilder
-                                    .append("failed, cause=")
-                                    .append(ignored.getMessage());
+                            catch (Exception e) {
+                                failReason = e.getMessage();
                             }
                             finally {
-                                logMessageBuilder
-                                    .append(", node=")
-                                    .append(U.toShortString(node))
-                                    .append(']');
-
-                                String logMessage = logMessageBuilder.toString();
-
-                                if (logMessage.contains("failed"))
-                                    U.warn(log, logMessage);
-                                else
-                                    log.info(logMessage);
+                                if (failReason != null)
+                                    U.warn(log, logMsg + "failed, cause='" + failReason + "'].");
+                                else if (log.isInfoEnabled())
+                                    log.info(logMsg);
 
                                 latch.countDown();
                             }
