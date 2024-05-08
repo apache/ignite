@@ -65,7 +65,6 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -1657,8 +1656,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                             Object unwrappedKeyObj;
                             Object unwrappedValObj;
 
-                            if (entry instanceof UnwrappedDataEntry) {
-                                UnwrappedDataEntry unwrapDataEntry = (UnwrappedDataEntry)entry;
+                            if (entry instanceof UnwrapDataEntry) {
+                                UnwrapDataEntry unwrapDataEntry = (UnwrapDataEntry)entry;
                                 unwrappedKeyObj = unwrapDataEntry.unwrappedKey();
                                 unwrappedValObj = unwrapDataEntry.unwrappedValue();
                             }
