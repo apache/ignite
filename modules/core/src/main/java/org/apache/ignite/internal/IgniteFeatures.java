@@ -126,9 +126,6 @@ public enum IgniteFeatures {
     /** Force rebuild, list or request indexes rebuild status from control script. */
     INDEXES_MANIPULATIONS_FROM_CONTROL_SCRIPT(42),
 
-    /** Optimization of recovery protocol for cluster which doesn't contain MVCC caches. */
-    MVCC_TX_RECOVERY_PROTOCOL_V2(44),
-
     /** Pk index keys are applied in correct order. */
     SPECIFIED_SEQ_PK_KEYS(45),
 

@@ -1554,12 +1554,12 @@ public final class IgniteSystemProperties {
 
     /**
      * When set to {@code true}, Ignite will allow execute DML operation (MERGE|INSERT|UPDATE|DELETE)
-     * within transaction for non MVCC mode.
+     * within transaction.
      *
      * Default is {@code false}.
      */
     @SystemProperty("When set to true, Ignite will allow executing DML operation " +
-        "(MERGE|INSERT|UPDATE|DELETE) within transactions for non MVCC mode")
+        "(MERGE|INSERT|UPDATE|DELETE) within transactions")
     public static final String IGNITE_ALLOW_DML_INSIDE_TRANSACTION = "IGNITE_ALLOW_DML_INSIDE_TRANSACTION";
 
     /**
