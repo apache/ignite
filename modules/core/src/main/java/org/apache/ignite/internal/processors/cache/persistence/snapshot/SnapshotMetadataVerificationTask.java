@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
@@ -39,14 +40,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
-import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
 
@@ -58,11 +57,11 @@ public class SnapshotMetadataVerificationTask
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public @NotNull Map<MetadataVerificationJob, ClusterNode> map(
+    @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
         SnapshotMetadataVerificationTaskArg arg
     ) throws IgniteException {
-        Map<MetadataVerificationJob, ClusterNode> map = U.newHashMap(subgrid.size());
+        Map<ComputeJob, ClusterNode> map = U.newHashMap(subgrid.size());
 
         for (ClusterNode node : subgrid)
             map.put(new MetadataVerificationJob(arg), node);
@@ -71,7 +70,7 @@ public class SnapshotMetadataVerificationTask
     }
 
     /** Job that verifies snapshot on an Ignite node. */
-    public static class MetadataVerificationJob extends ComputeJobAdapter {
+    private static class MetadataVerificationJob extends ComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -95,87 +94,80 @@ public class SnapshotMetadataVerificationTask
         @Override public List<SnapshotMetadata> execute() throws IgniteException {
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-            return execute(
-                snpMgr.readSnapshotMetadatas(arg.snapshotName(), arg.snapshotPath()),
-                ignite.localNode().consistentId(),
-                arg,
-                ignite.context().config().getEncryptionSpi().masterKeyDigest(),
-                ignite.context().compress()
-            );
-        }
+            List<SnapshotMetadata> metas = snpMgr.readSnapshotMetadatas(arg.snapshotName(), arg.snapshotPath());
 
-        /**
-         * @param metas Metadatas to validate.
-         * @param nodeConsistId Consistent if of the related node.
-         * @param arg Command arguments.
-         * @param masterKeyDigest Masterkey digest for encrypted snapshots.
-         * @param compressionProc Compression processor. If {@code null} and snapshot has any compressed cache,
-         *                        {@link UnsupportedOperationException} is thrown.
-         * @return {@code metas}.
-         */
-        public List<SnapshotMetadata> execute(
-            List<SnapshotMetadata> metas,
-            Object nodeConsistId,
-            SnapshotMetadataVerificationTaskArg arg,
-            byte[] masterKeyDigest,
-            @Nullable CompressionProcessor compressionProc
-        ) {
             if (metas.isEmpty()) {
-                throw error(metas, true, "Snapshot metadata not found [snapshot=" + arg.snapshotName()
+                throw raiseSnpMetaErr(metas, true, "Snapshot metadata not found [snapshot=" + arg.snapshotName()
                     + (arg.snapshotPath() != null ? ", baseDir=" + arg.snapshotPath() : "") + ", consistentId="
-                    + nodeConsistId + ']');
+                    + ignite.localNode().consistentId() + ']');
             }
 
+            List<SnapshotMetadata> locNodeMetas = new ArrayList<>();
+
             for (SnapshotMetadata meta : metas) {
-                byte[] snpMasterKeyDigest = meta.masterKeyDigest();
+                checkMeta(metas, meta, ignite.context().config().getEncryptionSpi().masterKeyDigest());
 
-                if (masterKeyDigest == null && snpMasterKeyDigest != null) {
-                    throw error(metas, true, "Snapshot '" + meta.snapshotName() + "' has encrypted caches " +
-                        "while encryption is disabled. To restore this snapshot, start Ignite with configured " +
-                        "encryption and the same master key.");
-                }
+                if (ignite.localNode().consistentId().equals(meta.consistentId()))
+                    locNodeMetas.add(meta);
+            }
 
-                if (snpMasterKeyDigest != null && !Arrays.equals(snpMasterKeyDigest, masterKeyDigest)) {
-                    throw error(metas, true, "Snapshot '" + meta.snapshotName() + "' has different master " +
-                        "key digest. To restore this snapshot, start Ignite with the same master key.");
-                }
-
-                Collection<Integer> grpIds = new HashSet<>(F.isEmpty(arg.grpIds()) ? meta.cacheGroupIds() : arg.grpIds());
-
-                if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompression)) {
-                    try {
-                        if (compressionProc == null) {
-                            throw new UnsupportedOperationException("Compression processor is not set. Compressed " +
-                                "snapshots aren't supported.");
-                        }
-
-                        compressionProc.checkPageCompressionSupported();
-                    }
-                    catch (IgniteCheckedException e) {
-                        String grpWithCompr = grpIds.stream().filter(meta::isGroupWithCompression)
-                            .map(String::valueOf).collect(Collectors.joining(", "));
-
-                        String msg = "Requested cache groups [" + grpWithCompr + "] for check " +
-                            "from snapshot '" + meta.snapshotName() + "' are compressed while " +
-                            "disk page compression is disabled. To check these groups please " +
-                            "start Ignite with ignite-compress module in classpath";
-
-                        throw error(metas, false, msg);
-                    }
-                }
-
-                grpIds.removeAll(meta.partitions().keySet());
-
-                if (!grpIds.isEmpty() && !new HashSet<>(meta.cacheGroupIds()).containsAll(grpIds)) {
-                    throw error(metas, true, "Cache group(s) was not found in the snapshot [groups=" +
-                        grpIds + ", snapshot=" + arg.snapshotName() + ']');
-                }
+            if (locNodeMetas.size() != 1) {
+                throw raiseSnpMetaErr(metas, true, "Failed to find single snapshot metafile for local " +
+                    "node [locNodeId=" + ignite.localNode().consistentId() + ", metas=" + metas + ", snpName=" + arg.snapshotName()
+                    + ", snpPath=" + arg.snapshotPath() + ']');
             }
 
             if (arg.incrementIndex() > 0)
-                checkIncrementalSnapshots(metas.get(0), arg);
+                checkIncrementalSnapshots(locNodeMetas.get(0), arg);
 
             return metas;
+        }
+
+        /** */
+        private void checkMeta(List<SnapshotMetadata> allMetas, SnapshotMetadata meta, byte[] masterKeyDigest) {
+            byte[] snpMasterKeyDigest = meta.masterKeyDigest();
+
+            if (masterKeyDigest == null && snpMasterKeyDigest != null) {
+                throw raiseSnpMetaErr(allMetas, true, "Snapshot '" + meta.snapshotName() + "' has encrypted caches " +
+                    "while encryption is disabled. To restore this snapshot, start Ignite with configured " +
+                    "encryption and the same master key.");
+            }
+
+            if (snpMasterKeyDigest != null && !Arrays.equals(snpMasterKeyDigest, masterKeyDigest)) {
+                throw raiseSnpMetaErr(allMetas, true, "Snapshot '" + meta.snapshotName() + "' has different master " +
+                    "key digest. To restore this snapshot, start Ignite with the same master key.");
+            }
+
+            Collection<Integer> grpIds = new HashSet<>(F.isEmpty(arg.grpIds()) ? meta.cacheGroupIds() : arg.grpIds());
+
+            if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompression)) {
+                try {
+                    if (ignite.context().compress() == null) {
+                        throw new UnsupportedOperationException("Compression processor is not set. Compressed " +
+                            "snapshots aren't supported.");
+                    }
+
+                    ignite.context().compress().checkPageCompressionSupported();
+                }
+                catch (IgniteCheckedException e) {
+                    String grpWithCompr = grpIds.stream().filter(meta::isGroupWithCompression)
+                        .map(String::valueOf).collect(Collectors.joining(", "));
+
+                    String msg = "Requested cache groups [" + grpWithCompr + "] for check " +
+                        "from snapshot '" + meta.snapshotName() + "' are compressed while " +
+                        "disk page compression is disabled. To check these groups please " +
+                        "start Ignite with ignite-compress module in classpath";
+
+                    throw raiseSnpMetaErr(allMetas, false, msg);
+                }
+            }
+
+            grpIds.removeAll(meta.partitions().keySet());
+
+            if (!grpIds.isEmpty() && !new HashSet<>(meta.cacheGroupIds()).containsAll(grpIds)) {
+                throw raiseSnpMetaErr(allMetas, true, "Cache group(s) was not found in the snapshot [groups=" +
+                    grpIds + ", snapshot=" + arg.snapshotName() + ']');
+            }
         }
 
         /** Checks that all incremental snapshots are present, contain correct metafile and WAL segments. */
@@ -255,8 +247,12 @@ public class SnapshotMetadataVerificationTask
         }
 
         /** */
-        private static InvalidMetadataException error(List<SnapshotMetadata> metas, boolean badParams, String errTxt) {
-            return new InvalidMetadataException(metas, badParams ? new IllegalArgumentException(errTxt)
+        private static SnapshotMetadataValidationException raiseSnpMetaErr(
+            List<SnapshotMetadata> metas,
+            boolean badParams,
+            String errTxt
+        ) {
+            return new SnapshotMetadataValidationException(metas, badParams ? new IllegalArgumentException(errTxt)
                 : new IllegalStateException(errTxt));
         }
     }
@@ -274,7 +270,7 @@ public class SnapshotMetadataVerificationTask
             if (res.getException() != null) {
                 exs.put(res.getNode(), res.getException());
 
-                if (!(res.getException() instanceof InvalidMetadataException))
+                if (!(res.getException() instanceof SnapshotMetadataValidationException))
                     knownExceptions = false;
 
                 continue;
@@ -298,7 +294,7 @@ public class SnapshotMetadataVerificationTask
             }
         }
 
-        return new SnapshotMetadataVerificationTaskResult(reduceRes, exs, !F.isEmpty(exs) && knownExceptions);
+        return new SnapshotMetadataVerificationTaskResult(reduceRes, exs, !exs.isEmpty() && knownExceptions);
     }
 
     /** {@inheritDoc} */
@@ -307,8 +303,8 @@ public class SnapshotMetadataVerificationTask
         return ComputeJobResultPolicy.WAIT;
     }
 
-    /** */
-    private static final class InvalidMetadataException extends IgniteException {
+    /** Known error of a snapshot metadata. Shoul be processed as a negative but expected validation result. */
+    private static final class SnapshotMetadataValidationException extends IgniteException {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -319,7 +315,7 @@ public class SnapshotMetadataVerificationTask
         final Exception nodeErr;
 
         /** */
-        private InvalidMetadataException(List<SnapshotMetadata> metas, Exception err) {
+        private SnapshotMetadataValidationException(List<SnapshotMetadata> metas, Exception err) {
             super(err);
 
             nodeMetas = metas;

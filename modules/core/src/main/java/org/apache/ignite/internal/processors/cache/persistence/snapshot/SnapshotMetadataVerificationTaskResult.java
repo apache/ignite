@@ -38,7 +38,10 @@ public class SnapshotMetadataVerificationTaskResult extends IgniteDataTransferOb
     /** Errors happened during snapshot metadata verification. */
     private Map<ClusterNode, Exception> exceptions;
 
-    /** If {@code true}, all the {@link #exceptions()} are known and should be processed as a validation result. */
+    /**
+     * If {@code true}, all the {@link #exceptions()} are known and should be processed as an expected validation
+     * result.
+     */
     private boolean validationExceptions;
 
     /** */
@@ -66,7 +69,10 @@ public class SnapshotMetadataVerificationTaskResult extends IgniteDataTransferOb
         return Collections.unmodifiableMap(meta);
     }
 
-    /** @return {@code True} if all the {@link #exceptions()} are known and should be processed as a validation result. */
+    /**
+     * @return {@code True} if all the {@link #exceptions()} are known and should be processed as an expected
+     * validation result.
+     */
     public boolean validationExceptions() {
         return validationExceptions;
     }

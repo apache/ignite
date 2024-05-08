@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Incremen
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -141,11 +143,16 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
             snapshotMetaFileName((String)srv.localNode().consistentId())));
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
-            GridTestUtils.assertThrows(
-                log,
-                () -> snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE).get(getTestTimeout()),
-                IgniteCheckedException.class,
-                "Failed to find snapshot metafile");
+            SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE)
+                .get(getTestTimeout());
+
+            assertTrue("Single missing metadata validation exception is excpected.", res.exceptions().size() == 1);
+
+            assertNotNull("The exception is expected for the test node " + srv.localNode().consistentId(),
+                res.exceptions().get(srv.localNode()));
+
+            assertTrue(X.hasCause(res.exceptions().get(srv.localNode()), "Failed to find single snapshot " +
+                "metafile for local node [locNodeId=" + srv.localNode().consistentId(), IgniteException.class));
         }
     }
 
