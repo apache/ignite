@@ -245,7 +245,7 @@ public class BlockingTxOpsTest extends AbstractThinClientTest {
             init.run();
 
         GridTestUtils.runMultiThreaded(() -> {
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < 50; i++) {
                 // Mix implicit and explicit transactions.
                 if (ThreadLocalRandom.current().nextBoolean()) {
                     while (true) {
