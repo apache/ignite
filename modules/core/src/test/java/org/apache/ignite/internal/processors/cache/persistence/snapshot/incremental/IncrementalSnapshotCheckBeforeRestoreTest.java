@@ -21,7 +21,6 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -114,22 +113,16 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createFullSnapshot();
 
         for (IgniteEx n : F.asList(grid(0), grid(GRID_CNT))) {
-            GridTestUtils.assertThrows(
-                log,
-                () -> snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE).get(getTestTimeout()),
-                IgniteCheckedException.class,
-                "No incremental snapshot found");
+            SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE)
+                .get(getTestTimeout());
+
+            assertEquals(res.exceptions().size(), GRID_CNT);
+
+            res.exceptions().values().forEach(e -> assertTrue(X.hasCause(e, "No incremental snapshot found",
+                IllegalArgumentException.class)));
         }
 
         createIncrementalSnapshots(1);
-
-        for (IgniteEx n : F.asList(grid(0), grid(GRID_CNT))) {
-            SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE)
-                    .get(getTestTimeout());
-
-            assertTrue(res.exceptions().isEmpty());
-            assertTrue(res.idleVerifyResult().exceptions().isEmpty());
-        }
     }
 
     /** */
@@ -143,16 +136,12 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
             snapshotMetaFileName((String)srv.localNode().consistentId())));
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
-            SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE)
-                .get(getTestTimeout());
-
-            assertTrue("Single missing metadata validation exception is excpected.", res.exceptions().size() == 1);
-
-            assertNotNull("The exception is expected for the test node " + srv.localNode().consistentId(),
-                res.exceptions().get(srv.localNode()));
-
-            assertTrue(X.hasCause(res.exceptions().get(srv.localNode()), "Failed to find single snapshot " +
-                "metafile for local node [locNodeId=" + srv.localNode().consistentId(), IgniteException.class));
+            GridTestUtils.assertThrows(
+                log,
+                () -> snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE).get(getTestTimeout()),
+                IgniteCheckedException.class,
+                "Failed to find single snapshot metafile for local node [locNodeId=" + srv.localNode().consistentId()
+            );
         }
     }
 
@@ -166,7 +155,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
             SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 0, DFLT_CHECK_ON_RESTORE)
-                    .get(getTestTimeout());
+                .get(getTestTimeout());
 
             assertTrue(res.exceptions().isEmpty());
             assertTrue(res.idleVerifyResult().exceptions().isEmpty());
@@ -174,11 +163,13 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
             for (int i = 1; i <= 2; i++) {
                 final int inc = i;
 
-                GridTestUtils.assertThrows(
-                    log,
-                    () -> snp(n).checkSnapshot(SNP, null, null, false, inc, DFLT_CHECK_ON_RESTORE).get(getTestTimeout()),
-                    IgniteCheckedException.class,
-                    "No incremental snapshot found");
+                res = snp(n).checkSnapshot(SNP, null, null, false, inc, DFLT_CHECK_ON_RESTORE)
+                    .get(getTestTimeout());
+
+                assertEquals(res.exceptions().size(), GRID_CNT);
+
+                res.exceptions().values().forEach(e -> assertTrue(X.hasCause(e, "No incremental snapshot found",
+                    IllegalArgumentException.class)));
             }
         }
     }
@@ -283,11 +274,14 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
             meta.incrementalSnapshotPointer()), incMetaFile);
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
-            GridTestUtils.assertThrows(
-                log,
-                () -> snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE).get(getTestTimeout()),
-                IgniteCheckedException.class,
-                "Incremental snapshot doesn't match full snapshot");
+            SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE)
+                .get(getTestTimeout());
+
+            assertEquals(res.exceptions().size(), 1);
+            assertNotNull(res.exceptions().get(srv.localNode()));
+
+            assertTrue(X.hasCause(res.exceptions().get(srv.localNode()), "Incremental snapshot doesn't match full snapshot",
+                IllegalStateException.class));
         }
     }
 
@@ -314,11 +308,14 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
             meta.incrementalSnapshotPointer()), incMetaFile);
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
-            GridTestUtils.assertThrows(
-                log,
-                () -> snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE).get(getTestTimeout()),
-                IgniteCheckedException.class,
-                "Incremental snapshot meta has wrong index");
+            SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE)
+                .get(getTestTimeout());
+
+            assertEquals(res.exceptions().size(), 1);
+            assertNotNull(res.exceptions().get(srv.localNode()));
+
+            assertTrue(X.hasCause(res.exceptions().get(srv.localNode()), "Incremental snapshot meta has wrong index",
+                IllegalStateException.class));
         }
     }
 

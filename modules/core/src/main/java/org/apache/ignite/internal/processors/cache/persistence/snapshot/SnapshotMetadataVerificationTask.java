@@ -98,13 +98,13 @@ public class SnapshotMetadataVerificationTask
             List<SnapshotMetadata> metas = snpMgr.readSnapshotMetadatas(arg.snapshotName(), arg.snapshotPath());
 
             if (metas.isEmpty()) {
-                throw new IllegalArgumentException("Snapshot metadata not found [snapshot=" + arg.snapshotName()
+                throw new IllegalArgumentException("Snapshot does not exists [snapshot=" + arg.snapshotName()
                     + (arg.snapshotPath() != null ? ", baseDir=" + arg.snapshotPath() : "") + ", consistentId="
                     + ignite.localNode().consistentId() + ']');
             }
 
             for (SnapshotMetadata meta : metas)
-                checkMeta(metas, meta, ignite.context().config().getEncryptionSpi().masterKeyDigest());
+                checkMeta(meta, ignite.context().config().getEncryptionSpi().masterKeyDigest());
 
             if (arg.incrementIndex() > 0) {
                 List<SnapshotMetadata> locNodeMetas = metas.stream()
@@ -124,7 +124,7 @@ public class SnapshotMetadataVerificationTask
         }
 
         /** */
-        private void checkMeta(List<SnapshotMetadata> allMetas, SnapshotMetadata meta, byte[] masterKeyDigest) {
+        private void checkMeta(SnapshotMetadata meta, byte[] masterKeyDigest) {
             byte[] snpMasterKeyDigest = meta.masterKeyDigest();
 
             if (masterKeyDigest == null && snpMasterKeyDigest != null) {
@@ -142,10 +142,8 @@ public class SnapshotMetadataVerificationTask
 
             if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompression)) {
                 try {
-                    if (ignite.context().compress() == null) {
-                        throw new UnsupportedOperationException("Compression processor is not set. Compressed " +
-                            "snapshots aren't supported.");
-                    }
+                    if (ignite.context().compress() == null)
+                        throw new IllegalStateException("Compression processor is not set. Compressed snapshots aren't supported.");
 
                     ignite.context().compress().checkPageCompressionSupported();
                 }
@@ -158,7 +156,7 @@ public class SnapshotMetadataVerificationTask
                         "disk page compression is disabled. To check these groups please " +
                         "start Ignite with ignite-compress module in classpath";
 
-                    throw new IllegalArgumentException(msg);
+                    throw new IllegalStateException(msg);
                 }
             }
 
@@ -182,7 +180,7 @@ public class SnapshotMetadataVerificationTask
                     File incSnpDir = snpMgr.incrementalSnapshotLocalDir(arg.snapshotName(), arg.snapshotPath(), inc);
 
                     if (!incSnpDir.exists()) {
-                        throw new IgniteException("No incremental snapshot found " +
+                        throw new IllegalArgumentException("No incremental snapshot found " +
                             "[snpName=" + arg.snapshotName() + ", snpPath=" + arg.snapshotPath() + ", incrementIndex=" + inc + ']');
                     }
 
@@ -193,12 +191,12 @@ public class SnapshotMetadataVerificationTask
                     IncrementalSnapshotMetadata incMeta = snpMgr.readFromFile(metafile);
 
                     if (!incMeta.matchBaseSnapshot(fullMeta)) {
-                        throw new IgniteException("Incremental snapshot doesn't match full snapshot " +
+                        throw new IllegalStateException("Incremental snapshot doesn't match full snapshot " +
                             "[incMeta=" + incMeta + ", fullMeta=" + fullMeta + ']');
                     }
 
                     if (incMeta.incrementIndex() != inc) {
-                        throw new IgniteException(
+                        throw new IllegalStateException(
                             "Incremental snapshot meta has wrong index [expectedIdx=" + inc + ", meta=" + incMeta + ']');
                     }
 
@@ -260,7 +258,7 @@ public class SnapshotMetadataVerificationTask
             if (res.getException() != null) {
                 exs.put(res.getNode(), res.getException());
 
-                if (!X.hasCause(res.getException(), IllegalArgumentException.class))
+                if (!X.hasCause(res.getException(), IllegalArgumentException.class, IllegalStateException.class))
                     knownExceptions = false;
 
                 continue;

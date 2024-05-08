@@ -3641,7 +3641,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             ignite.destroyCache(DEFAULT_CACHE_NAME);
 
             assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "restore", snpName, "--sync"));
-            assertContains(log, testOut.toString(), "Snapshot metadata not found [snapshot=" + snpName);
+            assertContains(log, testOut.toString(), "Snapshot does not exists [snapshot=" + snpName);
 
             assertEquals(EXIT_CODE_INVALID_ARGUMENTS,
                 execute("--snapshot", "restore", snpName, "--src", "A", "--src", "B"));
@@ -3649,7 +3649,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             // The check command simply prints the results of the check, it always ends with a zero exit code.
             assertEquals(EXIT_CODE_OK, execute("--snapshot", "check", snpName));
-            assertContains(log, testOut.toString(), "Snapshot metadata not found [snapshot=" + snpName);
+            assertContains(log, testOut.toString(), "Snapshot does not exists [snapshot=" + snpName);
 
             assertEquals(EXIT_CODE_OK, execute("--snapshot", "check", snpName, "--src", snpDir.getAbsolutePath()));
             assertContains(log, testOut.toString(), "The check procedure has finished, no conflicts have been found.");
