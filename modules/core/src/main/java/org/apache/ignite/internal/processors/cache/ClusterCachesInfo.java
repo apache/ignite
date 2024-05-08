@@ -1738,7 +1738,8 @@ public class ClusterCachesInfo {
                 grpData.persistenceEnabled(),
                 grpData.walEnabled(),
                 grpData.walChangeRequests(),
-                grpData.cacheConfigurationEnrichment()
+                grpData.cacheConfigurationEnrichment(),
+                ctx.cache().context().cache().cacheGroup(grpData.groupId()).offheap()
             );
 
             if (locCacheGrps.containsKey(grpDesc.groupId())) {
@@ -2481,6 +2482,8 @@ public class ClusterCachesInfo {
             walGloballyEnabled = drCfg != null && drCfg.isCdcEnabled();
         }
 
+        IgniteCacheOffheapManager offheapMgr = ctx.cache().context().cache().cacheGroup(grpId).offheap();
+
         CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(
             startedCacheCfg,
             startedCacheCfg.getGroupName(),
@@ -2492,7 +2495,8 @@ public class ClusterCachesInfo {
             persistent,
             walGloballyEnabled,
             null,
-            cacheCfgEnrichment
+            cacheCfgEnrichment,
+            offheapMgr
         );
 
         if (startedCacheCfg.isEncryptionEnabled())

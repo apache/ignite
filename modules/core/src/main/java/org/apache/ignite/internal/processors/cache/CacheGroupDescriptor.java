@@ -57,6 +57,10 @@ public class CacheGroupDescriptor {
     private volatile CacheConfiguration<?, ?> cacheCfg;
 
     /** */
+    @GridToStringExclude
+    private volatile IgniteCacheOffheapManager offheapMgr;
+
+    /** */
     @GridToStringInclude
     private Map<String, Integer> caches;
 
@@ -103,7 +107,8 @@ public class CacheGroupDescriptor {
         boolean persistenceEnabled,
         boolean walEnabled,
         @Nullable Collection<WalStateProposeMessage> walChangeReqs,
-        CacheConfigurationEnrichment cacheCfgEnrichment
+        CacheConfigurationEnrichment cacheCfgEnrichment,
+        IgniteCacheOffheapManager offheapMgr
     ) {
         assert cacheCfg != null;
         assert grpId != 0;
@@ -119,6 +124,7 @@ public class CacheGroupDescriptor {
         this.walEnabled = walEnabled;
         this.walChangeReqs = walChangeReqs == null ? new LinkedList<>() : new LinkedList<>(walChangeReqs);
         this.cacheCfgEnrichment = cacheCfgEnrichment;
+        this.offheapMgr = offheapMgr;
     }
 
     /**
@@ -270,6 +276,13 @@ public class CacheGroupDescriptor {
      */
     public void config(CacheConfiguration cacheCfg) {
         this.cacheCfg = cacheCfg;
+    }
+
+    /**
+     * @return Offheap manager.
+     */
+    public IgniteCacheOffheapManager offheap() {
+        return offheapMgr;
     }
 
     /**

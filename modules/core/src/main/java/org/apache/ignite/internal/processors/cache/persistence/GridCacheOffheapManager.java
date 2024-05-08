@@ -1133,6 +1133,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
+    @Override public boolean hasExpiredEntries() throws IgniteCheckedException {
+        for (CacheDataStore store : cacheDataStores())
+            if (((GridCacheDataStore)store).hasExpiredEntries())
+                return true;
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public void preloadPartition(int partId) throws IgniteCheckedException {
         GridDhtLocalPartition locPart = grp.topology().localPartition(partId, AffinityTopologyVersion.NONE, false, false);
 
@@ -2689,6 +2698,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             CacheDataStore delegate0 = init0(true);
 
             return delegate0 == null ? 0 : pendingTree.size();
+        }
+
+        /**
+         * Checks if there are entries pending expire.
+         *
+         * @return {@code True} if there are entries pending expire.
+         * @throws IgniteCheckedException If failed to get number of pending entries.
+         */
+        public boolean hasExpiredEntries() throws IgniteCheckedException {
+            CacheDataStore delegate0 = init0(true);
+
+            return delegate0 != null && !pendingTree.isEmpty();
         }
 
         /**

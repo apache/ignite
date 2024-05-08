@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.systemview.view;
 
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -331,7 +332,15 @@ public class CacheView {
 
     /** @see CacheConfiguration#getExpiryPolicyFactory() */
     public String expiryPolicyFactory() {
-        return toStringSafe(cache.cacheConfiguration().getExpiryPolicyFactory());
+        if (cache.cacheConfiguration().getExpiryPolicyFactory() == null)
+                return null;
+
+        ExpiryPolicy expiryPlc = (ExpiryPolicy)cache.cacheConfiguration().getExpiryPolicyFactory().create();
+
+        return expiryPlc.getClass().getSimpleName() +
+            "[C: " + expiryPlc.getExpiryForCreation() +
+            ",A: " + expiryPlc.getExpiryForAccess() +
+            ",U: " + expiryPlc.getExpiryForUpdate() + "]";
     }
 
     /** @see CacheConfiguration#isSqlEscapeAll() */
