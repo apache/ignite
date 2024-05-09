@@ -1987,6 +1987,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 assertEquals("Bill", qryResults.get(2).name());
                 assertEquals("Bill", qryResults.get(4).name());
             }
+            else
+                assert qryResults.isEmpty();
         }
         finally {
             for (int i = 0; i < gridCount(); i++) {
