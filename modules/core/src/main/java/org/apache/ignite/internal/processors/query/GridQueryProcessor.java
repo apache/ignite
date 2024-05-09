@@ -3657,6 +3657,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param entryFilter Optional user defined cache entries filter.
      * @param cacheFilter Ignite specific cache entries filters.
      * @param keepBinary Keep binary flag.
+     * @param taskHash Hashcode of the task.
      * @return Key/value rows.
      * @throws IgniteCheckedException If failed.
      */
@@ -3666,7 +3667,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         final IndexQueryDesc idxQryDesc,
         @Nullable IgniteBiPredicate<K, V> entryFilter,
         final IndexingQueryFilter cacheFilter,
-        boolean keepBinary
+        boolean keepBinary,
+        int taskHash
     ) throws IgniteCheckedException {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
@@ -3678,7 +3680,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 new IgniteOutClosureX<IndexQueryResult<K, V>>() {
                     @Override public IndexQueryResult<K, V> applyx() throws IgniteCheckedException {
                         try {
-                            return idxQryPrc.queryLocal(cctx, idxQryDesc, entryFilter, cacheFilter, keepBinary);
+                            return idxQryPrc.queryLocal(cctx, idxQryDesc, entryFilter, cacheFilter, keepBinary, taskHash);
                         }
                         catch (IgniteCheckedException e) {
                             String msg = "Failed to execute IndexQuery: " + e.getMessage() + ". Query desc: " + idxQryDesc;
