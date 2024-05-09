@@ -57,11 +57,16 @@ public class SnapshotMetadataVerificationTask
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private SnapshotMetadataVerificationTaskArg arg;
+
     /** {@inheritDoc} */
     @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
         SnapshotMetadataVerificationTaskArg arg
     ) throws IgniteException {
+        this.arg = arg;
+
         Map<ComputeJob, ClusterNode> map = U.newHashMap(subgrid.size());
 
         for (ClusterNode node : subgrid)
@@ -96,12 +101,6 @@ public class SnapshotMetadataVerificationTask
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
             List<SnapshotMetadata> metas = snpMgr.readSnapshotMetadatas(arg.snapshotName(), arg.snapshotPath());
-
-            if (metas.isEmpty()) {
-                throw new IllegalArgumentException("Snapshot does not exists [snapshot=" + arg.snapshotName()
-                    + (arg.snapshotPath() != null ? ", baseDir=" + arg.snapshotPath() : "") + ", consistentId="
-                    + ignite.localNode().consistentId() + ']');
-            }
 
             for (SnapshotMetadata meta : metas)
                 checkMeta(meta, ignite.context().config().getEncryptionSpi().masterKeyDigest());
@@ -279,6 +278,20 @@ public class SnapshotMetadataVerificationTask
                 }
 
                 reduceRes.computeIfAbsent(res.getNode(), n -> new ArrayList<>()).add(meta);
+            }
+        }
+
+        if (first == null && exs.isEmpty()) {
+            assert !results.isEmpty();
+
+            knownExceptions = true;
+
+            for (ComputeJobResult res : results) {
+                Exception e = new IllegalArgumentException("Snapshot does not exists [snapshot=" + arg.snapshotName()
+                    + (arg.snapshotPath() != null ? ", baseDir=" + arg.snapshotPath() : "") + ", consistentId="
+                    + res.getNode().consistentId() + ']');
+
+                exs.put(res.getNode(), e);
             }
         }
 

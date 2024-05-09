@@ -144,7 +144,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         GridTestUtils.assertThrowsAnyCause(
             log,
             () -> snp(ig1).restoreSnapshot(SNAPSHOT_NAME, Collections.singletonList(dfltCacheCfg.getName())).get(TIMEOUT),
-            IgniteCheckedException.class,
+            IllegalArgumentException.class,
             "different master key digest"
         );
     }

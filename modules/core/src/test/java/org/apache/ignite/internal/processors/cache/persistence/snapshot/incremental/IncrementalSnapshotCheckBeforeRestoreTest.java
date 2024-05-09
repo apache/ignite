@@ -123,6 +123,14 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         }
 
         createIncrementalSnapshots(1);
+
+        for (IgniteEx n : F.asList(grid(0), grid(GRID_CNT))) {
+            SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE)
+                .get(getTestTimeout());
+
+            assertTrue(res.exceptions().isEmpty());
+            assertTrue(res.idleVerifyResult().exceptions().isEmpty());
+        }
     }
 
     /** */
