@@ -312,10 +312,8 @@ public class CommandHandler {
                     if (suppliedAuth)
                         throw new GridClientAuthenticationException("Wrong credentials.");
 
-                    if (tryConnectMaxCnt == 0) {
-                        throw new GridClientAuthenticationException("Maximum number of " +
-                            "retries exceeded");
-                    }
+                    if (tryConnectMaxCnt == 0)
+                        throw new GridClientAuthenticationException("Maximum number of retries exceeded");
 
                     logger.info(credentialsRequested ?
                         "Authentication error, please try again." :
