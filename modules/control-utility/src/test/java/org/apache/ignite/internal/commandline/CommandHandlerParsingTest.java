@@ -46,6 +46,7 @@ import org.apache.ignite.internal.management.ShutdownPolicyCommand;
 import org.apache.ignite.internal.management.ShutdownPolicyCommandArg;
 import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.management.WarmUpCommand;
+import org.apache.ignite.internal.management.WarmUpStopCommand;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
 import org.apache.ignite.internal.management.api.Command;
@@ -65,6 +66,7 @@ import org.apache.ignite.internal.management.cache.CacheFindGarbageCommandArg;
 import org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommandArg;
 import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandArg;
 import org.apache.ignite.internal.management.cdc.CdcCommand;
+import org.apache.ignite.internal.management.cdc.CdcDeleteLostSegmentLinksCommand;
 import org.apache.ignite.internal.management.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand;
 import org.apache.ignite.internal.management.encryption.EncryptionCommand;
@@ -440,12 +442,7 @@ public class CommandHandlerParsingTest {
     @Test
     public <A extends IgniteDataTransferObject> void testParseAutoConfirmationFlag() {
         new IgniteCommandRegistry().commands().forEachRemaining(e -> {
-            Command<A, ?> cmdL = (Command<A, ?>)e.getValue();
-
-            // SET_STATE command has mandatory argument used in confirmation message.
-            CliCommandInvoker<A> cmd = cmdL.getClass() != SetStateCommand.class
-                ? new CliCommandInvoker<>(cmdL, null, null)
-                : new CliCommandInvoker<>(parseArgs(asList(cmdText(cmdL), "ACTIVE")).command(), null, null);
+            Command<A, ?> cmd = (Command<A, ?>)e.getValue();
 
             if (!(cmd instanceof ComputeCommand)
                 && !(cmd instanceof LocalCommand)
@@ -455,7 +452,7 @@ public class CommandHandlerParsingTest {
             }
 
             try {
-                if (cmdL.confirmationPrompt(cmdL.argClass().newInstance()) == null)
+                if (cmd.confirmationPrompt(cmd.argClass().newInstance()) == null)
                     return;
             }
             catch (InstantiationException | IllegalAccessException ex) {
@@ -464,33 +461,33 @@ public class CommandHandlerParsingTest {
 
             ConnectionAndSslParameters args;
 
-            if (cmdL.getClass() == SetStateCommand.class)
-                args = parseArgs(asList(cmdText(cmdL), "ACTIVE"));
-            else if (cmdL.getClass() == ChangeTagCommand.class)
-                args = parseArgs(asList(cmdText(cmdL), "newTagValue"));
-            else if (cmdL.getClass() == WarmUpCommand.class)
-                args = parseArgs(asList(cmdText(cmdL), "--stop"));
-            else if (cmdL.getClass() == CdcCommand.class)
-                args = parseArgs(asList(cmdText(cmdL), DELETE_LOST_SEGMENT_LINKS, NODE_ID, UUID.randomUUID().toString()));
+            if (cmd.getClass() == SetStateCommand.class)
+                args = parseArgs(asList(cmdText(cmd), "ACTIVE"));
+            else if (cmd.getClass() == ChangeTagCommand.class)
+                args = parseArgs(asList(cmdText(cmd), "newTagValue"));
+            else if (cmd.getClass() == WarmUpStopCommand.class)
+                args = parseArgs(asList(cmdText(cmd), "--stop"));
+            else if (cmd.getClass() == CdcDeleteLostSegmentLinksCommand.class)
+                args = parseArgs(asList(cmdText(cmd), DELETE_LOST_SEGMENT_LINKS, NODE_ID, UUID.randomUUID().toString()));
             else
-                args = parseArgs(asList(cmdText(cmdL)));
+                args = parseArgs(asList(cmdText(cmd)));
 
-            checkCommonParametersCorrectlyParsed(cmdL, args, false);
+            checkCommonParametersCorrectlyParsed(cmd, args, false);
 
-            if (cmdL.getClass() == DeactivateCommand.class) {
-                args = parseArgs(asList(cmdText(cmdL), "--yes"));
+            if (cmd.getClass() == DeactivateCommand.class) {
+                args = parseArgs(asList(cmdText(cmd), "--yes"));
 
-                checkCommonParametersCorrectlyParsed(cmdL, args, true);
+                checkCommonParametersCorrectlyParsed(cmd, args, true);
 
-                args = parseArgs(asList(cmdText(cmdL), "--force", "--yes"));
+                args = parseArgs(asList(cmdText(cmd), "--force", "--yes"));
 
-                checkCommonParametersCorrectlyParsed(cmdL, args, true);
+                checkCommonParametersCorrectlyParsed(cmd, args, true);
             }
-            else if (cmdL.getClass() == SetStateCommand.class) {
+            else if (cmd.getClass() == SetStateCommand.class) {
                 for (String newState : asList("ACTIVE_READ_ONLY", "ACTIVE", "INACTIVE")) {
-                    args = parseArgs(asList(cmdText(cmdL), newState, "--yes"));
+                    args = parseArgs(asList(cmdText(cmd), newState, "--yes"));
 
-                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
+                    checkCommonParametersCorrectlyParsed(cmd, args, true);
 
                     ClusterState argState = (((SetStateCommandArg)args.commandArg())).state();
 
@@ -498,20 +495,20 @@ public class CommandHandlerParsingTest {
                 }
 
                 for (String newState : asList("ACTIVE_READ_ONLY", "ACTIVE", "INACTIVE")) {
-                    args = parseArgs(asList(cmdText(cmdL), newState, "--force", "--yes"));
+                    args = parseArgs(asList(cmdText(cmd), newState, "--force", "--yes"));
 
-                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
+                    checkCommonParametersCorrectlyParsed(cmd, args, true);
 
                     ClusterState argState = (((SetStateCommandArg)args.commandArg())).state();
 
                     assertEquals(newState, argState.toString());
                 }
             }
-            else if (cmdL.getClass() == BaselineCommand.class) {
+            else if (cmd.getClass() == BaselineCommand.class) {
                 for (String baselineAct : asList("add", "remove", "set")) {
-                    args = parseArgs(asList(cmdText(cmdL), baselineAct, "c_id1,c_id2", "--yes"));
+                    args = parseArgs(asList(cmdText(cmd), baselineAct, "c_id1,c_id2", "--yes"));
 
-                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
+                    checkCommonParametersCorrectlyParsed(cmd, args, true);
 
                     BaselineAddCommandArg arg = (BaselineAddCommandArg)args.commandArg();
 
@@ -525,10 +522,10 @@ public class CommandHandlerParsingTest {
                     assertEquals(new HashSet<>(asList("c_id1", "c_id2")), new HashSet<>(Arrays.asList(arg.consistentIDs())));
                 }
             }
-            else if (cmdL.getClass() == TxCommand.class) {
-                args = parseArgs(asList(cmdText(cmdL), "--xid", "xid1", "--min-duration", "10", "--kill", "--yes"));
+            else if (cmd.getClass() == TxCommand.class) {
+                args = parseArgs(asList(cmdText(cmd), "--xid", "xid1", "--min-duration", "10", "--kill", "--yes"));
 
-                checkCommonParametersCorrectlyParsed(cmdL, args, true);
+                checkCommonParametersCorrectlyParsed(cmd, args, true);
 
                 TxCommandArg txTaskArg = (TxCommandArg)args.commandArg();
 
@@ -536,21 +533,21 @@ public class CommandHandlerParsingTest {
                 assertEquals(10_000, txTaskArg.minDuration().longValue());
                 assertTrue(txTaskArg.kill());
             }
-            else if (cmdL.getClass() == ChangeTagCommand.class) {
-                args = parseArgs(asList(cmdText(cmdL), "newTagValue", "--yes"));
+            else if (cmd.getClass() == ChangeTagCommand.class) {
+                args = parseArgs(asList(cmdText(cmd), "newTagValue", "--yes"));
 
-                checkCommonParametersCorrectlyParsed(cmdL, args, true);
+                checkCommonParametersCorrectlyParsed(cmd, args, true);
             }
-            else if (cmdL.getClass() == WarmUpCommand.class) {
-                args = parseArgs(asList(cmdText(cmdL), "--stop", "--yes"));
+            else if (cmd.getClass() == WarmUpStopCommand.class) {
+                args = parseArgs(asList(cmdText(cmd), "--stop", "--yes"));
 
-                checkCommonParametersCorrectlyParsed(cmdL, args, true);
+                checkCommonParametersCorrectlyParsed(cmd, args, true);
             }
-            else if (cmdL.getClass() == CdcCommand.class) {
-                args = parseArgs(asList(cmdText(cmdL), DELETE_LOST_SEGMENT_LINKS,
+            else if (cmd.getClass() == CdcDeleteLostSegmentLinksCommand.class) {
+                args = parseArgs(asList(cmdText(cmd), DELETE_LOST_SEGMENT_LINKS,
                     NODE_ID, UUID.randomUUID().toString(), "--yes"));
 
-                checkCommonParametersCorrectlyParsed(cmdL, args, true);
+                checkCommonParametersCorrectlyParsed(cmd, args, true);
             }
             else
                 fail("Unknown command: " + cmd);
