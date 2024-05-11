@@ -52,10 +52,12 @@
         <module>modules/hibernate-ext</module>
         <module>modules/geospatial-ext</module>            
         <module>modules/aop-ext</module>
+        <module>modules/yarn-ext</module>
         <module>modules/osgi-ext</module>
         <module>modules/ssh-ext</module>
         <module>modules/ml-ext</module>
-        <module>modules/gatling-ext</module>
+        <module>modules/elasticsearch-relay</module>
+        <module>modules/mongodb-relay</module>
     </modules>
 
     <profiles>

@@ -63,14 +63,14 @@ public class SimpleStepFunctionCompressor<T extends ImpurityMeasure<T>> implemen
 
     /** {@inheritDoc} */
     @Override public StepFunction<T> compress(StepFunction<T> function) {
-        double[] arguments = function.getX();
+        double[] args = function.getX();
         T[] values = function.getY();
 
-        if (arguments.length >= minSizeToBeCompressed) {
+        if (args.length >= minSizeToBeCompressed) {
             List<StepFunctionPoint> points = new ArrayList<>();
 
-            for (int i = 0; i < arguments.length; i++)
-                points.add(new StepFunctionPoint(arguments[i], values[i]));
+            for (int i = 0; i < args.length; i++)
+                points.add(new StepFunctionPoint(args[i], values[i]));
 
             points = compress(points);
 

@@ -344,7 +344,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         //locMxBean = new CacheLocalMetricsMXBeanImpl(this);
         //clusterMxBean = new CacheClusterMetricsMXBeanImpl(this);
 
-        FileSystemConfiguration[] igfsCfgs = gridCfg.getFileSystemConfiguration();
+        FileSystemConfiguration[] igfsCfgs = ctx.gridConfig().getFileSystemConfiguration();
 
         if (igfsCfgs != null) {
             for (FileSystemConfiguration igfsCfg : igfsCfgs) {

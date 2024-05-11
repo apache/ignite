@@ -349,20 +349,13 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable,
 
         for (final ClusterNode node : nodes) {
             // Normalize host names into Hadoop-expected format.
+        	// modify@byron
             try {
-                Collection<InetAddress> addrs = U.toInetAddresses(node);
-
-                for (InetAddress addr : addrs) {
-                    if (addr.getHostName() == null)
-                        names.add(addr.getHostAddress() + ":" + 9001);
-                    else {
-                        names.add(addr.getHostName() + ":" + 9001); // hostname:portNumber
-                        hosts.add(addr.getHostName());
-                    }
-                }
+            	names.addAll(node.addresses());
+            	hosts.addAll(node.hostNames());
             }
-            catch (IgniteCheckedException ignored) {
-                names.addAll(node.addresses());
+            catch (Exception ignored) {
+                
             }
 
             nodeIds.add(node.id());

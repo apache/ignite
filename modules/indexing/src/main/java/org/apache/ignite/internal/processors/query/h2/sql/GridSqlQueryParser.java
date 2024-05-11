@@ -105,6 +105,7 @@ import org.h2.table.TableFilter;
 import org.h2.table.TableView;
 import org.h2.value.DataType;
 import org.h2.value.Value;
+import org.h2.value.ValueString;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.AND;

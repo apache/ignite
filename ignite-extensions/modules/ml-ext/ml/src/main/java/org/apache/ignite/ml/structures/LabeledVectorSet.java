@@ -234,6 +234,7 @@ public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> im
     public LabeledVectorSet<Row> copy() {
         LabeledVectorSet<Row> res = new LabeledVectorSet<>(this.data, this.colSize);
         res.meta = this.meta;
+
         return res;
     }
 

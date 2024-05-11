@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.query;
+package org.apache.ignite.internal.management.cache;
 
 import java.util.regex.Pattern;
 import org.apache.ignite.binary.BinaryObject;

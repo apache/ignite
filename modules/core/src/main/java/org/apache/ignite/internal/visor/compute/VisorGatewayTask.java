@@ -44,7 +44,7 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.PublicAccessJob;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
+
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -63,7 +63,6 @@ import org.jetbrains.annotations.Nullable;
  * Task to run Visor tasks through http REST.
  */
 @GridInternal
-@GridVisorManagementTask
 public class VisorGatewayTask implements ComputeTask<Object[], Object> {
     /** */
     private static final long serialVersionUID = 0L;
