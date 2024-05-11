@@ -996,7 +996,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 27;
+        return 26;
     }
 
     /** {@inheritDoc} */

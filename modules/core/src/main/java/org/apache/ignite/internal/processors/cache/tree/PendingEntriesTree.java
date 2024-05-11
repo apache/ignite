@@ -120,6 +120,18 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
         return Long.compare(link, row.link);
     }
 
+    /**
+     * @param lower Lower bound (inclusive).
+     * @param upper Upper bound (inclusive).
+     * @param limit Limit of processed entries by single call, {@code 0} or negative value for no limit.
+     * @return {@code True} if removed at least one row.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean removex(PendingRow lower, PendingRow upper, int limit) throws IgniteCheckedException {
+        return removex(lower, upper, WITHOUT_KEY, limit);
+    }
+
+
     /** {@inheritDoc} */
     @Override public PendingRow getRow(BPlusIO<PendingRow> io, long pageAddr, int idx, Object flag)
         throws IgniteCheckedException {

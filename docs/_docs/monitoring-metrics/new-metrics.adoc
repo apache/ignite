@@ -507,6 +507,3 @@ Register name: `sql.queries.user`
 |failed| long | The number of failed SQL queries (including canceled).
 |canceled| long | The number of canceled SQL queries.
 |===
-
-
-

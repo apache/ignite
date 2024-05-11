@@ -30,6 +30,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
@@ -67,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIterator;
@@ -1107,7 +1109,28 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         try {
             int cleared = 0;
 
+            // Use random shift to reduce contention.
+            int shift = ThreadLocalRandom.current().nextInt(F.size(cacheDataStores().iterator()));
+
+            int cnt = 0;
             for (CacheDataStore store : cacheDataStores()) {
+                if (cnt++ < shift) // On the first iteration skip entries before <shift>.
+                    continue;
+
+                cleared += ((GridCacheDataStore)store).purgeExpired(cctx, c, unwindThrottlingTimeout, amount - cleared);
+
+                if (amount != -1 && cleared >= amount)
+                    return true;
+            }
+
+            if (shift == 0)
+                return false;
+
+            cnt = 0;
+            for (CacheDataStore store : cacheDataStores()) {
+                if (cnt++ >= shift) // On the second iteration skip entries after <shift>.
+                    break;
+
                 cleared += ((GridCacheDataStore)store).purgeExpired(cctx, c, unwindThrottlingTimeout, amount - cleared);
 
                 if (amount != -1 && cleared >= amount)
@@ -2625,17 +2648,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (pendingTree != null) {
                 PendingRow row = new PendingRow(cacheId);
 
-                GridCursor<PendingRow> cursor = pendingTree.find(row, row, PendingEntriesTree.WITHOUT_KEY);
-
-                while (cursor.next()) {
-                    PendingRow row0 = cursor.get();
-
-                    assert row0.link != 0 : row;
-
-                    boolean res = pendingTree.removex(row0);
-
-                    assert res;
-                }
+                while (pendingTree.removex(row, row, -1));
             }
 
             delegate0.clear(cacheId);
@@ -2723,43 +2736,37 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     long now = U.currentTimeMillis();
 
-                    GridCursor<PendingRow> cur;
-
-                    if (grp.sharedGroup())
-                        cur = pendingTree.find(new PendingRow(cctx.cacheId()), new PendingRow(cctx.cacheId(), now, 0));
-                    else
-                        cur = pendingTree.find(null, new PendingRow(CU.UNDEFINED_CACHE_ID, now, 0));
-
-                    if (!cur.next())
-                        return 0;
-
-                    GridCacheVersion obsoleteVer = null;
+                    int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
                     int cleared = 0;
 
                     do {
-                        PendingRow row = cur.get();
+                        List<PendingRow> rows = pendingTree.remove(new PendingRow(cacheId, Long.MIN_VALUE, 0),
+                            new PendingRow(cacheId, now, 0), amount - cleared);
 
-                        if (amount != -1 && cleared > amount)
-                            return cleared;
+                        if (rows.isEmpty())
+                            break;
 
-                        assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
+                        for (PendingRow row : rows) {
+                            row.key.partition(partId);
 
-                        row.key.partition(partId);
+                            assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
 
-                        if (pendingTree.removex(row)) {
+                            GridCacheVersion obsoleteVer = null;
+
                             if (obsoleteVer == null)
                                 obsoleteVer = cctx.cache().nextVersion();
 
-                            GridCacheEntryEx e1 = cctx.cache().entryEx(row.key);
+                            GridCacheEntryEx entry = cctx.cache().entryEx(row.key instanceof KeyCacheObjectImpl
+                                ? new ExpiredKeyCacheObject((KeyCacheObjectImpl)row.key, row.expireTime, row.link) : row.key);
 
-                            if (e1 != null)
-                                c.apply(e1, obsoleteVer);
+                            if (entry != null)
+                                c.apply(entry, obsoleteVer);
                         }
 
-                        cleared++;
+                        cleared += rows.size();
                     }
-                    while (cur.next());
+                    while (amount < 0 || cleared < amount);
 
                     return cleared;
                 }

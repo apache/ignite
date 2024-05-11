@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
@@ -108,12 +110,16 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_THREAD_CNT;
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_TIMEOUT;
+import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TMP_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
@@ -129,6 +135,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.d
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntrySerializer.HEADER_SZ;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
@@ -154,6 +161,8 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
         }
+
+        cfg.setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT);
 
         return cfg;
     }
@@ -570,6 +579,37 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         assertFalse(Objects.equals(ver0, ver1));
         assertFalse(Objects.equals(hash0, hash1));
+    }
+
+    /** */
+    @Test
+    public void testCancelDump() throws Exception {
+        persistence = true;
+
+        IgniteEx srv = startGrids(3);
+
+        Collection<Integer> locEvts = ConcurrentHashMap.newKeySet();
+
+        srv.events().localListen(e -> locEvts.add(e.type()), EVTS_CLUSTER_SNAPSHOT);
+
+        IgniteEx startCli = startClientGrid(G.allGrids().size());
+
+        IgniteEx killCli = startClientGrid(G.allGrids().size());
+
+        startCli.cluster().state(ClusterState.ACTIVE);
+
+        startCli.createCache(defaultCacheConfiguration());
+
+        try (IgniteDataStreamer<Integer, Integer> ds = startCli.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int i = 0; i < 1000; i++)
+                ds.addData(i, i);
+        }
+
+        doSnapshotCancellationTest(true, startCli, Collections.singletonList(srv),
+            srv.cache(DEFAULT_CACHE_NAME), snpName -> killCli.snapshot().cancelSnapshot(snpName).get());
+
+        waitForCondition(() -> locEvts.containsAll(Arrays.asList(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FAILED)),
+            getTestTimeout());
     }
 
     /** */
