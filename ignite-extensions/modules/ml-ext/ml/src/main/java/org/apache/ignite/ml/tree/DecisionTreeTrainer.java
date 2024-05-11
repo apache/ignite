@@ -224,13 +224,13 @@ public abstract class DecisionTreeTrainer<T extends ImpurityMeasure<T>> extends 
         for (int col = 0; col < criterionFunctions.length; col++) {
             StepFunction<T> criterionFunctionForCol = criterionFunctions[col];
 
-            double[] args = criterionFunctionForCol.getX();
+            double[] arguments = criterionFunctionForCol.getX();
             T[] values = criterionFunctionForCol.getY();
 
             for (int leftSize = 1; leftSize < values.length - 1; leftSize++) {
                 if ((values[0].impurity() - values[leftSize].impurity()) > minImpurityDecrease
                     && (res == null || values[leftSize].compareTo(res.val) < 0))
-                    res = new SplitPoint<>(values[leftSize], col, calculateThreshold(args, leftSize));
+                    res = new SplitPoint<>(values[leftSize], col, calculateThreshold(arguments, leftSize));
             }
         }
 

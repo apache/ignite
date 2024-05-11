@@ -4,8 +4,8 @@
 	
 	<parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-parent-internal</artifactId>
-        <version>2.16.999-SNAPSHOT</version>
+        <artifactId>ignite-parent-ext-internal</artifactId>
+        <version>1</version>
         <relativePath>../../parent-internal/pom.xml</relativePath>
     </parent>
     
