@@ -1,0 +1,7 @@
+Apache Ignite Extensions Release Notes
+======================================
+
+Apache Ignite Zookeeper Ip Finder Module 1.0.0
+----------------------------------------------
+
+* Initial release of the Apache Ignite ZooKeeper Ip Finder module that provides a TCP Discovery IP Finder.

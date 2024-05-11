@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util.xsd">
+
+    <bean id="loadBalancingPolicy" class="com.datastax.driver.core.policies.TokenAwarePolicy">
+        <constructor-arg type="com.datastax.driver.core.policies.LoadBalancingPolicy">
+            <bean class="com.datastax.driver.core.policies.RoundRobinPolicy"/>
+        </constructor-arg>
+    </bean>
+
+    <util:list id="contactPoints" value-type="java.lang.String">
+        <value>cassandra-node-1.abc.com</value>
+        <value>cassandra-node-2.abc.com</value>
+    </util:list>
+
+    <bean id="cassandraAdminDataSource" class="org.apache.ignite.cache.store.cassandra.datasource.DataSource">
+        <property name="user" value="cassandra"/>
+        <property name="password" value="cassandra"/>
+        <property name="contactPoints" ref="contactPoints"/>
+        <property name="readConsistency" value="ONE"/>
+        <property name="writeConsistency" value="ONE"/>
+        <property name="loadBalancingPolicy" ref="loadBalancingPolicy"/>
+    </bean>
+
+    <bean id="cache1_persistence_settings" class="org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings">
+        <constructor-arg type="java.lang.String">
+            <value><![CDATA[
+<persistence keyspace="test1" table="primitive_test1">
+    <keyPersistence class="java.lang.Long" strategy="PRIMITIVE" column="key"/>
+    <valuePersistence class="java.lang.Long" strategy="PRIMITIVE" column="value"/>
+</persistence>]]>
+            </value>
+        </constructor-arg>
+    </bean>
+
+    <!-- Ignite configuration -->
+    <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <!-- Turn on client mode -->
+        <property name="clientMode" value="true"/>
+
+        <property name="metricsLogFrequency" value="0"/>
+
+        <property name="cacheConfiguration">
+            <list>
+                <!-- Configuring persistence for "cache1" cache -->
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="cache1"/>
+                    <property name="readThrough" value="true"/>
+                    <property name="writeThrough" value="true"/>
+                    <property name="cacheStoreFactory">
+                        <bean class="org.apache.ignite.cache.store.cassandra.CassandraCacheStoreFactory">
+                            <property name="dataSourceBean" value="cassandraAdminDataSource"/>
+                            <property name="persistenceSettingsBean" value="cache1_persistence_settings"/>
+                        </bean>
+                    </property>
+                </bean>
+            </list>
+        </property>
+
+        <!-- Configuring remote ignite cluster connections -->
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <value>ignite-node-1</value>
+                                <value>ignite-node-2</value>
+                                <value>ignite-node-3</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+</beans>

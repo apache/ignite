@@ -52,6 +52,7 @@ import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.QueryMetrics;
+import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
@@ -619,8 +620,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             taskName));
                     }
 
+                    //add@byron use TextQuery insteads text string
+                    TextQuery<K, V> tq = new TextQuery<K, V>(qry.queryClassName(),qry.clause());
+                    tq.setPageSize(qry.pageSize());
+                    tq.setLocal(qry.forceLocal());
+                    tq.setFitler(qry.scanFilter());
+					tq.setLimit(qry.limit());
+                    //iter = qryProc.queryText(cacheName, tq, qry.queryClassName(), filter(qry));
                     iter = qryProc.queryText(cacheName, qry.clause(), qry.queryClassName(), filter(qry), qry.limit());
-
+					//end@
                     break;
 
                 case SET:
@@ -1242,9 +1250,20 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         K key0 = null;
                         V val0 = null;
+  						//add@byron support scanfilter:
+                        if(qry.scanFilter()!=null){                        	
+                            key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, qry.keepBinary(), false, null);                            
+                            val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, qry.keepBinary(), false, null);
+                            
+                            if(!qry.scanFilter().apply(key0,val0))
+                            	continue;
+                        }
+                        //end@
 
                         if (readEvt && cctx.gridEvents().hasListener(EVT_CACHE_QUERY_OBJECT_READ)) {
+                        	if (key0 == null)
                             key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, qry.keepBinary(), false, null);
+                        	if (val0 == null)
                             val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, qry.keepBinary(), false, null);
 
                             switch (type) {
@@ -1664,7 +1683,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             fut = resMap.get(qryInfo.requestId());
 
             if (fut == null) {
-                resMap.put(qryInfo.requestId(), fut = new GridFutureAdapter<>());
+                resMap.put(qryInfo.requestId(), fut =
+                    new GridFutureAdapter<>());
 
                 exec = true;
             }
@@ -2925,6 +2945,25 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             null)
             .limit(limit)
             .pageSize(pageSize);
+    }
+	
+	//add@byron support text search filter
+    public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName,
+        String search, IgniteBiPredicate<Object, Object> filter, int limit,  int pageSize, boolean keepBinary) {
+        A.notNull("clsName", clsName);
+        A.notNull("search", search);
+
+        return new GridCacheQueryAdapter<Map.Entry<K, V>>(cctx,
+            TEXT,
+            clsName,
+            search,
+            filter,
+            null,
+            false,
+            keepBinary,
+			null)
+        	.limit(limit)
+        	.pageSize(pageSize);
     }
 
     /**

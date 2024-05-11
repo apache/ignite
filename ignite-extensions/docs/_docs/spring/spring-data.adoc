@@ -1,0 +1,296 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Apache Ignite With Spring Data
+
+== Overview
+
+Spring Data Framework provides a unified and widely used API that allows abstracting an underlying data storage from the
+application layer. Spring Data helps you avoid locking to a specific database vendor, making it easy to switch from one
+database to another with minimal efforts. Apache Ignite integrates with Spring Data by implementing Spring Data `CrudRepository` interface.
+
+== Maven Configuration
+
+The easiest way to start working with Apache Ignite's Spring Data repository is by adding the following Maven dependencies
+to the application's `pom.xml` file:
+
+[tabs]
+--
+tab:pom.xml[]
+[source,xml]
+----
+<dependency>
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-spring-data-ext</artifactId>
+    <version>${ignite-spring-data-ext.version}</version>
+</dependency>
+
+<dependency>
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-core</artifactId>
+    <version>${ignite.version}</version>
+</dependency>
+
+<dependency>
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-indexing</artifactId>
+    <version>${ignite.version}</version>
+</dependency>
+
+<dependency>
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-spring</artifactId>
+    <version>${ignite.version}</version>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.data</groupId>
+    <artifactId>spring-data-commons</artifactId>
+    <version>${spring.data.version}</version>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-tx</artifactId>
+    <version>${spring.version}</version>
+</dependency>
+----
+--
+
+Replace `${ignite-spring-data-ext.version}`, `${spring.data.version}`, and
+`${ignite.version}` with an actual version of Apache Ignite Spring Data extension, Spring Data, and Apache Ignite
+dependencies you are interested in, respectively.
+
+The table below shows available versions of the Apache Ignite Spring Data extension and corresponding versions of the
+Apache Ignite each one is compatible with.
+
+[cols="4,5", opts="header"]
+|===
+|Apache Ignite Spring Data extension version | Compatible Apache Ignite versions
+| 1.0.0 | All versions since 2.8.0
+| 2.0.0 | All versions since 2.8.0
+|===
+
+== Apache Ignite Repository
+
+Apache Ignite introduces a special `IgniteRepository` interface that extends default `CrudRepository`. This interface
+should be extended by all custom Spring Data repositories that wish to store and query data located in an Apache Ignite cluster.
+
+For instance, let's create the first custom repository named `PersonRepository`:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+@RepositoryConfig(cacheName = "PersonCache")
+public interface PersonRepository extends IgniteRepository<Person, Long> {
+    /**
+     * Gets all the persons with the given name.
+     * @param name Person name.
+     * @return A list of Persons with the given first name.
+     */
+    public List<Person> findByFirstName(String name);
+
+    /**
+     * Returns top Person with the specified surname.
+     * @param name Person surname.
+     * @return Person that satisfy the query.
+     */
+    public Cache.Entry<Long, Person> findTopByLastNameLike(String name);
+
+    /**
+     * Getting ids of all the Person satisfying the custom query from {@link Query} annotation.
+     *
+     * @param orgId Query parameter.
+     * @param pageable Pageable interface.
+     * @return A list of Persons' ids.
+     */
+    @Query("SELECT id FROM Person WHERE orgId > ?")
+    public List<Long> selectId(long orgId, Pageable pageable);
+}
+----
+--
+
+* `@RepositoryConfig` annotation should be specified to map a repository to a distributed cache. In the above example, `PersonRepository` is mapped to `PersonCache`.
+* Signatures of custom methods like `findByFirstName(name)` and `findTopByLastNameLike(name)` will be automatically processed and turned
+into SQL queries when methods get executed. In addition, `@Query(queryString)` annotation can be used if a concrete​ SQL
+query needs to be executed as a result of a method call.
+
+
+[CAUTION]
+====
+[discrete]
+=== Unsupported CRUD Operations
+
+Some operations of CrudRepository interface are not currently supported. These are the operations that do not require providing the key as a parameter:
+
+* save(S entity)
+* save(Iterable<S> entities)
+* delete(T entity)
+* delete(Iterable<? extends T> entities)
+
+Instead of these operations you can use Ignite specific counterparts available via `IgniteRepository` interface:
+
+* save(ID key, S entity)
+* save(Map<ID, S> entities)
+* deleteAll(Iterable<ID> ids)
+
+====
+
+== Spring Data and Apache Ignite Configuration
+
+Apache Ignite Spring Data integration supports connecting to the Apache Ignite cluster through the Apache Ignite node or
+Apache Ignite thin client. Both approaches to configuring access to the Apache Ignite cluster use the same API shown
+below. Apache Ignite Spring Data integration automatically recognizes the type of the provided bean and uses the
+appropriate cluster connection.
+
+To enable Apache Ignite backed repositories in Spring Data, mark an application configuration with `@EnableIgniteRepositories`
+annotation, as shown below:
+
+[tabs]
+--
+tab:Ignite node connection configuration[]
+[source,java]
+----
+@Configuration
+@EnableIgniteRepositories
+public class SpringAppCfg {
+    /**
+     * Creating Apache Ignite instance bean. A bean will be passed
+     * to IgniteRepositoryFactoryBean to initialize all Ignite based Spring Data repositories and connect to a cluster.
+     */
+    @Bean
+    public Ignite igniteInstance() {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        // Setting some custom name for the node.
+        cfg.setIgniteInstanceName("springDataNode");
+
+        // Enabling peer-class loading feature.
+        cfg.setPeerClassLoadingEnabled(true);
+
+        // Defining and creating a new cache to be used by Ignite Spring Data
+        // repository.
+        CacheConfiguration ccfg = new CacheConfiguration("PersonCache");
+
+        // Setting SQL schema for the cache.
+        ccfg.setIndexedTypes(Long.class, Person.class);
+
+        cfg.setCacheConfiguration(ccfg);
+
+        return Ignition.start(cfg);
+    }
+}
+----
+tab:Ignite thin client connection configuration[]
+[source,java]
+----
+@Configuration
+@EnableIgniteRepositories
+public class SpringAppCfg {
+    /**
+     * Creating Apache Ignite thin client instance bean. A bean will be passed to the IgniteRepositoryFactoryBean to
+     * connect to the Ignite cluster and perform cache operations.
+     */
+    @Bean
+    public IgniteClient igniteInstance() {
+        return Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800");;
+    }
+}
+----
+--
+
+The configuration has to instantiate the Apache Ignite bean (node) or the Apache Ignite thin client bean that is passed
+to `IgniteRepositoryFactoryBean` and is used by all the Apache Ignite repositories in order to connect to the cluster.
+
+In the example above, the bean is initialized directly by the application and is named `igniteInstance`.
+Alternatively, the following beans can be registered in your configuration and an Apache Ignite node will be started automatically:
+
+* `IgniteConfiguration` object named as `igniteCfg` bean.
+* A path to Apache Ignite's Spring XML configuration named `igniteSpringCfgPath`.
+
+In the case of connecting to the cluster via Apache Ignite thin client, you can alternatively register the
+`ClientConfiguration` bean named `igniteCfg`, so that the Apache Ignite thin client instance is started automatically by
+the Apache Ignite Spring Data integration.
+
+== Using Apache Ignite Repositories
+
+Once all the configurations and repositories are ready to be used, you can register the configuration in an application context and get a reference to the repository.
+The following example shows how to register `SpringAppCfg` - our sample configuration from the section above - in an application context and get a reference to `PersonRepository`:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+ctx = new AnnotationConfigApplicationContext();
+
+// Explicitly registering Spring configuration.
+ctx.register(SpringAppCfg.class);
+
+ctx.refresh();
+
+// Getting a reference to PersonRepository.
+repo = ctx.getBean(PersonRepository.class);
+----
+--
+
+Now, you can put data in Ignite using Spring Data API:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+TreeMap<Long, Person> persons = new TreeMap<>();
+
+persons.put(1L, new Person(1L, 2000L, "John", "Smith", 15000, "Worked for Apple"));
+
+persons.put(2L, new Person(2L, 2000L, "Brad", "Pitt", 16000, "Worked for Oracle"));
+
+persons.put(3L, new Person(3L, 1000L, "Mark", "Tomson", 10000, "Worked for Sun"));
+
+// Adding data into the repository.
+repo.save(persons);
+----
+--
+
+To query the data, we can use basic CRUD operations or methods that will be automatically turned into Apache Ignite SQL queries:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+List<Person> persons = repo.findByFirstName("John");
+
+for (Person person: persons)
+    System.out.println("   >>>   " + person);
+
+Cache.Entry<Long, Person> topPerson = repo.findTopByLastNameLike("Smith");
+
+System.out.println("\n>>> Top Person with surname 'Smith': " +
+        topPerson.getValue());
+----
+--
+
+== Example
+
+The complete example is available on link: https://github.com/apache/ignite-extensions/tree/master/modules/spring-data-ext/examples[GitHub, windows="_blank"]
+
+== Tutorial
+
+Follow the tutorial that shows how to build a https://www.gridgain.com/docs/tutorials/spring/spring-ignite-tutorial[RESTful web service with Apache Ignite and Spring Data, window=_blank].
+

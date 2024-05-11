@@ -1,0 +1,78 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Apache Flink Streamer
+
+Apache Ignite Flink Sink module is a streaming connector to inject Flink data into Ignite cache. The sink emits its input
+data to Ignite cache. When creating a sink, an Ignite cache name and Ignite grid configuration file have to be provided.
+
+Starting data transfer to Ignite cache can be done with the following steps.
+
+. Import Ignite Flink Sink Module in Maven Project
+If you are using Maven to manage dependencies of your project, you can add Flink module
+dependency like this (replace `${ignite-flink-ext.version}` with actual Ignite Flink Extension version you are
+interested in):
++
+[tabs]
+--
+tab:pom.xml[]
+[source,xml]
+----
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                        http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    ...
+    <dependencies>
+        ...
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-flink-ext</artifactId>
+            <version>${ignite-flink-ext.version}</version>
+        </dependency>
+        ...
+    </dependencies>
+    ...
+</project>
+----
+--
+. Create an Ignite configuration file and make sure it is accessible from the sink.
+. Make sure your data input to the sink is specified and start the sink.
++
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+IgniteSink igniteSink = new IgniteSink("myCache", "ignite.xml");
+
+igniteSink.setAllowOverwrite(true);
+igniteSink.setAutoFlushFrequency(10);
+igniteSink.start();
+
+DataStream<Map> stream = ...;
+
+// Sink data into the grid.
+stream.addSink(igniteSink);
+try {
+    env.execute();
+} catch (Exception e){
+    // Exception handling.
+}
+finally {
+    igniteSink.stop();
+----
+--
+
+Refer to the Javadocs of the `ignite-flink` module for more info on the available options.

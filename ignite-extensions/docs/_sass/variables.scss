@@ -1,0 +1,33 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+:root {
+    --gg-red: #ec1c24;
+    --gg-orange: #ec1c24;
+    --gg-orange-dark: #bc440b;
+    --gg-orange-filter: invert(47%) sepia(61%) saturate(1950%) hue-rotate(345deg) brightness(100%) contrast(95%);
+    --gg-dark-gray: #333333;
+    --orange-line-thickness: 3px;
+    --block-code-background: rgba(241, 241, 241, 20%);
+    --inline-code-background: rgba(241, 241, 241, 90%);
+    --padding-top: 25px; 
+    --link-color: #ec1c24;
+}
+
+@font-face {
+    font-family: 'Open Sans';
+    font-weight: 300;
+    font-display: swap;
+    font-style: normal;
+}

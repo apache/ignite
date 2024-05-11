@@ -1,1 +1,0 @@
-PHP Client README.

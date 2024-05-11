@@ -1,0 +1,75 @@
+
+
+@import '../../../public/stylesheets/variables';
+
+table.table--ignite {
+    width: 100%;
+
+    line-height: 46px;
+
+    th, td {
+        padding: 0 20px;
+
+        border: solid $table-border-color;
+        border-width: 0;
+
+        &:first-child {
+            border-left-width: 1px;
+        }
+
+        &:last-child {
+            border-right-width: 1px;
+        }
+    }
+
+    th {
+        border-right-width: 1px;
+    }
+
+    td {
+        border-bottom-width: 1px;
+    }
+
+    thead {
+        border: solid $table-border-color;
+        border-width: 1px 0;
+
+        th {
+            color: $gray-light;
+            font-weight: 400;
+        }
+    }
+
+    tbody {
+        tr {
+            &:nth-child(even) {
+                background-color: $body-bg;
+            }
+        }
+
+        td {
+            color: $text-color;
+
+            .text-overflow {
+                overflow: hidden;
+                max-width: 220px;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+        }
+    }
+
+    .st-sort-ascent:after,
+    .st-sort-descent:after {
+        margin-left: 5px;
+        font-family: "ui-grid";
+    }
+
+    .st-sort-ascent:after {
+        content: '\C359';
+    }
+
+    .st-sort-descent:after {
+        content: '\C358';
+    }
+}

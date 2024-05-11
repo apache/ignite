@@ -67,8 +67,7 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
         CollectionConfiguration colCfg = new CollectionConfiguration();
 
         colCfg.setCacheMode(collectionCacheMode());
-        colCfg.setAtomicityMode(collectionCacheAtomicityMode());
-        colCfg.setOffHeapMaxMemory(collectionOffHeapMaxMemory());
+        colCfg.setAtomicityMode(collectionCacheAtomicityMode());        
 
         if (colCfg.getCacheMode() == PARTITIONED)
             colCfg.setBackups(1);

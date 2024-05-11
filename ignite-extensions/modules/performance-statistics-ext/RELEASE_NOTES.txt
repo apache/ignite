@@ -1,0 +1,8 @@
+Apache Ignite Extensions Release Notes
+======================================
+
+Apache Ignite Performance Statistics Module 1.0.0
+-------------------------------------------------
+
+* Added the tool to build the cluster performance report
+* Added the utility to print performance statistics operations to a console or to a file in JSON format

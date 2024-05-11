@@ -26,7 +26,7 @@
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent</artifactId>
-        <version>${revision}</version>
+        <version>2.16.999-SNAPSHOT</version>
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
 
@@ -41,7 +41,7 @@
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-bom</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -77,6 +77,7 @@
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>${maven.javadoc.plugin.version}</version>
                     <configuration>
+                        <skip>true</skip>
                         <groups>
                             <group>
                                 <title>Common Grid APIs</title>
@@ -317,6 +318,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
+                <version>1.2.7</version>
                 <executions>
                     <!-- disable flattering for parent pom. -->
                     <execution>
@@ -389,6 +391,7 @@
                                             <pluginExecutionFilter>
                                                 <groupId>org.codehaus.mojo</groupId>
                                                 <artifactId>flatten-maven-plugin</artifactId>
+                                                <versionRange>[1.2,)</versionRange>
                                                 <goals>
                                                     <goal>flatten</goal>
                                                 </goals>

@@ -1,0 +1,8 @@
+hosts: [127.0.0.1]
+port: 8184
+serializer: {
+    className: org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV1,
+    config: {
+        ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry]
+    }
+}

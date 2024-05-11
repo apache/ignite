@@ -2263,7 +2263,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             ccfg.setEncryptionEnabled(encrypted);
 
         ccfg.setSqlSchema("\"" + schemaName + "\"");
-        ccfg.setSqlEscapeAll(true);
+        ccfg.setSqlEscapeAll(false);
         ccfg.setQueryEntities(singleton(entity));
 
         if (!QueryUtils.isCustomAffinityMapper(ccfg.getAffinityMapper()))

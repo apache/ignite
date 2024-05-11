@@ -1,0 +1,18 @@
+
+
+.wch-notification(ng-show='$ctrl.UserNotifications.visible && $ctrl.UserNotifications.message' ng-bind-html='$ctrl.UserNotifications.message')
+
+.wch-notification(
+    ng-show='($ctrl.user$|async:this).becomeUsed'
+    translate='permanentNotificationsComponent.assumedIdentity'
+    translate-compile
+    translate-sanitize-strategy='null'
+    translate-values='{user: ($ctrl.user$|async:this)}'
+)
+
+.wch-notification.wch-notification--demo(
+    ng-if='$ctrl.Demo.enabled'
+    translate='permanentNotificationsComponent.demoMode'
+    translate-compile
+    translate-sanitize-strategy='null'
+)

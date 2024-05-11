@@ -1,0 +1,79 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Apache Flume Sink
+
+== Overview
+
+Apache Flume is a distributed, reliable, and available service for efficiently collecting, aggregating, and moving large
+amounts of log data.
+
+`IgniteSink` is a Flume sink that extracts events from an associated Flume channel and injects into an Ignite cache.
+
+`IgniteSink` and its dependencies have to be included in the agent's classpath, as described in the following subsection,
+before starting the Flume agent.
+
+== Setting Up
+
+. Create a transformer by implementing `EventTransformer` interface.
+. Create `ignite` directory inside `plugins.d` directory which is located in `$\{FLUME_HOME}`. If the `plugins.d` directory
+is not there, create it.
+. Build it and copy to `$\{FLUME_HOME}/plugins.d/ignite-sink/lib`.
+. Copy other Ignite-related jar files from Apache Ignite distribution to `$\{FLUME_HOME}/plugins.d/ignite-sink/libext` to
+have them as shown below.
++
+----
+plugins.d/
+`-- ignite
+ |-- lib
+ |   `-- ignite-flume-transformer-x.x.x.jar <-- your jar
+ `-- libext
+     |-- cache-api-1.0.0.jar
+     |-- ignite-core-x.x.x.jar
+     |-- ignite-flume-ext.x.x.x.jar <-- IgniteSink
+     |-- ignite-spring-x.x.x.jar
+     |-- spring-aop-4.1.0.RELEASE.jar
+     |-- spring-beans-4.1.0.RELEASE.jar
+     |-- spring-context-4.1.0.RELEASE.jar
+     |-- spring-core-4.1.0.RELEASE.jar
+     `-- spring-expression-4.1.0.RELEASE.jar
+----
+
+. In Flume configuration file, specify Ignite configuration XML file's location with cache properties
+(see `flume/src/test/resources/example-ignite.xml` for a basic example) with the cache name specified for cache creation.
+Also specify the cache name (same as in Ignite configuration file), your `EventTransformer`'s implementation class, and,
+optionally, batch size. All properties are shown in the table below (required properties are in bold).
++
+[cols="20%,45%,35%",opts="header"]
+|===
+|Property Name |Description | Default Value
+|channel| | -
+|type| The component type name. Needs to be `org.apache.ignite.stream.flume.IgniteSink` | -
+|igniteCfg| Ignite configuration XML file | -
+|cacheName| Cache name. Same as in igniteCfg | -
+|eventTransformer| Your implementation of `org.apache.ignite.stream.flume.EventTransformer` | -
+|batchSize| Number of events to be written per transaction| 100
+|===
+
+The sink configuration part of agent named `a1` can look like this:
+
+----
+a1.sinks.k1.type = org.apache.ignite.stream.flume.IgniteSink
+a1.sinks.k1.igniteCfg = /some-path/ignite.xml
+a1.sinks.k1.cacheName = testCache
+a1.sinks.k1.eventTransformer = my.company.MyEventTransformer
+a1.sinks.k1.batchSize = 100
+----
+
+After specifying your source and channel (see Flume's docs), you are ready to run a Flume agent.

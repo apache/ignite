@@ -1,0 +1,9 @@
+hosts: [172.16.29.37]
+port: 8182
+serializer: {
+  className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0,
+  config: {
+    serializeResultToString: false
+    
+  }
+}

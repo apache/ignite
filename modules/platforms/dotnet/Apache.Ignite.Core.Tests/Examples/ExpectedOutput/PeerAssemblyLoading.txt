@@ -1,4 +1,0 @@
->>> Peer loading example started.
->>> Executing an action on all remote nodes...
-Hello from automatically deployed assembly! Version is 1.0.*
->>> Action executed, check output on remote nodes.

@@ -33,16 +33,16 @@
  */
 
 // Create client instance.
-$client = new Memcached();
+$client = new Memcache();
 
 // Set localhost and port (set to correct values).
-$client->addServer("localhost", 11211);
+$client->addServer("localhost", 11211, 1);
 
 // Force client to use binary protocol.
-$client->setOption(Memcached::OPT_BINARY_PROTOCOL, true);
+//$client->setOption(Memcached::OPT_BINARY_PROTOCOL, true);
 
 // Put entry to cache.
-if ($client->add("key", "val"))
+if ($client->set("key", "val"))
     echo ">>> Successfully put entry in cache.\n";
 
 // Check entry value.
@@ -60,7 +60,7 @@ echo(">>> New value for 'key': " . $client->get("key") . "\n");
 echo(">>>\n");
 
 // Put one more entry to cache.
-if ($client->add("anotherKey", "anotherVal"))
+if ($client->set("anotherKey", "anotherVal"))
     echo ">>> Successfully put entry in cache.\n";
 
 // Check entry value.

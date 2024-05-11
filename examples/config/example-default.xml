@@ -30,7 +30,19 @@
         http://www.springframework.org/schema/util/spring-util.xsd">
     <bean abstract="true" id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <!-- Set to true to enable distributed class loading for examples, default is false. -->
-        <property name="peerClassLoadingEnabled" value="true"/>
+        
+        <property name="localHost" value="127.0.0.1"/>
+        <property name="peerClassLoadingEnabled" value="false"/>
+        
+        <property name="binaryConfiguration">
+	        <bean class="org.apache.ignite.configuration.BinaryConfiguration">
+	            <property name="nameMapper">
+	                <bean class="org.apache.ignite.binary.BinaryBasicNameMapper">
+	                    <property name="simpleName" value="true"/>
+	                </bean>
+	            </property>
+	        </bean>
+	    </property>
 
         <!-- Enable task execution events for examples. -->
         <property name="includeEventTypes">

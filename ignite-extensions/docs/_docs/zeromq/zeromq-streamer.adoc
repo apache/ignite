@@ -1,0 +1,67 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= ZeroMQ Streamer
+
+Apache Ignite ZeroMQ Streamer module enables streaming capabilities via http://zeromq.org/[ZeroMQ, window=_blank] into Ignite.
+
+To start streaming into Ignite, you need to do the following:
+
+. Add Ignite ZeroMQ Streamer Module to your Maven `pom.xml` file.
++
+[tabs]
+--
+tab:pom.xml[]
+[source,xml]
+----
+<dependencies>
+    ...
+    <dependency>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-zeromq-ext</artifactId>
+        <version>${ignite-zeromq-ext.version}</version>
+    </dependency>
+    ...
+</dependencies>
+----
+--
+
+. Implement either the https://github.com/apache/ignite/blob/f2f82f09b35368f25e136c9fce5e7f2198a91171/modules/core/src/main/java/org/apache/ignite/stream/StreamSingleTupleExtractor.java[StreamSingleTupleExtractor, window=_blank] or
+the https://github.com/apache/ignite/blob/f2f82f09b35368f25e136c9fce5e7f2198a91171/modules/core/src/main/java/org/apache/ignite/stream/StreamMultipleTupleExtractor.java[StreamMultipleTupleExtractor, window=_blank] for ZeroMQ streamer.
+Refer to https://github.com/apache/ignite/blob/7492843ad9e22c91764fb8d0c3a096b8ce6c653e/modules/zeromq/src/test/java/org/apache/ignite/stream/zeromq/ZeroMqStringSingleTupleExtractor.java[this sample implementation, window=_blank] for more details.
+. Set the extractor and initiate the streaming as shown below:
++
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+try (IgniteDataStreamer<Integer, String> dataStreamer =
+     grid().dataStreamer("myCacheName")) {
+
+    dataStreamer.allowOverwrite(true);
+    dataStreamer.autoFlushFrequency(1);
+
+    try (IgniteZeroMqStreamer streamer = new IgniteZeroMqStreamer(
+      1, ZeroMqTypeSocket.PULL, "tcp://localhost:5671", null)) {
+      streamer.setIgnite(grid());
+      streamer.setStreamer(dataStreamer);
+
+      streamer.setSingleTupleExtractor(new ZeroMqStringSingleTupleExtractor());
+
+      streamer.start();
+    }
+}
+----
+--

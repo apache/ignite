@@ -395,7 +395,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.rslvrMgr = add(rslvrMgr);
         this.pluginMgr = add(pluginMgr);
         this.affMgr = add(affMgr);
-        add(platformMgr);
+        this.add(platformMgr);
 
         log = ctx.log(getClass());
 
@@ -565,7 +565,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param mgr Manager to add.
      * @return Added manager.
      */
-    @Nullable private <T extends GridCacheManager<K, V>> T add(@Nullable T mgr) {
+    @Nullable private <T extends GridCacheManager> T add(@Nullable T mgr) {
         if (mgr != null)
             mgrs.add(mgr);
 

@@ -1,0 +1,49 @@
+= ZooKeeper IP Finder
+
+
+To set up ZooKeeper IP finder use `TcpDiscoveryZookeeperIpFinder` (note that `ignite-zookeeper` module has to be enabled).
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+
+    <property name="discoverySpi">
+        <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+            <property name="ipFinder">
+                <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.zk.TcpDiscoveryZookeeperIpFinder">
+                    <property name="zkConnectionString" value="127.0.0.1:2181"/>
+                </bean>
+            </property>
+        </bean>
+    </property>
+</bean>
+----
+
+tab:Java[]
+[source,java]
+----
+TcpDiscoverySpi spi = new TcpDiscoverySpi();
+
+TcpDiscoveryZookeeperIpFinder ipFinder = new TcpDiscoveryZookeeperIpFinder();
+
+// Specify ZooKeeper connection string.
+ipFinder.setZkConnectionString("127.0.0.1:2181");
+
+spi.setIpFinder(ipFinder);
+
+IgniteConfiguration cfg = new IgniteConfiguration();
+
+// Override default discovery SPI.
+cfg.setDiscoverySpi(spi);
+
+// Start the node.
+Ignite ignite = Ignition.start(cfg);
+----
+
+tab:C#/.NET[unsupported]
+tab:C++[unsupported]
+
+--

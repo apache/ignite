@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<web-app xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+	version="3.0">
+
+ <display-name>s3-filemanager-web</display-name>
+ 
+ 	<context-param>  
+		<param-name>ignite.cfg.path</param-name>  
+		<param-value>config/igfs-ignite.xml</param-value>  
+	</context-param>
+	
+	<context-param>  
+		<param-name>ignite.igfs.instanceName</param-name>  
+		<param-value>igfs</param-value>  
+	</context-param>
+	
+	<context-param>  
+		<param-name>repository.base.path</param-name>  
+		<param-value>./work/log</param-value>  
+	</context-param> 
+   
+    
+    <servlet>
+        <servlet-name>AngularFileManagerServlet</servlet-name>
+        <servlet-class>org.shaofan.servlet.AngularFileManagerServlet</servlet-class>       
+        <init-param>
+            <param-name>date.format</param-name>
+            <param-value>yyyy-MM-dd hh:mm:ss</param-value>
+        </init-param>
+        <init-param>
+            <param-name>enabled.action</param-name>
+            <param-value>rename,move,remove,edit,createFolder,changePermissions,compress,extract,copy,upload</param-value>
+        </init-param>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AngularFileManagerServlet</servlet-name>
+        <url-pattern>/logs/*</url-pattern>
+    </servlet-mapping>    
+    
+    <servlet>
+        <servlet-name>AngularIgfsFileManagerServlet</servlet-name>
+        <servlet-class>org.shaofan.servlet.AngularIgfsFileManagerServlet</servlet-class>       
+        <init-param>
+            <param-name>date.format</param-name>
+            <param-value>yyyy-MM-dd hh:mm:ss</param-value>
+        </init-param>
+        <init-param>
+            <param-name>enabled.action</param-name>
+            <param-value>rename,move,remove,edit,createFolder,changePermissions,compress,extract,copy,upload</param-value>
+        </init-param>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AngularIgfsFileManagerServlet</servlet-name>
+        <url-pattern>/file/*</url-pattern>
+    </servlet-mapping>
+     <servlet-mapping>
+        <servlet-name>AngularIgfsFileManagerServlet</servlet-name>
+        <url-pattern>/view/*</url-pattern>
+    </servlet-mapping>
+    
+    
+    <servlet>
+        <servlet-name>WebjarsServlet</servlet-name>
+        <servlet-class>org.shaofan.servlet.WebjarsServlet</servlet-class>
+        <init-param>
+            <param-name>disableCache</param-name>
+            <param-value>true</param-value>
+        </init-param>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>WebjarsServlet</servlet-name>
+        <url-pattern>/webjars/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>WebjarsServlet</servlet-name>
+        <url-pattern>/static/*</url-pattern>
+    </servlet-mapping>
+    
+    <welcome-file-list>
+        <welcome-file>index.html</welcome-file>
+    </welcome-file-list>	
+
+  <session-config>
+    <cookie-config>
+      <http-only>true</http-only>
+      <secure>true</secure>
+    </cookie-config>
+  </session-config>
+  
+  <locale-encoding-mapping-list>
+    <locale-encoding-mapping>
+      <locale>ar</locale>
+      <encoding>ISO-8859-6</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>be</locale>
+      <encoding>ISO-8859-5</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>bg</locale>
+      <encoding>ISO-8859-5</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>ca</locale>
+      <encoding>ISO-8859-1</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>cs</locale>
+      <encoding>ISO-8859-2</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>da</locale>
+      <encoding>ISO-8859-1</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>de</locale>
+      <encoding>ISO-8859-1</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>el</locale>
+      <encoding>ISO-8859-7</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>en</locale>
+      <encoding>ISO-8859-1</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>es</locale>
+      <encoding>ISO-8859-1</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>et</locale>
+      <encoding>ISO-8859-1</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>fi</locale>
+      <encoding>ISO-8859-1</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>fr</locale>
+      <encoding>ISO-8859-1</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>hr</locale>
+      <encoding>ISO-8859-2</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>hu</locale>
+      <encoding>ISO-8859-2</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>is</locale>
+      <encoding>ISO-8859-1</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>it</locale>
+      <encoding>ISO-8859-1</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>iw</locale>
+      <encoding>ISO-8859-8</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>ja</locale>
+      <encoding>Shift_JIS</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>ko</locale>
+      <encoding>EUC-KR</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>lt</locale>
+      <encoding>ISO-8859-2</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>lv</locale>
+      <encoding>ISO-8859-2</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>mk</locale>
+      <encoding>ISO-8859-5</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>nl</locale>
+      <encoding>ISO-8859-1</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>no</locale>
+      <encoding>ISO-8859-1</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>pl</locale>
+      <encoding>ISO-8859-2</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>pt</locale>
+      <encoding>ISO-8859-1</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>ro</locale>
+      <encoding>ISO-8859-2</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>ru</locale>
+      <encoding>ISO-8859-5</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>sh</locale>
+      <encoding>ISO-8859-5</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>sk</locale>
+      <encoding>ISO-8859-2</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>sl</locale>
+      <encoding>ISO-8859-2</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>sq</locale>
+      <encoding>ISO-8859-2</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>sr</locale>
+      <encoding>ISO-8859-5</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>sv</locale>
+      <encoding>ISO-8859-1</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>tr</locale>
+      <encoding>ISO-8859-9</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>uk</locale>
+      <encoding>ISO-8859-5</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>zh</locale>
+      <encoding>UTF-8</encoding>
+    </locale-encoding-mapping>
+    <locale-encoding-mapping>
+      <locale>zh_TW</locale>
+      <encoding>UTF-8</encoding>
+    </locale-encoding-mapping>
+  </locale-encoding-mapping-list>
+  
+</web-app>

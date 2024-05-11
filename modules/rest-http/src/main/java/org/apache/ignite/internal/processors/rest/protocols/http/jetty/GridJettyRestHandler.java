@@ -154,6 +154,10 @@ public class GridJettyRestHandler extends AbstractHandler {
 
     /** Mapper from Java object to JSON. */
     private final ObjectMapper jsonMapper;
+    
+    private final String contextPath;
+    
+    public int index = 0;
 
     /** */
     private final boolean getAllAsArray = IgniteSystemProperties.getBoolean(IGNITE_REST_GETALL_AS_ARRAY);
@@ -173,6 +177,7 @@ public class GridJettyRestHandler extends AbstractHandler {
         this.authChecker = authChecker;
         this.log = ctx.log(getClass());
         this.jsonMapper = new GridJettyObjectMapper(ctx);
+        this.contextPath = ctx.igniteInstanceName()==null || ctx.igniteInstanceName().isEmpty() ? null: "/"+ctx.igniteInstanceName();
 
         // Init default page and favicon.
         try {
@@ -257,7 +262,6 @@ public class GridJettyRestHandler extends AbstractHandler {
         }
     }
 
-    /** */
     private static <T extends Enum<T>> @Nullable T enumValue(
         String key,
         Map<String, String> params,
@@ -368,11 +372,20 @@ public class GridJettyRestHandler extends AbstractHandler {
         if (log.isDebugEnabled())
             log.debug("Handling request [target=" + target + ", req=" + req + ", srvReq=" + srvReq + ']');
 
-        if (target.startsWith("/ignite")) {
-            processRequest(target, srvReq, res);
-
-            req.setHandled(true);
+        
+        if(this.contextPath!=null && index==0 && target.equals("/ignite")) {
+        	 processRequest(target, srvReq, res);
+             req.setHandled(true);
         }
+        else if (this.contextPath!=null && target.startsWith(this.contextPath)) {        	
+            processRequest(target, srvReq, res);
+            req.setHandled(true);
+           
+        }       
+        else if (this.contextPath==null && target.startsWith("/ignite")) {        	
+            processRequest(target, srvReq, res);
+            req.setHandled(true);
+        }       
         else if (target.startsWith("/favicon.ico")) {
             if (favicon == null) {
                 res.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -391,10 +404,10 @@ public class GridJettyRestHandler extends AbstractHandler {
 
             req.setHandled(true);
         }
-        else {
+        else if(target.equals("/")){  //modify@byron 
             if (dfltPage == null) {
                 res.setStatus(HttpServletResponse.SC_NOT_FOUND);
-
+               
                 req.setHandled(true);
 
                 return;
@@ -406,8 +419,11 @@ public class GridJettyRestHandler extends AbstractHandler {
 
             res.getWriter().write(dfltPage);
             res.getWriter().flush();
-
+            
             req.setHandled(true);
+        }
+        else{ //add@byron
+        	req.setHandled(false);
         }
     }
 
@@ -452,12 +468,12 @@ public class GridJettyRestHandler extends AbstractHandler {
                 throw new IllegalStateException("Received null result from handler: " + hnd);
 
             if (getAllAsArray && cmd == GridRestCommand.CACHE_GET_ALL) {
-                List<Object> resKeyVal = new ArrayList<>();
+                List<Object> resKeyValue = new ArrayList<>();
 
                 for (Map.Entry<Object, Object> me : ((Map<Object, Object>)cmdRes.getResponse()).entrySet())
-                    resKeyVal.add(new IgniteBiTuple<>(me.getKey(), me.getValue()));
+                    resKeyValue.add(new IgniteBiTuple<>(me.getKey(), me.getValue()));
 
-                cmdRes.setResponse(resKeyVal);
+                cmdRes.setResponse(resKeyValue);
             }
 
             byte[] sesTok = cmdRes.sessionTokenBytes();
@@ -722,7 +738,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                 break;
             }
 
-            case DATA_REGION_METRICS:
+            case DATA_REGION_METRICS:            
             case NAME:
             case VERSION:
             case PROBE: {
@@ -862,6 +878,11 @@ public class GridJettyRestHandler extends AbstractHandler {
                 restReq0.cacheName(params.get(CACHE_NAME_PARAM));
 
                 restReq0.className(params.get("className"));
+                
+                String keepBinary = params.get("keepBinary");
+
+                if (keepBinary != null)
+                    restReq0.keepBinary(Boolean.parseBoolean(keepBinary));
 
                 restReq0.queryType(RestQueryRequest.QueryType.SCAN);
 

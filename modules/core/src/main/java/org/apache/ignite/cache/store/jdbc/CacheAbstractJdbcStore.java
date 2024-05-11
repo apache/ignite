@@ -54,6 +54,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cache.store.jdbc.dialect.BasicJdbcDialect;
 import org.apache.ignite.cache.store.jdbc.dialect.DB2Dialect;
+import org.apache.ignite.cache.store.jdbc.dialect.DremioDialect;
 import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
 import org.apache.ignite.cache.store.jdbc.dialect.JdbcDialect;
 import org.apache.ignite.cache.store.jdbc.dialect.MySQLDialect;
@@ -194,7 +195,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     protected JdbcTypesTransformer transformer = JdbcTypesDefaultTransformer.INSTANCE;
 
     /** Flag indicating that table and field names should be escaped in all SQL queries created by JDBC POJO store. */
-    private boolean sqlEscapeAll;
+    private boolean sqlEscapeAll = true; //modify@byron
 
     /**
      * Get field value from object for use as query parameter.
@@ -292,7 +293,11 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
         if (dbProductName.startsWith("DB2/"))
             return new DB2Dialect();
-
+        // add@byron
+        if (dbProductName.startsWith("Dremio"))
+            return new DremioDialect();
+        // end@
+        
         U.warn(log, "Failed to resolve dialect (BasicJdbcDialect will be used): " + dbProductName);
 
         return new BasicJdbcDialect();

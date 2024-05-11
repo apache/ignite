@@ -1,0 +1,72 @@
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<!DOCTYPE html>
+
+      {% assign doc_var = page.leftNav | append: "_var" %}
+      
+<html lang="en">
+<head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-1382082-1"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-61232409-1');
+    </script>
+
+    {% if page.content == nil or page.content == ""  %}
+<META NAME="ROBOTS" CONTENT="NOINDEX">
+{% endif %}
+
+    <meta charset="UTF-8">
+    <title>{{page.title}} | Ignite Documentation</title>
+    {% if site.attrs.base_url contains "/latest" %}
+    <link rel="canonical" href="{{page.id | replace_first: site.version, 'latest' }}" />
+    {% else %}
+    <link rel="canonical" href="{{page.id}}" />
+    {% endif %}
+	{% capture timestamp %}{{"now"| date: '%s'}}{% endcapture %}
+	<link rel="stylesheet" href="{{'assets/css/styles.css?'|append: timestamp |relative_url}}">
+    <link rel="stylesheet" href="{{'assets/css/asciidoc-pygments.css'|relative_url}}">
+    <link rel="shortcut icon" href="{{'/favicon.ico'|relative_url}}">
+    <meta name='viewport' content='width=device-width, height=device-height, initial-scale=1.0, minimum-scale=1.0'>
+
+	<link rel="stylesheet"
+	  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script type="text/javascript" src="{{'assets/js/jquery.swiftype.autocomplete.js?' |append: timestamp |relative_url}}"></script>
+    <script type="text/javascript" src="{{'assets/js/anchor.min.js?'|append: timestamp|relative_url}}"></script>
+    
+
+</head>
+<body>
+    {% include header.html %}
+    {{content}}
+    <script>
+    // inits deep anchors -- needs to be done here because of https://www.bryanbraun.com/anchorjs/#dont-run-it-too-late 
+    anchors.add('.page-docs h1, .page-docs h2, .page-docs h3:not(.discrete), .page-docs h4, .page-docs h5');
+    anchors.options = {
+        placement: 'right',
+        visible: 'always'
+    };
+    </script>
+</body>
+<script type='module' src='{{"assets/js/index.js?"|append: timestamp | relative_url}}' async></script>
+</html>

@@ -26,7 +26,7 @@
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent-internal</artifactId>
-        <version>${revision}</version>
+        <version>2.16.999-SNAPSHOT</version>
         <relativePath>../../parent-internal/pom.xml</relativePath>
     </parent>
 
@@ -47,12 +47,7 @@
             <artifactId>ignite-core</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
-            <version>${commons.lang.version}</version>
-        </dependency>
-
+        
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-continuation</artifactId>
@@ -87,6 +82,31 @@
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-xml</artifactId>
             <version>${jetty.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-servlet</artifactId>
+            <version>${jetty.version}</version>            
+        </dependency>
+        
+        
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-webapp</artifactId>
+            <version>${jetty.version}</version>            
+        </dependency>
+        
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-security</artifactId>
+            <version>${jetty.version}</version>            
+        </dependency>
+        
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-annotations</artifactId>
+            <version>${jetty.version}</version>            
         </dependency>
 
         <dependency>

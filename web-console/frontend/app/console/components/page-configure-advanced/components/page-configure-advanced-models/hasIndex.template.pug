@@ -1,0 +1,9 @@
+
+
+.ui-grid-cell-contents(ng-class=`{
+    'page-configure-advanced__invalid-model-cell': !row.entity[col.field],
+    'page-configure-advanced__valid-model-cell': row.entity[col.field],
+}`)
+    svg(ignite-icon='attention' ng-if='!row.entity[col.field]')
+    svg(ignite-icon='checkmark' ng-if='row.entity[col.field]')
+    span {{ row.entity[col.field] ? 'Yes' : 'No'}}

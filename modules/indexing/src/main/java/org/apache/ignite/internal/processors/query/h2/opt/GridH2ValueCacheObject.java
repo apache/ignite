@@ -20,17 +20,24 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Comparator;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.h2.engine.Mode;
 import org.h2.message.DbException;
 import org.h2.util.Bits;
 import org.h2.util.JdbcUtils;
 import org.h2.util.Utils;
 import org.h2.value.CompareMode;
 import org.h2.value.Value;
+import org.h2.value.ValueEnum;
+import org.h2.value.ValueEnumBase;
+import org.h2.value.ValueInt;
 import org.h2.value.ValueJavaObject;
+import org.h2.value.ValueString;
 
 /**
  * H2 Value over {@link CacheObject}. Replacement for {@link ValueJavaObject}.
@@ -162,15 +169,26 @@ public class GridH2ValueCacheObject extends Value {
             return o1.getClass().getName().compareTo(o2.getClass().getName());
         }
 
-        // Compare hash codes.
-        int h1 = hashCode();
-        int h2 = v.hashCode();
+        return compareHashOrBytes(this, v, (v1, v2) -> Bits.compareNotNullSigned(((Value)v1).getBytesNoCopy(),
+            ((Value)v2).getBytesNoCopy()));
+    }
+
+    /** Compare hash codes. */
+    public static int compareHashOrBytes(Object o1, Object o2) {
+        return compareHashOrBytes(o1, o2, null);
+    }
+
+    /** Compare hash codes. */
+    private static int compareHashOrBytes(Object o1, Object o2, Comparator<Object> comp) {
+        int h1 = o1.hashCode();
+        int h2 = o2.hashCode();
 
         if (h1 == h2) {
             if (o1.equals(o2))
                 return 0;
 
-            return Bits.compareNotNullSigned(getBytesNoCopy(), v.getBytesNoCopy());
+            return comp == null ? Bits.compareNotNullSigned(JdbcUtils.serialize(o1, null),
+                JdbcUtils.serialize(o2, null)) : comp.compare(o1, o2);
         }
 
         return h1 > h2 ? 1 : -1;
@@ -200,5 +218,36 @@ public class GridH2ValueCacheObject extends Value {
     /** {@inheritDoc} */
     @Override public int getMemory() {
         return 0;
+    }
+    
+    /** {@inheritDoc} add@byron */
+    @Override public int getInt() {
+    	if(obj	instanceof BinaryEnumObjectImpl) {
+    		BinaryEnumObjectImpl enumObj = (BinaryEnumObjectImpl) obj;
+    		return enumObj.enumOrdinal();
+    	}
+        return super.getInt();
+    }
+    
+    /**
+     * Compare a value to the specified type.
+     * add@byron
+     * @param targetType the type of the returned value
+     * @return the converted value
+     */
+    @Override public Value convertTo(int targetType, int precision, Mode mode, Object column, String[] enumerators) {
+        if(obj	instanceof BinaryEnumObjectImpl) {
+        	BinaryEnumObjectImpl enumObj = (BinaryEnumObjectImpl) obj;
+        	if(Value.ENUM == targetType) {            	
+            	return ValueEnum.get(enumObj.enumName(), enumObj.enumOrdinal());
+            }
+        	if(Value.INT == targetType) {            	
+            	return ValueInt.get(enumObj.enumOrdinal());
+            }
+        	if(Value.STRING == targetType) {            	
+            	return ValueString.get(enumObj.enumName());
+            }
+        }
+        return super.convertTo(targetType, precision, mode,column,enumerators);
     }
 }

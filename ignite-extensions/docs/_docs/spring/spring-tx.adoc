@@ -1,0 +1,533 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Apache Ignite with Spring Transactions
+
+== Overview
+
+http://docs.spring.io/spring/docs/current/spring-framework-reference/html/transaction.html[Spring Transactions, window="_blank"]
+abstraction allows you to use a declarative transaction management to concentrate on business logic rather than
+transaction life-cycle.
+
+Apache Ignite provides the `ignite-spring-tx-ext` extension that allows to manage
+https://ignite.apache.org/docs/latest/key-value-api/transactions#performing-transactions[Apache Ignite Transactions, window="_blank"]
+through the Spring Transactions abstraction. The mentioned above integration is achieved by providing implementations of the
+`TransactionManager` Spring Transactions interface. There are two such implementations: `SpringTransactionManager` and
+`IgniteClientSpringTransactionManager`, which use either Apache Ignite node or Apache Ignite thin client to connect to the
+Apache Ignite cluster and manage the Apache Ignite transactions.
+
+To enable declarative transaction management in your Spring application, create and configure
+`SpringTransactionManager` or `IgniteClientSpringTransactionManager` bean in the Spring application context. The choice
+of implementation depends on your preferable way to access the Apache Ignite cluster.
+
+== Maven Configuration
+
+If you use Maven to manage dependencies in your project, you can add Spring Transactions extension dependencies to
+the application's `pom.xml` file like this:
+
+[tabs]
+--
+tab:For all Apache Ignite versions since 2.12.0[]
+[source,xml]
+----
+<dependency>
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-spring-tx-ext</artifactId>
+    <version>${ignite-spring-tx-ext.version}</version>
+</dependency>
+
+<dependency>
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-core</artifactId>
+    <version>${ignite.version}</version>
+</dependency>
+
+<dependency>
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-spring</artifactId>
+    <version>${ignite.version}</version>
+     <exclusions>
+        <exclusion>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-context</artifactId>
+    <version>${spring.version}</version>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-tx</artifactId>
+    <version>${spring.version}</version>
+</dependency>
+----
+tab: For Apache Ignite 2.11.0[]
+[source,xml]
+----
+<dependency>
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-spring-tx-ext</artifactId>
+    <version>${ignite-spring-tx-ext.version}</version>
+</dependency>
+
+<dependency>
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-core</artifactId>
+    <version>${ignite.version}</version>
+</dependency>
+
+<dependency>
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-spring</artifactId>
+    <version>${ignite.version}</version>
+     <exclusions>
+        <exclusion>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </exclusion>
+        <exclusion>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+        </exclusion>
+        <exclusion>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aop</artifactId>
+        </exclusion>
+        <exclusion>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-expressions</artifactId>
+        </exclusion>
+        <exclusion>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+        </exclusion>
+        <exclusion>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+        </exclusion>
+        <exclusion>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-tx</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-context</artifactId>
+    <version>${spring.version}</version>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-tx</artifactId>
+    <version>${spring.version}</version>
+</dependency>
+----
+--
+
+Replace `${ignite-spring-tx-ext.version}`, `${spring.version}`, and
+`${ignite.version}` with an actual version of Apache Ignite Spring Transactions extension, Spring, and
+Apache Ignite dependency you need, respectively.
+
+The table below shows available versions of the Apache Ignite Spring Transactions extension and compatible versions
+of the Apache Ignite and Spring.
+
+[cols="4,5,5", opts="header"]
+|===
+|Apache Ignite Spring Transactions extension version | Apache Ignite versions | Spring versions
+| 1.0.0 | All versions since 2.11.0 | All versions since 4.3.0
+|===
+
+== Apache Ignite Node Transaction Manager Configuration
+This chapter shows how to set up `SpringTransactionManager` that relies on Apache Ignite node to connect to the cluster
+and to manage transactions. The configuration consists of two steps -
+link:extensions-and-integrations/spring/spring-tx#cluster-connection-configuration[Cluster connection configuration]
+and link:extensions-and-integrations/spring/spring-tx#transaction-concurrency-mode-configuration[Transaction concurrency mode configuration].
+
+=== Cluster Connection Configuration
+
+Cluster connection configuration defines Apache Ignite node used by `SpringTransactionManager` to access the cluster.
+There are several approaches to do this:
+
+[NOTE]
+====
+Mixing of multiple approaches is incorrect and results in the exception during the manager startup.
+====
+
+[discrete]
+=== 1. Specifying Name of the Manually Started Apache Ignite Node Instance
+
+This approach is suitable if you have Apache Ignite node instance already running in your application.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+@Configuration
+@EnableTransactionManagement
+public class SpringApplicationConfiguration {
+    @Bean
+    public SpringTransactionManager transactionManager() {
+        SpringTransactionManager mgr = new SpringTransactionManager();
+
+        mgr.setIgniteInstanceName("<name of the Apache Ignite node instance>");
+
+        return mgr;
+    }
+}
+----
+tab:XML[]
+[source,xml]
+----
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+    <!-- Provide Apache Ignite instance name. -->
+    <bean id="transactionManager" class="org.apache.ignite.transactions.spring.SpringTransactionManager">
+        <property
+            name="igniteInstanceName"
+            value="<name of the Apache Ignite node instance>"/>
+    </bean>
+
+    <!-- Use annotation-driven transaction configuration. -->
+    <tx:annotation-driven/>
+</beans>
+----
+--
+
+[discrete]
+=== 2. Specifying Apache Ignite Node Configuration
+
+In this case, Apache Ignite node instance is started automatically by the manager based on the provided configuration.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+@Configuration
+@EnableTransactionManagement
+public class SpringApplicationConfiguration {
+    @Bean
+    public SpringTransactionManager transactionManager() {
+        SpringTransactionManager mgr = new SpringTransactionManager();
+
+        mgr.setConfiguration(new IgniteConfiguration()
+            .setIgniteInstanceName("<name of the Ignite node instance>")
+            // Other required configuration parameters.
+        );
+
+        return mgr;
+    }
+}
+----
+tab:XML[]
+[source,xml]
+----
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+    <!-- Provide configuration bean. -->
+    <bean id="transactionManager" class="org.apache.ignite.transactions.spring.SpringTransactionManager">
+        <property name="configuration">
+            <bean id="gridCfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+                ...
+            </bean>
+        </property>
+    </bean>
+
+    <!-- Use annotation-driven transaction configuration. -->
+    <tx:annotation-driven/>
+</beans>
+----
+--
+
+[discrete]
+=== 3. Specifying Path to Apache Ignite XML Node Configuration File
+
+In this case, Apache Ignite node instance is started automatically by the manager based on the provided configuration.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+@Configuration
+@EnableTransactionManagement
+public class SpringApplicationConfiguration {
+    @Bean
+    public SpringTransactionManager transactionManager() {
+        SpringTransactionManager mgr = new SpringTransactionManager();
+
+        mgr.setConfigurationPath("<path to an Apache Ignite configuration XML file (path can be absolute or relative to `IGNITE_HOME`)>")
+
+        return mgr;
+    }
+}
+----
+tab:XML[]
+[source,xml]
+----
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+    <!-- Provide configuration file path. -->
+    <bean id="transactionManager" class="org.apache.ignite.transactions.spring.SpringTransactionManager">
+        <property
+            name="configurationPath"
+            value="<path to an Apache Ignite configuration XML file (path can be absolute or relative to `IGNITE_HOME`)"/>
+    </bean>
+
+    <!-- Use annotation-driven transaction configuration. -->
+    <tx:annotation-driven/>
+</beans>
+----
+--
+
+[NOTE]
+====
+If no connection configuration is specified, `SpringTransactionManager` uses Apache Ignite node instance with the
+default name. If it does not exist, an exception is thrown during the `SpringTransactionManager` startup.
+====
+
+[IMPORTANT]
+====
+[discrete]
+Regardless the configuration approach you chose, the same Apache Ignite node instance must be used to initialize the
+transaction manager and perform the transactional operations. In case Apache Ignite node was started by the transaction manager,
+you can obtain its instance in your application through `Ignition.ignite("<name of the Apache Ignite node instance>");`.
+====
+
+
+=== Transaction Concurrency Mode Configuration
+
+The transaction concurrency mode configuration defines the
+link:https://ignite.apache.org/docs/latest/key-value-api/transactions#concurrency-modes-and-isolation-levels[Apache Ignite
+transaction concurrency mode,window="_blank"]
+that a manager will apply to all transactions that it processes.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+@Configuration
+@EnableTransactionManagement
+public class SpringApplicationConfiguration {
+    @Bean
+    public SpringTransactionManager transactionManager() {
+        SpringTransactionManager mgr = new SpringTransactionManager();
+
+        mgr.setTransactionConcurrency(TransactionConcurrency.OPTIMISTIC);
+
+        return mgr;
+    }
+}
+----
+tab:XML[]
+[source,xml]
+----
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+    <!-- Provide Apache Ignite instance name. -->
+    <bean id="transactionManager" class="org.apache.ignite.transactions.spring.SpringTransactionManager">
+        <!-- Here is appropriate connection configuration. -->
+        <property name="transactionConcurrency" value="OPTIMISTIC"/>
+    </bean>
+
+    <!-- Use annotation-driven transaction configuration. -->
+        <tx:annotation-driven/>
+</beans>
+----
+--
+
+[NOTE]
+====
+If no transaction concurrency mode configuration is specified, `PESSIMISTIC` concurrency mode is used.
+====
+
+In case you need to support multiple transaction concurrency modes in your application, create separate
+transaction managers for each transaction concurrency mode that you need, and for each Spring transaction specify the
+manager that will process it.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+@Configuration
+@EnableTransactionManagement
+public class SpringApplicationConfiguration {
+    @Bean
+    public SpringTransactionManager pessimisticTransactionManager() {
+        SpringTransactionManager mgr = new SpringTransactionManager();
+
+        mgr.setTransactionConcurrency(TransactionConcurrency.PESSIMISTIC);
+
+        return mgr;
+    }
+
+    @Bean
+    public SpringTransactionManager optimisticTransactionManager() {
+        SpringTransactionManager mgr = new SpringTransactionManager();
+
+        mgr.setTransactionConcurrency(TransactionConcurrency.OPTIMISTIC);
+
+        return mgr;
+    }
+}
+----
+tab:XML[]
+[source,xml]
+----
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+    <bean id="optimisticTransactionManager" class="org.apache.ignite.transactions.spring.SpringTransactionManager">
+         <!-- Here is appropriate connection configuration -->
+        <property name="transactionConcurrency" value="OPTIMISTIC"/>
+    </bean>
+
+    <bean id="pessimisticTransactionManager" class="org.apache.ignite.transactions.spring.SpringTransactionManager">
+         <!-- Here is appropriate connection configuration configuration. -->
+        <property name="transactionConcurrency" value="PESSIMISTIC"/>
+    </bean>
+
+    <!-- Use annotation-driven transaction configuration. -->
+    <tx:annotation-driven/>
+</beans>
+----
+--
+
+[source,java]
+----
+public class TransactionalService {
+   @Transactional("optimisticTransactionManager")
+   public void doOptimistically() {
+       // Method body.
+   }
+
+   @Transactional("pessimisticTransactionManager")
+   public void doPessimistically() {
+       // Method body.
+   }
+}
+----
+
+== Apache Ignite Thin Client Transaction Manager Configuration
+This chapter shows how to set up `IgniteClientSpringTransactionManager` that relies on Ignite thin client to connect
+to the cluster and manage transactions.
+
+=== Cluster Connection Configuration
+Cluster connection configuration defines Apache Ignite thin client instance used by `IgniteClientSpringTransactionManager`
+to access the cluster.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+@Configuration
+@EnableTransactionManagement
+public static class SpringApplicationConfiguration {
+    @Bean
+    public IgniteClient igniteClient() {
+        return Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800"));
+    }
+
+    @Bean
+    public IgniteClientSpringTransactionManager transactionManager(IgniteClient cli) {
+        IgniteClientSpringTransactionManager mgr = new IgniteClientSpringTransactionManager();
+
+        mgr.setClientInstance(cli);
+
+        return mgr;
+    }
+}
+----
+tab:XML[]
+[source,xml]
+----
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+    <!--
+        Note that org.apache.ignite.IgniteClientSpringBean is available since Apache Ignite 2.11.0 version.
+        For Apache Ignite 2.10.0 and earlier `org.apache.ignite.client.IgniteClient` bean should be created
+        manually with concern of its connection to the Ignite cluster.
+    -->
+    <bean id="igniteClient" class="org.apache.ignite.IgniteClientSpringBean">
+        <property name="clientConfiguration">
+            <bean class="org.apache.ignite.configuration.ClientConfiguration">
+                <property name="addresses">
+                    <list>
+                        <value>127.0.0.1:10800</value>
+                    </list>
+                </property>
+            </bean>
+        </property>
+    </bean>
+
+    <!-- Provide Apache Ignite client instance. -->
+    <bean id="transactionManager" class="org.apache.ignite.transactions.spring.IgniteClientSpringTransactionManager">
+        <property name="clientInstance" ref="igniteClientBean"/>
+    </bean>
+
+    <!-- Use annotation-driven transaction configuration. -->
+    <tx:annotation-driven/>
+</beans>
+----
+--
+
+[IMPORTANT]
+====
+[discrete]
+The same Apache Ignite thin client instance must be used to initialize the transaction manager and to perform
+transactional operations.
+====
+
+=== Transaction Concurrency Mode Configuration
+Transaction concurrency mode configuration for `IgniteClientSpringTransactionManager` is performed the same way as for
+link:extensions-and-integrations/spring/spring-tx#transaction-concurrency-mode-configuration[SpringTransactionManager]
+that uses Apache Ignite node instance to access the cluster.
+
+== Examples
+
+The example of using Apache Ignite Spring Transactions integration is available on https://github.com/apache/ignite-extensions/tree/master/modules/spring-tx-ext/examples/main/java/org/apache/ignite/transactions/spring/examples[GitHub, window="_blank"].

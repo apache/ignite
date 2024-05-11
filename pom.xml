@@ -73,8 +73,7 @@
             <id>all-java</id> <!-- used to update project versions and check all modules compilation -->
             <modules> <!-- sorted alphabetically -->
                 <module>examples</module>
-                <module>modules/benchmarks</module>
-                <module>modules/compatibility</module>
+                <module>modules/benchmarks</module>                
                 <module>modules/ducktests</module>
                 <module>modules/numa-allocator</module>
                 <module>modules/schedule</module>
@@ -657,3 +656,4 @@
         </plugins>
     </build>
 </project>
+
