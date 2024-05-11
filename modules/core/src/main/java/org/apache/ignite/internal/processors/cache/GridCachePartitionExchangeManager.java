@@ -117,7 +117,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
@@ -150,6 +150,7 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
@@ -454,9 +455,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             new MessageHandler<GridDhtPartitionsFullMessage>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsFullMessage msg) {
                     if (msg.exchangeId() == null) {
-                        GridDhtPartitionsExchangeFuture currentExchange = lastTopologyFuture();
+                        GridDhtPartitionsExchangeFuture curExchange = lastTopologyFuture();
 
-                        if (currentExchange != null && currentExchange.addOrMergeDelayedFullMessage(node, msg)) {
+                        if (curExchange != null && curExchange.addOrMergeDelayedFullMessage(node, msg)) {
                             if (log.isInfoEnabled()) {
                                 log.info("Delay process full message without exchange id (there is exchange in progress) " +
                                     "[nodeId=" + node.id() + "]");
@@ -533,7 +534,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         durationHistogram = mreg.findMetric(PME_DURATION_HISTOGRAM);
         blockingDurationHistogram = mreg.findMetric(PME_OPS_BLOCKED_DURATION_HISTOGRAM);
 
-        MetricRegistry clusterReg = cctx.kernalContext().metric().registry(CLUSTER_METRICS);
+        MetricRegistryImpl clusterReg = cctx.kernalContext().metric().registry(CLUSTER_METRICS);
 
         rebalanced = clusterReg.booleanMetric(REBALANCED,
             "True if the cluster has fully achieved rebalanced state. Note that an inactive cluster always has" +
@@ -1343,16 +1344,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param grps Cache groups for partitions refresh.
      */
     public void refreshPartitions(@NotNull Collection<CacheGroupContext> grps) {
-        // TODO https://issues.apache.org/jira/browse/IGNITE-6857
-        if (cctx.snapshot().snapshotOperationInProgress()) {
-            if (log.isDebugEnabled())
-                log.debug("Schedule resend parititions due to snapshot in progress");
-
-            scheduleResendPartitions();
-
-            return;
-        }
-
         if (grps.isEmpty()) {
             if (log.isDebugEnabled())
                 log.debug("Skip partitions refresh, there are no cache groups for partition refresh.");
@@ -2355,7 +2346,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             ClusterGroup nearNode = ignite.cluster().forNodeId(nearNodeId);
 
-            String txRequestInfo = String.format(
+            String txReqInfo = String.format(
                 "[xidVer=%s, nodeId=%s]",
                 tx.xidVersion().toString(),
                 nearNodeId.toString()
@@ -2379,13 +2370,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     U.error(
                                         diagnosticLog,
                                         "Could not get thread dump from transaction owner because near node " +
-                                                "is out of topology now. " + txRequestInfo
+                                                "is out of topology now. " + txReqInfo
                                     );
                                 }
                                 catch (Exception e) {
                                     U.error(
                                         diagnosticLog,
-                                        "Could not get thread dump from transaction owner near node " + txRequestInfo,
+                                        "Could not get thread dump from transaction owner near node " + txReqInfo,
                                         e
                                     );
                                 }
@@ -2395,7 +2386,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         diagnosticLog,
                                         String.format(
                                             "Dumping the near node thread that started transaction %s\n%s",
-                                            txRequestInfo,
+                                            txReqInfo,
                                             traceDump
                                         )
                                     );
@@ -2404,14 +2395,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         });
                 }
                 catch (Exception e) {
-                    U.error(diagnosticLog, "Could not send dump request to transaction owner near node " + txRequestInfo, e);
+                    U.error(diagnosticLog, "Could not send dump request to transaction owner near node " + txReqInfo, e);
                 }
             }
             else {
                 U.warn(
                     diagnosticLog,
                     "Could not send dump request to transaction owner near node: node does not support this feature. " +
-                        txRequestInfo
+                        txReqInfo
                 );
             }
         }
@@ -2598,8 +2589,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     affDumpCnt++;
             }
         }
-
-        cctx.kernalContext().coordinators().dumpDebugInfo(diagnosticLog, diagCtx);
     }
 
     /**
@@ -3460,11 +3449,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 forcedRebFut = ((ForceRebalanceExchangeTask)task).forcedRebalanceFuture();
 
                             for (CacheGroupContext grp : assignsSet.descendingSet()) {
-                                boolean disableRebalance = cctx.snapshot().partitionsAreFrozen(grp);
-
-                                if (disableRebalance)
-                                    continue;
-
                                 RebalanceFuture cur = grp.preloader().prepare(exchId,
                                     exchFut,
                                     cnt,
@@ -3875,8 +3859,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (warningsTotal > 0) {
                 U.warn(log, String.format(title, warningsLimit, warningsTotal));
 
-                for (String message : messages)
-                    U.warn(log, message);
+                for (String msg : messages)
+                    U.warn(log, msg);
             }
         }
     }

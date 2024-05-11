@@ -21,7 +21,7 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import org.apache.ignite.spi.GridSpiStartStopAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
-import org.apache.ignite.testsuites.IgniteS3TestSuite;
+import org.apache.ignite.util.IgniteS3TestConfiguration;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -32,8 +32,8 @@ import org.junit.Test;
 public class S3CheckpointSpiStartStopSSEAlgorithmSelfTest extends GridSpiStartStopAbstractTest<S3CheckpointSpi> {
     /** {@inheritDoc} */
     @Override protected void spiConfigure(S3CheckpointSpi spi) throws Exception {
-        AWSCredentials cred = new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
-            IgniteS3TestSuite.getSecretKey());
+        AWSCredentials cred = new BasicAWSCredentials(IgniteS3TestConfiguration.getAccessKey(),
+            IgniteS3TestConfiguration.getSecretKey());
 
         spi.setAwsCredentials(cred);
         spi.setBucketNameSuffix(S3CheckpointSpiSelfTest.getBucketNameSuffix());

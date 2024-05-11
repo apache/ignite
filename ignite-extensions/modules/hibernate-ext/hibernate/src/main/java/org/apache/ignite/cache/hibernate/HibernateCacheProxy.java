@@ -544,7 +544,6 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
         return delegate.get().localMetrics();
     }
 
-
     /** {@inheritDoc} */
     @Override public long offHeapEntriesCount() {
         return delegate.get().offHeapEntriesCount();
@@ -593,11 +592,6 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     /** {@inheritDoc} */
     @Override public IgniteInternalCache withNoRetries() {
         return delegate.get().withNoRetries();
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K1, V1> IgniteInternalCache<K1, V1> withAllowAtomicOpsInTx() {
-        return delegate.get().withAllowAtomicOpsInTx();
     }
 
     /** {@inheritDoc} */
@@ -756,5 +750,5 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
             res.put(keyTransformer.transform(e.getKey()), e.getValue());
 
         return res;
-    }	
+    }
 }

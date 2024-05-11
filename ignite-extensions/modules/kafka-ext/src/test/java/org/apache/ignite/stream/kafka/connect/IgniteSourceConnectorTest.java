@@ -43,6 +43,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.utils.SystemTime;
 import org.apache.kafka.common.utils.Utils;
+import org.apache.kafka.connect.connector.policy.AllConnectorClientConfigOverridePolicy;
 import org.apache.kafka.connect.runtime.ConnectorConfig;
 import org.apache.kafka.connect.runtime.Herder;
 import org.apache.kafka.connect.runtime.Worker;
@@ -53,7 +54,6 @@ import org.apache.kafka.connect.runtime.standalone.StandaloneConfig;
 import org.apache.kafka.connect.runtime.standalone.StandaloneHerder;
 import org.apache.kafka.connect.storage.MemoryOffsetBackingStore;
 import org.apache.kafka.connect.util.Callback;
-import org.apache.kafka.connect.util.ConnectUtils;
 import org.apache.kafka.connect.util.FutureCallback;
 import org.junit.Test;
 
@@ -106,10 +106,14 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         MemoryOffsetBackingStore offBackingStore = new MemoryOffsetBackingStore();
         offBackingStore.configure(workerCfg);
 
-        worker = new Worker(WORKER_ID, new SystemTime(), new Plugins(props), workerCfg, offBackingStore);
+        AllConnectorClientConfigOverridePolicy allConnectorClientCfgOverridePlc
+            = new AllConnectorClientConfigOverridePolicy();
+
+        worker = new Worker(WORKER_ID, new SystemTime(), new Plugins(props), workerCfg, offBackingStore,
+            allConnectorClientCfgOverridePlc);
         worker.start();
 
-        herder = new StandaloneHerder(worker, ConnectUtils.lookupKafkaClusterId(workerCfg));
+        herder = new StandaloneHerder(worker, workerCfg.kafkaClusterId(), allConnectorClientCfgOverridePlc);
         herder.start();
     }
 
@@ -334,11 +338,9 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
      * @return Worker configurations.
      * @throws IOException If failed.
      */
-    private Map<String, String> makeWorkerProps() throws IOException {
+    private Map<String, String> makeWorkerProps() {
         Map<String, String> props = new HashMap<>();
 
-        props.put(WorkerConfig.INTERNAL_KEY_CONVERTER_CLASS_CONFIG, "org.apache.kafka.connect.storage.StringConverter");
-        props.put(WorkerConfig.INTERNAL_VALUE_CONVERTER_CLASS_CONFIG, "org.apache.kafka.connect.storage.StringConverter");
         props.put("internal.key.converter.schemas.enable", "false");
         props.put("internal.value.converter.schemas.enable", "false");
         props.put(WorkerConfig.KEY_CONVERTER_CLASS_CONFIG, "org.apache.kafka.connect.storage.StringConverter");

@@ -95,7 +95,10 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
             }
 
             return res;
-        }
+        },
+        "Decimal fraction of nodes that determines how many nodes must remain in the baseline topology in order " +
+            "to this segment was considered valid and continued to accept write requests after segmentation. " +
+            "This value must be in range from 0.5 (inclusively) to 1 or 0 if validation should be disabled."
     );
 
     /** Ignite kernel context. */

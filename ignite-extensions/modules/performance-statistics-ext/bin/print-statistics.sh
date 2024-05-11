@@ -23,12 +23,24 @@
 
 SCRIPT_DIR=$(cd $(dirname "$0"); pwd)
 
+source "${SCRIPT_DIR}"/include/jvmdefaults.sh
+
+#
+# Discover path to Java executable and check it's version.
+#
+checkJava
+
 #
 # JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp for more details.
 #
 # ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
 #
 JVM_OPTS="-Xms32m -Xmx512m"
+
+#
+# Final JVM_OPTS for Java 9+ compatibility
+#
+JVM_OPTS=$(getJavaSpecificOpts $version "$JVM_OPTS")
 
 #
 # Define classpath
@@ -50,4 +62,4 @@ JVM_OPTS="\
 #
 # Run tool.
 #
-java ${JVM_OPTS} -cp "${CP}" ${MAIN_CLASS} $@
+"$JAVA" ${JVM_OPTS} -cp "${CP}" ${MAIN_CLASS} $@

@@ -35,7 +35,9 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.PAGES_WRITE_THROTTLE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_PROPERTY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_ROWS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
@@ -172,6 +174,62 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         ps.print(",\"physicalReads\":");
         ps.print(physicalReads);
         ps.println("}");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void queryRows(
+        UUID nodeId,
+        GridCacheQueryType type,
+        UUID qryNodeId,
+        long id,
+        String action,
+        long rows
+    ) {
+        if (skip(QUERY_ROWS))
+            return;
+
+        ps.print("{\"op\":\"" + QUERY_ROWS);
+        ps.print("\",\"nodeId\":\"");
+        ps.print(nodeId);
+        ps.print("\",\"type\":\"");
+        ps.print(type);
+        ps.print("\",\"queryNodeId\":\"");
+        ps.print(qryNodeId);
+        ps.print("\",\"id\":");
+        ps.print(id);
+        ps.print(",\"action\":\"");
+        printEscaped(ps, action);
+        ps.print("\",\"rows\":");
+        ps.print(rows);
+        ps.println("}");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void queryProperty(
+        UUID nodeId,
+        GridCacheQueryType type,
+        UUID qryNodeId,
+        long id,
+        String name,
+        String val
+    ) {
+        if (skip(QUERY_PROPERTY))
+            return;
+
+        ps.print("{\"op\":\"" + QUERY_PROPERTY);
+        ps.print("\",\"nodeId\":\"");
+        ps.print(nodeId);
+        ps.print("\",\"type\":\"");
+        ps.print(type);
+        ps.print("\",\"queryNodeId\":\"");
+        ps.print(qryNodeId);
+        ps.print("\",\"id\":");
+        ps.print(id);
+        ps.print(",\"name\":\"");
+        printEscaped(ps, name);
+        ps.print("\",\"val\":\"");
+        printEscaped(ps, val);
+        ps.println("\"}");
     }
 
     /** {@inheritDoc} */

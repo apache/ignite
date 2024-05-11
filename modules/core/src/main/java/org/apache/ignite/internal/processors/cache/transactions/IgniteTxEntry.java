@@ -795,9 +795,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(key, keyVal, cacheVal, val,
                     ver, keepBinary(), cached());
 
-                EntryProcessor processor = t.get1();
+                EntryProcessor proc = t.get1();
 
-                processor.process(invokeEntry, t.get2());
+                proc.process(invokeEntry, t.get2());
 
                 val = invokeEntry.getValue();
 

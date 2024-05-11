@@ -107,12 +107,12 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
             url = "http://localhost:" + port + "/ignite";
         }
 
-        DefaultCamelContext context = new DefaultCamelContext();
+        DefaultCamelContext ctx = new DefaultCamelContext();
         // create Camel streamer
         dataStreamer = grid().dataStreamer(DEFAULT_CACHE_NAME);
         streamer = createCamelStreamer(dataStreamer);
-        streamer.setCamelContext(context);
-        producerTemplate = new DefaultProducerTemplate(context);
+        streamer.setCamelContext(ctx);
+        producerTemplate = new DefaultProducerTemplate(ctx);
         producerTemplate.start();
     }
 
@@ -207,11 +207,11 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
     @Test
     public void testUserSpecifiedCamelContext() throws Exception {
 
-        CamelContext context = streamer.getCamelContext();
+        CamelContext ctx = streamer.getCamelContext();
 
         final AtomicInteger cnt = new AtomicInteger();
-        context.setTracing(true);
-        context.addLifecycleStrategy(new LifecycleStrategySupport() {
+        ctx.setTracing(true);
+        ctx.addLifecycleStrategy(new LifecycleStrategySupport() {
             @Override public void onEndpointAdd(Endpoint endpoint) {
                 cnt.incrementAndGet();
             }
@@ -240,11 +240,11 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
     @Test
     public void testUserSpecifiedCamelContextWithPropertyPlaceholders() throws Exception {
         // Create a CamelContext with a custom property placeholder.
-        CamelContext context = new DefaultCamelContext();
+        CamelContext ctx = new DefaultCamelContext();
 
         PropertiesComponent pc = new PropertiesComponent("camel.test.properties");
 
-        context.setPropertiesComponent(pc);
+        ctx.setPropertiesComponent(pc);
 
         // Replace the context path in the test URL with the property placeholder.
         url = url.replaceAll("/ignite", "{{test.contextPath}}");
@@ -253,9 +253,9 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
         streamer = createCamelStreamer(dataStreamer);
 
         streamer.setSingleTupleExtractor(singleTupleExtractor());
-        streamer.setCamelContext(context);
+        streamer.setCamelContext(ctx);
 
-        producerTemplate = new DefaultProducerTemplate(context);
+        producerTemplate = new DefaultProducerTemplate(ctx);
         producerTemplate.start();
 
         // Subscribe to cache PUT events.
@@ -290,11 +290,11 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
             fail("Streamer started; should have failed.");
         }
         catch (IgniteException ignored) {
-            CamelContext context = streamer.getCamelContext();
-            ServiceStatus status = context.getStatus();
+            CamelContext ctx = streamer.getCamelContext();
+            ServiceStatus status = ctx.getStatus();
             assertEquals("streamer should be in a stopped state, instead is " + status, status, ServiceStatus.Stopped);
-            assertEquals("endpoint registry has > 0 elements, size: " + context.getEndpointRegistry().size(),
-                context.getEndpointRegistry().size(), 0);
+            assertEquals("endpoint registry has > 0 elements, size: " + ctx.getEndpointRegistry().size(),
+                ctx.getEndpointRegistry().size(), 0);
         }
     }
 

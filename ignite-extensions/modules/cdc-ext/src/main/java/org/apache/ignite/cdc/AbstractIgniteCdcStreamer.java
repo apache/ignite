@@ -27,11 +27,12 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.resources.LoggerResource;
 
 import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.DFLT_IS_ONLY_PRIMARY;
@@ -98,13 +99,15 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
     protected IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Override public void start(MetricRegistry mreg) {
+    @Override public void start(MetricRegistry reg) {
         A.notEmpty(caches, "caches");
 
         cachesIds = caches.stream()
             .mapToInt(CU::cacheId)
             .boxed()
             .collect(Collectors.toSet());
+
+        MetricRegistryImpl mreg = (MetricRegistryImpl)reg;
 
         this.evtsCnt = mreg.longMetric(EVTS_CNT, EVTS_CNT_DESC);
         this.typesCnt = mreg.longMetric(TYPES_CNT, TYPES_CNT_DESC);

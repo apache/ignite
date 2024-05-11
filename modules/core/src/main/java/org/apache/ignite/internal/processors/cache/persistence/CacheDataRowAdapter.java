@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTreeRuntimeException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
@@ -50,9 +49,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.KEY_ONLY;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.LINK_WITH_HEADER;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
@@ -926,46 +922,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
     /** {@inheritDoc} */
     @Override public int headerSize() {
         return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long mvccCoordinatorVersion() {
-        return MVCC_CRD_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long mvccCounter() {
-        return MVCC_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int mvccOperationCounter() {
-        return MVCC_OP_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte mvccTxState() {
-        return TxState.NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long newMvccCoordinatorVersion() {
-        return MVCC_CRD_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long newMvccCounter() {
-        return MVCC_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int newMvccOperationCounter() {
-        return MVCC_OP_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte newMvccTxState() {
-        return TxState.NA;
     }
 
     /**

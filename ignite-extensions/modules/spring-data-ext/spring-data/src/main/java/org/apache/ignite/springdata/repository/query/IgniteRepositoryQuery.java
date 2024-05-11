@@ -311,38 +311,38 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
     }
 
     /**
-     * {@inheritDoc} @param values the values
+     * {@inheritDoc} @param val the val
      *
      * @return the object
      */
-    @Override public Object execute(Object[] values) {
-        Object[] parameters = values;
+    @Override public Object execute(Object[] val) {
+        Object[] parameters = val;
 
-        // config via Query annotation (dynamicQuery = false)
-        DynamicQueryConfig config = staticQueryConfiguration;
+        // cfg via Query annotation (dynamicQuery = false)
+        DynamicQueryConfig cfg = staticQueryConfiguration;
 
         // or condition to allow query tunning
-        if (config == null || dynamicQueryConfigurationIndex != -1) {
-            DynamicQueryConfig newConfig = (DynamicQueryConfig)values[dynamicQueryConfigurationIndex];
+        if (cfg == null || dynamicQueryConfigurationIndex != -1) {
+            DynamicQueryConfig newCfg = (DynamicQueryConfig)val[dynamicQueryConfigurationIndex];
             parameters = ArrayUtils.removeElement(parameters, dynamicQueryConfigurationIndex);
-            if (newConfig != null) {
+            if (newCfg != null) {
                 // upset query configuration
-                config = newConfig;
+                cfg = newCfg;
             }
         }
-        // query configuration is required, via Query annotation or per parameter (within provided values param)
-        if (config == null) {
+        // query configuration is required, via Query annotation or per parameter (within provided val param)
+        if (cfg == null) {
             throw new IllegalStateException(
                 "Unable to execute query. When passing dynamicQuery = true via org.apache.ignite.springdata"
-                    + ".repository.config.Query annotation, you must provide a non null method parameter of type "
+                    + ".repository.cfg.Query annotation, you must provide a non null method parameter of type "
                     + "DynamicQueryConfig");
         }
 
-        IgniteQuery qry = getQuery(config);
+        IgniteQuery qry = getQuery(cfg);
 
         ReturnStrategy returnStgy = getReturnStgy(qry);
 
-        Query iQry = prepareQuery(qry, config, returnStgy, parameters);
+        Query iQry = prepareQuery(qry, cfg, returnStgy, parameters);
 
         QueryCursor qryCursor;
 
@@ -372,23 +372,23 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         Iterator<T> it = (Iterator<T>)method.getParameters().iterator();
         int i = 0;
         boolean found = false;
-        int index = -1;
+        int idx = -1;
         while (it.hasNext()) {
-            T parameter = it.next();
+            T param = it.next();
 
-            if (DynamicQueryConfig.class.isAssignableFrom(parameter.getType())) {
+            if (DynamicQueryConfig.class.isAssignableFrom(param.getType())) {
                 if (found) {
                     throw new IllegalStateException("Invalid '" + method.getName() + "' repository method signature. "
                         + "Only ONE DynamicQueryConfig parameter is allowed");
                 }
 
                 found = true;
-                index = i;
+                idx = i;
             }
 
             i++;
         }
-        return index;
+        return idx;
     }
 
     /**
@@ -438,21 +438,21 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         if (!(genericReturnType instanceof ParameterizedType))
             return false;
 
-        Type[] actualTypeArguments = ((ParameterizedType)genericReturnType).getActualTypeArguments();
+        Type[] actualTypeArgs = ((ParameterizedType)genericReturnType).getActualTypeArguments();
 
-        if (actualTypeArguments.length == 0)
+        if (actualTypeArgs.length == 0)
             return false;
 
-        if (actualTypeArguments[0] instanceof ParameterizedType) {
-            ParameterizedType type = (ParameterizedType)actualTypeArguments[0];
+        if (actualTypeArgs[0] instanceof ParameterizedType) {
+            ParameterizedType type = (ParameterizedType)actualTypeArgs[0];
 
             Class<?> type1 = (Class)type.getRawType();
 
             return type1.isAssignableFrom(cls);
         }
 
-        if (actualTypeArguments[0] instanceof Class) {
-            Class typeArg = (Class)actualTypeArguments[0];
+        if (actualTypeArgs[0] instanceof Class) {
+            Class typeArg = (Class)actualTypeArgs[0];
 
             return typeArg.isAssignableFrom(cls);
         }
@@ -542,26 +542,26 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         ReturnStrategy returnStgy,
         Object[] prmtrs,
         QueryCursor qryCursor) {
-        final Class<?> returnClass;
+        final Class<?> retCls;
 
         if (hasProjection) {
             if (hasDynamicProjection)
-                returnClass = (Class<?>)prmtrs[dynamicProjectionIndex];
+                retCls = (Class<?>)prmtrs[dynamicProjectionIndex];
             else
-                returnClass = returnedDomainClass;
+                retCls = returnedDomainClass;
         }
         else
-            returnClass = returnedDomainClass;
+            retCls = returnedDomainClass;
 
         if (qry.isFieldQuery()) {
             // take control over single primite result from queries, i.e. DELETE, SELECT COUNT, UPDATE ...
-            boolean singlePrimitiveResult = isPrimitiveOrWrapper(returnClass);
+            boolean singlePrimitiveResult = isPrimitiveOrWrapper(retCls);
 
             FieldsQueryCursor<?> fieldQryCur = (FieldsQueryCursor<?>)qryCursor;
 
             Function<List<?>, ?> cWrapperTransformFunction = null;
 
-            if (type.equals(returnClass))
+            if (type.equals(retCls))
                 cWrapperTransformFunction = row -> rowToEntity(row, fieldQryCur);
             else {
                 if (hasProjection || singlePrimitiveResult) {
@@ -570,7 +570,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
                     else {
                         // Map row -> projection class
                         cWrapperTransformFunction = row -> factory
-                            .createProjection(returnClass, rowToMap(row, fieldQryCur));
+                            .createProjection(retCls, rowToMap(row, fieldQryCur));
                     }
                 }
                 else
@@ -608,8 +608,8 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         else {
             Function<Cache.Entry<?, ?>, ?> cWrapperTransformFunction;
 
-            if (hasProjection && !type.equals(returnClass))
-                cWrapperTransformFunction = row -> factory.createProjection(returnClass, row.getValue());
+            if (hasProjection && !type.equals(retCls))
+                cWrapperTransformFunction = row -> factory.createProjection(retCls, row.getValue());
             else
                 cWrapperTransformFunction = Cache.Entry::getValue;
 
@@ -672,10 +672,10 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         HashMap<String, Integer> methodParams = new HashMap<>();
 
         // create an evaluation context for custom query
-        EvaluationContext queryEvalContext = queryMethodEvaluationContextProvider
+        EvaluationContext qryEvalCtx = queryMethodEvaluationContextProvider
             .getEvaluationContext(queryMethodParams, values);
 
-        // By default queryEvalContext:
+        // By default qryEvalCtx:
         // - make accesible query method parameters by index:
         // @Query("select u from User u where u.age = ?#{[0]}")
         // List<User> findUsersByAge(int age);
@@ -699,7 +699,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
 
             if (p.isExpression()) {
                 // Evaluate SpEl expressions (synthetic parameter value) , example ?#{#customer.firstname}
-                newValues[i] = expressionParser.parseExpression(p.getExpression()).getValue(queryEvalContext);
+                newValues[i] = expressionParser.parseExpression(p.getExpression()).getValue(qryEvalCtx);
             }
             else {
                 // Extract parameter value by name or position respectively from invoking values
@@ -721,9 +721,9 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
     private Query prepareQuery(IgniteQuery qry, DynamicQueryConfig config, ReturnStrategy returnStgy, Object[] values) {
         Object[] parameters = values;
 
-        String queryString = qry.qryStr();
+        String qryStr = qry.qryStr();
 
-        Query query;
+        Query gry;
 
         checkRequiredPageable(returnStgy, values);
 
@@ -731,8 +731,8 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
             boolean isParamDependent;
 
             if (!qry.isAutogenerated()) {
-                StringQuery squery = new ExpressionBasedStringQuery(queryString, metadata, expressionParser);
-                queryString = squery.getQueryString();
+                StringQuery squery = new ExpressionBasedStringQuery(qryStr, metadata, expressionParser);
+                qryStr = squery.getQueryString();
                 parameters = extractBindableValues(parameters, getQueryMethod().getParameters(),
                     squery.getParameterBindings());
 
@@ -748,15 +748,15 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
 
             switch (qry.options()) {
                 case SORTING:
-                    queryString = IgniteQueryGenerator
-                        .addSorting(new StringBuilder(queryString), (Sort)values[values.length - 1])
+                    qryStr = IgniteQueryGenerator
+                        .addSorting(new StringBuilder(qryStr), (Sort)values[values.length - 1])
                         .toString();
                     if (qry.isAutogenerated())
                         parameters = Arrays.copyOfRange(parameters, 0, values.length - 1);
                     break;
                 case PAGINATION:
-                    queryString = IgniteQueryGenerator
-                        .addPaging(new StringBuilder(queryString), (Pageable)values[values.length - 1])
+                    qryStr = IgniteQueryGenerator
+                        .addPaging(new StringBuilder(qryStr), (Pageable)values[values.length - 1])
                         .toString();
                     if (qry.isAutogenerated())
                         parameters = Arrays.copyOfRange(parameters, 0, values.length - 1);
@@ -766,17 +766,17 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
 
             if (isParamDependent) {
                 T2<String, Object[]> parseRes = ParameterBindingParser.INSTANCE.processParameterDependentClauses(
-                    queryString,
+                    qryStr,
                     parameters
                 );
 
-                queryString = parseRes.get1();
+                qryStr = parseRes.get1();
 
                 parameters = parseRes.get2();
             }
 
             if (qry.isFieldQuery()) {
-                SqlFieldsQuery sqlFieldsQry = new SqlFieldsQuery(queryString);
+                SqlFieldsQuery sqlFieldsQry = new SqlFieldsQuery(qryStr);
                 sqlFieldsQry.setArgs(parameters);
 
                 sqlFieldsQry.setCollocated(config.collocated());
@@ -790,10 +790,10 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
 
                 sqlFieldsQry.setTimeout(config.timeout(), TimeUnit.MILLISECONDS);
 
-                query = sqlFieldsQry;
+                gry = sqlFieldsQry;
             }
             else {
-                SqlQuery sqlQry = new SqlQuery(type, queryString);
+                SqlQuery sqlQry = new SqlQuery(type, qryStr);
                 sqlQry.setArgs(parameters);
 
                 sqlQry.setDistributedJoins(config.distributedJoins());
@@ -804,7 +804,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
 
                 sqlQry.setTimeout(config.timeout(), TimeUnit.MILLISECONDS);
 
-                query = sqlQry;
+                gry = sqlQry;
             }
         }
         else {
@@ -816,34 +816,34 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
                     break;
             }
 
-            // check if queryString contains SpEL template expressions and evaluate them if any
-            if (queryString.contains("#{")) {
-                EvaluationContext queryEvalContext = queryMethodEvaluationContextProvider
+            // check if qryStr contains SpEL template expressions and evaluate them if any
+            if (qryStr.contains("#{")) {
+                EvaluationContext qryEvalCtx = queryMethodEvaluationContextProvider
                     .getEvaluationContext(getQueryMethod().getParameters(),
                         values);
 
-                Object eval = expressionParser.parseExpression(queryString, ParserContext.TEMPLATE_EXPRESSION)
-                    .getValue(queryEvalContext);
+                Object eval = expressionParser.parseExpression(qryStr, ParserContext.TEMPLATE_EXPRESSION)
+                    .getValue(qryEvalCtx);
 
                 if (!(eval instanceof String)) {
                     throw new IllegalStateException(
                         "TextQuery with SpEL expressions must produce a String response, but found " + eval.getClass()
                             .getName()
-                            + ". Please, check your expression: " + queryString);
+                            + ". Please, check your expression: " + qryStr);
                 }
-                queryString = (String)eval;
+                qryStr = (String)eval;
             }
 
-            TextQuery textQuery = new TextQuery(type, queryString, config.limit());
+            TextQuery textQry = new TextQuery(type, qryStr, config.limit());
 
-            textQuery.setLocal(config.local());
+            textQry.setLocal(config.local());
 
             if (pageSize > -1)
-                textQuery.setPageSize(pageSize);
+                textQry.setPageSize(pageSize);
 
-            query = textQuery;
+            gry = textQry;
         }
-        return query;
+        return gry;
     }
 
     /**

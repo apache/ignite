@@ -22,9 +22,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.misc.VisorClusterNode;
-import org.apache.ignite.internal.visor.misc.VisorWalTask;
-import org.apache.ignite.internal.visor.misc.VisorWalTaskResult;
 import org.apache.ignite.lang.IgniteExperimental;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
@@ -32,7 +29,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 
 /** */
 @IgniteExperimental
-public class WalPrintCommand implements ComputeCommand<WalDeleteCommandArg, VisorWalTaskResult> {
+public class WalPrintCommand implements ComputeCommand<WalDeleteCommandArg, WalTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print absolute paths of unused archived wal segments on each node";
@@ -44,21 +41,21 @@ public class WalPrintCommand implements ComputeCommand<WalDeleteCommandArg, Viso
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorWalTask> taskClass() {
-        return VisorWalTask.class;
+    @Override public Class<WalTask> taskClass() {
+        return WalTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(WalDeleteCommandArg arg, VisorWalTaskResult taskRes, Consumer<String> printer) {
+    @Override public void printResult(WalDeleteCommandArg arg, WalTaskResult taskRes, Consumer<String> printer) {
         printer.accept("Unused wal segments per node:");
         printer.accept("");
 
         Map<String, Collection<String>> res = taskRes.results();
         Map<String, Exception> failRes = taskRes.exceptions();
-        Map<String, VisorClusterNode> nodesInfo = taskRes.getNodesInfo();
+        Map<String, ClusterNode> nodesInfo = taskRes.getNodesInfo();
 
         for (Map.Entry<String, Collection<String>> entry : res.entrySet()) {
-            VisorClusterNode node = nodesInfo.get(entry.getKey());
+            ClusterNode node = nodesInfo.get(entry.getKey());
 
             printer.accept("Node=" + node.getConsistentId());
             printer.accept(DOUBLE_INDENT + "addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()));
@@ -70,7 +67,7 @@ public class WalPrintCommand implements ComputeCommand<WalDeleteCommandArg, Viso
         }
 
         for (Map.Entry<String, Exception> entry : failRes.entrySet()) {
-            VisorClusterNode node = nodesInfo.get(entry.getKey());
+            ClusterNode node = nodesInfo.get(entry.getKey());
 
             printer.accept("Node=" + node.getConsistentId());
             printer.accept(DOUBLE_INDENT + "addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()));

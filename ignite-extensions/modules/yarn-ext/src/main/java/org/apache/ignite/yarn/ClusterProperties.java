@@ -454,12 +454,12 @@ public class ClusterProperties {
         if (fileProps != null && fileProps.containsKey(name))
             return Double.valueOf(fileProps.getProperty(name));
 
-        String property = System.getProperty(name);
+        String prop = System.getProperty(name);
 
-        if (property == null)
-            property = System.getenv(name);
+        if (prop == null)
+            prop = System.getenv(name);
 
-        return property == null || property.isEmpty() ? defaultVal : Double.valueOf(property);
+        return prop == null || prop.isEmpty() ? defaultVal : Double.valueOf(prop);
     }
 
     /**
@@ -471,12 +471,12 @@ public class ClusterProperties {
         if (fileProps != null && fileProps.containsKey(name))
             return fileProps.getProperty(name);
 
-        String property = System.getProperty(name);
+        String prop = System.getProperty(name);
 
-        if (property == null)
-            property = System.getenv(name);
+        if (prop == null)
+            prop = System.getenv(name);
 
-        return property == null || property.isEmpty() ? defaultVal : property;
+        return prop == null || prop.isEmpty() ? defaultVal : prop;
     }
 
     /**

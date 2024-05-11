@@ -271,7 +271,7 @@ public abstract class QueryUtils {
         Assert.hasText(originalQry, "OriginalQuery must not be null or empty!");
 
         Matcher matcher = COUNT_MATCH.matcher(originalQry);
-        String countQuery;
+        String cntQry;
 
         if (cntProjection == null) {
             String variable = matcher.matches() ? matcher.group(VARIABLE_NAME_GROUP_INDEX) : null;
@@ -279,12 +279,12 @@ public abstract class QueryUtils {
                 && !variable.startsWith("count(") && !variable.contains(",");
 
             String replacement = useVariable ? SIMPLE_COUNT_VALUE : COMPLEX_COUNT_VALUE;
-            countQuery = matcher.replaceFirst(String.format(COUNT_REPLACEMENT_TEMPLATE, replacement));
+            cntQry = matcher.replaceFirst(String.format(COUNT_REPLACEMENT_TEMPLATE, replacement));
         }
         else
-            countQuery = matcher.replaceFirst(String.format(COUNT_REPLACEMENT_TEMPLATE, cntProjection));
+            cntQry = matcher.replaceFirst(String.format(COUNT_REPLACEMENT_TEMPLATE, cntProjection));
 
-        return countQuery.replaceFirst(ORDER_BY_PART, "");
+        return cntQry.replaceFirst(ORDER_BY_PART, "");
     }
 
     /**

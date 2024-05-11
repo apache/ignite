@@ -59,19 +59,19 @@ public class IgniteYarnUtils {
      */
     public static LocalResource setupFile(Path file, FileSystem fs, LocalResourceType type)
         throws Exception {
-        LocalResource resource = Records.newRecord(LocalResource.class);
+        LocalResource rsrc = Records.newRecord(LocalResource.class);
 
         file = fs.makeQualified(file);
 
         FileStatus stat = fs.getFileStatus(file);
 
-        resource.setResource(ConverterUtils.getYarnUrlFromPath(file));
-        resource.setSize(stat.getLen());
-        resource.setTimestamp(stat.getModificationTime());
-        resource.setType(type);
-        resource.setVisibility(LocalResourceVisibility.APPLICATION);
+        rsrc.setResource(ConverterUtils.getYarnUrlFromPath(file));
+        rsrc.setSize(stat.getLen());
+        rsrc.setTimestamp(stat.getModificationTime());
+        rsrc.setType(type);
+        rsrc.setVisibility(LocalResourceVisibility.APPLICATION);
 
-        return resource;
+        return rsrc;
     }
 
     /**

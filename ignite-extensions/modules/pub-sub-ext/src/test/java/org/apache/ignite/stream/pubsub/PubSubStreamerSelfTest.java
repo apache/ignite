@@ -234,7 +234,7 @@ public class PubSubStreamerSelfTest {
 
         Collections.shuffle(subnet);
 
-        List<PubsubMessage> messages = new ArrayList<>();
+        List<PubsubMessage> pubMsg = new ArrayList<>();
 
         Map<String, String> keyValMap = new HashMap<>();
 
@@ -245,18 +245,18 @@ public class PubSubStreamerSelfTest {
 
             String msg = runtime + VALUE_URL + ip;
 
-            JsonObject jsonObject = new JsonObject();
-            jsonObject.addProperty(JSON_KEY, ip);
-            jsonObject.addProperty(JSON_VALUE, msg);
+            JsonObject jsonObj = new JsonObject();
+            jsonObj.addProperty(JSON_KEY, ip);
+            jsonObj.addProperty(JSON_VALUE, msg);
 
-            ByteString byteString = ByteString.copyFrom(jsonObject.toString(), Charset.defaultCharset());
+            ByteString byteStr = ByteString.copyFrom(jsonObj.toString(), Charset.defaultCharset());
 
-            PubsubMessage pubsubMessage = PubsubMessage.newBuilder()
-                                                       .setData(byteString)
+            PubsubMessage pubsubMsg = PubsubMessage.newBuilder()
+                                                       .setData(byteStr)
                                                        .build();
 
-            messages.add(pubsubMessage);
-            String messageId = mockPubSubServer.getPublisher(TOPIC_NAME).publish(pubsubMessage).get();
+            pubMsg.add(pubsubMsg);
+            String msgId = mockPubSubServer.getPublisher(TOPIC_NAME).publish(pubsubMsg).get();
             keyValMap.put(ip, msg);
 
         }
@@ -272,8 +272,8 @@ public class PubSubStreamerSelfTest {
             @Override public Map.Entry<String, String> extract(PubsubMessage msg) {
                 String dataStr = msg.getData().toStringUtf8();
                 JsonElement jsonElement = new JsonParser().parse(dataStr).getAsJsonObject();
-                JsonObject jsonObject = jsonElement.getAsJsonObject();
-                return new GridMapEntry<>(jsonObject.get(JSON_KEY).getAsString(), jsonObject.get(JSON_VALUE).getAsString());
+                JsonObject jsonObj = jsonElement.getAsJsonObject();
+                return new GridMapEntry<>(jsonObj.get(JSON_KEY).getAsString(), jsonObj.get(JSON_VALUE).getAsString());
             }
         };
     }
@@ -286,16 +286,16 @@ public class PubSubStreamerSelfTest {
             @Override public Map<String, String> extract(PubsubMessage msg) {
                 String dataStr = msg.getData().toStringUtf8();
                 JsonElement jsonElement = new JsonParser().parse(dataStr).getAsJsonObject();
-                JsonArray jsonArray = jsonElement.getAsJsonArray();
+                JsonArray jsonArr = jsonElement.getAsJsonArray();
 
                 final Map<String, String> answer = new HashMap<>();
 
-                for (int i = 0; i < jsonArray.size(); i++) {
-                    JsonObject jsonObject = jsonArray.get(i).getAsJsonObject();
-                    String key = jsonObject.get(JSON_KEY).getAsString();
-                    String value = jsonObject.get(JSON_VALUE).getAsString();
+                for (int i = 0; i < jsonArr.size(); i++) {
+                    JsonObject jsonObj = jsonArr.get(i).getAsJsonObject();
+                    String key = jsonObj.get(JSON_KEY).getAsString();
+                    String val = jsonObj.get(JSON_VALUE).getAsString();
 
-                    answer.put(key, value);
+                    answer.put(key, val);
                 }
 
                 return answer;

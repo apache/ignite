@@ -36,6 +36,7 @@
         <fileSet>
             <directory>${basedir}/bin</directory>
             <outputDirectory>${project.artifactId}/bin</outputDirectory>
+            <fileMode>755</fileMode>
         </fileSet>
     </fileSets>
 </assembly>

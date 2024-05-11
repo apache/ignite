@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -151,12 +152,12 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(null, "PUBLIC",
             "INSERT INTO DEVELOPER(_key, name, projectId) VALUES (?, ?, ?)", 0, "Igor", 1);
 
-        assertEquals(1, query.size());
+        assertEquals(1, qry.size());
 
-        List<List<?>> rows = query.get(0).getAll();
+        List<List<?>> rows = qry.get(0).getAll();
 
         assertEquals(1, rows.size());
 
@@ -166,11 +167,11 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
 
         assertEqualsCollections(F.asList(1L), row);
 
-        query = engine.query(null, "PUBLIC", "select _key, * from DEVELOPER");
+        qry = engine.query(null, "PUBLIC", "select _key, * from DEVELOPER");
 
-        assertEquals(1, query.size());
+        assertEquals(1, qry.size());
 
-        row = F.first(query.get(0).getAll());
+        row = F.first(qry.get(0).getAll());
 
         assertNotNull(row);
 
@@ -191,61 +192,61 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC", "INSERT INTO DEVELOPER VALUES (?, ?, ?, ?)", 0, 0, "Igor", 1);
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(null, "PUBLIC", "INSERT INTO DEVELOPER VALUES (?, ?, ?, ?)", 0, 0, "Igor", 1);
 
-        assertEquals(1, query.size());
+        assertEquals(1, qry.size());
 
-        List<?> row = F.first(query.get(0).getAll());
+        List<?> row = F.first(qry.get(0).getAll());
 
         assertNotNull(row);
 
         assertEqualsCollections(F.asList(1L), row);
 
-        query = engine.query(null, "PUBLIC", "select * from DEVELOPER");
+        qry = engine.query(null, "PUBLIC", "select * from DEVELOPER");
 
-        assertEquals(1, query.size());
+        assertEquals(1, qry.size());
 
-        row = F.first(query.get(0).getAll());
+        row = F.first(qry.get(0).getAll());
 
         assertNotNull(row);
 
         assertEqualsCollections(F.asList(0, 0, "Igor", 1), row);
 
-        query = engine.query(null, "PUBLIC", "UPDATE DEVELOPER d SET name = name || 'Roman' WHERE id = ?", 0);
+        qry = engine.query(null, "PUBLIC", "UPDATE DEVELOPER d SET name = name || 'Roman' WHERE id = ?", 0);
 
-        assertEquals(1, query.size());
+        assertEquals(1, qry.size());
 
-        row = F.first(query.get(0).getAll());
+        row = F.first(qry.get(0).getAll());
 
         assertNotNull(row);
 
         assertEqualsCollections(F.asList(1L), row);
 
-        query = engine.query(null, "PUBLIC", "select * from DEVELOPER");
+        qry = engine.query(null, "PUBLIC", "select * from DEVELOPER");
 
-        assertEquals(1, query.size());
+        assertEquals(1, qry.size());
 
-        row = F.first(query.get(0).getAll());
+        row = F.first(qry.get(0).getAll());
 
         assertNotNull(row);
 
         assertEqualsCollections(F.asList(0, 0, "IgorRoman", 1), row);
 
-        query = engine.query(null, "PUBLIC", "DELETE FROM DEVELOPER WHERE id = ?", 0);
+        qry = engine.query(null, "PUBLIC", "DELETE FROM DEVELOPER WHERE id = ?", 0);
 
-        assertEquals(1, query.size());
+        assertEquals(1, qry.size());
 
-        row = F.first(query.get(0).getAll());
+        row = F.first(qry.get(0).getAll());
 
         assertNotNull(row);
 
         assertEqualsCollections(F.asList(1L), row);
 
-        query = engine.query(null, "PUBLIC", "select * from DEVELOPER");
+        qry = engine.query(null, "PUBLIC", "select * from DEVELOPER");
 
-        assertEquals(1, query.size());
+        assertEquals(1, qry.size());
 
-        row = F.first(query.get(0).getAll());
+        row = F.first(qry.get(0).getAll());
 
         assertNull(row);
     }
@@ -490,6 +491,42 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
                 "    WHEN NOT MATCHED THEN INSERT (ID, NAME) VALUES (SRC.ID, SRC.NAME)",
             IgniteSQLException.class,
             "Object 'NON_EXISTENT_TABLE' not found");
+    }
+
+    /** */
+    @Test
+    public void testInsertMultipleDefaults() {
+        Stream.of(true, false).forEach(withPk -> {
+            try {
+                sql("CREATE TABLE integers(i INTEGER " + (withPk ? "PRIMARY KEY" : "") +
+                        " , col1 INTEGER DEFAULT 200, col2 INTEGER DEFAULT 300)");
+
+                sql("INSERT INTO integers (i) VALUES (0)");
+                sql("INSERT INTO integers VALUES (1, DEFAULT, DEFAULT)");
+                sql("INSERT INTO integers(i, col2) VALUES (2, DEFAULT), (3, 4), (4, DEFAULT)");
+                sql("INSERT INTO integers VALUES (5, DEFAULT, DEFAULT)");
+                sql("INSERT INTO integers VALUES (6, 4, DEFAULT)");
+                sql("INSERT INTO integers VALUES (7, 5, 5)");
+                sql("INSERT INTO integers(col1, i) VALUES (DEFAULT, 8)");
+                sql("INSERT INTO integers(i, col1) VALUES (9, DEFAULT)");
+
+                assertQuery("SELECT i, col1, col2 FROM integers ORDER BY i")
+                        .returns(0, 200, 300)
+                        .returns(1, 200, 300)
+                        .returns(2, 200, 300)
+                        .returns(3, 200, 4)
+                        .returns(4, 200, 300)
+                        .returns(5, 200, 300)
+                        .returns(6, 4, 300)
+                        .returns(7, 5, 5)
+                        .returns(8, 200, 300)
+                        .returns(9, 200, 300)
+                        .check();
+            }
+            finally {
+                sql("DROP TABLE IF EXISTS integers");
+            }
+        });
     }
 
     /** */

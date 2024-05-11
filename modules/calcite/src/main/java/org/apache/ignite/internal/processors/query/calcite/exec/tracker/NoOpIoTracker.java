@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.tracker;
 
+import java.util.concurrent.atomic.AtomicLong;
+import org.jetbrains.annotations.Nullable;
+
 /**
  * I/O operations tracker that does nothing.
  */
@@ -25,12 +28,22 @@ public class NoOpIoTracker implements IoTracker {
     public static final IoTracker INSTANCE = new NoOpIoTracker();
 
     /** {@inheritDoc} */
-    @Override public void startTracking() {
-        // No-op.
+    @Override public boolean startTracking() {
+        return false;
     }
 
     /** {@inheritDoc} */
     @Override public void stopTracking() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public AtomicLong processedRowsCounter(String action) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void flush() {
         // No-op.
     }
 }

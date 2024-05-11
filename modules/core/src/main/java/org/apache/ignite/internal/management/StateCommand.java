@@ -73,25 +73,7 @@ public class StateCommand implements LocalCommand<NoArg, GridTuple3<UUID, String
 
         printer.accept(DELIM);
 
-        switch (state) {
-            case ACTIVE:
-                printer.accept("Cluster is active");
-
-                break;
-
-            case INACTIVE:
-                printer.accept("Cluster is inactive");
-
-                break;
-
-            case ACTIVE_READ_ONLY:
-                printer.accept("Cluster is active (read-only)");
-
-                break;
-
-            default:
-                throw new IllegalStateException("Unknown state: " + state);
-        }
+        printer.accept("Cluster state: " + state);
 
         return F.t(id, tag, state);
     }

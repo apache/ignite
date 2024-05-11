@@ -23,8 +23,14 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
@@ -32,9 +38,11 @@ import org.apache.ignite.client.ClientServiceDescriptor;
 import org.apache.ignite.client.ClientServices;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.service.ServiceCallContextImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.PlatformServiceMethod;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.services.ServiceCallContext;
@@ -45,6 +53,9 @@ import org.jetbrains.annotations.Nullable;
  * Implementation of {@link ClientServices}.
  */
 class ClientServicesImpl implements ClientServices {
+    /** Max service topology update period in millis. */
+    static final int SRV_TOP_UPDATE_PERIOD = 60_000;
+
     /** Channel. */
     private final ReliableChannel ch;
 
@@ -57,13 +68,23 @@ class ClientServicesImpl implements ClientServices {
     /** Cluster group. */
     private final ClientClusterGroupImpl grp;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
+    /** Services topology. {@code Null} if partition awareness is not enabled. */
+    private final Map<String, ServiceTopology> servicesTopologies;
+
     /** Constructor. */
-    ClientServicesImpl(ReliableChannel ch, ClientBinaryMarshaller marsh, ClientClusterGroupImpl grp) {
+    ClientServicesImpl(ReliableChannel ch, ClientBinaryMarshaller marsh, ClientClusterGroupImpl grp, IgniteLogger log) {
         this.ch = ch;
         this.marsh = marsh;
         this.grp = grp;
 
         utils = new ClientUtils(marsh);
+
+        this.log = log;
+
+        servicesTopologies = ch.partitionAwarenessEnabled ? new ConcurrentHashMap<>() : Collections.emptyMap();
     }
 
     /** {@inheritDoc} */
@@ -165,7 +186,98 @@ class ClientServicesImpl implements ClientServices {
     ClientServices withClusterGroup(ClientClusterGroupImpl grp) {
         A.notNull(grp, "grp");
 
-        return new ClientServicesImpl(ch, marsh, grp);
+        return new ClientServicesImpl(ch, marsh, grp, log);
+    }
+
+    /**
+     * Keeps topology of certain service and its update progress meta.
+     */
+    private final class ServiceTopology {
+        /** The service name. */
+        private final String srvcName;
+
+        /** If {@code true}, topology update of current service is in progress. */
+        private final AtomicBoolean updateInProgress = new AtomicBoolean();
+
+        /** Time of the last received topology. */
+        private volatile long lastUpdateRequestTime;
+
+        /** UUID of the nodes with at least one service instance. */
+        private volatile List<UUID> nodes = Collections.emptyList();
+
+        /** Last cluster topology version when current service topology was actual. */
+        private volatile AffinityTopologyVersion lastAffTop;
+
+        /** */
+        private ServiceTopology(String name) {
+            srvcName = name;
+        }
+
+        /**
+         * @return {@code True} if update of the service topology is required. {@code False} otherwise.
+         */
+        private boolean isUpdateRequired(AffinityTopologyVersion curAffTop) {
+            return lastAffTop == null || curAffTop.topologyVersion() > lastAffTop.topologyVersion()
+                || U.nanosToMillis(System.nanoTime() - lastUpdateRequestTime) >= SRV_TOP_UPDATE_PERIOD;
+        }
+
+        /**
+         * Asynchronously updates the service topology.
+         */
+        private void updateTopologyAsync() {
+            AffinityTopologyVersion curAffTop = ch.affinityContext().lastTopology().version();
+
+            if (!updateInProgress.compareAndSet(false, true))
+                return;
+
+            ch.serviceAsync(
+                ClientOperation.SERVICE_GET_TOPOLOGY,
+                req -> utils.writeObject(req.out(), srvcName),
+                resp -> {
+                    int cnt = resp.in().readInt();
+
+                    List<UUID> res = new ArrayList<>(cnt);
+
+                    for (int i = 0; i < cnt; ++i)
+                        res.add(new UUID(resp.in().readLong(), resp.in().readLong()));
+
+                    return res;
+                }).whenComplete((nodes, err) -> {
+                    if (err == null) {
+                        this.nodes = filterTopology(nodes);
+                        lastAffTop = curAffTop;
+                        lastUpdateRequestTime = System.nanoTime();
+
+                        if (log.isDebugEnabled()) {
+                            log.debug("Topology of service '" + srvcName + "' has been updated. " +
+                                "The service instance nodes: " + nodes + ". " +
+                                "Effective topology with the cluster group is: " + this.nodes + '.');
+                        }
+                    }
+                    else
+                        log.error("Failed to update topology of the service '" + srvcName + "'.", err);
+
+                    updateInProgress.set(false);
+                });
+        }
+
+        /** */
+        private List<UUID> filterTopology(List<UUID> nodes) {
+            return Collections.unmodifiableList(grp == null ? nodes : nodes.stream().filter(n -> grp.node(n) != null)
+                .collect(Collectors.toList()));
+        }
+
+        /**
+         * Provides last known service topology and asynchronously updates it if required.
+         *
+         * @return Last known service topology.
+         */
+        public List<UUID> getAndUpdate() {
+            if (isUpdateRequired(ch.affinityContext().lastTopology().version()))
+                updateTopologyAsync();
+
+            return nodes;
+        }
     }
 
     /**
@@ -215,12 +327,25 @@ class ClientServicesImpl implements ClientServices {
 
                 return ch.service(ClientOperation.SERVICE_INVOKE,
                     req -> writeServiceInvokeRequest(req, nodeIds, method, args),
-                    res -> utils.readObject(res.in(), false, method.getReturnType())
+                    res -> utils.readObject(res.in(), false, method.getReturnType()),
+                    serviceTopology()
                 );
             }
             catch (ClientError e) {
                 throw new ClientException(e);
             }
+        }
+
+        /**
+         * @return Actual known service topology or empty list if: service topology is not enabled, not supported or
+         * not received yet.
+         */
+        private List<UUID> serviceTopology() {
+            if (!ch.partitionAwarenessEnabled
+                || !ch.applyOnDefaultChannel(c -> c.protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.SERVICE_TOPOLOGY), null))
+                return Collections.emptyList();
+
+            return servicesTopologies.computeIfAbsent(name, ServiceTopology::new).getAndUpdate();
         }
 
         /**

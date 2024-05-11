@@ -21,26 +21,24 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServer;
 import kafka.utils.TestUtils;
-import kafka.utils.ZkUtils;
-import kafka.zk.KafkaZkClient;
-import org.I0Itec.zkclient.ZkClient;
-import org.I0Itec.zkclient.ZkConnection;
 import org.apache.curator.test.TestingServer;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.common.utils.SystemTime;
-import scala.Tuple2;
 
 /**
  * Kafka Test Broker.
@@ -62,29 +60,42 @@ public class TestKafkaBroker {
     private static final int BROKER_PORT = 11092;
 
     /** Kafka config. */
-    private KafkaConfig kafkaCfg;
+    private final KafkaConfig kafkaCfg;
 
     /** Kafka server. */
-    private KafkaServer kafkaSrv;
+    private final KafkaServer kafkaSrv;
 
     /** ZooKeeper. */
-    private TestingServer zkServer;
+    private final TestingServer zkServer;
 
-    /** Kafka Zookeeper utils. */
-    private ZkUtils zkUtils;
+    /** Kafka Admin Client. */
+    private AdminClient admin;
 
     /**
      * Kafka broker constructor.
      */
     public TestKafkaBroker() {
         try {
-            setupZooKeeper();
+            zkServer = new TestingServer(ZK_PORT, true);
+            kafkaCfg = new KafkaConfig(getKafkaConfig());
+            kafkaSrv = TestUtils.createServer(kafkaCfg, new SystemTime());
 
-            setupKafkaServer();
+            kafkaSrv.startup();
         }
         catch (Exception e) {
             throw new RuntimeException("Failed to start Kafka: " + e);
         }
+    }
+
+    /**
+     * @return Existing admin client or creates new
+     * @throws IOException
+     */
+    public synchronized AdminClient admin() throws IOException {
+        if (admin == null)
+            admin = AdminClient.create(getKafkaConfig());
+
+        return admin;
     }
 
     /**
@@ -97,83 +108,46 @@ public class TestKafkaBroker {
      * @throws InterruptedException If interrupted.
      */
     public void createTopic(String topic, int partitions, int replicationFactor)
-        throws TimeoutException, InterruptedException {
-        List<KafkaServer> servers = new ArrayList<>();
-
-        servers.add(kafkaSrv);
-
-        KafkaZkClient client = kafkaSrv.zkClient();
-
-        TestUtils.createTopic(client, topic, partitions, replicationFactor,
-            scala.collection.JavaConversions.asScalaBuffer(servers), new Properties());
+        throws IOException, ExecutionException, InterruptedException {
+        admin().createTopics(Collections.singleton(new NewTopic(topic, partitions, (short)replicationFactor)))
+            .all().get();
     }
 
     /**
      * Sends a message to Kafka broker.
      *
      * @param records List of records.
-     * @return Producer used to send the message.
      */
     public void sendMessages(List<ProducerRecord<String, String>> records) {
-        Producer<String, String> producer = new KafkaProducer<>(getProducerConfig());
-
-        for (ProducerRecord<String, String> rec : records)
-            producer.send(rec);
-
-        producer.flush();
-        producer.close();
+        try (Producer<String, String> producer = new KafkaProducer<>(getProducerConfig())) {
+            for (ProducerRecord<String, String> rec : records)
+                producer.send(rec);
+        }
     }
 
     /**
      * Shuts down test Kafka broker.
      */
     public void shutdown() {
-        if (zkUtils != null)
-            zkUtils.close();
+        if (admin != null)
+            admin.close();
 
-        if (kafkaSrv != null)
-            kafkaSrv.shutdown();
+        assert kafkaSrv != null;
+        assert zkServer != null;
 
-        if (zkServer != null) {
-            try {
-                zkServer.stop();
-            }
-            catch (IOException ignored) {
-                // No-op.
-            }
+        kafkaSrv.shutdown();
+
+        try {
+            zkServer.stop();
+        }
+        catch (IOException ignored) {
+            // No-op.
         }
 
         List<String> logDirs = scala.collection.JavaConversions.seqAsJavaList(kafkaCfg.logDirs());
 
         for (String logDir : logDirs)
             U.delete(new File(logDir));
-    }
-
-    /**
-     * Sets up test Kafka broker.
-     *
-     * @throws IOException If failed.
-     */
-    private void setupKafkaServer() throws IOException {
-        kafkaCfg = new KafkaConfig(getKafkaConfig());
-
-        kafkaSrv = TestUtils.createServer(kafkaCfg, new SystemTime());
-
-        kafkaSrv.startup();
-    }
-
-    /**
-     * Sets up ZooKeeper test server.
-     *
-     * @throws Exception If failed.
-     */
-    private void setupZooKeeper() throws Exception {
-        zkServer = new TestingServer(ZK_PORT, true);
-
-        Tuple2<ZkClient, ZkConnection> zkTuple = ZkUtils.createZkClientAndConnection(zkServer.getConnectString(),
-            ZK_SESSION_TIMEOUT, ZK_CONNECTION_TIMEOUT);
-
-        zkUtils = new ZkUtils(zkTuple._1(), zkTuple._2(), false);
     }
 
     /**
@@ -189,10 +163,12 @@ public class TestKafkaBroker {
         props.put("zookeeper.connect", zkServer.getConnectString());
         props.put("host.name", BROKER_HOST);
         props.put("port", BROKER_PORT);
+        props.put("bootstrap.servers", getBrokerAddress());
         props.put("offsets.topic.replication.factor", "1");
         props.put("log.dir", createTmpDir("_cfg").getAbsolutePath());
         props.put("log.flush.interval.messages", "1");
         props.put("log.flush.interval.ms", "10");
+        props.put("listeners", "PLAINTEXT://" + getBrokerAddress());
 
         return props;
     }

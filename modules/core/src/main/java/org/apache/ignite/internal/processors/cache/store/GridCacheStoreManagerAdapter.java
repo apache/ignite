@@ -351,13 +351,10 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                     "key", key, true,
                     "val", val, true));
 
-            if (convert) {
+            if (convert)
                 val = convert(val);
 
-                return val;
-            }
-            else
-                return val;
+            return val;
         }
 
         return null;
@@ -621,7 +618,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         if (map.size() == 1) {
             Map.Entry<? extends KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>> e =
-                ((Map<? extends KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>>)map).entrySet().iterator().next();
+                map.entrySet().iterator().next();
 
             return put(tx, e.getKey(), e.getValue().get1(), e.getValue().get2());
         }
@@ -785,7 +782,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
     /** {@inheritDoc} */
     @Override public final void sessionEnd(IgniteInternalTx tx, boolean commit, boolean last,
-        boolean storeSessionEnded) throws IgniteCheckedException {
+        boolean storeSesEnded) throws IgniteCheckedException {
         assert store != null;
 
         sessionInit0(tx, commit ? StoreOperation.COMMIT : StoreOperation.ROLLBACK, false);
@@ -796,7 +793,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                     lsnr.onSessionEnd(locSes, commit);
             }
 
-            if (!sesHolder.get().ended(store) && !storeSessionEnded)
+            if (!sesHolder.get().ended(store) && !storeSesEnded)
                 store.sessionEnd(commit);
         }
         catch (Throwable e) {
@@ -909,7 +906,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                         break;
 
                     default:
-                        assert false : "Unexpected operation: " + op.toString();
+                        assert false : "Unexpected operation: " + op;
                 }
             }
             if (notifyLsnrs) {
@@ -976,8 +973,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         private Object attach;
 
         /** */
-        private final Set<CacheStore> started =
-            new GridSetWrapper<>(new IdentityHashMap<CacheStore, Object>());
+        private final Set<CacheStore> started = new GridSetWrapper<>(new IdentityHashMap<>());
 
         /**
          * @param tx Current transaction.

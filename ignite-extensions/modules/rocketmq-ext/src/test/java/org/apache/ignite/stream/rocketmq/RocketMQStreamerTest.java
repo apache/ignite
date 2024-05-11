@@ -194,22 +194,22 @@ public class RocketMQStreamerTest extends GridCommonAbstractTest {
      * @throws IgniteInterruptedCheckedException If fails.
      */
     private void initTopic(String topic, String nsAddr) throws Exception {
-        DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt();
-        defaultMQAdminExt.setNamesrvAddr(nsAddr);
+        DefaultMQAdminExt dfltMQAdminExt = new DefaultMQAdminExt();
+        dfltMQAdminExt.setNamesrvAddr(nsAddr);
         try {
-            defaultMQAdminExt.start();
+            dfltMQAdminExt.start();
 
-            TopicConfig topicConfig = new TopicConfig();
-            topicConfig.setTopicName(topic);
-            topicConfig.setReadQueueNums(4);
-            topicConfig.setWriteQueueNums(4);
+            TopicConfig topicCfg = new TopicConfig();
+            topicCfg.setTopicName(topic);
+            topicCfg.setReadQueueNums(4);
+            topicCfg.setWriteQueueNums(4);
 
-            defaultMQAdminExt.createAndUpdateTopicConfig(testRocketMQServer.getBrokerAddr(), topicConfig);
+            dfltMQAdminExt.createAndUpdateTopicConfig(testRocketMQServer.getBrokerAddr(), topicCfg);
 
             U.sleep(100);
         }
         finally {
-            defaultMQAdminExt.shutdown();
+            dfltMQAdminExt.shutdown();
         }
     }
 }

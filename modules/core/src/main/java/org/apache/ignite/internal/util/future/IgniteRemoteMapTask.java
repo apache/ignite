@@ -120,13 +120,13 @@ import org.jetbrains.annotations.Nullable;
 
                 compute.execute(remoteTask, arg);
 
-                ComputeTaskFuture<R> future = compute.future();
+                ComputeTaskFuture<R> fut = compute.future();
 
-                this.future = future;
+                this.future = fut;
 
                 jobCtx.holdcc();
 
-                future.listen(new IgniteInClosure<IgniteFuture<R>>() {
+                fut.listen(new IgniteInClosure<IgniteFuture<R>>() {
                     @Override public void apply(IgniteFuture<R> future) {
                         jobCtx.callcc();
                     }

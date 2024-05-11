@@ -64,11 +64,9 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.mxbean.TransactionsMXBean;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_TX_COLLISIONS_INTERVAL;
@@ -110,8 +108,6 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNoPdsStatisticsEnable() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9224", MvccFeatureChecker.forcedMvcc());
-
         testStatisticsEnable(false);
     }
 
@@ -120,8 +116,6 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPdsStatisticsEnable() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9224", MvccFeatureChecker.forcedMvcc());
-
         testStatisticsEnable(true);
     }
 
@@ -527,8 +521,6 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "30000")
     public void testTxContentionMetric() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9224", MvccFeatureChecker.forcedMvcc());
-
         backups = 1;
 
         useTestCommSpi = true;
@@ -557,13 +549,13 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache0 = cl.cache(cacheName);
 
-        CacheMetrics localCacheMetrics = cache.localMetrics();
+        CacheMetrics locCacheMetrics = cache.localMetrics();
 
         final List<Integer> priKeys = primaryKeys(cache, 3, 1);
 
         final Integer backKey = backupKey(cache);
 
-        IgniteTransactions txMgr = cl.transactions();
+        IgniteTransactions cliTxMgr = cl.transactions();
 
         CountDownLatch blockOnce = new CountDownLatch(1);
 
@@ -585,7 +577,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
         }
 
         IgniteInternalFuture f = GridTestUtils.runAsync(() -> {
-            try (Transaction tx = txMgr.txStart(PESSIMISTIC, READ_COMMITTED)) {
+            try (Transaction tx = cliTxMgr.txStart(PESSIMISTIC, READ_COMMITTED)) {
                 cache0.put(priKeys.get(0), 0);
                 cache0.put(priKeys.get(2), 0);
                 tx.commit();
@@ -598,7 +590,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < contCnt; ++i) {
             IgniteInternalFuture f0 = GridTestUtils.runAsync(() -> {
-                try (Transaction tx = txMgr.txStart(PESSIMISTIC, READ_COMMITTED)) {
+                try (Transaction tx = cliTxMgr.txStart(PESSIMISTIC, READ_COMMITTED)) {
                     cache0.put(priKeys.get(0), 0);
                     cache0.put(priKeys.get(1), 0);
 
@@ -609,7 +601,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
                     txLatch.countDown();
                 }
 
-                try (Transaction tx = txMgr.txStart(PESSIMISTIC, READ_COMMITTED)) {
+                try (Transaction tx = cliTxMgr.txStart(PESSIMISTIC, READ_COMMITTED)) {
                     cache0.put(priKeys.get(2), 0);
                     cache0.put(backKey, 0);
 
@@ -635,18 +627,18 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
             commSpi0.stopBlock();
         }
 
-        IgniteTxManager txManager = ((IgniteEx)ig).context().cache().context().tm();
+        IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 try {
-                    U.invoke(IgniteTxManager.class, txManager, "collectTxCollisionsInfo");
+                    U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
                 }
                 catch (IgniteCheckedException e) {
                     fail(e.toString());
                 }
 
-                String coll = localCacheMetrics.getTxKeyCollisions();
+                String coll = locCacheMetrics.getTxKeyCollisions();
 
                 if (coll.contains("val=" + priKeys.get(2)) || coll.contains("val=" + priKeys.get(0)));
                     return true;
@@ -663,8 +655,6 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
     /** Tests metric change interval. */
     @Test
     public void testKeyCollisionsMetricDifferentTimeout() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9224", MvccFeatureChecker.forcedMvcc());
-
         backups = 2;
 
         useTestCommSpi = true;
@@ -681,7 +671,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         Ignite cl = startGrid();
 
-        IgniteTransactions txMgr = cl.transactions();
+        IgniteTransactions cliTxMgr = cl.transactions();
 
         CacheConfiguration<?, ?> dfltCacheCfg = getCacheConfiguration();
 
@@ -718,7 +708,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
         }
 
         IgniteInternalFuture f = GridTestUtils.runAsync(() -> {
-            try (Transaction tx = txMgr.txStart(PESSIMISTIC, READ_COMMITTED)) {
+            try (Transaction tx = cliTxMgr.txStart(PESSIMISTIC, READ_COMMITTED)) {
                 cache0.put(keyId, 0);
                 tx.commit();
             }
@@ -730,7 +720,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < contCnt; ++i) {
             IgniteInternalFuture f0 = GridTestUtils.runAsync(() -> {
-                try (Transaction tx = txMgr.txStart(PESSIMISTIC, READ_COMMITTED)) {
+                try (Transaction tx = cliTxMgr.txStart(PESSIMISTIC, READ_COMMITTED)) {
                     cache0.put(keyId, 0);
 
                     tx.commit();
@@ -754,9 +744,9 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
             commSpi0.stopBlock();
         }
 
-        CacheMetrics localCacheMetrics = cache.localMetrics();
+        CacheMetrics locCacheMetrics = cache.localMetrics();
 
-        IgniteTxManager txManager = ((IgniteEx)ig).context().cache().context().tm();
+        IgniteTxManager srvTxMgr = ((IgniteEx)ig).context().cache().context().tm();
 
         final TransactionsMXBean txMXBean1 = txMXBean(0);
 
@@ -767,12 +757,12 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
             txMXBean2.setTxKeyCollisionsInterval(ThreadLocalRandom.current().nextInt(1000, 1100));
 
-            localCacheMetrics.getTxKeyCollisions();
+            locCacheMetrics.getTxKeyCollisions();
 
             ig.cache(cacheName).clearStatistics();
 
             try {
-                U.invoke(IgniteTxManager.class, txManager, "collectTxCollisionsInfo");
+                U.invoke(IgniteTxManager.class, srvTxMgr, "collectTxCollisionsInfo");
             }
             catch (IgniteCheckedException e) {
                 fail(e.toString());

@@ -48,6 +48,6 @@ public class SpringApplicationConfiguration {
      */
     @Bean
     public Ignite igniteInstance() {
-        return Ignition.start("modules/spring-data-2.2-ext/examples/config/example-spring-data.xml");
+        return Ignition.start("example-spring-data.xml");
     }
 }

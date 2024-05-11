@@ -290,11 +290,11 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
         lifecycleAwares.add(store.lifecycleAware);
 
-        TestAffinityFunction affinity = new TestAffinityFunction();
+        TestAffinityFunction aff = new TestAffinityFunction();
 
-        ccfg.setAffinity(affinity);
+        ccfg.setAffinity(aff);
 
-        lifecycleAwares.add(affinity);
+        lifecycleAwares.add(aff);
 
         TestEvictionFilter evictionFilter = new TestEvictionFilter();
 

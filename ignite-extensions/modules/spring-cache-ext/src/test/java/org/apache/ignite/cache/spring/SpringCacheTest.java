@@ -91,10 +91,10 @@ public class SpringCacheTest extends GridCommonAbstractTest {
     @Test
     public void testGetByKey() throws Exception {
         String key = "key";
-        String value = "value";
+        String val = "value";
 
-        springCache.put(key, value);
-        assertEquals(value, springCache.get(key).get());
+        springCache.put(key, val);
+        assertEquals(val, springCache.get(key).get());
 
         assertNull(springCache.get("wrongKey"));
     }
@@ -105,10 +105,10 @@ public class SpringCacheTest extends GridCommonAbstractTest {
     @Test
     public void testGetByKeyType() throws Exception {
         String key = "key";
-        String value = "value";
+        String val = "value";
 
-        springCache.put(key, value);
-        assertEquals(value, springCache.get(key, String.class));
+        springCache.put(key, val);
+        assertEquals(val, springCache.get(key, String.class));
 
         try {
             springCache.get(key, Integer.class);
@@ -127,10 +127,10 @@ public class SpringCacheTest extends GridCommonAbstractTest {
         String key = "key";
         assertNull(springCache.get(key));
 
-        String value = "value";
-        springCache.put(key, value);
+        String val = "value";
+        springCache.put(key, val);
 
-        assertEquals(value, springCache.get(key).get());
+        assertEquals(val, springCache.get(key).get());
     }
 
     /**

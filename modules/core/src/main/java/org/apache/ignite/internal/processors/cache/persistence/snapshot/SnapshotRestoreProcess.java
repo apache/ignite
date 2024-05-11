@@ -84,7 +84,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSn
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -96,6 +95,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.metric.MetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Optional.ofNullable;
@@ -308,11 +308,11 @@ public class SnapshotRestoreProcess {
             return new IgniteFinishedFutureImpl<>(e);
         }
 
-        fut0.listen(f -> {
-            if (f.error() != null) {
+        fut0.listen(() -> {
+            if (fut0.error() != null) {
                 snpMgr.recordSnapshotEvent(
                     snpName,
-                    OP_FAILED_MSG + ": " + f.error().getMessage() + " [reqId=" + fut0.rqId + "].",
+                    OP_FAILED_MSG + ": " + fut0.error().getMessage() + " [reqId=" + fut0.rqId + "].",
                     EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED
                 );
             }
@@ -420,7 +420,10 @@ public class SnapshotRestoreProcess {
                 new HashSet<>(bltNodes),
                 false,
                 incIdx,
-                onlyPrimary
+                onlyPrimary,
+                false,
+                false,
+                false
             );
 
             prepareRestoreProc.start(req.requestId(), req);
@@ -586,7 +589,7 @@ public class SnapshotRestoreProcess {
             interrupt(opCtx0, reason);
 
         return fut0 == null ? new IgniteFinishedFutureImpl<>(ctxStop) :
-            new IgniteFutureImpl<>(fut0.chain(f -> true));
+            new IgniteFutureImpl<>(fut0.chain(() -> true));
     }
 
     /**
@@ -784,15 +787,16 @@ public class SnapshotRestoreProcess {
                 if (!F.isEmpty(req.groups()) && !req.groups().contains(grpName))
                     continue;
 
-                if (!skipCompressCheck && meta.isGroupWithCompresion(CU.cacheId(grpName))) {
+                if (!skipCompressCheck && meta.isGroupWithCompression(CU.cacheId(grpName))) {
                     try {
                         File path = ctx.pdsFolderResolver().resolveFolders().persistentStoreRootPath();
 
                         ctx.compress().checkPageCompressionSupported(path.toPath(), meta.pageSize());
                     }
                     catch (Exception e) {
-                        String grpWithCompr = req.groups().stream().filter(s -> meta.isGroupWithCompresion(CU.cacheId(grpName)))
-                            .collect(Collectors.joining(", "));
+                        String grpWithCompr = F.isEmpty(req.groups()) ? ""
+                            : req.groups().stream().filter(s -> meta.isGroupWithCompression(CU.cacheId(grpName)))
+                                .collect(Collectors.joining(", "));
 
                         String msg = "Requested cache groups [" + grpWithCompr + "] for restore " +
                             "from snapshot '" + meta.snapshotName() + "' are compressed while " +
@@ -887,7 +891,7 @@ public class SnapshotRestoreProcess {
 
             if (!F.isEmpty(e.getValue().metas)) {
                 e.getValue().metas.stream().filter(SnapshotMetadata::hasCompressedGroups)
-                    .forEach(meta -> meta.cacheGroupIds().stream().filter(meta::isGroupWithCompresion)
+                    .forEach(meta -> meta.cacheGroupIds().stream().filter(meta::isGroupWithCompression)
                         .forEach(opCtx0::addCompressedGroup));
             }
 
@@ -933,11 +937,11 @@ public class SnapshotRestoreProcess {
         // Try to copy everything right from the single snapshot part.
         for (SnapshotMetadata meta : metas) {
             Set<Integer> grpParts = meta.partitions().get(grpId);
-            Set<Integer> grpWoIndex = grpParts == null ? Collections.emptySet() : new HashSet<>(grpParts);
+            Set<Integer> grpWoIdx = grpParts == null ? Collections.emptySet() : new HashSet<>(grpParts);
 
-            grpWoIndex.remove(INDEX_PARTITION);
+            grpWoIdx.remove(INDEX_PARTITION);
 
-            if (grpWoIndex.equals(parts))
+            if (grpWoIdx.equals(parts))
                 return meta;
         }
 
@@ -973,7 +977,7 @@ public class SnapshotRestoreProcess {
             IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
 
             synchronized (this) {
-                opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
+                opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(() -> null));
             }
 
             if (log.isInfoEnabled()) {
@@ -1671,7 +1675,7 @@ public class SnapshotRestoreProcess {
         GridFutureAdapter<Boolean> retFut = new GridFutureAdapter<>();
 
         synchronized (this) {
-            opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
+            opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(() -> null));
         }
 
         try {
@@ -2033,9 +2037,9 @@ public class SnapshotRestoreProcess {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            PartitionRestoreFuture future = (PartitionRestoreFuture)o;
+            PartitionRestoreFuture fut = (PartitionRestoreFuture)o;
 
-            return partId == future.partId;
+            return partId == fut.partId;
         }
 
         /** {@inheritDoc} */

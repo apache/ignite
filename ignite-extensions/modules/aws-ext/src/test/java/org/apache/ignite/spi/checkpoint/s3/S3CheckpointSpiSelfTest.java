@@ -37,7 +37,7 @@ import org.apache.ignite.spi.checkpoint.GridCheckpointTestState;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
-import org.apache.ignite.testsuites.IgniteS3TestSuite;
+import org.apache.ignite.util.IgniteS3TestConfiguration;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -55,8 +55,8 @@ public class S3CheckpointSpiSelfTest extends GridSpiAbstractTest<S3CheckpointSpi
 
     /** {@inheritDoc} */
     @Override protected void spiConfigure(S3CheckpointSpi spi) throws Exception {
-        AWSCredentials cred = new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
-            IgniteS3TestSuite.getSecretKey());
+        AWSCredentials cred = new BasicAWSCredentials(IgniteS3TestConfiguration.getAccessKey(),
+            IgniteS3TestConfiguration.getSecretKey());
 
         spi.setAwsCredentials(cred);
 
@@ -69,8 +69,8 @@ public class S3CheckpointSpiSelfTest extends GridSpiAbstractTest<S3CheckpointSpi
      * @throws Exception If error.
      */
     @Override protected void afterSpiStopped() throws Exception {
-        AWSCredentials cred = new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
-            IgniteS3TestSuite.getSecretKey());
+        AWSCredentials cred = new BasicAWSCredentials(IgniteS3TestConfiguration.getAccessKey(),
+            IgniteS3TestConfiguration.getSecretKey());
 
         AmazonS3 s3 = new AmazonS3Client(cred);
 
@@ -241,11 +241,11 @@ public class S3CheckpointSpiSelfTest extends GridSpiAbstractTest<S3CheckpointSpi
     static String getBucketNameSuffix() {
         String bucketNameSuffix;
         try {
-            bucketNameSuffix = IgniteS3TestSuite.getBucketName(
+            bucketNameSuffix = IgniteS3TestConfiguration.getBucketName(
                 "unit-test-" + InetAddress.getLocalHost().getHostName().toLowerCase());
         }
         catch (UnknownHostException e) {
-            bucketNameSuffix = IgniteS3TestSuite.getBucketName(
+            bucketNameSuffix = IgniteS3TestConfiguration.getBucketName(
                 "unit-test-rnd-" + ThreadLocalRandom.current().nextInt(100));
         }
 

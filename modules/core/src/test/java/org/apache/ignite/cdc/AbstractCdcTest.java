@@ -41,12 +41,13 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.CdcConsumerState;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ObjectMetric;
@@ -60,6 +61,7 @@ import static org.apache.ignite.internal.cdc.CdcMain.CDC_DIR;
 import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_IDX;
 import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_OFFSET;
 import static org.apache.ignite.internal.cdc.CdcMain.CUR_SEG_IDX;
+import static org.apache.ignite.internal.cdc.CdcMain.EVT_CAPTURE_TIME;
 import static org.apache.ignite.internal.cdc.CdcMain.LAST_SEG_CONSUMPTION_TIME;
 import static org.apache.ignite.internal.cdc.CdcMain.MARSHALLER_DIR;
 import static org.apache.ignite.internal.cdc.CdcMain.cdcInstanceName;
@@ -115,6 +117,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         cdcCfg.setConsumer(cnsmr);
         cdcCfg.setKeepBinary(keepBinary());
+        cdcCfg.setMetricExporterSpi(metricExporters());
 
         return new CdcMain(cfg, null, cdcCfg) {
             @Override protected CdcConsumerState createState(Path stateDir) {
@@ -243,6 +246,9 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
             m -> mreg.<LongMetric>findMetric(m).value(),
             m -> mreg.<ObjectMetric<String>>findMetric(m).value()
         );
+
+        HistogramMetric evtCaptureTime = mreg.findMetric(EVT_CAPTURE_TIME);
+        assertEquals(expCnt, (int)Arrays.stream(evtCaptureTime.value()).sum());
     }
 
     /** */

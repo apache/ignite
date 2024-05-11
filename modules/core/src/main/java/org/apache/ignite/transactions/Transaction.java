@@ -117,7 +117,7 @@ import org.jetbrains.annotations.Nullable;
  * }
  * </pre>
  */
-public interface Transaction extends AutoCloseable {
+public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
     /**
      * Gets unique identifier for this transaction.
      *
@@ -277,14 +277,14 @@ public interface Transaction extends AutoCloseable {
     public IgniteFuture<Void> rollbackAsync() throws IgniteException;
 
     /**
-     * Resume a transaction if it was previously suspended. <strong>Supported only for optimistic transactions.</strong>
+     * Resume a transaction if it was previously suspended.
      *
      * @throws IgniteException If resume failed.
      */
     public void resume() throws IgniteException;
 
     /**
-     * Suspends a transaction. It could be resumed later. <strong>Supported only for optimistic transactions.</strong>
+     * Suspends a transaction. It could be resumed later.
      *
      * @throws IgniteException If suspension failed.
      */

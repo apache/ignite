@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.performancestatistics.util;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Data structure for keeping the top N elements in DESC sort order.
@@ -52,19 +54,24 @@ public class OrderedFixedSizeStructure<K extends Comparable<? super K>, V> {
     /**
      * @param key Key.
      * @param value Value.
+     * @return Evicted value.
      */
-    public void put(K key, V value) {
+    public @Nullable V put(K key, V value) {
         if (map.size() < capacity) {
             map.put(key, value);
 
-            return;
+            return null;
         }
 
         if (map.firstKey().compareTo(key) < 0) {
-            map.pollFirstEntry();
+            Map.Entry<K, V> old = map.pollFirstEntry();
 
             map.put(key, value);
+
+            return old.getValue();
         }
+
+        return value;
     }
 
     /** @return Values. */

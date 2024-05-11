@@ -68,7 +68,7 @@ import org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.processors.platform.services.PlatformServiceConfiguration;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
@@ -936,7 +936,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @return Service topology.
      * @throws IgniteCheckedException On error.
      */
-    public Map<UUID, Integer> serviceTopology(String name, long timeout) throws IgniteCheckedException {
+    @Nullable public Map<UUID, Integer> serviceTopology(String name, long timeout) throws IgniteCheckedException {
         assert timeout >= 0;
 
         long startTime = U.currentTimeMillis();
@@ -1550,9 +1550,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @return @return Service's id if exists, otherwise {@code null};
      */
     @Nullable private IgniteUuid lookupDeployedServiceId(String name) {
-        ServiceInfo serviceInfo = deployedServicesByName.get(name);
-        if (serviceInfo != null) {
-            return serviceInfo.serviceId();
+        ServiceInfo srvcInfo = deployedServicesByName.get(name);
+        if (srvcInfo != null) {
+            return srvcInfo.serviceId();
         }
 
         return null;
@@ -1713,11 +1713,11 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             }
 
             for (ServiceConfiguration srvcCfg : prepCfgs.cfgs) {
-                ServiceInfo serviceInfo = new ServiceInfo(ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true);
+                ServiceInfo srvcInfo = new ServiceInfo(ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true);
 
-                serviceInfo.context(ctx);
+                srvcInfo.context(ctx);
 
-                staticServicesInfo.add(serviceInfo);
+                staticServicesInfo.add(srvcInfo);
             }
         }
 
@@ -2024,7 +2024,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @return Created metric registry.
      */
     private ReadOnlyMetricRegistry createServiceMetrics(ServiceContextImpl srvcCtx, ServiceConfiguration cfg) {
-        MetricRegistry metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcCtx.name()));
+        MetricRegistryImpl metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcCtx.name()));
 
         if (cfg instanceof LazyServiceConfiguration && ((LazyServiceConfiguration)cfg).platformMtdNames() != null) {
             for (String definedMtdName : ((LazyServiceConfiguration)cfg).platformMtdNames()) {

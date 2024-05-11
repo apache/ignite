@@ -18,11 +18,10 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexNode;
@@ -58,8 +57,8 @@ public interface IgniteTable extends TranslatableTable {
     RelDataType getRowType(RelDataTypeFactory typeFactory, ImmutableBitSet requiredColumns);
 
     /** {@inheritDoc} */
-    @Override default TableScan toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-        return toRel(context.getCluster(), relOptTable, null, null, null);
+    @Override default TableScan toRel(RelOptTable.ToRelContext ctx, RelOptTable relOptTable) {
+        return toRel(ctx.getCluster(), relOptTable, null, null, null, ctx.getTableHints());
     }
 
     /**
@@ -70,6 +69,7 @@ public interface IgniteTable extends TranslatableTable {
      * @param proj List of required projections.
      * @param cond Conditions to filter rows.
      * @param requiredColumns Set of columns to extract from original row.
+     * @param hints Table hints.
      * @return Table relational expression.
      */
     IgniteLogicalTableScan toRel(
@@ -77,24 +77,21 @@ public interface IgniteTable extends TranslatableTable {
         RelOptTable relOptTbl,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
-        @Nullable ImmutableBitSet requiredColumns
+        @Nullable ImmutableBitSet requiredColumns,
+        @Nullable List<RelHint> hints
     );
 
     /**
      * Creates rows iterator over the table.
      *
      * @param execCtx Execution context.
-     * @param group Colocation group.
-     * @param filter Row filter.
-     * @param rowTransformer Row transformer.
+     * @param grp Colocation group.
      * @param usedColumns Used columns enumeration.
      * @return Rows iterator.
      */
     public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
-        ColocationGroup group,
-        Predicate<Row> filter,
-        Function<Row, Row> rowTransformer,
+        ColocationGroup grp,
         @Nullable ImmutableBitSet usedColumns);
 
     /**
@@ -155,4 +152,26 @@ public interface IgniteTable extends TranslatableTable {
      * @return {@code True} if index rebuild in progress.
      */
     boolean isIndexRebuildInProgress();
+
+    /**
+     * @return Table name.
+     */
+    String name();
+
+    /**
+     * Authorizes operation on table.
+     */
+    void authorize(Operation op);
+
+    /** */
+    enum Operation {
+        /** */
+        READ,
+
+        /** */
+        PUT,
+
+        /** */
+        REMOVE
+    }
 }

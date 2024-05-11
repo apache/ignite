@@ -115,10 +115,10 @@ class MockPubSubServer {
     private ClientCall<AcknowledgeRequest, Empty> acknowledgeCall() {
         ClientCall<AcknowledgeRequest, Empty> clientCall = Mockito.mock(ClientCall.class);
         doAnswer(iom -> {
-                Object[] arguments = iom.getArguments();
-                ClientCall.Listener<Empty> listener = (ClientCall.Listener<Empty>)arguments[0];
+                Object[] args = iom.getArguments();
+                ClientCall.Listener<Empty> listener = (ClientCall.Listener<Empty>)args[0];
                 listener.onMessage(Empty.getDefaultInstance());
-                Metadata metadata = (Metadata)arguments[1];
+                Metadata metadata = (Metadata)args[1];
                 listener.onClose(Status.OK, metadata);
                 return null;
             }
@@ -132,9 +132,9 @@ class MockPubSubServer {
 
         doAnswer(
             iom -> {
-                Object[] arguments = iom.getArguments();
-                ClientCall.Listener<PullResponse> listener = (ClientCall.Listener<PullResponse>)arguments[0];
-                Metadata metadata = (Metadata)arguments[1];
+                Object[] args = iom.getArguments();
+                ClientCall.Listener<PullResponse> listener = (ClientCall.Listener<PullResponse>)args[0];
+                Metadata metadata = (Metadata)args[1];
                 pullMessages(listener, metadata);
                 return null;
             }
@@ -144,7 +144,7 @@ class MockPubSubServer {
 
     /** */
     private void pullMessages(ClientCall.Listener<PullResponse> listener, Metadata metadata) {
-        PullResponse.Builder pullResponse = PullResponse.newBuilder();
+        PullResponse.Builder pullRes = PullResponse.newBuilder();
 
         try {
             for (int i = 0; i < MESSAGES_PER_REQUEST; i++) {
@@ -153,14 +153,14 @@ class MockPubSubServer {
                 if (msg == null)
                     break;
 
-                pullResponse.addReceivedMessages(ReceivedMessage.newBuilder().mergeMessage(msg).build());
+                pullRes.addReceivedMessages(ReceivedMessage.newBuilder().mergeMessage(msg).build());
             }
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
 
-        listener.onMessage(pullResponse.build());
+        listener.onMessage(pullRes.build());
         listener.onClose(Status.OK, metadata);
     }
 
@@ -180,8 +180,8 @@ class MockPubSubServer {
 
         when(publisher.publish(any(PubsubMessage.class))).thenAnswer(
             (iom) -> {
-                PubsubMessage pubsubMessage = (PubsubMessage)iom.getArguments()[0];
-                blockingQueue.add(pubsubMessage);
+                PubsubMessage pubsubMsg = (PubsubMessage)iom.getArguments()[0];
+                blockingQueue.add(pubsubMsg);
                 return ApiFutures.immediateFuture(UUID.randomUUID().toString());
             }
         );

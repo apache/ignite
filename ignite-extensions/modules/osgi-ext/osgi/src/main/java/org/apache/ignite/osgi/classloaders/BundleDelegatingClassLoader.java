@@ -63,12 +63,12 @@ public class BundleDelegatingClassLoader extends ClassLoader {
 
     /** {@inheritDoc} */
     @Override protected URL findResource(String name) {
-        URL resource = bundle.getResource(name);
+        URL rsrc = bundle.getResource(name);
 
-        if (resource == null && clsLdr != null)
-            resource = clsLdr.getResource(name);
+        if (rsrc == null && clsLdr != null)
+            rsrc = clsLdr.getResource(name);
 
-        return resource;
+        return rsrc;
     }
 
     /** {@inheritDoc} */

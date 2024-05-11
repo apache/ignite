@@ -35,8 +35,8 @@ import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.EXPIRE_TIME_CALCULATE;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_NOT_CHANGED;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.EXPIRE_TIME_ETERNAL;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 
 /**
  * Contains logic to process {@link CdcEvent} and apply them to the destination cluster.
@@ -93,16 +93,18 @@ public class CdcEventsIgniteApplier extends AbstractCdcEventsApplier<KeyCacheObj
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDrInfo toValue(int cacheId, Object val, GridCacheVersion ver) {
+    @Override protected GridCacheDrInfo toValue(int cacheId, CdcEvent evt, GridCacheVersion ver) {
         CacheObject cacheObj;
+
+        Object val = evt.value();
 
         if (val instanceof CacheObject)
             cacheObj = (CacheObject)val;
         else
             cacheObj = new CacheObjectImpl(val, null);
 
-        return cache(cacheId).configuration().getExpiryPolicyFactory() != null ?
-            new GridCacheDrExpirationInfo(cacheObj, ver, TTL_NOT_CHANGED, EXPIRE_TIME_CALCULATE) :
+        return evt.expireTime() != EXPIRE_TIME_ETERNAL ?
+            new GridCacheDrExpirationInfo(cacheObj, ver, TTL_ETERNAL, evt.expireTime()) :
             new GridCacheDrInfo(cacheObj, ver);
     }
 

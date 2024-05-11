@@ -33,7 +33,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition
 import org.apache.ignite.internal.cache.query.index.sorted.defragmentation.DefragIndexFactory.DefragIndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.MvccIO;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -137,7 +136,7 @@ public class IndexingDefragmentation {
         cpLock.checkpointReadLock();
 
         try {
-            TreeIterator treeIterator = new TreeIterator(pageSize);
+            TreeIterator treeIter = new TreeIterator(pageSize);
 
             GridCacheContext<?, ?> cctx = indexes.cctx;
 
@@ -155,7 +154,7 @@ public class IndexingDefragmentation {
                 int segments = oldIdx.segmentsCount();
 
                 for (int i = 0; i < segments; ++i) {
-                    treeIterator.iterate(oldIdx.segment(i), oldCachePageMem, (theTree, io, pageAddr, idx) -> {
+                    treeIter.iterate(oldIdx.segment(i), oldCachePageMem, (theTree, io, pageAddr, idx) -> {
                         cancellationChecker.run();
 
                         if (System.currentTimeMillis() - lastCpLockTs.get() >= cpLockThreshold) {
@@ -191,8 +190,7 @@ public class IndexingDefragmentation {
                             DefragIndexRowImpl newRow = DefragIndexRowImpl.create(
                                 oldRowHnd,
                                 newLink,
-                                r,
-                                ((MvccIO)io).storeMvccInfo()
+                                r
                             );
 
                             newIdx.putIndexRow(newRow);

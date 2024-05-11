@@ -24,6 +24,7 @@ import os
 import subprocess
 from abc import ABCMeta, abstractmethod
 import re
+from copy import deepcopy
 from itertools import chain
 
 from ignitetest.services.utils import IgniteServiceType
@@ -149,14 +150,21 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         if config.service_type == IgniteServiceType.NODE:
             if is_opencensus_metrics_enabled(self.service):
-                config = configure_opencensus_metrics(config, self.service.context.globals)
+                config = configure_opencensus_metrics(config, self.service.context.globals, self)
 
             if is_jmx_metrics_enabled(self.service):
                 config = configure_jmx_metrics(config)
 
             if (is_opencensus_metrics_enabled(self.service) or
                     is_jmx_metrics_enabled(self.service)):
-                config = config._replace(ignite_instance_name=self._test_id)
+
+                ignite_instance_name = self._test_id
+
+                if config.ignite_instance_name:
+                    ignite_instance_name = ignite_instance_name[:250 - 2 - len(config.ignite_instance_name)] +\
+                                           "--" + config.ignite_instance_name
+
+                config = config._replace(ignite_instance_name=ignite_instance_name)
 
         config = config.prepare_ssl(self.service.globals, self.service.shared_root)
 
@@ -164,7 +172,7 @@ class IgniteSpec(metaclass=ABCMeta):
 
     @property
     def _test_id(self):
-        return re.sub("^[0-9A-Fa-f]+@ignitetest\\.tests\\.", "", self.service.context.test_name).replace("=", ".")[:255]
+        return re.sub("^[0-9A-Fa-f]+@ignitetest\\.tests\\.", "", self.service.context.test_name).replace("=", ".")[:250]
 
     def __home(self, product=None):
         """
@@ -209,7 +217,10 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         :return: modules set.
         """
-        modules = self.service.modules or []
+        if self.service.modules:
+            modules = deepcopy(self.service.modules)
+        else:
+            modules = []
 
         modules.append("log4j2")
         modules.append("ducktests")

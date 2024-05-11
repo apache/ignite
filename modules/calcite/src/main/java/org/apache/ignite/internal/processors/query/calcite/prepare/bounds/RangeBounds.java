@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare.bounds;
 
 import java.util.Objects;
+import java.util.function.Function;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -85,6 +86,17 @@ public class RangeBounds extends SearchBounds {
     /** {@inheritDoc} */
     @Override public Type type() {
         return Type.RANGE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SearchBounds transform(Function<RexNode, RexNode> tranformFunction) {
+        return new RangeBounds(
+            tranformFunction.apply(condition()),
+            tranformFunction.apply(lowerBound),
+            tranformFunction.apply(upperBound),
+            lowerInclude,
+            upperInclude
+        );
     }
 
     /** {@inheritDoc} */

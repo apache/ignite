@@ -18,13 +18,26 @@
 package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.datagrid.SpatialQueryExample;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * Tests {@link SpatialQueryExample}.
  */
 public class SpatialQueryExampleSelfTest extends GridAbstractExamplesTest {
+    /**
+     *
+     */
+    @BeforeClass
+    public static void init() {
+        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
+            GridTestUtils.getNextMulticastGroup(SpatialQueryExampleSelfTest.class));
+    }
+
     /**
      * @throws Exception If failed.
      */

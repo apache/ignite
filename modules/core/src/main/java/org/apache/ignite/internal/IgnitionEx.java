@@ -148,6 +148,9 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
+import static org.apache.ignite.internal.util.IgniteUtils.EMPTY_STRS;
+import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_MBEANS_DISABLED;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
 
 /**
@@ -181,8 +184,6 @@ public class IgnitionEx {
     private static final String GRACEFUL_SHUTDOWN_METASTORE_KEY =
         DistributedMetaStorageImpl.IGNITE_INTERNAL_KEY_PREFIX + "graceful.shutdown";
     
-    
-
     /** Map of named Ignite instances. */
     private static final ConcurrentMap<Object, IgniteNamedInstance> grids = new ConcurrentHashMap<>();
 
@@ -1516,9 +1517,6 @@ public class IgnitionEx {
         private static final Map<MBeanServer, GridMBeanServerData> mbeans =
             new HashMap<>();
 
-        /** */
-        private static final String[] EMPTY_STR_ARR = new String[0];
-
         /** Grid name. */
         private final String name;
 
@@ -1935,7 +1933,7 @@ public class IgnitionEx {
             myCfg.setMarshaller(marsh);
 
             if (myCfg.getPeerClassLoadingLocalClassPathExclude() == null)
-                myCfg.setPeerClassLoadingLocalClassPathExclude(EMPTY_STR_ARR);
+                myCfg.setPeerClassLoadingLocalClassPathExclude(EMPTY_STRS);
 
             initializeDefaultSpi(myCfg);
 
@@ -2253,17 +2251,17 @@ public class IgnitionEx {
                         safeToStop = false;
 
                     if (safeToStop && !proposedSuppliers.isEmpty()) {
-                        Set<UUID> supportedPolicyNodes = proposedSuppliers.keySet().stream()
+                        Set<UUID> supportedPlcNodes = proposedSuppliers.keySet().stream()
                             .filter(nodeId ->
                                 IgniteFeatures.nodeSupports(grid0.cluster().node(nodeId), IgniteFeatures.SHUTDOWN_POLICY))
                             .collect(Collectors.toSet());
 
-                        if (!supportedPolicyNodes.isEmpty()) {
+                        if (!supportedPlcNodes.isEmpty()) {
                             try {
                                 safeToStop = grid0.context().task().execute(
                                     CheckCpHistTask.class,
                                     proposedSuppliers,
-                                    TaskExecutionOptions.options(grid0.cluster().forNodeIds(supportedPolicyNodes).nodes())
+                                    options(grid0.cluster().forNodeIds(supportedPlcNodes).nodes())
                                 ).get();
                             }
                             catch (IgniteCheckedException e) {
@@ -2348,22 +2346,22 @@ public class IgnitionEx {
             if (fullMap == null)
                 return false;
 
-            UUID localNodeId = grid.localNodeId();
+            UUID locNodeId = grid.localNodeId();
 
-            GridDhtPartitionMap localPartMap = fullMap.get(localNodeId);
+            GridDhtPartitionMap locPartMap = fullMap.get(locNodeId);
 
             int parts = grpCtx.topology().partitions();
 
             List<List<ClusterNode>> idealAssignment = grpCtx.affinity().idealAssignmentRaw();
 
             for (int p = 0; p < parts; p++) {
-                if (localPartMap.get(p) != GridDhtPartitionState.OWNING)
+                if (locPartMap.get(p) != GridDhtPartitionState.OWNING)
                     continue;
 
                 boolean foundCopy = false;
 
                 for (Map.Entry<UUID, GridDhtPartitionMap> entry : fullMap.entrySet()) {
-                    if (localNodeId.equals(entry.getKey()) || nodesToExclude.contains(entry.getKey()))
+                    if (locNodeId.equals(entry.getKey()) || nodesToExclude.contains(entry.getKey()))
                         continue;
 
                     //This remote node does not present in ideal assignment.

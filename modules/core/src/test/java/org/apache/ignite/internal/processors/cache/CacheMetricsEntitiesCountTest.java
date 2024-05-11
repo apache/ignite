@@ -29,12 +29,12 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 
 /**
@@ -198,19 +198,19 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
 
         CacheMetricsImpl metrics = cache.metrics0();
 
-        long offHeapEntriesCount = cache.offHeapEntriesCount();
+        long offHeapEntriesCnt = cache.offHeapEntriesCount();
 
-        long offHeapPrimaryEntriesCount = cctx.offheap().cacheEntriesCount(cctx.cacheId(),
+        long offHeapPrimaryEntriesCnt = cctx.offheap().cacheEntriesCount(cctx.cacheId(),
             true,
             false,
             cctx.affinity().affinityTopologyVersion());
 
-        long offHeapBackupEntriesCount = cctx.offheap().cacheEntriesCount(cctx.cacheId(),
+        long offHeapBackupEntriesCnt = cctx.offheap().cacheEntriesCount(cctx.cacheId(),
             false,
             true,
             cctx.affinity().affinityTopologyVersion());
 
-        long heapEntriesCount = cache.localSizeLong(ONHEAP_PEEK_MODES);
+        long heapEntriesCnt = cache.localSizeLong(ONHEAP_PEEK_MODES);
 
         long cacheSize = cache.localSizeLong(new CachePeekMode[]{CachePeekMode.PRIMARY});
         int size = cache.localSize(new CachePeekMode[]{CachePeekMode.PRIMARY});
@@ -222,12 +222,12 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
         log.info("Checking cache,  " + cacheInfo);
 
         assertEquals(cacheInfo + " offHeapEntriesCount",
-            offHeapEntriesCount, metrics.getOffHeapEntriesCount());
+            offHeapEntriesCnt, metrics.getOffHeapEntriesCount());
         assertEquals(cacheInfo + " offHeapBackupEntriesCount",
-            offHeapBackupEntriesCount, metrics.getOffHeapBackupEntriesCount());
+            offHeapBackupEntriesCnt, metrics.getOffHeapBackupEntriesCount());
         assertEquals(cacheInfo + " offHeapPrimaryEntriesCount",
-            offHeapPrimaryEntriesCount, metrics.getOffHeapPrimaryEntriesCount());
-        assertEquals(cacheInfo + " heapEntriesCount", heapEntriesCount, metrics.getHeapEntriesCount());
+            offHeapPrimaryEntriesCnt, metrics.getOffHeapPrimaryEntriesCount());
+        assertEquals(cacheInfo + " heapEntriesCount", heapEntriesCnt, metrics.getHeapEntriesCount());
         assertEquals(cacheInfo + " size", size, metrics.getSize());
         assertEquals(cacheInfo + " keySize", size, metrics.getKeySize());
         assertEquals(cacheInfo + " cacheSize", cacheSize, metrics.getCacheSize());
@@ -238,10 +238,10 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
 
         assertNotNull(mreg);
 
-        assertEquals(offHeapEntriesCount, ((LongMetric)mreg.findMetric("OffHeapEntriesCount")).value());
-        assertEquals(offHeapBackupEntriesCount, ((LongMetric)mreg.findMetric("OffHeapBackupEntriesCount")).value());
-        assertEquals(offHeapPrimaryEntriesCount, ((LongMetric)mreg.findMetric("OffHeapPrimaryEntriesCount")).value());
-        assertEquals(heapEntriesCount, ((LongMetric)mreg.findMetric("HeapEntriesCount")).value());
+        assertEquals(offHeapEntriesCnt, ((LongMetric)mreg.findMetric("OffHeapEntriesCount")).value());
+        assertEquals(offHeapBackupEntriesCnt, ((LongMetric)mreg.findMetric("OffHeapBackupEntriesCount")).value());
+        assertEquals(offHeapPrimaryEntriesCnt, ((LongMetric)mreg.findMetric("OffHeapPrimaryEntriesCount")).value());
+        assertEquals(heapEntriesCnt, ((LongMetric)mreg.findMetric("HeapEntriesCount")).value());
         assertEquals(cacheSize, ((LongMetric)mreg.findMetric("CacheSize")).value());
     }
 
@@ -276,10 +276,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
                 metrics.getOffHeapBackupEntriesCount());
             assertEquals(cacheInfo + " offHeapPrimaryEntriesCnt", offHeapPrimaryEntriesCnt,
                 metrics.getOffHeapPrimaryEntriesCount());
-
-            if (!MvccFeatureChecker.forcedMvcc()) // Onheap cache is not supported in Mvcc mode.
-                assertEquals(cacheInfo + " heapEntriesCnt", heapEntriesCnt, metrics.getHeapEntriesCount());
-
+            assertEquals(cacheInfo + " heapEntriesCnt", heapEntriesCnt, metrics.getHeapEntriesCount());
             assertEquals(cacheInfo + " size", cacheSize, metrics.getSize());
             assertEquals(cacheInfo + " keySize", cacheSize, metrics.getKeySize());
             assertEquals(cacheInfo + " isEmpty", cacheSize == 0, metrics.isEmpty());
@@ -300,10 +297,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
         assertEquals(cacheInfo + " offHeapEntriesCnt", offHeapEntriesCnt, offHeapEntriesCntSum);
         assertEquals(cacheInfo + " offHeapBackupEntriesCnt", offHeapBackupEntriesCnt, offHeapBackupEntriesCntSum);
         assertEquals(cacheInfo + " offHeapPrimaryEntriesCnt", offHeapPrimaryEntriesCnt, offHeapPrimaryEntriesCntSum);
-
-        if (!MvccFeatureChecker.forcedMvcc()) // Onheap cache is not supported in Mvcc mode.
-            assertEquals(cacheInfo + " heapEntriesCnt", heapEntriesCnt, heapEntriesCntSum);
-
+        assertEquals(cacheInfo + " heapEntriesCnt", heapEntriesCnt, heapEntriesCntSum);
         assertEquals(cacheInfo + " isEmpty", cacheSize == 0, isEmptySum);
     }
 }

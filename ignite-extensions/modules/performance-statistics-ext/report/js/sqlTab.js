@@ -44,6 +44,12 @@ $('#sqlStatisticsTable').bootstrapTable({
         sortable: true
     }],
     data: prepareSqlTableData(),
+    detailViewIcon: true,
+    detailViewByClick: true,
+    detailView: true,
+    onExpandRow: function (index, row, $detail) {
+        buildExpandDetails(row, $detail)
+    },
     sortName: 'duration',
     sortOrder: 'desc'
 });
@@ -58,7 +64,9 @@ function prepareSqlTableData() {
             "duration": sqlData["duration"],
             "logicalReads": sqlData["logicalReads"],
             "physicalReads": sqlData["physicalReads"],
-            "failures": sqlData["failures"]
+            "failures": sqlData["failures"],
+            "properties": sqlData["properties"],
+            "rows": sqlData["rows"]
         });
     });
 
@@ -99,6 +107,12 @@ $('#topSlowSqlTable').bootstrapTable({
         sortable: true
     }],
     data: prepareSlowSqlTableData(),
+    detailViewIcon: true,
+    detailViewByClick: true,
+    detailView: true,
+    onExpandRow: function (index, row, $detail) {
+        buildExpandDetails(row, $detail)
+    },
     sortName: 'duration',
     sortOrder: 'desc'
 });
@@ -114,9 +128,86 @@ function prepareSlowSqlTableData() {
             nodeId: sqlData["nodeId"],
             logicalReads: sqlData["logicalReads"],
             physicalReads: sqlData["physicalReads"],
-            success: sqlData["success"]
+            success: sqlData["success"],
+            properties: sqlData["properties"],
+            rows: sqlData["rows"]
         });
     });
 
     return data;
+}
+
+/** Builds details on expand row. */
+function buildExpandDetails(row, $detail) {
+    var hasProperties = row.hasOwnProperty("properties")
+    var hasRows = row.hasOwnProperty("rows")
+    var htmlProperties = hasProperties ? "<h5>Properties</h5><table class='properties'></table>" : ""
+    var htmlRows = hasRows ? "<h5>Rows</h5><table class='rows'></table>" : ""
+
+    var html = $detail.html(htmlProperties + (hasProperties & hasRows ? "<br/>" : "") + htmlRows)
+
+    if (hasProperties)
+        buildPropertiesSubTable(html.find('table.properties'), row.properties)
+
+    if (hasRows)
+        buildRowsSubTable(html.find('table.rows'), row.rows)
+}
+
+/** Builds query properties subtable. */
+function buildPropertiesSubTable($el, properties) {
+    var data = [];
+
+    $.each(properties, function (k, prop) {
+        data.push({
+            name: k,
+            value: prop["value"],
+            count: prop["count"]
+        });
+    });
+
+    $el.bootstrapTable({
+        columns: [{
+            field: 'name',
+            title: 'Property name',
+            sortable: true
+        }, {
+            field: 'value',
+            title: 'Property value',
+            sortable: true
+        }, {
+            field: 'count',
+            title: 'Count',
+            sortable: true
+        }],
+        data: data,
+        sortName: 'name',
+        sortOrder: 'asc'
+    })
+}
+
+/** Builds query rows subtable. */
+function buildRowsSubTable($el, rows) {
+    var data = [];
+
+    $.each(rows, function (k, row) {
+        data.push({
+            action: k,
+            rows: row
+        });
+    });
+
+    $el.bootstrapTable({
+        columns: [{
+            field: 'action',
+            title: 'Action',
+            sortable: true
+        }, {
+            field: 'rows',
+            title: 'Rows count',
+            sortable: true
+        }],
+        data: data,
+        sortName: 'action',
+        sortOrder: 'asc'
+    })
 }

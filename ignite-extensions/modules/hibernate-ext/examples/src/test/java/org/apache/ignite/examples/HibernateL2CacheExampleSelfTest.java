@@ -18,13 +18,24 @@
 package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.datagrid.hibernate.HibernateL2CacheExample;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * Tests the {@link HibernateL2CacheExample}.
  */
 public class HibernateL2CacheExampleSelfTest extends GridAbstractExamplesTest {
+    /** */
+    @BeforeClass
+    public static void init() {
+        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
+            GridTestUtils.getNextMulticastGroup(HibernateL2CacheExampleSelfTest.class));
+    }
+
     /** */
     @Test
     public void testHibernateL2CacheExample() {

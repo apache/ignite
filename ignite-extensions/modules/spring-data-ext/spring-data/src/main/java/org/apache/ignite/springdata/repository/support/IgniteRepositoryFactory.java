@@ -136,10 +136,10 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
                 String qryStr = annotation.value();
 
-                boolean annotatedIgniteQuery = !annotation.dynamicQuery() && (StringUtils.hasText(qryStr) || annotation
+                boolean annotatedIgniteQry = !annotation.dynamicQuery() && (StringUtils.hasText(qryStr) || annotation
                     .textQuery());
 
-                IgniteQuery query = annotatedIgniteQuery
+                IgniteQuery qry = annotatedIgniteQry
                     ? new IgniteQuery(
                         qryStr,
                         !annotation.textQuery() && (isFieldQuery(qryStr) || annotation.forceFieldsQuery()),
@@ -150,8 +150,8 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
                     : null;
 
                 if (key != QueryLookupStrategy.Key.CREATE) {
-                    return new IgniteRepositoryQuery(metadata, query, mtd, factory, cache,
-                        annotatedIgniteQuery ? DynamicQueryConfig.fromQueryAnnotation(annotation) : null,
+                    return new IgniteRepositoryQuery(metadata, qry, mtd, factory, cache,
+                        annotatedIgniteQry ? DynamicQueryConfig.fromQueryAnnotation(annotation) : null,
                         evaluationContextProvider);
                 }
             }

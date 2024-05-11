@@ -30,9 +30,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -97,7 +97,6 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setMvccVacuumFrequency(1000)
             .setCacheConfiguration(createCacheConfigs())
             .setGridLogger(listeningLog)
             .setConnectorConfiguration(new ConnectorConfiguration());
@@ -116,8 +115,8 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
 
         IgniteEx crd = createCluster(nodes);
 
-        for (CacheConfiguration cacheConfig : createCacheConfigs()) {
-            String cacheName = cacheConfig.getName();
+        for (CacheConfiguration cacheCfg : createCacheConfigs()) {
+            String cacheName = cacheCfg.getName();
 
             IgniteCache<Object, Object> cache = crd.cache(cacheName);
 
@@ -164,8 +163,8 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
 
         IgniteEx crd = createCluster(nodes);
 
-        for (CacheConfiguration cacheConfig : createCacheConfigs()) {
-            String cacheName = cacheConfig.getName();
+        for (CacheConfiguration cacheCfg : createCacheConfigs()) {
+            String cacheName = cacheCfg.getName();
 
             IgniteCache<Object, Object> cache = crd.cache(cacheName);
 

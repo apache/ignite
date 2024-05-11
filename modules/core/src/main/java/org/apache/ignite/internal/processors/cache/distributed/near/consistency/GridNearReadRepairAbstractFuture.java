@@ -201,7 +201,6 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
                     true,
                     true,
                     tx != null ? tx.label() : null,
-                    tx != null ? tx.mvccSnapshot() : null,
                     node);
 
             futs.put(mapping.getKey(), fut);
@@ -249,10 +248,10 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         if (REMAP_CALLS_UPD.compareAndSet(this, 0, 1)) {
             GridNearReadRepairAbstractFuture fut = remapFuture(topVer);
 
-            fut.listen(f -> {
+            fut.listen(() -> {
                 assert !isDone();
 
-                onDone(f.result(), f.error());
+                onDone(fut.result(), fut.error());
             });
         }
     }
@@ -514,9 +513,9 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
                 continue;
             }
 
-            for (Map.Entry<T2<ByteArrayWrapper, GridCacheVersion>, T2<EntryGetResult, Integer>> count : cntMap.entrySet())
-                if (count.getValue().getValue().equals(max)) {
-                    correctedMap.put(key, count.getValue().getKey());
+            for (Map.Entry<T2<ByteArrayWrapper, GridCacheVersion>, T2<EntryGetResult, Integer>> cnt : cntMap.entrySet())
+                if (cnt.getValue().getValue().equals(max)) {
+                    correctedMap.put(key, cnt.getValue().getKey());
 
                     break;
                 }

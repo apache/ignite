@@ -26,7 +26,6 @@ import org.apache.ignite.internal.client.thin.TcpClientCache;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
@@ -36,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
  * @see TcpClientCache#putAllConflict(Map)
  * @see TcpClientCache#removeAllConflict(Map)
  */
-public class CdcEventsIgniteClientApplier extends AbstractCdcEventsApplier<Object, T3<Object, GridCacheVersion,Long>> {
+public class CdcEventsIgniteClientApplier extends AbstractCdcEventsApplier<Object, T3<Object, GridCacheVersion, Long>> {
     /** Client connected to the destination cluster. */
     private final IgniteClient client;
 
@@ -60,8 +59,8 @@ public class CdcEventsIgniteClientApplier extends AbstractCdcEventsApplier<Objec
     }
 
     /** {@inheritDoc} */
-    @Override protected T3<Object, GridCacheVersion,Long> toValue(int cacheId, Object val, GridCacheVersion ver) {
-        return new T3<>(val, ver,(long)cacheId);
+    @Override protected T3<Object, GridCacheVersion, Long> toValue(int cacheId, CdcEvent evt, GridCacheVersion ver) {
+        return new T3<>(evt.value(), ver, evt.expireTime());
     }
 
     /** {@inheritDoc} */

@@ -30,9 +30,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -228,8 +228,8 @@ public class UserQueriesTestBase extends SqlStatisticsAbstractTest {
 
         Collection<GridRunningQueryInfo> queries = node.context().query().runningQueries(-1);
 
-        for (GridRunningQueryInfo queryInfo : queries) {
-            String killId = queryInfo.globalQueryId();
+        for (GridRunningQueryInfo qryInfo : queries) {
+            String killId = qryInfo.globalQueryId();
 
             node.context().query().querySqlFields(
                 new SqlFieldsQuery("KILL QUERY ASYNC '" + killId + "'").setSchema("PUBLIC"), false);

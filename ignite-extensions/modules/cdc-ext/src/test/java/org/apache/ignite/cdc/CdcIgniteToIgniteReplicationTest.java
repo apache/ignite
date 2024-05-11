@@ -21,15 +21,22 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cdc.thin.IgniteToIgniteClientCdcStreamer;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
+import org.apache.ignite.spi.systemview.view.SystemView;
+import org.junit.Test;
 
+import static org.apache.ignite.cdc.AbstractReplicationTest.ClientType.CLIENT_NODE;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
@@ -82,11 +89,15 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
 
             if (clientType == ClientType.THIN_CLIENT) {
                 streamer = new IgniteToIgniteClientCdcStreamer()
+                    .setAliveCheckTimeout(5_000)
                     .setDestinationClientConfiguration(new ClientConfiguration()
                         .setAddresses(hostAddresses(dest)));
             }
-            else
-                streamer = new IgniteToIgniteCdcStreamer().setDestinationIgniteConfiguration(destCfg);
+            else {
+                streamer = new IgniteToIgniteCdcStreamer().setDestinationIgniteConfiguration(
+                    new IgniteConfiguration(destCfg).setFailureHandler(new StopNodeOrHaltFailureHandler(true, 30_000))
+                );
+            }
 
             streamer.setMaxBatchSize(KEYS_CNT);
             streamer.setCaches(Collections.singleton(cache));
@@ -100,5 +111,47 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
 
             cdc.run();
         });
+    }
+
+    /** */
+    @Test
+    public void testCdcStopOnClientNodeCrash() throws Exception {
+        List<IgniteInternalFuture<?>> cdcFuts = startActivePassiveCdc(ACTIVE_PASSIVE_CACHE);
+
+        if (clientType == CLIENT_NODE) {
+            assertTrue("Waiting for clients to connect", waitForCondition(
+                () -> destCluster[0].cluster().forClients().nodes().size() == srcCluster.length,
+                30_000
+            ));
+        }
+        else {
+            assertTrue("Waiting for clients to connect", waitForCondition(
+                () -> {
+                    int cliCnt = 0;
+
+                    for (IgniteEx dest : destCluster) {
+                        SystemView<?> view = dest.context().systemView().view(ClientListenerProcessor.CLI_CONN_VIEW);
+
+                        assertNotNull(view);
+
+                        cliCnt += view.size();
+                    }
+
+                    return cliCnt >= srcCluster.length;
+                },
+                30_000
+            ));
+        }
+
+        // Stopping destination cluster. IgniteToIgniteCdcStreamer connected to it.
+        for (IgniteEx destIgnite : destCluster)
+            Ignition.stop(destIgnite.name(), true);
+
+        for (IgniteInternalFuture<?> cdcFut : cdcFuts) {
+            assertTrue(
+                "Waiting for clients fail and crash ignite-cdc",
+                waitForCondition(cdcFut::isDone, 30_000)
+            );
+        }
     }
 }

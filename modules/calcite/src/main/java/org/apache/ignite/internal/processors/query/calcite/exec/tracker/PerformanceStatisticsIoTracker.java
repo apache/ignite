@@ -17,11 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.tracker;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
+import org.apache.ignite.internal.util.typedef.T2;
 
 /**
  * Performance statistics gathering I/O operations tracker.
@@ -37,6 +42,18 @@ public class PerformanceStatisticsIoTracker implements IoTracker {
     private final long originatingQryId;
 
     /** */
+    private final AtomicLong logicalReads = new AtomicLong();
+
+    /** */
+    private final AtomicLong physicalReads = new AtomicLong();
+
+    /** */
+    private final AtomicBoolean started = new AtomicBoolean();
+
+    /** */
+    private final List<T2<String, AtomicLong>> cntrs = new CopyOnWriteArrayList<>();
+
+    /** */
     public PerformanceStatisticsIoTracker(
         PerformanceStatisticsProcessor perfStatProc,
         UUID originatingNodeId,
@@ -48,21 +65,60 @@ public class PerformanceStatisticsIoTracker implements IoTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public void startTracking() {
-        IoStatisticsQueryHelper.startGatheringQueryStatistics();
+    @Override public boolean startTracking() {
+        if (started.compareAndSet(false, true)) {
+            IoStatisticsQueryHelper.startGatheringQueryStatistics();
+            return true;
+        }
+        else
+            return false;
     }
 
     /** {@inheritDoc} */
     @Override public void stopTracking() {
         IoStatisticsHolder stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
 
-        if (stat.logicalReads() > 0 || stat.physicalReads() > 0) {
+        logicalReads.addAndGet(stat.logicalReads());
+        physicalReads.addAndGet(stat.physicalReads());
+
+        started.compareAndSet(true, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public AtomicLong processedRowsCounter(String action) {
+        AtomicLong cntr = new AtomicLong();
+
+        cntrs.add(new T2<>(action, cntr));
+
+        return cntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void flush() {
+        long logicalReads = this.logicalReads.getAndSet(0);
+        long physicalReads = this.physicalReads.getAndSet(0);
+
+        if (logicalReads > 0 || physicalReads > 0) {
             perfStatProc.queryReads(
                 GridCacheQueryType.SQL_FIELDS,
                 originatingNodeId,
                 originatingQryId,
-                stat.logicalReads(),
-                stat.physicalReads());
+                logicalReads,
+                physicalReads);
+        }
+
+        for (T2<String, AtomicLong> cntr : cntrs) {
+            long rowsCnt = cntr.get2().getAndSet(0);
+
+            if (rowsCnt > 0) {
+                perfStatProc.queryRowsProcessed(
+                    GridCacheQueryType.SQL_FIELDS,
+                    originatingNodeId,
+                    originatingQryId,
+                    cntr.get1(),
+                    rowsCnt
+                );
+            }
         }
     }
 }

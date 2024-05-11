@@ -19,7 +19,7 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.s3;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
-import org.apache.ignite.testsuites.IgniteS3TestSuite;
+import org.apache.ignite.util.IgniteS3TestConfiguration;
 import org.junit.Test;
 
 /**
@@ -38,7 +38,7 @@ public class TcpDiscoveryS3IpFinderAwsCredentialsProviderSelfTest extends TcpDis
     /** {@inheritDoc} */
     @Override protected void setAwsCredentials(TcpDiscoveryS3IpFinder finder) {
         finder.setAwsCredentialsProvider(new AWSStaticCredentialsProvider(
-            new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(), IgniteS3TestSuite.getSecretKey())));
+            new BasicAWSCredentials(IgniteS3TestConfiguration.getAccessKey(), IgniteS3TestConfiguration.getSecretKey())));
     }
 
     /** {@inheritDoc} */

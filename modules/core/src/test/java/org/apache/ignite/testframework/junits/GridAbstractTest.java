@@ -122,7 +122,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
@@ -166,7 +165,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
 import static org.apache.ignite.internal.IgnitionEx.gridx;
@@ -776,10 +774,10 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     private ScheduledExecutorService scheduleThreadDumpOnAfterTestTimeOut(AtomicBoolean afterTestFinished) {
         // Compute class name as string to avoid holding reference to the test class instance in task.
-        String testClassName = getClass().getName();
+        String testClsName = getClass().getName();
 
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, task -> {
-            Thread thread = new Thread(task, "after-test-timeout-" + testClassName);
+            Thread thread = new Thread(task, "after-test-timeout-" + testClsName);
             thread.setDaemon(true);
             return thread;
         });
@@ -788,7 +786,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             scheduler.shutdownNow();
 
             if (!afterTestFinished.get()) {
-                log.info(testClassName +
+                log.info(testClsName +
                     ".afterTest() timed out, dumping threads (afterTest() still keeps running)");
 
                 dumpThreadsReliably();
@@ -2191,10 +2189,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     public static <K, V> CacheConfiguration<K, V> defaultCacheConfiguration() {
         CacheConfiguration<K, V> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-        if (MvccFeatureChecker.forcedMvcc())
-            cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-        else
-            cfg.setAtomicityMode(TRANSACTIONAL).setNearConfiguration(new NearCacheConfiguration<>());
+        cfg.setAtomicityMode(TRANSACTIONAL).setNearConfiguration(new NearCacheConfiguration<>());
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setEvictionPolicy(null);
 

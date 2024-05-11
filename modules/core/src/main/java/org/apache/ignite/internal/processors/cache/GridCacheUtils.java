@@ -73,7 +73,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheA
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -98,6 +97,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteClosure;
@@ -115,6 +115,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -184,7 +185,6 @@ public class GridCacheUtils {
     public static final String[] RESERVED_NAMES = new String[] {
         UTILITY_CACHE_NAME,
         MetaStorage.METASTORAGE_CACHE_NAME,
-        TxLog.TX_LOG_CACHE_NAME,
     };
 
     /** */
@@ -333,29 +333,6 @@ public class GridCacheUtils {
         }
     };
 
-    /** Transaction entry to key. */
-    private static final IgniteClosure tx2key = new C1<IgniteTxEntry, Object>() {
-        @Override public Object apply(IgniteTxEntry e) {
-            return e.key();
-        }
-
-        @Override public String toString() {
-            return "Cache transaction entry to key converter.";
-        }
-    };
-
-    /** Transaction entry to key. */
-    private static final IgniteClosure txCol2key = new C1<Collection<IgniteTxEntry>, Collection<Object>>() {
-        @SuppressWarnings( {"unchecked"})
-        @Override public Collection<Object> apply(Collection<IgniteTxEntry> e) {
-            return F.viewReadOnly(e, tx2key);
-        }
-
-        @Override public String toString() {
-            return "Cache transaction entry collection to key collection converter.";
-        }
-    };
-
     /** Converts transaction to XID version. */
     private static final IgniteClosure tx2xidVer = new C1<IgniteInternalTx, GridCacheVersion>() {
         @Override public GridCacheVersion apply(IgniteInternalTx tx) {
@@ -364,13 +341,6 @@ public class GridCacheUtils {
 
         @Override public String toString() {
             return "Transaction to XID version converter.";
-        }
-    };
-
-    /** Converts tx entry to entry. */
-    private static final IgniteClosure tx2entry = new C1<IgniteTxEntry, GridCacheEntryEx>() {
-        @Override public GridCacheEntryEx apply(IgniteTxEntry e) {
-            return e.cached();
         }
     };
 
@@ -643,7 +613,7 @@ public class GridCacheUtils {
 
             /** {@inheritDoc} */
             @Override public String toString() {
-                return "Map reducer: " + ret;
+                return S.toString("Map Reducer", "reducedEntries", ret);
             }
         };
     }
@@ -676,7 +646,7 @@ public class GridCacheUtils {
 
             /** {@inheritDoc} */
             @Override public synchronized String toString() {
-                return "Collection reducer: " + ret;
+                return S.toString("Collection Reducer", "reducedElements", ret);
             }
         };
     }
@@ -888,16 +858,6 @@ public class GridCacheUtils {
         assert ctx != null;
 
         ctx.ttl().expire(TTL_BATCH_SIZE);
-    }
-
-    /**
-     * @param ctx Shared cache context.
-     */
-    public static <K, V> void unwindEvicts(GridCacheSharedContext<K, V> ctx) {
-        assert ctx != null;
-
-        for (GridCacheContext<K, V> cacheCtx : ctx.cacheContexts())
-            unwindEvicts(cacheCtx);
     }
 
     /**
@@ -1491,9 +1451,9 @@ public class GridCacheUtils {
 
         Map<UUID, Collection<ClusterNode>> neighbors = new HashMap<>(topSnapshot.size(), 1.0f);
 
-        for (Collection<ClusterNode> group : macMap.values())
-            for (ClusterNode node : group)
-                neighbors.put(node.id(), group);
+        for (Collection<ClusterNode> grp : macMap.values())
+            for (ClusterNode node : grp)
+                neighbors.put(node.id(), grp);
 
         return neighbors;
     }
@@ -1666,27 +1626,27 @@ public class GridCacheUtils {
         IgniteLogger log,
         boolean fail
     ) throws IgniteCheckedException {
-        Map<String, String> rmtAffinityKeys = CU.validateKeyConfigiration(groupName, cacheName, rmtCacheKeyCfgs, log, fail);
+        Map<String, String> rmtAffKeys = CU.validateKeyConfigiration(groupName, cacheName, rmtCacheKeyCfgs, log, fail);
 
-        Map<String, String> locAffinityKey = CU.validateKeyConfigiration(groupName, cacheName, locCacheKeyCfgs, log, fail);
+        Map<String, String> locAffKey = CU.validateKeyConfigiration(groupName, cacheName, locCacheKeyCfgs, log, fail);
 
-        if (rmtAffinityKeys.size() != locAffinityKey.size()) {
+        if (rmtAffKeys.size() != locAffKey.size()) {
             throwIgniteCheckedException(log, fail, "Affinity key configuration mismatch" +
                 "[" +
                 (groupName != null ? "cacheGroup=" + groupName + ", " : "") +
                 "cacheName=" + cacheName + ", " +
-                "remote keyConfiguration.length=" + rmtAffinityKeys.size() + ", " +
-                "local keyConfiguration.length=" + locAffinityKey.size() +
+                "remote keyConfiguration.length=" + rmtAffKeys.size() + ", " +
+                "local keyConfiguration.length=" + locAffKey.size() +
                 (rmtNodeId != null ? ", rmtNodeId=" + rmtNodeId : "") +
                 ']');
         }
 
-        for (Map.Entry<String, String> rmtAffinityKey : rmtAffinityKeys.entrySet()) {
-            String rmtTypeName = rmtAffinityKey.getKey();
+        for (Map.Entry<String, String> rmtAffKey : rmtAffKeys.entrySet()) {
+            String rmtTypeName = rmtAffKey.getKey();
 
-            String rmtFieldName = rmtAffinityKey.getValue();
+            String rmtFieldName = rmtAffKey.getValue();
 
-            String locFieldName = locAffinityKey.get(rmtTypeName);
+            String locFieldName = locAffKey.get(rmtTypeName);
 
             if (!rmtFieldName.equals(locFieldName)) {
                 throwIgniteCheckedException(log, fail, "Affinity key configuration mismatch [" +
@@ -1807,7 +1767,7 @@ public class GridCacheUtils {
         boolean readThrough,
         boolean skipVals
     ) {
-        if (cctx.mvccEnabled() || !readThrough || skipVals ||
+        if (!readThrough || skipVals ||
             (key != null && !cctx.affinity().backupsByKey(key, topVer).contains(cctx.localNode())))
             return null;
 

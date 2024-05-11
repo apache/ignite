@@ -814,8 +814,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private GridCloseableIterator scanIterator(final GridCacheQueryAdapter<?> qry, IgniteClosure transformer,
         boolean locNode)
         throws IgniteCheckedException {
-        assert !cctx.mvccEnabled() || qry.mvccSnapshot() != null;
-
         final IgniteBiPredicate<K, V> keyValFilter = qry.scanFilter();
         final InternalScanFilter<K, V> intFilter = keyValFilter != null ? new InternalScanFilter<>(keyValFilter) : null;
 
@@ -863,7 +861,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 locPart = locPart0;
 
-                it = cctx.offheap().cachePartitionIterator(cctx.cacheId(), part, qry.mvccSnapshot(),
+                it = cctx.offheap().cachePartitionIterator(cctx.cacheId(), part,
                     qry.isDataPageScanEnabled());
             }
             else {
@@ -879,7 +877,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
 
                 it = cctx.offheap().cacheIterator(cctx.cacheId(), true, backups, topVer,
-                    qry.mvccSnapshot(), qry.isDataPageScanEnabled());
+                    qry.isDataPageScanEnabled());
             }
 
             ScanQueryIterator iter = new ScanQueryIterator(it, qry, topVer, locPart,

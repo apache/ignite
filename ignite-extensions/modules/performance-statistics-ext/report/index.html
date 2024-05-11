@@ -71,6 +71,10 @@
                            aria-selected="false">Scan queries</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#indexQueryStatisticsTab" role="tab"
+                           aria-selected="false">Index queries</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" data-toggle="tab" href="#computeStatisticsTab" role="tab"
                            aria-selected="false">Tasks and jobs</a>
                     </li>
@@ -128,6 +132,15 @@
                     <h2 class="mt-4">Top of slowest queries</h2>
                     <table data-toggle="table" id="topSlowScanTable"></table>
                 </div>
+                <div class="tab-pane fade" id="indexQueryStatisticsTab" role="tabpanel">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">Index query statistics</h1>
+                    </div>
+                    <h2 class="mt-4">Overall statistics</h2>
+                    <table data-toggle="table" id="indexQueryStatisticsTable"></table>
+                    <h2 class="mt-4">Top of slowest queries</h2>
+                    <table data-toggle="table" id="topSlowIndexQueryTable"></table>
+                </div>
                 <div class="tab-pane fade" id="computeStatisticsTab" role="tabpanel">
                     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                         <h1 class="h2">Tasks and jobs statistics</h1>
@@ -143,7 +156,7 @@
 </div>
 
 <!-- Bootstrap JS, Popper.js, and jQuery. -->
-<script src="libs/jquery-3.3.1.min.js"></script>
+<script src="libs/jquery-3.6.1.min.js"></script>
 <script src="libs/popper.min.js"></script>
 <script src="libs/bootstrap.min.js"></script>
 
@@ -170,6 +183,7 @@
 <script type="text/javascript" src="js/operationsTab.js"></script>
 <script type="text/javascript" src="js/sqlTab.js"></script>
 <script type="text/javascript" src="js/scanTab.js"></script>
+<script type="text/javascript" src="js/indexQueryTab.js"></script>
 <script type="text/javascript" src="js/txTab.js"></script>
 <script type="text/javascript" src="js/computeTab.js"></script>
 

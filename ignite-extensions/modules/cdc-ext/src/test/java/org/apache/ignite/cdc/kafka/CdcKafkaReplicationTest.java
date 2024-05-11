@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -64,32 +65,14 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        if (KAFKA == null) {
-            KAFKA = new EmbeddedKafkaCluster(1);
-
-            KAFKA.start();
-        }
-
-        KAFKA.createTopic(SRC_DEST_TOPIC, DFLT_PARTS, 1);
-        KAFKA.createTopic(DEST_SRC_TOPIC, DFLT_PARTS, 1);
-        KAFKA.createTopic(SRC_DEST_META_TOPIC, 1, 1);
-        KAFKA.createTopic(DEST_SRC_META_TOPIC, 1, 1);
+        KAFKA = initKafka(KAFKA);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        KAFKA.getAllTopicsInCluster().forEach(t -> {
-            try {
-                KAFKA.deleteTopic(t);
-            }
-            catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        });
-
-        waitForCondition(() -> KAFKA.getAllTopicsInCluster().isEmpty(), getTestTimeout());
+        removeKafkaTopicsAndWait(KAFKA, getTestTimeout());
     }
 
     /** {@inheritDoc} */
@@ -239,14 +222,64 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
 
     /** */
     protected Properties kafkaProperties() {
+        return kafkaProperties(KAFKA);
+    }
+
+    /**
+     * @param kafka Kafka cluster.
+     */
+    static Properties kafkaProperties(EmbeddedKafkaCluster kafka) {
         Properties props = new Properties();
 
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA.bootstrapServers());
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.bootstrapServers());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "kafka-to-ignite-applier");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, "10000");
 
         return props;
+    }
+
+    /**
+     * Init Kafka cluster if current instance is null and create topics.
+     *
+     * @param curKafka Current kafka.
+     */
+    static EmbeddedKafkaCluster initKafka(EmbeddedKafkaCluster curKafka) throws Exception {
+        EmbeddedKafkaCluster kafka = curKafka;
+
+        if (kafka == null) {
+            Properties props = new Properties();
+
+            props.put("auto.create.topics.enable", "false");
+
+            kafka = new EmbeddedKafkaCluster(1, props);
+
+            kafka.start();
+        }
+
+        kafka.createTopic(SRC_DEST_TOPIC, DFLT_PARTS, 1);
+        kafka.createTopic(DEST_SRC_TOPIC, DFLT_PARTS, 1);
+        kafka.createTopic(SRC_DEST_META_TOPIC, 1, 1);
+        kafka.createTopic(DEST_SRC_META_TOPIC, 1, 1);
+
+        return kafka;
+    }
+
+    /**
+     * @param kafka Kafka cluster.
+     * @param timeout Timeout.
+     */
+    static void removeKafkaTopicsAndWait(EmbeddedKafkaCluster kafka, long timeout) throws IgniteInterruptedCheckedException {
+        kafka.getAllTopicsInCluster().forEach(t -> {
+            try {
+                kafka.deleteTopic(t);
+            }
+            catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        waitForCondition(() -> kafka.getAllTopicsInCluster().isEmpty(), timeout);
     }
 }

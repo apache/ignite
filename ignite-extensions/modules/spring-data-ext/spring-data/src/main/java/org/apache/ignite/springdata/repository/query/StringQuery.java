@@ -85,12 +85,12 @@ class StringQuery implements DeclaredQuery {
         bindings = new ArrayList<>();
         containsPageableInSpel = query.contains("#pageable");
 
-        Metadata queryMeta = new Metadata();
+        Metadata qryMeta = new Metadata();
         this.query = ParameterBindingParser.INSTANCE
             .parseParameterBindingsOfQueryIntoBindingsAndReturnCleanedQuery(query, bindings,
-                queryMeta);
+                qryMeta);
 
-        usesJdbcStyleParameters = queryMeta.usesJdbcStyleParameters;
+        usesJdbcStyleParameters = qryMeta.usesJdbcStyleParameters;
         alias = QueryUtils.detectAlias(query);
         hasConstructorExpression = QueryUtils.hasConstructorExpression(query);
     }
@@ -396,29 +396,29 @@ class StringQuery implements DeclaredQuery {
              * position of the greatest discovered index parameter in order to
              * not mix-up with the actual parameter indices.
              */
-            int expressionParameterIndex = parametersShouldBeAccessedByIndex ? greatestParameterIndex : 0;
+            int expressionParamIdx = parametersShouldBeAccessedByIndex ? greatestParameterIndex : 0;
 
-            BiFunction<Integer, String, String> indexToParameterName = parametersShouldBeAccessedByIndex
+            BiFunction<Integer, String, String> idxToParamName = parametersShouldBeAccessedByIndex
                 ? (index, expression) -> String.valueOf(
-                index + expressionParameterIndex + 1)
+                index + expressionParamIdx + 1)
                 : (index, expression) ->
                 EXPRESSION_PARAMETER_PREFIX + (index
                     + 1);
 
             String fixedPrefix = parametersShouldBeAccessedByIndex ? "?" : ":";
 
-            BiFunction<String, String, String> parameterNameToReplacement = (prefix, name) -> fixedPrefix + name;
+            BiFunction<String, String, String> paramNameToReplacement = (prefix, name) -> fixedPrefix + name;
 
-            return SpelQueryContext.of(indexToParameterName, parameterNameToReplacement).parse(queryWithSpel);
+            return SpelQueryContext.of(idxToParamName, paramNameToReplacement).parse(queryWithSpel);
         }
 
         /** */
         private static String replaceFirst(String text, String substring, String replacement) {
-            int index = text.indexOf(substring);
-            if (index < 0)
+            int idx = text.indexOf(substring);
+            if (idx < 0)
                 return text;
 
-            return text.substring(0, index) + replacement + text.substring(index + substring.length());
+            return text.substring(0, idx) + replacement + text.substring(idx + substring.length());
         }
 
         /** */
@@ -431,18 +431,18 @@ class StringQuery implements DeclaredQuery {
 
         /** */
         private static int tryFindGreatestParameterIndexIn(String query) {
-            Matcher parameterIndexMatcher = PARAMETER_BINDING_BY_INDEX.matcher(query);
+            Matcher paramIdxMatcher = PARAMETER_BINDING_BY_INDEX.matcher(query);
 
-            int greatestParameterIndex = -1;
-            while (parameterIndexMatcher.find()) {
+            int greatestParamIdx = -1;
+            while (paramIdxMatcher.find()) {
 
-                String parameterIndexString = parameterIndexMatcher.group(1);
-                Integer parameterIndex = getParameterIndex(parameterIndexString);
-                if (parameterIndex != null)
-                    greatestParameterIndex = Math.max(greatestParameterIndex, parameterIndex);
+                String paramIdxStr = paramIdxMatcher.group(1);
+                Integer paramIdx = getParameterIndex(paramIdxStr);
+                if (paramIdx != null)
+                    greatestParamIdx = Math.max(greatestParamIdx, paramIdx);
             }
 
-            return greatestParameterIndex;
+            return greatestParamIdx;
         }
 
         /** */
@@ -901,15 +901,15 @@ class StringQuery implements DeclaredQuery {
             int start = 0;
 
             for (int i = 0; i < query.length(); i++) {
-                char currentChar = query.charAt(i);
+                char curChar = query.charAt(i);
 
-                if (QUOTING_CHARACTERS.contains(currentChar)) {
+                if (QUOTING_CHARACTERS.contains(curChar)) {
                     if (inQuotation == null) {
 
-                        inQuotation = currentChar;
+                        inQuotation = curChar;
                         start = i;
                     }
-                    else if (currentChar == inQuotation) {
+                    else if (curChar == inQuotation) {
                         inQuotation = null;
 
                         quotedRanges.add(Range.from(Bound.inclusive(start)).to(Bound.inclusive(i)));

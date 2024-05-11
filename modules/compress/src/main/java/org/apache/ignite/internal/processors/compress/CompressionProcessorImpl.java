@@ -30,9 +30,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
-import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -41,16 +39,12 @@ import org.xerial.snappy.Snappy;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.MAX_PAGE_SIZE;
-import static org.apache.ignite.configuration.DiskPageCompression.SKIP_GARBAGE;
 import static org.apache.ignite.internal.util.GridUnsafe.NATIVE_BYTE_ORDER;
 
 /**
  * Compression processor.
  */
 public class CompressionProcessorImpl extends CompressionProcessor {
-    /** Max page size. */
-    private final ThreadLocalDirectByteBuffer compactBuf = new ThreadLocalDirectByteBuffer(MAX_PAGE_SIZE, NATIVE_BYTE_ORDER);
-
     /** A bit more than max page size, extra space is required by compressors. */
     private final ThreadLocalDirectByteBuffer compressBuf =
         new ThreadLocalDirectByteBuffer(maxCompressedBufferSize(MAX_PAGE_SIZE), NATIVE_BYTE_ORDER);
@@ -92,96 +86,18 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         checkPunchHole(storagePath, fsBlockSize);
     }
 
-    /** {@inheritDoc} */
-    @Override public ByteBuffer compressPage(
-        ByteBuffer page,
-        int pageSize,
-        int blockSize,
-        DiskPageCompression compression,
-        int compressLevel
-    ) throws IgniteCheckedException {
-        assert compression != null && compression != DiskPageCompression.DISABLED : compression;
-        assert U.isPow2(blockSize) : blockSize;
-        assert page.position() == 0 && page.limit() >= pageSize;
-
-        int oldPageLimit = page.limit();
-
-        try {
-            // Page size will be less than page limit when TDE is enabled. To make compaction and compression work
-            // correctly we need to set limit to real page size.
-            page.limit(pageSize);
-
-            ByteBuffer compactPage = doCompactPage(page, pageSize);
-
-            int compactSize = compactPage.limit();
-
-            assert compactSize <= pageSize : compactSize;
-
-            // If no need to compress further or configured just to skip garbage.
-            if (compactSize < blockSize || compression == SKIP_GARBAGE)
-                return setCompactionInfo(compactPage, compactSize);
-
-            ByteBuffer compressedPage = doCompressPage(compression, compactPage, compactSize, compressLevel);
-
-            assert compressedPage.position() == 0;
-            int compressedSize = compressedPage.limit();
-
-            int freeCompactBlocks = (pageSize - compactSize) / blockSize;
-            int freeCompressedBlocks = (pageSize - compressedSize) / blockSize;
-
-            if (freeCompactBlocks >= freeCompressedBlocks) {
-                if (freeCompactBlocks == 0)
-                    return page; // No blocks will be released.
-
-                return setCompactionInfo(compactPage, compactSize);
-            }
-
-            return setCompressionInfo(compressedPage, compression, compressedSize, compactSize);
-        }
-        finally {
-            page.limit(oldPageLimit);
-        }
-    }
-
-    /**
-     * @param page Page buffer.
-     * @param pageSize Page size.
-     * @return Compacted page buffer.
-     */
-    private ByteBuffer doCompactPage(ByteBuffer page, int pageSize) throws IgniteCheckedException {
-        PageIO io = PageIO.getPageIO(page);
-
-        ByteBuffer compactPage = compactBuf.get();
-
-        if (io instanceof CompactablePageIO) {
-            // Drop the garbage from the page.
-            ((CompactablePageIO)io).compactPage(page, compactPage, pageSize);
-        }
-        else {
-            // Direct buffer is required as output of this method.
-            if (page.isDirect())
-                return page;
-
-            PageUtils.putBytes(GridUnsafe.bufferAddress(compactPage), 0, page.array());
-
-            compactPage.limit(pageSize);
-        }
-
-        return compactPage;
-    }
-
     /** Check if filesystem actually supports punching holes. */
     private void checkPunchHole(Path storagePath, int fsBlockSz) throws IgniteException {
-        ByteBuffer buffer = null;
+        ByteBuffer buf = null;
         File testFile = null;
         try {
             testFile = File.createTempFile("punch_hole_", null, storagePath.toFile());
 
-            buffer = GridUnsafe.allocateBuffer(fsBlockSz * 2);
-            GridUnsafe.zeroMemory(GridUnsafe.bufferAddress(buffer), buffer.capacity());
+            buf = GridUnsafe.allocateBuffer(fsBlockSz * 2);
+            GridUnsafe.zeroMemory(GridUnsafe.bufferAddress(buf), buf.capacity());
 
             try (RandomAccessFileIO testFileIO = new RandomAccessFileIO(testFile, CREATE, WRITE)) {
-                testFileIO.writeFully(buffer);
+                testFileIO.writeFully(buf);
 
                 testFileIO.punchHole(fsBlockSz, fsBlockSz);
             }
@@ -190,39 +106,12 @@ public class CompressionProcessorImpl extends CompressionProcessor {
             throw new IgniteException("File system does not support punching holes on path " + storagePath, e);
         }
         finally {
-            if (buffer != null)
-                GridUnsafe.freeBuffer(buffer);
+            if (buf != null)
+                GridUnsafe.freeBuffer(buf);
 
             if (testFile != null)
                 testFile.delete();
         }
-    }
-
-    /**
-     * @param page Page.
-     * @param compactSize Compacted page size.
-     * @return The given page.
-     */
-    private static ByteBuffer setCompactionInfo(ByteBuffer page, int compactSize) {
-        return setCompressionInfo(page, SKIP_GARBAGE, compactSize, compactSize);
-    }
-
-    /**
-     * @param page Page.
-     * @param compression Compression algorithm.
-     * @param compressedSize Compressed size.
-     * @param compactedSize Compact size.
-     * @return The given page.
-     */
-    private static ByteBuffer setCompressionInfo(ByteBuffer page, DiskPageCompression compression, int compressedSize, int compactedSize) {
-        assert compressedSize >= 0 && compressedSize <= Short.MAX_VALUE : compressedSize;
-        assert compactedSize >= 0 && compactedSize <= Short.MAX_VALUE : compactedSize;
-
-        PageIO.setCompressionType(page, getCompressionType(compression));
-        PageIO.setCompressedSize(page, (short)compressedSize);
-        PageIO.setCompactedSize(page, (short)compactedSize);
-
-        return page;
     }
 
     /**
@@ -232,7 +121,12 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @param compressLevel Compression level.
      * @return Compressed page.
      */
-    private ByteBuffer doCompressPage(DiskPageCompression compression, ByteBuffer compactPage, int compactSize, int compressLevel) {
+    @Override protected ByteBuffer doCompressPage(
+        DiskPageCompression compression,
+        ByteBuffer compactPage,
+        int compactSize,
+        int compressLevel
+    ) {
         switch (compression) {
             case ZSTD:
                 return compressPageZstd(compactPage, compactSize, compressLevel);
@@ -319,99 +213,46 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         compactPage.limit(compactSize);
     }
 
-    /**
-     * @param compression Compression.
-     * @return Level.
-     */
-    private static byte getCompressionType(DiskPageCompression compression) {
-        if (compression == DiskPageCompression.DISABLED)
-            return UNCOMPRESSED_PAGE;
-
-        switch (compression) {
-            case ZSTD:
-                return ZSTD_COMPRESSED_PAGE;
-
-            case LZ4:
-                return LZ4_COMPRESSED_PAGE;
-
-            case SNAPPY:
-                return SNAPPY_COMPRESSED_PAGE;
-
-            case SKIP_GARBAGE:
-                return COMPACTED_PAGE;
-        }
-        throw new IllegalStateException("Unexpected compression: " + compression);
-    }
-
     /** {@inheritDoc} */
-    @Override public void decompressPage(ByteBuffer page, int pageSize) throws IgniteCheckedException {
-        assert page.capacity() >= pageSize : "capacity=" + page.capacity() + ", pageSize=" + pageSize;
+    @Override protected void doDecompressPage(int compressType, ByteBuffer page, int compressedSize, int compactSize) {
+        ByteBuffer dst = compressBuf.get();
 
-        byte compressType = PageIO.getCompressionType(page);
+        // Position on a part that needs to be decompressed.
+        page.limit(compressedSize)
+            .position(PageIO.COMMON_HEADER_END);
 
-        if (compressType == UNCOMPRESSED_PAGE)
-            return; // Nothing to do.
+        // LZ4 needs this limit to be exact.
+        dst.limit(compactSize - PageIO.COMMON_HEADER_END);
 
-        short compressedSize = PageIO.getCompressedSize(page);
-        short compactSize = PageIO.getCompactedSize(page);
+        switch (compressType) {
+            case ZSTD_COMPRESSED_PAGE:
+                Zstd.decompress(dst, page);
+                dst.flip();
 
-        assert compactSize <= pageSize && compactSize >= compressedSize;
+                break;
 
-        if (compressType == COMPACTED_PAGE) {
-            // Just setup bounds before restoring the page.
-            page.position(0).limit(compactSize);
-        }
-        else {
-            ByteBuffer dst = compressBuf.get();
+            case LZ4_COMPRESSED_PAGE:
+                Lz4.decompress(page, dst);
+                dst.flip();
 
-            // Position on a part that needs to be decompressed.
-            page.limit(compressedSize)
-                .position(PageIO.COMMON_HEADER_END);
+                break;
 
-            // LZ4 needs this limit to be exact.
-            dst.limit(compactSize - PageIO.COMMON_HEADER_END);
+            case SNAPPY_COMPRESSED_PAGE:
+                try {
+                    Snappy.uncompress(page, dst);
+                }
+                catch (IOException e) {
+                    throw new IgniteException(e);
+                }
+                break;
 
-            switch (compressType) {
-                case ZSTD_COMPRESSED_PAGE:
-                    Zstd.decompress(dst, page);
-                    dst.flip();
-
-                    break;
-
-                case LZ4_COMPRESSED_PAGE:
-                    Lz4.decompress(page, dst);
-                    dst.flip();
-
-                    break;
-
-                case SNAPPY_COMPRESSED_PAGE:
-                    try {
-                        Snappy.uncompress(page, dst);
-                    }
-                    catch (IOException e) {
-                        throw new IgniteException(e);
-                    }
-                    break;
-
-                default:
-                    throw new IgniteException("Unknown compression: " + compressType);
-            }
-
-            page.position(PageIO.COMMON_HEADER_END).limit(compactSize);
-            page.put(dst).flip();
-            assert page.limit() == compactSize;
+            default:
+                throw new IgniteException("Unknown compression: " + compressType);
         }
 
-        PageIO io = PageIO.getPageIO(page);
-
-        if (io instanceof CompactablePageIO)
-            ((CompactablePageIO)io).restorePage(page, pageSize);
-        else {
-            assert compactSize == pageSize
-                : "Wrong compacted page size [compactSize=" + compactSize + ", pageSize=" + pageSize + ']';
-        }
-
-        setCompressionInfo(page, DiskPageCompression.DISABLED, 0, 0);
+        page.position(PageIO.COMMON_HEADER_END).limit(compactSize);
+        page.put(dst).flip();
+        assert page.limit() == compactSize;
     }
 
     /** */

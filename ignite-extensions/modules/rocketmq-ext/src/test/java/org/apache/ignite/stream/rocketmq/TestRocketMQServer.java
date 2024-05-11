@@ -83,13 +83,13 @@ class TestRocketMQServer {
      * @throws Exception If fails.
      */
     private void startNameServer() throws Exception {
-        NamesrvConfig namesrvConfig = new NamesrvConfig();
-        NettyServerConfig nameServerNettyServerConfig = new NettyServerConfig();
+        NamesrvConfig nameSrvCfg = new NamesrvConfig();
+        NettyServerConfig nameServerNettyServerCfg = new NettyServerConfig();
 
-        namesrvConfig.setKvConfigPath(System.getProperty("java.io.tmpdir") + separator + "namesrv" + separator + "kvConfig.json");
-        nameServerNettyServerConfig.setListenPort(NAME_SERVER_PORT);
+        nameSrvCfg.setKvConfigPath(System.getProperty("java.io.tmpdir") + separator + "namesrv" + separator + "kvConfig.json");
+        nameServerNettyServerCfg.setListenPort(NAME_SERVER_PORT);
 
-        nameSrv = new NamesrvController(namesrvConfig, nameServerNettyServerConfig);
+        nameSrv = new NamesrvController(nameSrvCfg, nameServerNettyServerCfg);
 
         nameSrv.initialize();
         nameSrv.start();

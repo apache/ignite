@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +30,6 @@ import java.util.Queue;
 import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.Query;
@@ -48,10 +46,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -68,8 +62,8 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.plugin.security.SecurityPermission;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SET;
@@ -137,9 +131,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
     /** */
     private int taskHash;
-
-    /** */
-    private MvccSnapshot mvccSnapshot;
 
     /** */
     private Boolean dataPageScanEnabled;
@@ -248,7 +239,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param incMeta Include metadata flag.
      * @param keepBinary Keep binary flag.
      * @param taskHash Task hash.
-     * @param mvccSnapshot Mvcc version.
      * @param dataPageScanEnabled Flag to enable data page scan.
      */
     public GridCacheQueryAdapter(
@@ -269,7 +259,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         boolean incMeta,
         boolean keepBinary,
         int taskHash,
-        MvccSnapshot mvccSnapshot,
         Boolean dataPageScanEnabled
     ) {
         this.cctx = cctx;
@@ -289,7 +278,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.incMeta = incMeta;
         this.keepBinary = keepBinary;
         this.taskHash = taskHash;
-        this.mvccSnapshot = mvccSnapshot;
         this.dataPageScanEnabled = dataPageScanEnabled;
     }
 
@@ -329,13 +317,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      */
     public Boolean isDataPageScanEnabled() {
         return dataPageScanEnabled;
-    }
-
-    /**
-     * @return MVCC snapshot.
-     */
-    @Nullable MvccSnapshot mvccSnapshot() {
-        return mvccSnapshot;
     }
 
     /**
@@ -625,22 +606,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         final GridCacheQueryManager qryMgr = cctx.queries();
 
-        MvccQueryTracker mvccTracker = null;
-
-        if (cctx.mvccEnabled() && mvccSnapshot == null) {
-            GridNearTxLocal tx = cctx.tm().userTx();
-
-            if (tx != null)
-                mvccSnapshot = MvccUtils.requestSnapshot(tx);
-            else {
-                mvccTracker = MvccUtils.mvccTracker(cctx, null);
-
-                mvccSnapshot = mvccTracker.snapshot();
-            }
-
-            assert mvccSnapshot != null;
-        }
-
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 
         GridCloseableIterator it;
@@ -652,7 +617,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         else
             it = qryMgr.scanQueryDistributed(this, nodes);
 
-        return mvccTracker != null ? new MvccTrackingIterator(it, mvccTracker) : it;
+        return it;
     }
 
     /**
@@ -668,12 +633,12 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 if (prj != null || part != null)
                     return nodes(cctx, prj, part);
 
-                GridDhtPartitionTopology topology = cctx.topology();
+                GridDhtPartitionTopology top = cctx.topology();
 
-                if (cctx.affinityNode() && !topology.localPartitionMap().hasMovingPartitions())
+                if (cctx.affinityNode() && !top.localPartitionMap().hasMovingPartitions())
                     return Collections.singletonList(cctx.localNode());
 
-                topology.readLock();
+                top.readLock();
 
                 try {
 
@@ -684,14 +649,14 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                     Collections.shuffle(nodes);
 
                     for (ClusterNode node : nodes) {
-                        if (!topology.partitions(node.id()).hasMovingPartitions())
+                        if (!top.partitions(node.id()).hasMovingPartitions())
                             return Collections.singletonList(node);
                     }
 
                     return affNodes;
                 }
                 finally {
-                    topology.readUnlock();
+                    top.readUnlock();
                 }
 
             case PARTITIONED:
@@ -987,96 +952,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
             if (t != null && t.get2() != null)
                 t.get2().cancel();
-        }
-    }
-
-    /**
-     * Wrapper for an MVCC-related iterators.
-     */
-    private static class MvccTrackingIterator implements GridCloseableIterator {
-        /** Serial version uid. */
-        private static final long serialVersionUID = -1905248502802333832L;
-
-        /** Underlying iterator. */
-        private final GridCloseableIterator it;
-
-        /** Query MVCC tracker. */
-        private final MvccQueryTracker mvccTracker;
-
-        /**
-         * Constructor.
-         *
-         * @param it Underlying iterator.
-         * @param mvccTracker Query MVCC tracker.
-         */
-        MvccTrackingIterator(GridCloseableIterator it, MvccQueryTracker mvccTracker) {
-            assert it != null && mvccTracker != null;
-
-            this.it = it;
-            this.mvccTracker = mvccTracker;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() throws IgniteCheckedException {
-            if (isClosed())
-                return;
-
-            try {
-                it.close();
-            }
-            finally {
-                mvccTracker.onDone();
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isClosed() {
-            return it.isClosed();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean hasNext() {
-            boolean hasNext = it.hasNext();
-
-            if (!hasNext)
-                try {
-                    close();
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-
-            return hasNext;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean hasNextX() throws IgniteCheckedException {
-            boolean hasNext = it.hasNext();
-
-            if (!hasNext)
-                close();
-
-            return hasNext;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object nextX() throws IgniteCheckedException {
-            return it.nextX();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void removeX() throws IgniteCheckedException {
-            it.removeX();
-        }
-
-        /** {@inheritDoc} */
-        @NotNull @Override public Iterator iterator() {
-            return this;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object next() {
-            return it.next();
         }
     }
 }

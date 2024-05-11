@@ -28,7 +28,6 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -70,25 +69,6 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
     @Test
     public void testPagesRecyclingAndReusingTxReplicated() throws Exception {
         testPagesRecyclingAndReusing(CacheAtomicityMode.TRANSACTIONAL, CacheMode.REPLICATED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10738")
-    @Test
-    public void testPagesRecyclingAndReusingMvccTxPartitioned() throws Exception {
-        testPagesRecyclingAndReusing(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.PARTITIONED);
-    }
-
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10738")
-    @Test
-    public void testPagesRecyclingAndReusingMvccTxReplicated() throws Exception {
-        testPagesRecyclingAndReusing(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.REPLICATED);
     }
 
     /**

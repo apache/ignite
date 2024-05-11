@@ -50,6 +50,11 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-calcite</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-control-utility</artifactId>
         </dependency>
 

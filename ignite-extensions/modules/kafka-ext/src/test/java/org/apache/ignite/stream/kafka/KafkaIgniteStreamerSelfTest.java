@@ -17,6 +17,7 @@
 
 package org.apache.ignite.stream.kafka;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,6 +27,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -105,7 +107,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
      * @throws InterruptedException If interrupted.
      */
     @Test
-    public void testKafkaStreamer() throws TimeoutException, InterruptedException {
+    public void testKafkaStreamer() throws TimeoutException, InterruptedException, IOException, ExecutionException {
         embeddedBroker.createTopic(TOPIC_NAME, PARTITIONS, REPLICATION_FACTOR);
 
         Map<String, String> keyValMap = produceStream(TOPIC_NAME);
@@ -128,7 +130,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
         Collections.shuffle(subnet);
 
-        List<ProducerRecord<String, String>> messages = new ArrayList<>(CNT);
+        List<ProducerRecord<String, String>> msgs = new ArrayList<>(CNT);
 
         Map<String, String> keyValMap = new HashMap<>();
 
@@ -139,12 +141,12 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
             String msg = runtime + VALUE_URL + ip;
 
-            messages.add(new ProducerRecord<>(topic, ip, msg));
+            msgs.add(new ProducerRecord<>(topic, ip, msg));
 
             keyValMap.put(ip, msg);
         }
 
-        embeddedBroker.sendMessages(messages);
+        embeddedBroker.sendMessages(msgs);
 
         return keyValMap;
     }

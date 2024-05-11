@@ -45,11 +45,11 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -341,15 +341,15 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
             assertTrue("Renting partitions count when node returns not equals to moved partitions when node left",
                 GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
-                        IntMetric localNodeRentingPartitionsCount =
+                        IntMetric locNodeRentingPartitionsCnt =
                             mxBean0Grp1.findMetric("LocalNodeRentingPartitionsCount");
 
                         log.info("Renting partitions count: " +
-                            localNodeRentingPartitionsCount.value());
+                            locNodeRentingPartitionsCnt.value());
                         log.info("Renting entries count: " +
                             mxBean0Grp1.findMetric("LocalNodeRentingEntriesCount").getAsString());
 
-                        return localNodeRentingPartitionsCount.value() == movingCnt;
+                        return locNodeRentingPartitionsCnt.value() == movingCnt;
                     }
                 }, 10_000L)
             );

@@ -41,6 +41,9 @@ public class RestartWithWalForceArchiveTimeoutTest extends GridCommonAbstractTes
     @Parameterized.Parameter
     public WALMode walMode;
 
+    /** */
+    private long walForceArchiveTimeout;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -49,7 +52,7 @@ public class RestartWithWalForceArchiveTimeoutTest extends GridCommonAbstractTes
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setWalMode(walMode)
-            .setWalForceArchiveTimeout(60 * 60 * 1000) // 1 hour to make sure auto archive will not work.
+            .setWalForceArchiveTimeout(walForceArchiveTimeout)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
 
         return cfg;
@@ -61,12 +64,17 @@ public class RestartWithWalForceArchiveTimeoutTest extends GridCommonAbstractTes
         return EnumSet.of(WALMode.FSYNC, WALMode.LOG_ONLY, WALMode.BACKGROUND);
     }
 
-    /** */
-    @Test
-    public void testRestart() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
         stopAllGrids(true);
 
         cleanPersistenceDir();
+    }
+
+    /** */
+    @Test
+    public void testRestart() throws Exception {
+        walForceArchiveTimeout = 60 * 60 * 1000; // 1 hour to make sure auto archive will not work.
 
         Supplier<IgniteEx> restart = () -> {
             stopAllGrids(true);
@@ -91,5 +99,35 @@ public class RestartWithWalForceArchiveTimeoutTest extends GridCommonAbstractTes
 
         for (int i = 0; i < 5; i++)
             restart.get();
+    }
+
+    /** */
+    @Test
+    public void testRestartAfterArchive() throws Exception {
+        walForceArchiveTimeout = 1000;
+
+        IgniteEx srv = startGrid(0);
+
+        srv.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, Integer> cache = srv.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        cache.put(1, 1);
+
+        forceCheckpoint();
+
+        Thread.sleep(2 * walForceArchiveTimeout);
+
+        stopGrid(0);
+        srv = startGrid(0);
+        cache = srv.cache(DEFAULT_CACHE_NAME);
+
+        cache.put(2, 2);
+
+        stopGrid(0);
+        srv = startGrid(0);
+        cache = srv.cache(DEFAULT_CACHE_NAME);
+
+        assertEquals(2, cache.size());
     }
 }

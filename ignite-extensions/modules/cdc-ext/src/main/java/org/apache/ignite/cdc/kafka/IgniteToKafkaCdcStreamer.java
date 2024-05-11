@@ -39,7 +39,7 @@ import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -47,6 +47,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -147,9 +148,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** Count of sent mappings. */
     protected AtomicLongMetric mappingsCnt;
 
-    /** Count of metadata updates. */
-    protected byte metaUpdCnt = 0;
-
     /** */
     private List<Future<RecordMetadata>> futs;
 
@@ -204,7 +202,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     @Override public void onTypes(Iterator<BinaryType> types) {
         sendAll(
             types,
-            t -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(((BinaryTypeImpl)t).metadata())),
+            t -> new ProducerRecord<>(metadataTopic, 0, null, IgniteUtils.toBytes(((BinaryTypeImpl)t).metadata())),
             typesCnt
         );
 
@@ -215,7 +213,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     @Override public void onMappings(Iterator<TypeMapping> mappings) {
         sendAll(
             mappings,
-            m -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(m)),
+            m -> new ProducerRecord<>(metadataTopic, 0, null, IgniteUtils.toBytes(m)),
             mappingsCnt
         );
 
@@ -297,7 +295,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(MetricRegistry mreg) {
+    @Override public void start(MetricRegistry reg) {
         A.notNull(kafkaProps, "Kafka properties");
         A.notNull(evtTopic, "Kafka topic");
         A.notNull(metadataTopic, "Kafka metadata topic");
@@ -327,6 +325,8 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+
+        MetricRegistryImpl mreg = (MetricRegistryImpl)reg;
 
         this.evtsCnt = mreg.longMetric(EVTS_CNT, EVTS_CNT_DESC);
         this.lastMsgTs = mreg.longMetric(LAST_EVT_TIME, LAST_EVT_TIME_DESC);

@@ -20,12 +20,10 @@ package org.apache.ignite.internal.management.defragmentation;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationStatusCommandArg;
-import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTask;
-import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTaskResult;
 
 /** */
 public class DefragmentationStatusCommand
-    implements ComputeCommand<DefragmentationStatusCommandArg, VisorDefragmentationTaskResult> {
+    implements ComputeCommand<DefragmentationStatusCommandArg, DefragmentationTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Prints status of running defragmentation operation";
@@ -37,14 +35,14 @@ public class DefragmentationStatusCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorDefragmentationTask> taskClass() {
-        return VisorDefragmentationTask.class;
+    @Override public Class<DefragmentationTask> taskClass() {
+        return DefragmentationTask.class;
     }
 
     /** {@inheritDoc} */
     @Override public void printResult(
         DefragmentationStatusCommandArg arg,
-        VisorDefragmentationTaskResult res,
+        DefragmentationTaskResult res,
         Consumer<String> printer
     ) {
         printer.accept(res.getMessage());

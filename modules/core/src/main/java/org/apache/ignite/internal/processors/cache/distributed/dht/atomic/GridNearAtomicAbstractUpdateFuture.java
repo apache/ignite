@@ -91,9 +91,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     /** Return value require flag. */
     protected final boolean retval;
 
-    /** Raw return value flag. */
-    protected final boolean rawRetval;
-
     /** Expiry policy. */
     protected final ExpiryPolicy expiryPlc;
 
@@ -154,7 +151,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * @param op Operation.
      * @param invokeArgs Invoke arguments.
      * @param retval Return value flag.
-     * @param rawRetval Raw return value flag.
      * @param expiryPlc Expiry policy.
      * @param filter Filter.
      * @param taskNameHash Task name hash.
@@ -170,7 +166,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         GridCacheOperation op,
         @Nullable Object[] invokeArgs,
         boolean retval,
-        boolean rawRetval,
         @Nullable ExpiryPolicy expiryPlc,
         CacheEntryPredicate[] filter,
         int taskNameHash,
@@ -190,14 +185,13 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         this.op = op;
         this.invokeArgs = invokeArgs;
         this.retval = retval;
-        this.rawRetval = rawRetval;
         this.expiryPlc = expiryPlc;
         this.filter = filter;
         this.taskNameHash = taskNameHash;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
         this.recovery = recovery;
-        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
+        deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         nearEnabled = CU.isNearEnabled(cctx);
 
@@ -298,13 +292,11 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     final void sendSingleRequest(UUID nodeId, GridNearAtomicAbstractUpdateRequest req) {
         if (cctx.localNodeId().equals(nodeId)) {
             cache.updateAllAsyncInternal(cctx.localNode(), req,
-                new GridDhtAtomicCache.UpdateReplyClosure() {
-                    @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
-                        if (syncMode != FULL_ASYNC)
-                            onPrimaryResponse(res.nodeId(), res, false);
-                        else if (res.remapTopologyVersion() != null)
-                            ((GridDhtAtomicCache)cctx.cache()).remapToNewPrimary(req);
-                    }
+                (ignored, res) -> {
+                    if (syncMode != FULL_ASYNC)
+                        onPrimaryResponse(res.nodeId(), res, false);
+                    else if (res.remapTopologyVersion() != null)
+                        ((GridDhtAtomicCache<?, ?>)cctx.cache()).remapToNewPrimary(req);
                 });
         }
         else {
@@ -349,12 +341,14 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * @param futId Not null ID if need remove future.
      */
     final void completeFuture(@Nullable GridCacheReturn ret, Throwable err, @Nullable Long futId) {
-        Object retval = ret == null ? null : rawRetval ? ret : (this.retval || op == TRANSFORM) ?
-            cctx.unwrapBinaryIfNeeded(
-                ret.value(),
-                keepBinary,
-                U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
-            ) : ret.success();
+        Object retval = ret == null
+            ? null
+            : (this.retval || op == TRANSFORM)
+                ? cctx.unwrapBinaryIfNeeded(
+                    ret.value(),
+                    keepBinary,
+                    U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId))
+                : ret.success();
 
         if (op == TRANSFORM && retval == null)
             retval = Collections.emptyMap();
@@ -771,7 +765,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
                 nodeRes.rcvd = true;
 
-                rcvdCnt++;
             }
             else {
                 if (!hasRes) // Do not finish future until primary response received and mapping is known.
@@ -779,8 +772,9 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
                 mappedNodes.put(nodeId, new NodeResult(true));
 
-                rcvdCnt++;
             }
+
+            rcvdCnt++;
 
             return finished();
         }

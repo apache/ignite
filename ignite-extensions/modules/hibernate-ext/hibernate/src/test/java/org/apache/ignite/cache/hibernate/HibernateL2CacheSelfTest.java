@@ -1921,8 +1921,8 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
         MetadataSources metadataSources = new MetadataSources(srvcRegistry);
 
-        for (Class entityClass : getAnnotatedClasses())
-            metadataSources.addAnnotatedClass(entityClass);
+        for (Class entityCls : getAnnotatedClasses())
+            metadataSources.addAnnotatedClass(entityCls);
 
         Metadata metadata = metadataSources.buildMetadata();
 

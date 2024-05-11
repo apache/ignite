@@ -111,7 +111,7 @@ public class DistributedProcessCoordinatorLeftTest extends GridCommonAbstractTes
 
         HashMap<String, DistributedProcess<Integer, Integer>> processes = new HashMap<>();
 
-        int processRes = 1;
+        int procRes = 1;
 
         for (Ignite grid : G.allGrids()) {
             DistributedProcess<Integer, Integer> dp = new DistributedProcess<>(((IgniteEx)grid).context(), TEST_PROCESS,
@@ -130,14 +130,14 @@ public class DistributedProcessCoordinatorLeftTest extends GridCommonAbstractTes
                     // A single message will be sent before this latch released.
                     // It is guaranteed by the LIFO order of future listeners notifying.
                     if (!grid.name().equals(getTestIgniteInstanceName(STOP_NODE_IDX)))
-                        fut.listen(f -> msgSendLatch.countDown());
+                        fut.listen(msgSendLatch::countDown);
 
                     startLatch.countDown();
 
                     return fut;
                 },
                 (uuid, res, err) -> {
-                    if (res.values().size() == NODES_CNT - 1 && res.values().stream().allMatch(i -> i == processRes))
+                    if (res.values().size() == NODES_CNT - 1 && res.values().stream().allMatch(i -> i == procRes))
                         finishLatch.countDown();
                     else
                         fail("Unexpected process result [res=" + res + ", err=" + err + ']');
@@ -147,7 +147,7 @@ public class DistributedProcessCoordinatorLeftTest extends GridCommonAbstractTes
             processes.put(grid.name(), dp);
         }
 
-        processes.get(grid(STOP_NODE_IDX).name()).start(UUID.randomUUID(), processRes);
+        processes.get(grid(STOP_NODE_IDX).name()).start(UUID.randomUUID(), procRes);
 
         assertTrue(startLatch.await(TIMEOUT, MILLISECONDS));
 

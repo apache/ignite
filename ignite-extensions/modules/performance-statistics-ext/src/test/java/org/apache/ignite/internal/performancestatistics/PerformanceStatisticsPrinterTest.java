@@ -52,7 +52,9 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.PAGES_WRITE_THROTTLE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_PROPERTY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_ROWS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
@@ -90,6 +92,8 @@ public class PerformanceStatisticsPrinterTest {
             writer.transaction(GridIntList.asList(0), 0, 0, false);
             writer.query(GridCacheQueryType.SQL_FIELDS, "query", 0, 0, 0, true);
             writer.queryReads(GridCacheQueryType.SQL_FIELDS, NODE_ID, 0, 0, 0);
+            writer.queryProperty(GridCacheQueryType.SQL_FIELDS, NODE_ID, 0, "name", "val");
+            writer.queryRows(GridCacheQueryType.SQL_FIELDS, NODE_ID, 0, "action", 0);
             writer.task(new IgniteUuid(NODE_ID, 0), "task", 0, 0, 0);
             writer.job(new IgniteUuid(NODE_ID, 0), 0, 0, 0, true);
             writer.checkpoint(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -97,7 +101,7 @@ public class PerformanceStatisticsPrinterTest {
         });
 
         List<OperationType> expOps = F.asList(CACHE_START, CACHE_GET, TX_COMMIT, TX_ROLLBACK, QUERY, QUERY_READS,
-            TASK, JOB, CHECKPOINT, PAGES_WRITE_THROTTLE);
+            QUERY_PROPERTY, QUERY_ROWS, TASK, JOB, CHECKPOINT, PAGES_WRITE_THROTTLE);
 
         checkOperationFilter(null, expOps);
         checkOperationFilter(F.asList(CACHE_START), F.asList(CACHE_START));

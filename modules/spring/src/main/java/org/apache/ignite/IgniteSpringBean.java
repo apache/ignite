@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
@@ -198,6 +199,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
         checkIgnite();
 
         return g.compute();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteMetrics metrics() {
+        checkIgnite();
+
+        return g.metrics();
     }
 
     /** {@inheritDoc} */

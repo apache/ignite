@@ -16,7 +16,7 @@
  */
 package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
@@ -82,7 +82,7 @@ public class ClientListenerMetrics {
     /**
      * @param mreg Metrics registry.
      */
-    public ClientListenerMetrics(MetricRegistry mreg) {
+    public ClientListenerMetrics(MetricRegistryImpl mreg) {
         rejectedTimeout = mreg.intMetric(METRIC_REJECTED_TIMEOUT,
                 "TCP sessions count that were rejected due to handshake timeout.");
 
@@ -106,10 +106,10 @@ public class ClientListenerMetrics {
             "The number of affinity-aware query requests that were sent not to the primary node");
 
         for (byte clientType : CLI_TYPES) {
-            String clientLabel = clientTypeLabel(clientType);
+            String clientLbl = clientTypeLabel(clientType);
 
-            String labelAccepted = MetricUtils.metricName(clientLabel, METRIC_ACEPTED);
-            accepted[clientType] = mreg.intMetric(labelAccepted,
+            String lblAccepted = MetricUtils.metricName(clientLbl, METRIC_ACEPTED);
+            accepted[clientType] = mreg.intMetric(lblAccepted,
                     "Number of successfully established sessions for the client type.");
         }
     }

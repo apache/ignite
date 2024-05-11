@@ -26,21 +26,20 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.query.DistributedSqlConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
@@ -52,6 +51,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableImpl
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.systemview.view.SqlQueryView;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -102,7 +102,7 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
      */
     @Test
     public void testCancelAtPlanningPhase() throws IgniteCheckedException {
-        MetricRegistry mreg = client.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        MetricRegistryImpl mreg = client.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
         mreg.reset();
 
         CalciteQueryProcessor engine = queryProcessor(client);
@@ -147,7 +147,7 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
      */
     @Test
     public void testCancelAtExecutionPhase() throws Exception {
-        MetricRegistry mreg = client.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        MetricRegistryImpl mreg = client.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
         mreg.reset();
 
         CalciteQueryProcessor cliEngine = queryProcessor(client);
@@ -165,8 +165,6 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
                 ColocationGroup grp,
-                Predicate<Row> filter,
-                Function<Row, Row> rowTransformer,
                 @Nullable ImmutableBitSet usedColumns
             ) {
                 return new Iterable<Row>() {
@@ -232,7 +230,7 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
      */
     @Test
     public void testCancelByRemoteFragment() throws IgniteCheckedException {
-        MetricRegistry mreg = client.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        MetricRegistryImpl mreg = client.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
         mreg.reset();
 
         CalciteQueryProcessor clientEngine = queryProcessor(client);
@@ -281,7 +279,7 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
 
     /** */
     @Test
-    public void testLongPlanningTimeout() {
+    public void testLongPlanningTimeout() throws IgniteCheckedException {
         Stream.of("T1", "T2").forEach(tblName -> {
             sql(String.format("CREATE TABLE %s(A INT, B INT)", tblName));
 
@@ -310,7 +308,23 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
             assertFalse(res.get().isEmpty());
         }
         catch (Exception e) {
-            assertTrue("Unexpected exception: " + e, e instanceof RelOptPlanner.CannotPlanException);
+            assertTrue("Unexpected exception: " + e, X.cause(e, QueryCancelledException.class) != null);
+        }
+
+        DistributedSqlConfiguration distrCfg = queryProcessor(client).distributedConfiguration();
+
+        try {
+            distrCfg.defaultQueryTimeout((int)PLANNER_TIMEOUT / 3).get();
+
+            GridTestUtils.assertTimeout(PLANNER_TIMEOUT, TimeUnit.MILLISECONDS, () -> {
+                sql(longJoinQry + " AND 1=1"); // Modify SQL to skip cached plan.
+            });
+        }
+        catch (Exception e) {
+            assertTrue("Unexpected exception: " + e, X.cause(e, QueryCancelledException.class) != null);
+        }
+        finally {
+            distrCfg.defaultQueryTimeout(DistributedSqlConfiguration.DFLT_QRY_TIMEOUT).get();
         }
     }
 
@@ -359,5 +373,48 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
         }
 
         assertTrue(GridTestUtils.waitForCondition(() -> F.isEmpty(engine.runningQueries()), PLANNER_TIMEOUT * 2));
+    }
+
+    /** */
+    @Test
+    public void testErrorOnRemoteFragment() throws Exception {
+        MetricRegistryImpl mreg = client.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        mreg.reset();
+
+        CalciteQueryProcessor clientEngine = queryProcessor(client);
+        CalciteQueryProcessor srvEngine = queryProcessor(srv);
+
+        sql("CREATE TABLE t(id int, val varchar)");
+
+        IgniteCacheTable oldTbl = (IgniteCacheTable)srvEngine.schemaHolder().schema("PUBLIC").getTable("T");
+
+        CountDownLatch initLatch = new CountDownLatch(1);
+
+        IgniteCacheTable newTbl = new CacheTableImpl(srv.context(), oldTbl.descriptor()) {
+            @Override public <Row> Iterable<Row> scan(
+                ExecutionContext<Row> execCtx,
+                ColocationGroup grp,
+                @Nullable ImmutableBitSet usedColumns
+            ) {
+                initLatch.countDown();
+
+                throw new IllegalStateException("Init error");
+            }
+        };
+
+        srvEngine.schemaHolder().schema("PUBLIC").add("T", newTbl);
+
+        IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> sql("SELECT * FROM t"));
+
+        initLatch.await(TIMEOUT_IN_MS, TimeUnit.MILLISECONDS);
+
+        assertTrue(GridTestUtils.waitForCondition(
+            () -> clientEngine.runningQueries().isEmpty() && srvEngine.runningQueries().isEmpty(),
+            TIMEOUT_IN_MS));
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(100), IllegalStateException.class, "Init error");
+
+        assertEquals(0, ((LongMetric)mreg.findMetric("canceled")).value());
+        assertEquals(1, ((LongMetric)mreg.findMetric("failed")).value());
     }
 }

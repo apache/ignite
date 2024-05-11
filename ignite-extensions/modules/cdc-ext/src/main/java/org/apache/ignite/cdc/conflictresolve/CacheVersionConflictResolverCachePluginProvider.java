@@ -47,20 +47,28 @@ public class CacheVersionConflictResolverCachePluginProvider<K, V, C extends Cac
     /** Cluster Id. */
     private final byte clusterId;
 
+    /** Custom conflict resolver. */
+    private CacheVersionConflictResolver resolver;
+
     /**
      * @param conflictResolveField Field to resolve conflicts.
      * @param clusterId Cluster ID.
+     * @param resolver Conflict resolver.
      */
-    public CacheVersionConflictResolverCachePluginProvider(String conflictResolveField, byte clusterId) {
+    public CacheVersionConflictResolverCachePluginProvider(
+        String conflictResolveField,
+        byte clusterId,
+        CacheVersionConflictResolver resolver) {
         this.conflictResolveField = conflictResolveField;
         this.clusterId = clusterId;
+        this.resolver = resolver;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T createComponent(Class<T> cls) {
         if (cls.equals(CacheConflictResolutionManager.class))
-            return (T)new CacheConflictResolutionManagerImpl<>(conflictResolveField, clusterId);
+            return (T)new CacheConflictResolutionManagerImpl<>(conflictResolveField, clusterId, resolver);
 
         return null;
     }

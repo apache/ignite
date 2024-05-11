@@ -109,14 +109,14 @@ public class NumberUtil {
         if ( (count & 0x01) != 0)
             throw new IllegalArgumentException("Count is not divisible by two (" + count + ").")/*by contract*/;
 
-        final int charCount = Math.min((string.length() - offset), count);
-        final int upperBound = offset + charCount;
+        final int charCnt = Math.min((string.length() - offset), count);
+        final int upperBound = offset + charCnt;
 
-        final byte[] bytes = new byte[charCount >>> 1/*aka /2*/];
-        int byteIndex = 0/*beginning*/;
+        final byte[] bytes = new byte[charCnt >>> 1/*aka /2*/];
+        int byteIdx = 0/*beginning*/;
 
         for (int i = offset; i < upperBound; i += 2)
-            bytes[byteIndex++] = (byte)(( (digit(string.charAt(i)) << 4) | digit(string.charAt(i + 1))) & 0xFF);
+            bytes[byteIdx++] = (byte)(( (digit(string.charAt(i)) << 4) | digit(string.charAt(i + 1))) & 0xFF);
 
         return bytes;
     }

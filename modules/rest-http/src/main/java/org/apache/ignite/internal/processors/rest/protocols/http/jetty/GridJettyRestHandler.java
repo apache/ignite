@@ -1213,5 +1213,3 @@ public class GridJettyRestHandler extends AbstractHandler {
         }
     }
 }
-
-

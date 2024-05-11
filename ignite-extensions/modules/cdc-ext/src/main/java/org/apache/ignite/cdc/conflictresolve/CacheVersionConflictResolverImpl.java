@@ -57,7 +57,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
      * @see CacheVersionConflictResolverImpl
      */
     @GridToStringInclude
-    private final String conflictResolveField;
+    protected final String conflictResolveField;
 
     /** Logger. */
     protected final IgniteLogger log;
@@ -88,7 +88,9 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     ) {
         GridCacheVersionConflictContext<K, V> res = new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
 
-        if (isUseNew(ctx, oldEntry, newEntry))
+        boolean useNew = isUseNew(ctx, oldEntry, newEntry);
+
+        if (useNew)
             res.useNew();
         else
             res.useOld();
@@ -116,8 +118,18 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         if (oldEntry.isStartVersion()) // Entry absent (new entry).
             return true;
 
-        if (oldEntry.dataCenterId() == newEntry.dataCenterId())
-            return newEntry.version().compareTo(oldEntry.version()) > 0; // New version from the same cluster.
+        if (oldEntry.dataCenterId() == newEntry.dataCenterId()) {
+            int cmp = newEntry.version().compareTo(oldEntry.version());
+
+            // Ignite sets the expire time to zero on backups for transaction caches.
+            // If CDC is running in onlyPrimary=false mode, then the updates from backups may be applied first.
+            // In this case, a new entry from the primary node should be used to set the expiration time.
+            // See GridDistributedTxRemoteAdapter#commitIfLocked
+            if (cmp == 0)
+                return newEntry.expireTime() > oldEntry.expireTime();
+
+            return cmp > 0; // New version from the same cluster.
+        }
 
         if (conflictResolveFieldEnabled) {
             Object oldVal = oldEntry.value(ctx);

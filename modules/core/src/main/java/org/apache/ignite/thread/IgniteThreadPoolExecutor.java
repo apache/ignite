@@ -24,7 +24,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.pool.MetricsAwareExecutorService;
 import org.apache.ignite.internal.util.GridMutableLong;
@@ -214,7 +214,7 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor implements Metr
     }
 
     /** {@inheritDoc} */
-    @Override public void registerMetrics(MetricRegistry mreg) {
+    @Override public void registerMetrics(MetricRegistryImpl mreg) {
         mreg.register("ActiveCount", this::getActiveCount, ACTIVE_COUNT_DESC);
         mreg.register("CompletedTaskCount", this::getCompletedTaskCount, COMPLETED_TASK_DESC);
         mreg.register("CorePoolSize", this::getCorePoolSize, CORE_SIZE_DESC);

@@ -28,8 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
-
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -38,7 +36,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -57,7 +54,6 @@ import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -191,25 +187,12 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerResponse handle(ClientListenerRequest req0) {
-        assert req0 != null;
+    @Override public ClientListenerResponse handle(ClientListenerRequest req) {
+        assert req != null;
 
-        assert req0 instanceof OdbcRequest;
+        assert req instanceof OdbcRequest;
 
-        OdbcRequest req = (OdbcRequest)req0;
-
-        if (!MvccUtils.mvccEnabled(ctx))
-            return doHandle(req);
-        else {
-            GridFutureAdapter<ClientListenerResponse> fut = worker.process(req);
-
-            try {
-                return fut.get();
-            }
-            catch (IgniteCheckedException e) {
-                return exceptionToResult(e);
-            }
-        }
+        return doHandle((OdbcRequest)req);
     }
 
     /**
@@ -595,25 +578,25 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response.
      */
     private ClientListenerResponse closeQuery(OdbcQueryCloseRequest req) {
-        long queryId = req.queryId();
+        long qryId = req.queryId();
 
         try {
-            OdbcQueryResults results = qryResults.get(queryId);
+            OdbcQueryResults results = qryResults.get(qryId);
 
             if (results == null)
                 return new OdbcResponse(IgniteQueryErrorCode.UNKNOWN,
-                    "Failed to find query with ID: " + queryId);
+                    "Failed to find query with ID: " + qryId);
 
-            CloseCursor(results, queryId);
+            CloseCursor(results, qryId);
 
-            OdbcQueryCloseResult res = new OdbcQueryCloseResult(queryId);
+            OdbcQueryCloseResult res = new OdbcQueryCloseResult(qryId);
 
             return new OdbcResponse(res);
         }
         catch (Exception e) {
-            qryResults.remove(queryId);
+            qryResults.remove(qryId);
 
-            U.error(log, "Failed to close SQL query [reqId=" + req.requestId() + ", req=" + queryId + ']', e);
+            U.error(log, "Failed to close SQL query [reqId=" + req.requestId() + ", req=" + qryId + ']', e);
 
             return exceptionToResult(e);
         }
@@ -627,12 +610,12 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private ClientListenerResponse fetchQuery(OdbcQueryFetchRequest req) {
         try {
-            long queryId = req.queryId();
-            OdbcQueryResults results = qryResults.get(queryId);
+            long qryId = req.queryId();
+            OdbcQueryResults results = qryResults.get(qryId);
 
             if (results == null)
                 return new OdbcResponse(ClientListenerResponse.STATUS_FAILED,
-                    "Failed to find query with ID: " + queryId);
+                    "Failed to find query with ID: " + qryId);
 
             OdbcResultSet set = results.currentResultSet();
 
@@ -642,9 +625,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             // Automatically closing cursor if no more data is available.
             if (!results.hasUnfetchedRows())
-                CloseCursor(results, queryId);
+                CloseCursor(results, qryId);
 
-            OdbcQueryFetchResult res = new OdbcQueryFetchResult(queryId, items, lastPage);
+            OdbcQueryFetchResult res = new OdbcQueryFetchResult(qryId, items, lastPage);
 
             return new OdbcResponse(res);
         }
@@ -823,12 +806,12 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private ClientListenerResponse moreResults(OdbcQueryMoreResultsRequest req) {
         try {
-            long queryId = req.queryId();
-            OdbcQueryResults results = qryResults.get(queryId);
+            long qryId = req.queryId();
+            OdbcQueryResults results = qryResults.get(qryId);
 
             if (results == null)
                 return new OdbcResponse(ClientListenerResponse.STATUS_FAILED,
-                    "Failed to find query with ID: " + queryId);
+                    "Failed to find query with ID: " + qryId);
 
             results.nextResultSet();
 
@@ -840,9 +823,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             // Automatically closing cursor if no more data is available.
             if (!results.hasUnfetchedRows())
-                CloseCursor(results, queryId);
+                CloseCursor(results, qryId);
 
-            OdbcQueryMoreResultsResult res = new OdbcQueryMoreResultsResult(queryId, items, lastPage);
+            OdbcQueryMoreResultsResult res = new OdbcQueryMoreResultsResult(qryId, items, lastPage);
 
             return new OdbcResponse(res);
         }

@@ -44,6 +44,13 @@ public class KafkaToIgniteLoaderTest extends GridCommonAbstractTest {
             "Spring bean with provided name doesn't exist"
         );
 
+        assertThrows(
+            null,
+            () -> loadKafkaToIgniteStreamer("loader/same-consumers-group/kafka-to-ignite.xml"),
+            IllegalArgumentException.class,
+            "The group of event and metadata consumers must be different."
+        );
+
         KafkaToIgniteCdcStreamer streamer = loadKafkaToIgniteStreamer("loader/kafka-to-ignite-correct.xml");
 
         assertNotNull(streamer);

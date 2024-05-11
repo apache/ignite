@@ -177,7 +177,7 @@ class ControlUtility:
         """
         data = self.__run("--cache idle_verify --dump", node=node)
 
-        assert ('VisorIdleVerifyDumpTask successfully' in data), data
+        assert ('IdleVerifyDumpTask successfully' in data), data
 
         return re.search(r'/.*.txt', data).group(0)
 
@@ -220,6 +220,17 @@ class ControlUtility:
         raise TimeoutError(f'Failed to wait for the snapshot operation to complete: '
                            f'snapshot_name={snapshot_name} in {timeout_sec} seconds.')
 
+    def snapshot_check(self, snapshot_name: str):
+        """
+        Check snapshot.
+        :param snapshot_name: Name of snapshot.
+        """
+        res = self.__run(f"--snapshot check {snapshot_name}")
+
+        assert "The check procedure has finished, no conflicts have been found." in res
+
+        return res
+
     def start_performance_statistics(self):
         """
         Start performance statistics collecting in the cluster.
@@ -259,6 +270,15 @@ class ControlUtility:
         assert "Enabled." in output or "Disabled." in output
 
         return "Enabled." in output
+
+    def run(self, cmd, node=None):
+        """
+        Run arbitrary control.sh subcommand.
+        :param cmd: Command line parameters for the control.sh.
+        :param node: Node to run the control.sh on.
+        :return: Output of the commands as a string.
+        """
+        return self.__run(cmd, node)
 
     def __performance_statistics_cmd(self, sub_command):
         return self.__run(f"--performance-statistics {sub_command}")
@@ -416,10 +436,10 @@ class ControlUtility:
             auth = f" --user {self.username} --password {self.password} "
 
         return "%s %s" % \
-               (envs_to_exports(self.__envs()),
+               (envs_to_exports(self.envs()),
                 self._cluster.script(f"{self.BASE_COMMAND} --host {node_ip} {cmd} {ssl} {auth}"))
 
-    def __envs(self):
+    def envs(self):
         """
         :return: environment set.
         """

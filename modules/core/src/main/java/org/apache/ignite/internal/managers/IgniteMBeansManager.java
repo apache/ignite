@@ -134,8 +134,8 @@ public class IgniteMBeansManager {
         registerMBean("Compute", computeMXBean.getClass().getSimpleName(), computeMXBean, ComputeMXBean.class);
 
         // Service management
-        ServiceMXBean serviceMXBean = new ServiceMXBeanImpl(ctx);
-        registerMBean("Service", serviceMXBean.getClass().getSimpleName(), serviceMXBean, ServiceMXBean.class);
+        ServiceMXBean srvcMXBean = new ServiceMXBeanImpl(ctx);
+        registerMBean("Service", srvcMXBean.getClass().getSimpleName(), srvcMXBean, ServiceMXBean.class);
 
         // Data storage
         DataStorageMXBean dataStorageMXBean = new DataStorageMXBeanImpl(ctx);

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -44,6 +45,9 @@ public class ConvertingClosableIterator<Row> implements Iterator<List<?>>, AutoC
 
     /** */
     @Nullable Runnable onClose;
+
+    /** */
+    private final AtomicBoolean closed = new AtomicBoolean();
 
     /** */
     public ConvertingClosableIterator(
@@ -87,9 +91,11 @@ public class ConvertingClosableIterator<Row> implements Iterator<List<?>>, AutoC
      * {@inheritDoc}
      */
     @Override public void close() throws Exception {
-        Commons.close(it);
+        if (closed.compareAndSet(false, true)) {
+            Commons.close(it);
 
-        if (onClose != null)
-            onClose.run();
+            if (onClose != null)
+                onClose.run();
+        }
     }
 }

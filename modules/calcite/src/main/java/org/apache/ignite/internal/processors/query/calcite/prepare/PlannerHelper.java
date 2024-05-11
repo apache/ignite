@@ -18,21 +18,30 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import com.google.common.collect.ImmutableSet;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.Hintable;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -45,7 +54,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescript
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.HintUtils;
+import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class PlannerHelper {
@@ -63,16 +72,23 @@ public class PlannerHelper {
      */
     public static IgniteRel optimize(SqlNode sqlNode, IgnitePlanner planner, IgniteLogger log) {
         try {
-            // Convert to Relational operators graph
+            // Convert to Relational operators graph.
             RelRoot root = planner.rel(sqlNode);
+
+            root = addExternalOptions(root);
+
+            planner.setDisabledRules(HintUtils.options(root.rel, extractRootHints(root.rel), HintDefinition.DISABLE_RULE));
 
             RelNode rel = root.rel;
 
-            if (HintUtils.containsDisabledRules(root.hints))
-                planner.setDisabledRules(HintUtils.disabledRules(root.hints));
-
             // Transformation chain
             rel = planner.transform(PlannerPhase.HEP_DECORRELATE, rel.getTraitSet(), rel);
+
+            // RelOptUtil#propagateRelHints(RelNode, equiv) may skip hints because current RelNode has no hints.
+            // Or if hints reside in a child nodes which are not inputs of the current node. Like LogicalFlter#condition.
+            // Such hints may appear or be required below in the tree, after rules applying.
+            // In Calcite, RelDecorrelator#decorrelateQuery(...) can re-propagate hints.
+            rel = RelOptUtil.propagateRelHints(rel, false);
 
             rel = planner.replaceCorrelatesCollisions(rel);
 
@@ -111,6 +127,49 @@ public class PlannerHelper {
 
             throw ex;
         }
+    }
+
+    /**
+     * Add external options as hints to {@code root.rel}.
+     *
+     * @return New or old root node.
+     */
+    private static RelRoot addExternalOptions(RelRoot root) {
+        if (!Commons.context(root.rel).isForcedJoinOrder())
+            return root;
+
+        if (!(root.rel instanceof Hintable)) {
+            Commons.context(root.rel).logger().warning("Unable to set hint " + HintDefinition.ENFORCE_JOIN_ORDER
+                + " passed as an external parameter to the root relation operator ["
+                + RelOptUtil.toString(HintUtils.noInputsRelWrap(root.rel)).trim()
+                + "] because it is not a Hintable.");
+
+            return root;
+        }
+
+        List<RelHint> newHints = Stream.concat(HintUtils.allRelHints(root.rel).stream(),
+            Stream.of(RelHint.builder(HintDefinition.ENFORCE_JOIN_ORDER.name()).build())).collect(Collectors.toList());
+
+        root = root.withRel(((Hintable)root.rel).withHints(newHints));
+
+        RelOptUtil.propagateRelHints(root.rel, false);
+
+        return root;
+    }
+
+    /**
+     * Extracts planner-level hints like 'DISABLE_RULE' if the root node is a combining node like 'UNION'.
+     */
+    private static Collection<RelHint> extractRootHints(RelNode rel) {
+        if (!HintUtils.allRelHints(rel).isEmpty())
+            return HintUtils.allRelHints(rel);
+
+        if (rel instanceof SetOp) {
+            return F.flatCollections(rel.getInputs().stream()
+                .map(PlannerHelper::extractRootHints).collect(Collectors.toList()));
+        }
+
+        return Collections.emptyList();
     }
 
     /**

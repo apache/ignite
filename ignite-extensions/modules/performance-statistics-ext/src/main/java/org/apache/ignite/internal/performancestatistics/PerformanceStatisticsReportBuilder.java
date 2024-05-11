@@ -125,8 +125,8 @@ public class PerformanceStatisticsReportBuilder {
 
         ObjectNode dataJson = MAPPER.createObjectNode();
 
-        for (IgnitePerformanceStatisticsHandler handler : handlers)
-            handler.results().forEach(dataJson::set);
+        for (IgnitePerformanceStatisticsHandler hnd : handlers)
+            hnd.results().forEach(dataJson::set);
 
         writeJsonToFile(resDir + "/data/data.json", dataJson);
 
@@ -210,14 +210,14 @@ public class PerformanceStatisticsReportBuilder {
                 ZipEntry entry;
 
                 while ((entry = zip.getNextEntry()) != null) {
-                    File entryDestination = new File(resDir, entry.getName());
+                    File entryDest = new File(resDir, entry.getName());
 
                     if (entry.isDirectory())
-                        entryDestination.mkdirs();
+                        entryDest.mkdirs();
                     else {
-                        entryDestination.getParentFile().mkdirs();
+                        entryDest.getParentFile().mkdirs();
 
-                        try (OutputStream out = new FileOutputStream(entryDestination)) {
+                        try (OutputStream out = new FileOutputStream(entryDest)) {
                             IOUtils.copy(zip, out);
                         }
                     }

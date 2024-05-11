@@ -43,12 +43,13 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
-import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
@@ -374,11 +375,11 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                             e.getKey(),
                             false,
                             consId,
-                            e.getValue().hash,
-                            e.getValue().verHash,
                             null,
                             0,
-                            null)
+                            null,
+                            new VerifyPartitionContext(e.getValue())
+                        )
                     ));
 
                 if (log.isInfoEnabled()) {
@@ -448,12 +449,12 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
     }
 
     /** Holder for calculated hashes. */
-    private static class HashHolder {
+    public static class HashHolder {
         /** */
-        private int hash;
+        public int hash;
 
         /** */
-        private int verHash;
+        public int verHash;
 
         /** */
         public void increment(int hash, int verHash) {

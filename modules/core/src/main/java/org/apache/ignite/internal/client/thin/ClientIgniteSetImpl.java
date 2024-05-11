@@ -133,16 +133,16 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         Function<PayloadInputChannel, ClientAutoCloseableIterator<T>> payloadReader = in -> {
             List<T> page = readPage(in);
             boolean hasNext = in.in().readBoolean();
-            Long resourceId = hasNext ? in.in().readLong() : null;
-            ClientChannel resourceCh = hasNext ? in.clientChannel() : null;
+            Long rsrcId = hasNext ? in.in().readLong() : null;
+            ClientChannel rsrcCh = hasNext ? in.clientChannel() : null;
 
-            return new PagedIterator(resourceCh, resourceId, page);
+            return new PagedIterator(rsrcCh, rsrcId, page);
         };
 
         if (colocated) {
-            Object affinityKey = name.hashCode();
+            Object affKey = name.hashCode();
 
-            return ch.affinityService(cacheId, affinityKey, ClientOperation.OP_SET_ITERATOR_START, payloadWriter, payloadReader);
+            return ch.affinityService(cacheId, affKey, ClientOperation.OP_SET_ITERATOR_START, payloadWriter, payloadReader);
         }
 
         return ch.service(ClientOperation.OP_SET_ITERATOR_START, payloadWriter, payloadReader);

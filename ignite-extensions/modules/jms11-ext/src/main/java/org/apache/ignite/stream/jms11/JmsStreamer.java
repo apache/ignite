@@ -240,17 +240,17 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
                 scheduler = Executors.newScheduledThreadPool(1);
                 scheduler.schedule(new Runnable() {
                     @Override public void run() {
-                        for (Session session : sessions) {
+                        for (Session ses : sessions) {
                             try {
-                                session.commit();
+                                ses.commit();
                                 if (log.isDebugEnabled()) {
-                                    log.debug("Committing session from time-based batch completion [session=" +
-                                        session + "]");
+                                    log.debug("Committing session from time-based batch completion [ses=" +
+                                        ses + "]");
                                 }
                             }
                             catch (JMSException ignored) {
                                 log.warning("Error while committing session: from batch time-based completion " +
-                                    "[session=" + session + "]");
+                                    "[ses=" + ses + "]");
                             }
                         }
                         for (IgniteJmsMessageListener ml : listeners) {
@@ -440,39 +440,39 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
 
     /** */
     private void initializeJmsObjectsForTopic() throws JMSException {
-        Session session = connection.createSession(transacted, Session.AUTO_ACKNOWLEDGE);
+        Session ses = connection.createSession(transacted, Session.AUTO_ACKNOWLEDGE);
         Topic topic = (Topic)destination;
 
         if (destination == null)
-            topic = session.createTopic(destinationName);
+            topic = ses.createTopic(destinationName);
 
-        MessageConsumer consumer = durableSubscription ? session.createDurableSubscriber(topic, durableSubscriptionName) :
-            session.createConsumer(topic);
+        MessageConsumer consumer = durableSubscription ? ses.createDurableSubscriber(topic, durableSubscriptionName) :
+            ses.createConsumer(topic);
 
-        IgniteJmsMessageListener messageListener = new IgniteJmsMessageListener(session, true);
-        consumer.setMessageListener(messageListener);
+        IgniteJmsMessageListener msgListener = new IgniteJmsMessageListener(ses, true);
+        consumer.setMessageListener(msgListener);
 
         consumers.add(consumer);
-        sessions.add(session);
-        listeners.add(messageListener);
+        sessions.add(ses);
+        listeners.add(msgListener);
     }
 
     /** */
     private void initializeJmsObjectsForQueue() throws JMSException {
         for (int i = 0; i < threads; i++) {
-            Session session = connection.createSession(transacted, Session.AUTO_ACKNOWLEDGE);
+            Session ses = connection.createSession(transacted, Session.AUTO_ACKNOWLEDGE);
 
             if (destination == null)
-                destination = session.createQueue(destinationName);
+                destination = ses.createQueue(destinationName);
 
-            MessageConsumer consumer = session.createConsumer(destination);
+            MessageConsumer consumer = ses.createConsumer(destination);
 
-            IgniteJmsMessageListener messageListener = new IgniteJmsMessageListener(session, false);
-            consumer.setMessageListener(messageListener);
+            IgniteJmsMessageListener msgListener = new IgniteJmsMessageListener(ses, false);
+            consumer.setMessageListener(msgListener);
 
             consumers.add(consumer);
-            sessions.add(session);
-            listeners.add(messageListener);
+            sessions.add(ses);
+            listeners.add(msgListener);
         }
     }
 

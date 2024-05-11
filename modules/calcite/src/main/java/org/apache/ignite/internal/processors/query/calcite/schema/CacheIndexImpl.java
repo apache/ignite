@@ -21,8 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
@@ -116,16 +114,14 @@ public class CacheIndexImpl implements IgniteIndex {
     /** */
     @Override public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
-        ColocationGroup group,
-        Predicate<Row> filters,
+        ColocationGroup grp,
         RangeIterable<Row> ranges,
-        Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        UUID localNodeId = execCtx.localNodeId();
-        if (group.nodeIds().contains(localNodeId) && idx != null) {
+        UUID locNodeId = execCtx.localNodeId();
+        if (grp.nodeIds().contains(locNodeId) && idx != null) {
             return new IndexScan<>(execCtx, tbl.descriptor(), idx.unwrap(InlineIndex.class), collation.getKeys(),
-                group.partitions(localNodeId), filters, ranges, rowTransformer, requiredColumns);
+                grp.partitions(locNodeId), ranges, requiredColumns);
         }
 
         return Collections.emptyList();
@@ -138,16 +134,16 @@ public class CacheIndexImpl implements IgniteIndex {
         ColocationGroup grp,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        UUID localNodeId = ectx.localNodeId();
+        UUID locNodeId = ectx.localNodeId();
 
-        if (grp.nodeIds().contains(localNodeId) && idx != null) {
+        if (grp.nodeIds().contains(locNodeId) && idx != null) {
             return new IndexFirstLastScan<>(
                 first,
                 ectx,
                 tbl.descriptor(),
                 idx.unwrap(InlineIndexImpl.class),
                 collation.getKeys(),
-                grp.partitions(localNodeId),
+                grp.partitions(locNodeId),
                 requiredColumns
             );
         }
@@ -206,7 +202,7 @@ public class CacheIndexImpl implements IgniteIndex {
 
             try {
                 for (int i = 0; i < iidx.segmentsCount(); ++i)
-                    cnt += iidx.count(i, new IndexQueryContext(filter, rowFilter, ectx.mvccSnapshot()));
+                    cnt += iidx.count(i, new IndexQueryContext(filter, rowFilter));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Unable to count index records.", e);

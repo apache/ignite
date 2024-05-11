@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cdc;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamer;
@@ -25,9 +26,14 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.lifecycle.LifecycleBean;
+import org.apache.ignite.lifecycle.LifecycleEventType;
+import org.apache.ignite.metric.MetricRegistry;
+
+import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_STOP;
+import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_STOP;
 
 /**
  * Change Data Consumer that streams all data changes to provided {@link #dest} Ignite cluster.
@@ -44,12 +50,15 @@ import org.apache.ignite.lang.IgniteExperimental;
  * @see CacheVersionConflictResolverImpl
  */
 @IgniteExperimental
-public class IgniteToIgniteCdcStreamer extends AbstractIgniteCdcStreamer {
+public class IgniteToIgniteCdcStreamer extends AbstractIgniteCdcStreamer implements LifecycleBean {
     /** Destination cluster client configuration. */
     private IgniteConfiguration destIgniteCfg;
 
     /** Destination Ignite cluster client */
     private IgniteEx dest;
+
+    /** Alive flag. */
+    private volatile boolean alive = true;
 
     /** {@inheritDoc} */
     @Override public void start(MetricRegistry mreg) {
@@ -59,6 +68,20 @@ public class IgniteToIgniteCdcStreamer extends AbstractIgniteCdcStreamer {
             log.info("Ignite To Ignite Streamer [cacheIds=" + cachesIds + ']');
 
         A.notNull(destIgniteCfg, "Destination Ignite configuration.");
+
+        LifecycleBean[] lifecycleBeans = destIgniteCfg.getLifecycleBeans();
+
+        if (lifecycleBeans != null) {
+            LifecycleBean[] newBeans = new LifecycleBean[lifecycleBeans.length + 1];
+
+            System.arraycopy(lifecycleBeans, 0, newBeans, 0, lifecycleBeans.length);
+
+            newBeans[lifecycleBeans.length] = this;
+
+            destIgniteCfg.setLifecycleBeans(newBeans);
+        }
+        else
+            destIgniteCfg.setLifecycleBeans(this);
 
         dest = (IgniteEx)Ignition.start(destIgniteCfg);
 
@@ -84,5 +107,15 @@ public class IgniteToIgniteCdcStreamer extends AbstractIgniteCdcStreamer {
         this.destIgniteCfg = destIgniteCfg;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean alive() {
+        return alive;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteException {
+        alive = evt != BEFORE_NODE_STOP && evt != AFTER_NODE_STOP;
     }
 }

@@ -117,8 +117,8 @@ public class GridSpringCacheManagerMultiJvmSelfTest extends GridCommonAbstractTe
 
         int totalCalledCnt = 0;
 
-        for (IgniteInternalFuture<Integer> future : futures)
-            totalCalledCnt += future.get();
+        for (IgniteInternalFuture<Integer> fut : futures)
+            totalCalledCnt += fut.get();
 
         IgniteCache<Object, Object> cache = loc.cache("dynamicCache");
 

@@ -46,9 +46,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -654,8 +652,6 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      */
     @Test
     public void testDeactivateDuringEvictionAndRebalance() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7384", MvccFeatureChecker.forcedMvcc());
-
         IgniteEx srv = startGrids(3);
 
         srv.cluster().state(ACTIVE);
@@ -670,13 +666,13 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         IgniteCache cache = srv.createCache(ccfg);
 
         // High number of keys triggers long partition eviction.
-        final int keysCount = 100_000;
+        final int keysCnt = 100_000;
 
         try (IgniteDataStreamer ds = srv.dataStreamer(DEFAULT_CACHE_NAME)) {
             log.info("Writing initial data...");
 
             ds.allowOverwrite(true);
-            for (int k = 1; k <= keysCount; k++) {
+            for (int k = 1; k <= keysCnt; k++) {
                 ds.addData(k, k);
 
                 if (k % 50_000 == 0)
@@ -686,12 +682,12 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
             log.info("Writing initial data finished.");
         }
 
-        AtomicInteger keyCounter = new AtomicInteger(keysCount);
+        AtomicInteger keyCounter = new AtomicInteger(keysCnt);
         AtomicBoolean stop = new AtomicBoolean(false);
 
         Set<Integer> addedKeys = new GridConcurrentHashSet<>();
 
-        IgniteInternalFuture cacheLoadFuture = GridTestUtils.runMultiThreadedAsync(
+        IgniteInternalFuture cacheLoadFut = GridTestUtils.runMultiThreadedAsync(
             () -> {
                 while (!stop.get()) {
                     int key = keyCounter.incrementAndGet();
@@ -722,7 +718,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         stop.set(true);
 
-        cacheLoadFuture.get();
+        cacheLoadFut.get();
 
         // Deactivate and activate again.
         srv.cluster().state(INACTIVE);
@@ -736,7 +732,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         for (Ignite ignite : G.allGrids()) {
             IgniteCache cache1 = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-            for (int k = 1; k <= keysCount; k++) {
+            for (int k = 1; k <= keysCnt; k++) {
                 Object val = cache1.get(k);
 
                 Assert.assertNotNull("node=" + ignite.name() + ", key=" + k, val);

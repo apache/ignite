@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp.ipfinder.s3;
 
 import com.amazonaws.auth.BasicAWSCredentials;
-import org.apache.ignite.testsuites.IgniteS3TestSuite;
+import org.apache.ignite.util.IgniteS3TestConfiguration;
 import org.junit.Test;
 
 /**
@@ -38,8 +38,8 @@ public class TcpDiscoveryS3IpFinderSSEAlgorithmSelfTest extends TcpDiscoveryS3Ip
 
     /** {@inheritDoc} */
     @Override protected void setAwsCredentials(TcpDiscoveryS3IpFinder finder) {
-        finder.setAwsCredentials(new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
-            IgniteS3TestSuite.getSecretKey()));
+        finder.setAwsCredentials(new BasicAWSCredentials(IgniteS3TestConfiguration.getAccessKey(),
+            IgniteS3TestConfiguration.getSecretKey()));
     }
 
     /** {@inheritDoc} */

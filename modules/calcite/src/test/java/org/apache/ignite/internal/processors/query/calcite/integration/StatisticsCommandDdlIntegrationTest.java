@@ -18,7 +18,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
 import java.util.function.Predicate;
-import com.google.inject.internal.util.Lists;
+import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
@@ -128,11 +128,11 @@ public class StatisticsCommandDdlIntegrationTest extends AbstractDdlIntegrationT
         assertFalse(res.isEmpty());
         assertFalse(res.get(0).isEmpty() || res.get(0).size() < 10);
 
-        long version = (Long)res.get(0).get(9);
+        long ver = (Long)res.get(0).get(9);
 
         assertThat(res, hasItems(
-            Lists.newArrayList(PUBLIC_SCHEMA, "TABLE", TABLE_NAME, ID_FIELD, (byte)2, 6L, 5L, 7L, 8, version),
-            Lists.newArrayList(PUBLIC_SCHEMA, "TABLE", TABLE_NAME, NAME_FIELD, (byte)2, 7L, 6L, 8L, null, version)
+            Lists.newArrayList(PUBLIC_SCHEMA, "TABLE", TABLE_NAME, ID_FIELD, (byte)2, 6L, 5L, 7L, 8, ver),
+            Lists.newArrayList(PUBLIC_SCHEMA, "TABLE", TABLE_NAME, NAME_FIELD, (byte)2, 7L, 6L, 8L, null, ver)
         ));
     }
 
@@ -307,10 +307,10 @@ public class StatisticsCommandDdlIntegrationTest extends AbstractDdlIntegrationT
                 if (node.cluster().localNode().isClient())
                     continue;
 
-                ObjectStatistics localStat = statisticsMgr((IgniteEx)node).getLocalStatistics(
+                ObjectStatistics locStat = statisticsMgr((IgniteEx)node).getLocalStatistics(
                     new StatisticsKey(schema, obj));
 
-                if (!(isNull == (localStat == null)))
+                if (!(isNull == (locStat == null)))
                     return false;
             }
             return true;
@@ -333,10 +333,10 @@ public class StatisticsCommandDdlIntegrationTest extends AbstractDdlIntegrationT
                 if (node.cluster().localNode().isClient())
                     continue;
 
-                ObjectStatisticsImpl localStat = (ObjectStatisticsImpl)statisticsMgr((IgniteEx)node)
+                ObjectStatisticsImpl locStat = (ObjectStatisticsImpl)statisticsMgr((IgniteEx)node)
                     .getLocalStatistics(new StatisticsKey(schema, obj));
 
-                long sumVer = localStat.columnsStatistics().values().stream()
+                long sumVer = locStat.columnsStatistics().values().stream()
                     .mapToLong(ColumnStatistics::version)
                     .sum();
 
@@ -352,13 +352,13 @@ public class StatisticsCommandDdlIntegrationTest extends AbstractDdlIntegrationT
      * Get average version of the column statistics for specified DB object.
      */
     private long sumStatisticsVersion(String schema, String obj) {
-        ObjectStatisticsImpl localStat = (ObjectStatisticsImpl)statisticsMgr(0)
+        ObjectStatisticsImpl locStat = (ObjectStatisticsImpl)statisticsMgr(0)
             .getLocalStatistics(new StatisticsKey(schema, obj));
 
-        if (localStat == null)
+        if (locStat == null)
             return -1;
 
-        return localStat.columnsStatistics().values().stream()
+        return locStat.columnsStatistics().values().stream()
             .mapToLong(ColumnStatistics::version)
             .sum();
     }

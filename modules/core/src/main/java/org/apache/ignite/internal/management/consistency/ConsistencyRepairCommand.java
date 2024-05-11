@@ -28,8 +28,6 @@ import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.LocalCommand;
-import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask;
-import org.apache.ignite.internal.visor.consistency.VisorConsistencyTaskResult;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
 
@@ -94,10 +92,10 @@ public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairC
     ) throws GridClientException {
         boolean failed = false;
 
-        VisorConsistencyTaskResult res = CommandUtils.execute(
+        ConsistencyTaskResult res = CommandUtils.execute(
             cli,
             ignite,
-            VisorConsistencyRepairTask.class,
+            ConsistencyRepairTask.class,
             arg,
             nodes
         );

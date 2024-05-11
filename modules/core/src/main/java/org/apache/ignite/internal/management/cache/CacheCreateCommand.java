@@ -19,7 +19,7 @@ package org.apache.ignite.internal.management.cache;
 
 import java.util.Set;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.cache.VisorCacheCreateTask;
+
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 
 /** Create caches. */
@@ -36,7 +36,7 @@ public class CacheCreateCommand implements ComputeCommand<CacheCreateCommandArg,
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorCacheCreateTask> taskClass() {
-        return VisorCacheCreateTask.class;
+    @Override public Class<CacheCreateTask> taskClass() {
+        return CacheCreateTask.class;
     }
 }

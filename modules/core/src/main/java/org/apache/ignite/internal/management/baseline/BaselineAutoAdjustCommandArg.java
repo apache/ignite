@@ -23,20 +23,31 @@ import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
+import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
+import org.apache.ignite.internal.management.baseline.BaselineCommand.BaselineTaskArg;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @CliConfirmArgument
 @ArgumentGroup(value = {"enabled", "timeout"}, optional = false)
-public class BaselineAutoAdjustCommandArg extends VisorBaselineTaskArg {
+public class BaselineAutoAdjustCommandArg extends BaselineTaskArg {
     /** */
     private static final long serialVersionUID = 0;
 
     /** */
     @Positional
     @Argument(optional = true)
+    @EnumDescription(
+        names = {
+            "ENABLE",
+            "DISABLE"
+        },
+        descriptions = {
+            "Enable baseline auto adjust",
+            "Disable baseline auto adjust"
+        }
+    )
     private Enabled enabled;
 
     /** */

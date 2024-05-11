@@ -107,8 +107,12 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
         appliers = new ArrayList<>(streamerCfg.getThreadCount());
         runners = new ArrayList<>(streamerCfg.getThreadCount());
 
-        if (!kafkaProps.containsKey(ConsumerConfig.GROUP_ID_CONFIG))
-            throw new IllegalArgumentException("Kafka properties don't contains " + ConsumerConfig.GROUP_ID_CONFIG);
+        String grp = kafkaProps.getProperty(ConsumerConfig.GROUP_ID_CONFIG);
+
+        A.ensure(grp != null, "Kafka properties don't contains " + ConsumerConfig.GROUP_ID_CONFIG);
+        A.ensure(
+            !grp.equals(streamerCfg.getMetadataConsumerGroup()),
+            "The group of event and metadata consumers must be different.");
 
         kafkaProps.put(KEY_DESERIALIZER_CLASS_CONFIG, IntegerDeserializer.class.getName());
         kafkaProps.put(VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
@@ -179,8 +183,8 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
         }
 
         try {
-            for (int i = 0; i < threadCnt + 1; i++)
-                runners.get(i).join();
+            for (Thread run: runners)
+                run.join();
         }
         catch (InterruptedException e) {
             stopped.set(true);

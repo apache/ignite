@@ -19,11 +19,9 @@ package org.apache.ignite.internal.management;
 
 import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.shutdown.VisorShutdownPolicyTask;
-import org.apache.ignite.internal.visor.shutdown.VisorShutdownPolicyTaskResult;
 
 /** */
-public class ShutdownPolicyCommand implements ComputeCommand<ShutdownPolicyCommandArg, VisorShutdownPolicyTaskResult> {
+public class ShutdownPolicyCommand implements ComputeCommand<ShutdownPolicyCommandArg, ShutdownPolicyTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Set or display shutdown policy";
@@ -35,14 +33,14 @@ public class ShutdownPolicyCommand implements ComputeCommand<ShutdownPolicyComma
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorShutdownPolicyTask> taskClass() {
-        return VisorShutdownPolicyTask.class;
+    @Override public Class<ShutdownPolicyTask> taskClass() {
+        return ShutdownPolicyTask.class;
     }
 
     /** {@inheritDoc} */
     @Override public void printResult(
         ShutdownPolicyCommandArg arg,
-        VisorShutdownPolicyTaskResult res,
+        ShutdownPolicyTaskResult res,
         Consumer<String> printer
     ) {
         printer.accept("Cluster shutdown policy is " + res.getShutdown());

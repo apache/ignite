@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
@@ -184,7 +183,7 @@ public class CacheParallelStartTest extends GridCommonAbstractTest {
      */
     private void assertCaches(IgniteEx igniteEx) {
         for (int i = 0; i < GROUPS_COUNT; i++) {
-            Collection<GridCacheContext> caches = igniteEx
+            Collection<GridCacheContext<?, ?>> caches = igniteEx
                     .context()
                     .cache()
                     .cacheGroup(CU.cacheId(STATIC_CACHE_CACHE_GROUP_NAME + i))
@@ -192,13 +191,13 @@ public class CacheParallelStartTest extends GridCommonAbstractTest {
 
             assertEquals(CACHES_COUNT / GROUPS_COUNT, caches.size());
 
-            @Nullable CacheGroupContext cacheGrp = igniteEx
+            CacheGroupContext cacheGrp = igniteEx
                     .context()
                     .cache()
                     .cacheGroup(CU.cacheId(STATIC_CACHE_CACHE_GROUP_NAME + i));
 
-            for (GridCacheContext cacheContext : caches)
-                assertEquals(cacheContext.group(), cacheGrp);
+            for (GridCacheContext<?, ?> cacheCtx : caches)
+                assertEquals(cacheCtx.group(), cacheGrp);
         }
     }
 }

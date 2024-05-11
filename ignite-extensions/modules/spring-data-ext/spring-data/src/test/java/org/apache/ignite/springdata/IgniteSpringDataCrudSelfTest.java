@@ -262,10 +262,10 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDeleteExpressionMultiple() {
-        long count = repo.countByFirstName("nonUniquePerson");
-        long cnt = repo.deleteByFirstName("nonUniquePerson");
+        long cnt = repo.countByFirstName("nonUniquePerson");
+        long cntDel = repo.deleteByFirstName("nonUniquePerson");
 
-        assertEquals(cnt, count);
+        assertEquals(cntDel, cnt);
     }
 
     /**
@@ -275,8 +275,8 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     public void testRemoveExpression() {
         repo.removeByFirstName("person3f");
 
-        long count = repo.count();
-        assertEquals(CACHE_SIZE - 1, count);
+        long cnt = repo.count();
+        assertEquals(CACHE_SIZE - 1, cnt);
     }
 
     /**
@@ -286,8 +286,8 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     public void testDeleteQuery() {
         repo.deleteBySecondNameLowerCase("uniqueLastName");
 
-        long countAfter = repo.count();
-        assertEquals(CACHE_SIZE - 1, countAfter);
+        long cnt = repo.count();
+        assertEquals(CACHE_SIZE - 1, cnt);
     }
 
     /**
@@ -295,7 +295,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testWrongDeleteQuery() {
-        long countBefore = repo.countByFirstNameLike("person3f");
+        long cntBefore = repo.countByFirstNameLike("person3f");
 
         try {
             repo.deleteWrongByFirstNameQuery("person3f");
@@ -304,8 +304,8 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
             //expected
         }
 
-        long countAfter = repo.countByFirstNameLike("person3f");
-        assertEquals(countBefore, countAfter);
+        long cntAfter = repo.countByFirstNameLike("person3f");
+        assertEquals(cntBefore, cntAfter);
     }
 
     /**

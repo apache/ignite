@@ -121,11 +121,11 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
 
                     Map<String, String> env = new HashMap<>(ctx.getEnvironment());
 
-                    Map<String, String> systemEnv = System.getenv();
+                    Map<String, String> sysEnv = System.getenv();
 
-                    for (String key : systemEnv.keySet()) {
+                    for (String key : sysEnv.keySet()) {
                         if (key.matches("^IGNITE_[_0-9A-Z]+$"))
-                            env.put(key, systemEnv.get(key));
+                            env.put(key, sysEnv.get(key));
                     }
 
                     env.put("IGNITE_TCP_DISCOVERY_ADDRESSES", getAddress(c.getNodeId().getHost()));

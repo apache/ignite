@@ -163,7 +163,7 @@ public class CachesRegistry {
      * @return Future that will be completed when all unregistered cache configurations will be persisted.
      */
     public IgniteInternalFuture<?> addUnregistered(Collection<DynamicCacheDescriptor> descs) {
-        Collection<CacheGroupDescriptor> groups = descs.stream()
+        Collection<CacheGroupDescriptor> grps = descs.stream()
             .map(DynamicCacheDescriptor::groupDescriptor)
             .filter(grpDesc -> !registeredGrps.containsKey(grpDesc.groupId()))
             .collect(Collectors.toList());
@@ -172,7 +172,7 @@ public class CachesRegistry {
             .filter(cacheDesc -> !registeredCaches.containsKey(cacheDesc.cacheId()))
             .collect(Collectors.toList());
 
-        return registerAllCachesAndGroups(groups, caches);
+        return registerAllCachesAndGroups(grps, caches);
     }
 
     /**
@@ -213,11 +213,11 @@ public class CachesRegistry {
      * Awaits last registered caches configurations persist future.
      */
     private void waitLastRegistration() {
-        IgniteInternalFuture<?> currentFut = cachesConfPersistFuture;
+        IgniteInternalFuture<?> curFut = cachesConfPersistFuture;
 
-        if (currentFut != null && !currentFut.isDone()) {
+        if (curFut != null && !curFut.isDone()) {
             try {
-                currentFut.get();
+                curFut.get();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to wait for last registered caches registration future", e);

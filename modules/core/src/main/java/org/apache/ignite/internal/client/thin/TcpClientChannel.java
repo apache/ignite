@@ -400,7 +400,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      */
     private <T> T receive(ClientRequestFuture pendingReq, Function<PayloadInputChannel, T> payloadReader)
         throws ClientException {
-        long requestId = pendingReq.requestId;
+        long reqId = pendingReq.requestId;
         ClientOperation op = pendingReq.operation;
         long startTimeNanos = pendingReq.startTimeNanos;
 
@@ -411,7 +411,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             if (payload != null && payloadReader != null)
                 res = payloadReader.apply(new PayloadInputChannel(this, payload));
 
-            eventListener.onRequestSuccess(connDesc, requestId, op.code(), op.name(), System.nanoTime() - startTimeNanos);
+            eventListener.onRequestSuccess(connDesc, reqId, op.code(), op.name(), System.nanoTime() - startTimeNanos);
 
             return res;
         }
@@ -420,7 +420,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             RuntimeException err = convertException(e);
 
-            eventListener.onRequestFail(connDesc, requestId, op.code(), op.name(), System.nanoTime() - startTimeNanos, err);
+            eventListener.onRequestFail(connDesc, reqId, op.code(), op.name(), System.nanoTime() - startTimeNanos, err);
 
             throw err;
         }
@@ -435,19 +435,19 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      */
     private <T> CompletableFuture<T> receiveAsync(ClientRequestFuture pendingReq, Function<PayloadInputChannel, T> payloadReader) {
         CompletableFuture<T> fut = new CompletableFuture<>();
-        long requestId = pendingReq.requestId;
+        long reqId = pendingReq.requestId;
         ClientOperation op = pendingReq.operation;
         long startTimeNanos = pendingReq.startTimeNanos;
 
-        pendingReq.listen(payloadFut -> asyncContinuationExecutor.execute(() -> {
+        pendingReq.listen(() -> asyncContinuationExecutor.execute(() -> {
             try {
-                ByteBuffer payload = payloadFut.get();
+                ByteBuffer payload = pendingReq.get();
 
                 T res = null;
                 if (payload != null && payloadReader != null)
                     res = payloadReader.apply(new PayloadInputChannel(this, payload));
 
-                eventListener.onRequestSuccess(connDesc, requestId, op.code(), op.name(), System.nanoTime() - startTimeNanos);
+                eventListener.onRequestSuccess(connDesc, reqId, op.code(), op.name(), System.nanoTime() - startTimeNanos);
 
                 fut.complete(res);
             }
@@ -456,7 +456,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
                 RuntimeException err = convertException(t);
 
-                eventListener.onRequestFail(connDesc, requestId, op.code(), op.name(), System.nanoTime() - startTimeNanos, err);
+                eventListener.onRequestFail(connDesc, reqId, op.code(), op.name(), System.nanoTime() - startTimeNanos, err);
 
                 fut.completeExceptionally(err);
             }
@@ -686,12 +686,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         if (F.isEmpty(addrs))
             error = "At least one Ignite server node must be specified in the Ignite client configuration";
-        else {
-            for (InetSocketAddress addr : addrs) {
-                if (addr.getPort() < 1024 || addr.getPort() > 49151)
-                    error = String.format("Ignite client port %s is out of valid ports range 1024...49151", addr.getPort());
-            }
-        }
 
         if (error == null && cfg.getHeartbeatInterval() <= 0)
             error = "heartbeatInterval cannot be zero or less.";
@@ -703,7 +697,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** Client handshake. */
     private void handshake(ProtocolVersion ver, String user, String pwd, Map<String, String> userAttrs)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
-        long requestId = -1L;
+        long reqId = -1L;
         long startTime = System.nanoTime();
 
         eventListener.onHandshakeStart(new ConnectionDescription(sock.localAddress(), sock.remoteAddress(),
@@ -718,9 +712,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                 if (closed())
                     throw new ClientConnectionException("Channel is closed");
 
-                fut = new ClientRequestFuture(requestId, ClientOperation.HANDSHAKE);
+                fut = new ClientRequestFuture(reqId, ClientOperation.HANDSHAKE);
 
-                pendingReqs.put(requestId, fut);
+                pendingReqs.put(reqId, fut);
             }
             finally {
                 pendingReqsLock.readLock().unlock();

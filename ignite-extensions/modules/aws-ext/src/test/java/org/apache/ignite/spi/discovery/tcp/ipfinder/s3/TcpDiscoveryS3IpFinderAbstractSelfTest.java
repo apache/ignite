@@ -25,7 +25,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.encrypt.EncryptionService;
-import org.apache.ignite.testsuites.IgniteS3TestSuite;
+import org.apache.ignite.util.IgniteS3TestConfiguration;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -155,11 +155,11 @@ public abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
     static String getBucketName() {
         String bucketName;
         try {
-            bucketName = IgniteS3TestSuite.getBucketName(
+            bucketName = IgniteS3TestConfiguration.getBucketName(
                 "ip-finder-unit-test-" + InetAddress.getLocalHost().getHostName().toLowerCase());
         }
         catch (UnknownHostException e) {
-            bucketName = IgniteS3TestSuite.getBucketName(
+            bucketName = IgniteS3TestConfiguration.getBucketName(
                 "ip-finder-unit-test-rnd-" + ThreadLocalRandom.current().nextInt(100));
         }
 

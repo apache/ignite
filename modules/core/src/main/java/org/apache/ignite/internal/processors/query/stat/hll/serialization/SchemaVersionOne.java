@@ -63,32 +63,32 @@ public class SchemaVersionOne implements ISchemaVersion {
         final HLLType type = metadata.HLLType();
         final int typeOrdinal = getOrdinal(type);
 
-        final int explicitCutoffValue;
+        final int explicitCutoffVal;
         if (metadata.explicitOff())
-            explicitCutoffValue = EXPLICIT_OFF;
+            explicitCutoffVal = EXPLICIT_OFF;
         else if (metadata.explicitAuto())
-            explicitCutoffValue = EXPLICIT_AUTO;
+            explicitCutoffVal = EXPLICIT_AUTO;
         else
-            explicitCutoffValue = metadata.log2ExplicitCutoff() + 1/*per spec*/;
+            explicitCutoffVal = metadata.log2ExplicitCutoff() + 1/*per spec*/;
 
         bytes[0] = SerializationUtil.packVersionByte(SCHEMA_VERSION, typeOrdinal);
         bytes[1] = SerializationUtil.packParametersByte(metadata.registerWidth(), metadata.registerCountLog2());
-        bytes[2] = SerializationUtil.packCutoffByte(explicitCutoffValue, metadata.sparseEnabled());
+        bytes[2] = SerializationUtil.packCutoffByte(explicitCutoffVal, metadata.sparseEnabled());
     }
 
     /* (non-Javadoc)
      * @see net.agkn.hll.serialization.ISchemaVersion#readMetadata(byte[])
      */
     @Override public IHLLMetadata readMetadata(final byte[] bytes) {
-        final byte versionByte = bytes[0];
+        final byte verByte = bytes[0];
         final byte parametersByte = bytes[1];
         final byte cutoffByte = bytes[2];
 
-        final int typeOrdinal = SerializationUtil.typeOrdinal(versionByte);
-        final int explicitCutoffValue = SerializationUtil.explicitCutoff(cutoffByte);
-        final boolean explicitOff = (explicitCutoffValue == EXPLICIT_OFF);
-        final boolean explicitAuto = (explicitCutoffValue == EXPLICIT_AUTO);
-        final int log2ExplicitCutoff = (explicitOff || explicitAuto) ? -1/*sentinel*/ : (explicitCutoffValue - 1/*per spec*/);
+        final int typeOrdinal = SerializationUtil.typeOrdinal(verByte);
+        final int explicitCutoffVal = SerializationUtil.explicitCutoff(cutoffByte);
+        final boolean explicitOff = (explicitCutoffVal == EXPLICIT_OFF);
+        final boolean explicitAuto = (explicitCutoffVal == EXPLICIT_AUTO);
+        final int log2ExplicitCutoff = (explicitOff || explicitAuto) ? -1/*sentinel*/ : (explicitCutoffVal - 1/*per spec*/);
 
         return new HLLMetadata(SCHEMA_VERSION,
             getType(typeOrdinal),

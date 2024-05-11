@@ -72,12 +72,12 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSupportedCommands() throws Exception {
-        GridLogCommandHandler cmdHandler = new GridLogCommandHandler(newContext());
+        GridLogCommandHandler cmdHnd = new GridLogCommandHandler(newContext());
 
-        Collection<GridRestCommand> commands = cmdHandler.supportedCommands();
+        Collection<GridRestCommand> cmds = cmdHnd.supportedCommands();
 
-        assertEquals(1, commands.size());
-        assertTrue(commands.contains(GridRestCommand.LOG));
+        assertEquals(1, cmds.size());
+        assertTrue(cmds.contains(GridRestCommand.LOG));
     }
 
     /**
@@ -85,12 +85,12 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testUnSupportedCommands() throws Exception {
-        GridLogCommandHandler cmdHandler = new GridLogCommandHandler(newContext());
+        GridLogCommandHandler cmdHnd = new GridLogCommandHandler(newContext());
 
-        Collection<GridRestCommand> commands = cmdHandler.supportedCommands();
+        Collection<GridRestCommand> cmds = cmdHnd.supportedCommands();
 
-        assertEquals(1, commands.size());
-        assertFalse(commands.contains(GridRestCommand.VERSION));
+        assertEquals(1, cmds.size());
+        assertFalse(cmds.contains(GridRestCommand.VERSION));
     }
 
     /**
@@ -101,14 +101,14 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setIgniteHome(igniteHome);
         GridTestKernalContext ctx = newContext(cfg);
-        GridLogCommandHandler cmdHandler = new GridLogCommandHandler(ctx);
+        GridLogCommandHandler cmdHnd = new GridLogCommandHandler(ctx);
         GridRestLogRequest req = new GridRestLogRequest();
 
         req.to(5);
         req.from(2);
 
         req.path(igniteHome + "/work/log/" + "test.log");
-        IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
+        IgniteInternalFuture<GridRestResponse> resp = cmdHnd.handleAsync(req);
 
         assertNull(resp.result().getError());
         assertEquals(GridRestResponse.STATUS_SUCCESS, resp.result().getSuccessStatus());
@@ -123,14 +123,14 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setIgniteHome(igniteHome);
         GridTestKernalContext ctx = newContext(cfg);
-        GridLogCommandHandler cmdHandler = new GridLogCommandHandler(ctx);
+        GridLogCommandHandler cmdHnd = new GridLogCommandHandler(ctx);
         GridRestLogRequest req = new GridRestLogRequest();
 
         req.to(50);
         req.from(20);
 
         req.path(igniteHome + "/work/log/" + "test.log");
-        IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
+        IgniteInternalFuture<GridRestResponse> resp = cmdHnd.handleAsync(req);
 
         assertEquals("Request parameter 'from' and 'to' are for lines that do not exist in log file.", resp.result().getError());
         assertEquals(GridRestResponse.STATUS_FAILED, resp.result().getSuccessStatus());
@@ -145,11 +145,11 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setIgniteHome(igniteHome);
         GridTestKernalContext ctx = newContext(cfg);
-        GridLogCommandHandler cmdHandler = new GridLogCommandHandler(ctx);
+        GridLogCommandHandler cmdHnd = new GridLogCommandHandler(ctx);
         GridRestLogRequest req = new GridRestLogRequest();
 
         req.path(igniteHome + "/work/log/" + "test.log");
-        IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
+        IgniteInternalFuture<GridRestResponse> resp = cmdHnd.handleAsync(req);
 
         assertNull(resp.result().getError());
         assertEquals(GridRestResponse.STATUS_SUCCESS, resp.result().getSuccessStatus());
@@ -163,13 +163,13 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
     public void testHandleAsyncPathNotSet() throws Exception {
         GridTestKernalContext ctx = newContext();
         ctx.config().setIgniteHome(igniteHome);
-        GridLogCommandHandler cmdHandler = new GridLogCommandHandler(ctx);
+        GridLogCommandHandler cmdHnd = new GridLogCommandHandler(ctx);
         GridRestLogRequest req = new GridRestLogRequest();
 
         req.to(5);
         req.from(2);
 
-        IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
+        IgniteInternalFuture<GridRestResponse> resp = cmdHnd.handleAsync(req);
 
         assertNull(resp.result().getError());
         assertEquals(GridRestResponse.STATUS_SUCCESS, resp.result().getSuccessStatus());
@@ -184,14 +184,14 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setIgniteHome(igniteHome);
         GridTestKernalContext ctx = newContext(cfg);
-        GridLogCommandHandler cmdHandler = new GridLogCommandHandler(ctx);
+        GridLogCommandHandler cmdHnd = new GridLogCommandHandler(ctx);
         GridRestLogRequest req = new GridRestLogRequest();
 
         req.to(5);
         req.from(2);
         req.path("/home/users/mytest.log");
 
-        IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
+        IgniteInternalFuture<GridRestResponse> resp = cmdHnd.handleAsync(req);
 
         assertEquals("Request parameter 'path' must contain a path to valid log file.", resp.result().getError());
         assertEquals(GridRestResponse.STATUS_FAILED, resp.result().getSuccessStatus());
@@ -206,14 +206,14 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setIgniteHome(igniteHome);
         GridTestKernalContext ctx = newContext(cfg);
-        GridLogCommandHandler cmdHandler = new GridLogCommandHandler(ctx);
+        GridLogCommandHandler cmdHnd = new GridLogCommandHandler(ctx);
         GridRestLogRequest req = new GridRestLogRequest();
 
         req.to(5);
         req.from(7);
 
         req.path(igniteHome + "/work/log/" + "test.log");
-        IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
+        IgniteInternalFuture<GridRestResponse> resp = cmdHnd.handleAsync(req);
 
         assertEquals("Request parameter 'from' must be less than 'to'.", resp.result().getError());
         assertEquals(GridRestResponse.STATUS_FAILED, resp.result().getSuccessStatus());
@@ -228,14 +228,14 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setIgniteHome(igniteHome);
         GridTestKernalContext ctx = newContext(cfg);
-        GridLogCommandHandler cmdHandler = new GridLogCommandHandler(ctx);
+        GridLogCommandHandler cmdHnd = new GridLogCommandHandler(ctx);
         GridRestLogRequest req = new GridRestLogRequest();
 
         req.to(5);
         req.from(5);
 
         req.path(igniteHome + "/work/log/" + "test.log");
-        IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
+        IgniteInternalFuture<GridRestResponse> resp = cmdHnd.handleAsync(req);
 
         assertEquals("Request parameter 'from' must be less than 'to'.", resp.result().getError());
         assertEquals(GridRestResponse.STATUS_FAILED, resp.result().getSuccessStatus());

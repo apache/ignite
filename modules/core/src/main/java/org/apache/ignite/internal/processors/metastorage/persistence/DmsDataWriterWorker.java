@@ -123,7 +123,7 @@ public class DmsDataWriterWorker extends GridWorker {
 
             updateQueue.offer((RunnableFuture<?>)(suspendFut = new FutureTask<>(() -> AWAIT)));
 
-            compFut.listen(f -> latch.countDown());
+            compFut.listen(() -> latch.countDown());
         }
     }
 

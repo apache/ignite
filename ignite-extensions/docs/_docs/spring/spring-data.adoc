@@ -32,7 +32,7 @@ tab:pom.xml[]
 ----
 <dependency>
     <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite-spring-data-2.2-ext</artifactId>
+    <artifactId>ignite-spring-data-ext</artifactId>
     <version>${ignite-spring-data-ext.version}</version>
 </dependency>
 
@@ -59,6 +59,12 @@ tab:pom.xml[]
     <artifactId>spring-data-commons</artifactId>
     <version>${spring.data.version}</version>
 </dependency>
+
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-tx</artifactId>
+    <version>${spring.version}</version>
+</dependency>
 ----
 --
 
@@ -73,13 +79,8 @@ Apache Ignite each one is compatible with.
 |===
 |Apache Ignite Spring Data extension version | Compatible Apache Ignite versions
 | 1.0.0 | All versions since 2.8.0
+| 2.0.0 | All versions since 2.8.0
 |===
-
-[NOTE]
-====
-If your Spring Data version is earlier than Spring Data 2.2 then set `ignite-spring-data-2.0-ext`
-or `ignite-spring-data-ext` as an `artifactId` in the pom.xml configuration.
-====
 
 == Apache Ignite Repository
 
@@ -287,7 +288,7 @@ System.out.println("\n>>> Top Person with surname 'Smith': " +
 
 == Example
 
-The complete example is available on link: https://github.com/apache/ignite-extensions/tree/master/modules/spring-data-2.0-ext/examples/main[GitHub, windows="_blank"]
+The complete example is available on link: https://github.com/apache/ignite-extensions/tree/master/modules/spring-data-ext/examples[GitHub, windows="_blank"]
 
 == Tutorial
 

@@ -28,11 +28,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheGenericTestStore;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -99,8 +97,6 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         GridCacheGenericTestStore<String, Integer> store = new GridCacheGenericTestStore<>();
@@ -121,12 +117,6 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
         cfg.setCacheConfiguration(cacheCfg);
 
         return cfg;
-    }
-
-    /** */
-    @Before
-    public void beforeCacheStoreListenerRWThroughDisabledTransactionalCacheTest() {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /** {@inheritDoc} */
@@ -323,18 +313,18 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
         while (keys.size() < 30) {
             String key = String.valueOf(numKey);
 
-            Affinity<Object> affinity = ignite(0).affinity(DEFAULT_CACHE_NAME);
+            Affinity<Object> aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
             if (nodeType == NEAR_NODE) {
-                if (!affinity.isPrimaryOrBackup(grid(0).localNode(), key))
+                if (!aff.isPrimaryOrBackup(grid(0).localNode(), key))
                     keys.add(key);
             }
             else if (nodeType == PRIMARY_NODE) {
-                if (affinity.isPrimary(grid(0).localNode(), key))
+                if (aff.isPrimary(grid(0).localNode(), key))
                     keys.add(key);
             }
             else if (nodeType == BACKUP_NODE) {
-                if (affinity.isBackup(grid(0).localNode(), key))
+                if (aff.isBackup(grid(0).localNode(), key))
                     keys.add(key);
             }
 

@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -96,7 +95,6 @@ public class H2PkHashIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, final SearchRow lower, final SearchRow upper) {
         IndexingQueryCacheFilter filter = null;
-        MvccSnapshot mvccSnapshot = null;
 
         QueryContext qctx = H2Utils.context(ses);
 
@@ -105,11 +103,8 @@ public class H2PkHashIndex extends GridH2IndexBase {
         if (qctx != null) {
             IndexingQueryFilter f = qctx.filter();
             filter = f != null ? f.forCache(getTable().cacheName()) : null;
-            mvccSnapshot = qctx.mvccSnapshot();
             seg = qctx.segment();
         }
-
-        assert !cctx.mvccEnabled() || mvccSnapshot != null;
 
         KeyCacheObject lowerObj = lower != null ? cctx.toCacheKeyObject(lower.getValue(0).getObject()) : null;
         KeyCacheObject upperObj = upper != null ? cctx.toCacheKeyObject(upper.getValue(0).getObject()) : null;
@@ -126,7 +121,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
                     continue;
 
                 if (filter == null || filter.applyPartition(part))
-                    cursors.add(store.cursor(cctx.cacheId(), lowerObj, upperObj, null, mvccSnapshot));
+                    cursors.add(store.cursor(cctx.cacheId(), lowerObj, upperObj, null));
             }
 
             return new H2PkHashIndexCursor(cursors.iterator());

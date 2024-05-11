@@ -24,8 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
@@ -36,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
@@ -50,9 +47,6 @@ import org.jetbrains.annotations.Nullable;
 public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
     /** */
     private final GridCacheContext<?, ?> cctx;
-
-    /** */
-    private final Predicate<Row> filters;
 
     /** */
     private final ExecutionContext<Row> ectx;
@@ -70,13 +64,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
     private final int[] parts;
 
     /** */
-    private final MvccSnapshot mvccSnapshot;
-
-    /** */
     private volatile List<GridDhtLocalPartition> reserved;
-
-    /** */
-    private final Function<Row, Row> rowTransformer;
 
     /** Participating colunms. */
     private final ImmutableBitSet requiredColunms;
@@ -86,23 +74,18 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
         ExecutionContext<Row> ectx,
         CacheTableDescriptor desc,
         int[] parts,
-        Predicate<Row> filters,
-        Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColunms
     ) {
         this.ectx = ectx;
         cctx = desc.cacheContext();
         this.desc = desc;
         this.parts = parts;
-        this.filters = filters;
-        this.rowTransformer = rowTransformer;
         this.requiredColunms = requiredColunms;
 
         RelDataType rowType = desc.rowType(this.ectx.getTypeFactory(), requiredColunms);
 
         factory = this.ectx.rowHandler().factory(this.ectx.getTypeFactory(), rowType);
         topVer = ectx.topologyVersion();
-        mvccSnapshot = ectx.mvccSnapshot();
     }
 
     /** {@inheritDoc} */
@@ -253,7 +236,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
                     if (part == null)
                         break;
 
-                    cur = part.dataStore().cursor(cctx.cacheId(), mvccSnapshot);
+                    cur = part.dataStore().cursor(cctx.cacheId());
                 }
 
                 if (cur.next()) {
@@ -265,15 +248,8 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
                     if (!desc.match(row))
                         continue;
 
-                    Row r = desc.toRow(ectx, row, factory, requiredColunms);
+                    next = desc.toRow(ectx, row, factory, requiredColunms);
 
-                    if (filters != null && !filters.test(r))
-                        continue;
-
-                    if (rowTransformer != null)
-                        r = rowTransformer.apply(r);
-
-                    next = r;
                     break;
                 }
                 else

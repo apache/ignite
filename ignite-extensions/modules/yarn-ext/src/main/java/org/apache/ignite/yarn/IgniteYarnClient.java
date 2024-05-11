@@ -137,16 +137,16 @@ public class IgniteYarnClient {
         capability.setVirtualCores(1);
 
         // Finally, set-up ApplicationSubmissionContext for the application
-        ApplicationSubmissionContext appContext = app.getApplicationSubmissionContext();
-        appContext.setApplicationName("ignition"); // application name
-        appContext.setAMContainerSpec(amContainer);
-        appContext.setResource(capability);
-        appContext.setQueue(props.yarnQueue()); // queue
+        ApplicationSubmissionContext appCtx = app.getApplicationSubmissionContext();
+        appCtx.setApplicationName("ignition"); // application name
+        appCtx.setAMContainerSpec(amContainer);
+        appCtx.setResource(capability);
+        appCtx.setQueue(props.yarnQueue()); // queue
 
         // Submit application
-        ApplicationId appId = appContext.getApplicationId();
+        ApplicationId appId = appCtx.getApplicationId();
 
-        yarnClient.submitApplication(appContext);
+        yarnClient.submitApplication(appCtx);
 
         log.log(Level.INFO, "Submitted application. Application id: {0}", appId);
 

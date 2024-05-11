@@ -258,11 +258,11 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
         else
             assertNotContains(log, testOutStr, SENSITIVE_DATA_VALUE_PREFIX);
 
-        for (String sensitiveDataValue : sensitiveValues) {
+        for (String sensitiveDataVal : sensitiveValues) {
             if (containsData)
-                assertContains(log, testOutStr, converter.apply(sensitiveDataValue));
+                assertContains(log, testOutStr, converter.apply(sensitiveDataVal));
             else
-                assertNotContains(log, testOutStr, converter.apply(sensitiveDataValue));
+                assertNotContains(log, testOutStr, converter.apply(sensitiveDataVal));
         }
     }
 

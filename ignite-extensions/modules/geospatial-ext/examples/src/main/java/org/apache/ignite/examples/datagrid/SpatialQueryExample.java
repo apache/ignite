@@ -70,7 +70,7 @@ public class SpatialQueryExample {
                 }
 
                 // Query to fetch the points that fit into a specific polygon.
-                SqlQuery<Integer, MapPoint> query = new SqlQuery<>(MapPoint.class, "coords && ?");
+                SqlQuery<Integer, MapPoint> qry = new SqlQuery<>(MapPoint.class, "coords && ?");
 
                 // Selecting points that fit into a specific polygon.
                 for (int i = 0; i < 10; i++) {
@@ -80,7 +80,7 @@ public class SpatialQueryExample {
                         rnd.nextInt(10000) + " 0, 0 0))");
 
                     // Executing the query.
-                    Collection<Cache.Entry<Integer, MapPoint>> entries = cache.query(query.setArgs(cond)).getAll();
+                    Collection<Cache.Entry<Integer, MapPoint>> entries = cache.query(qry.setArgs(cond)).getAll();
 
                     // Printing number of points that fit into the area defined by the polygon.
                     System.out.println("Fetched points [cond=" + cond + ", cnt=" + entries.size() + ']');

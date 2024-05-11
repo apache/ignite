@@ -1,5 +1,3 @@
-package org.apache.ignite.spring.sessions;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,12 +15,17 @@ package org.apache.ignite.spring.sessions;
  * limitations under the License.
  */
 
+package org.apache.ignite.spring.sessions;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -34,12 +37,14 @@ import org.springframework.session.IndexResolver;
 import org.springframework.session.SaveMode;
 import org.springframework.session.Session;
 import org.springframework.session.config.SessionRepositoryCustomizer;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.springframework.test.util.ReflectionTestUtils.getField;
 
 /**
  * Tests for {@link IgniteHttpSessionConfiguration}.
@@ -52,13 +57,12 @@ public class IgniteHttpSessionConfigurationTest {
     private static final int MAX_INACTIVE_INTERVAL_IN_SECONDS = 600;
 
     /** */
-    private AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    private final AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
 
     /** */
     @AfterEach
     void closeContext() {
-        if (this.context != null)
-            this.context.close();
+        this.ctx.close();
     }
 
     /** */
@@ -73,7 +77,7 @@ public class IgniteHttpSessionConfigurationTest {
     void defaultConfiguration() {
         registerAndRefresh(DefaultConfiguration.class);
 
-        assertThat(this.context.getBean(IgniteIndexedSessionRepository.class)).isNotNull();
+        assertThat(this.ctx.getBean(IgniteIndexedSessionRepository.class)).isNotNull();
     }
 
     /** */
@@ -81,10 +85,10 @@ public class IgniteHttpSessionConfigurationTest {
     void customTableName() {
         registerAndRefresh(CustomSessionMapNameConfiguration.class);
 
-        IgniteIndexedSessionRepository repository = this.context.getBean(IgniteIndexedSessionRepository.class);
-        IgniteHttpSessionConfiguration configuration = this.context.getBean(IgniteHttpSessionConfiguration.class);
-        assertThat(repository).isNotNull();
-        assertThat(ReflectionTestUtils.getField(configuration, "sessionMapName")).isEqualTo(MAP_NAME);
+        IgniteIndexedSessionRepository repo = this.ctx.getBean(IgniteIndexedSessionRepository.class);
+        IgniteHttpSessionConfiguration configuration = this.ctx.getBean(IgniteHttpSessionConfiguration.class);
+        assertThat(repo).isNotNull();
+        assertThat(getField(configuration, "sesMapName")).isEqualTo(MAP_NAME);
     }
 
     /** */
@@ -92,10 +96,10 @@ public class IgniteHttpSessionConfigurationTest {
     void setCustomSessionMapName() {
         registerAndRefresh(BaseConfiguration.class, CustomSessionMapNameSetConfiguration.class);
 
-        IgniteIndexedSessionRepository repository = this.context.getBean(IgniteIndexedSessionRepository.class);
-        IgniteHttpSessionConfiguration configuration = this.context.getBean(IgniteHttpSessionConfiguration.class);
-        assertThat(repository).isNotNull();
-        assertThat(ReflectionTestUtils.getField(configuration, "sessionMapName")).isEqualTo(MAP_NAME);
+        IgniteIndexedSessionRepository repo = this.ctx.getBean(IgniteIndexedSessionRepository.class);
+        IgniteHttpSessionConfiguration configuration = this.ctx.getBean(IgniteHttpSessionConfiguration.class);
+        assertThat(repo).isNotNull();
+        assertThat(getField(configuration, "sesMapName")).isEqualTo(MAP_NAME);
     }
 
     /** */
@@ -103,9 +107,9 @@ public class IgniteHttpSessionConfigurationTest {
     void setCustomMaxInactiveIntervalInSeconds() {
         registerAndRefresh(BaseConfiguration.class, CustomMaxInactiveIntervalInSecondsSetConfiguration.class);
 
-        IgniteIndexedSessionRepository repository = this.context.getBean(IgniteIndexedSessionRepository.class);
-        assertThat(repository).isNotNull();
-        assertThat(ReflectionTestUtils.getField(repository, "defaultMaxInactiveInterval"))
+        IgniteIndexedSessionRepository repo = this.ctx.getBean(IgniteIndexedSessionRepository.class);
+        assertThat(repo).isNotNull();
+        assertThat(getField(repo, "dfltMaxInactiveInterval"))
                 .isEqualTo(MAX_INACTIVE_INTERVAL_IN_SECONDS);
     }
 
@@ -114,9 +118,9 @@ public class IgniteHttpSessionConfigurationTest {
     void customMaxInactiveIntervalInSeconds() {
         registerAndRefresh(CustomMaxInactiveIntervalInSecondsConfiguration.class);
 
-        IgniteIndexedSessionRepository repository = this.context.getBean(IgniteIndexedSessionRepository.class);
-        assertThat(repository).isNotNull();
-        assertThat(ReflectionTestUtils.getField(repository, "defaultMaxInactiveInterval"))
+        IgniteIndexedSessionRepository repo = this.ctx.getBean(IgniteIndexedSessionRepository.class);
+        assertThat(repo).isNotNull();
+        assertThat(getField(repo, "dfltMaxInactiveInterval"))
                 .isEqualTo(MAX_INACTIVE_INTERVAL_IN_SECONDS);
     }
 
@@ -125,9 +129,9 @@ public class IgniteHttpSessionConfigurationTest {
     void customFlushImmediately() {
         registerAndRefresh(CustomFlushImmediatelyConfiguration.class);
 
-        IgniteIndexedSessionRepository repository = this.context.getBean(IgniteIndexedSessionRepository.class);
-        assertThat(repository).isNotNull();
-        assertThat(ReflectionTestUtils.getField(repository, "flushMode")).isEqualTo(FlushMode.IMMEDIATE);
+        IgniteIndexedSessionRepository repo = this.ctx.getBean(IgniteIndexedSessionRepository.class);
+        assertThat(repo).isNotNull();
+        assertThat(getField(repo, "flushMode")).isEqualTo(FlushMode.IMMEDIATE);
     }
 
     /** */
@@ -135,16 +139,16 @@ public class IgniteHttpSessionConfigurationTest {
     void setCustomFlushImmediately() {
         registerAndRefresh(BaseConfiguration.class, CustomFlushImmediatelySetConfiguration.class);
 
-        IgniteIndexedSessionRepository repository = this.context.getBean(IgniteIndexedSessionRepository.class);
-        assertThat(repository).isNotNull();
-        assertThat(ReflectionTestUtils.getField(repository, "flushMode")).isEqualTo(FlushMode.IMMEDIATE);
+        IgniteIndexedSessionRepository repo = this.ctx.getBean(IgniteIndexedSessionRepository.class);
+        assertThat(repo).isNotNull();
+        assertThat(getField(repo, "flushMode")).isEqualTo(FlushMode.IMMEDIATE);
     }
 
     /** */
     @Test
     void customSaveModeAnnotation() {
         registerAndRefresh(BaseConfiguration.class, CustomSaveModeExpressionAnnotationConfiguration.class);
-        assertThat(this.context.getBean(IgniteIndexedSessionRepository.class)).hasFieldOrPropertyWithValue("saveMode",
+        assertThat(this.ctx.getBean(IgniteIndexedSessionRepository.class)).hasFieldOrPropertyWithValue("saveMode",
                 SaveMode.ALWAYS);
     }
 
@@ -152,7 +156,7 @@ public class IgniteHttpSessionConfigurationTest {
     @Test
     void customSaveModeSetter() {
         registerAndRefresh(BaseConfiguration.class, CustomSaveModeExpressionSetterConfiguration.class);
-        assertThat(this.context.getBean(IgniteIndexedSessionRepository.class)).hasFieldOrPropertyWithValue("saveMode",
+        assertThat(this.ctx.getBean(IgniteIndexedSessionRepository.class)).hasFieldOrPropertyWithValue("saveMode",
                 SaveMode.ALWAYS);
     }
 
@@ -161,12 +165,12 @@ public class IgniteHttpSessionConfigurationTest {
     void qualifiedIgniteConfiguration() {
         registerAndRefresh(QualifiedIgniteConfiguration.class);
 
-        IgniteIndexedSessionRepository repository = this.context.getBean(IgniteIndexedSessionRepository.class);
-        Ignite ignite = this.context.getBean("qualifiedIgnite", Ignite.class);
-        assertThat(repository).isNotNull();
+        IgniteIndexedSessionRepository repo = this.ctx.getBean(IgniteIndexedSessionRepository.class);
+        Ignite ignite = this.ctx.getBean("qualifiedIgnite", Ignite.class);
+        assertThat(repo).isNotNull();
         assertThat(ignite).isNotNull();
-        assertThat(ReflectionTestUtils.getField(repository, "sessions"))
-                .isEqualTo(QualifiedIgniteConfiguration.qualifiedIgniteSessions);
+        assertThat(getField(getField(repo, "sessions"), "cache"))
+            .isEqualTo(QualifiedIgniteConfiguration.qualifiedIgniteSessions);
     }
 
     /** */
@@ -174,12 +178,12 @@ public class IgniteHttpSessionConfigurationTest {
     void primaryIgniteConfiguration() {
         registerAndRefresh(PrimaryIgniteConfiguration.class);
 
-        IgniteIndexedSessionRepository repository = this.context.getBean(IgniteIndexedSessionRepository.class);
-        Ignite ignite = this.context.getBean("primaryIgnite", Ignite.class);
-        assertThat(repository).isNotNull();
+        IgniteIndexedSessionRepository repo = this.ctx.getBean(IgniteIndexedSessionRepository.class);
+        Ignite ignite = this.ctx.getBean("primaryIgnite", Ignite.class);
+        assertThat(repo).isNotNull();
         assertThat(ignite).isNotNull();
-        assertThat(ReflectionTestUtils.getField(repository, "sessions"))
-                .isEqualTo(PrimaryIgniteConfiguration.primaryIgniteSessions);
+        assertThat(getField(getField(repo, "sessions"), "cache"))
+            .isEqualTo(PrimaryIgniteConfiguration.primaryIgniteSessions);
     }
 
     /** */
@@ -187,12 +191,12 @@ public class IgniteHttpSessionConfigurationTest {
     void qualifiedAndPrimaryIgniteConfiguration() {
         registerAndRefresh(QualifiedAndPrimaryIgniteConfiguration.class);
 
-        IgniteIndexedSessionRepository repository = this.context.getBean(IgniteIndexedSessionRepository.class);
-        Ignite ignite = this.context.getBean("qualifiedIgnite", Ignite.class);
-        assertThat(repository).isNotNull();
+        IgniteIndexedSessionRepository repo = this.ctx.getBean(IgniteIndexedSessionRepository.class);
+        Ignite ignite = this.ctx.getBean("qualifiedIgnite", Ignite.class);
+        assertThat(repo).isNotNull();
         assertThat(ignite).isNotNull();
-        assertThat(ReflectionTestUtils.getField(repository, "sessions"))
-                .isEqualTo(QualifiedAndPrimaryIgniteConfiguration.qualifiedIgniteSessions);
+        assertThat(getField(getField(repo, "sessions"), "cache"))
+            .isEqualTo(QualifiedAndPrimaryIgniteConfiguration.qualifiedIgniteSessions);
     }
 
     /** */
@@ -200,72 +204,67 @@ public class IgniteHttpSessionConfigurationTest {
     void namedIgniteConfiguration() {
         registerAndRefresh(NamedIgniteConfiguration.class);
 
-        IgniteIndexedSessionRepository repository = this.context.getBean(IgniteIndexedSessionRepository.class);
-        Ignite ignite = this.context.getBean("ignite", Ignite.class);
-        assertThat(repository).isNotNull();
+        IgniteIndexedSessionRepository repo = this.ctx.getBean(IgniteIndexedSessionRepository.class);
+        Ignite ignite = this.ctx.getBean("ignite", Ignite.class);
+        assertThat(repo).isNotNull();
         assertThat(ignite).isNotNull();
-        assertThat(ReflectionTestUtils.getField(repository, "sessions"))
-                .isEqualTo(NamedIgniteConfiguration.igniteSessions);
+        assertThat(getField(getField(repo, "sessions"), "cache"))
+            .isEqualTo(NamedIgniteConfiguration.igniteSessions);
     }
 
     /** */
     @Test
     void multipleIgniteConfiguration() {
         assertThatExceptionOfType(BeanCreationException.class)
-                .isThrownBy(() -> registerAndRefresh(MultipleIgniteConfiguration.class))
-                .withMessageContaining("expected single matching bean but found 2");
+            .isThrownBy(() -> registerAndRefresh(MultipleIgniteConfiguration.class))
+            .withMessageContaining("expected single matching bean but found 2");
     }
 
     /** */
     @Test
     void customIndexResolverConfiguration() {
         registerAndRefresh(CustomIndexResolverConfiguration.class);
-        IgniteIndexedSessionRepository repository = this.context.getBean(IgniteIndexedSessionRepository.class);
+        IgniteIndexedSessionRepository repo = this.ctx.getBean(IgniteIndexedSessionRepository.class);
         @SuppressWarnings("unchecked")
-        IndexResolver<Session> indexResolver = this.context.getBean(IndexResolver.class);
-        assertThat(repository).isNotNull();
-        assertThat(indexResolver).isNotNull();
-        assertThat(repository).hasFieldOrPropertyWithValue("indexResolver", indexResolver);
+        IndexResolver<Session> idxResolver = this.ctx.getBean(IndexResolver.class);
+        assertThat(repo).isNotNull();
+        assertThat(idxResolver).isNotNull();
+        assertThat(repo).hasFieldOrPropertyWithValue("idxResolver", idxResolver);
     }
 
     /** */
     @Test
     void sessionRepositoryCustomizer() {
         registerAndRefresh(SessionRepositoryCustomizerConfiguration.class);
-        IgniteIndexedSessionRepository sessionRepository = this.context.getBean(IgniteIndexedSessionRepository.class);
-        assertThat(sessionRepository).hasFieldOrPropertyWithValue("defaultMaxInactiveInterval",
+        IgniteIndexedSessionRepository sesRepo = this.ctx.getBean(IgniteIndexedSessionRepository.class);
+        assertThat(sesRepo).hasFieldOrPropertyWithValue("dfltMaxInactiveInterval",
                 MAX_INACTIVE_INTERVAL_IN_SECONDS);
     }
 
     /** */
     private void registerAndRefresh(Class<?>... annotatedClasses) {
-        this.context.register(annotatedClasses);
-        this.context.refresh();
+        this.ctx.register(annotatedClasses);
+        this.ctx.refresh();
     }
 
     /** */
     @Configuration
     @EnableIgniteHttpSession
     static class NoIgniteConfiguration {
-
+        // No-op.
     }
 
     /** */
     static class BaseConfiguration {
-
         /** */
         @SuppressWarnings("unchecked")
-        static IgniteCache<Object, Object> defaultIgniteSessions = mock(IgniteCache.class);
+        static IgniteCache<Object, Object> dfltIgniteSessions = mock(IgniteCache.class);
 
         /** */
         @Bean
         Ignite defaultIgnite() {
-            Ignite ignite = mock(Ignite.class);
-            given(ignite.getOrCreateCache(ArgumentMatchers.<CacheConfiguration<Object, Object>>any()))
-                    .willReturn(defaultIgniteSessions);
-            return ignite;
+            return mockedIgnite(dfltIgniteSessions);
         }
-
     }
 
     /** */
@@ -346,7 +345,6 @@ public class IgniteHttpSessionConfigurationTest {
     @Configuration
     @EnableIgniteHttpSession
     static class QualifiedIgniteConfiguration extends BaseConfiguration {
-
         /** */
         @SuppressWarnings("unchecked")
         static IgniteCache<Object, Object> qualifiedIgniteSessions = mock(IgniteCache.class);
@@ -355,19 +353,14 @@ public class IgniteHttpSessionConfigurationTest {
         @Bean
         @SpringSessionIgnite
         Ignite qualifiedIgnite() {
-            Ignite ignite = mock(Ignite.class);
-            given(ignite.getOrCreateCache(ArgumentMatchers.<CacheConfiguration<Object, Object>>any()))
-                    .willReturn(qualifiedIgniteSessions);
-            return ignite;
+            return mockedIgnite(qualifiedIgniteSessions);
         }
-
     }
 
     /** */
     @Configuration
     @EnableIgniteHttpSession
     static class PrimaryIgniteConfiguration extends BaseConfiguration {
-
         /** */
         @SuppressWarnings("unchecked")
         static IgniteCache<Object, Object> primaryIgniteSessions = mock(IgniteCache.class);
@@ -376,19 +369,14 @@ public class IgniteHttpSessionConfigurationTest {
         @Bean
         @Primary
         Ignite primaryIgnite() {
-            Ignite ignite = mock(Ignite.class);
-            given(ignite.getOrCreateCache(ArgumentMatchers.<CacheConfiguration<Object, Object>>any()))
-                    .willReturn(primaryIgniteSessions);
-            return ignite;
+            return mockedIgnite(primaryIgniteSessions);
         }
-
     }
 
     /** */
     @Configuration
     @EnableIgniteHttpSession
     static class QualifiedAndPrimaryIgniteConfiguration extends BaseConfiguration {
-
         /** */
         @SuppressWarnings("unchecked")
         static IgniteCache<Object, Object> qualifiedIgniteSessions = mock(IgniteCache.class);
@@ -401,29 +389,21 @@ public class IgniteHttpSessionConfigurationTest {
         @Bean
         @SpringSessionIgnite
         Ignite qualifiedIgnite() {
-            Ignite ignite = mock(Ignite.class);
-            given(ignite.getOrCreateCache(ArgumentMatchers.<CacheConfiguration<Object, Object>>any()))
-                    .willReturn(qualifiedIgniteSessions);
-            return ignite;
+            return mockedIgnite(qualifiedIgniteSessions);
         }
 
         /** */
         @Bean
         @Primary
         Ignite primaryIgnite() {
-            Ignite ignite = mock(Ignite.class);
-            given(ignite.getOrCreateCache(ArgumentMatchers.<CacheConfiguration<Object, Object>>any()))
-                    .willReturn(primaryIgniteSessions);
-            return ignite;
+            return mockedIgnite(primaryIgniteSessions);
         }
-
     }
 
     /** */
     @Configuration
     @EnableIgniteHttpSession
     static class NamedIgniteConfiguration extends BaseConfiguration {
-
         /** */
         @SuppressWarnings("unchecked")
         static IgniteCache<Object, Object> igniteSessions = mock(IgniteCache.class);
@@ -431,19 +411,14 @@ public class IgniteHttpSessionConfigurationTest {
         /** */
         @Bean
         Ignite ignite() {
-            Ignite ignite = mock(Ignite.class);
-            given(ignite.getOrCreateCache(ArgumentMatchers.<CacheConfiguration<Object, Object>>any()))
-                    .willReturn(igniteSessions);
-            return ignite;
+            return mockedIgnite(igniteSessions);
         }
-
     }
 
     /** */
     @Configuration
     @EnableIgniteHttpSession
     static class MultipleIgniteConfiguration extends BaseConfiguration {
-
         /** */
         @SuppressWarnings("unchecked")
         static IgniteCache<Object, Object> secondaryIgniteSessions = mock(IgniteCache.class);
@@ -451,31 +426,24 @@ public class IgniteHttpSessionConfigurationTest {
         /** */
         @Bean
         Ignite secondaryIgnite() {
-            Ignite ignite = mock(Ignite.class);
-            given(ignite.getOrCreateCache(ArgumentMatchers.<CacheConfiguration<Object, Object>>any()))
-                    .willReturn(secondaryIgniteSessions);
-            return ignite;
+            return mockedIgnite(secondaryIgniteSessions);
         }
-
     }
 
     /** */
     @EnableIgniteHttpSession
     static class CustomIndexResolverConfiguration extends BaseConfiguration {
-
         /** */
         @Bean
         @SuppressWarnings("unchecked")
         IndexResolver<Session> indexResolver() {
             return mock(IndexResolver.class);
         }
-
     }
 
     /** */
     @EnableIgniteHttpSession
     static class SessionRepositoryCustomizerConfiguration extends BaseConfiguration {
-
         /** */
         @Bean
         @Order(0)
@@ -490,5 +458,20 @@ public class IgniteHttpSessionConfigurationTest {
             return (sessionRepository) -> sessionRepository
                     .setDefaultMaxInactiveInterval(MAX_INACTIVE_INTERVAL_IN_SECONDS);
         }
+    }
+
+    /**
+     * @param cache Cache instance.
+     */
+    private static Ignite mockedIgnite(IgniteCache<Object, Object> cache) {
+        IgniteEx ignite = mock(IgniteEx.class);
+        GridKernalContext ctx = mock(GridKernalContext.class);
+        GridQueryProcessor qryProc = mock(GridQueryProcessor.class);
+        
+        given(qryProc.querySqlFields(any(SqlFieldsQuery.class), anyBoolean())).willReturn(mock(FieldsQueryCursor.class));
+        given(ctx.query()).willReturn(qryProc);
+        given(ignite.context()).willReturn(ctx);
+        given(ignite.cache(any())).willReturn(cache);
+        return ignite;
     }
 }

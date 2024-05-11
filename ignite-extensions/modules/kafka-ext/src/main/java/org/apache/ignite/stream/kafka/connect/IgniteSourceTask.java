@@ -277,9 +277,9 @@ public class IgniteSourceTask extends SourceTask {
 
         /** {@inheritDoc} */
         @Override public boolean apply(CacheEvent evt) {
-            Affinity<Object> affinity = ignite.affinity(cacheName);
+            Affinity<Object> aff = ignite.affinity(cacheName);
 
-            if (affinity.isPrimary(ignite.cluster().localNode(), evt.key())) {
+            if (aff.isPrimary(ignite.cluster().localNode(), evt.key())) {
                 // Process this event. Ignored on backups.
                 if (filter != null && filter.apply(evt))
                     return false;

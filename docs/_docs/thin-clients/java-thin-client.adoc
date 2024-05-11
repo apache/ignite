@@ -12,7 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-= Java Thin Client
+= Java Thin Client [[java_thin_client]]
 
 :sourceCodeFile: {javaCodeDir}/JavaThinClient.java
 == Overview
@@ -75,7 +75,7 @@ include::{sourceCodeFile}[tag=connect-to-many-nodes,indent=0]
 
 Note that the code above provides a failover mechanism in case of server node failures. Refer to the <<Handling Node Failures>> section for more information.
 
-== Partition Awareness
+== Partition Awareness [partition_awareness]
 
 include::includes/partition-awareness.adoc[]
 
@@ -115,6 +115,11 @@ The code snippet shows how an example implementation might look like if you want
 * Configure client with `ClientConfiguration.setAddressFinder(finder)`.
 
 Also, you can check a link:https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/client/ClientKubernetesPutGetExample.java#L50[real example] of the interface implementation. `ThinClientKubernetesAddressFinder` is created to handle scalable Kubernetes environment.
+
+[NOTE]
+====
+Partition Awareness also enables link:../services/services.adoc#service_awareness[Service Awareness]
+====
 
 == Using Key-Value API
 

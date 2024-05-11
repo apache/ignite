@@ -34,6 +34,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
@@ -60,6 +61,9 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
 
     /** Projection filters. */
     private final ProjectionFilters projectionFilters;
+
+    /** Client channel from which the cluster group nodes data was previously received. */
+    private ClientChannel topDataSrc;
 
     /** Cached topology version. */
     private long cachedTopVer;
@@ -303,7 +307,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
                         throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.CLUSTER_GROUPS);
 
                     try (BinaryRawWriterEx writer = utils.createBinaryWriter(req.out())) {
-                        writer.writeLong(cachedTopVer);
+                        writer.writeLong(topDataSrc == null || topDataSrc.closed() ? 0 : cachedTopVer);
 
                         projectionFilters.write(writer);
                     }
@@ -326,6 +330,8 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
                     cachedTopVer = topVer;
 
                     cachedNodeIds = nodeIds;
+
+                    topDataSrc = res.clientChannel();
 
                     return new ArrayList<>(nodeIds);
                 });
@@ -438,8 +444,14 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
 
         Map<String, Object> attrs = new HashMap<>(attrCnt);
 
-        for (int i = 0; i < attrCnt; i++)
-            attrs.put(reader.readString(), reader.readObjectDetached());
+        for (int i = 0; i < attrCnt; i++) {
+            try {
+                attrs.put(reader.readString(), reader.readObjectDetached());
+            }
+            catch (BinaryObjectException ignored) {
+                // Skipping deserialization issues related to the incompatible classes from different versions.
+            }
+        }
 
         return attrs;
     }

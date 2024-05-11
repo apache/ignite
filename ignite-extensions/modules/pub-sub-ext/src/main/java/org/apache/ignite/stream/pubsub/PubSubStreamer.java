@@ -227,27 +227,27 @@ public class PubSubStreamer<K, V> extends StreamAdapter<PubsubMessage, K, V> {
         @Override public Void call() throws Exception {
             try {
                 while (!stopped) {
-                    PullRequest pullRequest =
+                    PullRequest pullReq =
                             PullRequest.newBuilder()
                                        .setMaxMessages(maxMessages)
                                        .setReturnImmediately(returnImmediately) // return immediately if messages are not available
                                        .setSubscription(subscriptionName)
                                        .build();
 
-                    PullResponse pullResponse = subscriberStub.pullCallable().call(pullRequest);
+                    PullResponse pullRes = subscriberStub.pullCallable().call(pullReq);
 
                     List<String> ackIds = new ArrayList<>();
-                    for (ReceivedMessage message : pullResponse.getReceivedMessagesList()) {
-                        addMessage(message.getMessage());
-                        ackIds.add(message.getAckId());
+                    for (ReceivedMessage msg : pullRes.getReceivedMessagesList()) {
+                        addMessage(msg.getMessage());
+                        ackIds.add(msg.getAckId());
                     }
 
-                    AcknowledgeRequest acknowledgeRequest = AcknowledgeRequest.newBuilder()
+                    AcknowledgeRequest acknowledgeReq = AcknowledgeRequest.newBuilder()
                                                                               .setSubscription(subscriptionName)
                                                                               .addAllAckIds(ackIds)
                                                                               .build();
 
-                    subscriberStub.acknowledgeCallable().call(acknowledgeRequest);
+                    subscriberStub.acknowledgeCallable().call(acknowledgeReq);
                 }
             }
             finally {

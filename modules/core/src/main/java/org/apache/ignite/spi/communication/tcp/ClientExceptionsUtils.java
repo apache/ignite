@@ -48,10 +48,10 @@ public class ClientExceptionsUtils {
      *     was made while only inverse connections are allowed.
      */
     public static boolean isAttemptToEstablishDirectConnectionWhenOnlyInverseIsAllowed(Throwable t) {
-        IgniteSpiException igniteSpiException = X.cause(t, IgniteSpiException.class);
+        IgniteSpiException igniteSpiEx = X.cause(t, IgniteSpiException.class);
 
-        return igniteSpiException != null && igniteSpiException.getMessage() != null
-            && igniteSpiException.getMessage().contains(
+        return igniteSpiEx != null && igniteSpiEx.getMessage() != null
+            && igniteSpiEx.getMessage().contains(
                 "because it is started in 'forceClientToServerConnections' mode; inverse connection will be requested");
     }
 }

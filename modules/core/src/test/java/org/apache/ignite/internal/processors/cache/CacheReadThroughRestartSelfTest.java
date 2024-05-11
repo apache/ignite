@@ -24,11 +24,9 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -38,12 +36,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Test for read through store.
  */
 public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
-    /** */
-    @Before
-    public void beforeCacheReadThroughRestartSelfTest() {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-    }
-
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 2;
@@ -111,14 +103,12 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
 
         Ignite ignite = grid(1);
 
-        cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         for (TransactionConcurrency txConcurrency : TransactionConcurrency.values()) {
             for (TransactionIsolation txIsolation : TransactionIsolation.values()) {
-                if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(txConcurrency, txIsolation))
-                    continue;
-
-                try (Transaction tx = ignite.transactions().txStart(txConcurrency, txIsolation, 100000, 1000)) {
+                try (Transaction tx = cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ?
+                    ignite.transactions().txStart(txConcurrency, txIsolation, 100000, 1000) : null) {
                     for (int k = 0; k < 1000; k++) {
                         String key = "key" + k;
 
@@ -132,7 +122,8 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
                         }
                     }
 
-                    tx.commit();
+                    if (tx != null)
+                        tx.commit();
                 }
             }
         }

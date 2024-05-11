@@ -89,4 +89,28 @@ public interface IgnitePerformanceStatisticsHandler extends PerformanceStatistic
     @Override default void pagesWriteThrottle(UUID nodeId, long endTime, long duration) {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override default void queryRows(
+        UUID nodeId,
+        GridCacheQueryType type,
+        UUID qryNodeId,
+        long id,
+        String action,
+        long rows
+    ) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override default void queryProperty(
+        UUID nodeId,
+        GridCacheQueryType type,
+        UUID qryNodeId,
+        long id,
+        String name,
+        String val
+    ) {
+        // No-op.
+    }
 }

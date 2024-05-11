@@ -35,6 +35,7 @@ import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -49,12 +50,19 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -258,6 +266,8 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        checkNoLocalUpdatesOnPassiveCluster();
+
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -319,6 +329,8 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
     /** */
     public void doTestActivePassiveSqlDataReplicationComplexKey(String name, BiConsumer<IgniteEx, Integer> addData) throws Exception {
+        String backupsStr = mode == PARTITIONED ? "BACKUPS=" + backups + "," : "";
+
         String createTbl = "CREATE TABLE IF NOT EXISTS " + name + "(" +
             "    ID INT NOT NULL, " +
             "    SUBID VARCHAR NOT NULL, " +
@@ -328,7 +340,9 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             "    WITH \"CACHE_NAME=" + name + "," +
             "KEY_TYPE=" + TestKey.class.getName() + "," +
             "VALUE_TYPE=" + TestVal.class.getName() + "," +
-            "ATOMICITY=" + atomicity.name() + "\";";
+            "ATOMICITY=" + atomicity.name() + "," +
+            backupsStr +
+            "TEMPLATE=" + mode.name() + "\";";
 
         executeSql(srcCluster[0], createTbl);
         executeSql(destCluster[0], createTbl);
@@ -372,7 +386,15 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     /** Active/Passive mode means changes made only in one cluster. */
     @Test
     public void testActivePassiveSqlDataReplication() throws Exception {
-        String createTbl = "CREATE TABLE T1(ID BIGINT PRIMARY KEY, NAME VARCHAR) WITH \"CACHE_NAME=T1,VALUE_TYPE=T1Type\"";
+        String backupsStr = mode == PARTITIONED ? "BACKUPS=" + backups + "," : "";
+
+        String createTbl = "CREATE TABLE T1(ID BIGINT PRIMARY KEY, NAME VARCHAR) WITH \"" +
+            "CACHE_NAME=T1," +
+            "VALUE_TYPE=T1Type," +
+            "ATOMICITY=" + atomicity.name() + "," +
+            backupsStr +
+            "TEMPLATE=" + mode.name() + "\";";
+
         String insertQry = "INSERT INTO T1 VALUES(?, ?)";
         String deleteQry = "DELETE FROM T1";
 
@@ -446,7 +468,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     /** Test that destination cluster applies expiration policy on received entries. */
     @Test
     public void testWithExpiryPolicy() throws Exception {
-        Factory<? extends ExpiryPolicy> factory = () -> new CreatedExpiryPolicy(new Duration(TimeUnit.SECONDS, 10));
+        Factory<? extends ExpiryPolicy> factory = () -> new CreatedExpiryPolicy(new Duration(TimeUnit.SECONDS, 30));
 
         IgniteCache<Integer, ConflictResolvableTestData> srcCache = createCache(srcCluster[0], ACTIVE_PASSIVE_CACHE, factory);
         IgniteCache<Integer, ConflictResolvableTestData> destCache = createCache(destCluster[0], ACTIVE_PASSIVE_CACHE, factory);
@@ -465,7 +487,13 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             assertTrue(waitForCondition(() -> !srcCache.containsKey(0), getTestTimeout()));
 
             log.warning(">>>>>> Waiting for removing in destination cache");
-            assertTrue(waitForCondition(() -> !destCache.containsKey(0), 20_000));
+
+            Duration ttl = factory.create().getExpiryForCreation();
+
+            assertTrue(waitForCondition(
+                () -> !destCache.containsKey(0),
+                2 * TimeUnit.MILLISECONDS.convert(ttl.getDurationAmount(), ttl.getTimeUnit())
+            ));
         }
         finally {
             for (IgniteInternalFuture<?> fut : futs)
@@ -555,6 +583,34 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         return node.context().query().querySqlFields(new SqlFieldsQuery(sqlText).setArgs(args), true).getAll();
     }
 
+    /** */
+    private void checkNoLocalUpdatesOnPassiveCluster() throws IgniteCheckedException {
+        if (srcCluster[0].cache(ACTIVE_PASSIVE_CACHE) == null)
+            return;
+
+        assertTrue(hasLocalUpdates(srcCluster));
+        assertFalse(hasLocalUpdates(destCluster));
+    }
+
+    /** @return {@code True} if cluster has local updates. */
+    private boolean hasLocalUpdates(IgniteEx[] cluster) throws IgniteCheckedException {
+        for (IgniteEx srv : cluster) {
+            WALIterator iter = srv.context().cache().context().wal().replay(null,
+                (type, ptr) -> type == WALRecord.RecordType.DATA_RECORD_V2);
+
+            for (IgniteBiTuple<WALPointer, WALRecord> t : iter) {
+                Collection<DataEntry> locUpdates = F.view(((DataRecord)t.get2()).writeEntries(),
+                    e -> e.cacheId() == CU.cacheId(ACTIVE_PASSIVE_CACHE),
+                    e -> !(e.writeVersion() instanceof GridCacheVersionEx));
+
+                if (!locUpdates.isEmpty())
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
     /** @return Destination cluster host addresses. */
     protected String[] hostAddresses(IgniteEx[] dest) {
         String[] addrs = new String[dest.length];
@@ -578,7 +634,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     protected abstract void checkConsumerMetrics(Function<String, Long> longMetric);
 
     /** */
-    protected void checkMetrics() {
+    protected void checkMetrics() throws IgniteInterruptedCheckedException {
         for (int i = 0; i < cdcs.size(); i++) {
             IgniteConfiguration cfg = getFieldValue(cdcs.get(i), "igniteCfg");
 
@@ -611,14 +667,15 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkMetrics(Function<String, Long> longMetric, Function<String, String> strMetric) {
+    private void checkMetrics(Function<String, Long> longMetric, Function<String, String> strMetric)
+        throws IgniteInterruptedCheckedException {
         long committedSegIdx = longMetric.apply(COMMITTED_SEG_IDX);
         long curSegIdx = longMetric.apply(CUR_SEG_IDX);
 
         assertTrue(committedSegIdx <= curSegIdx);
 
         assertTrue(longMetric.apply(COMMITTED_SEG_OFFSET) >= 0);
-        assertTrue(longMetric.apply(LAST_SEG_CONSUMPTION_TIME) > 0);
+        assertTrue(waitForCondition(() -> longMetric.apply(LAST_SEG_CONSUMPTION_TIME) > 0, getTestTimeout()));
 
         for (String m : new String[] {BINARY_META_DIR, MARSHALLER_DIR, CDC_DIR})
             assertTrue(new File(strMetric.apply(m)).exists());

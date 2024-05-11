@@ -124,18 +124,18 @@ public class ServiceMiddlewareExample {
 
         /** {@inheritDoc} */
         @Override public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> next) throws Exception {
-            String serviceName = ctx.name();
+            String srvcName = ctx.name();
             ServiceCallContext callCtx = ctx.currentCallContext();
             String user = callCtx == null ? null : callCtx.attribute("user");
 
-            recordEvent(user, serviceName, mtd, "start");
+            recordEvent(user, srvcName, mtd, "start");
 
             try {
                 // Execute service method.
                 Object res = next.call();
 
                 // Record finish event after execution of the service method.
-                recordEvent(user, serviceName, mtd, "result " + res);
+                recordEvent(user, srvcName, mtd, "result " + res);
 
                 return res;
             }
@@ -143,7 +143,7 @@ public class ServiceMiddlewareExample {
                 log.error("Intercepted error", e);
 
                 // Record error.
-                recordEvent(user, serviceName, mtd, "error: " + e.getMessage());
+                recordEvent(user, srvcName, mtd, "error: " + e.getMessage());
 
                 // Re-throw exception to initiator.
                 throw e;

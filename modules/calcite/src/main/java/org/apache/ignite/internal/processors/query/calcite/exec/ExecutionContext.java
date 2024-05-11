@@ -30,7 +30,6 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.ExecutionNodeMemoryTracker;
@@ -48,6 +47,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.RunnableX;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.checkRange;
@@ -102,6 +102,12 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     private final IoTracker ioTracker;
 
     /** */
+    private final long timeout;
+
+    /** */
+    private final long startTs;
+
+    /** */
     private Object[] correlations = new Object[16];
 
     /**
@@ -122,6 +128,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         RowHandler<Row> handler,
         MemoryTracker qryMemoryTracker,
         IoTracker ioTracker,
+        long timeout,
         Map<String, Object> params
     ) {
         super(qctx);
@@ -136,6 +143,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         this.qryMemoryTracker = qryMemoryTracker;
         this.ioTracker = ioTracker;
         this.params = params;
+        this.timeout = timeout;
+
+        startTs = U.currentTimeMillis();
 
         baseDataContext = new BaseDataContext(qctx.typeFactory());
 
@@ -183,13 +193,6 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
      */
     public boolean keepBinary() {
         return true; // TODO
-    }
-
-    /**
-     * @return MVCC snapshot.
-     */
-    public MvccSnapshot mvccSnapshot() {
-        return null; // TODO
     }
 
     /**
@@ -325,6 +328,11 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     }
 
     /** */
+    public boolean isTimedOut() {
+        return timeout > 0 && U.currentTimeMillis() - startTs >= timeout;
+    }
+
+    /** */
     public Object unspecifiedValue() {
         return UNSPECIFIED_VALUE;
     }
@@ -354,9 +362,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         if (o == null || getClass() != o.getClass())
             return false;
 
-        ExecutionContext<?> context = (ExecutionContext<?>)o;
+        ExecutionContext<?> ctx = (ExecutionContext<?>)o;
 
-        return qryId.equals(context.qryId) && fragmentDesc.fragmentId() == context.fragmentDesc.fragmentId();
+        return qryId.equals(ctx.qryId) && fragmentDesc.fragmentId() == ctx.fragmentDesc.fragmentId();
     }
 
     /** {@inheritDoc} */

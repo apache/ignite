@@ -228,7 +228,7 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
                     IgniteCache<Object, Object> cache = jcache();
 
                     ClusterNode locNode = testedGrid().cluster().localNode();
-                    Affinity<Object> affinity = testedGrid().affinity(cacheName());
+                    Affinity<Object> aff = testedGrid().affinity(cacheName());
 
                     Map<Object, Object> map = new HashMap<>();
 
@@ -238,7 +238,7 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
 
                         cache.put(key, val);
 
-                        if (!isClientMode() && (cacheMode() == REPLICATED || affinity.isPrimary(locNode, key)))
+                        if (!isClientMode() && (cacheMode() == REPLICATED || aff.isPrimary(locNode, key)))
                             map.put(key, val);
                     }
 
@@ -312,7 +312,7 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
             @Override public void run() throws Exception {
                 IgniteCache<Object, Object> cache = jcache();
 
-                Affinity<Object> affinity = testedGrid().affinity(cacheName());
+                Affinity<Object> aff = testedGrid().affinity(cacheName());
 
                 Map<Integer, Map<Object, Object>> partMap = new HashMap<>();
 
@@ -332,7 +332,7 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
                     cache.put(key, val);
 
                     if (filter.apply(key, val)) {
-                        int part = affinity.partition(key);
+                        int part = aff.partition(key);
 
                         Map<Object, Object> map = partMap.get(part);
 
@@ -343,7 +343,7 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
                     }
                 }
 
-                for (int part = 0; part < affinity.partitions(); part++) {
+                for (int part = 0; part < aff.partitions(); part++) {
                     try {
                         Map<Object, Object> expMap = partMap.get(part);
 

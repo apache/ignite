@@ -62,6 +62,9 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     /** Cache plugin provider. */
     private CachePluginProvider<?> provider;
 
+    /** Custom conflict resolver. */
+    private CacheVersionConflictResolver resolver;
+
     /** Log. */
     private IgniteLogger log;
 
@@ -88,7 +91,7 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     /** {@inheritDoc} */
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
         this.log = ctx.log(CacheVersionConflictResolverPluginProvider.class);
-        this.provider = new CacheVersionConflictResolverCachePluginProvider<>(conflictResolveField, clusterId);
+        this.provider = new CacheVersionConflictResolverCachePluginProvider<>(conflictResolveField, clusterId, resolver);
     }
 
     /** {@inheritDoc} */
@@ -134,6 +137,11 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     /** @param name Plugin name. */
     public void setName(String name) {
         this.name = name;
+    }
+
+    /** @param resolver Conflict resolver. */
+    public void setConflictResolver(CacheVersionConflictResolver resolver) {
+        this.resolver = resolver;
     }
 
     /** {@inheritDoc} */

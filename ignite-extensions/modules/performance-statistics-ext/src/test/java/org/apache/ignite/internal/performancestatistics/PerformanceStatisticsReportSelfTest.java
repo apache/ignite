@@ -19,21 +19,34 @@ package org.apache.ignite.internal.performancestatistics;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.waitForStatisticsEnabled;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -53,8 +66,12 @@ public class PerformanceStatisticsReportSelfTest {
         ) {
             client.context().performanceStatistics().startCollectStatistics();
 
-            IgniteCache<Object, Object> cache = client.createCache("cache");
+            IgniteCache<Object, Object> cache = client.createCache(new CacheConfiguration<>("cache")
+                .setQueryEntities(F.asList(new QueryEntity()
+                    .setKeyType(Integer.class.getName())
+                    .setValueType(Integer.class.getName()))));
 
+            cache.put(0, 0);
             cache.put(1, 1);
             cache.get(1);
             cache.remove(1);
@@ -67,6 +84,8 @@ public class PerformanceStatisticsReportSelfTest {
             client.compute().run(() -> {
                 // No-op.
             });
+
+            assertThrowsWithCause(() -> client.compute().execute(new TaskWithoutJobs(), null), IgniteException.class);
 
             IgniteCache<Object, Object> txCache = client.createCache(new CacheConfiguration<>("txCache")
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
@@ -85,7 +104,11 @@ public class PerformanceStatisticsReportSelfTest {
 
             cache.query(new ScanQuery<>((key, val) -> true)).getAll();
 
-            cache.query(new SqlFieldsQuery("select * from sys.tables")).getAll();
+            cache.query(new SqlFieldsQuery("select * from sys.tables").setEnforceJoinOrder(true)).getAll();
+
+            cache.query(new SqlFieldsQuery("select sum(_VAL) from \"cache\".Integer")).getAll();
+
+            cache.query(new IndexQuery<>(Integer.class).setCriteria(gt("_KEY", 0))).getAll();
 
             client.context().performanceStatistics().stopCollectStatistics();
 
@@ -103,16 +126,32 @@ public class PerformanceStatisticsReportSelfTest {
 
             File report = reportDir[0];
 
-            File index = new File(report.getAbsolutePath() + File.separatorChar + "index.html");
+            File idx = new File(report.getAbsolutePath() + File.separatorChar + "index.html");
             File dataDir = new File(report.getAbsolutePath() + File.separatorChar + "data");
             File dataJs = new File(dataDir.getAbsolutePath() + File.separatorChar + "data.json.js");
 
-            assertTrue(index.exists());
+            assertTrue(idx.exists());
             assertTrue(dataDir.exists());
             assertTrue(dataJs.exists());
         }
         finally {
             U.delete(new File(U.defaultWorkDirectory()));
+        }
+    }
+
+    /** */
+    private static class TaskWithoutJobs extends ComputeTaskAdapter<Object, Object> {
+        /** {@inheritDoc} */
+        @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
+            List subgrid,
+            @Nullable Object arg
+        ) throws IgniteException {
+            return Collections.emptyMap();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object reduce(List list) throws IgniteException {
+            return null;
         }
     }
 }

@@ -69,9 +69,9 @@ public class TestTransformers {
         return new MessageTransformer<ObjectMessage, String, String>() {
             @SuppressWarnings("unchecked")
             @Override public Map<String, String> apply(ObjectMessage message) {
-                Object object;
+                Object obj;
                 try {
-                    object = message.getObject();
+                    obj = message.getObject();
                 }
                 catch (JMSException e) {
                     e.printStackTrace();
@@ -79,13 +79,13 @@ public class TestTransformers {
                 }
 
                 final Map<String, String> answer = new HashMap<>();
-                if (object instanceof Collection) {
-                    for (TestObject to : (Collection<TestObject>)object)
+                if (obj instanceof Collection) {
+                    for (TestObject to : (Collection<TestObject>)obj)
                         answer.put(to.getKey(), to.getValue());
 
                 }
-                else if (object instanceof TestObject) {
-                    TestObject to = (TestObject)object;
+                else if (obj instanceof TestObject) {
+                    TestObject to = (TestObject)obj;
                     answer.put(to.getKey(), to.getValue());
                 }
                 return answer;

@@ -54,7 +54,7 @@ public class FunctionsManager {
     /**
      *
      */
-    public FunctionsManager(DistributedSqlConfiguration distSqlCfg) {
+    public FunctionsManager(DistributedIndexingConfiguration distSqlCfg) {
         assert Objects.nonNull(funcs);
         assert Objects.nonNull(origFuncs);
         distSqlCfg.listenDisabledFunctions(this::updateDisabledFunctions);
@@ -74,7 +74,7 @@ public class FunctionsManager {
         if (newDisabledFuncs != null)
             removeFunctions(newDisabledFuncs);
         else
-            removeFunctions(DistributedSqlConfiguration.DFLT_DISABLED_FUNCS);
+            removeFunctions(DistributedIndexingConfiguration.DFLT_DISABLED_FUNCS);
     }
 
     /**

@@ -21,7 +21,7 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManagerAbstractSelfTest;
-import org.apache.ignite.testsuites.IgniteS3TestSuite;
+import org.apache.ignite.util.IgniteS3TestConfiguration;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -37,8 +37,8 @@ public class S3CheckpointManagerSelfTest extends GridCheckpointManagerAbstractSe
 
         S3CheckpointSpi spi = new S3CheckpointSpi();
 
-        AWSCredentials cred = new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
-            IgniteS3TestSuite.getSecretKey());
+        AWSCredentials cred = new BasicAWSCredentials(IgniteS3TestConfiguration.getAccessKey(),
+            IgniteS3TestConfiguration.getSecretKey());
 
         spi.setAwsCredentials(cred);
 

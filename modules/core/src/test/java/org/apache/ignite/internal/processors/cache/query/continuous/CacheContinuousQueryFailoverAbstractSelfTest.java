@@ -87,7 +87,6 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
@@ -103,8 +102,6 @@ import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionRollbackException;
-import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -779,14 +776,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             boolean updated = false;
 
             while (!updated) {
-                try {
-                    clnCache.put(key, val);
+                clnCache.put(key, val);
 
-                    updated = true;
-                }
-                catch (Exception ignore) {
-                    assertEquals(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, atomicityMode());
-                }
+                updated = true;
             }
 
             filtered = !filtered;
@@ -1211,8 +1203,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 if (dup) {
                     for (List<CacheEntryEvent<?, ?>> e : lsnr.evts.values()) {
                         if (!e.isEmpty()) {
-                            for (CacheEntryEvent<?, ?> event : e)
-                                log.error("Got duplicate event: " + event);
+                            for (CacheEntryEvent<?, ?> evt : e)
+                                log.error("Got duplicate event: " + evt);
                         }
                     }
                 }
@@ -1704,7 +1696,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
             boolean filtered = false;
 
-            boolean processorPut = false;
+            boolean procPut = false;
 
             while (System.currentTimeMillis() < stopTime) {
                 Integer key = rnd.nextInt(PARTS);
@@ -1759,29 +1751,23 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 boolean updated = false;
 
                 while (!updated) {
-                    try {
-                        if (processorPut && prevVal != null) {
-                            qryClnCache.invoke(key, new CacheEntryProcessor<Object, Object, Void>() {
-                                @Override public Void process(MutableEntry<Object, Object> entry,
-                                    Object... arguments) throws EntryProcessorException {
-                                    entry.setValue(arguments[0]);
+                    if (procPut && prevVal != null) {
+                        qryClnCache.invoke(key, new CacheEntryProcessor<Object, Object, Void>() {
+                            @Override public Void process(MutableEntry<Object, Object> entry,
+                                Object... arguments) throws EntryProcessorException {
+                                entry.setValue(arguments[0]);
 
-                                    return null;
-                                }
-                            }, val);
-                        }
-                        else
-                            qryClnCache.put(key, val);
+                                return null;
+                            }
+                        }, val);
+                    }
+                    else
+                        qryClnCache.put(key, val);
 
-                        updated = true;
-                    }
-                    catch (CacheException e) {
-                        assertTrue(X.hasCause(e, TransactionRollbackException.class));
-                        assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
-                    }
+                    updated = true;
                 }
 
-                processorPut = !processorPut;
+                procPut = !procPut;
 
                 vals.put(key, val);
 
@@ -2035,15 +2021,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                         boolean updated = false;
 
                         while (!updated) {
-                            try {
-                                prevVal = (Integer)qryClnCache.getAndPut(key, val);
+                            prevVal = (Integer)qryClnCache.getAndPut(key, val);
 
-                                updated = true;
-                            }
-                            catch (CacheException e) {
-                                assertTrue(e.getCause() instanceof TransactionSerializationException);
-                                assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
-                            }
+                            updated = true;
                         }
 
                         expEvts.get(threadId).add(new T3<>((Object)key, (Object)val, (Object)prevVal));
@@ -2138,15 +2118,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                     boolean updated = false;
 
                     while (!updated) {
-                        try {
-                            cache.put(key, val0);
+                        cache.put(key, val0);
 
-                            updated = true;
-                        }
-                        catch (CacheException e) {
-                            assertTrue(e.getCause() instanceof TransactionSerializationException);
-                            assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
-                        }
+                        updated = true;
                     }
 
                     return null;

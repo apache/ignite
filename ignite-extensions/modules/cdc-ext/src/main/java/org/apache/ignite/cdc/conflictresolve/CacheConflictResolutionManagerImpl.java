@@ -48,23 +48,33 @@ public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictRe
     /** CLuster Id. */
     private final byte clusterId;
 
+    /** Custom conflict resolver. */
+    private CacheVersionConflictResolver resolver;
+
     /** Grid cache context. */
     private GridCacheContext<K, V> cctx;
 
     /**
      * @param conflictResolveField Field to resolve conflicts.
      * @param clusterId Cluster id.
+     * @param resolver Conflict resolver.
      */
-    public CacheConflictResolutionManagerImpl(String conflictResolveField, byte clusterId) {
+    public CacheConflictResolutionManagerImpl(
+        String conflictResolveField,
+        byte clusterId,
+        CacheVersionConflictResolver resolver) {
         this.conflictResolveField = conflictResolveField;
         this.clusterId = clusterId;
+        this.resolver = resolver;
     }
 
     /** {@inheritDoc} */
     @Override public CacheVersionConflictResolver conflictResolver() {
         CacheVersionConflictResolver rslvr;
 
-        if (conflictResolverLog.isDebugEnabled()) {
+        if (resolver != null)
+            rslvr = resolver;
+        else if (conflictResolverLog.isDebugEnabled()) {
             rslvr = new DebugCacheVersionConflictResolverImpl(
                 clusterId,
                 conflictResolveField,

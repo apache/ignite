@@ -1,5 +1,3 @@
-package org.apache.ignite.spring.sessions;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,6 +15,8 @@ package org.apache.ignite.spring.sessions;
  * limitations under the License.
  */
 
+package org.apache.ignite.spring.sessions;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -24,10 +24,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.client.IgniteClient;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 /**
- * Qualifier annotation for a {@link Ignite} to be injected in
+ * Qualifier annotation for a {@link Ignite} or a {@link IgniteClient} to be injected in
  * {@link IgniteIndexedSessionRepository}.
  *
  */

@@ -316,6 +316,52 @@ public class DdlSqlToCommandConverter {
                 IgniteQueryErrorCode.PARSING);
         }
 
+        // Validate affinity key.
+        if (createTblCmd.affinityKey() != null) {
+            String affColName = null;
+            String val = createTblCmd.affinityKey();
+
+            if (val.startsWith("'")) {
+                if (val.length() == 1 || !val.endsWith("'")) {
+                    throw new IgniteSQLException("Affinity key column name does not have trailing quote: " + val,
+                        IgniteQueryErrorCode.PARSING);
+                }
+
+                val = val.substring(1, val.length() - 1);
+
+                if (F.isEmpty(val))
+                    throw new IgniteSQLException("Affinity key cannot be empty", IgniteQueryErrorCode.PARSING);
+
+                affColName = val;
+            }
+            else {
+                for (ColumnDefinition col : createTblCmd.columns()) {
+                    if (col.name().equalsIgnoreCase(val)) {
+                        if (affColName != null) {
+                            throw new IgniteSQLException("Ambiguous affinity column name, use single quotes " +
+                                "for case sensitivity: " + val, IgniteQueryErrorCode.PARSING);
+                        }
+
+                        affColName = col.name();
+                    }
+                }
+            }
+
+            String affColFinal = affColName;
+
+            if (affColName == null || createTblCmd.columns().stream().noneMatch(col -> affColFinal.equals(col.name()))) {
+                throw new IgniteSQLException("Affinity key column with given name not found: " + val,
+                    IgniteQueryErrorCode.PARSING);
+            }
+
+            if (!createTblCmd.primaryKeyColumns().contains(affColName)) {
+                throw new IgniteSQLException("Affinity key column must be one of key columns: " + affColName,
+                    IgniteQueryErrorCode.PARSING);
+            }
+
+            createTblCmd.affinityKey(affColName);
+        }
+
         return createTblCmd;
     }
 

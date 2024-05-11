@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.ignite.internal.performancestatistics.util.OrderedFixedSizeStructure;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -134,7 +135,7 @@ public class ComputeHandler implements IgnitePerformanceStatisticsHandler {
 
             ArrayNode jobsJson = MAPPER.createArrayNode();
 
-            for (Job job : jobs.get(task.sesId)) {
+            for (Job job : F.view(jobs.get(task.sesId))) {
                 ObjectNode jobJson = MAPPER.createObjectNode();
 
                 jobJson.put("queuedTime", job.queuedTime);

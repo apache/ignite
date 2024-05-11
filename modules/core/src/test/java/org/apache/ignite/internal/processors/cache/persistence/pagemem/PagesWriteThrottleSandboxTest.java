@@ -139,7 +139,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
             }, 2, "read-loader");
 
             final HitRateMetric putRate = new HitRateMetric("putRate", "", 1000, 5);
-            final AtomicLong putCount = new AtomicLong();
+            final AtomicLong putCnt = new AtomicLong();
             final AtomicDouble maxDirtyRatio = new AtomicDouble();
             long startNanos = System.nanoTime();
 
@@ -168,8 +168,8 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                             cpBufPages = pageMemory.checkpointBufferPagesCount();
 
                             if (System.nanoTime() - startNanos > TimeUnit.SECONDS.toNanos(10)) {
-                                double currentDirtyRatio = (double)dirtyPages / pageMemory.totalPages();
-                                double newMaxDirtyRatio = Math.max(maxDirtyRatio.get(), currentDirtyRatio);
+                                double curDirtyRatio = (double)dirtyPages / pageMemory.totalPages();
+                                double newMaxDirtyRatio = Math.max(maxDirtyRatio.get(), curDirtyRatio);
                                 maxDirtyRatio.set(newMaxDirtyRatio);
                             }
                         }
@@ -179,7 +179,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                         }
 
                         System.out.println("@@@ globalPutsPerSec="
-                            + String.format("%.2f", globalPutsPerSec(putCount, startNanos))
+                            + String.format("%.2f", globalPutsPerSec(putCnt, startNanos))
                             + ", putsPerSec=" + (putRate.value()) + ", getsPerSec=" + (getRate.value()) + ", dirtyPages="
                             + dirtyPages + ", cpWrittenPages=" + cpWrittenPages + ", cpBufPages=" + cpBufPages
                             + ", maxDirtyRatio=" + String.format("%.2f", maxDirtyRatio.get())
@@ -211,7 +211,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                             ThreadLocalRandom.current().nextInt()));
 
                         putRate.increment();
-                        putCount.incrementAndGet();
+                        putCnt.incrementAndGet();
                     }
 
                     if (System.nanoTime() - startNanos > TimeUnit.MINUTES.toNanos(10))

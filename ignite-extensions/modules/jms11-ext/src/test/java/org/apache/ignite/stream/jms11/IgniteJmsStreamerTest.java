@@ -641,22 +641,22 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
             set.add(to);
         }
 
-        int messagesSent;
+        int msgsSent;
 
         if (singleMsg) {
             mp.send(ses.createObjectMessage(set));
-            messagesSent = 1;
+            msgsSent = 1;
         }
         else {
             for (TestTransformers.TestObject to : set)
                 mp.send(ses.createObjectMessage(to));
 
-            messagesSent = set.size();
+            msgsSent = set.size();
         }
 
         if (dest instanceof Queue) {
             try {
-                assertEquals(messagesSent, broker.getBroker().getDestinationMap().get(dest)
+                assertEquals(msgsSent, broker.getBroker().getDestinationMap().get(dest)
                     .getDestinationStatistics().getMessages().getCount());
             }
             catch (Exception e) {
@@ -677,7 +677,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
         for (String key : TEST_DATA.keySet())
             set.add(key + "," + TEST_DATA.get(key));
 
-        int messagesSent;
+        int msgsSent;
 
         if (singleMsg) {
             StringBuilder sb = new StringBuilder();
@@ -687,19 +687,19 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
 
             sb.deleteCharAt(sb.length() - 1);
             mp.send(ses.createTextMessage(sb.toString()));
-            messagesSent = 1;
+            msgsSent = 1;
 
         }
         else {
             for (String s : set)
                 mp.send(ses.createTextMessage(s));
 
-            messagesSent = set.size();
+            msgsSent = set.size();
         }
 
         if (dest instanceof Queue) {
             try {
-                assertEquals(messagesSent, broker.getBroker().getDestinationMap().get(dest)
+                assertEquals(msgsSent, broker.getBroker().getDestinationMap().get(dest)
                     .getDestinationStatistics().getMessages().getCount());
             }
             catch (Exception e) {

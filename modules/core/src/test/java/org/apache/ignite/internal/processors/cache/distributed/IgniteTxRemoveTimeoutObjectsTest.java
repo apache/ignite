@@ -32,10 +32,8 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionTimeoutException;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -56,16 +54,6 @@ public class IgniteTxRemoveTimeoutObjectsTest extends GridCacheAbstractSelfTest 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 60_000;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7388", MvccFeatureChecker.forcedMvcc());
-
-        if (nearEnabled())
-            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
-        super.beforeTest();
     }
 
     /**
@@ -153,8 +141,8 @@ public class IgniteTxRemoveTimeoutObjectsTest extends GridCacheAbstractSelfTest 
     private void assertDoesNotContainLockTimeoutObjects() throws IgniteInterruptedCheckedException {
         boolean noLockTimeoutObjs = GridTestUtils.waitForCondition(() -> {
             for (Ignite ignite : G.allGrids()) {
-                for (GridTimeoutObject object : getTimeoutObjects((IgniteEx)ignite)) {
-                    if (object.getClass().getSimpleName().equals("LockTimeoutObject"))
+                for (GridTimeoutObject obj : getTimeoutObjects((IgniteEx)ignite)) {
+                    if (obj.getClass().getSimpleName().equals("LockTimeoutObject"))
                         return false;
                 }
             }

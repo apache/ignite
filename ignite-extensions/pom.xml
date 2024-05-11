@@ -29,7 +29,7 @@
     <modules>
         <module>modules/apache-license-gen</module>
         <module>parent-internal</module>
-       
+        <module>modules/flink-ext</module>
         <module>modules/pub-sub-ext</module>
         <module>modules/spring-boot-autoconfigure-ext</module>
         <module>modules/spring-boot-thin-client-autoconfigure-ext</module>
@@ -46,11 +46,16 @@
         <module>modules/spring-cache-ext</module>
         <module>modules/spring-session-ext</module>
         <module>modules/cdc-ext</module>
+        <module>modules/aws-ext</module>
         <module>modules/zookeeper-ip-finder-ext</module>
         <module>modules/topology-validator-ext</module>
         <module>modules/hibernate-ext</module>
         <module>modules/geospatial-ext</module>            
+        <module>modules/aop-ext</module>
         <module>modules/osgi-ext</module>
+        <module>modules/ssh-ext</module>
+        <module>modules/ml-ext</module>
+        <module>modules/gatling-ext</module>
     </modules>
 
     <profiles>
@@ -58,20 +63,6 @@
             <id>use-ignite-src</id>
             <modules>
                 <module>../ignite</module>
-            </modules>
-        </profile>
-        
-        <profile>
-            <id>all-java</id>
-            <modules>
-                <module>modules/flink-ext</module>
-        		<module>modules/flume-ext</module>
-        		<module>modules/rocketmq-ext</module>
-        		<module>modules/camel-ext</module>
-        		<module>modules/aws-ext</module>
-        		<module>modules/spark-ext</module>		        
-		        <module>modules/yarn-ext</module>
-		        <module>modules/cloud-ext</module>
             </modules>
         </profile>
     </profiles>

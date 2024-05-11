@@ -52,10 +52,10 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -611,11 +611,11 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         loadData(cacheName(), 100_000);
         loadData(cache2, 100_000);
 
-        List<String> cacheGroups = Arrays.asList(cacheName(), cache2);
+        List<String> cacheGrps = Arrays.asList(cacheName(), cache2);
 
-        node0.encryption().changeCacheGroupKey(cacheGroups).get();
+        node0.encryption().changeCacheGroupKey(cacheGrps).get();
 
-        while (isReencryptionInProgress(cacheGroups)) {
+        while (isReencryptionInProgress(cacheGrps)) {
             int rndNode = ThreadLocalRandom.current().nextInt(3);
 
             String gridName = "grid-" + rndNode;
@@ -625,7 +625,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
             IgniteEx restarted = startGrid(gridName);
 
             // Find last reencrypted page's index of currently reencrypted partition.
-            ReencryptionStatus firstNotReencrypted = findFirstNotReencrypted(restarted, cacheGroups);
+            ReencryptionStatus firstNotReencrypted = findFirstNotReencrypted(restarted, cacheGrps);
 
             if (firstNotReencrypted != null) {
                 int grpId = firstNotReencrypted.grpId;
@@ -857,8 +857,8 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
      */
     private boolean isReencryptionInProgress(Iterable<String> cacheGroups) {
         for (Ignite node : G.allGrids()) {
-            for (String groupName : cacheGroups) {
-                if (isReencryptionInProgress((IgniteEx)node, CU.cacheId(groupName)))
+            for (String grpName : cacheGroups) {
+                if (isReencryptionInProgress((IgniteEx)node, CU.cacheId(grpName)))
                     return true;
             }
         }

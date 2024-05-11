@@ -72,19 +72,19 @@ public class DynamicQueryConfig {
      * @return the dynamic query config
      */
     public static DynamicQueryConfig fromQueryAnnotation(Query queryConfiguration) {
-        DynamicQueryConfig config = new DynamicQueryConfig();
+        DynamicQueryConfig cfg = new DynamicQueryConfig();
         if (queryConfiguration != null) {
-            config.value = queryConfiguration.value();
-            config.collocated = queryConfiguration.collocated();
-            config.timeout = queryConfiguration.timeout();
-            config.enforceJoinOrder = queryConfiguration.enforceJoinOrder();
-            config.distributedJoins = queryConfiguration.distributedJoins();
-            config.lazy = queryConfiguration.lazy();
-            config.parts = queryConfiguration.parts();
-            config.local = queryConfiguration.local();
-            config.limit = queryConfiguration.limit();
+            cfg.value = queryConfiguration.value();
+            cfg.collocated = queryConfiguration.collocated();
+            cfg.timeout = queryConfiguration.timeout();
+            cfg.enforceJoinOrder = queryConfiguration.enforceJoinOrder();
+            cfg.distributedJoins = queryConfiguration.distributedJoins();
+            cfg.lazy = queryConfiguration.lazy();
+            cfg.parts = queryConfiguration.parts();
+            cfg.local = queryConfiguration.local();
+            cfg.limit = queryConfiguration.limit();
         }
-        return config;
+        return cfg;
     }
 
     /**

@@ -36,7 +36,11 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.hamcrest.CustomMatcher;
@@ -228,7 +232,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         assertThat(ccfg.getGroupName(), equalTo("my_cache_group"));
         assertThat(ccfg.getName(), equalTo("my_cache_name"));
         assertThat(ccfg.getDataRegionName(), equalTo(DATA_REGION_NAME));
-        assertThat(ccfg.getKeyConfiguration()[0].getAffinityKeyFieldName(), equalTo("id2"));
+        assertThat(ccfg.getKeyConfiguration()[0].getAffinityKeyFieldName(), equalTo("ID2"));
 
         QueryEntity ent = ccfg.getQueryEntities().iterator().next();
 
@@ -264,6 +268,67 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
             ccfg -> "REPL".equals(ccfg.getName()) && ccfg.getCacheMode() == CacheMode.REPLICATED)));
         assertThat(ccfgs, hasItem(matches("partitioned cache",
             ccfg -> "PART".equals(ccfg.getName()) && ccfg.getCacheMode() == CacheMode.PARTITIONED)));
+    }
+
+    /**
+     * Creates table with affinity key.
+     */
+    @Test
+    public void createTableWithAffinity() {
+        assertThrows("create table TBL0 (id1 int, id2 int, val varchar, primary key(id1, id2)) with " +
+            "\"affinity_key=''\"", IgniteSQLException.class, "Affinity key cannot be empty");
+
+        assertThrows("create table TBL0 (id1 int, id2 int, val varchar, primary key(id1, id2)) with " +
+            "\"affinity_key='id\"", IgniteSQLException.class, "Affinity key column name does not have trailing quote");
+
+        assertThrows("create table TBL0 (id1 int, id2 int, val varchar, primary key(id1, id2)) with " +
+            "affinity_key=\"id3\"", IgniteSQLException.class, "Affinity key column with given name not found: id3");
+
+        assertThrows("create table TBL0 (id1 int, id2 int, val varchar, primary key(id1, id2)) with " +
+            "affinity_key=val", IgniteSQLException.class, "Affinity key column must be one of key columns: VAL");
+
+        // Wrong case of quoted 'id1'.
+        assertThrows("create table TBL0 (id1 int, id2 int, val varchar, primary key(id1, id2)) with " +
+            "\"affinity_key='id1'\"", IgniteSQLException.class, "Affinity key column with given name not found: id1");
+
+        assertThrows("create table TBL0 (\"id\" int, \"iD\" int, val varchar, primary key(\"id\", \"iD\")) with " +
+            " \"affinity_key=id\"", IgniteSQLException.class, "Ambiguous affinity column name");
+
+        sql("create table TBL1 (id1 int, id2 int, val varchar, primary key(id1, id2)) with " +
+            " affinity_key=id1");
+
+        checkAffinity("TBL1", "ID1");
+
+        sql("create table TBL2 (\"id1\" int, id2 int, val varchar, primary key(\"id1\", id2)) with " +
+            " affinity_key=\"id1\"");
+
+        checkAffinity("TBL2", "id1");
+
+        sql("create table TBL3 (\"id1\" int, id2 int, val varchar, primary key(\"id1\", id2)) with " +
+            " \"affinity_key='id1'\"");
+
+        checkAffinity("TBL3", "id1");
+
+        sql("create table TBL4 (id1 int, \"iD2\" int, val varchar, primary key(id1, \"iD2\")) with " +
+            " affinity_key=id2");
+
+        checkAffinity("TBL4", "iD2");
+
+        sql("create table TBL5 (\"id\" int, \"iD\" int, val varchar, primary key(\"id\", \"iD\")) with " +
+            " \"affinity_key='iD'\"");
+
+        checkAffinity("TBL5", "iD");
+    }
+
+    /** */
+    private void checkAffinity(String tableName, String affCol) {
+        CalciteQueryProcessor proc = queryProcessor(client);
+
+        IgniteTable tbl = (IgniteTable)proc.schemaHolder().schema(QueryUtils.DFLT_SCHEMA).getTable(tableName);
+        IgniteDistribution distr = tbl.distribution();
+
+        assertEquals(1, distr.getKeys().size());
+        assertEquals(tbl.descriptor().columnDescriptor(affCol).fieldIndex(), (int)distr.getKeys().get(0));
     }
 
     /**
@@ -429,6 +494,35 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         sql("create table my_table2(i) as select * from my_table1");
 
         assertEquals(100L, sql("select count(*) from my_table2").get(0).get(0));
+    }
+
+    /**
+     * Creates table with nullabale/not nullable columns and checks nullability.
+     */
+    @Test
+    public void createTableWithNullability() {
+        List<String> dataTypes = F.asList("INT", "FLOAT", "DOUBLE", "DECIMAL", "DECIMAL(10,2)", "VARCHAR",
+            "VARCHAR(10)", "CHAR", "CHAR(10)", "DATE", "TIME", "TIMESTAMP", "BINARY", "BINARY(10)", "VARBINARY",
+            "VARBINARY(10)", "UUID", "OTHER");
+
+        for (String dataType : dataTypes) {
+            try {
+                sql("CREATE TABLE my_table (id INT PRIMARY KEY, val " + dataType + ')');
+                sql("INSERT INTO my_table(id, val) VALUES (0, NULL)");
+            }
+            finally {
+                sql("DROP TABLE my_table");
+            }
+
+            try {
+                sql("CREATE TABLE my_table (id INT PRIMARY KEY, val " + dataType + " NOT NULL)");
+                assertThrows("INSERT INTO my_table(id, val) VALUES (0, NULL)", IgniteSQLException.class,
+                    "does not allow NULLs");
+            }
+            finally {
+                sql("DROP TABLE my_table");
+            }
+        }
     }
 
     /**
@@ -676,7 +770,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         sql("alter table my_table add column val2 varchar not null");
 
         assertThrows("insert into my_table (id, val, val2) values (0, '1', null)", IgniteSQLException.class,
-            "Null value is not allowed");
+            "does not allow NULLs");
 
         sql("insert into my_table (id, val, val2) values (0, '1', '2')");
 
@@ -785,7 +879,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         assertEquals("2", res.get(0).get(2));
 
         assertThrows("insert into my_table (id, val, val2) values (1, '2', null)", IgniteSQLException.class,
-            "Null value is not allowed");
+            "does not allow NULLs");
 
         sql("insert into my_table (id, val, val2) values (1, '2', '3')");
 
@@ -863,13 +957,13 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void testMulitlineWithCreateTable() {
-        String multiLineQuery = "CREATE TABLE test (val0 int primary key, val1 varchar);" +
+        String multiLineQry = "CREATE TABLE test (val0 int primary key, val1 varchar);" +
             "INSERT INTO test(val0, val1) VALUES (0, 'test0');" +
             "ALTER TABLE test ADD COLUMN val2 int;" +
             "INSERT INTO test(val0, val1, val2) VALUES(1, 'test1', 10);" +
             "ALTER TABLE test DROP COLUMN val2;";
 
-        sql(multiLineQuery);
+        sql(multiLineQry);
 
         List<List<?>> res = sql("SELECT * FROM test order by val0");
         assertEquals(2, res.size());
@@ -880,6 +974,40 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
             assertEquals(2, row.size());
             assertEquals(i, row.get(0));
             assertEquals("test" + i, row.get(1));
+        }
+    }
+
+    /**
+     * Creates table with primary key and check inline size.
+     */
+    @Test
+    public void testPrimaryKeyInlineSize() {
+        checkPkInlineSize("create table my_table (id int primary key, val varchar)",
+            "MY_TABLE", 5);
+
+        checkPkInlineSize("create table my_table (id bigint, val varchar, primary key (id))",
+            "MY_TABLE", 9);
+
+        checkPkInlineSize("create table my_table (id int primary key, val varchar) WITH \"key_type=Integer\"",
+            "MY_TABLE", 5);
+
+        checkPkInlineSize("create table my_table (id1 int, id2 smallint, val varchar, primary key(id1, id2))",
+            "MY_TABLE", 5 + 3);
+    }
+
+    /** */
+    private void checkPkInlineSize(String ddl, String tableName, int expectedSize) {
+        sql(ddl);
+
+        try {
+            List<List<?>> res = sql("SELECT INLINE_SIZE FROM SYS.INDEXES WHERE \"TABLE_NAME\" = ? AND INDEX_NAME = ?",
+                tableName, QueryUtils.PRIMARY_KEY_INDEX);
+
+            assertEquals(1, res.size());
+            assertEquals(expectedSize, res.get(0).get(0));
+        }
+        finally {
+            sql("DROP TABLE " + tableName);
         }
     }
 

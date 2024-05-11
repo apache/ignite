@@ -26,8 +26,8 @@ import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.diagnostic.Operation;
-import static org.apache.ignite.internal.visor.diagnostic.Operation.DUMP_LOG;
+
+import static org.apache.ignite.internal.management.diagnostic.Operation.DUMP_LOG;
 
 /** */
 @ArgumentGroup(value = {"all", "nodes"}, onlyOneOf = true, optional = true)

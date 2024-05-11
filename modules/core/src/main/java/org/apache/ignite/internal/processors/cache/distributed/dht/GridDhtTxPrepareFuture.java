@@ -67,10 +67,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -382,7 +378,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             cctx.database().checkpointReadLock();
 
             try {
-                if ((txEntry.op() == CREATE || txEntry.op() == UPDATE) &&
+                if ((txEntry.op() == CREATE || txEntry.op() == UPDATE || txEntry.op() == TRANSFORM) &&
                     txEntry.conflictExpireTime() == CU.EXPIRE_TIME_CALCULATE) {
                     if (expiry != null) {
                         cached.unswap(true);
@@ -446,18 +442,18 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(key, val,
                                     txEntry.cached().version(), keepBinary, txEntry.cached());
 
-                                EntryProcessor<Object, Object, Object> processor = t.get1();
+                                EntryProcessor<Object, Object, Object> proc = t.get1();
 
                                 IgniteThread.onEntryProcessorEntered(false);
 
                                 if (cctx.kernalContext().deploy().enabled() &&
-                                    cctx.kernalContext().deploy().isGlobalLoader(processor.getClass().getClassLoader())) {
+                                    cctx.kernalContext().deploy().isGlobalLoader(proc.getClass().getClassLoader())) {
                                     U.restoreDeploymentContext(cctx.kernalContext(), cctx.kernalContext()
-                                        .deploy().getClassLoaderId(processor.getClass().getClassLoader()));
+                                        .deploy().getClassLoaderId(proc.getClass().getClassLoader()));
                                 }
 
                                 try {
-                                    procRes = processor.process(invokeEntry, t.get2());
+                                    procRes = proc.process(invokeEntry, t.get2());
 
                                     val = cacheCtx.toCacheObject(invokeEntry.getValue(true));
 
@@ -1350,11 +1346,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 return;
 
             if (last) {
-                if (!tx.txState().mvccEnabled()) {
-                    /** For MVCC counters are assigned on enlisting. */
-                    /** See usage of {@link TxCounters#incrementUpdateCounter(int, int)} ) */
-                    tx.calculatePartitionUpdateCounters();
-                }
+                tx.calculatePartitionUpdateCounters();
 
                 recheckOnePhaseCommit();
 
@@ -1394,19 +1386,11 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      *
      */
     private void sendPrepareRequests() {
-        assert !tx.txState().mvccEnabled() || !tx.onePhaseCommit() || tx.mvccSnapshot() != null;
-
         int miniId = 0;
 
         assert tx.transactionNodes() != null;
 
         final long timeout = timeoutObj != null ? timeoutObj.timeout : 0;
-
-        // Do not need process active transactions on backups.
-        MvccSnapshot mvccSnapshot = tx.mvccSnapshot();
-
-        if (mvccSnapshot != null)
-            mvccSnapshot = mvccSnapshot.withoutActiveTransactions();
 
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : tx.dhtMap().values()) {
@@ -1447,7 +1431,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 tx.activeCachesDeploymentEnabled(),
                 tx.storeWriteThrough(),
                 retVal,
-                mvccSnapshot,
                 cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
 
             req.queryUpdate(dhtMapping.queryUpdate());
@@ -1561,7 +1544,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     tx.activeCachesDeploymentEnabled(),
                     tx.storeWriteThrough(),
                     retVal,
-                    mvccSnapshot,
                     null);
 
                 for (IgniteTxEntry entry : nearMapping.entries()) {
@@ -1989,10 +1971,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         try {
                             if (entry.initialValue(info.value(),
                                 info.version(),
-                                cacheCtx.mvccEnabled() ? ((MvccVersionAware)info).mvccVersion() : null,
-                                cacheCtx.mvccEnabled() ? ((MvccUpdateVersionAware)info).newMvccVersion() : null,
-                                cacheCtx.mvccEnabled() ? ((MvccVersionAware)info).mvccTxState() : TxState.NA,
-                                cacheCtx.mvccEnabled() ? ((MvccUpdateVersionAware)info).newMvccTxState() : TxState.NA,
                                 info.ttl(),
                                 info.expireTime(),
                                 true,
