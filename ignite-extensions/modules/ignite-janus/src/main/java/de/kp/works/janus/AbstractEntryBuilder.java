@@ -14,7 +14,7 @@ package de.kp.works.janus;
  * License for the specific language governing permissions and limitations under
  * the License.
  * 
- * @author Stefan Krusche, Dr. Krusche & Partner PartG
+ * 
  * 
  */
 
@@ -64,27 +64,24 @@ public class AbstractEntryBuilder {
     }
 
     public static String encodeKeyBufferAsHexString(final StaticBuffer input, String defaultKey) {
-
 		if (input == null || input.length() == 0) {
 			return defaultKey;
 	    }
 	
 	    final ByteBuffer buf = input.asByteBuffer();
 	    final char[] chats = Hex.encodeHex(buf);	    
-	    return new String(chats);
-	
-	}
-    
+	    return new String(chats);	
+	}    
    
 
     public static String _encodeKeyBufferAsString(final StaticBuffer input, String defaultKey) {
     	if (input == null || input.length() == 0) {
             return defaultKey;
         }
-
         final ByteBuffer buf = input.asByteBuffer();
-       
-		return new String(buf.array(), 0, buf.limit(),StandardCharsets.UTF_8);
+        IgniteValue value = new IgniteValue(buf);
+        byte[] data = value.data();
+		return new String(data,StandardCharsets.UTF_8);
     }
  
     /********** VALUE SUPPORT **********/
@@ -94,55 +91,49 @@ public class AbstractEntryBuilder {
     }
 
     public StaticBuffer decodeValue(final ByteBuffer val) {
-
 		if (null == val) return null;
 		return StaticArrayBuffer.of(val);
     	
     }
     
+    public StaticBuffer decodeValue(final byte[] val) {
+		if (null == val) return null;
+		return StaticArrayBuffer.of(val);    	
+    }
+    
     public StaticBuffer decodeValue(final IgniteValue val) {
-
     	if (null == val) return null;
-    	return StaticArrayBuffer.of(val.getB());
+    	return StaticArrayBuffer.of(val.data());
     
     }
 
-    public StaticBuffer decodeHashKey(IgniteValue key) {
- 
+    public StaticBuffer decodeHashKey(IgniteValue key) { 
         final String value = key.getS();
         //not modfiy@byron
         return decodeKeyFromHexString(value);
-        //return decodeKeyFromString(value);
- 
     }
 
     public static StaticBuffer decodeKeyFromHexString(final String name) {
         try {
-            return new StaticArrayBuffer(Hex.decodeHex(name));
-  
+            return new StaticArrayBuffer(Hex.decodeHex(name));  
         } catch (DecoderException e) {
             throw new RuntimeException(e);
-        }
-    
+        }    
     }	
     
     public static StaticBuffer _decodeKeyFromString(final String name) {
     	return new StaticArrayBuffer(name.getBytes(StandardCharsets.UTF_8));    
     }	
 
-    public StaticBuffer decodeRangeKey(IgniteValue key) {
- 
+    public StaticBuffer decodeRangeKey(IgniteValue key) { 
         final String value = key.getS();
         //not modfiy@byron
-        return decodeKeyFromHexString(value);
-        //-return decodeKeyFromString(value);
-  
+        return decodeKeyFromHexString(value);       
     }
   
     public StaticBuffer decodeRangeKey(String value) {
     	//not modfiy@byron
-        return decodeKeyFromHexString(value);
-        //-return decodeKeyFromString(value);
+        return decodeKeyFromHexString(value);        
   
     }
    

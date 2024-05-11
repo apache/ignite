@@ -9,12 +9,10 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/io/netty/netty-resolver/4.1.94.Final/netty-resolver-4.1.94.Final.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/javax/cache/cache-api/1.0.0/cache-api-1.0.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/jetbrains/annotations/16.0.3/annotations-16.0.3.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/ignite/ignite-spring/2.16.999-SNAPSHOT/ignite-spring-2.16.999-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/springframework/spring-context/5.2.22.RELEASE/spring-context-5.2.22.RELEASE.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/springframework/spring-aop/5.2.22.RELEASE/spring-aop-5.2.22.RELEASE.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/springframework/spring-expression/5.2.22.RELEASE/spring-expression-5.2.22.RELEASE.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/commons-logging/commons-logging/1.1.1/commons-logging-1.1.1.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/ignite/ignite-indexing/2.16.999-SNAPSHOT/ignite-indexing-2.16.999-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/commons-codec/commons-codec/1.15/commons-codec-1.15.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/lucene/lucene-core/8.11.2/lucene-core-8.11.2.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/lucene/lucene-analyzers-common/8.11.2/lucene-analyzers-common-8.11.2.jar" enabled="true" runInBatchMode="false"/>
@@ -69,6 +67,7 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/ai/djl/pytorch/pytorch-model-zoo/0.23.0/pytorch-model-zoo-0.23.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/aias/sentence-encoder-15-sdk/0.23.0/sentence-encoder-15-sdk-0.23.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/ai/djl/huggingface/tokenizers/0.23.0/tokenizers-0.23.0.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/ignite/ignite-jieba-lucene-plugin/1.0.0-SNAPSHOT/ignite-jieba-lucene-plugin-1.0.0-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/aias/jieba-lib/0.23.0/jieba-lib-0.23.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/springframework/spring-core/5.3.23/spring-core-5.3.23.jar" enabled="true" runInBatchMode="false"/>

@@ -1,55 +1,48 @@
 package de.kp.works.janus;
 
-/*
- * Copyright (c) 2019 - 2021 Dr. Krusche & Partner PartG. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- * 
- * @author Stefan Krusche, Dr. Krusche & Partner PartG
- * 
- */
-
 import java.nio.ByteBuffer;
 
-public class IgniteValue {
-
-	private Integer i = -1;
+public class IgniteValue {	
 	private String s;
+	//private ByteBuffer b;
+	private byte[] data;
 	
-	private ByteBuffer b;
 
-	public IgniteValue(Integer i) {
-		this.i = i;
-	}
-	
 	public IgniteValue(String s) {
 		this.s = s;
 	}
-	
-	public IgniteValue(ByteBuffer b) {
-		this.b = b;
+	// read data from bytebuffer
+	public IgniteValue(ByteBuffer byteBuffer) {
+		final int remaining = byteBuffer.remaining();
+        // Use the underlying buffer if possible
+        if (byteBuffer.hasArray()) {
+            final byte[] byteArray = byteBuffer.array();
+            if (remaining == byteArray.length) {
+                byteBuffer.position(remaining);
+                data = byteArray;
+                return ;
+            }
+        }
+        // Copy the bytes
+        final byte[] byteArray = new byte[remaining];
+        byteBuffer.get(byteArray);
+        data =  byteArray;
 	}
 	
-	public Integer getI() {
-		return i;
+	public IgniteValue(byte[] data) {
+		this.data = data;
 	}
 
 	public String getS() {
 		return s;
 	}
 	
-	public ByteBuffer getB() {
-		return b;
+	//public ByteBuffer getB() {
+	//	return b;
+	//}
+	
+	public byte[] data() {
+		return data;
 	}
 	
 }

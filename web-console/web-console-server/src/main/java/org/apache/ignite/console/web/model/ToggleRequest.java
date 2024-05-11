@@ -18,9 +18,11 @@ package org.apache.ignite.console.web.model;
 
 import java.util.UUID;
 import io.swagger.v3.oas.annotations.media.Schema;
+
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.hibernate.validator.constraints.NotEmpty;
+
 
 /**
  * Web model of toggle admin right request.

@@ -20,6 +20,8 @@ const MemoryStore = memorystore(session);
 const ALLOWED_SUBTYPES = new Set([
   mongodb.Binary.SUBTYPE_UUID_OLD,
   mongodb.Binary.SUBTYPE_UUID,
+  mongodb.Binary.SUBTYPE_DEFAULT,  
+  mongodb.Binary.SUBTYPE_USER_DEFINED
 ]);
 
 const addTrailingSlash = function (s) {
@@ -35,10 +37,11 @@ const buildBaseHref = function (originalUrl, reqUrl) {
   return addTrailingSlash(rootPath);
 };
 
-const buildId = function (id, query) {
+const buildId = function (id, query) {  
   // Case 1 : ObjectId
+  console.log(query)
   try {
-    return mongodb.BSON.ObjectId.createFromHexString(id);
+    id = mongodb.BSON.ObjectId.createFromHexString(id);
   } catch {
     // Case 2 : BinaryID (only subtype 3 and 4)
     if (('subtype' in query)) {

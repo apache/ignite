@@ -497,8 +497,23 @@ public class IgniteLuceneIndex extends Index<Object> {
 						
 						queryBuider.add(termQuery, BooleanClause.Occur.FILTER);
 						query.remove(indexKey.getKey());						
+					}					
+				}				
+			}
+			else if (queriedKey instanceof String) {					
+				String keyString = (String) queriedKey;
+				if (!keyString.isEmpty()) {
+					if(this.isTextIndex()) {
+						SimpleQueryParser parser = new SimpleQueryParser(indexAccess.analyzerWrapper, weights); // 定义查询分析器 // 定义查询分析器
+						parser.setDefaultOperator(BooleanClause.Occur.MUST);
+						Query textQuery = parser.parse(keyString);
+						queryBuider.add(textQuery, BooleanClause.Occur.MUST);
 					}
-					
+					else {
+						Query termQuery = getQueryValueForExpression(indexKey,keyString, QueryOperator.EQUAL);						
+						queryBuider.add(termQuery, BooleanClause.Occur.MUST);
+						query.remove(indexKey.getKey());		
+					}
 				}
 			}
 			

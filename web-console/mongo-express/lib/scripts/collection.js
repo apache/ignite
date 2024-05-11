@@ -195,6 +195,7 @@ $(() => {
 
     const target = $(this);
     const _id = target.attr('doc_id');
+    
     const prop = target.attr('doc_prop');
     const spinner = `<img src="${ME_SETTINGS.baseHref}public/img/gears.gif" />`;
     const leftScroll = $tableWrapper.scrollLeft();
@@ -202,7 +203,14 @@ $(() => {
     // Set the element with spinner for now
     target.html(spinner);
 
-    $.get(`${makeCollectionUrl()}${encodeURIComponent(_id)}/${prop}`, function (prop) {
+	let subtype = target.parent().parent().parent().attr('doc_subtype');
+    if(subtype!=undefined){
+      subtype = '?subtype='+subtype
+    }
+	else{
+	  subtype=''
+	}
+    $.get(`${makeCollectionUrl()}${encodeURIComponent(_id)}/${prop}${subtype}`, function (prop) {
       prop = renderProp(prop);
       // Set the element with gotten datas
       target.parent().html(prop);

@@ -8,6 +8,7 @@ const routes = function (config) {
   exp.getProperty = function (req, res) {
     // Get a single property
     // URI like database/collection/document/prop
+	console.log(req.prop)
     res.send(req.prop);
   };
 

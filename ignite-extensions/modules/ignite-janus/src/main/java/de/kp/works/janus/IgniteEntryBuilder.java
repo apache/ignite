@@ -14,7 +14,7 @@ package de.kp.works.janus;
  * License for the specific language governing permissions and limitations under
  * the License.
  * 
- * @author Stefan Krusche, Dr. Krusche & Partner PartG
+ * 
  * 
  */
 
@@ -33,13 +33,10 @@ public class IgniteEntryBuilder extends AbstractEntryBuilder {
     
     /** HASHKEY SUPPORT **/
 
-    public IgniteEntryBuilder hashKey(final StaticBuffer hashKey) {
-    
+    public IgniteEntryBuilder hashKey(final StaticBuffer hashKey) {    
         this.hk = hashKey;
         entry.put(HASH_KEY, encodeRowKeyAsIgniteValue(hashKey));
-
         return this;
-
     }
 
 	public IgniteEntryBuilder hashKeyStart(final StaticBuffer key) {
@@ -54,10 +51,8 @@ public class IgniteEntryBuilder extends AbstractEntryBuilder {
 
 	/** RANGE KEY SUPPORT **/
 	
-	public IgniteEntryBuilder rangeKey(final StaticBuffer rangeKey) {
-		
-		this.rk = rangeKey;
-		
+	public IgniteEntryBuilder rangeKey(final StaticBuffer rangeKey) {		
+		this.rk = rangeKey;		
         entry.put(RANGE_KEY, encodeRangeKeyAsIgniteValue(rangeKey));
         return this;
     }

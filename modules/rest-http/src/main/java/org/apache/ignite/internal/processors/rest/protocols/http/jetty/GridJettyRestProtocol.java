@@ -73,9 +73,7 @@ import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
  * 
  */
 public class GridJettyRestProtocol extends GridRestProtocolAdapter {
-    /**
-     *
-     */
+   
     static {
         if (!IgniteSystemProperties.getBoolean(IGNITE_JETTY_LOG_NO_OVERRIDE)) {
             // See also https://www.eclipse.org/jetty/documentation/9.4.x/configuring-logging.html
@@ -373,10 +371,10 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 			    WebAppContext webApp = new WebAppContext();
 			    webApp.setContextPath("/"+contextPath);
 			    webApp.setConfigurationDiscovered(true);
+			    AnnotationConfiguration annotationConfiguration = new AnnotationConfiguration();
 			    
 			    webApp.setConfigurations(new Configuration[]{
-			            new AnnotationConfiguration(), new WebXmlConfiguration(),
-			            new WebInfConfiguration(), new MetaInfConfiguration(), new FragmentConfiguration()		            
+			    		annotationConfiguration, new WebXmlConfiguration(), new WebInfConfiguration(), new MetaInfConfiguration(), new FragmentConfiguration()		            
 			        });			    
 			    
 			    if (warFile.isDirectory()) {

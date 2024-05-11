@@ -1,6 +1,20 @@
 import { addHyphensToUUID } from './utils.js';
+import { BSON, ObjectId, Long,Binary } from 'mongodb';
+import { BSONValue } from 'bson';
 
 export const json = function (input) {
+  if (input instanceof Binary) {	
+	
+  }
+  if (input instanceof Long) {	
+	input = input.toExtendedJSON();
+  }
+  else if (input instanceof BSONValue && input.toJSON) {	
+	input = input.toJSON();
+  }
+  else if (input instanceof BSONValue) {	
+	input = input.toExtendedJSON();
+  }
   return JSON.stringify(input, null, '    ');
 };
 
@@ -167,6 +181,9 @@ function uuid4ToString(input) {
  * @returns {string}
  */
 export const stringDocIDs = function (input) {
+  if (input && input instanceof Long) {	
+	return input.toString();
+  }
   if (input && typeof input === 'object') {
     switch (input._bsontype) {
       case 'Binary': {
@@ -176,6 +193,9 @@ export const stringDocIDs = function (input) {
         return input.toJSON();
       }
       case 'ObjectId': {
+        return input.toString();
+      }
+	  case 'Long': {
         return input.toString();
       }
       default: {

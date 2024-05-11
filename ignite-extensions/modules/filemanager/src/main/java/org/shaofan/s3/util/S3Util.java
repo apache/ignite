@@ -28,11 +28,20 @@ import java.util.Map;
 public class S3Util {
     @Autowired
     private SystemConfig systemConfig;
+    
+    private S3Client s3;
 
     private S3Client getClient() {
-        S3Client s3 = S3Client.builder()
+    	if(s3!=null ) {
+    		return s3;
+    	}
+    	String endpoint = systemConfig.getEndpointOverride();
+    	if(endpoint==null || endpoint.isBlank()) {
+    		endpoint = CommonUtil.getApiPath() + "s3/";
+    	}
+        s3 = S3Client.builder()
                 .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(systemConfig.getAccessKey(), systemConfig.getSecretAccessKey())))
-                .endpointOverride(URI.create(CommonUtil.getApiPath() + "s3/"))
+                .endpointOverride(URI.create(endpoint))
                 .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).chunkedEncodingEnabled(false).build())
                 .region(Region.AWS_CN_GLOBAL)
                 .build();
@@ -40,22 +49,35 @@ public class S3Util {
     }
 
     private S3Presigner getPresigner() {
+    	String endpoint = systemConfig.getEndpointOverride();
+    	if(endpoint==null || endpoint.isBlank()) {
+    		endpoint = CommonUtil.getApiPath() + "s3/";
+    	}
+    	
         S3Presigner s3Presigner = S3Presigner.builder()
                 .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(systemConfig.getAccessKey(), systemConfig.getSecretAccessKey())))
-                .endpointOverride(URI.create(CommonUtil.getApiPath() + "s3/"))
+                .endpointOverride(URI.create(endpoint))
                 .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).chunkedEncodingEnabled(false).build())
                 .region(Region.AWS_CN_GLOBAL)
                 .build();
         return s3Presigner;
     }
 
+    
+    public void close() {
+    	if(s3!=null ) {
+    		s3.close();
+    		s3 = null;
+    	}
+    }
+    
     public void createBucket(String bucketName) {
         S3Client s3Client = getClient();
         CreateBucketRequest request = CreateBucketRequest.builder()
                 .bucket(bucketName)
                 .build();
         s3Client.createBucket(request);
-        s3Client.close();
+        
     }
 
     public List<Bucket> getBucketList() {
@@ -63,7 +85,7 @@ public class S3Util {
         ListBucketsRequest request = ListBucketsRequest.builder().build();
         ListBucketsResponse response = s3Client.listBuckets(request);
         List<Bucket> bucketList = response.buckets();
-        s3Client.close();
+        
         return bucketList;
     }
 
@@ -78,7 +100,7 @@ public class S3Util {
         } catch (NoSuchBucketException e) {
             checkExist = false;
         }
-        s3Client.close();
+        
         return checkExist;
     }
 
@@ -88,7 +110,7 @@ public class S3Util {
                 .bucket(bucketName)
                 .build();
         s3Client.deleteBucket(request);
-        s3Client.close();
+        
     }
 
 
@@ -97,7 +119,7 @@ public class S3Util {
         ListObjectsRequest request = ListObjectsRequest.builder().bucket(bucketName).prefix(prefix).delimiter("/").build();
         ListObjectsResponse response = s3Client.listObjects(request);
         List<S3Object> s3ObjectList = response.contents();
-        s3Client.close();
+        
         return s3ObjectList;
     }
 
@@ -110,7 +132,7 @@ public class S3Util {
                     .bucket(bucketName)
                     .build();
             HeadObjectResponse objectHead = s3Client.headObject(objectRequest);
-            s3Client.close();
+            
             headInfo.put("contentType", objectHead.contentType());
             headInfo.put("contentLength", objectHead.contentLength() + "");
             headInfo.put("contentDisposition", objectHead.contentDisposition());
@@ -134,7 +156,7 @@ public class S3Util {
                     .accessControlPolicy(policy)
                     .build();
             PutObjectAclResponse objectHead = s3Client.putObjectAcl(objectRequest);
-            s3Client.close();
+            
             return objectHead.requestChargedAsString();
             
         } catch (NoSuchKeyException e) {
@@ -151,7 +173,7 @@ public class S3Util {
                     .bucket(bucketName)             
                     .build();
             GetObjectAclResponse objectHead = s3Client.getObjectAcl(objectRequest);
-            s3Client.close();            
+                        
             return objectHead.grants();
             
         } catch (NoSuchKeyException e) {
@@ -164,7 +186,7 @@ public class S3Util {
         PutObjectRequest request = PutObjectRequest.builder().bucket(bucketName).key(key).build();
         RequestBody requestBody = RequestBody.fromBytes(FileUtil.convertStreamToByte(inputStream));
         s3Client.putObject(request, requestBody);
-        s3Client.close();
+        
     }
 
     public byte[] getFileByte(String bucketName, String key) {
@@ -175,7 +197,7 @@ public class S3Util {
                 .build();
         ResponseBytes<GetObjectResponse> objectBytes = s3Client.getObjectAsBytes(request);
         byte[] data = objectBytes.asByteArray();
-        s3Client.close();
+        
         return data;
     }
     
@@ -207,7 +229,7 @@ public class S3Util {
                 .key(key)
                 .build();
         s3Client.deleteObject(request);
-        s3Client.close();
+        
     }
 
     public void copyObject(String sourceBucketName, String sourceKey, String targetBucketName, String targetKey) throws Exception {
@@ -218,7 +240,7 @@ public class S3Util {
                 .destinationBucket(targetBucketName)
                 .destinationKey(targetKey).build();
         s3Client.copyObject(request);
-        s3Client.close();
+        
     }
 
     public String createMultipartUpload(String bucketName, String key) {
@@ -229,7 +251,7 @@ public class S3Util {
                 .key(key).build();
         CreateMultipartUploadResponse response = s3Client.createMultipartUpload(request);
         uploadID = response.uploadId();
-        s3Client.close();
+        
         return uploadID;
     }
 
@@ -250,7 +272,7 @@ public class S3Util {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        s3Client.close();
+        
         return eTag;
     }
 
@@ -263,7 +285,7 @@ public class S3Util {
                 .multipartUpload(CompletedMultipartUpload.builder().parts(partList).build())
                 .build();
         CompleteMultipartUploadResponse response = s3Client.completeMultipartUpload(request);
-        s3Client.close();
+        
         return response.eTag();
     }
 }

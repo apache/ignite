@@ -20,7 +20,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import javax.validation.constraints.NotNull;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.hibernate.validator.constraints.NotEmpty;
+import javax.validation.constraints.NotEmpty;
 
 /**
  * Web model of the user.

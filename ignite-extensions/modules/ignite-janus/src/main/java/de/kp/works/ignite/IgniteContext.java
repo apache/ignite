@@ -14,28 +14,36 @@ package de.kp.works.ignite;
  * License for the specific language governing permissions and limitations under
  * the License.
  * 
- * @author Stefan Krusche, Dr. Krusche & Partner PartG
+ * 
  * 
  */
 
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.logger.java.JavaLogger;
-import org.janusgraph.diskstorage.StandardStoreManager;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
+import de.kp.works.janus.IgniteStore;
+import jline.internal.Log;
+
 public class IgniteContext {
+	
+	
+	public static ConcurrentHashMap<String, IgniteContext> instances = new ConcurrentHashMap<>();
+	
+	public static JavaLogger logger = new JavaLogger();
+	
 	/*
 	 * Reference to Apache Ignite that is transferred to the key value store to
 	 * enable cache operations
 	 */
-	private final Ignite ignite;
-
-	private static IgniteContext instance;
+	private Ignite ignite;
 	
-	public static JavaLogger logger = new JavaLogger();
 
     /**
      * Define the storage backed to use for persistence
@@ -43,50 +51,72 @@ public class IgniteContext {
     public static final ConfigOption<String> STORAGE_CFG = new ConfigOption<>(GraphDatabaseConfiguration.STORAGE_NS,"cfg",
             "The config file path of ignite.",
             ConfigOption.Type.LOCAL, String.class);
+    
+    /**
+     * Define the storage backed to use for persistence
+     */
+    public static final ConfigOption<String> STORAGE_IGNITE_NAME = new ConfigOption<>(GraphDatabaseConfiguration.STORAGE_NS,"namespace",
+            "The config name of ignite.",
+            ConfigOption.Type.LOCAL, String.class);
 
 	private IgniteContext(IgniteConfiguration config) {
+		instances.put(config.getIgniteInstanceName(), this);
+		ignite = Ignition.getOrStart(config);
+	}
 
-		if (config == null && Ignition.allGrids().size()==0)
+	private IgniteContext(String cfg,String name) {
+		instances.put(name, this);
+		// ignite already started
+		if(Ignition.allGrids().size()>0) {
+			try {
+				if (name == null && Ignition.allGrids().size()==1)
+					ignite = Ignition.allGrids().get(0);
+				else			
+					ignite = Ignition.ignite(name);		
+			
+			}
+			catch(IgniteIllegalStateException e) {
+				if(cfg!=null) {
+					if(name==null || name.isBlank()) {
+						name = "ignite-bankend.cfg";
+					}
+					IgniteConfiguration config = Ignition.loadSpringBean(cfg, name);				
+					ignite = Ignition.start(config);
+				}
+				else {
+					throw e;
+				}
+			}
+		}
+		// ignite not started
+		else if(cfg!=null) {
+			ignite = Ignition.start(cfg);
+		}
+		else {
 			ignite = Ignition.start();
-		else if (config == null && Ignition.allGrids().size()==1)
-			ignite = Ignition.allGrids().get(0);
-		else if (config == null && Ignition.allGrids().size()>1)
-			ignite = Ignition.ignite();
-		else {			
-			ignite = Ignition.getOrStart(config);
 		}
-	}
+	}	
 
-	private IgniteContext(String cfg) {			
-		this(fromConfig(cfg));
-	}
-
-	public static IgniteConfiguration fromConfig(String cfg) {	  
-	  try {
-		  IgniteConfiguration config = Ignition.loadSpringBean(cfg, "ignite.cfg");
-		  return config;
-	  }
-	  catch(Exception e) {
-		  logger.error("Error load config from "+cfg,e);
-	  }
-	  return null; 	  
-   }
-	
-
-	public static IgniteContext getInstance(String cfg) {
-		if(cfg==null) {
-			cfg = "conf/ignite/backend-config.xml";
+	public static IgniteContext getInstance(String cfg,String name) {
+		IgniteContext instance = instances.get(name);
+		if (instance == null) {
+			instance = new IgniteContext(cfg,name);
 		}
-		if (instance == null)
-			instance = new IgniteContext(cfg);
+		else {
+			Log.warn("ignite instance "+name+" already use as other janus graph backend");
+		}
 		return instance;
 	}
 
 	
 
 	public static IgniteContext getInstance(IgniteConfiguration config) {
+		IgniteContext instance = instances.get(config.getIgniteInstanceName());
 		if (instance == null)
 			instance = new IgniteContext(config);
+		else {
+			Log.warn("ignite instance "+config.getIgniteInstanceName()+" already use as other janus graph backend");
+		}
 		return instance;
 	}
 

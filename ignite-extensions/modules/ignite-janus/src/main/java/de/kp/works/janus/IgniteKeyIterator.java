@@ -14,7 +14,7 @@ package de.kp.works.janus;
  * License for the specific language governing permissions and limitations under
  * the License.
  * 
- * @author Stefan Krusche, Dr. Krusche & Partner PartG
+ * 
  * 
  */
 

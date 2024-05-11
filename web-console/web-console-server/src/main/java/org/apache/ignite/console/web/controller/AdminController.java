@@ -27,15 +27,22 @@ import org.apache.ignite.console.services.AdminService;
 import org.apache.ignite.console.web.model.PeriodFilterRequest;
 import org.apache.ignite.console.web.model.SignUpRequest;
 import org.apache.ignite.console.web.model.ToggleRequest;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 
@@ -47,6 +54,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @RestController
 @RequestMapping("/api/v1/admin")
 public class AdminController {
+	private static final Logger log = LoggerFactory.getLogger(AdminController.class);
     /** */
     private final AdminService adminSrv;
 
@@ -70,6 +78,27 @@ public class AdminController {
         return ResponseEntity.ok(adminSrv.list(period.getStartDate(), period.getEndDate()));
     }
 
+    
+    /**
+     * @param period Period filter.
+     * @return List of accounts.
+     */
+    @Operation(summary = "Get a user.")
+    @GetMapping(path = "/users/{accountId}", consumes = APPLICATION_JSON_VALUE)
+    public ResponseEntity<Account> findByIdAccount(@PathVariable("accountId") UUID accId) {
+        return ResponseEntity.ok(adminSrv.getUser(accId));
+    }
+    
+    /**
+     * @param period Period filter.
+     * @return List of accounts.
+     */
+    @Operation(summary = "Get a user.")
+    @GetMapping(path = "/users", consumes = APPLICATION_JSON_VALUE)
+    public ResponseEntity<Account> findAccount(@RequestParam("email") String email, @RequestParam("phoneNumber") String phoneNumber) {
+        return ResponseEntity.ok(adminSrv.findUser(email,phoneNumber));
+    }
+    
     /**
      * @param acc Account.
      * @param params Parameters.

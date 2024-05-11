@@ -14,7 +14,7 @@ package de.kp.works.janus;
  * License for the specific language governing permissions and limitations under
  * the License.
  *
- * @author Stefan Krusche, Dr. Krusche & Partner PartG
+ * 
  *
  */
 
@@ -46,6 +46,7 @@ import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
 import org.janusgraph.graphdb.log.StandardTransactionId;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 import org.janusgraph.graphdb.types.TypeDefinitionDescription;
@@ -141,11 +142,14 @@ public class IgniteSerializer implements AttributeHandler, Serializer {
         registerClassInternal(64,Duration.class, new DurationSerializer());
         registerClassInternal(65,Instant.class, new InstantSerializer());
         registerClassInternal(66,StandardTransactionId.class, new StandardTransactionIdSerializer());
-        registerClassInternal(67,TraverserSet.class, new SerializableSerializer());
-        registerClassInternal(68,HashMap.class, new SerializableSerializer());
+        registerClassInternal(67,TraverserSet.class, new SerializableSerializer<>());
+        registerClassInternal(68,HashMap.class, new SerializableSerializer<>());
         registerClassInternal(69,GraphCacheEvictionAction.class, new EnumSerializer<>(GraphCacheEvictionAction.class));
         registerClassInternal(70, ObjectNode.class, new JsonSerializer<>(ObjectNode.class));
         registerClassInternal(71, ArrayNode.class, new JsonSerializer<>(ArrayNode.class));
+        // add@byron
+        registerClassInternal(72, RelationIdentifier.class, new SerializableSerializer<>());      
+        
     }
 
     @Override

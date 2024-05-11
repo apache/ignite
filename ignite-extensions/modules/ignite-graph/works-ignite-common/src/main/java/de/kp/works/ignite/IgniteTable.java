@@ -131,7 +131,7 @@ public class IgniteTable extends IgniteBaseTable {
              IgniteMutation mutation = mutations.get(i);
              if (mutation.mutationType.equals(IgniteMutationType.DELETE)) {
 
-                 System.out.println("DELETE");
+                 // System.out.println("DELETE");
                  IgniteDelete deleteMutation = (IgniteDelete)mutation;
 
                  boolean success = delete(deleteMutation);

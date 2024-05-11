@@ -14,7 +14,7 @@ package de.kp.works.janus;
  * License for the specific language governing permissions and limitations under
  * the License.
  * 
- * @author Stefan Krusche, Dr. Krusche & Partner PartG
+ * 
  * 
  */
 
@@ -41,8 +41,10 @@ public class IgniteCacheEntry extends AbstractEntryBuilder {
 
 	String hashKey;
 	String rangeKey;
+	
+	byte[] data;
 
-	ByteBuffer byteBuffer;
+	//ByteBuffer byteBuffer;
 
 	public IgniteCacheEntry(Map<String, IgniteValue> items) {
 
@@ -50,7 +52,7 @@ public class IgniteCacheEntry extends AbstractEntryBuilder {
 		this.rangeKey = items.get(RANGE_KEY).getS();
 
 		if (items.containsKey(BYTE_BUFFER))
-			this.byteBuffer = items.get(BYTE_BUFFER).getB();
+			this.data = items.get(BYTE_BUFFER).data();
 
 	}
 
@@ -63,21 +65,28 @@ public class IgniteCacheEntry extends AbstractEntryBuilder {
 	}
 
 	public String getCacheKey() {
-		String serialized = toString();
+		String serialized = hashKey + ":" + rangeKey;		
+		return serialized;
+		/**
 		try {
 			return new String(MD5.digest(serialized.getBytes(StandardCharsets.UTF_8)),StandardCharsets.UTF_8);
 
 		} catch (Exception e) {
 			return null;
 		}
+		*/
 	}
 
-	public ByteBuffer getBuffer() {
-		return byteBuffer;
+	//public ByteBuffer getBuffer() {
+	//	return byteBuffer;
+	//}
+	
+	public byte[] data() {
+		return data;
 	}
 
 	@Override
 	public String toString() {
-		return "hashKey::" + hashKey + ", rangeKey::" + rangeKey + ", byteBuffer:: " + byteBuffer;
+		return "hashKey::" + hashKey + ", rangeKey::" + rangeKey + ", data:: " + new String(data,StandardCharsets.UTF_8);
 	}
 }

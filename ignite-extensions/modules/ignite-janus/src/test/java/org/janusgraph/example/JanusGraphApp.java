@@ -18,12 +18,15 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
+import org.janusgraph.core.ConfiguredGraphFactory;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.RelationType;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.util.system.ConfigurationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +56,8 @@ public class JanusGraphApp extends GraphApp {
     protected String mixedIndexConfigName;
     
     protected JanusGraph janusgraph;
+    
+    ConfiguredGraphFactory f;
 
     /**
      * Constructs a graph app using the given properties.
@@ -69,7 +74,11 @@ public class JanusGraphApp extends GraphApp {
 
     @Override
     public GraphTraversalSource openGraph() throws ConfigurationException, IOException {
-        super.openGraph();
+    	LOGGER.info("opening janus graph");
+    	conf = ConfigurationUtil.loadPropertiesConfig(propFileName);
+        graph = JanusGraphFactory.open(conf);
+       
+        g = graph.traversal();
         useMixedIndex = useMixedIndex && conf.containsKey("index." + mixedIndexConfigName + ".backend");
         return g;
     }

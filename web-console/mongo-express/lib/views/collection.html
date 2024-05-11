@@ -251,14 +251,14 @@
       </thead>
       {% for index, document in docs %}
         {% if document._id._bsontype == 'Binary' %}
-        <tr id="doc-{{ index }}" onclick="loadDocument('{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}?subtype={{ document._id.sub_type }}&skip={{skip}}')">
+        <tr id="doc-{{ index }}" onclick="loadDocument('{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}?subtype={{ document._id.sub_type }}&skip={{skip}}')" doc_subtype="{{ document._id.sub_type }}">
         {% else %}
         <tr id="doc-{{ index }}" onclick="loadDocument('{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}?skip={{skip}}')">
         {% endif %}
           {% for column in columns %}
             <td><div class="tableContent">
               {% if !settings.read_only && !settings.no_delete && column === '_id' && collectionName !== 'system.indexes' %}
-                <button class="btn btn-info" onclick="loadDocument('{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}')">
+                <button class="btn btn-info" onclick="loadDocument('{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}?subtype={{ document._id.sub_type }}&skip={{ skip }}')">
                   <span class="glyphicon glyphicon-link"></span>
                 </button>
                 <form class="deleteButtonDocument" method="POST" style="display:inline;" action="{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}?subtype={{ document._id.sub_type }}&skip={{ skip }}&key={{ key }}&value={{ value }}&type={{ type }}&query={{ query }}&projection= {{ projection }}">
@@ -518,8 +518,12 @@
         </td>
         <td>
           {% for sort in index.key %}
-          <div>{{ loop.key }} &nbsp; {% if sort == 1 %} ASC {% else %} DSC {% endif %}</div>
+          <div>{{ loop.key }} &nbsp; 
+		  {% if sort == 1 %} ASC 
+		  {% elseif sort==0 || sort==-1 %} DSC 
+		  {% else %} {{ sort | json | safe }} {% endif %}
           {% endfor %}
+		  </div>
         </td>
         <td>
           {{ index.size|convertBytes }}

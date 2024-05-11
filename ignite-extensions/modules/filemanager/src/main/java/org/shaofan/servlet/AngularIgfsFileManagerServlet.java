@@ -205,7 +205,7 @@ public class AngularIgfsFileManagerServlet extends HttpServlet {
     * @return
     */
    private String[] getFileToken(String webjarsResourceURI) {
-	   if(webjarsResourceURI.startsWith("/")) {
+	   while(webjarsResourceURI.startsWith("/")) {
 		   webjarsResourceURI = webjarsResourceURI.substring(1);
 	   }
        String[] tokens = webjarsResourceURI.split("/",2);
@@ -217,7 +217,7 @@ public class AngularIgfsFileManagerServlet extends HttpServlet {
    }
    
    private IgfsFile getFile(String webjarsResourceURI) {
-	   if(webjarsResourceURI.startsWith("/")) {
+	   while(webjarsResourceURI.startsWith("/")) {
 		   webjarsResourceURI = webjarsResourceURI.substring(1);
 	   }
        String[] tokens = webjarsResourceURI.split("/",2);
@@ -229,7 +229,7 @@ public class AngularIgfsFileManagerServlet extends HttpServlet {
    }
    
    private IgfsPath getPath(String webjarsResourceURI) {
-	   if(webjarsResourceURI.startsWith("/")) {
+	   while(webjarsResourceURI.startsWith("/")) {
 		   webjarsResourceURI = webjarsResourceURI.substring(1);
 	   }
        String[] tokens = webjarsResourceURI.split("/",2);       

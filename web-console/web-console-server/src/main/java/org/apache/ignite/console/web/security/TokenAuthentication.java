@@ -16,9 +16,11 @@ public class TokenAuthentication implements Authentication{
     private final String token;
     private final Account principal;
     private boolean isAdmin = false;
+    
     public TokenAuthentication(String token, Account principal){
         this.token = token;
         this.principal = principal;
+        this.isAdmin = principal.isAdmin();
     }
  
     @Override

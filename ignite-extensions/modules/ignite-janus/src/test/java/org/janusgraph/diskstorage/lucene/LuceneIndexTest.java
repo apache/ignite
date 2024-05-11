@@ -144,4 +144,10 @@ public class LuceneIndexTest extends IndexProviderTest {
         String expected = "field" + REPLACEMENT_CHAR + "name" + REPLACEMENT_CHAR + "with" + REPLACEMENT_CHAR + "spaces";
         assertEquals(expected, index.mapKey2Field("field name with spaces", null));
     }
+
+	@Override
+	public Mapping preferredGeoShapeMapping() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

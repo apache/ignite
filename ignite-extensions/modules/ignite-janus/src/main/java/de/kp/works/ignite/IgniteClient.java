@@ -15,11 +15,12 @@ package de.kp.works.ignite;
  * License for the specific language governing permissions and limitations under
  * the License.
  * 
- * @author Stefan Krusche, Dr. Krusche & Partner PartG
+ * 
  * 
  */
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -38,9 +39,12 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.transactions.Transaction;
 import org.janusgraph.diskstorage.Entry;
@@ -59,6 +63,15 @@ public class IgniteClient extends AbstractEntryBuilder {
 
 	public IgniteClient(Ignite ignite) {
 		this.ignite = ignite;
+		log.info("wait for ignite active ...");
+		while(ignite.cluster().state()==ClusterState.INACTIVE) {
+			try {				
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	}
 
 	/*
@@ -69,8 +82,7 @@ public class IgniteClient extends AbstractEntryBuilder {
 	 * supported and will be used within this key query mechanism
 	 * 
 	 */
-	public KeyIterator getKeySlice(IgniteCache<String, BinaryObject> cache, SliceQuery query,
-			Map<String, IgniteValue> items) {
+	public KeyIterator getKeySlice(IgniteCache<String, BinaryObject> cache, SliceQuery query, Map<String, IgniteValue> items) {
 
 		Transaction tx = ignite.transactions().txStart();
 
@@ -125,7 +137,7 @@ public class IgniteClient extends AbstractEntryBuilder {
 				String rowKey = (String) result.get(0);
 				StaticBuffer hashKey = decodeKeyFromHexString(rowKey);
 
-				ByteBuffer byteBuffer = (ByteBuffer) result.get(2);
+				byte[] byteBuffer = (byte[]) result.get(2);
 				StaticBuffer value = decodeValue(byteBuffer);
 
 				if (value == null)
@@ -236,7 +248,7 @@ public class IgniteClient extends AbstractEntryBuilder {
 				String rowKey = (String) result.get(0);
 				StaticBuffer hashKey = decodeKeyFromHexString(rowKey);
 
-				ByteBuffer byteBuffer = (ByteBuffer) result.get(2);
+				byte[] byteBuffer = (byte[]) result.get(2);
 				StaticBuffer value = decodeValue(byteBuffer);
 
 				if (value == null)
@@ -298,7 +310,7 @@ public class IgniteClient extends AbstractEntryBuilder {
 				String colName = (String) result.get(1);
 				StaticBuffer rangeKey = decodeRangeKey(colName);
 
-				ByteBuffer colValu = (ByteBuffer) result.get(2);
+				byte[] colValu = (byte[]) result.get(2);
 				StaticBuffer value = decodeValue(colValu);
 				/*
 				 * There are stores (e.g. janusgraph_ids) that use the column name also as its
@@ -414,8 +426,8 @@ public class IgniteClient extends AbstractEntryBuilder {
 		String rangeKey = entry.getRangeKey();
 		valueBuilder.setField(RANGE_KEY, rangeKey);
 
-		ByteBuffer buffer = entry.getBuffer();
-		valueBuilder.setField(BYTE_BUFFER, buffer);
+		//-ByteBuffer buffer = entry.getBuffer();
+		valueBuilder.setField(BYTE_BUFFER, entry.data());
 
 		return valueBuilder.build();
 
@@ -467,6 +479,7 @@ public class IgniteClient extends AbstractEntryBuilder {
 		cfg.setIndexedTypes(String.class, BinaryObject.class);
 
 		cfg.setCacheMode(cacheMode);
+		cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
 		cfg.setQueryEntities(qes);
 		return cfg;
@@ -504,11 +517,19 @@ public class IgniteClient extends AbstractEntryBuilder {
 		 * The [ByteBuffer] representation fo the column value that can be converted
 		 * into JabusGraph's [StaticBuffer]
 		 */
-		fields.put("BYTE_BUFFER", "java.nio.ByteBuffer");
+		//-fields.put("BYTE_BUFFER", "java.nio.ByteBuffer");
+		fields.put("BYTE_BUFFER", "java.lang.byte[]");
 
 		qe.setFields(fields);
+		qe.setIndexes(buildDocumentIndexs());
 		return qe;
 
 	}
-
+	
+	private List<QueryIndex> buildDocumentIndexs() {
+        List<QueryIndex> indexes = new ArrayList<>();
+        indexes.add(new QueryIndex("HASH_KEY"));
+        indexes.add(new QueryIndex("RANGE_KEY"));  
+        return indexes;
+    }
 }

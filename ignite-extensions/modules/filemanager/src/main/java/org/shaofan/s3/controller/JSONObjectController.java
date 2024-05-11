@@ -13,15 +13,18 @@ import org.springframework.beans.factory.annotation.Value;
 
 
 import org.springframework.util.FileCopyUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.*;
-
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.mail.internet.MimeUtility;
 import javax.servlet.http.HttpServletResponse;
@@ -40,11 +43,20 @@ public class JSONObjectController  {
     private S3Util s3Util;
     
     private String bucketName = "json_datasets";
+    
+    private String key(String coll,String docId) {
+    	coll = StringUtils.trimLeadingCharacter(coll,'/');
+    	coll = StringUtils.trimTrailingCharacter(coll,'/');
+    	docId = StringUtils.trimLeadingCharacter(docId, '/');
+    	docId = StringUtils.trimTrailingCharacter(docId, '/');
+    	
+    	return coll+"/"+docId+".json";
+    }
 
     /**
-     * 展示JSON对象列表
+     * 展示JSON collection列表
      */
-    @RequestMapping(value="/list",method=RequestMethod.GET, headers=ACCEPT_JSON)
+    @RequestMapping(value="/",method=RequestMethod.GET, headers=ACCEPT_JSON)
     public JSONObject list(@RequestParam(value="name",required=false) String name) {
     	JSONObject jsonObject = new JSONObject();
         try {
@@ -95,35 +107,34 @@ public class JSONObjectController  {
     	JSONObject jsonObject = new JSONObject();
         try {
             // 需要显示的目录路径
-            // 返回的结果集
-            List<JSONObject> fileItems = new ArrayList<>();
+            // 返回的结果集            
             
             List<S3Object> list = s3Util.getObjectList(bucketName, collection);
 
-            String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
-            SimpleDateFormat dt = new SimpleDateFormat(DATE_FORMAT);
-            for (S3Object pathObj : list) {
-            	String fname = pathObj.key();            	
+            List<JSONObject> fileItems = list.parallelStream().filter((S3Object pathObj)->{
+            	String fname = pathObj.key().substring(collection.length());         	
             	
             	if(name!=null && !name.isEmpty()) {
             		if(name.charAt(0)=='/' && !fname.startsWith(name)) {
-            			continue;
+            			return false;
             		}
             		if(name.charAt(0)!='/' && fname.indexOf(name)<0) {
-            			continue;
-            		}
-            	}                   
-
-                // 封装返回JSON数据
-                JSONObject fileItem = new JSONObject();
-                fileItem.put("name", fname);
-                fileItem.put("date", dt.format(new Date(pathObj.lastModified().toEpochMilli())));
-                fileItem.put("size", pathObj.size());
-                fileItem.put("etag", pathObj.eTag());
-                fileItem.put("type", fname.endsWith("/")?"dir":"file");
-                fileItems.add(fileItem);
-            }
-            
+            			return false;
+            		}            		
+            	}
+            	return true;
+            }).map((S3Object pathObj)->{
+            	String fname = pathObj.key();            	
+            	String jsonString = new String(s3Util.getFileByte(bucketName, fname),StandardCharsets.UTF_8);
+                
+                JSONObject json = JSONObject.parseObject(jsonString);
+                if(fname.endsWith(".json")) {
+                	fname = fname.substring(0,fname.length()-5);
+                }
+                json.put("_id",fname);
+            	return json;
+            }).collect(Collectors.toList());
+           
             jsonObject.put("data", fileItems);
             jsonObject.put("status",0);
             return jsonObject;
@@ -140,8 +151,8 @@ public class JSONObjectController  {
 
         try {
         	StringInputStream in = new StringInputStream(json.toJSONString());        	
-            s3Util.upload(bucketName, collection+"/"+destination, in);
-            return success(destination);
+            s3Util.upload(bucketName, key(collection,destination), in);
+            return success(key(collection,destination));
         } catch (Exception e) {
             return error(e.getMessage(),500);
         }
@@ -159,7 +170,7 @@ public class JSONObjectController  {
         response.setHeader("Content-Disposition", "inline; filename=\"" + MimeUtility.encodeWord(FilenameUtils.getName(path)) + "\"");
 
         try (
-        	InputStream in = s3Util.getFileInputStream(bucketName, collection+"/"+path);
+        	InputStream in = s3Util.getFileInputStream(bucketName, key(collection,path));
         	InputStream inputStream = new BufferedInputStream(in)) {
             FileCopyUtils.copy(inputStream, response.getOutputStream());
         }
@@ -170,25 +181,18 @@ public class JSONObjectController  {
     
 
     /**
-     * 文件下载/预览
+     * 文件全量更新，返回新版本
      */
     @RequestMapping(value="/{collection}/{path}",method=RequestMethod.PUT, headers=ACCEPT_JSON)
     @ResponseBody
-    public JSONObject put(@PathVariable("collection") String collection,@PathVariable("path") String path,@RequestParam("key") String key, @RequestBody JSONObject updates) {
-
-        if (key==null) {
-        	return error("Key Not Set",HttpServletResponse.SC_BAD_REQUEST);
-        }      
-            	
+    public JSONObject put(@PathVariable("collection") String collection,@PathVariable("path") String destination,@RequestBody JSONObject updates) {
+        	
         try {
-        	String jsonString = new String(s3Util.getFileByte(bucketName, collection+"/"+path),"UTF-8");
+        	
+            StringInputStream in = new StringInputStream(updates.toJSONString());
             
-            JSONObject json = JSONObject.parseObject(jsonString);
-            json.put(key, updates);
-            StringInputStream in = new StringInputStream(json.toJSONString());    
-            
-			s3Util.upload(bucketName, path, in);
-			return success("");
+			s3Util.upload(bucketName, key(collection,destination), in);
+			return success(key(collection,destination));
 		} catch (Exception e) {
 			return error(e.getMessage(),500);
 		}
@@ -196,40 +200,67 @@ public class JSONObjectController  {
     }
 
     /**
-     * 删除文件或目录
+     * 删除文档中的内容keys
      */
     @RequestMapping(value="/{collection}/{path}",method=RequestMethod.DELETE, headers=ACCEPT_JSON)
     @ResponseBody
-    public JSONObject remove(@PathVariable("collection") String collection,@PathVariable("path") String path,@RequestBody JSONObject deletes) {
+    public JSONObject remove(@PathVariable("collection") String collection,@PathVariable("path") String destination,@RequestBody JSONObject deletes) {
         try {
+        	String path = key(collection,destination);
+        	if(deletes==null) {
+        		s3Util.delete(bucketName, path);
+        		return success(path);
+        	}
         	
-        	String jsonString = new String(s3Util.getFileByte(bucketName, collection+"/"+path),"UTF-8");
+        	String jsonString = new String(s3Util.getFileByte(bucketName, path),"UTF-8");
             
             JSONObject json = JSONObject.parseObject(jsonString);
-            for(String key: deletes.keySet()) {
-            	json.remove(key);
-            }
+            deleteMap(json,deletes);
+            
             StringInputStream in = new StringInputStream(json.toJSONString());        	
             
 			s3Util.upload(bucketName, path, in);
 			return success(deletes.keySet());
-    		
             
         } catch (Exception e) {
             return error(e.getMessage(),500);
         }
     }
 
+    private void deleteMap(Map<String,Object> json, Map<String,Object> deletes) {
+    	for(Map.Entry<String,Object> ent: deletes.entrySet()) {
+        	String key = ent.getKey();
+        	if(ent.getValue() instanceof Map) {
+        		Object value = json.get(key);
+        		if(value instanceof Map) {
+        			deleteMap((Map<String,Object>)value,(Map<String,Object>)ent.getValue());
+        		}
+        	}
+        	else if(ent.getValue() instanceof List) {
+        		Object value = json.get(key);
+        		if(value instanceof Map) {
+        			Map<String,Object> jsonValue = (Map<String,Object>)value;
+        			List keys = (List)ent.getValue();
+        			for(Object id: keys) {
+        				jsonValue.remove(id);
+        			}        			
+        		}
+        	}
+        	else {
+        		json.remove(key);
+        	}
+        }
+    }
    
 
     /**
      * 查看文件内容,针对html、txt等可编辑文件
      */
     @RequestMapping("/{collection}/{path}/meta")
-    public JSONObject getContent(@PathVariable("collection") String collection,@PathVariable("path") String path) {
+    public JSONObject getContent(@PathVariable("collection") String collection,@PathVariable("path") String destination) {
         try {      
         	JSONObject jsonObject = new JSONObject();
-        	List<S3Object> list = s3Util.getObjectList(bucketName, collection+"/"+path);
+        	List<S3Object> list = s3Util.getObjectList(bucketName, key(collection,destination));
         	String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
         	SimpleDateFormat dt = new SimpleDateFormat(DATE_FORMAT);
         	for (S3Object pathObj : list) {
@@ -259,21 +290,20 @@ public class JSONObjectController  {
    
 
     @RequestMapping(value="/{collection}/{path}",method=RequestMethod.PATCH, headers=ACCEPT_JSON)
-    public JSONObject patch(@PathVariable("collection") String collection,@PathVariable("path") String path,@RequestBody JSONObject updates) {    
+    public JSONObject patch(@PathVariable("collection") String collection,@PathVariable("path") String destination,@RequestBody JSONObject updates) {    
     	
         try {
-        	String jsonString = new String(s3Util.getFileByte(bucketName, path),"UTF-8");
+        	String jsonString = new String(s3Util.getFileByte(bucketName, key(collection,destination)),"UTF-8");
             
             JSONObject json = JSONObject.parseObject(jsonString);
             json.putAll(updates);
             StringInputStream in = new StringInputStream(json.toJSONString()); 
             
-			s3Util.upload(bucketName, path, in);
+			s3Util.upload(bucketName, key(collection,destination), in);
 			return success("");
 		} catch (Exception e) {
 			return error(e.getMessage(),500);
-		}
-                    
+		}                    
         
     }
 

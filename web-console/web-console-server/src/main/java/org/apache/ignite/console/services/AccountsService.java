@@ -185,6 +185,15 @@ public class AccountsService implements UserDetailsService {
     Account delete(UUID accId) {
         return accountsRepo.delete(accId);
     }
+    
+    /**
+     * Delete account by ID.
+     *
+     * @param accId Account ID.
+     */
+    Account getById(UUID accId) {
+        return accountsRepo.getById(accId);
+    }
 
     /**
      * Update admin flag..

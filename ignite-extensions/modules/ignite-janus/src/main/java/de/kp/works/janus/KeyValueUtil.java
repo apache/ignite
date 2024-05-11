@@ -9,7 +9,7 @@ package de.kp.works.janus;
  * it only in accordance with the terms of the license agreement you
  * entered into with Dr. Krusche & Partner PartG.
  *
- * @author Stefan Krusche, Dr. Krusche & Partner PartG
+ * 
  *
  */
 
@@ -40,10 +40,11 @@ public class KeyValueUtil {
             so.writeObject(obj);
             so.flush();
 
-            serialized = boas.toString();
+            serialized = boas.toString(StandardCharsets.UTF_8);
 
         } catch (Exception e) {
             System.out.println(e.getLocalizedMessage());
+            serialized = obj.toString();
         }
 
         return serialized;
@@ -54,7 +55,7 @@ public class KeyValueUtil {
         Object obj = null;
         try {
 
-            byte bytes[] = serialized.getBytes();
+            byte bytes[] = serialized.getBytes(StandardCharsets.UTF_8);
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
 
             ObjectInputStream si = new ObjectInputStream(bais);
@@ -125,7 +126,6 @@ public class KeyValueUtil {
      */
     @SuppressWarnings("unchecked")
     public static<O> O staticBuffer2Object(final StaticBuffer s, Class<O> dataType) {
-
         Object value = serializer.readClassAndObject(s.asReadBuffer());
         Preconditions.checkArgument(dataType.isInstance(value),"Could not deserialize to [%s], got: %s",dataType,value);
         return (O)value;
@@ -134,7 +134,6 @@ public class KeyValueUtil {
     public static Object staticBuffer2Object(final StaticBuffer s) {
         Object value = serializer.readClassAndObject(s.asReadBuffer());
         return value;
-
     }
 }
 

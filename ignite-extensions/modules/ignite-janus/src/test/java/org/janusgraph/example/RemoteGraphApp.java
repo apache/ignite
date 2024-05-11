@@ -204,7 +204,7 @@ public class RemoteGraphApp extends JanusGraphApp {
     }
 
     public static void main(String[] args) {
-        String fileName = (args != null && args.length > 0) ? args[0] : "conf/remote-graph.properties";
+        String fileName = (args != null && args.length > 0) ? args[0] : "conf/remote-jgex.properties";
        
         final RemoteGraphApp app = new RemoteGraphApp(fileName);
         app.supportsSchema = false;

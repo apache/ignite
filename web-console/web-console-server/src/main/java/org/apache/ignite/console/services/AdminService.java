@@ -30,6 +30,7 @@ import org.apache.ignite.console.web.model.SignUpRequest;
 import org.apache.ignite.console.web.socket.TransitionService;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import static org.apache.ignite.console.event.AccountEventType.ACCOUNT_CREATE_BY_ADMIN;
@@ -161,6 +162,29 @@ public class AdminService {
         evtPublisher.publish(new Event<>(ACCOUNT_CREATE_BY_ADMIN, acc));
 
         return acc;
+    }
+    
+    /**
+     * @param params SignUp params.
+     */
+    public Account getUser(UUID accId) {
+        Account acc = accountsSrv.getById(accId);
+        return acc;
+    }
+    
+    /**
+     * @param params SignUp params.
+     */
+    public Account findUser(String email,String phineNumber) {
+    	if(email!=null && !email.isBlank()) {
+	        Account acc = accountsSrv.loadUserByUsername(email);
+	        return acc;
+    	}
+    	if(phineNumber!=null && !phineNumber.isBlank()) {
+	        Account acc = accountsSrv.loadUserByUsername(phineNumber);
+	        return acc;
+    	}
+    	throw new UsernameNotFoundException("empty email or phineNumber");
     }
 
     /** */

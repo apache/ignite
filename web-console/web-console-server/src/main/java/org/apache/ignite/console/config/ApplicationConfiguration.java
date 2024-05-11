@@ -17,19 +17,24 @@
 package org.apache.ignite.console.config;
 
 import java.util.Map;
+
+import org.apache.ignite.Ignite;
 import org.apache.ignite.console.web.security.PassportLocalPasswordEncoder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.context.event.SimpleApplicationEventMulticaster;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -79,30 +84,14 @@ public class ApplicationConfiguration  {
         pool.initialize();
 
         return pool;
-    }   
+    }    
     
     @Bean
-    public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/api/**")
-                		.maxAge(3600)
-                        .allowedOriginPatterns("*")
-                        .allowCredentials(true)
-                        .allowedHeaders("*")
-                        .exposedHeaders("*")
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS");
-            }
-            
-            @Override
-            public void addResourceHandlers(ResourceHandlerRegistry registry) {
-                registry.addResourceHandler("swagger-ui.html")
-                  .addResourceLocations("classpath:/META-INF/resources/");
-
-                registry.addResourceHandler("/webjars/**")
-                  .addResourceLocations("classpath:/META-INF/resources/webjars/");
-            }
-        };
+    public TaskScheduler taskScheduler(){
+      ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+      scheduler.setPoolSize(4);      
+      scheduler.initialize();
+      
+      return scheduler;
     }
 }

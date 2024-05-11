@@ -1,2 +1,0 @@
-io.prestosql.plugin.ignite.IgnitePlugin
-com.shard.jdbc.plugin.ShardingJdbcPlugin

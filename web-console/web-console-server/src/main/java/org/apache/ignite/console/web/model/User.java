@@ -17,15 +17,21 @@
 package org.apache.ignite.console.web.model;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.hibernate.validator.constraints.NotEmpty;
+
 
 /**
  * Base class for user web models.
  */
 public class User {
+	/** Email. */
+    @Schema(title = "User uid")    
+    private String uid;
+    
     /** Email. */
     @Schema(title = "User email", required = true)
     @NotNull
@@ -43,10 +49,19 @@ public class User {
     @NotNull
     @NotEmpty
     private String lastName;
+    
+    /** display name. */
+    @Schema(title = "User display name")    
+    private String displayName;
+
 
     /** Phone. */
     @Schema(title = "User phone")
-    private String phone;
+    private String phone;    
+    
+    /** photo url */
+    @Schema(title = "User photo URL")    
+    private String photoURL;
 
     /** Company. */
     @Schema(title = "User company", required = true)
@@ -73,6 +88,7 @@ public class User {
      * @param acc AccountDTO.
      */
     public User(Account acc) {
+    	uid = acc.getId().toString();
         email = acc.getEmail();
         firstName = acc.getFirstName();
         lastName = acc.getLastName();
@@ -165,7 +181,31 @@ public class User {
         this.phone = phone;
     }
 
-    /** {@inheritDoc} */
+    public String getUid() {
+		return uid;
+	}
+
+	public void setUid(String uid) {
+		this.uid = uid;
+	}
+
+	public String getDisplayName() {
+		return displayName;
+	}
+
+	public void setDisplayName(String displayName) {
+		this.displayName = displayName;
+	}
+
+	public String getPhotoURL() {
+		return photoURL;
+	}
+
+	public void setPhotoURL(String photoURL) {
+		this.photoURL = photoURL;
+	}
+
+	/** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(User.class, this);
     }

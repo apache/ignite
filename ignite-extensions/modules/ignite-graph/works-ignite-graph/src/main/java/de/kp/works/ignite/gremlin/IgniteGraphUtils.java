@@ -22,6 +22,8 @@ import de.kp.works.ignite.IgniteAdmin;
 import de.kp.works.ignite.IgniteConf;
 import de.kp.works.ignite.IgniteConstants;
 import de.kp.works.ignite.ValueType;
+import de.kp.works.ignite.ValueUtils;
+
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 
@@ -116,6 +118,9 @@ public final class IgniteGraphUtils {
             	}
             	else if(value instanceof Collection) {
             		props.put(keyStr, value);
+            	}            	
+            	else if(value instanceof Number) {
+            		props.put(keyStr, ValueUtils.convertNumberToString(((Number) value)));
             	}
             	else {
             		props.put(keyStr, value.toString());

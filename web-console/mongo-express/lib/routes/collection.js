@@ -153,7 +153,7 @@ const routes = function (config) {
           const queryAggregate = exp._getSimpleAggregatePipeline(query, queryOptions);
           [items, count] = await Promise.all([
             req.collection.aggregate(queryAggregate, { allowDiskUse: config.mongodb.allowDiskUse }).toArray(),
-            req.collection.countDocuments(query),
+            req.collection.count(query) // req.collection.countDocuments(query),
           ]);
         } else {
           // Array case
@@ -165,7 +165,7 @@ const routes = function (config) {
       } else {
         [items, count] = await Promise.all([
           req.collection.find(query, queryOptions).toArray(),
-          req.collection.countDocuments(query),
+          req.collection.count(query)// req.collection.countDocuments(query),
         ]);
       }
 

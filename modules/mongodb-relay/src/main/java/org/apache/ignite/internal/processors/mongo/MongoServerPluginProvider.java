@@ -58,6 +58,8 @@ public class MongoServerPluginProvider implements PluginProvider<MongoPluginConf
     private MongoPluginConfiguration cfg;
     
     private MongoPlugin mongoPlugin = new MongoPlugin();
+    
+    private int counter = 0;
 
 	
     /** {@inheritDoc} */
@@ -115,6 +117,7 @@ public class MongoServerPluginProvider implements PluginProvider<MongoPluginConf
          	}
          	this.mongoPlugin.backend = backend;
          	this.mongoPlugin.databaseName =	databaseName;
+         	counter++;
          }
          	
     }
@@ -138,16 +141,8 @@ public class MongoServerPluginProvider implements PluginProvider<MongoPluginConf
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void stop(boolean cancel) {
-    	if(mongoServer!=null) {
-    		synchronized(MongoServerPluginProvider.class) {
-    			if(mongoServer!=null) {
-		      	   log.info("mongoServer","shutting down "+ mongoServer.toString());
-		      	   mongoServer.shutdownNow();
-		      	   mongoServer = null;
-    			}
-    		}
-      	}
+    @Override public void stop(boolean cancel) {
+    	
     }
 
     /** {@inheritDoc} */
@@ -172,7 +167,18 @@ public class MongoServerPluginProvider implements PluginProvider<MongoPluginConf
 
     /** {@inheritDoc} */
     @Override public void onIgniteStop(boolean cancel) {    	
-    	
+    	if(cfg!=null) {
+    		counter--;
+    		if(mongoServer!=null) {
+        		synchronized(MongoServerPluginProvider.class) {
+        			if(mongoServer!=null && counter<=0) {
+    		      	   log.info("mongoServer","shutting down "+ mongoServer.toString());
+    		      	   mongoServer.shutdownNow();
+    		      	   mongoServer = null;
+        			}
+        		}
+          	}
+    	}
     }
 
     /** {@inheritDoc} */

@@ -139,4 +139,10 @@ public class IgniteLuceneTest extends JanusGraphIndexTest {
         assertEquals(expectedIndexes, mgmt.printIndexes());
     }
 
+	@Override
+	public boolean supportsGeoShapePrefixTreeMapping() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
 }

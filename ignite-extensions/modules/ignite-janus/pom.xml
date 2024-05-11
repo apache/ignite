@@ -3,17 +3,18 @@
   	<modelVersion>4.0.0</modelVersion>
   	<groupId>de.kp.works</groupId>
   	<artifactId>ignite-janus</artifactId>
-  	<version>0.6.2</version>
+  	<version>1.1.0</version>
 	<name>Janus-Ignite</name>
 	
   	<properties>
-   		<maven.compiler.source>1.8</maven.compiler.source>
-   		<maven.compiler.target>1.8</maven.compiler.target>
+   		<maven.compiler.source>11</maven.compiler.source>
+   		<maven.compiler.target>11</maven.compiler.target>
    		<encoding>UTF-8</encoding>
 
 		<ignite.version>2.16.999-SNAPSHOT</ignite.version>
-		<janus.version>0.6.2</janus.version>
-		<lucene-solr.version>8.8.2</lucene-solr.version>
+		<janus.version>1.1.0-20231108-040802.ba4b083</janus.version>
+		<lucene-solr.version>8.11.2</lucene-solr.version>
+		<gremlin.version>3.7.0</gremlin.version>
 	</properties>
 
 	<dependencies>
@@ -23,8 +24,16 @@
 		<dependency>
 			<groupId>org.janusgraph</groupId>
 			<artifactId>janusgraph-core</artifactId>
-			<version>${janus.version}</version>
+			<version>${janus.version}</version>			
 		</dependency>
+		
+		<!-- https://mvnrepository.com/artifact/org.janusgraph/janusgraph-lucene -->
+		<dependency>
+		    <groupId>org.janusgraph</groupId>
+		    <artifactId>janusgraph-lucene</artifactId>
+		    <version>${janus.version}</version>
+		</dependency>
+		
 		
 		<dependency>
 			<groupId>org.janusgraph</groupId>
@@ -41,14 +50,14 @@
 		<dependency>
 			<groupId>org.janusgraph</groupId>
 			<artifactId>janusgraph-driver</artifactId>
-			<version>${janus.version}</version>			
+			<version>${janus.version}</version>				
 		</dependency>
 		
 		<!-- https://mvnrepository.com/artifact/org.apache.tinkerpop/gremlin-console -->
 		<dependency>
 		    <groupId>org.apache.tinkerpop</groupId>
 		    <artifactId>gremlin-console</artifactId>
-		    <version>3.5.3</version>
+		    <version>${gremlin.version}</version>
 		</dependency>
 		
 		
@@ -76,15 +85,6 @@
             <version>${janus.version}</version>
             <scope>test</scope>
         </dependency>
-        
-	       
-	    <dependency>
-	        <groupId>com.baidu.hugegraph</groupId>
-	        <artifactId>hugegraph-client</artifactId>
-	        <version>2.0.1</version>
-	        <scope>test</scope>
-	    </dependency>    
-
 
 		<!-- APACHE IGNITE
 		-->
@@ -92,18 +92,21 @@
 		    <groupId>org.apache.ignite</groupId>
 		    <artifactId>ignite-core</artifactId>
 		    <version>${ignite.version}</version>
+		    <scope>provided</scope>
 		</dependency>
 
 		<dependency>
 		    <groupId>org.apache.ignite</groupId>
 		    <artifactId>ignite-indexing</artifactId>
-		    <version>${ignite.version}</version>		    
+		    <version>${ignite.version}</version>
+		    <scope>provided</scope>		    
 		</dependency>
 		
 		<dependency>
 		    <groupId>org.apache.ignite</groupId>
 		    <artifactId>ignite-spring</artifactId>
 		    <version>${ignite.version}</version>
+		    <scope>provided</scope>
 		</dependency>
 		
 		
@@ -111,13 +114,8 @@
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j2</artifactId>
             <version>${ignite.version}</version>
-        </dependency>
-        
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <version>2.17.1</version>
-            <artifactId>log4j-slf4j-impl</artifactId>           
-        </dependency>
+            <scope>provided</scope>
+        </dependency>       
 
 	</dependencies>	
 	
@@ -133,8 +131,8 @@
                         </goals>
                         <configuration>
                             <outputDirectory>${project.build.directory}/libs</outputDirectory>
-                            <includeScope>compile</includeScope>
-                            <!-- <excludeArtifactIds>ignite-core,ignite-spring,ignite-indexing</excludeArtifactIds> -->
+                            <includeScope>runtime</includeScope>
+                            <excludeArtifactIds>ignite-core,ignite-spring,ignite-indexing,ignite-log4j2</excludeArtifactIds>
                         </configuration>
                     </execution>
                 </executions>

@@ -92,8 +92,7 @@ public class TransactionTest {
             .withMessage(null);
 
     }
-    
-    // see https://github.com/bwaldvogel/mongo-java-server/issues/39
+
     @Test
     public void testBuildData() throws Exception {        
         

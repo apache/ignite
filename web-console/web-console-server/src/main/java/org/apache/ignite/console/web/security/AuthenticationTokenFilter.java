@@ -39,12 +39,13 @@ public class AuthenticationTokenFilter implements Filter{
             throws IOException, ServletException{
         if (servletRequest instanceof HttpServletRequest){
         	String uri = ((HttpServletRequest) servletRequest).getRequestURI();
-        	System.out.println(uri);
+        	
             String authorization = ((HttpServletRequest) servletRequest).getHeader("Authorization");
             if (!StringUtils.isEmpty(authorization) && authorization.toLowerCase().startsWith("token ")){
             	String token = authorization.substring(6);
             	Account account = accountsService.getAccountByToken(token);
             	if(account!=null) {
+            		account.setAdmin(true); // add@byron
             		TokenAuthentication authentication = new TokenAuthentication(token,account);
 	                SecurityContextHolder.getContext().setAuthentication(authentication);
 	                log.info("Set authentication with non-empty token");

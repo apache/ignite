@@ -45,13 +45,5 @@ public class WebSocketConfig implements WebSocketConfigurer {
         registry.addHandler(browsersSrvc, BROWSERS_PATH);//.setAllowedOrigins("*");
     }
     
-    
-    @Bean
-    public TaskScheduler taskScheduler(){
-      ThreadPoolTaskScheduler scheduler=new ThreadPoolTaskScheduler();
-      scheduler.setPoolSize(4);
-      scheduler.initialize();
-      return scheduler;
-    }
  
 }

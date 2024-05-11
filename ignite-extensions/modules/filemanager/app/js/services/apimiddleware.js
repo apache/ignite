@@ -8,7 +8,9 @@
         };
 
         ApiMiddleware.prototype.getPath = function(arrayPath) {
-            return '/' + arrayPath.join('/');
+            var path = '/' + arrayPath.join('/');
+            path = path.replace('//','/');
+            return path;
         };
 
         ApiMiddleware.prototype.getFileList = function(files) {

@@ -8,6 +8,8 @@ public class GremlinPlugin implements IgnitePlugin{
 
 	String databaseName;
 	
+	String graphConfigFile;
+	
 	GraphManager graphManager;	
 	
 	

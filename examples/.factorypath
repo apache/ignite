@@ -1,6 +1,5 @@
 <factorypath>
     <factorypathentry kind="VARJAR" id="M2_REPO/javax/cache/cache-api/1.0.0/cache-api-1.0.0.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/ignite/ignite-core/2.16.999-SNAPSHOT/ignite-core-2.16.999-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/jetbrains/annotations/16.0.3/annotations-16.0.3.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/springframework/spring-context/5.2.22.RELEASE/spring-context-5.2.22.RELEASE.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/springframework/spring-aop/5.2.22.RELEASE/spring-aop-5.2.22.RELEASE.jar" enabled="true" runInBatchMode="false"/>
@@ -11,7 +10,6 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/org/springframework/spring-beans/5.2.22.RELEASE/spring-beans-5.2.22.RELEASE.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/logging/log4j/log4j-api/2.20.0/log4j-api-2.20.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/logging/log4j/log4j-core/2.20.0/log4j-core-2.20.0.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/ignite/ignite-indexing/2.16.999-SNAPSHOT/ignite-indexing-2.16.999-SNAPSHOT.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/commons-codec/commons-codec/1.15/commons-codec-1.15.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/lucene/lucene-core/8.11.2/lucene-core-8.11.2.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/lucene/lucene-analyzers-common/8.11.2/lucene-analyzers-common-8.11.2.jar" enabled="true" runInBatchMode="false"/>
@@ -68,7 +66,6 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/io/prometheus/simpleclient/0.6.0/simpleclient-0.6.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/io/prometheus/simpleclient_httpserver/0.3.0/simpleclient_httpserver-0.3.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/io/prometheus/simpleclient_common/0.3.0/simpleclient_common-0.3.0.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/it/unimi/dsi/fastutil/7.0.12/fastutil-7.0.12.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/github/fommil/netlib/core/1.1.2/core-1.1.2.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/net/sourceforge/f2j/arpack_combined_all/0.1/arpack_combined_all-0.1.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/commons/commons-rng-core/1.0/commons-rng-core-1.0.jar" enabled="true" runInBatchMode="false"/>

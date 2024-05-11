@@ -25,10 +25,9 @@ import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.apache.tinkerpop.shaded.jackson.databind.util.StdDateFormat;
 
 import org.apache.commons.lang3.SerializationUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -149,6 +148,23 @@ public final class ValueUtils {
 		}
     }
     
+       
+    public static String convertNumberToString(Number num) {  
+        String str = String.valueOf(num); 
+        String[] partS = str.split("\\.");
+        if(partS.length==2)
+        	return StringUtils.leftPad(partS[0], 16)+"."+partS[1];
+        else {
+        	if(str.charAt(0)=='-') {
+        		return StringUtils.leftPad(str,20);
+        	}
+        	else {
+        		return StringUtils.leftPad(str,20,'0');
+        	}
+        }
+    }
+    
+    
     public static Object parseValue(String input,ValueType toType) {
     	if(input==null) {
     		return input;
@@ -169,14 +185,14 @@ public final class ValueUtils {
     		DateTimeFormatter fmt = DateTimeFormatter.ISO_DATE_TIME;
     		return fmt.parse(input);
     	}
-    	if(toType==ValueType.INT) {
-    		return Integer.valueOf(input);
+    	if(toType==ValueType.INT) {    		
+    		return Integer.valueOf(input.trim());
     	}
     	if(toType==ValueType.SHORT) {
-    		return Short.valueOf(input);
+    		return Short.valueOf(input.trim());
     	}
     	if(toType==ValueType.LONG) {
-    		return Long.valueOf(input);
+    		return Long.valueOf(input.trim());
     	}
     	if(toType==ValueType.FLOAT) {
     		return Float.valueOf(input);
@@ -230,5 +246,25 @@ public final class ValueUtils {
 			return key.id().toString();
 		}
 		return id.toString();
-	}	
+	}
+	
+	 public static void main(String[] args) {
+	    	String s ="  -1234";
+	    	String s4="  -2234";
+
+	    	long i = Integer.parseInt(s.trim());
+	    	String o = convertNumberToString(i);
+	    	String o4 = convertNumberToString(1234);
+	    	int diff = o.compareTo(o4);
+	    	
+	    	int i4 = Integer.parseInt(o.trim());
+	    	
+	    	String s2="-00000012.321000";
+	    	double d = Double.parseDouble(s2);
+	    	
+	    	String o2 = convertNumberToString(d);
+	    	double d2 = Double.parseDouble(o2);
+	    	int ii = 10;
+	    	
+	 }
 }

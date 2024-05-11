@@ -5,6 +5,7 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
 import org.janusgraph.core.attribute.Geoshape;
@@ -92,7 +93,7 @@ public class GraphApp {
             }
             LOGGER.info("creating elements");
 
-            // see GraphOfTheGodsFactory.java
+            // see GraphOfTheGodsFactory.java .property(T.id, "saturn")
 
             final Vertex saturn = g.addV("titan").property("name", "saturn").property("age", 10000).next();
             final Vertex sky = g.addV("location").property("name", "sky").next();

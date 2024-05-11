@@ -17,7 +17,7 @@
 package org.apache.ignite.console.web.model;
 
 import javax.validation.constraints.NotNull;
-import org.hibernate.validator.constraints.NotEmpty;
+import javax.validation.constraints.NotEmpty;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 

@@ -38,6 +38,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestWrapper;
@@ -45,6 +46,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import static org.apache.ignite.console.dto.Account.ROLE_ADMIN;
+import static org.apache.ignite.console.dto.Account.ROLE_USER;
 
 import static org.apache.ignite.console.common.Utils.getAuthority;
 import static org.apache.ignite.console.common.Utils.isBecomeUsed;
@@ -90,13 +94,15 @@ public class AccountController {
     @Operation(summary = "Login user.")
     @PostMapping(path = "/api/v1/login")
     public ResponseEntity<UserResponse> signin(@Valid @RequestBody SignInRequest params) {        
-
-        Authentication auth = authMgr.authenticate(
-            new UsernamePasswordAuthenticationToken(
-                params.getEmail(),
-                params.getPassword())
-        );
-
+    	
+    	UsernamePasswordAuthenticationToken tok = new UsernamePasswordAuthenticationToken(
+                 params.getEmail(),
+                 params.getPassword());
+    	
+    	tok.setDetails(params.getActivationToken());
+    	 
+        Authentication auth = authMgr.authenticate(tok);        
+        
         SecurityContextHolder.getContext().setAuthentication(auth);
         
         Account acc = accountsSrvc.loadUserByUsername(params.getEmail());
