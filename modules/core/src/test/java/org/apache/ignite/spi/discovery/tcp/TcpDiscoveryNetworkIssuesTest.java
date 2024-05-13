@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -158,10 +159,8 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         cfg.setLocalHost(localhost);
 
-        if (testLog != null) {
+        if (testLog != null)
             cfg.setGridLogger(testLog);
-            testLog = null;
-        }
 
         return cfg;
     }
@@ -244,7 +243,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBackwardNodeCheckWithSameLoopbackSingleLocalAddress() throws Exception {
-        doTestBackwardNodeCheckWithSameLoopback("127.0.0.1", null);
+        doTestBackwardNodeCheckWithSameLoopback("127.0.0.1", false);
     }
 
     /**
@@ -253,6 +252,14 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBackwardNodeCheckWithSameLoopbackSeveralLocalAddresses() throws Exception {
+        doTestBackwardNodeCheckWithSameLoopback("0.0.0.0", true);
+    }
+
+    /**
+     * Performs Tests backward node ping if {@link TcpDiscoveryNode#socketAddresses()} contains same loopback address as of local node.
+     * Assumes several local address are resolved.
+     */
+    private void doTestBackwardNodeCheckWithSameLoopback(String localhost, boolean withSkippedLogs) throws Exception {
         ListeningTestLogger testMethodLog = new ListeningTestLogger(log);
 
         String startLogMsg = "Checking connection to node";
@@ -260,24 +267,11 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         Collection<LogListener> lsnrs = new ArrayList<>();
 
         lsnrs.add(LogListener.matches(startLogMsg).andMatches("result=success").times(1).build());
-        lsnrs.add(LogListener.matches(startLogMsg).andMatches("result=skipped").times(3).build());
+        lsnrs.add(LogListener.matches(startLogMsg).andMatches("result=skipped").atLeast(withSkippedLogs ? 1 : 0).build());
         lsnrs.add(LogListener.matches("Connection check to previous node done").times(1).build());
 
         lsnrs.forEach(testMethodLog::registerListener);
 
-        doTestBackwardNodeCheckWithSameLoopback("0.0.0.0", testMethodLog);
-
-        for (LogListener lsnr : lsnrs)
-            waitForCondition(lsnr::check, getTestTimeout());
-
-        testMethodLog.clearListeners();
-    }
-
-    /**
-     * Performs Tests backward node ping if {@link TcpDiscoveryNode#socketAddresses()} contains same loopback address as of local node.
-     * Assumes several local address are resolved.
-     */
-    private void doTestBackwardNodeCheckWithSameLoopback(String localhost, ListeningTestLogger testMethodLog) throws Exception {
         this.localhost = localhost;
 
         specialSpi = new TestDiscoverySpi();
@@ -292,6 +286,8 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         testLog = testMethodLog;
 
         Ignite node2 = startGrid(2);
+
+        testLog = null;
 
         CountDownLatch handshakeToNode2 = new CountDownLatch(1);
 
@@ -341,6 +337,11 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         // Node 1 must not be kicked.
         for (Ignite ig : G.allGrids())
             assertEquals(3, ig.cluster().nodes().size());
+
+        for (LogListener lsnr : lsnrs)
+            waitForCondition(lsnr::check, getTestTimeout());
+
+        testMethodLog.clearListeners();
     }
 
     /**

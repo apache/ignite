@@ -7286,7 +7286,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         for (int i = 0; i < addrsToCheck; ++i) {
                             InetSocketAddress addr = addrs.get(addrIdx.getAndIncrement());
 
-                            String logMsg = "Checking connection to node: [nodeId=" + node.id() + ", address=" + addr + ", result=";
+                            String logMsg = "Checking connection to node [nodeId=" + node.id() + ", address=" + addr + "], result=";
                             String failReason = null;
 
                             try (Socket sock = new Socket()) {
@@ -7295,17 +7295,17 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                     liveAddrHolder.compareAndSet(null, addr);
 
-                                    logMsg += "success].";
+                                    logMsg += "success.";
                                 }
                                 else
-                                    logMsg += "skipped, another alive address is already found].";
+                                    logMsg += "skipped, cause='Another alive address is already found'.";
                             }
                             catch (Exception e) {
                                 failReason = e.getMessage();
                             }
                             finally {
                                 if (failReason != null)
-                                    U.warn(log, logMsg + "failed, cause='" + failReason + "'].");
+                                    U.warn(log, logMsg + "failed, cause='" + failReason + "'.");
                                 else if (log.isInfoEnabled())
                                     log.info(logMsg);
 
