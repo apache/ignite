@@ -143,8 +143,8 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         assertThrowsAnyCause(
             log,
             () -> snp(ig1).restoreSnapshot(SNAPSHOT_NAME, Collections.singletonList(dfltCacheCfg.getName())).get(TIMEOUT),
-            IllegalArgumentException.class,
-            "different master key digest"
+            IllegalStateException.class,
+            "Snapshot '" + SNAPSHOT_NAME + "' has different master key digest."
         );
     }
 
