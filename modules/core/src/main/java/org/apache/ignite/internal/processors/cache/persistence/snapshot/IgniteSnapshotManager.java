@@ -391,6 +391,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Marshaller. */
     private final Marshaller marsh;
 
+    /** Marshaller class loader. */
+    private final ClassLoader marshClsLdr;
+
     /** Distributed process to restore cache group from the snapshot. */
     private final SnapshotRestoreProcess restoreCacheGrpProc;
 
@@ -488,6 +491,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             this::processLocalSnapshotEndStageResult, (reqId, req) -> new InitMessage<>(reqId, END_SNAPSHOT, req, true));
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
+        marshClsLdr = U.resolveClassLoader(cctx.gridConfig());
 
         restoreCacheGrpProc = new SnapshotRestoreProcess(ctx, locBuff);
 
@@ -2080,7 +2084,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             throw new IgniteCheckedException("Snapshot metafile cannot be read due to it doesn't exist: " + smf);
 
         try (InputStream in = new BufferedInputStream(Files.newInputStream(smf.toPath()))) {
-            return marsh.unmarshal(in, U.resolveClassLoader(cctx.gridConfig()));
+            return marsh.unmarshal(in, marshClsLdr);
         }
     }
 
@@ -4476,7 +4480,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * Delta file iterator sorted by page indexes to almost sequential disk writes on apply to a page store.
      */
-    final class DeltaSortedIterator extends DeltaIterator {
+    class DeltaSortedIterator extends DeltaIterator {
         /** Snapshot delta sort batch size in pages count. */
         public static final int DELTA_SORT_BATCH_SIZE = 500_000;
 
@@ -4607,7 +4611,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** */
-    public static final class ClusterSnapshotFuture extends GridFutureAdapter<Void> {
+    public static class ClusterSnapshotFuture extends GridFutureAdapter<Void> {
         /** Unique snapshot request id. */
         final UUID rqId;
 

@@ -193,7 +193,7 @@ public class SnapshotMetadataVerificationTask
 
         SnapshotMetadata first = null;
 
-        for (ComputeJobResult res: results) {
+        for (ComputeJobResult res : results) {
             if (res.getException() != null) {
                 exs.put(res.getNode(), res.getException());
 
@@ -214,8 +214,7 @@ public class SnapshotMetadataVerificationTask
                     continue;
                 }
 
-                reduceRes.computeIfAbsent(res.getNode(), n -> new ArrayList<>())
-                        .add(meta);
+                reduceRes.computeIfAbsent(res.getNode(), n -> new ArrayList<>()).add(meta);
             }
         }
 

@@ -43,8 +43,8 @@ public class SnapshotMetadataVerificationTaskResult extends IgniteDataTransferOb
         Map<ClusterNode, List<SnapshotMetadata>> meta,
         Map<ClusterNode, Exception> exceptions
     ) {
-        this.meta = Collections.unmodifiableMap(meta);
-        this.exceptions = Collections.unmodifiableMap(exceptions);
+        this.meta = meta;
+        this.exceptions = exceptions;
     }
 
     /** */
@@ -58,7 +58,7 @@ public class SnapshotMetadataVerificationTaskResult extends IgniteDataTransferOb
 
     /** @return Full snapshot metadata. */
     public Map<ClusterNode, List<SnapshotMetadata>> meta() {
-        return Collections.unmodifiableMap(meta);
+        return meta;
     }
 
     /** {@inheritDoc} */

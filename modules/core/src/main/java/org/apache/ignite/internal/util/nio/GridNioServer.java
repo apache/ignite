@@ -170,7 +170,7 @@ public class GridNioServer<T> {
     public static final String SESSIONS_CNT_METRIC_NAME = "ActiveSessionsCount";
 
     /** Defines how many times selector should do {@code selectNow()} before doing {@code select(long)}. */
-    private long selectorSpins;
+    private final long selectorSpins;
 
     /** Accept worker. */
     @GridToStringExclude
@@ -220,12 +220,6 @@ public class GridNioServer<T> {
 
     /** Idle timeout. */
     private volatile long idleTimeout = ConnectorConfiguration.DFLT_IDLE_TIMEOUT;
-
-    /** For test purposes only. */
-    private boolean skipWrite;
-
-    /** For test purposes only. */
-    private boolean skipRead;
 
     /** Local address. */
     private final InetSocketAddress locAddr;
@@ -1161,17 +1155,6 @@ public class GridNioServer<T> {
          * @throws IOException If key read failed.
          */
         @Override protected void processRead(SelectionKey key) throws IOException {
-            if (skipRead) {
-                try {
-                    U.sleep(50);
-                }
-                catch (IgniteInterruptedCheckedException ignored) {
-                    U.warn(log, "Sleep has been interrupted.");
-                }
-
-                return;
-            }
-
             ReadableByteChannel sockCh = (ReadableByteChannel)key.channel();
 
             final GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
@@ -1252,31 +1235,20 @@ public class GridNioServer<T> {
                     buf = (ByteBuffer)req.message();
                 }
 
-                if (!skipWrite) {
-                    Span span = tracing.create(COMMUNICATION_SOCKET_WRITE, req.span());
+                Span span = tracing.create(COMMUNICATION_SOCKET_WRITE, req.span());
 
-                    try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
-                        int cnt = sockCh.write(buf);
+                try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
+                    int cnt = sockCh.write(buf);
 
-                        if (log.isTraceEnabled())
-                            log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
+                    if (log.isTraceEnabled())
+                        log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
-                        span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(cnt));
+                    span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(cnt));
 
-                        if (sentBytesCntMetric != null)
-                            sentBytesCntMetric.add(cnt);
+                    if (sentBytesCntMetric != null)
+                        sentBytesCntMetric.add(cnt);
 
-                        ses.bytesSent(cnt);
-                    }
-                }
-                else {
-                    // For test purposes only (skipWrite is set to true in tests only).
-                    try {
-                        U.sleep(50);
-                    }
-                    catch (IgniteInterruptedCheckedException e) {
-                        throw new IOException("Thread has been interrupted.", e);
-                    }
+                    ses.bytesSent(cnt);
                 }
 
                 if (buf.remaining() > 0) {
@@ -1330,17 +1302,6 @@ public class GridNioServer<T> {
          * @throws IOException If key read failed.
          */
         @Override protected void processRead(SelectionKey key) throws IOException {
-            if (skipRead) {
-                try {
-                    U.sleep(50);
-                }
-                catch (IgniteInterruptedCheckedException ignored) {
-                    U.warn(log, "Sleep has been interrupted.");
-                }
-
-                return;
-            }
-
             ReadableByteChannel sockCh = (ReadableByteChannel)key.channel();
 
             final GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
@@ -1478,7 +1439,6 @@ public class GridNioServer<T> {
                         }
                     }
 
-                    Message msg;
                     boolean finished = false;
 
                     List<SessionWriteRequest> pendingRequests = new ArrayList<>(2);
@@ -1520,26 +1480,15 @@ public class GridNioServer<T> {
 
                     assert buf.hasRemaining();
 
-                    if (!skipWrite) {
-                        int cnt = sockCh.write(buf);
+                    int cnt = sockCh.write(buf);
 
-                        if (log.isTraceEnabled())
-                            log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
+                    if (log.isTraceEnabled())
+                        log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
-                        if (sentBytesCntMetric != null)
-                            sentBytesCntMetric.add(cnt);
+                    if (sentBytesCntMetric != null)
+                        sentBytesCntMetric.add(cnt);
 
-                        ses.bytesSent(cnt);
-                    }
-                    else {
-                        // For test purposes only (skipWrite is set to true in tests only).
-                        try {
-                            U.sleep(50);
-                        }
-                        catch (IgniteInterruptedCheckedException e) {
-                            throw new IOException("Thread has been interrupted.", e);
-                        }
-                    }
+                    ses.bytesSent(cnt);
 
                     ses.addMeta(NIO_OPERATION.ordinal(), req);
 
@@ -1712,27 +1661,16 @@ public class GridNioServer<T> {
 
             assert buf.hasRemaining();
 
-            if (!skipWrite) {
-                int cnt = sockCh.write(buf);
+            int cnt = sockCh.write(buf);
 
-                if (log.isTraceEnabled())
-                    log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
+            if (log.isTraceEnabled())
+                log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
-                if (sentBytesCntMetric != null)
-                    sentBytesCntMetric.add(cnt);
+            if (sentBytesCntMetric != null)
+                sentBytesCntMetric.add(cnt);
 
-                ses.bytesSent(cnt);
-                onWrite(cnt);
-            }
-            else {
-                // For test purposes only (skipWrite is set to true in tests only).
-                try {
-                    U.sleep(50);
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    throw new IOException("Thread has been interrupted.", e);
-                }
-            }
+            ses.bytesSent(cnt);
+            onWrite(cnt);
 
             if (buf.hasRemaining() || !finished) {
                 buf.compact();
