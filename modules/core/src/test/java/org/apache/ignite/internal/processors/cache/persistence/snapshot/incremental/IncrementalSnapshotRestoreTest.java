@@ -388,9 +388,12 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         corruptIncrementalSnapshot(1, 1, 0);
 
-        GridTestUtils.assertThrowsAnyCause(log,
+        GridTestUtils.assertThrowsAnyCause(
+            log,
             () -> grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(),
-            IgniteException.class, "System WAL record for incremental snapshot wasn't found");
+            IgniteCheckedException.class,
+            "System WAL record for incremental snapshot wasn't found"
+        );
 
         awaitPartitionMapExchange();
 

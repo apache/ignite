@@ -20,7 +20,10 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -38,11 +41,11 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescripto
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
 
@@ -53,11 +56,16 @@ public class SnapshotMetadataVerificationTask
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private SnapshotMetadataVerificationTaskArg arg;
+
     /** {@inheritDoc} */
     @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
         SnapshotMetadataVerificationTaskArg arg
     ) throws IgniteException {
+        this.arg = arg;
+
         Map<ComputeJob, ClusterNode> map = U.newHashMap(subgrid.size());
 
         for (ClusterNode node : subgrid)
@@ -88,25 +96,74 @@ public class SnapshotMetadataVerificationTask
         }
 
         /** {@inheritDoc} */
-        @Override public List<SnapshotMetadata> execute() throws IgniteException {
+        @Override public List<SnapshotMetadata> execute() {
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-            List<SnapshotMetadata> snpMeta = snpMgr.readSnapshotMetadatas(arg.snapshotName(), arg.snapshotPath());
+            List<SnapshotMetadata> metas = snpMgr.readSnapshotMetadatas(arg.snapshotName(), arg.snapshotPath());
+
+            for (SnapshotMetadata meta : metas)
+                checkMeta(meta, ignite.context().config().getEncryptionSpi().masterKeyDigest());
 
             if (arg.incrementIndex() > 0) {
-                List<SnapshotMetadata> metas = snpMeta.stream()
+                List<SnapshotMetadata> locNodeMetas = metas.stream()
                     .filter(m -> m.consistentId().equals(ignite.localNode().consistentId()))
                     .collect(Collectors.toList());
 
-                if (metas.size() != 1) {
-                    throw new IgniteException("Failed to find snapshot metafile [metas=" + metas +
-                        ", snpName=" + arg.snapshotName() + ", snpPath=" + arg.snapshotPath() + ']');
+                if (locNodeMetas.size() != 1) {
+                    throw new IgniteException("Failed to find single snapshot metafile for local node [locNodeId="
+                        + ignite.localNode().consistentId() + ", metas=" + metas + ", snpName=" + arg.snapshotName()
+                        + ", snpPath=" + arg.snapshotPath() + ']');
                 }
 
-                checkIncrementalSnapshots(metas.get(0), arg);
+                checkIncrementalSnapshots(locNodeMetas.get(0), arg);
             }
 
-            return snpMeta;
+            return metas;
+        }
+
+        /** */
+        private void checkMeta(SnapshotMetadata meta, byte[] masterKeyDigest) {
+            byte[] snpMasterKeyDigest = meta.masterKeyDigest();
+
+            if (masterKeyDigest == null && snpMasterKeyDigest != null) {
+                throw new IllegalStateException("Snapshot '" + meta.snapshotName() + "' has encrypted caches " +
+                    "while encryption is disabled. To restore this snapshot, start Ignite with configured " +
+                    "encryption and the same master key.");
+            }
+
+            if (snpMasterKeyDigest != null && !Arrays.equals(snpMasterKeyDigest, masterKeyDigest)) {
+                throw new IllegalStateException("Snapshot '" + meta.snapshotName() + "' has different master " +
+                    "key digest. To restore this snapshot, start Ignite with the same master key.");
+            }
+
+            Collection<Integer> grpIds = new HashSet<>(F.isEmpty(arg.grpIds()) ? meta.cacheGroupIds() : arg.grpIds());
+
+            if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompression)) {
+                try {
+                    if (ignite.context().compress() == null)
+                        throw new IllegalStateException("Compression processor is not set. Compressed snapshots aren't supported.");
+
+                    ignite.context().compress().checkPageCompressionSupported();
+                }
+                catch (IgniteCheckedException e) {
+                    String grpWithCompr = grpIds.stream().filter(meta::isGroupWithCompression)
+                        .map(String::valueOf).collect(Collectors.joining(", "));
+
+                    String msg = "Requested cache groups [" + grpWithCompr + "] for check " +
+                        "from snapshot '" + meta.snapshotName() + "' are compressed while " +
+                        "disk page compression is disabled. To check these groups please " +
+                        "start Ignite with ignite-compress module in classpath";
+
+                    throw new IllegalStateException(msg);
+                }
+            }
+
+            grpIds.removeAll(meta.partitions().keySet());
+
+            if (!grpIds.isEmpty() && !new HashSet<>(meta.cacheGroupIds()).containsAll(grpIds)) {
+                throw new IllegalArgumentException("Cache group(s) was not found in the snapshot [groups=" + grpIds +
+                    ", snapshot=" + arg.snapshotName() + ']');
+            }
         }
 
         /** Checks that all incremental snapshots are present, contain correct metafile and WAL segments. */
@@ -121,7 +178,7 @@ public class SnapshotMetadataVerificationTask
                     File incSnpDir = snpMgr.incrementalSnapshotLocalDir(arg.snapshotName(), arg.snapshotPath(), inc);
 
                     if (!incSnpDir.exists()) {
-                        throw new IgniteException("No incremental snapshot found " +
+                        throw new IllegalArgumentException("No incremental snapshot found " +
                             "[snpName=" + arg.snapshotName() + ", snpPath=" + arg.snapshotPath() + ", incrementIndex=" + inc + ']');
                     }
 
@@ -132,12 +189,12 @@ public class SnapshotMetadataVerificationTask
                     IncrementalSnapshotMetadata incMeta = snpMgr.readFromFile(metafile);
 
                     if (!incMeta.matchBaseSnapshot(fullMeta)) {
-                        throw new IgniteException("Incremental snapshot doesn't match full snapshot " +
+                        throw new IllegalStateException("Incremental snapshot doesn't match full snapshot " +
                             "[incMeta=" + incMeta + ", fullMeta=" + fullMeta + ']');
                     }
 
                     if (incMeta.incrementIndex() != inc) {
-                        throw new IgniteException(
+                        throw new IllegalStateException(
                             "Incremental snapshot meta has wrong index [expectedIdx=" + inc + ", meta=" + incMeta + ']');
                     }
 
@@ -187,13 +244,13 @@ public class SnapshotMetadataVerificationTask
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable SnapshotMetadataVerificationTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {
+    @Override public SnapshotMetadataVerificationTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {
         Map<ClusterNode, List<SnapshotMetadata>> reduceRes = new HashMap<>();
         Map<ClusterNode, Exception> exs = new HashMap<>();
 
         SnapshotMetadata first = null;
 
-        for (ComputeJobResult res: results) {
+        for (ComputeJobResult res : results) {
             if (res.getException() != null) {
                 exs.put(res.getNode(), res.getException());
 
@@ -214,8 +271,19 @@ public class SnapshotMetadataVerificationTask
                     continue;
                 }
 
-                reduceRes.computeIfAbsent(res.getNode(), n -> new ArrayList<>())
-                        .add(meta);
+                reduceRes.computeIfAbsent(res.getNode(), n -> new ArrayList<>()).add(meta);
+            }
+        }
+
+        if (first == null && exs.isEmpty()) {
+            assert !results.isEmpty();
+
+            for (ComputeJobResult res : results) {
+                Exception e = new IllegalArgumentException("Snapshot does not exists [snapshot=" + arg.snapshotName()
+                    + (arg.snapshotPath() != null ? ", baseDir=" + arg.snapshotPath() : "") + ", consistentId="
+                    + res.getNode().consistentId() + ']');
+
+                exs.put(res.getNode(), e);
             }
         }
 
