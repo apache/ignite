@@ -135,7 +135,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
     /** */
     @Test
-    public void testNoFullSnapshotMetaNotFound() throws Exception {
+    public void testNoFullSnapshotMeta7NotFound() throws Exception {
         createFullSnapshot();
         createIncrementalSnapshots(1);
 

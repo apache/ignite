@@ -3582,7 +3582,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             assertContains(log, testOut.toString(), "--increment argument specified twice");
 
             // Non existent increment.
-            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--snapshot", "restore", snpName, "--increment", "2", "--sync"));
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "restore", snpName, "--increment", "2", "--sync"));
+            assertContains(log, testOut.toString(), "No incremental snapshot found [snpName=" + snpName);
         }
         finally {
             autoConfirmation = autoConfirmation0;
