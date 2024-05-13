@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -127,13 +126,13 @@ public class SnapshotMetadataVerificationTask
             byte[] snpMasterKeyDigest = meta.masterKeyDigest();
 
             if (masterKeyDigest == null && snpMasterKeyDigest != null) {
-                throw new IllegalArgumentException("Snapshot '" + meta.snapshotName() + "' has encrypted caches " +
+                throw new IllegalStateException("Snapshot '" + meta.snapshotName() + "' has encrypted caches " +
                     "while encryption is disabled. To restore this snapshot, start Ignite with configured " +
                     "encryption and the same master key.");
             }
 
             if (snpMasterKeyDigest != null && !Arrays.equals(snpMasterKeyDigest, masterKeyDigest)) {
-                throw new IllegalArgumentException("Snapshot '" + meta.snapshotName() + "' has different master " +
+                throw new IllegalStateException("Snapshot '" + meta.snapshotName() + "' has different master " +
                     "key digest. To restore this snapshot, start Ignite with the same master key.");
             }
 
@@ -251,14 +250,9 @@ public class SnapshotMetadataVerificationTask
 
         SnapshotMetadata first = null;
 
-        boolean knownExceptions = true;
-
         for (ComputeJobResult res : results) {
             if (res.getException() != null) {
                 exs.put(res.getNode(), res.getException());
-
-                if (!X.hasCause(res.getException(), IllegalArgumentException.class, IllegalStateException.class))
-                    knownExceptions = false;
 
                 continue;
             }
@@ -284,8 +278,6 @@ public class SnapshotMetadataVerificationTask
         if (first == null && exs.isEmpty()) {
             assert !results.isEmpty();
 
-            knownExceptions = true;
-
             for (ComputeJobResult res : results) {
                 Exception e = new IllegalArgumentException("Snapshot does not exists [snapshot=" + arg.snapshotName()
                     + (arg.snapshotPath() != null ? ", baseDir=" + arg.snapshotPath() : "") + ", consistentId="
@@ -295,7 +287,7 @@ public class SnapshotMetadataVerificationTask
             }
         }
 
-        return new SnapshotMetadataVerificationTaskResult(reduceRes, exs, !exs.isEmpty() && knownExceptions);
+        return new SnapshotMetadataVerificationTaskResult(reduceRes, exs);
     }
 
     /** {@inheritDoc} */

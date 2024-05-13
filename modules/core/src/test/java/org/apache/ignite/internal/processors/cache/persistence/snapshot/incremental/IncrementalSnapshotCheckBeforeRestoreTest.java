@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Incremen
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -113,13 +112,12 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createFullSnapshot();
 
         for (IgniteEx n : F.asList(grid(0), grid(GRID_CNT))) {
-            SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE)
-                .get(getTestTimeout());
-
-            assertEquals(res.exceptions().size(), GRID_CNT);
-
-            res.exceptions().values().forEach(e -> assertTrue(X.hasCause(e, "No incremental snapshot found",
-                IllegalArgumentException.class)));
+            GridTestUtils.assertThrowsAnyCause(
+                log,
+                () -> snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE).get(getTestTimeout()),
+                IllegalArgumentException.class,
+                "No incremental snapshot found"
+            );
         }
 
         createIncrementalSnapshots(1);
@@ -171,13 +169,11 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
             for (int i = 1; i <= 2; i++) {
                 final int inc = i;
 
-                res = snp(n).checkSnapshot(SNP, null, null, false, inc, DFLT_CHECK_ON_RESTORE)
-                    .get(getTestTimeout());
-
-                assertEquals(res.exceptions().size(), GRID_CNT);
-
-                res.exceptions().values().forEach(e -> assertTrue(X.hasCause(e, "No incremental snapshot found",
-                    IllegalArgumentException.class)));
+                GridTestUtils.assertThrowsAnyCause(
+                    log,
+                    () -> snp(n).checkSnapshot(SNP, null, null, false, inc, DFLT_CHECK_ON_RESTORE).get(getTestTimeout()),
+                    IllegalArgumentException.class,
+                    "No incremental snapshot found");
             }
         }
     }
@@ -282,14 +278,11 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
             meta.incrementalSnapshotPointer()), incMetaFile);
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
-            SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE)
-                .get(getTestTimeout());
-
-            assertEquals(res.exceptions().size(), 1);
-            assertNotNull(res.exceptions().get(srv.localNode()));
-
-            assertTrue(X.hasCause(res.exceptions().get(srv.localNode()), "Incremental snapshot doesn't match full snapshot",
-                IllegalStateException.class));
+            GridTestUtils.assertThrowsAnyCause(
+                log,
+                () -> snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE).get(getTestTimeout()),
+                IllegalStateException.class,
+                "Incremental snapshot doesn't match full snapshot");
         }
     }
 
@@ -316,14 +309,11 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
             meta.incrementalSnapshotPointer()), incMetaFile);
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
-            SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE)
-                .get(getTestTimeout());
-
-            assertEquals(res.exceptions().size(), 1);
-            assertNotNull(res.exceptions().get(srv.localNode()));
-
-            assertTrue(X.hasCause(res.exceptions().get(srv.localNode()), "Incremental snapshot meta has wrong index",
-                IllegalStateException.class));
+            GridTestUtils.assertThrowsAnyCause(
+                log,
+                () -> snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE).get(getTestTimeout()),
+                IllegalStateException.class,
+                "Incremental snapshot meta has wrong index");
         }
     }
 

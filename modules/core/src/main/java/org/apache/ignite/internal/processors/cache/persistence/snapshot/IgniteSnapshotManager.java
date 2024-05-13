@@ -1939,12 +1939,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     });
             }
             else {
-                if (f0.error() == null) {
-                    if (taskRes.validationExceptions())
-                        res.onDone(new SnapshotPartitionsVerifyTaskResult(taskRes.meta(), new IdleVerifyResultV2(taskRes.exceptions())));
-                    else
-                        res.onDone(new IgniteSnapshotVerifyException(taskRes.exceptions()));
-                }
+                if (f0.error() == null)
+                    res.onDone(new IgniteSnapshotVerifyException(taskRes.exceptions()));
                 else if (f0.error() instanceof IgniteSnapshotVerifyException)
                     res.onDone(new SnapshotPartitionsVerifyTaskResult(null,
                         new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f0.error()).exceptions())));
