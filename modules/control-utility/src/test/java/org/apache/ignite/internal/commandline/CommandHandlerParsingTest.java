@@ -51,10 +51,8 @@ import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.management.baseline.BaselineAddCommand;
+import org.apache.ignite.internal.management.baseline.AbstractBaselineCommand;
 import org.apache.ignite.internal.management.baseline.BaselineAutoAdjustCommand;
-import org.apache.ignite.internal.management.baseline.BaselineRemoveCommand;
-import org.apache.ignite.internal.management.baseline.BaselineSetCommand;
 import org.apache.ignite.internal.management.baseline.BaselineVersionCommand;
 import org.apache.ignite.internal.management.cache.CacheClearCommand;
 import org.apache.ignite.internal.management.cache.CacheClearCommandArg;
@@ -506,14 +504,12 @@ public class CommandHandlerParsingTest {
             cmdText = F.concat(cmdText, "newTagValue");
         else if (cmd.getClass() == CdcDeleteLostSegmentLinksCommand.class)
             cmdText = F.concat(cmdText, NODE_ID, UUID.randomUUID().toString());
-        else if (cmd.getClass() == BaselineAddCommand.class
-            || cmd.getClass() == BaselineRemoveCommand.class
-            || cmd.getClass() == BaselineSetCommand.class)
-            cmdText = F.concat(cmdText, "consistentId1");
         else if (cmd.getClass() == BaselineVersionCommand.class)
             cmdText = F.concat(cmdText, "1");
         else if (cmd.getClass() == BaselineAutoAdjustCommand.class)
             cmdText = F.concat(cmdText, "enable");
+        else if (AbstractBaselineCommand.class.isAssignableFrom(cmd.getClass()))
+            cmdText = F.concat(cmdText, "consistentId1");
         else if (cmd.getClass() == CacheDestroyCommand.class || cmd.getClass() == CacheClearCommand.class)
             cmdText = F.concat(cmdText, "--caches", "cache1");
         else if (cmd.getClass() == EncryptionChangeMasterKeyCommand.class)
