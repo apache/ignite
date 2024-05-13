@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import javax.annotation.Nullable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -243,7 +242,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBackwardNodeCheckWithSameLoopbackSingleLocalAddress() throws Exception {
-        doTestBackwardNodeCheckWithSameLoopback("127.0.0.1", false);
+        doTestBackwardNodeCheckWithSameLoopback("127.0.0.1");
     }
 
     /**
@@ -252,14 +251,14 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBackwardNodeCheckWithSameLoopbackSeveralLocalAddresses() throws Exception {
-        doTestBackwardNodeCheckWithSameLoopback("0.0.0.0", true);
+        doTestBackwardNodeCheckWithSameLoopback("0.0.0.0");
     }
 
     /**
      * Performs Tests backward node ping if {@link TcpDiscoveryNode#socketAddresses()} contains same loopback address as of local node.
      * Assumes several local address are resolved.
      */
-    private void doTestBackwardNodeCheckWithSameLoopback(String localhost, boolean withSkippedLogs) throws Exception {
+    private void doTestBackwardNodeCheckWithSameLoopback(String localhost) throws Exception {
         ListeningTestLogger testMethodLog = new ListeningTestLogger(log);
 
         String startLogMsg = "Checking connection to node";
@@ -267,10 +266,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         Collection<LogListener> lsnrs = new ArrayList<>();
 
         lsnrs.add(LogListener.matches(startLogMsg).andMatches("result=success").times(1).build());
-        lsnrs.add(LogListener.matches(startLogMsg).andMatches("result=skipped").atLeast(withSkippedLogs ? 1 : 0).build());
         lsnrs.add(LogListener.matches("Connection check to previous node done").times(1).build());
-
-        lsnrs.forEach(testMethodLog::registerListener);
 
         this.localhost = localhost;
 
@@ -284,6 +280,13 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         specialSpi = new TestDiscoverySpi();
         testLog = testMethodLog;
+
+        int effAddrsSizeNode0 = spi(node0).getEffectiveNodeAddresses((TcpDiscoveryNode)node1.cluster().localNode()).size();
+
+        if (effAddrsSizeNode0 > 1)
+            lsnrs.add(LogListener.matches(startLogMsg).andMatches("result=skipped").times(effAddrsSizeNode0 - 1).build());
+
+        lsnrs.forEach(testMethodLog::registerListener);
 
         Ignite node2 = startGrid(2);
 
