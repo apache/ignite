@@ -241,7 +241,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
             ig.cluster().state(ACTIVE);
 
-           GridTestUtils.assertThrowsAnyCause(
+            GridTestUtils.assertThrowsAnyCause(
                 log,
                 () -> snp(ig).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult(),
                 IllegalStateException.class,
