@@ -36,6 +36,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -466,21 +467,11 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         locEvts.clear();
 
-        GridTestUtils.assertThrowsAnyCause(
-            log,
-            () -> snp(ignite).restoreSnapshot(SNAPSHOT_NAME, Arrays.asList(CACHE1, CACHE2)).get(TIMEOUT),
-            IllegalArgumentException.class,
-            "Cache group(s) was not found in the snapshot"
-        );
-
-        waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED);
-        assertEquals(2, locEvts.size());
-
-        locEvts.clear();
+        IgniteSnapshot snp = ignite.snapshot();
 
         GridTestUtils.assertThrowsAnyCause(
             log,
-            () -> snp(ignite).restoreSnapshot(SNAPSHOT_NAME, null, Arrays.asList(CACHE1, CACHE2), 0, false).get(TIMEOUT),
+            () -> snp.restoreSnapshot(SNAPSHOT_NAME, Arrays.asList(CACHE1, CACHE2)).get(TIMEOUT),
             IllegalArgumentException.class,
             "Cache group(s) was not found in the snapshot"
         );
@@ -494,7 +485,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         awaitPartitionMapExchange();
 
-        snp(ignite).restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(SHARED_GRP)).get(TIMEOUT);
+        snp.restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(SHARED_GRP)).get(TIMEOUT);
 
         assertCacheKeys(ignite.cache(CACHE1), CACHE_KEYS_RANGE);
         assertCacheKeys(ignite.cache(CACHE2), CACHE_KEYS_RANGE);
