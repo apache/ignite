@@ -7287,7 +7287,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             InetSocketAddress addr = addrs.get(addrIdx.getAndIncrement());
 
                             String logMsg = "Checking connection to node [nodeId=" + node.id() + ", order=" + node.order()
-                                + ", address=" + addr + "]: result=";
+                                + ", address=" + addr + "], result=";
                             String failReason = null;
 
                             try (Socket sock = new Socket()) {

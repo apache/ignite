@@ -343,8 +343,6 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         for (LogListener lsnr : lsnrs)
             waitForCondition(lsnr::check, getTestTimeout());
-
-        testMethodLog.clearListeners();
     }
 
     /**
@@ -417,50 +415,42 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
     /**
      * This test uses node failure by stopping service threads, which makes the node unresponsive and results in
-     * failing connection to the server.
+     * failing connection to the server. Failures are simulated on the 1st node in the ring. In this case,
+     * the 2nd node in the ring will trigger 'Backward Connection Check', which should result in failing attempt of connection.
+     * This result is followed by the corresponding logs, indicating described failures. The test verifies the logs.
      *
      * @throws Exception If failed.
-     * @see TcpDiscoverySpi#simulateNodeFailure()
      */
     @Test
-    public void testCheckNodeFailureSocketConnectionLogMessage() throws Exception {
+    public void testBackwardConnectionCheckFailedLogMessage() throws Exception {
         ListeningTestLogger testLog = new ListeningTestLogger(log);
 
-        Collection<LogListener> lsnrs = new ArrayList<>();
+        LogListener lsnr0 = LogListener.matches("Checking connection to node").andMatches("result=failed").times(1).build();
+        LogListener lsnr1 = LogListener.matches("Connection check to previous node failed").times(1).build();
 
-        lsnrs.add(LogListener.matches("Checking connection to node").andMatches("result=failed").times(1).build());
-        lsnrs.add(LogListener.matches("Connection check to previous node failed").times(1).build());
+        testLog.registerListener(lsnr0);
+        testLog.registerListener(lsnr1);
 
-        lsnrs.forEach(testLog::registerListener);
+        startGrid(0);
 
-        TcpDiscoverySpi spi0 = new TcpDiscoverySpi();
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(1));
+        cfg.setGridLogger(testLog);
 
-        startGrid(getTestConfigWithSpi(spi0, "ignite-0"));
+        startGrid(cfg);
 
-        IgniteConfiguration cfg1 = getTestConfigWithSpi(new TcpDiscoverySpi(), "ignite-1");
-        cfg1.setGridLogger(testLog);
+        startGrid(2);
 
-        startGrid(cfg1);
+        spi(grid(0)).simulateNodeFailure();
 
-        startGrid(getTestConfigWithSpi(new TcpDiscoverySpi(), "ignite-2"));
+        waitForCondition(lsnr0::check, getTestTimeout());
+        waitForCondition(lsnr1::check, getTestTimeout());
 
-        spi0.simulateNodeFailure();
+        for (int i = 1; i < 2; ++i) {
+            int finalI = i;
+            waitForCondition(() -> grid(finalI).cluster().nodes().size() == 2, getTestTimeout());
 
-        for (LogListener lsnr : lsnrs)
-            waitForCondition(lsnr::check, getTestTimeout());
-
-        testLog.clearListeners();
-    }
-
-    /**
-     * Returns default {@link IgniteConfiguration} with specified ignite instance name and {@link TcpDiscoverySpi}.
-     * @param spi {@link TcpDiscoverySpi}
-     * @param igniteInstanceName ignite instance name
-     * @return {@link IgniteConfiguration}
-     * @throws Exception If failed.
-     */
-    private IgniteConfiguration getTestConfigWithSpi(TcpDiscoverySpi spi, String igniteInstanceName) throws Exception {
-        return getConfiguration(igniteInstanceName).setDiscoverySpi(spi);
+            assertTrue(F.viewReadOnly(grid(i).cluster().nodes(), n -> n, n -> n.order() == 1).isEmpty());
+        }
     }
 
     /**
