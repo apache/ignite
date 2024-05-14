@@ -22,6 +22,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -281,7 +282,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         specialSpi = new TestDiscoverySpi();
         testLog = testMethodLog;
 
-        int effAddrsSizeNode0 = spi(node0).getEffectiveNodeAddresses((TcpDiscoveryNode)node1.cluster().localNode()).size();
+        int effAddrsSizeNode0 = spi(node0).getEffectiveNodeAddresses((TcpDiscoveryNode)node0.cluster().localNode()).size();
 
         if (effAddrsSizeNode0 > 1)
             lsnrs.add(LogListener.matches(startLogMsg).andMatches("result=skipped").times(effAddrsSizeNode0 - 1).build());
@@ -445,11 +446,10 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         waitForCondition(lsnr0::check, getTestTimeout());
         waitForCondition(lsnr1::check, getTestTimeout());
 
-        for (int i = 1; i < 2; ++i) {
-            int finalI = i;
-            waitForCondition(() -> grid(finalI).cluster().nodes().size() == 2, getTestTimeout());
+        for (Ignite ig : Arrays.asList(grid(1), grid(2))) {
+            waitForCondition(() -> ig.cluster().nodes().size() == 2, getTestTimeout());
 
-            assertTrue(F.viewReadOnly(grid(i).cluster().nodes(), n -> n, n -> n.order() == 1).isEmpty());
+            assertTrue(F.viewReadOnly(ig.cluster().nodes(), n -> n, n -> n.order() == 1).isEmpty());
         }
     }
 
