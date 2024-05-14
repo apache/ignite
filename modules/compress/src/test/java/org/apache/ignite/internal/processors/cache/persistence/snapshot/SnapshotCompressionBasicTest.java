@@ -226,6 +226,16 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
                     "these groups please start Ignite with ignite-compress"
             );
         }
+
+        for (String snpName : Arrays.asList(SNAPSHOT_WITH_HOLES, SNAPSHOT_WITHOUT_HOLES)) {
+            GridTestUtils.assertThrowsAnyCause(
+                log,
+                () -> snp(ignite).restoreSnapshot(snpName, null, null, 0, false).get(TIMEOUT),
+                IllegalStateException.class,
+                "from snapshot '" + snpName + "' are compressed while disk page compression is disabled. To check " +
+                    "these groups please start Ignite with ignite-compress"
+            );
+        }
     }
 
     /** */

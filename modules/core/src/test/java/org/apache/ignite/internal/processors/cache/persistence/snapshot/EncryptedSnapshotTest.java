@@ -146,6 +146,13 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
             IllegalStateException.class,
             "Snapshot '" + SNAPSHOT_NAME + "' has different master key digest."
         );
+
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> snp(ig1).restoreSnapshot(SNAPSHOT_NAME, null, Collections.singletonList(dfltCacheCfg.getName()), 0, false).get(TIMEOUT),
+            IllegalStateException.class,
+            "Snapshot '" + SNAPSHOT_NAME + "' has different master key digest."
+        );
     }
 
     /** Checks both encrypted and plain caches can be restored from same snapshot. */
@@ -244,6 +251,13 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
            GridTestUtils.assertThrowsAnyCause(
                 log,
                 () -> snp(ig).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult(),
+                IllegalStateException.class,
+                "has encrypted caches while encryption is disabled"
+            );
+
+            GridTestUtils.assertThrowsAnyCause(
+                log,
+                () -> snp(ig).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, false).get(),
                 IllegalStateException.class,
                 "has encrypted caches while encryption is disabled"
             );
