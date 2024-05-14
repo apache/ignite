@@ -18,7 +18,7 @@
 package org.apache.ignite.ml.math.isolve.lsqr;
 
 import java.util.Arrays;
-import com.github.fommil.netlib.BLAS;
+import dev.ludovic.netlib.blas.BLAS;
 
 /**
  * Basic implementation of the LSQR algorithm without assumptions about dataset storage format or data processing

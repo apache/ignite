@@ -49,8 +49,7 @@
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-spring</artifactId>
-            <version>${ignite.version}</version>
+            <artifactId>ignite-spring</artifactId>            
             <scope>provided</scope>
             <exclusions>
                 <exclusion>
@@ -73,25 +72,16 @@
             <scope>provided</scope>
         </dependency>
 
+        
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-compatibility</artifactId>
-            <version>${ignite.version}</version>
-            <type>test-jar</type>
+            <artifactId>ignite-log4j2</artifactId>            
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-log4j2</artifactId>
-            <version>${ignite.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
+            <artifactId>ignite-core</artifactId>            
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>

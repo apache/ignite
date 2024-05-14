@@ -42,9 +42,7 @@ public class DenseVectorStorage implements VectorStorage {
 
    
     public DenseVectorStorage(int size) {
-    	 this.rawData = new Number[size];
-    	 for (int i = 0; i < rawData.length; i++)
-             rawData[i] = 0;
+    	 this.rawData = new Serializable[size];    	 
     }
 
     /**
@@ -84,7 +82,10 @@ public class DenseVectorStorage implements VectorStorage {
     @Override public double get(int i) {       
 
         Serializable v = rawData[i];
-        //TODO: IGNITE-11664
+        //TODO: IGNITE-11664 
+    	if(v instanceof String)
+    		return Double.parseDouble(v.toString());
+    	
         return v == null ? 0.0 : ((Number)rawData[i]).doubleValue();
     }
 
@@ -99,8 +100,8 @@ public class DenseVectorStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public void setRaw(int i, Serializable v) {        
-        this.rawData[i] = v;
+    @Override public void setRaw(int i, Serializable v) {
+    	this.rawData[i] = v;
     }
 
     /** {@inheritDoc}} */

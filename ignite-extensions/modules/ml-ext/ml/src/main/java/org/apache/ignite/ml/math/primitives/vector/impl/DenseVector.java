@@ -50,7 +50,7 @@ public final class DenseVector extends AbstractVector {
      * @param size Vector cardinality.
      */
     private VectorStorage mkStorage(int size) {
-        return new DenseDoubleVectorStorage(size);
+        return new DenseVectorStorage(size);
     }
 
     /**
@@ -59,7 +59,6 @@ public final class DenseVector extends AbstractVector {
      */
     private VectorStorage mkStorage(double[] arr, boolean cp) {
         assert arr != null;
-
         return new DenseDoubleVectorStorage(cp ? arr.clone() : arr);
     }
     
@@ -143,6 +142,12 @@ public final class DenseVector extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public Vector like(int crd) {
+    	if(this.getStorage() instanceof DenseFloatVectorStorage) {
+    		return new DenseVector(new float[crd],false);
+    	}
+    	if(this.getStorage() instanceof DenseDoubleVectorStorage) {
+    		return new DenseVector(new double[crd],false);
+    	}
         return new DenseVector(crd);
     }
 }

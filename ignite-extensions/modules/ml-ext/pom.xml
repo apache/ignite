@@ -39,9 +39,7 @@
 
     <modules>
         <module>ml</module>
-        <module>ml/catboost-model-parser</module>
-        <module>ml/h2o-model-parser</module>
-        <module>ml/spark-model-parser</module>
+        <module>ml/catboost-model-parser</module>        
         <module>ml/xgboost-model-parser</module>
         <module>ml/extdata/p2p</module>
         <module>examples</module>

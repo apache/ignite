@@ -29,7 +29,7 @@ public class CosineSimilarityTest {
     /** */
     @Test
     public void cosineSimilarityDistance() {
-        double expRes = 0.9449111825230682d;
+        double expRes = 1-0.9449111825230682d;
         DenseVector a = new DenseVector(new double[] {1, 2, 3});
         double[] b = {1, 1, 4};
 

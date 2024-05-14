@@ -54,6 +54,8 @@ public abstract class Vectorizer<K, V, C extends Serializable, L> implements Fea
 
     /** Label coordinate. */
     private C labelCoord;
+    
+    private DenseVector root; //default type root
 
     /**
      * Extracts labeled vector from upstream object.
@@ -97,6 +99,12 @@ public abstract class Vectorizer<K, V, C extends Serializable, L> implements Fea
     public Vectorizer(C... coords) {
         extractionCoordinates = Arrays.asList(coords);
         this.useAllValues = coords.length == 0;
+    }
+    
+    public Vectorizer(DenseVector root,C... coords) {
+        extractionCoordinates = Arrays.asList(coords);
+        this.useAllValues = coords.length == 0;
+        this.root = root;
     }
 
     /**
@@ -230,6 +238,9 @@ public abstract class Vectorizer<K, V, C extends Serializable, L> implements Fea
      * @return vector.
      */
     protected Vector createVector(int size) {
+    	if(root!=null) {
+    		return root.like(size);
+    	}
         return new DenseVector(size);
     }
 

@@ -31,7 +31,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.console.agent.db.DbColumn;
 import org.apache.ignite.console.agent.db.DbTable;
-import org.apache.ignite.internal.visor.query.VisorQueryIndex;
+import org.apache.ignite.console.db.VisorQueryIndex;
 import org.springframework.cache.Cache;
 import org.springframework.cache.Cache.ValueWrapper;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;

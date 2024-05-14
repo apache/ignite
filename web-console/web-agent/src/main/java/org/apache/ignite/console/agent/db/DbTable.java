@@ -18,7 +18,7 @@ package org.apache.ignite.console.agent.db;
 
 import java.util.Collection;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.visor.query.VisorQueryIndex;
+import org.apache.ignite.console.db.VisorQueryIndex;
 
 /**
  * Database table.

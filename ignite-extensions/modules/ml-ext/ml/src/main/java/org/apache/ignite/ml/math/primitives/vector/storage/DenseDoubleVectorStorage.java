@@ -101,6 +101,8 @@ public class DenseDoubleVectorStorage implements VectorStorage {
     @Override public void setRaw(int i, Serializable v) {
         if(v instanceof Number)
         	this.data[i] = ((Number) v).doubleValue();
+        else if(v instanceof String)
+        	this.data[i] = Double.parseDouble(v.toString());
         else
         	throw new ClassCastException("Vector only accept numeric values.");
     }

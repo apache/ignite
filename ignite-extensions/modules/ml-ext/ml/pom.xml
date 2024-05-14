@@ -138,7 +138,9 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
-        </dependency>
+        </dependency>        
+
+        
     </dependencies>
 
     <build>
@@ -168,19 +170,5 @@
                 </configuration>
             </plugin>
         </plugins>
-    </build>
-     <profiles>
-	    <profile>
-	      <id>lgpl</id>
-	      <dependencies>
-	        <dependency>
-	          <groupId>com.github.fommil.netlib</groupId>
-	          <artifactId>all</artifactId>
-	          <version>1.1.2</version>
-	          <type>pom</type>
-	        </dependency>
-	      </dependencies>
-	    </profile>
-	  </profiles>
-	    
+    </build>     
 </project>

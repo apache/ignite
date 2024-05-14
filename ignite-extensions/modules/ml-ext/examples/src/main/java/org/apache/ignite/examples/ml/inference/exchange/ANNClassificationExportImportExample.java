@@ -71,17 +71,19 @@ public class ANNClassificationExportImportExample {
             try {
                 dataCache = getTestCache(ignite);
 
-                ANNClassificationTrainer trainer = new ANNClassificationTrainer()
+                ANNClassificationTrainer<Integer> trainer = new ANNClassificationTrainer<Integer>()
                     .withDistance(new ManhattanDistance())
                     .withK(50)
                     .withMaxIterations(1000)
                     .withEpsilon(1e-2);
 
-                ANNClassificationModel mdl = (ANNClassificationModel)trainer.fit(
+                ANNClassificationModel<Integer> mdl = (ANNClassificationModel)trainer.fit(
                     ignite,
                     dataCache,
                     new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
-                ).withK(5)
+                );
+                
+                mdl.withK(5)
                     .withDistanceMeasure(new EuclideanDistance())
                     .withWeighted(true);
 
@@ -117,7 +119,7 @@ public class ANNClassificationExportImportExample {
     }
 
     /** */
-    private static double evaluateModel(IgniteCache<Integer, double[]> dataCache, NNClassificationModel knnMdl) {
+    private static double evaluateModel(IgniteCache<Integer, double[]> dataCache, NNClassificationModel<Integer> knnMdl) {
         int amountOfErrors = 0;
         int totalAmount = 0;
 
@@ -132,7 +134,7 @@ public class ANNClassificationExportImportExample {
                 double[] inputs = Arrays.copyOfRange(val, 1, val.length);
                 double groundTruth = val[0];
 
-                double prediction = knnMdl.predict(new DenseVector(inputs));
+                Integer prediction = knnMdl.predict(new DenseVector(inputs));
 
                 totalAmount++;
                 if (!Precision.equals(groundTruth, prediction, Precision.EPSILON))

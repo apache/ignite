@@ -83,6 +83,9 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
         Serializable obj = sto.get(i);
         if (obj == null)
             return 0.0; //TODO: IGNITE-11664
+        
+        if(obj instanceof String)
+    		return Double.parseDouble(obj.toString());
 
         return ((Number)obj).doubleValue();
     }

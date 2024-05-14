@@ -69,8 +69,6 @@ public class MLDeployingTest extends GridCommonAbstractTest {
     /** */
     private Ignite ignite2;
 
-    /** */
-    private Ignite ignite3;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

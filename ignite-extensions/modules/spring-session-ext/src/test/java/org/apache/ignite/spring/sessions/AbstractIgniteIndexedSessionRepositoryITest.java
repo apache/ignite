@@ -20,7 +20,7 @@ package org.apache.ignite.spring.sessions;
 import java.time.Duration;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.spring.sessions.IgniteIndexedSessionRepository.IgniteSession;
+import org.apache.ignite.spring.sessions.IgniteSession;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -50,10 +50,10 @@ abstract class AbstractIgniteIndexedSessionRepositoryITest {
     /** */
     @Test
     void createAndDestroySession() {
-        IgniteIndexedSessionRepository.IgniteSession sessionToSave = this.repository.createSession();
+        IgniteSession sessionToSave = this.repository.createSession();
         String sessionId = sessionToSave.getId();
 
-        IgniteCache<String, IgniteIndexedSessionRepository.IgniteSession> cache = this.ignite
+        IgniteCache<String, IgniteSession> cache = this.ignite
                 .getOrCreateCache(IgniteIndexedSessionRepository.DEFAULT_SESSION_MAP_NAME);
 
         assertThat(cache.size()).isEqualTo(0);

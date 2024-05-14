@@ -66,7 +66,7 @@ public class ANNClassificationExample {
             try {
                 dataCache = getTestCache(ignite);
 
-                ANNClassificationTrainer trainer = new ANNClassificationTrainer()
+                ANNClassificationTrainer<Integer> trainer = new ANNClassificationTrainer<Integer>()
                     .withDistance(new ManhattanDistance())
                     .withK(50)
                     .withMaxIterations(1000)
@@ -74,11 +74,13 @@ public class ANNClassificationExample {
 
                 long startTrainingTime = System.currentTimeMillis();
 
-                NNClassificationModel knnMdl = trainer.fit(
+                NNClassificationModel<Integer> knnMdl = (NNClassificationModel)trainer.fit(
                     ignite,
                     dataCache,
                     new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
-                ).withK(5)
+                );
+                
+                knnMdl.withK(5)
                     .withDistanceMeasure(new EuclideanDistance())
                     .withWeighted(true);
 
@@ -100,7 +102,7 @@ public class ANNClassificationExample {
                         double groundTruth = val[0];
 
                         long startPredictionTime = System.currentTimeMillis();
-                        double prediction = knnMdl.predict(new DenseVector(inputs));
+                        Integer prediction = knnMdl.predict(new DenseVector(inputs));
                         long endPredictionTime = System.currentTimeMillis();
 
                         totalPredictionTime += (endPredictionTime - startPredictionTime);

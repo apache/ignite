@@ -28,7 +28,7 @@ import org.junit.runners.Parameterized;
  * Basic fields and methods for the trainer tests.
  */
 @RunWith(Parameterized.class)
-public class TrainerTest {
+public abstract class TrainerTest {
     /** Number of parts to be tested. */
     private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 13};
 

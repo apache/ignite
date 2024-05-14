@@ -18,7 +18,7 @@
 package org.apache.ignite.ml.math.isolve.lsqr;
 
 import java.util.Arrays;
-import com.github.fommil.netlib.BLAS;
+import dev.ludovic.netlib.blas.BLAS;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
