@@ -37,7 +37,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition
 import org.apache.ignite.internal.cache.query.index.sorted.SortedSegmentedIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -92,6 +91,8 @@ public class IndexQueryProcessor {
 
         IndexQueryResultMeta meta = new IndexQueryResultMeta(def, qry.critSize());
 
+        boolean isRecordable = cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
+
         // Map IndexRow to Cache Key-Value pair.
         return new IndexQueryResult<>(meta, new GridCloseableIteratorAdapter<IgniteBiTuple<K, V>>() {
             private IgniteBiTuple<K, V> currVal;
@@ -131,16 +132,9 @@ public class IndexQueryProcessor {
 
                 IgniteBiTuple<K, V> row = currVal;
 
-                if (cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ) &&
-                    cctx.gridEvents().hasListener(EVT_CACHE_QUERY_OBJECT_READ)) {
-
-                    final K key = row.getKey();
-                    final V val = row.getValue();
-
-                    CacheObjectContext objCtx = cctx.cacheObjectContext();
-
-                    K key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, keepBinary, false, null);
-                    V val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, keepBinary, false, null);
+                if (isRecordable) {
+                    K k = unwrap(row.getKey(), keepBinary);
+                    V v = unwrap(row.getValue(), keepBinary);
 
                     String taskName = cctx.kernalContext().task().resolveTaskName(taskHash);
 
@@ -157,8 +151,8 @@ public class IndexQueryProcessor {
                         null,
                         securitySubjectId(cctx),
                         taskName,
-                        key0,
-                        val0,
+                        k,
+                        v,
                         null,
                         null));
                 }
@@ -169,8 +163,8 @@ public class IndexQueryProcessor {
             }
 
             /** */
-            private <T> T unwrap(CacheObject o, boolean keepBinary) {
-                return (T)CacheObjectUtils.unwrapBinaryIfNeeded(coctx, o, keepBinary, false);
+            private <T> T unwrap(Object o, boolean keepBinary) {
+                return (T)CacheObjectUtils.unwrapBinaryIfNeeded(coctx, o, keepBinary, false, null);
             }
         });
     }
