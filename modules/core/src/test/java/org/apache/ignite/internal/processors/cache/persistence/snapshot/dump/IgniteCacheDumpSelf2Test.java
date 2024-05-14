@@ -135,6 +135,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.d
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntrySerializer.HEADER_SZ;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
@@ -945,7 +946,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             log
         ).run(), IgniteException.class, "Encryption SPI required to read encrypted dump");
 
-        assertThrows(
+        assertThrowsAnyCause(
             null,
             () -> {
                 EncryptionSpi encSpi = encryptionSpi();
@@ -973,8 +974,10 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                     ),
                     log
                 ).run();
+
+                return null;
             },
-            IgniteException.class,
+            IllegalStateException.class,
             "Dump '" + DMP_NAME + "' has different master key digest"
         );
 

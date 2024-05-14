@@ -124,7 +124,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
         for (IgniteEx n : F.asList(grid(0), grid(GRID_CNT))) {
             SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE)
-                .get(getTestTimeout());
+                    .get(getTestTimeout());
 
             assertTrue(res.exceptions().isEmpty());
             assertTrue(res.idleVerifyResult().exceptions().isEmpty());
@@ -133,7 +133,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
     /** */
     @Test
-    public void testNoFullSnapshotMeta7NotFound() throws Exception {
+    public void testNoFullSnapshotMetaNotFound() throws Exception {
         createFullSnapshot();
         createIncrementalSnapshots(1);
 
@@ -161,7 +161,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
             SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 0, DFLT_CHECK_ON_RESTORE)
-                .get(getTestTimeout());
+                    .get(getTestTimeout());
 
             assertTrue(res.exceptions().isEmpty());
             assertTrue(res.idleVerifyResult().exceptions().isEmpty());
@@ -173,7 +173,8 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
                     log,
                     () -> snp(n).checkSnapshot(SNP, null, null, false, inc, DFLT_CHECK_ON_RESTORE).get(getTestTimeout()),
                     IllegalArgumentException.class,
-                    "No incremental snapshot found");
+                    "No incremental snapshot found"
+                );
             }
         }
     }
@@ -281,8 +282,9 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
             GridTestUtils.assertThrowsAnyCause(
                 log,
                 () -> snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE).get(getTestTimeout()),
-                IllegalStateException.class,
-                "Incremental snapshot doesn't match full snapshot");
+                IllegalArgumentException.class,
+                "Incremental snapshot doesn't match full snapshot"
+            );
         }
     }
 
@@ -309,10 +311,10 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
             meta.incrementalSnapshotPointer()), incMetaFile);
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
-            GridTestUtils.assertThrowsAnyCause(
+            GridTestUtils.assertThrows(
                 log,
                 () -> snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE).get(getTestTimeout()),
-                IllegalStateException.class,
+                IgniteCheckedException.class,
                 "Incremental snapshot meta has wrong index");
         }
     }

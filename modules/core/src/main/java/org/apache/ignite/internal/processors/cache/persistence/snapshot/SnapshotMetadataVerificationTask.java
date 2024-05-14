@@ -189,12 +189,12 @@ public class SnapshotMetadataVerificationTask
                     IncrementalSnapshotMetadata incMeta = snpMgr.readFromFile(metafile);
 
                     if (!incMeta.matchBaseSnapshot(fullMeta)) {
-                        throw new IllegalStateException("Incremental snapshot doesn't match full snapshot " +
+                        throw new IllegalArgumentException("Incremental snapshot doesn't match full snapshot " +
                             "[incMeta=" + incMeta + ", fullMeta=" + fullMeta + ']');
                     }
 
                     if (incMeta.incrementIndex() != inc) {
-                        throw new IllegalStateException(
+                        throw new IgniteException(
                             "Incremental snapshot meta has wrong index [expectedIdx=" + inc + ", meta=" + incMeta + ']');
                     }
 
@@ -250,7 +250,7 @@ public class SnapshotMetadataVerificationTask
 
         SnapshotMetadata first = null;
 
-        for (ComputeJobResult res : results) {
+        for (ComputeJobResult res: results) {
             if (res.getException() != null) {
                 exs.put(res.getNode(), res.getException());
 

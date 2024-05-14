@@ -3648,7 +3648,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 execute("--snapshot", "restore", snpName, "--src", "A", "--src", "B"));
             assertContains(log, testOut.toString(), "--src argument specified twice");
 
-            // The check command simply prints the results of the check, it always ends with a zero exit code.
             assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "check", snpName));
             assertContains(log, testOut.toString(), "Snapshot does not exists [snapshot=" + snpName);
 

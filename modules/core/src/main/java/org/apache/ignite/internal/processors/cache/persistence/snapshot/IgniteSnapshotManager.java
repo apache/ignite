@@ -1911,11 +1911,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             SnapshotMetadataVerificationTask.class,
             taskArg,
             options(bltNodes)
-        ).listen(f0 -> {
-            SnapshotMetadataVerificationTaskResult taskRes = f0.result();
+        ).listen(metaFut -> {
+            SnapshotMetadataVerificationTaskResult metasRes = metaFut.result();
 
-            if (f0.error() == null && F.isEmpty(taskRes.exceptions())) {
-                Map<ClusterNode, List<SnapshotMetadata>> metas = taskRes.meta();
+            if (metaFut.error() == null && F.isEmpty(metasRes.exceptions())) {
+                Map<ClusterNode, List<SnapshotMetadata>> metas = metasRes.meta();
 
                 Class<? extends AbstractSnapshotVerificationTask> cls;
 
@@ -1939,13 +1939,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     });
             }
             else {
-                if (f0.error() == null)
-                    res.onDone(new IgniteSnapshotVerifyException(taskRes.exceptions()));
-                else if (f0.error() instanceof IgniteSnapshotVerifyException)
+                if (metaFut.error() == null)
+                    res.onDone(new IgniteSnapshotVerifyException(metasRes.exceptions()));
+                else if (metaFut.error() instanceof IgniteSnapshotVerifyException)
                     res.onDone(new SnapshotPartitionsVerifyTaskResult(null,
-                        new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f0.error()).exceptions())));
+                        new IdleVerifyResultV2(((IgniteSnapshotVerifyException)metaFut.error()).exceptions())));
                 else
-                    res.onDone(f0.error());
+                    res.onDone(metaFut.error());
             }
         });
 

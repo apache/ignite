@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
 
@@ -43,7 +44,6 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CACHE_GROUP_KEY_CHANGE_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.MASTER_KEY_CHANGE_PREPARE;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
  * Snapshot test for encrypted-only snapshots.
@@ -140,7 +140,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         ig1.cluster().state(ACTIVE);
 
-        assertThrowsAnyCause(
+        GridTestUtils.assertThrowsAnyCause(
             log,
             () -> snp(ig1).restoreSnapshot(SNAPSHOT_NAME, Collections.singletonList(dfltCacheCfg.getName())).get(TIMEOUT),
             IllegalStateException.class,
@@ -201,7 +201,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         IgniteEx ig2 = startGrids(2);
 
-        assertThrowsAnyCause(
+        GridTestUtils.assertThrowsAnyCause(
             log,
             () -> snp(ig2).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult(),
             IllegalStateException.class,
@@ -241,7 +241,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
             ig.cluster().state(ACTIVE);
 
-            assertThrowsAnyCause(
+           GridTestUtils.assertThrowsAnyCause(
                 log,
                 () -> snp(ig).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult(),
                 IllegalStateException.class,
@@ -269,7 +269,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         masterKeyName = AbstractEncryptionTest.MASTER_KEY_NAME_2;
 
-        assertThrowsAnyCause(
+        GridTestUtils.assertThrowsAnyCause(
             log,
             () -> startGridsFromSnapshot(2, SNAPSHOT_NAME),
             IgniteSpiException.class,
@@ -283,7 +283,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         // Start grid node with data before each test.
         IgniteEx ig = startGridsWithCache(1, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        assertThrowsAnyCause(log,
+        GridTestUtils.assertThrowsAnyCause(log,
             () -> snp(ig).registerSnapshotTask(SNAPSHOT_NAME,
                 null,
                 ig.localNode().id(),
@@ -399,7 +399,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         spi0.waitBlocked(TIMEOUT);
 
-        assertThrowsAnyCause(log, () -> action.apply(2).get(TIMEOUT), errType,
+        GridTestUtils.assertThrowsAnyCause(log, () -> action.apply(2).get(TIMEOUT), errType,
             errPrefix + " Snapshot operation is in progress.");
 
         spi0.unblock();
@@ -441,12 +441,12 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         discoSpi.waitBlocked(TIMEOUT);
 
-        assertThrowsAnyCause(log,
+        GridTestUtils.assertThrowsAnyCause(log,
             () -> grid(1).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singletonList(CACHE2)).get(TIMEOUT),
             IgniteCheckedException.class,
             expectedError);
 
-        assertThrowsAnyCause(log,
+        GridTestUtils.assertThrowsAnyCause(log,
             () -> snp(grid(2)).createSnapshot(SNAPSHOT_NAME + "_v2", null, false, onlyPrimary).get(TIMEOUT), IgniteCheckedException.class,
             expectedError);
 

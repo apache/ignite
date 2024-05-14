@@ -352,10 +352,12 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence();
 
-        GridTestUtils.assertThrowsAnyCause(log, () ->
-            grid(0).snapshot().restoreSnapshot(SNP, null, 2).get(getTestTimeout()),
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> grid(0).snapshot().restoreSnapshot(SNP, null, 2).get(getTestTimeout()),
             IllegalArgumentException.class,
-            "No incremental snapshot found");
+            "No incremental snapshot found"
+        );
     }
 
     /** */
@@ -388,12 +390,9 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         corruptIncrementalSnapshot(1, 1, 0);
 
-        GridTestUtils.assertThrowsAnyCause(
-            log,
+        GridTestUtils.assertThrowsAnyCause(log,
             () -> grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(),
-            IgniteCheckedException.class,
-            "System WAL record for incremental snapshot wasn't found"
-        );
+            IgniteException.class, "System WAL record for incremental snapshot wasn't found");
 
         awaitPartitionMapExchange();
 

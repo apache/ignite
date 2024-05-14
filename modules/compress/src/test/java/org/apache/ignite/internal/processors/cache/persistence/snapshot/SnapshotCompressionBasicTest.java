@@ -221,7 +221,9 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
             GridTestUtils.assertThrowsAnyCause(
                 log,
                 () -> ignite.snapshot().restoreSnapshot(snpName, null).get(TIMEOUT),
-                IllegalStateException.class, "snapshot '" + snpName + "' are compressed while disk page compression is disabled."
+                IllegalStateException.class,
+                "from snapshot '" + snpName + "' are compressed while disk page compression is disabled. To check " +
+                    "these groups please start Ignite with ignite-compress"
             );
         }
     }
