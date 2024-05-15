@@ -294,8 +294,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         boolean hasNearCache = false;
 
-        Map<UUID, Collection<UUID>> txNodes;
-
         GridDhtTxMapping txMapping = new GridDhtTxMapping();
 
         for (IgniteTxEntry txEntry : tx.allEntries()) {
@@ -333,7 +331,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             txMapping.addMapping(nodes);
         }
 
-        txNodes = txMapping.transactionNodes();
+        Map<UUID, Collection<UUID>> txNodes = txMapping.transactionNodes();
 
         tx.transactionNodes(txNodes);
 
