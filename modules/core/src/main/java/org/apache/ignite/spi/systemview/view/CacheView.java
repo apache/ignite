@@ -333,7 +333,7 @@ public class CacheView {
     /** @see CacheConfiguration#getExpiryPolicyFactory() */
     public String expiryPolicyFactory() {
         if (cache.cacheConfiguration().getExpiryPolicyFactory() == null)
-                return null;
+            return null;
 
         ExpiryPolicy expiryPlc = (ExpiryPolicy)cache.cacheConfiguration().getExpiryPolicyFactory().create();
 
