@@ -107,7 +107,7 @@ public class SnapshotMetadataVerificationTaskArg extends VisorDataTransferObject
         snpPath = U.readString(in);
         incIdx = in.readInt();
 
-        if (protoVer >= V1)
+        if (protoVer > V1)
             grpIds = U.readCollection(in);
     }
 
