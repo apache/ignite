@@ -269,7 +269,7 @@ public class ObjectDetachHelper {
 
         /** {@inheritDoc} */
         @Override public int compareTo(@NotNull ObjectDetachHelper.ObjectDescriptor other) {
-            return Integer.compare(objStartOffset, other.objDataStartOffset);
+            return Integer.compare(objStartOffset, other.objStartOffset);
         }
 
         /** */
