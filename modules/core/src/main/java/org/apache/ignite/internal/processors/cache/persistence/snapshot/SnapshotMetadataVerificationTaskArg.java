@@ -42,7 +42,7 @@ public class SnapshotMetadataVerificationTaskArg extends VisorDataTransferObject
     private int incIdx;
 
     /** Cache group ids. */
-    private Collection<Integer> grpIds;
+    @Nullable private Collection<Integer> grpIds;
 
     /** Default constructor. */
     public SnapshotMetadataVerificationTaskArg() {
@@ -58,6 +58,11 @@ public class SnapshotMetadataVerificationTaskArg extends VisorDataTransferObject
         this.snpPath = snpPath;
         this.incIdx = incIdx;
         this.grpIds = grpIds;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
     }
 
     /**
@@ -84,7 +89,7 @@ public class SnapshotMetadataVerificationTaskArg extends VisorDataTransferObject
     /**
      * @return Cache group ids.
      */
-    public Collection<Integer> grpIds() {
+    @Nullable public Collection<Integer> grpIds() {
         return grpIds;
     }
 
@@ -101,7 +106,9 @@ public class SnapshotMetadataVerificationTaskArg extends VisorDataTransferObject
         snpName = U.readString(in);
         snpPath = U.readString(in);
         incIdx = in.readInt();
-        grpIds = U.readCollection(in);
+
+        if (protoVer >= V1)
+            grpIds = U.readCollection(in);
     }
 
     /** {@inheritDoc} */

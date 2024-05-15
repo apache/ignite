@@ -99,31 +99,33 @@ public class SnapshotMetadataVerificationTask
         @Override public List<SnapshotMetadata> execute() {
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-            List<SnapshotMetadata> metas = snpMgr.readSnapshotMetadatas(arg.snapshotName(), arg.snapshotPath());
+            List<SnapshotMetadata> snpMeta = snpMgr.readSnapshotMetadatas(arg.snapshotName(), arg.snapshotPath());
 
-            for (SnapshotMetadata meta : metas)
-                checkMeta(meta, ignite.context().config().getEncryptionSpi().masterKeyDigest());
+            for (SnapshotMetadata meta : snpMeta)
+                checkMeta(meta);
 
             if (arg.incrementIndex() > 0) {
-                List<SnapshotMetadata> locNodeMetas = metas.stream()
+                List<SnapshotMetadata> metas = snpMeta.stream()
                     .filter(m -> m.consistentId().equals(ignite.localNode().consistentId()))
                     .collect(Collectors.toList());
 
-                if (locNodeMetas.size() != 1) {
-                    throw new IgniteException("Failed to find single snapshot metafile for local node [locNodeId="
-                        + ignite.localNode().consistentId() + ", metas=" + metas + ", snpName=" + arg.snapshotName()
-                        + ", snpPath=" + arg.snapshotPath() + ']');
+                if (metas.size() != 1) {
+                    throw new IgniteException("Failed to find single snapshot metafile on local node [locNodeId="
+                        + ignite.localNode().consistentId() + ", metas=" + snpMeta + ", snpName=" + arg.snapshotName()
+                        + ", snpPath=" + arg.snapshotPath() + "]. Incremental snapshots requires exactly one meta file " +
+                        "per node because they don't support restoring on a different topology.");
                 }
 
-                checkIncrementalSnapshots(locNodeMetas.get(0), arg);
+                checkIncrementalSnapshots(metas.get(0), arg);
             }
 
-            return metas;
+            return snpMeta;
         }
 
         /** */
-        private void checkMeta(SnapshotMetadata meta, byte[] masterKeyDigest) {
+        private void checkMeta(SnapshotMetadata meta) {
             byte[] snpMasterKeyDigest = meta.masterKeyDigest();
+            byte[] masterKeyDigest = ignite.context().config().getEncryptionSpi().masterKeyDigest();
 
             if (masterKeyDigest == null && snpMasterKeyDigest != null) {
                 throw new IllegalStateException("Snapshot '" + meta.snapshotName() + "' has encrypted caches " +
@@ -140,12 +142,9 @@ public class SnapshotMetadataVerificationTask
 
             if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompression)) {
                 try {
-                    if (ignite.context().compress() == null)
-                        throw new IllegalStateException("Compression processor is not set. Compressed snapshots aren't supported.");
-
                     ignite.context().compress().checkPageCompressionSupported();
                 }
-                catch (IgniteCheckedException e) {
+                catch (NullPointerException | IgniteCheckedException e) {
                     String grpWithCompr = grpIds.stream().filter(meta::isGroupWithCompression)
                         .map(String::valueOf).collect(Collectors.joining(", "));
 
