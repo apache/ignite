@@ -37,6 +37,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition
 import org.apache.ignite.internal.cache.query.index.sorted.SortedSegmentedIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -118,6 +119,26 @@ public class IndexQueryProcessor {
                             continue;
                     }
 
+                    if (isRecordable) {
+                        cctx.gridEvents().record(new CacheQueryReadEvent<>(
+                            cctx.localNode(),
+                            "Index query entry read.",
+                            EVT_CACHE_QUERY_OBJECT_READ,
+                            CacheQueryType.INDEX.name(),
+                            cctx.name(),
+                            idxQryDesc.valType(),
+                            null,
+                            filter,
+                            null,
+                            null,
+                            securitySubjectId(cctx),
+                            cctx.kernalContext().task().resolveTaskName(taskHash),
+                            k,
+                            v,
+                            null,
+                            null));
+                    }
+
                     currVal = new IgniteBiTuple<>(k, v);
                 }
 
@@ -132,39 +153,14 @@ public class IndexQueryProcessor {
 
                 IgniteBiTuple<K, V> row = currVal;
 
-                if (isRecordable) {
-                    K k = unwrap(row.getKey(), keepBinary);
-                    V v = unwrap(row.getValue(), keepBinary);
-
-                    String taskName = cctx.kernalContext().task().resolveTaskName(taskHash);
-
-                    cctx.gridEvents().record(new CacheQueryReadEvent<>(
-                        cctx.localNode(),
-                        "Index query entry read.",
-                        EVT_CACHE_QUERY_OBJECT_READ,
-                        CacheQueryType.INDEX.name(),
-                        cctx.name(),
-                        idxQryDesc.valType(),
-                        null,
-                        filter,
-                        null,
-                        null,
-                        securitySubjectId(cctx),
-                        taskName,
-                        k,
-                        v,
-                        null,
-                        null));
-                }
-
                 currVal = null;
 
                 return row;
             }
 
             /** */
-            private <T> T unwrap(Object o, boolean keepBinary) {
-                return (T)CacheObjectUtils.unwrapBinaryIfNeeded(coctx, o, keepBinary, false, null);
+            private <T> T unwrap(CacheObject o, boolean keepBinary) {
+                return (T)CacheObjectUtils.unwrapBinaryIfNeeded(coctx, o, keepBinary, false);
             }
         });
     }

@@ -1893,7 +1893,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     @Test
     public void testIndexQueryEvents() throws Exception {
-        final Map<Integer, Type2> qryResults = new ConcurrentHashMap<>();
+        final Map<Integer, BinaryObject> qryResults = new ConcurrentHashMap<>();
         final IgniteCache<Integer, Type2> cache = jcache(Integer.class, Type2.class);
         final boolean evtsDisabled = cache.getConfiguration(CacheConfiguration.class).isEventsDisabled();
 
@@ -1922,7 +1922,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                     assertNull(qe.continuousQueryFilter());
                     assertNull(qe.arguments());
 
-                    qryResults.put(qe.key(), qe.value());
+                    qryResults.put(qe.key(), (BinaryObject)qe.value());
 
                     readLatch.countDown();
 
@@ -1984,8 +1984,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             if (!evtsDisabled) {
                 assertEquals(2, qryResults.size());
 
-                assertEquals("Bill", qryResults.get(2).name());
-                assertEquals("Bill", qryResults.get(4).name());
+                assertEquals("Bill", ((Type2)qryResults.get(2).deserialize()).name());
+                assertEquals("Bill", ((Type2)qryResults.get(4).deserialize()).name());
             }
             else
                 assert qryResults.isEmpty();
