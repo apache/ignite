@@ -629,13 +629,29 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     break;
 
                 case INDEX:
+                    if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                        cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
+                            cctx.localNode(),
+                            "Index query executed.",
+                            EVT_CACHE_QUERY_EXECUTED,
+                            CacheQueryType.INDEX.name(),
+                            cctx.name(),
+                            qry.queryClassName(),
+                            null,
+                            qry.scanFilter(),
+                            null,
+                            null,
+                            securitySubjectId(cctx),
+                            taskName));
+                    }
+
                     int[] parts = null;
 
                     if (qry.partition() != null)
                         parts = new int[]{qry.partition()};
 
                     IndexQueryResult<K, V> idxQryRes = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(),
-                        qry.scanFilter(), filter(qry, parts, parts != null), qry.keepBinary());
+                        qry.scanFilter(), filter(qry, parts, parts != null), qry.keepBinary(), qry.taskHash());
 
                     iter = idxQryRes.iter();
                     res.metadata(idxQryRes.metadata());
