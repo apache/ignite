@@ -1076,7 +1076,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         assert req != null;
         try (MTC.TraceSurroundings ignored =
                  MTC.supportContinual(span = cctx.kernalContext().tracing().create(TX_DHT_PREPARE, MTC.span()))) {
-            if (tx.empty() && !req.queryUpdate()) {
+            if (tx.empty()) {
                 tx.setRollbackOnly();
 
                 onDone((GridNearTxPrepareResponse)null);
@@ -1394,7 +1394,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : tx.dhtMap().values()) {
-            assert !dhtMapping.empty() || dhtMapping.queryUpdate();
+            assert !dhtMapping.empty();
 
             ClusterNode n = dhtMapping.primary();
 
@@ -1406,7 +1406,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             Collection<IgniteTxEntry> dhtWrites = dhtMapping.writes();
 
-            if (!dhtMapping.queryUpdate() && F.isEmpty(dhtWrites) && F.isEmpty(nearWrites))
+            if (F.isEmpty(dhtWrites) && F.isEmpty(nearWrites))
                 continue;
 
             MiniFuture fut = new MiniFuture(n.id(), ++miniId, dhtMapping, nearMapping);
@@ -1432,8 +1432,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 tx.storeWriteThrough(),
                 retVal,
                 cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
-
-            req.queryUpdate(dhtMapping.queryUpdate());
 
             int idx = 0;
 
@@ -1940,7 +1938,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         }
                     }
 
-                    if (!dhtMapping.queryUpdate() && dhtMapping.empty()) {
+                    if (dhtMapping.empty()) {
                         dhtMap.remove(nodeId);
 
                         if (log.isDebugEnabled())

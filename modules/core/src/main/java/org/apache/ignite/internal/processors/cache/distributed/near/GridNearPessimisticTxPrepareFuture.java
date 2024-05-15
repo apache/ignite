@@ -240,8 +240,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             tx.activeCachesDeploymentEnabled(),
             tx.txState().recovery());
 
-        req.queryUpdate(m.queryUpdate());
-
         for (IgniteTxEntry txEntry : writes) {
             if (txEntry.op() == TRANSFORM)
                 req.addDhtVersion(txEntry.txKey(), null);

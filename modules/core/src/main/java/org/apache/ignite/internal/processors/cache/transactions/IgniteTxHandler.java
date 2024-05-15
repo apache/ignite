@@ -1654,7 +1654,7 @@ public class IgniteTxHandler {
         GridDhtTxPrepareRequest req,
         GridDhtTxPrepareResponse res
     ) throws IgniteCheckedException {
-        if (req.queryUpdate() || !F.isEmpty(req.writes())) {
+        if (!F.isEmpty(req.writes())) {
             GridDhtTxRemote tx = ctx.tm().tx(req.version());
 
             if (tx == null) {
@@ -1843,7 +1843,7 @@ public class IgniteTxHandler {
 
             res.invalidPartitionsByCacheId(tx.invalidPartitions());
 
-            if (!req.queryUpdate() && tx.empty() && req.last()) {
+            if (tx.empty() && req.last()) {
                 tx.skipCompletedVersions(req.skipCompletedVersion());
 
                 tx.rollbackRemoteTx();
