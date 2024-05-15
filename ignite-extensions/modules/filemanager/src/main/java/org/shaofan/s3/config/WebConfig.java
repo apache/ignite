@@ -20,9 +20,5 @@ public class WebConfig implements WebMvcConfigurer {
     
     @Autowired
     private SystemConfig config;
-
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(s3Intecept).addPathPatterns("/s3/**");
-    }    
+   
 }

@@ -12,7 +12,7 @@
    		<encoding>UTF-8</encoding>
 
 		<ignite.version>2.16.999-SNAPSHOT</ignite.version>
-		<janus.version>1.1.0-20231108-040802.ba4b083</janus.version>
+		<janus.version>1.0.0</janus.version>
 		<lucene-solr.version>8.11.2</lucene-solr.version>
 		<gremlin.version>3.7.0</gremlin.version>
 	</properties>

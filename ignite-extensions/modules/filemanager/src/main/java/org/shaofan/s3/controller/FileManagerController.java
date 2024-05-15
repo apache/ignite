@@ -155,7 +155,7 @@ public class FileManagerController  {
 	
 	                    String filename = part.getOriginalFilename();
 	                    
-	                    s3Util.upload(bucketName, path+filename, part.getInputStream());
+	                    s3Util.upload(bucketName, path+"/"+filename, part.getInputStream());
 	                    
 	                    part.getInputStream().close();
 	                }

@@ -37,6 +37,8 @@ public class MongoPluginConfiguration implements PluginConfiguration {
     private int mdlDescStorageBackups;
     
     private boolean partitioned = true;
+    
+    private boolean ACID = true;
 
     /** */
     public boolean isWithBinaryStorage() {
@@ -92,5 +94,13 @@ public class MongoPluginConfiguration implements PluginConfiguration {
 
 	public void setPartitioned(boolean partitioned) {
 		this.partitioned = partitioned;
+	}
+
+	public boolean isACID() {
+		return ACID;
+	}
+
+	public void setACID(boolean aCID) {
+		ACID = aCID;
 	}
 }

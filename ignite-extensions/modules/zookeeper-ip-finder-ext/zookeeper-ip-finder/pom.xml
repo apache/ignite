@@ -68,11 +68,7 @@
             <version>${curator.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava16.version}</version>
-        </dependency>
+        
 
         <!-- Do not remove com.fasterxml.jackson.core:jackson-core it is required by Apache Curator at runtime -->
         <dependency>

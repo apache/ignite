@@ -24,14 +24,19 @@
 		</mvc:message-converters>
 	</mvc:annotation-driven>
 	
+	<mvc:interceptors>
+	    <mvc:interceptor>
+	        <mvc:mapping path="/**" />
+	        <bean id="s3Intecepter" class="org.shaofan.s3.intecept.S3Intecept"/>
+	    </mvc:interceptor>
+	</mvc:interceptors>
+	
 	<bean class="org.springframework.web.servlet.view.BeanNameViewResolver">
 		<property name="order" value="1" />
 	</bean>
-
     
 	
-	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
-		
+	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">		
 		<property name="defaultEncoding" value="UTF-8" />
 		<property name="maxUploadSize" value="5242880" />
 		<property name="maxInMemorySize" value="40960" />
@@ -43,8 +48,6 @@
 		<property name="secretAccessKey" value="123456" />
 		<property name="dataPath" value="work/data/" />
 		<property name="s3BucketName" value="igfs" />		
-	</bean>
-
-	
+	</bean>	
 	
 </beans>

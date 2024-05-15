@@ -40,6 +40,7 @@ public class S3Intecept implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         boolean flag = false;
+        
         String authorization = request.getHeader("Authorization");
         if(!StringUtils.isEmpty(authorization)){
             flag = validAuthorizationHead(request, systemConfig.getAccessKey(), systemConfig.getSecretAccessKey());
@@ -47,6 +48,9 @@ public class S3Intecept implements HandlerInterceptor {
             authorization = request.getParameter("X-Amz-Credential");
             if(!StringUtils.isEmpty(authorization)){
                 flag = validAuthorizationUrl(request, systemConfig.getAccessKey(), systemConfig.getSecretAccessKey());
+            }
+            else {
+            	flag = true; // 匿名访问            	
             }
         }
         if(!flag){
@@ -147,6 +151,7 @@ public class S3Intecept implements HandlerInterceptor {
         ///endregion
 
         if (signature.equals(strHexSignature)) {
+        	request.setAttribute("accessKey", accessKey);
             return true;
         }
         return false;
@@ -257,6 +262,7 @@ public class S3Intecept implements HandlerInterceptor {
         ///endregion
 
         if (signature.equals(strHexSignature)) {
+        	request.setAttribute("accessKey", accessKey);
             return true;
         }
         return false;

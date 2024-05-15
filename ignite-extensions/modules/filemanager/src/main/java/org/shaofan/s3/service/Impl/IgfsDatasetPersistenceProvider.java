@@ -16,7 +16,6 @@
  */
 package org.shaofan.s3.service.Impl;
 
-import org.apache.commons.io.FilenameUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
@@ -43,8 +42,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -59,7 +56,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
-import javax.servlet.ServletException;
 
 /**
  * An {@link DatasetPersistenceProvider} that uses AWS Igfs for storage.
@@ -107,19 +103,15 @@ public class IgfsDatasetPersistenceProvider{
     	if(ignite==null) {
     		ignite = FileManagerInitializer.ignite;
     	}
-    	if(ignite.fileSystems().size()==1) {
-    		igfs = ignite.fileSystems().iterator().next();
-		}
-    	else {
-    		s3BucketName = systemConfig.getS3BucketName();
-            if (StringUtils.isEmpty(s3BucketName)) {
-                throw new IllegalArgumentException("The property '" + BUCKET_NAME_PROP + "' must be provided");
-            }        
-            
-            if(!StringUtils.isEmpty(systemConfig.getEndpointOverride()))
-        		endpointOverride = URI.create(systemConfig.getEndpointOverride()); 
-    		igfs = ignite.fileSystem(s3BucketName);
-    	}
+    	s3BucketName = systemConfig.getS3BucketName();
+        if (StringUtils.isEmpty(s3BucketName)) {
+            throw new IllegalArgumentException("The property '" + BUCKET_NAME_PROP + "' must be provided");
+        }        
+        
+        if(!StringUtils.isEmpty(systemConfig.getEndpointOverride()))
+    		endpointOverride = URI.create(systemConfig.getEndpointOverride());
+        
+		igfs = ignite.fileSystem(s3BucketName);
         return igfs;
     }
    
@@ -350,6 +342,10 @@ public class IgfsDatasetPersistenceProvider{
 		metadata.setContentEncoding(file.property("contentEncoding",null));
 		metadata.setLastModified(new Date(file.modificationTime()));
 		metadata.setUserMetadata(file.properties());
+		if(endpointOverride!=null) {
+			String url = endpointOverride.toString()+"/"+s3BucketName+"/"+file.path().name();
+			metadata.getUserMetadata().put("endpointURL",url);
+		}
 		return metadata;
     }
 	

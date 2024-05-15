@@ -8,10 +8,7 @@ import javax.servlet.ServletRegistration;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.GridKernalContext;
-import org.shaofan.s3.config.SystemConfig;
-import org.shaofan.s3.config.WebConfig;
-import org.shaofan.s3.service.Impl.IgfsDatasetPersistenceProvider;
-import org.shaofan.s3.service.Impl.S3IgfsServiceImpl;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
@@ -25,6 +22,7 @@ import org.springframework.web.servlet.DispatcherServlet;
 
 @Component
 public class FileManagerInitializer implements WebApplicationInitializer {
+	
 	public static Ignite ignite;	
 	
 	
@@ -58,8 +56,7 @@ public class FileManagerInitializer implements WebApplicationInitializer {
         
         MultipartConfigElement MULTI_PART_CONFIG = new MultipartConfigElement(System.getProperty("java.io.tmpdir"));
         
-        dispatcher.setMultipartConfig(MULTI_PART_CONFIG);
-              
+        dispatcher.setMultipartConfig(MULTI_PART_CONFIG);              
        
         
 	}

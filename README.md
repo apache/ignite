@@ -78,6 +78,7 @@ Ignite can be used as a Gremlin server, it is fast and distributed, it supports 
 
 ## Redis
 Ignite can also be used as a distributed redis server. To execute below script, run an Ignite instance with 'redis-ignite-internal-cache-0' cache specified and configured. 
+
     ```
     import redis    
 
@@ -101,6 +102,7 @@ Ignite can also be used as a distributed redis server. To execute below script, 
 Ignite is also available as a distributed memcached server.
 
 php code:
+
     ```
 
     // Create client instance.

@@ -22,7 +22,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>11</java.version>
-		<fastjson.version>1.2.70</fastjson.version>
+		<fastjson.version>1.2.83</fastjson.version>
 
 		<jmail.version>1.6.7</jmail.version>
 		<ignite.version>2.16.999-SNAPSHOT</ignite.version>
@@ -49,15 +49,13 @@
 		<dependency>
 			<groupId>org.apache.ignite</groupId>
 			<artifactId>ignite-core</artifactId>
-			<scope>provided</scope>
-			<version>${ignite.version}</version>
+			<scope>provided</scope>			
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.ignite</groupId>
 			<artifactId>ignite-spring</artifactId>
-			<scope>provided</scope>
-			<version>${ignite.version}</version>			
+			<scope>provided</scope>			
 		</dependency>
 		<dependency>
 			<groupId>org.apache.ignite</groupId>
@@ -69,13 +67,13 @@
 		<dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-webmvc</artifactId>
-            <version>${spring.version}</version>                    
+            <version>${spring.version}</version>                              
         </dependency>
         
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
-            <version>${spring.version}</version>                    
+            <version>${spring.version}</version>                          
         </dependency>
         
 

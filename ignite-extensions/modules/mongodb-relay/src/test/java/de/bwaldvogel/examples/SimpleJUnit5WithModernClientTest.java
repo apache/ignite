@@ -59,9 +59,9 @@ class SimpleJUnit5WithModernClientTest {
     	
     	List<Document> pipeline = List.of(filter);
         
-    	client.getDatabase("graph").createView("testview", "testcollection", pipeline);
+    	client.getDatabase("graph").createView("test_view2", "testcollection", pipeline);
     	
-    	collection = client.getDatabase("graph").getCollection("testview");
+    	collection = client.getDatabase("graph").getCollection("test_view2");
     	
     	for(Document doc: collection.find()) {
     		System.out.println(doc);

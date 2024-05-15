@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import javax.cache.Cache;
@@ -15,6 +17,7 @@ import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -25,6 +28,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.stream.StreamVisitor;
+import org.apache.ignite.transactions.Transaction;
 
 import de.bwaldvogel.mongo.MongoCollection;
 import de.bwaldvogel.mongo.MongoDatabase;
@@ -45,6 +49,8 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
 	public static final String DEFAULT_DB_NAME = "default";
 	public static final String SYS_DB_NAME = "admin";
 	public static final String INDEX_DB_PREFIX = "INDEXES.";
+	
+	private static Map<UUID,Transaction> transactionsMap = new ConcurrentHashMap<>(); 
 	
     private Ignite mvStore;
     private IgniteBackend backend;
@@ -204,7 +210,13 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
     	Ignite mvStore = database.getIgnite();
         CacheConfiguration<Object, BinaryObject> cfg = new CacheConfiguration<>();
         cfg.setName(fullCollectionName);
-        cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);        
+        
+        if(backend.getCfg().isACID()) {
+        	cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        }
+        else{
+        	cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+        }
         
         if(!this.isGlobal) {        	
 	       
@@ -301,7 +313,36 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
 	    collection.renameTo(this, newCollectionName);
         //throw new UnsupportedOperationException();
     }
-   
+    
+    @Override
+    public void startTransaction(Document tx){
+    	UUID sessId = (UUID)tx.getDocument("lsid").get("id");
+    	Transaction t = transactionsMap.get(sessId);
+    	if(t!=null) {
+    		t.close();
+    	}
+    	IgniteTransactions tp = this.getIgnite().transactions();
+    	t =  tp.txStart();
+    	transactionsMap.put(sessId, t);
+    }
+    
+    @Override
+    public void commitTransaction(Document tx){
+    	UUID sessId = (UUID)tx.getDocument("lsid").get("id");
+    	Transaction t = transactionsMap.remove(sessId);
+    	if(t!=null) {
+    		t.commit();
+    	}
+    }
+
+    @Override
+    public void abortTransaction(Document tx){
+    	UUID sessId = (UUID)tx.getDocument("lsid").get("id");
+    	Transaction t = transactionsMap.remove(sessId);
+    	if(t!=null) {
+    		t.rollback();
+    	}
+    }   
     
     public Ignite getIgnite() {
     	return this.mvStore;

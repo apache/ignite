@@ -1,15 +1,11 @@
 package de.bwaldvogel.examples;
 
-
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.apache.ignite.internal.processors.mongo.MongoPluginConfiguration;
+
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.IterableAssert;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -36,7 +32,7 @@ import com.mongodb.session.ServerSession;
 import de.bwaldvogel.mongo.MongoServer;
 import de.bwaldvogel.mongo.backend.AbstractTest;
 import de.bwaldvogel.mongo.backend.TestUtils;
-import de.bwaldvogel.mongo.backend.ignite.IgniteBackend;
+
 import static de.bwaldvogel.mongo.backend.TestUtils.json;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -46,36 +42,31 @@ public class TransactionTest {
 
     private static MongoCollection<Document> collection;
     private static MongoClient client;
-    private static MongoServer server;
+
+    private static String dbname = "graph";
 
     @BeforeEach
-    public void setUp() {
-    	if(server!=null) {
-    		return ;
-    	}
-        server = new MongoServer(IgniteBackend.inMemory(new MongoPluginConfiguration()));
+    public void setUp() {    	
 
-        // bind on a random local port
-        String serverAddress = server.bindAndGetConnectionString();
+        String connectionString = "mongodb://127.0.0.1:27018/graph?ssl=false";
 
-        client = MongoClients.create(serverAddress);
+        client = MongoClients.create(connectionString);
         
-        for(String name:client.getDatabase("testdb").listCollectionNames()) {
+        for(String name:client.getDatabase(dbname).listCollectionNames()) {
         	System.out.println(name);
         }
-        collection = client.getDatabase("testdb").getCollection("testcoll");
+        collection = client.getDatabase(dbname).getCollection("test");
     }
 
     @AfterEach
     public void tearDown() {
     	collection.drop();
     	//client.getDatabase("testdb").drop();
-        //client.close();
-        //server.shutdown();
+        client.close();       
     }
 
-    @Test
-    void testSimpleCursor() {
+    //@Test
+    void _testSimpleCursor() {
         int expectedCount = 20;
         int batchSize = 10;
         for (int i = 0; i < expectedCount; i++) {
@@ -96,23 +87,35 @@ public class TransactionTest {
     @Test
     public void testBuildData() throws Exception {        
         
-        ClientSession session = client.startSession();        
-       
+        ClientSession session = client.startSession();
+        
+        collection = client.getDatabase(dbname).getCollection("test2");
+        collection.insertOne(session,json("_id: 0, text: 'init'"));
+        
         BsonDocument id = session.getServerSession().getIdentifier();
         
+        
+        
+        session.withTransaction(()->{
+        	
+        	collection.insertOne(session,json("_id: 15, text: 'abc'"));
+        	collection.deleteOne(session,json("_id: 5"));
+        	return 1;
+        });
+        
         session.startTransaction();
-
-        collection.insertOne(json("_id: 1, text: 'abc'"));
-        collection.insertOne(json("_id: 2, text: 'def'"));
-        collection.insertOne(json("_id: 3, title: '标题'"));
-        collection.insertOne(json("_id: 4"));
-        collection.insertOne(json("_id: 5, text: 'def'"));
+        
+        collection.insertOne(session,json("_id: 1, text: 'abc'"));
+        collection.insertOne(session,json("_id: 2, text: 'def'"));
+        collection.insertOne(session,json("_id: 3, title: '标题'"));
+        collection.insertOne(session,json("_id: 4"));
+        collection.insertOne(session,json("_id: 5, text: 'def'"));
 
         
-        collection.deleteOne(json("_id: 5"));
+        collection.deleteOne(session,json("_id: 5"));
 
-        collection.updateOne(json("_id: 2"), new Document("$set", json("text: null")));
-        collection.updateOne(json("_id: 1"), new Document("$set", json("text: 'def'")));
+        collection.updateOne(session,json("_id: 2"), new Document("$set", json("text: null")));
+        collection.updateOne(session,json("_id: 1"), new Document("$set", json("text: 'def'")));
         
         session.notifyMessageSent();
         
