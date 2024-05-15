@@ -18,12 +18,14 @@
 package org.apache.ignite.cache.query;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
@@ -40,6 +42,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -224,14 +227,25 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
             for (int pageSize: F.asList(1, 10, 100, 1000, 10_000)) {
                 idxQry.setPageSize(pageSize);
 
-                TestRecordingCommunicationSpi.spi(grid(0)).record(GridQueryNextPageRequest.class);
+                for (int i = 0; i < NODES; i++)
+                    TestRecordingCommunicationSpi.spi(grid(i)).record(GridCacheQueryRequest.class);
 
                 assertClientQuery(cache, NULLS_CNT, CNT, idxQry);
 
-                List<Object> reqs = TestRecordingCommunicationSpi.spi(grid(0)).recordedMessages(true);
+                List<Object> reqs = new ArrayList<>();
+
+                for (int i = 0; i < NODES; i++) {
+                    reqs.addAll(TestRecordingCommunicationSpi.spi(grid(i)).recordedMessages(true)
+                        .stream()
+                        .map(o -> (GridCacheQueryRequest)o)
+                        .filter(o -> o.type() == null)
+                        .collect(Collectors.toList()));
+                }
+
+                assert pageSize >= CNT || !reqs.isEmpty();
 
                 for (Object r: reqs)
-                    assertEquals(pageSize, ((GridQueryNextPageRequest)r).pageSize());
+                    assertEquals(pageSize, ((GridCacheQueryRequest)r).pageSize());
             }
 
             for (int pageSize: F.asList(-10, -1, 0)) {
