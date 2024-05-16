@@ -986,7 +986,7 @@ public final class UpdatePlanBuilder {
 
                     H2Utils.checkQuery(idx, cacheIds, qry.tables());
 
-                    return new DmlDistributedPlanInfo(qry.isReplicatedOnly(), cacheIds, qry.derivedPartitions());
+                    return new DmlDistributedPlanInfo(qry.isReplicatedOnly(), cacheIds);
                 }
                 else
                     return null;
