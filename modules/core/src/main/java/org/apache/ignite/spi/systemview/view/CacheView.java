@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.systemview.view;
 
+import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -337,10 +338,26 @@ public class CacheView {
 
         ExpiryPolicy expiryPlc = (ExpiryPolicy)cache.cacheConfiguration().getExpiryPolicyFactory().create();
 
-        return expiryPlc.getClass().getSimpleName() +
-            "[C: " + expiryPlc.getExpiryForCreation() +
-            ",A: " + expiryPlc.getExpiryForAccess() +
-            ",U: " + expiryPlc.getExpiryForUpdate() + "]";
+        String expiryPlcFactoryStr = "";
+
+        expiryPlcFactoryStr += durationToStringWithCustomMessage("create", expiryPlc.getExpiryForCreation());
+        expiryPlcFactoryStr += durationToStringWithCustomMessage("update", expiryPlc.getExpiryForUpdate());
+        expiryPlcFactoryStr += durationToStringWithCustomMessage("access", expiryPlc.getExpiryForAccess());
+
+        return expiryPlcFactoryStr.equals("") ? "Eternal" : expiryPlcFactoryStr;
+    }
+
+    /**
+     * Returns {@link Duration} String representation with description
+     * @param msg descriptive message for {@link Duration} instance
+     * @param duration @link Duration}
+     * @return {@link Duration} representation with descriptive message
+     */
+    public String durationToStringWithCustomMessage(String msg, Duration duration) {
+        if(duration == null || duration.getTimeUnit() == null || duration.getDurationAmount() == 0)
+            return "";
+
+        return "[" + msg + "=" + duration.getDurationAmount() + duration.getTimeUnit() + "]";
     }
 
     /** @see CacheConfiguration#isSqlEscapeAll() */

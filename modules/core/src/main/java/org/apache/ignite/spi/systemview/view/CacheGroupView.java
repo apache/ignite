@@ -28,6 +28,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.lang.IgnitePredicate;
 
@@ -155,8 +156,12 @@ public class CacheGroupView {
 
     /** @return {@code True} if group has expired entries, {@code false} otherwise. */
     public boolean hasExpiredEntries() {
+        CacheGroupContext grpCtx = grp.cache().cacheGroup(cacheGroupId());
+        if (grpCtx == null)
+            return false;
+
         try {
-            return grp.offheap().hasExpiredEntries();
+            return grpCtx.offheap().hasExpiredEntries();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

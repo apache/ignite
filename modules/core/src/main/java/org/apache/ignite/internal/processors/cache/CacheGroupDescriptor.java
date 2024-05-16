@@ -58,7 +58,7 @@ public class CacheGroupDescriptor {
 
     /** */
     @GridToStringExclude
-    private volatile IgniteCacheOffheapManager offheapMgr;
+    private volatile GridCacheProcessor cacheProc;
 
     /** */
     @GridToStringInclude
@@ -108,7 +108,7 @@ public class CacheGroupDescriptor {
         boolean walEnabled,
         @Nullable Collection<WalStateProposeMessage> walChangeReqs,
         CacheConfigurationEnrichment cacheCfgEnrichment,
-        IgniteCacheOffheapManager offheapMgr
+        GridCacheProcessor cacheProc
     ) {
         assert cacheCfg != null;
         assert grpId != 0;
@@ -124,7 +124,7 @@ public class CacheGroupDescriptor {
         this.walEnabled = walEnabled;
         this.walChangeReqs = walChangeReqs == null ? new LinkedList<>() : new LinkedList<>(walChangeReqs);
         this.cacheCfgEnrichment = cacheCfgEnrichment;
-        this.offheapMgr = offheapMgr;
+        this.cacheProc = cacheProc;
     }
 
     /**
@@ -279,10 +279,10 @@ public class CacheGroupDescriptor {
     }
 
     /**
-     * @return Offheap manager.
+     * @return Cache Group Context.
      */
-    public IgniteCacheOffheapManager offheap() {
-        return offheapMgr;
+    public GridCacheProcessor cache() {
+        return cacheProc;
     }
 
     /**
