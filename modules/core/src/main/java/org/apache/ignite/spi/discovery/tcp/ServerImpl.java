@@ -6781,16 +6781,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 }
 
                                 liveAddr = checkConnection(previous, backwardCheckTimeout);
-
-                                String logMsg = "Connection check to previous node " + (liveAddr == null ? "failed" : "done")
-                                    + ". ConnectingNodeId=" + nodeId + ". PreviousNode=" + U.toShortString(previous)
-                                    + ", firstAliveAddr=" + liveAddr + ", addressesToCheck=" +
-                                    spi.getEffectiveNodeAddresses(previous) + "].";
-
-                                if (liveAddr == null)
-                                    U.warn(log, logMsg);
-                                else if (log.isInfoEnabled())
-                                    log.info(logMsg);
                             }
 
                             ok = liveAddr != null;
@@ -7312,6 +7302,15 @@ class ServerImpl extends TcpDiscoveryImpl {
             catch (InterruptedException ignored) {
                 // No-op.
             }
+
+            String logMsg = "Connection check to previous node " + (liveAddrHolder.get() == null ? "failed" : "done")
+                + ". ConnectingNodeId=" + nodeId + ". PreviousNode=" + U.toShortString(node)
+                + ", firstAliveAddr=" + liveAddrHolder.get() + ", addressesToCheck=" + addrs + "].";
+
+            if (liveAddrHolder.get() == null)
+                U.warn(log, logMsg);
+            else if (log.isInfoEnabled())
+                log.info(logMsg);
 
             return liveAddrHolder.get();
         }
