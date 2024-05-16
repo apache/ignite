@@ -113,9 +113,6 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     private TcpDiscoverySpi specialSpi;
 
     /** */
-    private ListeningTestLogger testLog;
-
-    /** */
     private boolean usePortFromNodeName;
 
     /** */
@@ -158,9 +155,6 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         cfg.setSystemWorkerBlockedTimeout(10_000);
 
         cfg.setLocalHost(localhost);
-
-        if (testLog != null)
-            cfg.setGridLogger(testLog);
 
         return cfg;
     }
@@ -260,15 +254,6 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
      * Assumes several local address are resolved.
      */
     private void doTestBackwardNodeCheckWithSameLoopback(String localhost) throws Exception {
-        ListeningTestLogger testMethodLog = new ListeningTestLogger(log);
-
-        String startLogMsg = "Checking connection to node";
-
-        Collection<LogListener> lsnrs = new ArrayList<>();
-
-        lsnrs.add(LogListener.matches(startLogMsg).andMatches("result=success").times(1).build());
-        lsnrs.add(LogListener.matches("Connection check to previous node done").times(1).build());
-
         this.localhost = localhost;
 
         specialSpi = new TestDiscoverySpi();
@@ -280,18 +265,8 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         Ignite node1 = startGrid(1);
 
         specialSpi = new TestDiscoverySpi();
-        testLog = testMethodLog;
-
-        int effAddrsSizeNode0 = spi(node0).getEffectiveNodeAddresses((TcpDiscoveryNode)node0.cluster().localNode()).size();
-
-        if (effAddrsSizeNode0 > 1)
-            lsnrs.add(LogListener.matches(startLogMsg).andMatches("result=skipped").times(effAddrsSizeNode0 - 1).build());
-
-        lsnrs.forEach(testMethodLog::registerListener);
 
         Ignite node2 = startGrid(2);
-
-        testLog = null;
 
         CountDownLatch handshakeToNode2 = new CountDownLatch(1);
 
@@ -341,9 +316,6 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         // Node 1 must not be kicked.
         for (Ignite ig : G.allGrids())
             assertEquals(3, ig.cluster().nodes().size());
-
-        for (LogListener lsnr : lsnrs)
-            waitForCondition(lsnr::check, getTestTimeout());
     }
 
     /**

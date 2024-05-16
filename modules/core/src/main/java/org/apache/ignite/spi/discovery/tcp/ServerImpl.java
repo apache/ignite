@@ -7286,30 +7286,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                         for (int i = 0; i < addrsToCheck; ++i) {
                             InetSocketAddress addr = addrs.get(addrIdx.getAndIncrement());
 
-                            String logMsg = "Checking connection to node [nodeId=" + node.id() + ", order=" + node.order()
-                                + ", address=" + addr + "], result=";
-                            String failReason = null;
-
                             try (Socket sock = new Socket()) {
                                 if (liveAddrHolder.get() == null) {
                                     sock.connect(addr, perAddrTimeout);
 
                                     liveAddrHolder.compareAndSet(null, addr);
-
-                                    logMsg += "success.";
                                 }
-                                else
-                                    logMsg += "skipped, cause='Another alive address is already found'.";
                             }
                             catch (Exception e) {
-                                failReason = e.getMessage();
+                                U.warn(log, "Checking connection to node [nodeId=" + node.id() + ", order=" + node.order()
+                                    + ", address=" + addr + "], result=failed, cause='" + e.getMessage() + "'.");
                             }
                             finally {
-                                if (failReason != null)
-                                    U.warn(log, logMsg + "failed, cause='" + failReason + "'.");
-                                else if (log.isInfoEnabled())
-                                    log.info(logMsg);
-
                                 latch.countDown();
                             }
                         }
