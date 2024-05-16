@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 
-import static org.apache.ignite.internal.binary.BinaryArrayIdentityResolver.instance;
 import static org.apache.ignite.internal.binary.BinaryUtils.FLAG_OFFSET_ONE_BYTE;
 import static org.apache.ignite.internal.binary.BinaryUtils.FLAG_OFFSET_TWO_BYTES;
 import static org.apache.ignite.internal.binary.BinaryUtils.OFFSET_1;
@@ -43,7 +42,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TOTAL_LEN_P
 /** */
 public class CrossObjectReferenceResolver {
     /** */
-    private final RawBytesObjectReader reader;
+    private final RawBinaryObjectExtractor reader;
 
     /** */
     private final BinaryOutputStream writer;
@@ -58,7 +57,7 @@ public class CrossObjectReferenceResolver {
     private final BinaryWriterSchemaHolder schema = new BinaryWriterSchemaHolder();
 
     /** */
-    private CrossObjectReferenceResolver(RawBytesObjectReader reader, BinaryOutputStream out) {
+    private CrossObjectReferenceResolver(RawBinaryObjectExtractor reader, BinaryOutputStream out) {
         this.reader = reader;
 
         readerRootObjStartPos = reader.position();
@@ -67,7 +66,7 @@ public class CrossObjectReferenceResolver {
     }
 
     /** */
-    static void copyObject(RawBytesObjectReader reader, BinaryOutputStream out) {
+    static void copyObject(RawBinaryObjectExtractor reader, BinaryOutputStream out) {
         CrossObjectReferenceResolver resolver = new CrossObjectReferenceResolver(reader, out);
 
         resolver.reassembleNextObject();
@@ -189,7 +188,7 @@ public class CrossObjectReferenceResolver {
             overrideHeader(
                 writerObjStartPos,
                 /** flags */ setFieldOffsetFlag(readObjDesc.flags, footerFieldOffsetLen),
-                /** hash */ instance().hashCode(writer.array(), writerObjStartPos + DFLT_HDR_LEN, writeFooterStartPos),
+                /** hash */ BinaryArrayIdentityResolver.instance().hashCode(writer.array(), writerObjStartPos + DFLT_HDR_LEN, writeFooterStartPos),
                 /** total length */ writer.position() - writerObjStartPos,
                 schemaOrRawOffsetPos
             );
@@ -277,7 +276,7 @@ public class CrossObjectReferenceResolver {
 
         ObjectDetachHelper detachHelper = ObjectDetachHelper.create(reader.array(), readerPos);
 
-        if (detachHelper.isCrossObjectReferencesPresent())
+        if (detachHelper.isCrossObjectReferencesDetected())
             detachHelper.detach(writer);
         else
             reader.copyObject(writer);

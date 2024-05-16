@@ -22,17 +22,17 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 
 /** */
-public class RawBytesObjectReader implements BinaryPositionReadable {
+public class RawBinaryObjectExtractor implements BinaryPositionReadable {
     /** */
     private final BinaryInputStream in;
 
     /** */
-    public RawBytesObjectReader(BinaryInputStream in) {
+    public RawBinaryObjectExtractor(BinaryInputStream in) {
         this.in = in;
     }
 
     /** */
-    public byte[] readObject() {
+    public byte[] extractObject() {
         int startPos = in.position();
 
         skipObject();
@@ -315,11 +315,8 @@ public class RawBytesObjectReader implements BinaryPositionReadable {
     public void skipTypeId() {
         int typeId = in.readInt();
 
-        if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
-            skipBytes(Byte.BYTES); // String type.
-
-            skipBytes(in.readInt());
-        }
+        if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+            skipObject();
     }
 
     /** */

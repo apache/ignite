@@ -28,7 +28,7 @@ import static org.apache.ignite.internal.binary.BinaryUtils.rawOffsetAbsolute;
 /** */
 class ObjectDetachHelper {
     /** */
-    private final RawBytesObjectReader reader;
+    private final RawBinaryObjectExtractor reader;
 
     /** */
     private final int rootObjStartPos;
@@ -38,7 +38,7 @@ class ObjectDetachHelper {
 
     /** */
     private ObjectDetachHelper(BinaryInputStream in) {
-        reader = new RawBytesObjectReader(in);
+        reader = new RawBinaryObjectExtractor(in);
 
         rootObjStartPos = in.position();
     }
@@ -53,7 +53,7 @@ class ObjectDetachHelper {
     }
 
     /** */
-    public boolean isCrossObjectReferencesPresent() {
+    public boolean isCrossObjectReferencesDetected() {
         return isCrossObjReferenceDetected;
     } 
     

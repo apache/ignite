@@ -39,7 +39,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /** */
-public class RawBytesObjectReaderTest extends GridCommonAbstractTest {
+public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void test() throws Exception {
@@ -55,10 +55,10 @@ public class RawBytesObjectReaderTest extends GridCommonAbstractTest {
             serializedTestObjectsBytes = writer.array();
         }
 
-        RawBytesObjectReader rawReader = new RawBytesObjectReader(BinaryHeapInputStream.create(serializedTestObjectsBytes, 0));
+        RawBinaryObjectExtractor rawReader = new RawBinaryObjectExtractor(BinaryHeapInputStream.create(serializedTestObjectsBytes, 0));
 
         for (Object testObj : testObjects) {
-            byte[] objRawBytes = rawReader.readObject();
+            byte[] objRawBytes = rawReader.extractObject();
 
             try (BinaryReaderExImpl binReader = new BinaryReaderExImpl(ctx, BinaryHeapInputStream.create(objRawBytes, 0), null, false)) {
                 Object deserializedObj = binReader.readObject();
@@ -247,12 +247,12 @@ public class RawBytesObjectReaderTest extends GridCommonAbstractTest {
             unregisteredClass = UnregisteredClass.class;
 
             registeredClsProxy = Proxy.newProxyInstance(
-                RawBytesObjectReaderTest.class.getClassLoader(),
+                RawBinaryObjectExtractorTest.class.getClassLoader(),
                 new Class[] { RegisteredClass.class },
                 new TestInvocationHandler(RegisteredClass.class));
 
             unregisteredClsProxy = Proxy.newProxyInstance(
-                RawBytesObjectReaderTest.class.getClassLoader(),
+                RawBinaryObjectExtractorTest.class.getClassLoader(),
                 new Class[] { UnregisteredClass.class },
                 new TestInvocationHandler(UnregisteredClass.class));
 
