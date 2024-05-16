@@ -1527,7 +1527,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             IndexQueryResult<K, V> idxQryRes = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(),
                 qry.scanFilter(), filter(qry, parts, parts != null), qry.keepBinary());
 
-            return new IndexQueryIterator(idxQryRes.iter(), qry, cctx);
+            return new IndexQueryIterator(idxQryRes.iter());
         }, qry, updateStatistics);
     }
 
@@ -3469,24 +3469,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private final GridCloseableIterator<IgniteBiTuple<K, V>> iter;
 
         /** */
-        private final GridCacheQueryAdapter qry;
-
-        /** */
-        private final GridCacheContext cctx;
-
-        /** */
         private Cache.Entry<K, V> currVal;
 
         /**
          * @param iter Iterator.
          */
-        IndexQueryIterator(
-            GridCloseableIterator<IgniteBiTuple<K, V>> iter,
-            GridCacheQueryAdapter qry,
-            GridCacheContext cctx) {
+        IndexQueryIterator(GridCloseableIterator<IgniteBiTuple<K, V>> iter) {
             this.iter = iter;
-            this.qry = qry;
-            this.cctx = cctx;
         }
 
         /** */
@@ -3497,38 +3486,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             Cache.Entry<K, V> entry = currVal;
-
-            if (cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ) &&
-                cctx.gridEvents().hasListener(EVT_CACHE_QUERY_OBJECT_READ)) {
-
-                final K key = entry.getKey();
-                final V val = entry.getValue();
-
-                CacheObjectContext objCtx = cctx.cacheObjectContext();
-
-                K key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, qry.keepBinary(), false, null);
-                V val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, qry.keepBinary(), false, null);
-
-                String taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
-
-                cctx.gridEvents().record(new CacheQueryReadEvent<>(
-                    cctx.localNode(),
-                    "Index query entry read.",
-                    EVT_CACHE_QUERY_OBJECT_READ,
-                    CacheQueryType.INDEX.name(),
-                    cctx.name(),
-                    qry.queryClassName(),
-                    null,
-                    qry.scanFilter(),
-                    null,
-                    null,
-                    securitySubjectId(cctx),
-                    taskName,
-                    key0,
-                    val0,
-                    null,
-                    null));
-            }
 
             currVal = null;
 
