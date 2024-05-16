@@ -22,17 +22,17 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 
 /** */
-public class RawBinaryObjectExtractor implements BinaryPositionReadable {
+class RawBinaryObjectExtractor implements BinaryPositionReadable {
     /** */
     private final BinaryInputStream in;
 
     /** */
-    public RawBinaryObjectExtractor(BinaryInputStream in) {
+    RawBinaryObjectExtractor(BinaryInputStream in) {
         this.in = in;
     }
 
     /** */
-    public byte[] extractObject() {
+    byte[] extractObject() {
         int startPos = in.position();
 
         skipObject();
@@ -45,7 +45,7 @@ public class RawBinaryObjectExtractor implements BinaryPositionReadable {
     }
 
     /** */
-    public void copyObject(BinaryOutputStream out) {
+    void copyObject(BinaryOutputStream out) {
         int startPos = in.position();
 
         skipObject();
@@ -54,7 +54,7 @@ public class RawBinaryObjectExtractor implements BinaryPositionReadable {
     }
 
     /** */
-    public void copyTypeId(BinaryOutputStream out) {
+    void copyTypeId(BinaryOutputStream out) {
         int startPos = in.position();
 
         skipTypeId();
@@ -63,7 +63,7 @@ public class RawBinaryObjectExtractor implements BinaryPositionReadable {
     }
 
     /** */
-    public void copyBytes(int cnt, BinaryOutputStream out) {
+    void copyBytes(int cnt, BinaryOutputStream out) {
         assert cnt >= 0;
 
         if (cnt == 0)
@@ -75,12 +75,12 @@ public class RawBinaryObjectExtractor implements BinaryPositionReadable {
     }
 
     /** */
-    public int readInt() {
+    int readInt() {
         return in.readInt();
     }
 
     /** */
-    public void skipObject() {
+    void skipObject() {
         int objStartPos = in.position();
 
         byte type = in.readByte();
@@ -285,34 +285,34 @@ public class RawBinaryObjectExtractor implements BinaryPositionReadable {
     }
 
     /** */
-    public int position() {
+    int position() {
         return in.position();
     }
 
     /** */
-    public void position(int position) {
+    void position(int position) {
         in.position(position);
     }
 
     /** */
-    public byte peekByte() {
+    byte peekByte() {
         return in.readBytePositioned(in.position());
     }
 
     /** */
-    public int peekInt() {
+    int peekInt() {
         return in.readIntPositioned(in.position());
     }
 
     /** */
-    public void skipBytes(int count) {
+    void skipBytes(int count) {
         int curPos = in.position();
 
         in.position(curPos + count);
     }
 
     /** */
-    public void skipTypeId() {
+    void skipTypeId() {
         int typeId = in.readInt();
 
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
@@ -320,7 +320,7 @@ public class RawBinaryObjectExtractor implements BinaryPositionReadable {
     }
 
     /** */
-    public byte[] array() {
+    byte[] array() {
         return in.array();
     }
 
