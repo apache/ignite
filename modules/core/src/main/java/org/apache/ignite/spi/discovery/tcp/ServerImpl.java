@@ -6785,7 +6785,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 String logMsg = "Connection check to previous node " + (liveAddr == null ? "failed" : "done")
                                     + ". ConnectingNodeId=" + nodeId + ". PreviousNode=" + U.toShortString(previous)
                                     + ", firstAliveAddr=" + liveAddr + ", addressesToCheck=" +
-                                    spi.getEffectiveNodeAddresses(previous) +  "].";
+                                    spi.getEffectiveNodeAddresses(previous) + "].";
 
                                 if (liveAddr == null)
                                     U.warn(log, logMsg);
