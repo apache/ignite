@@ -237,9 +237,6 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
 
                 assertClientQuery(cache, NULLS_CNT, CNT, idxQry);
 
-                List<Object> msg0 = TestRecordingCommunicationSpi.spi(grid(0)).recordedMessages(false);
-                List<Object> msg1 = TestRecordingCommunicationSpi.spi(grid(1)).recordedMessages(false);
-
                 List<Object> msgs = new ArrayList<>();
 
                 for (int i = 0; i < NODES; i++)
