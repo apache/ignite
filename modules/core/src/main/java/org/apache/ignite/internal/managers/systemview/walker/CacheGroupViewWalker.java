@@ -49,7 +49,7 @@ public class CacheGroupViewWalker implements SystemViewRowAttributeWalker<CacheG
         v.accept(13, "rebalanceMode", CacheRebalanceMode.class);
         v.accept(14, "rebalanceOrder", int.class);
         v.accept(15, "topologyValidator", String.class);
-        v.accept(16, "hasExpiredEntries", boolean.class);
+        v.accept(16, "hasEntriesPendingExpire", String.class);
     }
 
     /** {@inheritDoc} */
@@ -70,7 +70,7 @@ public class CacheGroupViewWalker implements SystemViewRowAttributeWalker<CacheG
         v.accept(13, "rebalanceMode", CacheRebalanceMode.class, row.rebalanceMode());
         v.acceptInt(14, "rebalanceOrder", row.rebalanceOrder());
         v.accept(15, "topologyValidator", String.class, row.topologyValidator());
-        v.acceptBoolean(16, "hasExpiredEntries", row.hasExpiredEntries());
+        v.accept(16, "hasEntriesPendingExpire", String.class, row.hasEntriesPendingExpire());
     }
 
     /** {@inheritDoc} */

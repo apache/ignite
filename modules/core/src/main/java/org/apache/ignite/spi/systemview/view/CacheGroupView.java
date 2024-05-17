@@ -19,7 +19,6 @@ package org.apache.ignite.spi.systemview.view;
 
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -155,16 +154,19 @@ public class CacheGroupView {
     }
 
     /** @return {@code True} if group has expired entries, {@code false} otherwise. */
-    public boolean hasExpiredEntries() {
+    public String hasEntriesPendingExpire() {
+        if (!ccfg.isEagerTtl())
+            return "Unknown";
+
         CacheGroupContext grpCtx = grp.cache().cacheGroup(cacheGroupId());
         if (grpCtx == null)
-            return false;
+            return "No";
 
         try {
-            return grpCtx.offheap().hasExpiredEntries();
+            return grpCtx.offheap().hasEntriesPendingExpire() ? "Yes" : "No";
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            return e.getMessage();
         }
     }
 }

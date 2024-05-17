@@ -1181,7 +1181,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasExpiredEntries() throws IgniteCheckedException {
+    @Override public boolean hasEntriesPendingExpire() throws IgniteCheckedException {
         return pendingEntries != null && !pendingEntries.isEmpty();
     }
 

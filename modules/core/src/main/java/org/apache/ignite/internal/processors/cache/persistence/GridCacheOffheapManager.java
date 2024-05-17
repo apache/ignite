@@ -1133,9 +1133,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasExpiredEntries() throws IgniteCheckedException {
+    @Override public boolean hasEntriesPendingExpire() throws IgniteCheckedException {
         for (CacheDataStore store : cacheDataStores())
-            if (((GridCacheDataStore)store).hasExpiredEntries())
+            if (((GridCacheDataStore)store).hasEntriesPendingExpire())
                 return true;
 
         return false;
@@ -2706,7 +2706,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @return {@code True} if there are entries pending expire.
          * @throws IgniteCheckedException If failed to get number of pending entries.
          */
-        public boolean hasExpiredEntries() throws IgniteCheckedException {
+        public boolean hasEntriesPendingExpire() throws IgniteCheckedException {
             CacheDataStore delegate0 = init0(true);
 
             return delegate0 != null && !pendingTree.isEmpty();

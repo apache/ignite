@@ -177,7 +177,7 @@ public interface IgniteCacheOffheapManager {
      * @return {@code True} if there are entries pending expire.
      * @throws IgniteCheckedException If failed to get number of pending entries.
      */
-    public boolean hasExpiredEntries() throws IgniteCheckedException;
+    public boolean hasEntriesPendingExpire() throws IgniteCheckedException;
 
     /**
      * @param cctx Cache context.
