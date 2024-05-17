@@ -28,7 +28,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -69,12 +68,12 @@ public class IgniteInsertNullableDuplicatesSqlTest extends AbstractIndexingCommo
         
         assertThrows(log,
             () -> sql("insert into test (id1, id2, val) values (1, null, 1);"),
-            TransactionDuplicateKeyException.class,
+            IgniteSQLException.class,
             "Duplicate key during INSERT");
 
         assertThrows(log,
             () -> sql("insert into test (id1, val) values (1, 1);"),
-            TransactionDuplicateKeyException.class,
+            IgniteSQLException.class,
             "Duplicate key during INSERT");
 
         assertEquals(sql("SELECT * FROM test").getAll().size(), 1);
@@ -90,17 +89,17 @@ public class IgniteInsertNullableDuplicatesSqlTest extends AbstractIndexingCommo
         
         assertThrows(log,
             () -> sql("insert into test (id1, val) values (null, 1);"),
-            TransactionDuplicateKeyException.class,
+            IgniteSQLException.class,
             "Duplicate key during INSERT");
 
         assertThrows(log,
             () -> sql("insert into test (id2, val) values (null, 1);"),
-            TransactionDuplicateKeyException.class,
+            IgniteSQLException.class,
             "Duplicate key during INSERT");
 
         assertThrows(log,
             () -> sql("insert into test (id2, id1, val) values (null, null, 1);"),
-            TransactionDuplicateKeyException.class,
+            IgniteSQLException.class,
             "Duplicate key during INSERT");
 
         assertEquals(sql("SELECT * FROM test").getAll().size(), 1);
@@ -115,7 +114,7 @@ public class IgniteInsertNullableDuplicatesSqlTest extends AbstractIndexingCommo
         sql("insert into test (val) values (1);");
         assertThrows(log,
             () -> sql("insert into test (val) values (1);"),
-            TransactionDuplicateKeyException.class,
+            IgniteSQLException.class,
             "Duplicate key during INSERT");
     }
 
@@ -131,12 +130,12 @@ public class IgniteInsertNullableDuplicatesSqlTest extends AbstractIndexingCommo
     
         assertThrows(log,
                 () -> sql("insert into test (id1, val) values (0, 1);"),
-                TransactionDuplicateKeyException.class,
+                IgniteSQLException.class,
                 "Duplicate key during INSERT");
     
         assertThrows(log,
                 () -> sql("insert into test (val) values (2);"),
-                TransactionDuplicateKeyException.class,
+                IgniteSQLException.class,
                 "Duplicate key during INSERT");
     
         List<List<?>> sql = sql("select * from test order by val asc;").getAll();
@@ -183,12 +182,12 @@ public class IgniteInsertNullableDuplicatesSqlTest extends AbstractIndexingCommo
     
         assertThrows(log,
                 () -> sql("insert into test (id1, val) values (0, 1);"),
-                TransactionDuplicateKeyException.class,
+                IgniteSQLException.class,
                 "Duplicate key during INSERT");
         
         assertThrows(log,
                 () -> sql("insert into test (val) values (2);"),
-                TransactionDuplicateKeyException.class,
+                IgniteSQLException.class,
                 "Duplicate key during INSERT");
         
         List<List<?>> sql = sql("select * from test order by val asc;").getAll();
@@ -232,12 +231,12 @@ public class IgniteInsertNullableDuplicatesSqlTest extends AbstractIndexingCommo
 
         assertThrows(log,
             () -> sql("insert into test (id1, id2, val) values (1, null, 1);"),
-            TransactionDuplicateKeyException.class,
+            IgniteSQLException.class,
             "Duplicate key during INSERT");
 
         assertThrows(log,
             () -> sql("insert into test (id1, val) values (1, 1);"),
-            TransactionDuplicateKeyException.class,
+            IgniteSQLException.class,
             "Duplicate key during INSERT");
 
         assertEquals(sql("SELECT * FROM test").getAll().size(), 1);

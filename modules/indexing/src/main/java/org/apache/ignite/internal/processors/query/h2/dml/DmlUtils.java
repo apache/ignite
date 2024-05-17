@@ -51,7 +51,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.h2.util.DateTimeUtils;
 import org.h2.util.LocalDateTimeUtils;
 import org.h2.value.Value;
@@ -208,7 +207,7 @@ public class DmlUtils {
                 if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                     return 1;
                 else
-                    throw new TransactionDuplicateKeyException("Duplicate key during INSERT [key=" + t.getKey() + ']');
+                    throw new IgniteSQLException("Duplicate key during INSERT [key=" + t.getKey() + ']', DUPLICATE_KEY);
             }
         }
         else {

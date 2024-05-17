@@ -30,7 +30,6 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
@@ -147,7 +146,7 @@ public class SqlStatisticsUserQueriesFastTest extends UserQueriesTestBase {
         assertMetricsIncrementedOnlyOnReducer(() -> GridTestUtils.assertThrowsAnyCause(
             log,
             () -> cache.query(new SqlFieldsQuery("INSERT INTO TAB VALUES(5, 'I will NOT be inserted')")).getAll(),
-            TransactionDuplicateKeyException.class,
+            IgniteSQLException.class,
             "Duplicate key during INSERT"),
             "failed");
     }
