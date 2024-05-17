@@ -43,6 +43,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -224,28 +225,57 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
         IndexQuery<Integer, Person> idxQry = new IndexQuery<>(Person.class);
 
         withClientCache(cache -> {
-            for (int pageSize: F.asList(1, 10, 100, 1000, 10_000)) {
+//            for (int pageSize: F.asList(1, 10, 100, 1000, 10_000)) {
+//            for (int pageSize: F.asList(1000)) {
+            for (int pageSize: F.asList(10_000)) {
                 idxQry.setPageSize(pageSize);
 
                 for (int i = 0; i < NODES; i++)
-                    TestRecordingCommunicationSpi.spi(grid(i)).record(GridCacheQueryRequest.class);
+                    TestRecordingCommunicationSpi.spi(grid(i)).record(
+                        GridCacheQueryRequest.class,
+                        GridCacheQueryResponse.class);
 
                 assertClientQuery(cache, NULLS_CNT, CNT, idxQry);
 
-                List<Object> reqs = new ArrayList<>();
+                List<Object> msg0 = TestRecordingCommunicationSpi.spi(grid(0)).recordedMessages(false);
+                List<Object> msg1 = TestRecordingCommunicationSpi.spi(grid(1)).recordedMessages(false);
 
-                for (int i = 0; i < NODES; i++) {
-                    reqs.addAll(TestRecordingCommunicationSpi.spi(grid(i)).recordedMessages(true)
-                        .stream()
-                        .map(o -> (GridCacheQueryRequest)o)
-                        .filter(o -> o.type() == null)
-                        .collect(Collectors.toList()));
+                List<Object> msgs = new ArrayList<>();
+
+                for (int i = 0; i < NODES; i++)
+                    msgs.addAll(TestRecordingCommunicationSpi.spi(grid(i)).recordedMessages(true));
+
+                assert pageSize >= CNT || !msgs.isEmpty();
+
+                List<GridCacheQueryRequest> reqs = msgs.stream()
+                    .filter(msg -> msg instanceof GridCacheQueryRequest)
+                    .map(msg -> (GridCacheQueryRequest)msg)
+                    .collect(Collectors.toList());
+
+                List<GridCacheQueryResponse> resp = msgs.stream()
+                    .filter(msg -> msg instanceof GridCacheQueryResponse)
+                    .map(msg -> (GridCacheQueryResponse)msg)
+                    .collect(Collectors.toList());
+
+                assertEquals(reqs.size(), resp.size());
+
+                for (int i = 0; i < reqs.size(); i++) {
+//                    assertEquals(pageSize, reqs.get(i).pageSize());
+//
+//                    assertEquals(resp.get(i).data().size(), reqs.get(i).pageSize());
+
+                    int reqPageSize = reqs.get(i).pageSize();
+
+                    int respData = resp.get(i).data().size();
+
+                    int h = 0;
+
                 }
 
-                assert pageSize >= CNT || !reqs.isEmpty();
 
-                for (Object r: reqs)
-                    assertEquals(pageSize, ((GridCacheQueryRequest)r).pageSize());
+
+                for (GridCacheQueryRequest r: reqs)
+                    assertEquals(pageSize, r.pageSize());
             }
 
             for (int pageSize: F.asList(-10, -1, 0)) {
