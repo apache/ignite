@@ -42,13 +42,13 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TOTAL_LEN_P
 /** */
 public class CrossObjectReferenceResolver {
     /** */
-    private final RawBinaryObjectExtractor reader;
+    private final RawBinaryObjectExtractor in;
 
     /** */
-    private final BinaryOutputStream writer;
+    private final BinaryOutputStream out;
 
     /** */
-    private final int readerRootObjStartPos;
+    private final int inRootObjStartPos;
 
     /** */
     private final Map<Integer, Integer> objPosTranslation = new HashMap<>();
@@ -57,27 +57,27 @@ public class CrossObjectReferenceResolver {
     private final BinaryWriterSchemaHolder schema = new BinaryWriterSchemaHolder();
 
     /** */
-    private CrossObjectReferenceResolver(RawBinaryObjectExtractor reader, BinaryOutputStream out) {
-        this.reader = reader;
+    private CrossObjectReferenceResolver(RawBinaryObjectExtractor in, BinaryOutputStream out) {
+        this.in = in;
 
-        readerRootObjStartPos = reader.position();
+        inRootObjStartPos = in.position();
 
-        writer = out;
+        this.out = out;
     }
 
     /** */
-    static void copyObject(RawBinaryObjectExtractor reader, BinaryOutputStream out) {
-        CrossObjectReferenceResolver resolver = new CrossObjectReferenceResolver(reader, out);
+    static void copyObject(RawBinaryObjectExtractor in, BinaryOutputStream out) {
+        CrossObjectReferenceResolver resolver = new CrossObjectReferenceResolver(in, out);
 
         resolver.reassembleNextObject();
     }
 
     /** */
     private void reassembleNextObject() {
-        int readerObjStartPos = reader.position();
-        int writerObjStartPos = writer.position();
+        int inObjStartPos = in.position();
+        int outObjStartPos = out.position();
 
-        byte objType = reader.readBytePositioned(readerObjStartPos);
+        byte objType = in.readBytePositioned(inObjStartPos);
 
         switch (objType) {
             case GridBinaryMarshaller.OBJ: {
@@ -93,11 +93,11 @@ public class CrossObjectReferenceResolver {
             }
 
             case GridBinaryMarshaller.OBJ_ARR: {
-                objPosTranslation.put(readerObjStartPos, writerObjStartPos);
+                objPosTranslation.put(inObjStartPos, outObjStartPos);
 
                 copyBytes(Byte.BYTES); // Object type.
 
-                reader.copyTypeId(writer);
+                in.copyTypeId(out);
 
                 int size = copyInt();
 
@@ -107,7 +107,7 @@ public class CrossObjectReferenceResolver {
             }
 
             case GridBinaryMarshaller.COL: {
-                objPosTranslation.put(readerObjStartPos, writerObjStartPos);
+                objPosTranslation.put(inObjStartPos, outObjStartPos);
 
                 copyBytes(Byte.BYTES); // Object type.
 
@@ -121,7 +121,7 @@ public class CrossObjectReferenceResolver {
             }
 
             case GridBinaryMarshaller.MAP: {
-                objPosTranslation.put(readerObjStartPos, writerObjStartPos);
+                objPosTranslation.put(inObjStartPos, outObjStartPos);
 
                 copyBytes(Byte.BYTES); // Object type.
 
@@ -135,65 +135,65 @@ public class CrossObjectReferenceResolver {
             }
 
             default:
-                reader.copyObject(writer);
+                in.copyObject(out);
         }
     }
 
     /** */
     private void doObjectProcessing() {
-        int readerObjStartPos = reader.position();
-        int writerObjStartPos = writer.position();
+        int inObjStartPos = in.position();
+        int outObjStartPos = out.position();
 
-        objPosTranslation.put(readerObjStartPos, writerObjStartPos);
+        objPosTranslation.put(inObjStartPos, outObjStartPos);
 
-        BinaryObjectDescriptor readObjDesc = BinaryObjectDescriptor.parse(reader, readerObjStartPos);
+        BinaryObjectDescriptor inObjDesc = BinaryObjectDescriptor.parse(in, inObjStartPos);
 
         int fieldsCnt = 0;
 
         try {
             // Copy object's header. Update with actual data length and field offsets will be performed later.
-            copyBytes(dataStartRelative(reader, readerObjStartPos));
+            copyBytes(dataStartRelative(in, inObjStartPos));
 
             // Process object fields.
-            while (reader.position() < readObjDesc.rawDataStartPos)
-                reassembleField(fieldsCnt++, offset(writerObjStartPos, writer.position()), readObjDesc);
+            while (in.position() < inObjDesc.rawDataStartPos)
+                reassembleField(fieldsCnt++, offset(outObjStartPos, out.position()), inObjDesc);
 
-            int writeRawDataStartPos = -1;
+            int outRawDataStartPos = -1;
 
-            if (readObjDesc.hasRaw) {
-                writeRawDataStartPos = writer.position();
+            if (inObjDesc.hasRaw) {
+                outRawDataStartPos = out.position();
 
-                copyBytes(readObjDesc.footerStartPos - reader.position());
+                copyBytes(inObjDesc.footerStartPos - in.position());
             }
 
-            int writeFooterStartPos = writer.position();
+            int outFooterStartPos = out.position();
 
             int schemaOrRawOffsetPos;
             int footerFieldOffsetLen;
 
             // Write footer and raw data offset if required.
-            if (readObjDesc.hasSchema) {
-                schemaOrRawOffsetPos = offset(writerObjStartPos, writeFooterStartPos);
-                footerFieldOffsetLen = schema.write(writer, fieldsCnt, readObjDesc.isCompactFooter);
+            if (inObjDesc.hasSchema) {
+                schemaOrRawOffsetPos = offset(outObjStartPos, outFooterStartPos);
+                footerFieldOffsetLen = schema.write(out, fieldsCnt, inObjDesc.isCompactFooter);
 
-                if (readObjDesc.hasRaw)
-                    writer.writeInt(offset(writerObjStartPos, writeRawDataStartPos));
+                if (inObjDesc.hasRaw)
+                    out.writeInt(offset(outObjStartPos, outRawDataStartPos));
             }
             else {
-                schemaOrRawOffsetPos = readObjDesc.hasRaw ? offset(writerObjStartPos, writeRawDataStartPos) : DFLT_HDR_LEN;
+                schemaOrRawOffsetPos = inObjDesc.hasRaw ? offset(outObjStartPos, outRawDataStartPos) : DFLT_HDR_LEN;
                 footerFieldOffsetLen = 0;
             }
 
             // Update header to reflect changes after cross object references are resolved.
             overrideHeader(
-                writerObjStartPos,
-                /** flags */ setFieldOffsetFlag(readObjDesc.flags, footerFieldOffsetLen),
-                /** hash */ BinaryArrayIdentityResolver.instance().hashCode(writer.array(), writerObjStartPos + DFLT_HDR_LEN, writeFooterStartPos),
-                /** total length */ writer.position() - writerObjStartPos,
+                outObjStartPos,
+                /** flags */ setFieldOffsetFlag(inObjDesc.flags, footerFieldOffsetLen),
+                /** hash */ BinaryArrayIdentityResolver.instance().hashCode(out.array(), outObjStartPos + DFLT_HDR_LEN, outFooterStartPos),
+                /** total length */ out.position() - outObjStartPos,
                 schemaOrRawOffsetPos
             );
 
-            reader.position(readObjDesc.endPos);
+            in.position(inObjDesc.endPos);
         }
         finally {
             schema.pop(fieldsCnt);
@@ -202,37 +202,37 @@ public class CrossObjectReferenceResolver {
 
     /** */
     private void doHandleProcessing() {
-        int readerObjStartPos = reader.position();
+        int inObjStartPos = in.position();
 
-        reader.skipBytes(1); // Object type.
+        in.skipBytes(1); // Object type.
 
-        int offset = reader.readInt();
+        int offset = in.readInt();
 
-        int readerHandleObjPos = readerObjStartPos - offset;
+        int inHandleObjPos = inObjStartPos - offset;
 
-        Integer writerObjPos = objPosTranslation.get(readerHandleObjPos);
+        Integer outHandleObjPos = objPosTranslation.get(inHandleObjPos);
 
-        if (writerObjPos != null) {
-            int writerObjStartPos = writer.position();
+        if (outHandleObjPos != null) {
+            int outObjStartPos = out.position();
 
-            writer.writeByte(GridBinaryMarshaller.HANDLE);
-            writer.writeInt(offset(writerObjPos, writerObjStartPos));
+            out.writeByte(GridBinaryMarshaller.HANDLE);
+            out.writeInt(offset(outHandleObjPos, outObjStartPos));
         }
         else {
-            assert readerHandleObjPos < readerRootObjStartPos;
+            assert inHandleObjPos < inRootObjStartPos;
 
-            objPosTranslation.put(readerHandleObjPos, writer.position());
+            objPosTranslation.put(inHandleObjPos, out.position());
 
-            copyObjectPositioned(readerHandleObjPos);
+            copyObjectPositioned(inHandleObjPos);
         }
     }
 
     /** */
     private void overrideHeader(int writeObjStartPos, short flags, int hashCode, int totalLen, int schemaOrRawOffsetPos) {
-        writer.unsafeWriteShort(writeObjStartPos + FLAGS_POS, flags);
-        writer.unsafeWriteInt(writeObjStartPos + HASH_CODE_POS, hashCode);
-        writer.unsafeWriteInt(writeObjStartPos + TOTAL_LEN_POS, totalLen);
-        writer.unsafeWriteInt(writeObjStartPos + SCHEMA_OR_RAW_OFF_POS, schemaOrRawOffsetPos);
+        out.unsafeWriteShort(writeObjStartPos + FLAGS_POS, flags);
+        out.unsafeWriteInt(writeObjStartPos + HASH_CODE_POS, hashCode);
+        out.unsafeWriteInt(writeObjStartPos + TOTAL_LEN_POS, totalLen);
+        out.unsafeWriteInt(writeObjStartPos + SCHEMA_OR_RAW_OFF_POS, schemaOrRawOffsetPos);
     }
 
     /** */
@@ -255,7 +255,7 @@ public class CrossObjectReferenceResolver {
     private void reassembleField(int fieldOrder, int fieldOffset, BinaryObjectDescriptor binObjDesc) {
         int fieldId = binObjDesc.isCompactFooter
             ? -1
-            : reader.readIntPositioned(binObjDesc.fieldIdPosition(fieldOrder));
+            : in.readIntPositioned(binObjDesc.fieldIdPosition(fieldOrder));
 
         schema.push(fieldId, fieldOffset);
 
@@ -269,24 +269,24 @@ public class CrossObjectReferenceResolver {
     }
 
     /** */
-    private void copyObjectPositioned(int readerPos) {
-        int readerRetPos = reader.position();
+    private void copyObjectPositioned(int inPos) {
+        int inRetPos = in.position();
 
-        reader.position(readerPos);
+        in.position(inPos);
 
-        ObjectDetachHelper detachHelper = ObjectDetachHelper.create(reader.array(), readerPos);
+        ObjectDetachHelper detachHelper = ObjectDetachHelper.create(in.array(), inPos);
 
         if (detachHelper.isCrossObjectReferencesDetected())
-            detachHelper.detach(writer);
+            detachHelper.detach(out);
         else
-            reader.copyObject(writer);
+            in.copyObject(out);
 
-        reader.position(readerRetPos);
+        in.position(inRetPos);
     }
 
     /** */
     private int copyInt() {
-        int res = reader.peekInt();
+        int res = in.peekInt();
 
         copyBytes(Integer.BYTES);
 
@@ -295,7 +295,7 @@ public class CrossObjectReferenceResolver {
 
     /** */
     private void copyBytes(int cnt) {
-        reader.copyBytes(cnt, writer);
+        in.copyBytes(cnt, out);
     }
 
     /** */
@@ -332,12 +332,12 @@ public class CrossObjectReferenceResolver {
         private final int fieldOffsetLength;
 
         /** */
-        private BinaryObjectDescriptor(BinaryPositionReadable reader, int startPos) {
-            rawDataStartPos = rawOffsetAbsolute(reader, startPos);
-            footerStartPos = footerStartAbsolute(reader, startPos);
-            endPos = startPos + length(reader, startPos);
+        private BinaryObjectDescriptor(BinaryPositionReadable in, int startPos) {
+            rawDataStartPos = rawOffsetAbsolute(in, startPos);
+            footerStartPos = footerStartAbsolute(in, startPos);
+            endPos = startPos + length(in, startPos);
 
-            flags = reader.readShortPositioned(startPos + FLAGS_POS);
+            flags = in.readShortPositioned(startPos + FLAGS_POS);
 
             hasRaw = hasRaw(flags);
             hasSchema = hasSchema(flags);
@@ -346,8 +346,8 @@ public class CrossObjectReferenceResolver {
         }
 
         /** */
-        private static BinaryObjectDescriptor parse(BinaryPositionReadable reader, int startPos) {
-            return new BinaryObjectDescriptor(reader, startPos);
+        private static BinaryObjectDescriptor parse(BinaryPositionReadable in, int startPos) {
+            return new BinaryObjectDescriptor(in, startPos);
         }
 
         /** */
