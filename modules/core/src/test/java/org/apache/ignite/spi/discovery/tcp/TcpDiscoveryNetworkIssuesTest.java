@@ -413,7 +413,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         spi(grid(0)).simulateNodeFailure();
 
-        waitForCondition(lsnr0::check, getTestTimeout());
+        assertTrue(lsnr0.check(getTestTimeout()));
 
         for (Ignite ig : Arrays.asList(grid(1), grid(2))) {
             waitForCondition(() -> ig.cluster().nodes().size() == 2, getTestTimeout());
