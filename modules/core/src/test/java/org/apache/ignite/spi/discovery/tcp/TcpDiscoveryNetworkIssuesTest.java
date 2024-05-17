@@ -418,7 +418,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         for (Ignite ig : Arrays.asList(grid(1), grid(2))) {
             waitForCondition(() -> ig.cluster().nodes().size() == 2, getTestTimeout());
 
-            assertTrue(F.viewReadOnly(ig.cluster().nodes(), n -> n, n -> n.order() == 1).isEmpty());
+            assertTrue(ig.cluster().nodes().stream().noneMatch(node -> node.order() == 1));
         }
     }
 
