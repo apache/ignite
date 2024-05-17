@@ -1541,7 +1541,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 parts = new int[] {part};
 
             IndexQueryResult<K, V> idxQryRes = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(),
-                qry.scanFilter(), filter(qry, parts, parts != null), qry.keepBinary());
+                qry.scanFilter(), filter(qry, parts, parts != null), qry.keepBinary(), qry.taskHash());
 
             return new IndexQueryIterator(idxQryRes.iter());
         }, qry, updateStatistics);
