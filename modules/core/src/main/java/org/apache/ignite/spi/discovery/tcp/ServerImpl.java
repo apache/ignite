@@ -7303,13 +7303,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // No-op.
             }
 
-            if (liveAddrHolder.get() == null)
+            if (liveAddrHolder.get() == null) {
                 U.warn(log, "Failed to check connection to previous node [connectingNodeId=" + nodeId
                     + ", previousNode=" + U.toShortString(node) + ", previousNodeKnownAddresses=" + addrs + ']');
-            else if (log.isInfoEnabled())
+            }
+            else if (log.isInfoEnabled()) {
                 log.info("Connection check to previous node done [connectingNodeId=" + nodeId + ", previousNode="
                     + U.toShortString(node) + ", firstRespondedAddress=" + liveAddrHolder.get() +
                     ", previousNodeKnownAddresses=" + addrs + ']');
+            }
 
             return liveAddrHolder.get();
         }
