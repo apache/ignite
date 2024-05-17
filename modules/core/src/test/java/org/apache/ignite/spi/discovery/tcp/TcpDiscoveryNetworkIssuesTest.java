@@ -398,11 +398,9 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     public void testBackwardConnectionCheckFailedLogMessage() throws Exception {
         ListeningTestLogger testLog = new ListeningTestLogger(log);
 
-        LogListener lsnr0 = LogListener.matches("Checking connection to node").andMatches("result=failed").times(1).build();
-        LogListener lsnr1 = LogListener.matches("Connection check to previous node failed").times(1).build();
+        LogListener lsnr0 = LogListener.matches("Failed to check connection to previous node").times(2).build();
 
         testLog.registerListener(lsnr0);
-        testLog.registerListener(lsnr1);
 
         startGrid(0);
 
@@ -416,7 +414,6 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         spi(grid(0)).simulateNodeFailure();
 
         waitForCondition(lsnr0::check, getTestTimeout());
-        waitForCondition(lsnr1::check, getTestTimeout());
 
         for (Ignite ig : Arrays.asList(grid(1), grid(2))) {
             waitForCondition(() -> ig.cluster().nodes().size() == 2, getTestTimeout());

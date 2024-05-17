@@ -7285,8 +7285,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 }
                             }
                             catch (Exception e) {
-                                U.warn(log, "Checking connection to node [nodeId=" + node.id() + ", order=" + node.order()
-                                    + ", address=" + addr + "], result=failed, cause='" + e.getMessage() + "'.");
+                                U.warn(log, "Failed to check connection to previous node [nodeId=" + node.id() + ", order="
+                                    + node.order() + ", address=" + addr + "].", e);
                             }
                             finally {
                                 latch.countDown();
@@ -7303,14 +7303,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // No-op.
             }
 
-            String logMsg = "Connection check to previous node " + (liveAddrHolder.get() == null ? "failed" : "done")
-                + ". ConnectingNodeId=" + nodeId + ". PreviousNode=" + U.toShortString(node)
-                + ", firstAliveAddr=" + liveAddrHolder.get() + ", addressesToCheck=" + addrs + "].";
-
             if (liveAddrHolder.get() == null)
-                U.warn(log, logMsg);
+                U.warn(log, "Failed to check connection to previous node [connectingNodeId=" + nodeId
+                    + ", previousNode=" + U.toShortString(node) + ", previousNodeKnownAddresses=" + addrs + "].");
             else if (log.isInfoEnabled())
-                log.info(logMsg);
+                log.info("Connection check to previous node done [connectingNodeId=" + nodeId + ", previousNode="
+                    + U.toShortString(node) + ", firstRespondedAddress=" + liveAddrHolder.get() +
+                    ", previousNodeKnownAddresses=" + addrs + "].");
 
             return liveAddrHolder.get();
         }
