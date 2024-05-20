@@ -483,6 +483,8 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Filter messages in a collection by a certain class.
+     *
      * @param msgs List of mixed messages.
      * @param cls Class of messages that need to be filtered.
      * @return List of messages filtered by the specified class.
