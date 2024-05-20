@@ -225,17 +225,22 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
         IndexQuery<Integer, Person> idxQry = new IndexQuery<>(Person.class);
 
         withClientCache(cache -> {
-//            for (int pageSize: F.asList(1, 10, 100, 1000, 10_000)) {
-//            for (int pageSize: F.asList(1000)) {
-            for (int pageSize: F.asList(10_000)) {
+            for (int pageSize: F.asList(1, 10, 100, 1000, 10_000)) {
                 idxQry.setPageSize(pageSize);
 
-                for (int i = 0; i < NODES; i++)
+                for (int i = 0; i < NODES; i++) {
                     TestRecordingCommunicationSpi.spi(grid(i)).record(
                         GridCacheQueryRequest.class,
                         GridCacheQueryResponse.class);
+                }
 
                 assertClientQuery(cache, NULLS_CNT, CNT, idxQry);
+
+                int nodeOneEntries = cache.query(new ScanQuery<Integer, Person>().setLocal(true)).getAll().size();
+                int nodeTwoEntries = (CNT - NULLS_CNT) - nodeOneEntries;
+
+                int nodeOneLastPageEntries = nodeOneEntries % pageSize;
+                int nodeTwoLastPageEntries = nodeTwoEntries % pageSize;
 
                 List<Object> msgs = new ArrayList<>();
 
@@ -244,35 +249,22 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
 
                 assert pageSize >= CNT || !msgs.isEmpty();
 
-                List<GridCacheQueryRequest> reqs = msgs.stream()
-                    .filter(msg -> msg instanceof GridCacheQueryRequest)
-                    .map(msg -> (GridCacheQueryRequest)msg)
-                    .collect(Collectors.toList());
+                List<GridCacheQueryRequest> reqs = getFilteredMessages(msgs, GridCacheQueryRequest.class);
+                List<GridCacheQueryResponse> resp = getFilteredMessages(msgs, GridCacheQueryResponse.class);
 
-                List<GridCacheQueryResponse> resp = msgs.stream()
-                    .filter(msg -> msg instanceof GridCacheQueryResponse)
-                    .map(msg -> (GridCacheQueryResponse)msg)
-                    .collect(Collectors.toList());
-
-                assertEquals(reqs.size(), resp.size());
+                assert reqs.size() == resp.size();
 
                 for (int i = 0; i < reqs.size(); i++) {
-//                    assertEquals(pageSize, reqs.get(i).pageSize());
-//
-//                    assertEquals(resp.get(i).data().size(), reqs.get(i).pageSize());
-
-                    int reqPageSize = reqs.get(i).pageSize();
-
+                    int reqPage = reqs.get(i).pageSize();
                     int respData = resp.get(i).data().size();
 
-                    int h = 0;
+                    assert reqPage == pageSize;
 
+                    if (i == reqs.size() - 1 && (nodeOneLastPageEntries != 0 || nodeTwoLastPageEntries != 0))
+                        assert respData == nodeOneLastPageEntries || respData == nodeTwoLastPageEntries;
+                    else
+                        assert respData == reqPage;
                 }
-
-
-
-                for (GridCacheQueryRequest r: reqs)
-                    assertEquals(pageSize, r.pageSize());
             }
 
             for (int pageSize: F.asList(-10, -1, 0)) {
@@ -488,6 +480,18 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
 
             consumer.accept(cache);
         }
+    }
+
+    /**
+     * @param msgs List of mixed messages.
+     * @param cls Class of messages that need to be filtered.
+     * @return List of messages filtered by the specified class.
+     */
+    public <T> List<T> getFilteredMessages(List<Object> msgs, Class<T> cls) {
+        return msgs.stream()
+            .filter(msg -> msg.getClass().equals(cls))
+            .map(msg -> (T)msg)
+            .collect(Collectors.toList());
     }
 
     /** */
