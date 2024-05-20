@@ -672,8 +672,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param memCfg Memory config.
      */
     protected void checkPageSize(DataStorageConfiguration memCfg) {
-        if (memCfg.getPageSize() == 0)
+        if (memCfg.getPageSize() == 0) {
             memCfg.setPageSize(DFLT_PAGE_SIZE);
+            log.info("pageSize has been set to default value: " + memCfg.getPageSize() + "KB");
+        }
     }
 
     /**
