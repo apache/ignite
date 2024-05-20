@@ -85,7 +85,7 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.TX_DHT_LOCK
  * Cache lock future.
  */
 public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boolean>
-    implements GridCacheVersionedFuture<Boolean>, GridDhtFuture<Boolean>, GridCacheMappedVersion, DhtLockFuture<Boolean> {
+    implements GridCacheVersionedFuture<Boolean>, GridDhtFuture<Boolean>, GridCacheMappedVersion {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -638,7 +638,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     /**
      * @param t Error.
      */
-    @Override public void onError(Throwable t) {
+    public void onError(Throwable t) {
         synchronized (this) {
             if (err != null)
                 return;

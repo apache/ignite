@@ -44,18 +44,6 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
     public void finishRecover() throws IgniteCheckedException;
 
     /**
-     * Initializes disk store structures.
-     *
-     * @param cacheId Cache id.
-     * @param partitions Partitions count.
-     * @param cacheName Cache name.
-     * @param pageMetrics Page metrics.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void initialize(int cacheId, int partitions, String cacheName, PageMetrics pageMetrics)
-        throws IgniteCheckedException;
-
-    /**
      * Callback called when a cache is starting.
      *
      * @param grpDesc Cache group descriptor.
