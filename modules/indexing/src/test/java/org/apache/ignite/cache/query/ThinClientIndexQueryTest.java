@@ -247,7 +247,7 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
                 for (int i = 0; i < NODES; i++)
                     msgs.addAll(TestRecordingCommunicationSpi.spi(grid(i)).recordedMessages(true));
 
-                assert pageSize >= CNT || !msgs.isEmpty();
+                assert pageSize >= (CNT - NULLS_CNT) || !msgs.isEmpty();
 
                 List<GridCacheQueryRequest> reqs = getFilteredMessages(msgs, GridCacheQueryRequest.class);
                 List<GridCacheQueryResponse> resp = getFilteredMessages(msgs, GridCacheQueryResponse.class);
