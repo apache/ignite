@@ -109,7 +109,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
-import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1504,12 +1503,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Process local index query.
      *
      * @param qry Query.
-     * @param updateStatistics Update statistics flag.
      * @return GridCloseableIterator.
      */
     @SuppressWarnings({"unchecked"})
-    protected GridCloseableIterator indexQueryLocal(final GridCacheQueryAdapter qry,
-        boolean updateStatistics) throws IgniteCheckedException {
+    protected GridCloseableIterator indexQueryLocal(final GridCacheQueryAdapter qry) throws IgniteCheckedException {
         if (!enterBusy())
             throw new IllegalStateException("Failed to process query request (grid is stopping).");
 

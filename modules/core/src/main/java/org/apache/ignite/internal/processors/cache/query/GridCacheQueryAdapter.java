@@ -616,7 +616,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         if (type == INDEX) {
             assert loc;
 
-            return qryMgr.indexQueryLocal(this, true);
+            return qryMgr.indexQueryLocal(this);
         }
 
         GridCloseableIterator it;
