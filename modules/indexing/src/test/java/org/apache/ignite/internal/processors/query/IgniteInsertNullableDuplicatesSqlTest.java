@@ -69,12 +69,12 @@ public class IgniteInsertNullableDuplicatesSqlTest extends AbstractIndexingCommo
         assertThrows(log,
             () -> sql("insert into test (id1, id2, val) values (1, null, 1);"),
             IgniteSQLException.class,
-            "Duplicate key during INSERT");
+            "Failed to INSERT some keys because they are already in cache");
 
         assertThrows(log,
             () -> sql("insert into test (id1, val) values (1, 1);"),
             IgniteSQLException.class,
-            "Duplicate key during INSERT");
+            "Failed to INSERT some keys because they are already in cache");
 
         assertEquals(sql("SELECT * FROM test").getAll().size(), 1);
     }
@@ -90,17 +90,17 @@ public class IgniteInsertNullableDuplicatesSqlTest extends AbstractIndexingCommo
         assertThrows(log,
             () -> sql("insert into test (id1, val) values (null, 1);"),
             IgniteSQLException.class,
-            "Duplicate key during INSERT");
+            "Failed to INSERT some keys because they are already in cache");
 
         assertThrows(log,
             () -> sql("insert into test (id2, val) values (null, 1);"),
             IgniteSQLException.class,
-            "Duplicate key during INSERT");
+            "Failed to INSERT some keys because they are already in cache");
 
         assertThrows(log,
             () -> sql("insert into test (id2, id1, val) values (null, null, 1);"),
             IgniteSQLException.class,
-            "Duplicate key during INSERT");
+            "Failed to INSERT some keys because they are already in cache");
 
         assertEquals(sql("SELECT * FROM test").getAll().size(), 1);
     }
@@ -115,7 +115,7 @@ public class IgniteInsertNullableDuplicatesSqlTest extends AbstractIndexingCommo
         assertThrows(log,
             () -> sql("insert into test (val) values (1);"),
             IgniteSQLException.class,
-            "Duplicate key during INSERT");
+            "Failed to INSERT some keys because they are already in cache");
     }
 
     /**
@@ -131,12 +131,12 @@ public class IgniteInsertNullableDuplicatesSqlTest extends AbstractIndexingCommo
         assertThrows(log,
                 () -> sql("insert into test (id1, val) values (0, 1);"),
                 IgniteSQLException.class,
-                "Duplicate key during INSERT");
+                "Failed to INSERT some keys because they are already in cache");
     
         assertThrows(log,
                 () -> sql("insert into test (val) values (2);"),
                 IgniteSQLException.class,
-                "Duplicate key during INSERT");
+                "Failed to INSERT some keys because they are already in cache");
     
         List<List<?>> sql = sql("select * from test order by val asc;").getAll();
     
@@ -183,12 +183,12 @@ public class IgniteInsertNullableDuplicatesSqlTest extends AbstractIndexingCommo
         assertThrows(log,
                 () -> sql("insert into test (id1, val) values (0, 1);"),
                 IgniteSQLException.class,
-                "Duplicate key during INSERT");
+                "Failed to INSERT some keys because they are already in cache");
         
         assertThrows(log,
                 () -> sql("insert into test (val) values (2);"),
                 IgniteSQLException.class,
-                "Duplicate key during INSERT");
+                "Failed to INSERT some keys because they are already in cache");
         
         List<List<?>> sql = sql("select * from test order by val asc;").getAll();
     
@@ -232,12 +232,12 @@ public class IgniteInsertNullableDuplicatesSqlTest extends AbstractIndexingCommo
         assertThrows(log,
             () -> sql("insert into test (id1, id2, val) values (1, null, 1);"),
             IgniteSQLException.class,
-            "Duplicate key during INSERT");
+            "Failed to INSERT some keys because they are already in cache");
 
         assertThrows(log,
             () -> sql("insert into test (id1, val) values (1, 1);"),
             IgniteSQLException.class,
-            "Duplicate key during INSERT");
+            "Failed to INSERT some keys because they are already in cache");
 
         assertEquals(sql("SELECT * FROM test").getAll().size(), 1);
     }

@@ -149,7 +149,7 @@ public class IgniteCacheSqlInsertValidationSelfTest extends AbstractIndexingComm
         GridTestUtils.assertThrows(log(),
             () -> execute("INSERT INTO FORGOTTEN_KEY_FLDS(FK1, FK2, FV1, FV2) VALUES (8,9,10,11)"),
             IgniteSQLException.class,
-            "Duplicate key during INSERT");
+            "Failed to INSERT some keys because they are already in cache");
     }
 
     /**

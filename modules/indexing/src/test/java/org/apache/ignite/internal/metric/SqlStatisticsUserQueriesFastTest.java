@@ -147,7 +147,7 @@ public class SqlStatisticsUserQueriesFastTest extends UserQueriesTestBase {
             log,
             () -> cache.query(new SqlFieldsQuery("INSERT INTO TAB VALUES(5, 'I will NOT be inserted')")).getAll(),
             IgniteSQLException.class,
-            "Duplicate key during INSERT"),
+            "Failed to INSERT some keys because they are already in cache"),
             "failed");
     }
 
