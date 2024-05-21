@@ -21,7 +21,7 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.QueryEngineConfiguration;
 
 /** */
-public class DdlTransactionCalciteSelfTest extends DdlTransactionSelfTest {
+public class DdlTransactionCalciteSelfTest extends DdlTransactionSelfTestBase {
     /** {@inheritDoc} */
     @Override protected QueryEngineConfiguration getQueryEngineConfiguration() {
         return new CalciteQueryEngineConfiguration()

@@ -23,7 +23,7 @@ import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 /**
  *
  */
-public class DdlTransactionIndexingSelfTest extends DdlTransactionSelfTest {
+public class DdlTransactionIndexingSelfTest extends DdlTransactionSelfTestBase {
     /** {@inheritDoc} */
     @Override protected QueryEngineConfiguration getQueryEngineConfiguration() {
         return new IndexingQueryEngineConfiguration()

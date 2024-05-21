@@ -43,7 +43,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 /**
  *
  */
-public abstract class DdlTransactionSelfTest extends GridCommonAbstractTest {
+public abstract class DdlTransactionSelfTestBase extends GridCommonAbstractTest {
     /** Create table request. */
     public static final String CREATE_TABLE = "CREATE TABLE " +
         "person (id int, name varchar, age int, company varchar, city varchar, primary key (id, name, city))" +
