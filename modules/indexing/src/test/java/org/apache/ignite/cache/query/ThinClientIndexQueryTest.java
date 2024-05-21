@@ -55,6 +55,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static java.lang.Math.ceil;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.between;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
@@ -247,20 +248,21 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
                 for (int i = 0; i < NODES; i++)
                     msgs.addAll(TestRecordingCommunicationSpi.spi(grid(i)).recordedMessages(true));
 
-                assert pageSize >= (CNT - NULLS_CNT) || !msgs.isEmpty();
-
                 List<GridCacheQueryRequest> reqs = getFilteredMessages(msgs, GridCacheQueryRequest.class);
                 List<GridCacheQueryResponse> resp = getFilteredMessages(msgs, GridCacheQueryResponse.class);
 
-                assert reqs.size() == resp.size();
+                int reqsSize = reqs.size();
 
-                for (int i = 0; i < reqs.size(); i++) {
+                assert (reqsSize == ceil((float)nodeOneEntries / pageSize) ||
+                    reqsSize == ceil((float)nodeTwoEntries / pageSize)) && reqsSize == resp.size();
+
+                for (int i = 0; i < reqsSize; i++) {
                     int reqPage = reqs.get(i).pageSize();
                     int respData = resp.get(i).data().size();
 
                     assert reqPage == pageSize;
 
-                    if (i == reqs.size() - 1 && (nodeOneLastPageEntries != 0 || nodeTwoLastPageEntries != 0))
+                    if (i == reqsSize - 1 && (nodeOneLastPageEntries != 0 || nodeTwoLastPageEntries != 0))
                         assert respData == nodeOneLastPageEntries || respData == nodeTwoLastPageEntries;
                     else
                         assert respData == reqPage;
