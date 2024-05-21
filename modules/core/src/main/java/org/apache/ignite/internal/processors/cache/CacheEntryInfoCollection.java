@@ -37,6 +37,11 @@ public class CacheEntryInfoCollection implements Message {
     @GridDirectCollection(GridCacheEntryInfo.class)
     private List<GridCacheEntryInfo> infos;
 
+    /** */
+    public CacheEntryInfoCollection() {
+        // No-op
+    }
+
     /**
      *
      */
