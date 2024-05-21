@@ -944,8 +944,6 @@ public class SnapshotRestoreProcess {
             Set<SnapshotMetadata> allMetas =
                 opCtx0.metasPerNode.values().stream().flatMap(List::stream).collect(Collectors.toSet());
 
-            AbstractSnapshotVerificationTask.checkMissedMetadata(allMetas);
-
             IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
 
             synchronized (this) {
