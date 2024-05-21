@@ -1056,15 +1056,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     else
                         entities.add(row);
 
-                    if (rdc == null && ((!qryInfo.allPages() && ++cnt == pageSize) || !it.hasNext())) {
+                    if (rdc == null && (++cnt == pageSize || !it.hasNext())) {
                         onFieldsPageReady(qryInfo.local(), qryInfo, !metaSent ? meta : null,
                             entities, data, !it.hasNext(), null);
 
                         if (it.hasNext())
                             rmvRes = false;
 
-                        if (!qryInfo.allPages())
-                            return;
+                        return;
                     }
                 }
 
@@ -1349,13 +1348,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             if (!finished)
                                 rmvIter = false;
 
-                            if (!qryInfo.allPages())
-                                return;
-
-                            data = new ArrayList<>(pageSize);
-
-                            if (stop)
-                                break; // while
+                            return;
                         }
                     }
                 }

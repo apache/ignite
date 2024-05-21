@@ -133,9 +133,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     private boolean incMeta;
 
     /** */
-    private boolean all;
-
-    /** */
     private boolean keepBinary;
 
     /** */
@@ -212,7 +209,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             qry.pageSize(),
             qry.includeBackups(),
             fields,
-            false,
             qry.keepBinary(),
             qry.taskHash(),
             cctx.affinity().affinityTopologyVersion(),
@@ -269,7 +265,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param pageSize Page size.
      * @param incBackups {@code true} if need to include backups.
      * @param fields Fields query flag.
-     * @param all Whether to load all pages.
      * @param keepBinary Whether to keep binary.
      * @param taskHash Task name hash code.
      * @param topVer Topology version.
@@ -283,7 +278,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         int pageSize,
         boolean incBackups,
         boolean fields,
-        boolean all,
         boolean keepBinary,
         int taskHash,
         AffinityTopologyVersion topVer,
@@ -296,7 +290,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         this.pageSize = pageSize;
         this.incBackups = incBackups;
         this.fields = fields;
-        this.all = all;
         this.keepBinary = keepBinary;
         this.taskHash = taskHash;
         this.topVer = topVer;
@@ -601,13 +594,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @return Whether to load all pages.
-     */
-    public boolean allPages() {
-        return all;
-    }
-
-    /**
      * @return Whether to keep binary.
      */
     public boolean keepBinary() {
@@ -659,7 +645,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeBoolean("all", all))
+                if (!writer.writeBoolean("all", false))
                     return false;
 
                 writer.incrementState();
@@ -806,7 +792,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
         switch (reader.state()) {
             case 4:
-                all = reader.readBoolean("all");
+                reader.readBoolean("all");
 
                 if (!reader.isLastRead())
                     return false;
