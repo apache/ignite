@@ -589,7 +589,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             if (part != null) {
                 if (forceLocal) {
                     throw new IgniteCheckedException("No queryable nodes for partition " + part
-                        + " [forced local query=" + this + "]");
+                            + " [forced local query=" + this + "]");
                 }
             }
 
