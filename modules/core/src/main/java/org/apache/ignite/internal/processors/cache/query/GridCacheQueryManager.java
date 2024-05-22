@@ -43,6 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -52,6 +53,7 @@ import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.QueryMetrics;
+import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
@@ -128,6 +130,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -1506,15 +1509,49 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return GridCloseableIterator.
      */
     @SuppressWarnings({"unchecked"})
-    protected GridCloseableIterator indexQueryLocal(final GridCacheQueryAdapter qry) throws IgniteCheckedException {
+    public GridCloseableIterator indexQueryLocal(final GridCacheQueryAdapter qry) throws IgniteCheckedException {
         if (!enterBusy())
             throw new IllegalStateException("Failed to process query request (grid is stopping).");
 
         try {
-            assert qry.type() == INDEX;
+            assert qry.type() == INDEX : "Wrong processing of query: " + qry.type();
 
-            if (log.isDebugEnabled())
-                log.debug("Running local INDEX query: " + qry);
+            cctx.checkSecurity(SecurityPermission.CACHE_READ);
+
+            GridDhtCacheAdapter<?, ?> cacheAdapter = cctx.isNear() ? cctx.near().dht() : cctx.dht();
+
+            Set<Integer> lostParts = cacheAdapter.topology().lostPartitions();
+
+            Integer part = qry.partition();
+
+            if (!lostParts.isEmpty()) {
+                if (part == null || lostParts.contains(part)) {
+                    throw new CacheException(new CacheInvalidStateException("Failed to execute query because cache partition " +
+                        "has been lostParts [cacheName=" + cctx.name() +
+                        ", part=" + (part == null ? lostParts.iterator().next() : part) + ']'));
+                }
+            }
+
+            Collection<ClusterNode> nodes = new ArrayList<>(qry.nodes());
+
+            if (nodes.isEmpty()) {
+                if (part != null) {
+                    if (qry.forceLocal()) {
+                        throw new IgniteCheckedException("No queryable nodes for partition " + part
+                            + " [forced local query=" + qry + "]");
+                    }
+                }
+
+                throw new IgniteException(new ClusterGroupEmptyException());
+            }
+
+            if (cctx.deploymentEnabled())
+                cctx.deploy().registerClasses(qry.scanFilter());
+
+            if (log.isDebugEnabled()) {
+                log.debug("Executing query [query=" + qry + ", nodes=" + nodes + ']');
+                log.debug("Running local index query: " + qry);
+            }
 
             if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                 cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
@@ -1534,8 +1571,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             int[] parts = null;
 
-            if (qry.partition() != null)
-                parts = new int[] {qry.partition()};
+            if (part != null)
+                parts = new int[] {part};
 
             IndexQueryResult<K, V> idxQryRes = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(),
                 qry.scanFilter(), filter(qry, parts, parts != null), qry.keepBinary(), qry.taskHash());

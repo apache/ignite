@@ -266,7 +266,7 @@ public interface CacheQuery<T> {
     public <R> CacheQueryFuture<R> execute(IgniteReducer<T, R> rmtReducer, @Nullable Object... args);
 
     /**
-     * @return GridCloseableIterator with query results.
+     * @return Scan query iterator.
      */
-    public GridCloseableIterator executeQueryWithIterator() throws IgniteCheckedException;
+    public GridCloseableIterator executeScanQuery() throws IgniteCheckedException;
 }

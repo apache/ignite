@@ -30,12 +30,10 @@ import java.util.Queue;
 import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -567,8 +565,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCloseableIterator executeQueryWithIterator() throws IgniteCheckedException {
-        assert type == SCAN || type == INDEX : "Wrong processing of query: " + type;
+    @Override public GridCloseableIterator executeScanQuery() throws IgniteCheckedException {
+        assert type == SCAN : "Wrong processing of query: " + type;
 
         GridDhtCacheAdapter<?, ?> cacheAdapter = cctx.isNear() ? cctx.near().dht() : cctx.dht();
 
@@ -591,12 +589,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             if (part != null) {
                 if (forceLocal) {
                     throw new IgniteCheckedException("No queryable nodes for partition " + part
-                            + " [forced local query=" + this + "]");
+                        + " [forced local query=" + this + "]");
                 }
             }
-
-            if (type == INDEX)
-                throw new IgniteException(new ClusterGroupEmptyException());
 
             return new GridEmptyCloseableIterator();
         }
@@ -613,12 +608,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 
-        if (type == INDEX) {
-            assert loc;
-
-            return qryMgr.indexQueryLocal(this);
-        }
-
         GridCloseableIterator it;
 
         if (loc)
@@ -634,7 +623,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * @return Nodes to execute on.
      */
-    private Collection<ClusterNode> nodes() throws IgniteCheckedException {
+    public Collection<ClusterNode> nodes() throws IgniteCheckedException {
         CacheMode cacheMode = cctx.config().getCacheMode();
 
         Integer part = partition();
