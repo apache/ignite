@@ -19,6 +19,7 @@ package org.apache.ignite.spi.systemview.view;
 
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -31,6 +32,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -345,6 +347,21 @@ public class CacheView {
         expiryPlcFactoryStr += durationToStringWithCustomMessage("access", expiryPlc.getExpiryForAccess());
 
         return expiryPlcFactoryStr.equals("") ? "Eternal" : expiryPlcFactoryStr;
+    }
+
+    /** @return {@code Yes} if group has expired entries, {@code No} otherwise. If {@code eagerTtl = true} returns 'Unknown'*/
+    public String hasEntriesPendingExpire() {
+        CacheGroupContext grpCtx = ctx.cache().cacheGroup(cache.groupId());
+
+        if (!cache.cacheConfiguration().isEagerTtl() || grpCtx == null || grpCtx.name() == null)
+            return "Unknown";
+
+        try {
+            return grpCtx.offheap().hasEntriesPendingExpire(cache.cacheId()) ? "Yes" : "No";
+        }
+        catch (IgniteCheckedException e) {
+            return e.getMessage();
+        }
     }
 
     /**

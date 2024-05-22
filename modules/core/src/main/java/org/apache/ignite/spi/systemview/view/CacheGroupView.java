@@ -153,7 +153,7 @@ public class CacheGroupView {
         return ccfg.getBackups();
     }
 
-    /** @return {@code True} if group has expired entries, {@code false} otherwise. */
+    /** @return {@code Yes} if group has expired entries, {@code No} otherwise. If {@code eagerTtl = true} returns 'Unknown'*/
     public String hasEntriesPendingExpire() {
         if (!ccfg.isEagerTtl())
             return "Unknown";

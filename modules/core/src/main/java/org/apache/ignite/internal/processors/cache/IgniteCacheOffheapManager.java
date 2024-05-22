@@ -180,6 +180,14 @@ public interface IgniteCacheOffheapManager {
     public boolean hasEntriesPendingExpire() throws IgniteCheckedException;
 
     /**
+     * Checks if the cache has entries pending expire.
+     *
+     * @return {@code True} if there are entries pending expire.
+     * @throws IgniteCheckedException If failed to get number of pending entries.
+     */
+    public boolean hasEntriesPendingExpire(int cacheId) throws IgniteCheckedException;
+
+    /**
      * @param cctx Cache context.
      * @param key Key.
      * @param part Partition.

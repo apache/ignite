@@ -1142,6 +1142,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
+    @Override public boolean hasEntriesPendingExpire(int cacheId) throws IgniteCheckedException {
+        for (CacheDataStore store : cacheDataStores())
+            if (((GridCacheDataStore)store).hasEntriesPendingExpire(cacheId))
+                return true;
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public void preloadPartition(int partId) throws IgniteCheckedException {
         GridDhtLocalPartition locPart = grp.topology().localPartition(partId, AffinityTopologyVersion.NONE, false, false);
 
@@ -2710,6 +2719,32 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             CacheDataStore delegate0 = init0(true);
 
             return delegate0 != null && !pendingTree.isEmpty();
+        }
+
+        /**
+         * Checks if the cache has entries pending expire.
+         *
+         * @return {@code True} if there are entries pending expire.
+         * @throws IgniteCheckedException If failed to get number of pending entries.
+         */
+        public boolean hasEntriesPendingExpire(int cacheId) throws IgniteCheckedException {
+            if(pendingTree == null)
+                return false;
+
+            PendingRow row = new PendingRow(cacheId);
+            GridCursor<PendingRow> cur;
+
+            if (grp.sharedGroup())
+                cur = pendingTree.find(row, row, PendingEntriesTree.WITHOUT_KEY);
+            else
+                return hasEntriesPendingExpire();
+
+            while (cur.next()) {
+                if (pendingTree.findOne(cur.get()) != null)
+                    return true;
+            }
+
+            return false;
         }
 
         /**
