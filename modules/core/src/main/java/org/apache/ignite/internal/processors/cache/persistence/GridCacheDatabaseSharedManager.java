@@ -1328,6 +1328,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             memCfg.setPageSize(DataStorageConfiguration.DFLT_PAGE_SIZE);
+            log.info("pageSize has been set to default value: " + memCfg.getPageSize() + " bytes");
         }
     }
 
