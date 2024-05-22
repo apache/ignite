@@ -68,7 +68,7 @@ public class SystemViewCacheExpiryPolicyTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheViewExpiryPolicy() throws Exception {
-        try(IgniteEx g = startGrid()) {
+        try (IgniteEx g = startGrid()) {
             CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
             ccfg.setName("cache");
             ccfg.setExpiryPolicyFactory(new PlatformExpiryPolicyFactory(create, update, access));

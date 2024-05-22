@@ -371,7 +371,7 @@ public class CacheView {
      * @return {@link Duration} representation with descriptive message
      */
     public String durationToStringWithCustomMessage(String msg, Duration duration) {
-        if(duration == null || duration.getTimeUnit() == null || duration.getDurationAmount() == 0)
+        if (duration == null || duration.getTimeUnit() == null || duration.getDurationAmount() == 0)
             return "";
 
         return "[" + msg + "=" + duration.getDurationAmount() + duration.getTimeUnit() + "]";
