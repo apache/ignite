@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -248,12 +249,13 @@ public class SnapshotMetadataVerificationTask
     }
 
     /** {@inheritDoc} */
-    @Override public SnapshotMetadataVerificationTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {
+    @Override public SnapshotMetadataVerificationTaskResult reduce(
+        List<ComputeJobResult> results) throws IgniteException {
         Map<ClusterNode, List<SnapshotMetadata>> reduceRes = new HashMap<>();
         Map<ClusterNode, Exception> exceptions = new HashMap<>();
 
         SnapshotMetadata first = null;
-        Set<String> baselineMetasLeft = null;
+        Set<String> baselineMetasLeft = Collections.emptySet();
 
         for (ComputeJobResult res : results) {
             if (res.getException() != null) {
@@ -265,8 +267,13 @@ public class SnapshotMetadataVerificationTask
             List<SnapshotMetadata> metas = res.getData();
 
             for (SnapshotMetadata meta : metas) {
-                if (first == null)
+                if (first == null) {
                     first = meta;
+
+                    baselineMetasLeft = new HashSet<>(meta.baselineNodes());
+                }
+
+                baselineMetasLeft.remove(meta.consistentId());
 
                 if (!first.sameSnapshot(meta)) {
                     exceptions.put(res.getNode(),
@@ -275,11 +282,6 @@ public class SnapshotMetadataVerificationTask
 
                     continue;
                 }
-
-                if (baselineMetasLeft == null)
-                    baselineMetasLeft = new HashSet<>(meta.baselineNodes());
-
-                baselineMetasLeft.remove(meta.consistentId());
 
                 reduceRes.computeIfAbsent(res.getNode(), n -> new ArrayList<>()).add(meta);
             }
