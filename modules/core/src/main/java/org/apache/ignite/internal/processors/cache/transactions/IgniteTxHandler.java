@@ -730,8 +730,6 @@ public class IgniteTxHandler {
      * @return {@code True} if cache affinity changed and request should be remapped.
      */
     private boolean needRemap(AffinityTopologyVersion rmtVer, GridNearTxPrepareRequest req) {
-        // TODO IGNITE-6754 check mvcc crd for mvcc enabled txs.
-
         for (IgniteTxEntry e : F.concat(false, req.reads(), req.writes())) {
             if (!e.context().affinity().isCompatibleWithCurrentTopologyVersion(rmtVer))
                 return true;
