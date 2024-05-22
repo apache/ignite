@@ -611,11 +611,6 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public int headerSize() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
         @Override public long link() {
             return link;
         }

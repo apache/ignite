@@ -893,11 +893,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
         return len + (cacheId() != 0 ? 4 : 0);
     }
 
-    /** {@inheritDoc} */
-    @Override public int headerSize() {
-        return 0;
-    }
-
     /**
      *
      */
