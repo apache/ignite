@@ -240,6 +240,9 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
                 int nodeOneEntries = cache.query(new ScanQuery<Integer, Person>().setLocal(true)).getAll().size();
                 int nodeTwoEntries = (CNT - NULLS_CNT) - nodeOneEntries;
 
+                int nodeOneExpectedReqs = (int)(ceil((float)nodeOneEntries / pageSize));
+                int nodeTwoExpectedReqs = (int)(ceil((float)nodeTwoEntries / pageSize));
+
                 int nodeOneLastPageEntries = nodeOneEntries % pageSize;
                 int nodeTwoLastPageEntries = nodeTwoEntries % pageSize;
 
@@ -253,8 +256,7 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
 
                 int reqsSize = reqs.size();
 
-                assert (reqsSize == ceil((float)nodeOneEntries / pageSize) ||
-                    reqsSize == ceil((float)nodeTwoEntries / pageSize)) && reqsSize == resp.size();
+                assert (reqsSize == nodeOneExpectedReqs || reqsSize == nodeTwoExpectedReqs) && reqsSize == resp.size();
 
                 for (int i = 0; i < reqsSize; i++) {
                     int reqPage = reqs.get(i).pageSize();
