@@ -1317,7 +1317,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 if (anyIdxPartFile != null) {
                     memCfg.setPageSize(resolvePageSizeFromPartitionFile(anyIdxPartFile));
-                    log.info("The DataStorageConfiguration.pageSize property has been set to: " + memCfg.getPageSize() + " bytes");
+                    log.info("The DataStorageConfiguration.pageSize property has been restored from persistence to: "
+                            + memCfg.getPageSize() + " bytes");
 
                     return;
                 }
