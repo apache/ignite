@@ -42,7 +42,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- * Checks service invocation for thin client.
+ * Checks entry processor invocation for thin client.
  */
 @RunWith(Parameterized.class)
 public class InvokeTest extends AbstractThinClientTest {
