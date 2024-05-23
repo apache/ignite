@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
+import org.apache.ignite.internal.management.cdc.CdcCacheDataResendTask;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -40,6 +41,9 @@ public class DataEntry {
 
     /** */
     public static final byte FROM_STORE_FLAG = 0b00000100;
+
+    /** */
+    public static final byte RESEND_FLAG = 0b00001000;
 
     /** Cache ID. */
     @GridToStringInclude
@@ -137,21 +141,23 @@ public class DataEntry {
      * @return Flags value.
      */
     public static byte flags(boolean primary) {
-        return flags(primary, false, false);
+        return flags(primary, false, false, false);
     }
 
     /**
      * @param primary {@code True} if node is primary for partition in the moment of logging.
      * @param preload {@code True} if logged during preload(rebalance).
      * @param fromStore {@code True} if logged during loading from third-party store.
+     * @param resend {@code True} if logged during {@link CdcCacheDataResendTask}.
      * @return Flags value.
      */
-    public static byte flags(boolean primary, boolean preload, boolean fromStore) {
+    public static byte flags(boolean primary, boolean preload, boolean fromStore, boolean resend) {
         byte val = EMPTY_FLAGS;
 
         val |= primary ? PRIMARY_FLAG : EMPTY_FLAGS;
         val |= preload ? PRELOAD_FLAG : EMPTY_FLAGS;
         val |= fromStore ? FROM_STORE_FLAG : EMPTY_FLAGS;
+        val |= resend ? RESEND_FLAG : EMPTY_FLAGS;
 
         return val;
     }

@@ -205,7 +205,7 @@ public class CdcCacheDataResendTask extends VisorMultiNodeTask<CdcResendCommandA
                     row.expireTime(),
                     key.partition(),
                     -1,
-                    DataEntry.flags(true))
+                    DataEntry.flags(true, false, false, true))
                 );
 
                 wal.log(rec);

@@ -2612,7 +2612,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         expireTime,
                         partition(),
                         updateCntr,
-                        DataEntry.flags(primary, preload, fromStore)
+                        DataEntry.flags(primary, preload, fromStore, false)
                     )));
                 }
 

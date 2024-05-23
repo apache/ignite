@@ -36,6 +36,8 @@ import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
@@ -93,12 +95,18 @@ public class WalRecordsConsumer<K, V> {
     static final IgniteClosure<DataEntry, CdcEvent> CDC_EVENT_TRANSFORMER = e -> {
         UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
 
+        GridCacheVersion ver = e.writeVersion();
+
+        // Will drop GridCacheVersion#otherClusterVersion for cache resending.
+        if ((e.flags() & DataEntry.RESEND_FLAG) != 0 && ver instanceof GridCacheVersionEx)
+            ver = new GridCacheVersion(ver.topologyVersion(), ver.order(), ver.nodeOrder(), ver.clusterId());
+
         return new CdcEventImpl(
             ue.unwrappedKey(),
             ue.unwrappedValue(),
             (e.flags() & DataEntry.PRIMARY_FLAG) != 0,
             e.partitionId(),
-            e.writeVersion(),
+            ver,
             e.cacheId(),
             e.expireTime()
         );
