@@ -3875,7 +3875,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /**
          * @param nodeId A node left the cluster.
          */
-        public void onNodeLeft(UUID nodeId) {
+        public synchronized void onNodeLeft(UUID nodeId) {
             Set<RemoteSnapshotFilesRecevier> futs = activeTasks();
             ClusterTopologyCheckedException ex = new ClusterTopologyCheckedException("The node from which a snapshot has been " +
                 "requested left the grid");
@@ -4019,7 +4019,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (task == null)
                 return;
 
-            assert task.rmtNodeId.equals(nodeId);
+            assert task.isDone() || task.stopChecker.getAsBoolean() || task.rmtNodeId.equals(nodeId);
 
             task.acceptException(ex);
         }
