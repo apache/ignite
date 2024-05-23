@@ -251,7 +251,7 @@ public class SqlParser {
                         return cmd;
                     }
                     else
-                        throw errorUnexpectedToken(lex, BEGIN, COMMIT, CREATE, DROP, ROLLBACK, COPY, SET, ALTER, START, KILL);
+                        throw errorUnexpectedToken(lex, CREATE, DROP, COPY, SET, ALTER, KILL);
 
                 case QUOTED:
                 case MINUS:
