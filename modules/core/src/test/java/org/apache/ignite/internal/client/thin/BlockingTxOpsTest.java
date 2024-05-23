@@ -20,6 +20,8 @@ package org.apache.ignite.internal.client.thin;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
@@ -234,6 +236,20 @@ public class BlockingTxOpsTest extends AbstractThinClientTest {
                         () -> cache.replace(0, 1),
                         () -> assertEquals(1, cache.get(0))
                     );
+
+                    // Invoke operation.
+                    checkOpMultithreaded(client,
+                        null,
+                        () -> cache.invoke(0, new TestEntryProcessor(), 0),
+                        () -> assertEquals(0, cache.get(0))
+                    );
+
+                    // Invoke all operation.
+                    checkOpMultithreaded(client,
+                        null,
+                        () -> cache.invokeAll(new TreeSet<>(F.asList(0, 1)), new TestEntryProcessor(), 0),
+                        () -> assertEquals(F.asMap(0, 0, 1, 0), cache.getAll(new TreeSet<>(F.asList(0, 1))))
+                    );
                 }
             }
         }
@@ -368,6 +384,17 @@ public class BlockingTxOpsTest extends AbstractThinClientTest {
                     }
                 }, THREADS_CNT, "tx-thread");
             }
+        }
+    }
+
+    /** */
+    static class TestEntryProcessor implements EntryProcessor<Object, Object, Object> {
+        /** {@inheritDoc} */
+        @Override public Object process(MutableEntry<Object, Object> e, Object... args) {
+            if (args != null && args.length >= 1)
+                e.setValue(args[0]);
+
+            return null;
         }
     }
 }
