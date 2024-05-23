@@ -397,6 +397,12 @@ public enum ClientOperation {
             case CACHE_GET_AND_PUT_IF_ABSENT:
                 return ClientOperationType.CACHE_GET_AND_PUT_IF_ABSENT;
 
+            case CACHE_INVOKE:
+                return ClientOperationType.CACHE_INVOKE;
+
+            case CACHE_INVOKE_ALL:
+                return ClientOperationType.CACHE_INVOKE_ALL;
+
             case CACHE_CLEAR:
                 return ClientOperationType.CACHE_CLEAR_EVERYTHING;
 
