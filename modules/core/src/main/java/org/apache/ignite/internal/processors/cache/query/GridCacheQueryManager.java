@@ -1527,7 +1527,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (!lostParts.isEmpty()) {
                 if (part == null || lostParts.contains(part)) {
                     throw new CacheException(new CacheInvalidStateException("Failed to execute query because cache partition " +
-                        "has been lostParts [cacheName=" + cctx.name() +
+                        "has been lost [cacheName=" + cctx.name() +
                         ", part=" + (part == null ? lostParts.iterator().next() : part) + ']'));
                 }
             }
