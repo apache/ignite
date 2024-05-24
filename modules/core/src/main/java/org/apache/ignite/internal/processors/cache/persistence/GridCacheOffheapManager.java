@@ -1226,8 +1226,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         grp.groupId(),
                         grp.dataRegion().pageMemory(),
                         globalRemoveId(),
-                        reuseListForIndex(name),
-                        false
+                        reuseListForIndex(name)
                     );
 
                     indexStorage.dropIndex(name);

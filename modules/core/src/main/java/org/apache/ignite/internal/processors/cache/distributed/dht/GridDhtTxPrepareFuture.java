@@ -1326,7 +1326,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                     assert entry != null && entry.cached() != null : entry;
 
-                    // Counter shouldn't be reserved for mvcc, local cache entries, NOOP operations and NOOP transforms.
+                    // Counter shouldn't be reserved for local cache entries, NOOP operations and NOOP transforms.
                     if (!entry.cached().isLocal() && entry.op() != NOOP &&
                         !(entry.op() == TRANSFORM &&
                             (entry.entryProcessorCalculatedValue() == null || // Possible for txs over cachestore

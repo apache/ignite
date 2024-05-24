@@ -1946,7 +1946,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             GridCacheContext<?, ?> cctx = plan.cacheContext();
 
-            // For MVCC case, let's enlist batch elements one by one.
             if (plan.hasRows() && plan.mode() == UpdateMode.INSERT) {
                 CacheOperationContext opCtx = DmlUtils.setKeepBinaryContext(cctx);
 
