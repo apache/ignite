@@ -83,8 +83,6 @@ class ObjectDetachHelper {
 
                 reader.position(objDataStartPos);
 
-                boolean isFound = false;
-
                 while (reader.position() < objDataEndPos) {
                     if (findInNextObject())
                       return true;
@@ -92,7 +90,7 @@ class ObjectDetachHelper {
 
                 reader.position(objEndPos);
 
-                return isFound;
+                return false;
             }
 
             case GridBinaryMarshaller.HANDLE: {

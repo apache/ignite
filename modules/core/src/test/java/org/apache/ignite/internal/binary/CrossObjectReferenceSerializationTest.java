@@ -49,6 +49,9 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class CrossObjectReferenceSerializationTest extends GridCommonAbstractTest {
     /** */
+    private static boolean prevFieldsSortedOrderFlag;
+
+    /** */
     private static Ignite srv;
 
     /** */
@@ -114,12 +117,14 @@ public class CrossObjectReferenceSerializationTest extends GridCommonAbstractTes
         srvCache = srv.cache(DEFAULT_CACHE_NAME);
         cliCache = cli.cache(DEFAULT_CACHE_NAME);
 
-        BinaryClassDescriptor.foreSortedFieldsOrder = true;
+        prevFieldsSortedOrderFlag = BinaryUtils.FIELDS_SORTED_ORDER;
+
+        BinaryUtils.FIELDS_SORTED_ORDER = true;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        BinaryClassDescriptor.foreSortedFieldsOrder = false;
+        BinaryUtils.FIELDS_SORTED_ORDER = prevFieldsSortedOrderFlag;
 
         super.afterTestsStopped();
 

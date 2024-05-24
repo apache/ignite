@@ -61,9 +61,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.isLambda;
  * Binary class descriptor.
  */
 public class BinaryClassDescriptor {
-    /** For test use only. */
-    static boolean foreSortedFieldsOrder;
-
     /** */
     @GridToStringExclude
     private final BinaryContext ctx;
@@ -335,7 +332,7 @@ public class BinaryClassDescriptor {
                 else {
                     Map<Object, BinaryFieldAccessor> fields0;
 
-                    if (BinaryUtils.FIELDS_SORTED_ORDER || foreSortedFieldsOrder) {
+                    if (BinaryUtils.FIELDS_SORTED_ORDER) {
                         fields0 = new TreeMap<>();
 
                         stableFieldsMeta = metaDataEnabled ? new TreeMap<>() : null;
