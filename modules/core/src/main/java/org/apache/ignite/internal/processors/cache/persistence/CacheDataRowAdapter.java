@@ -376,8 +376,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         long nextLink = data.nextLink();
 
-        int hdrLen = 0;
-
         if (incomplete == null) {
             if (nextLink == 0) {
                 // Fast path for a single page row.
@@ -389,8 +387,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         ByteBuffer buf = wrapPointer(pageAddr, pageSize);
 
-        int off = data.offset() + hdrLen;
-        int payloadSize = data.payloadSize() - hdrLen;
+        int off = data.offset();
+        int payloadSize = data.payloadSize();
 
         buf.position(off);
         buf.limit(off + payloadSize);
