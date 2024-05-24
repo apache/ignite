@@ -85,7 +85,7 @@ class ObjectDetachHelper {
 
                 while (reader.position() < objDataEndPos) {
                     if (findInNextObject())
-                      return true;
+                        return true;
                 }
 
                 reader.position(objEndPos);
