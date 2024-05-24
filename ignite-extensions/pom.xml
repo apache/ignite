@@ -67,7 +67,8 @@
                 <module>../ignite</module>
             </modules>
         </profile>
-    </profiles>
+    </profiles>  
+    
 
     <build>
         <plugins>

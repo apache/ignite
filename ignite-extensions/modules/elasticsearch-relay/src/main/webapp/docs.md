@@ -15,42 +15,38 @@ Supports indices from Liferay,   Nuxeo,   Shindig and the Elasticsearch IMAP imp
 Ignite作为后端搜索引擎实现代替elasticsearch
 
 
+=========
+GET /{index}
+Returns information about one or more indices.
+
 关键词查询
 =========
-/es-relay/content_faq/_search?query="keyword"
+/es-relay/{index}/_search?query="keyword"
 
-意思是在Ignite实例里面的content_faq表(或者缓存里)搜索keyword。
+意思是在Ignite实例里面的{index}表(或者cache)搜索keyword。
 
-/es-relay/content_faq/faq/_search?q="keyword"
+/es-relay/content.faq/_search?q="keyword"
 
-意思是在cacheName为content_faq的faq表里搜索keyword。
+意思是在scheam为content的faq表里搜索keyword。
 
 
 因为未来cache和table是一对一关系，可以直接使用schema/tableName搜索,如：
-/es-relay/public/faq/_search?q="keyword"
+/es-relay/public.faq/_search?q="keyword"
 
-path[1]为cacheName或者schema
-path[2]为TypeName
+path[1]为cacheName或者tableName
+path[2]为操作
 
 
 查询视图
 ========
-/es-relay/views/view2?q=view2
+/es-relay/_views/{view_name}?q=sql
 
-意思是列出view2的结果，功能是为了在后端配置SQL视图。
-
+意思是列出{view_name}的结果，功能是为了在后端配置SQL视图。
 
 
 如： 使用视图hosp-cluster
-/es-relay/views/hosp-cluster/_all?key=value
+/es-relay/_views/hosp-cluster?key=value
 
-CMD
-=========
-
-支持以json的方式访问ignite rest api。
-如：
-/_cmd/put?cacheName=test&key=k1
-可以使用 JSON {key=k1,cacheName=test} post给服务端
 
 创建与更新
 =========
@@ -63,5 +59,42 @@ PUT /<index>/_create/<_id>
 
 POST /<index>/_create/<_id>
 
+操作单个文档
+============
 
+GET /{index}/_doc/{id}
+获取
+
+DELETE /{index}/_doc/{id}
+删除
+
+HEAD /{index}/_doc/{id}
+是否存在
+
+GET /{index}/_source/{id}
+Returns the source of a document.
+
+操作索引
+==============
+PUT /{index}
+Creates an index with optional settings and mappings.
+
+GET /{index}
+Returns information about one or more indices.
+
+DELETE /{index}
+Deletes an index.
+
+聚合命令
+=======
+
+/{index}/_count
+
+
+CMD
+=========
+支持以json的方式访问ignite rest api。
+如：
+/_cmd/put?cacheName=test&key=k1
+可以使用 JSON {key=k1,cacheName=test} post给服务端
 

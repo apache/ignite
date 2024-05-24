@@ -50,7 +50,7 @@ public class LiferayFilter implements IFilter {
 
 			termObject.put(LR_USER_ID, userId);
 
-			userFilter.put(ESConstants.Q_TERM, termObject);
+			userFilter.set(ESConstants.Q_TERM, termObject);
 
 			filters.add(userFilter);
 
@@ -61,7 +61,7 @@ public class LiferayFilter implements IFilter {
 
 				termObject.put(LR_ROLE_ID, roleId);
 
-				roleFilter.put(ESConstants.Q_TERM, termObject);
+				roleFilter.set(ESConstants.Q_TERM, termObject);
 
 				filters.add(roleFilter);
 			}
@@ -73,7 +73,7 @@ public class LiferayFilter implements IFilter {
 
 				termObject.put(LR_ROLE_ID, roleId);
 
-				roleFilter.put(ESConstants.Q_TERM, termObject);
+				roleFilter.set(ESConstants.Q_TERM, termObject);
 
 				filters.add(roleFilter);
 			}

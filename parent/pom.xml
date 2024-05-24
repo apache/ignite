@@ -318,7 +318,7 @@
                             <taglet>
                                 <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
                                 <tagletArtifact>
-                                    <groupId>${project.groupId}</groupId>
+                                    <groupId>org.apache.ignite</groupId>
                                     <artifactId>ignite-tools</artifactId>
                                     <version>${ignite.version}</version>
                                 </tagletArtifact>

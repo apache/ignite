@@ -84,7 +84,7 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
+    
     <dependencies>
         <!-- The TestSuiteAwareTestsetReporter added to classpath for the maven-surefire-plugin. -->
         <dependency>
@@ -93,6 +93,7 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
 
     <build>
         <plugins>

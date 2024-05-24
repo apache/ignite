@@ -1,0 +1,324 @@
+= Apache Ignite Cluster Manager for Vert.x
+
+This is a cluster manager implementation for Vert.x that uses http://ignite.apache.org/index.html[Apache Ignite].
+
+In Vert.x a cluster manager is used for various functions including:
+
+* Discovery and group membership of Vert.x nodes in a cluster
+* Maintaining cluster wide topic subscriber lists (so we know which nodes are interested in which event bus
+addresses)
+* Distributed Map support
+* Distributed Locks
+* Distributed Counters
+
+Cluster managersdo not* handle the event bus inter-node transport, this is done directly by Vert.x with TCP
+connections.
+
+Vert.x cluster manager is a pluggable component, so you can pick the one you want, or the one that is the most
+adapted to your environment. So you can replace default Vert.x cluster manager by this implementation.
+
+== Using Ignite cluster manager
+
+If the jar is on your classpath then Vert.x will automatically detect this and use it as the cluster manager.
+Please make sure you don’t have any other cluster managers on your classpath or Vert.x might choose the wrong one.
+
+Alternatively, you can configure the following system property to instruct vert.x to use this cluster manager:
+`-Dvertx.clusterManagerFactory=io.vertx.spi.cluster.ignite.IgniteClusterManager`
+
+=== Using Vert.x from command line
+
+`vertx-ignite-${maven.version}.jar` should be in the `lib` directory of the Vert.x installation.
+
+=== Using Vert.x in Maven or Gradle project
+
+Add a dependency to the artifact.
+
+* Maven (in your `pom.xml`):
+
+[source,xml,subs="+attributes"]
+----
+<dependency>
+  <groupId>${maven.groupId}</groupId>
+  <artifactId>${maven.artifactId}</artifactId>
+  <version>${maven.version}</version>
+</dependency>
+----
+
+* Gradle (in your `build.gradle` file):
+
+[source,groovy,subs="+attributes"]
+----
+compile '${maven.groupId}:${maven.artifactId}:${maven.version}'
+----
+
+=== Programmatically specifying cluster manager
+
+You can also specify the cluster manager programmatically. In order to do this just specify it on the options
+when you are creating your Vert.x instance, for example:
+
+[source,java]
+----
+ClusterManager clusterManager = new IgniteClusterManager();
+
+VertxOptions options = new VertxOptions().setClusterManager(clusterManager);
+Vertx.clusteredVertx(options, res -> {
+  if (res.succeeded()) {
+    Vertx vertx = res.result();
+  } else {
+    // failed!
+  }
+});
+----
+
+== Configuring cluster manager
+
+Note: Starting with version 2.0, Apache Ignite has introduced a new off-heap memory architecture. All caches use
+off-heap memory by default. New memory architecture is described in
+https://apacheignite.readme.io/docs/page-memory[Ignite Virtual Memory] article.
+
+=== Using configuration file
+
+The cluster manager is configured by a file `default-ignite.json` which is packaged inside the jar.
+
+If you want to override this configuration you can provide `ignite.json` file on your classpath and this will be
+used instead. The config maps to {@link io.vertx.spi.cluster.ignite.IgniteOptions} where you can find more details on
+each individual option.
+
+In the example below the default config is extended to activate TLS for cluster communication.
+[source,json]
+----
+{
+  "cacheConfiguration": [{
+    "name": "__vertx.*",
+    "cacheMode": "REPLICATED",
+    "atomicityMode": "ATOMIC",
+    "writeSynchronizationMode": "FULL_SYNC"
+  }, {
+    "name": "*",
+    "cacheMode": "PARTITIONED",
+    "backups": 1,
+    "readFromBackup": false,
+    "atomicityMode": "ATOMIC",
+    "writeSynchronizationMode": "FULL_SYNC"
+  }],
+  "sslContextFactory": {
+    "protocol": "TLSv1.2",
+    "jksKeyCertOptions": {
+      "path": "server.jks",
+      "password": "changeme",
+    },
+    "jksTrustOptions": {
+      "path": "server.jks",
+      "password": "changeme",
+    },
+    "trustAll": false
+  },
+  "metricsLogFrequency": 0,
+  "shutdownOnSegmentation": true
+}
+----
+
+As an alternative to the json format you can use the native Ignite XML configuration. You can provide an `ignite.xml` file
+on your classpath and it will be used instead.
+
+First, add the `ignite-spring` dependency.
+
+* Maven (in your `pom.xml`):
+
+[source,xml,subs="+attributes"]
+----
+<dependency>
+  <groupId>org.apache.ignite</groupId>
+  <artifactId>ignite-spring</artifactId>
+  <version>${ignite.version}</version>
+</dependency>
+----
+
+* Gradle (in your `build.gradle` file):
+
+[source,groovy,subs="+attributes"]
+----
+compile 'org.apache.ignite:ignite-spring:${ignite.version}'
+----
+
+Then add an `ignite.xml` file like this one:
+
+[source,xml,subs="+attributes"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/util
+                           http://www.springframework.org/schema/util/spring-util.xsd">
+
+  <bean class="org.apache.ignite.configuration.IgniteConfiguration">
+
+    <property name="discoverySpi">
+      <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+        <property name="ipFinder">
+          <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder"/>
+        </property>
+      </bean>
+    </property>
+
+    <property name="cacheConfiguration">
+      <list>
+        <bean class="org.apache.ignite.configuration.CacheConfiguration">
+          <property name="name" value="__vertx.*"/>
+          <property name="cacheMode" value="REPLICATED"/>
+          <property name="atomicityMode" value="ATOMIC"/>
+          <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+        </bean>
+        <bean class="org.apache.ignite.configuration.CacheConfiguration">
+          <property name="name" value="*"/>
+          <property name="cacheMode" value="PARTITIONED"/>
+          <property name="backups" value="1"/>
+          <property name="readFromBackup" value="false"/>
+          <property name="atomicityMode" value="ATOMIC"/>
+          <property name="affinity">
+            <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
+              <property name="partitions" value="128"/>
+            </bean>
+          </property>
+          <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+        </bean>
+      </list>
+    </property>
+
+    <property name="gridLogger">
+      <bean class="io.vertx.spi.cluster.ignite.impl.VertxLogger"/>
+    </property>
+
+    <property name="metricsLogFrequency" value="0"/>
+  </bean>
+</beans>
+----
+
+The json format is a simplified version of the xml config described in details at
+https://apacheignite.readme.io/docs[Apache Ignite documentation].
+
+=== Configuring programmatically
+
+You can also specify configuration programmatically:
+
+[source,java]
+----
+IgniteConfiguration cfg = new IgniteConfiguration();
+// Configuration code (omitted)
+
+ClusterManager clusterManager = new IgniteClusterManager(cfg);
+
+VertxOptions options = new VertxOptions().setClusterManager(clusterManager);
+Vertx.clusteredVertx(options, res -> {
+  if (res.succeeded()) {
+    Vertx vertx = res.result();
+  } else {
+    // failed!
+  }
+});
+----
+
+=== Discovery and network transport configuration
+
+The default configuration uses `TcpDiscoveryMulticastIpFinder` so you must have multicast enabled on your network.
+For cases when multicast is disabled `TcpDiscoveryVmIpFinder` should be used with pre-configured list of IP addresses.
+Please see http://apacheignite.readme.io/docs/cluster-config[Cluster Configuration] section
+at Apache Ignite documentation for details.
+
+== Trouble shooting clustering
+
+If the default multicast configuration is not working here are some common causes:
+
+=== Multicast not enabled on the machine.
+
+By default the cluster manager is using `TcpDiscoveryMulticastIpFinder`, so IP multicasting is required,
+on some systems, multicast route(s) need to be added to the routing table otherwise, the default route will be used.
+
+Note that some systems don't consult the routing table for IP multicast routing, only for unicast routing
+
+MacOS example:
+
+----
+# Adds a multicast route for 224.0.0.1-231.255.255.254
+sudo route add -net 224.0.0.0/5 127.0.0.1
+
+# Adds a multicast route for 232.0.0.1-239.255.255.254
+sudo route add -net 232.0.0.0/5 192.168.1.3
+----
+
+Please google for more information.
+
+=== Using wrong network interface
+
+If you have more than one network interface on your machine (and this can also be the case if you are running
+VPN software on your machine), then Apache Ignite may be using the wrong one.
+
+To tell Ignite to use a specific interface you can provide the IP address of the interface to the
+bean of `IgniteConfiguration` type using `localHost` property. For example:
+
+----
+{
+  "localHost": "192.168.1.20"
+}
+----
+
+When running Vert.x is in clustered mode, you should also make sure that Vert.x knows about the correct interface.
+When running at the command line this is done by specifying the `cluster-host` option:
+
+----
+vertx run myverticle.js -cluster -cluster-host your-ip-address
+----
+
+Where `your-ip-address` is the same IP address you specified in the Apache Ignite configuration.
+
+If using Vert.x programmatically you can specify this using {@link io.vertx.core.VertxOptions#getEventBusOptions().setHost(java.lang.String)}.
+
+=== Using a VPN
+
+This is a variation of the above case.
+VPN software often works by creating a virtual network interface which often doesn't support multicast.
+If you have a VPN running and you do not specify the correct interface to use in both the Ignite configuration and to Vert.x then the VPN interface may be chosen instead of the correct interface.
+
+So, if you have a VPN running you may have to configure both the Ignite and Vert.x to use the correct interface as described in the previous section.
+
+=== When multicast is not available
+
+In some cases you may not be able to use multicast as it might not be available in your environment.
+In that case you should configure another transport using corresponding IP finder, e.g. `TcpDiscoveryVmIpFinder` to use TCP sockets, or `TcpDiscoveryS3IpFinder` to use Amazon S3.
+
+For more information on available Ignite transports and how to configure them please consult the
+https://apacheignite.readme.io/docs/clustering[Ignite Clustering] documentation.
+
+=== Enabling logging
+
+When trouble-shooting clustering issues it's often useful to get some logging output from Ignite to see if it's forming a cluster properly.
+You can do this (when using the default JUL logging) by adding a file called `vertx-default-jul-logging.properties` on your classpath.
+This is a standard java.util.loging (JUL) configuration file.
+Inside it set:
+
+----
+org.apache.ignite.level=INFO
+----
+
+and also
+
+----
+java.util.logging.ConsoleHandler.level=INFO
+java.util.logging.FileHandler.level=INFO
+----
+
+
+=== JDK17 later
+
+
+add vm options
+----
+--add-opens=java.base/java.nio=ALL-UNNAMED 
+--add-opens=java.base/java.util=ALL-UNNAMED 
+--add-opens=java.base/java.lang.invoke=ALL-UNNAMED 
+--add-opens=java.base/java.lang=ALL-UNNAMED
+----

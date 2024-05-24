@@ -46,16 +46,16 @@ public class BinaryObjectMatch extends DefaultQueryMatcher implements IgniteBiPr
             //-validateQueryValue(queryValue, key);
             List<String> keys = splitKey(key);
             if(keys.size()!=1) {
-            	return true;
+            	continue;
             }
             if (QueryFilter.isQueryFilter(key)) {
-                return true;
+            	continue;
             }
             if (key.startsWith("$")) {
-            	return true;
+            	continue;
             }
             if(!document.hasField(key)) {
-            	return true;
+            	continue;
             }
             Object documentValue = document.field(key);
             if (documentValue instanceof Collection<?>) {
@@ -64,17 +64,25 @@ public class BinaryObjectMatch extends DefaultQueryMatcher implements IgniteBiPr
                     Document queryDocument = (Document) queryValue;
                     boolean matches = checkMatchesAnyValue(queryDocument, keys, null, documentValues);
                     if (matches) {
-                        return true;
-                    }
+                    	continue;
+                    }                    
                     if (isInQuery(queryDocument)) {
-                        return checkMatchesValue(queryValue, documentValue);
+                    	matches = checkMatchesValue(queryDocument, documentValue);
+                    	if (matches) {
+                        	continue;
+                        }
+                    	return false;
                     } else {
                         return false;
                     }
                 } else if (queryValue instanceof Collection<?>) {
-                    return checkMatchesValue(queryValue, documentValues);
-                } else if (checkMatchesAnyValue(queryValue, documentValues)) {
-                    return true;
+                	boolean matches = checkMatchesValue(queryValue, documentValues);
+                	if (matches) {
+                    	continue;
+                    }
+                	return false;
+                } else if (!checkMatchesAnyValue(queryValue, documentValues)) {
+                    return false;
                 }
             }
             else if (documentValue instanceof Map && !(documentValue instanceof Document)) {

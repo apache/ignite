@@ -1,0 +1,758 @@
+<!--
+ * Copyright 2019 Yang Wang
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+
+<!-- TODO 需要滚动分页加载和行拖动释放 -->
+<style type="text/css">
+    .box-cover {
+        border-radius: 2px;
+        background: #232429;
+        border-top: 0px solid #d2d6de !important;
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .box-header-cover {
+        color: #929299;
+    }
+    
+    .box-header-cover h3 {
+        font-weight: 400;
+    }
+    
+    .acl-btn-col {
+        padding-top: 8px;
+        float: right;
+        width: 8%;
+    }
+    
+    .acl-allow {
+        color: #00a65a;
+    }
+    
+    .acl-deny {
+        color: #dd4b39;
+    }
+    
+    .acl-allow span,
+    .acl-deny span {
+        margin-left: 3px;
+    }
+    
+    .acl-delete-btn {
+        margin-left: 5px;
+    }
+    
+    #delete-show-acl {
+        padding-left: 22px;
+    }
+    
+    #delete-show-acl .row {
+        margin-bottom: 5px;
+    }
+    
+    #delete-show-acl .col-sm-3 {
+        width: 20% !important;
+        padding-right: 0px !important;
+    }
+    
+    #delete-show-acl .col-sm-9 {
+        padding-left: 0px !important;
+    }
+    
+    #delete-show-acl i {
+        padding-right: 3px;
+    }
+</style>
+
+<section class="content-header">
+    <div class="row">
+        <div class="col-md-6 col-sm-6 col-xs-6">
+            <h1 class="content-wrapper-title content-wrapper-title-cover" data-locale="menu_management_acl">
+            </h1>
+        </div>
+
+        <div class="col-md-6 col-sm-6 col-xs-6 acl-btn-col">
+            <button type="button" class="btn btn-block btn-info btn-sm" id="add-acl">
+                <i class="fa fa-plus"></i>
+                <span data-locale="common_add_btn"></span>
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12 col-sm-12 col-xs-12">
+            <div class="box box-default box-cover">
+                <div class="box-header with-border box-header-cover">
+                    <h3 class="box-title" data-locale="acl_explain"></h3>
+                </div>
+                <div class="box-body">
+                    <div data-locale="acl_explain_detail_one"></div>
+                    <div data-locale="acl_explain_detail_two"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row info-row info-row-cover last-info-row">
+        <div class="col-md-12 col-sm-12 col-xs-12 table-cols">
+            <div class="box-body table-box-body" id="acl-table-container">
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-acl">
+        <div class="modal-dialog">
+            <div class="modal-content modal-content-cover">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title" id="acl-modal-title"></h4>
+                </div>
+                <div class="modal-body">
+                    <form role="form" id="acl-form">
+                        <div class="box-body box-body-cover">
+                            <div class="form-group">
+                                <label for="acl-target-type" data-locale="acl_type"></label>
+                                <select class="select2" id="acl-target-type">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="box-body box-body-cover">
+                            <div class="form-group" id="acl-form">
+                                <label for="acl-target" data-locale="acl_target"></label>
+                                <input type="text" class="form-control" id="acl-target" name="acl-target">
+                                <span class="help-block" id="acl-target-help"></span>
+                            </div>
+                        </div>
+                        <div class="box-body box-body-cover">
+                            <div class="form-group">
+                                <label for="acl-topic" data-locale="acl_topic"></label>
+                                <input type="text" class="form-control" id="acl-topic" name="acl-topic">
+                                <span class="help-block" id="acl-topic-help"></span>
+                            </div>
+                        </div>
+                        <div class="box-body box-body-cover">
+                            <div class="form-group">
+                                <label for="acl-access-type" data-locale="acl_access"></label>
+                                <select class="select2" id="acl-access-type">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="box-body box-body-cover">
+                            <div class="form-group">
+                                <label for="acl-authority" data-locale="acl_authority"></label>
+                                <select class="select2" id="acl-authority">
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" data-locale="common_cancel_btn"></button>
+                    <button type="button" class="btn btn-info" data-locale="common_save_btn" id="acl-save-btn" oper="add"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-delete-acl">
+        <div class="modal-dialog">
+            <div class="modal-content modal-content-cover">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" data-locale="acl_delete_title"></h4>
+                </div>
+                <div class="modal-body">
+                    <p>
+                        <i class="fa fa-fw fa-exclamation-triangle text-yellow"></i>
+                        <font data-locale="acl_delete_conf_text"></font>
+                        <div id="delete-show-acl">
+                            <div class="row">
+                                <div class="col-sm-3" data-locale="acl_delete_target"></div>
+                                <div class="col-sm-9" id="acl-delete-target"></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-3" data-locale="acl_delete_type"></div>
+                                <div class="col-sm-9" id="acl-delete-type"></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-3" data-locale="acl_delete_topic"></div>
+                                <div class="col-sm-9" id="acl-delete-topic"></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-3" data-locale="acl_delete_access"></div>
+                                <div class="col-sm-9" id="acl-delete-access"></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-3" data-locale="acl_delete_authority"></div>
+                                <div class="col-sm-9" id="acl-delete-authority"></div>
+                            </div>
+                        </div>
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" data-locale="common_cancel_btn"></button>
+                    <button type="button" class="btn btn-info" data-locale="common_confirm_btn" id="delete-acl-conf-btn"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script type="text/javascript">
+    var language = getLanguage();
+    var aclDataTable;
+    var targetTypeCtrl;
+    var accessTypeCtrl;
+    var authorityTypeCtrl;
+    var $saveBtn = $('#acl-save-btn');
+    var selectedAclData;
+
+    var queryAclCols = [{
+        "sWidth": "0%"
+    }, {
+        "sWidth": "23%"
+    }, {
+        "sWidth": "14%"
+    }, {
+        "sWidth": "23%"
+    }, {
+        "sWidth": "14%"
+    }, {
+        "sWidth": "14%"
+    }, {
+        "sWidth": "12%"
+    }];
+
+    var queryAclColDefs = [{
+        'targets': 0,
+        'className': 'reorder',
+        'visible': false,
+        'orderable': true,
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 1,
+        'orderable': false,
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 2,
+        'orderable': false,
+        'render': function(data, type, full) {
+            if (data === 1) {
+                return '<i class="fa fa-tag text-red"></i>' + locale_messages.acl_connect_user;
+            } else if (data === 2) {
+                return '<i class="fa fa-tag text-yellow"></i>' + locale_messages.acl_ip_addr;
+            } else if (data === 3) {
+                return '<i class="fa fa-tag text-aqua"></i>' + locale_messages.acl_client_id;
+            } else if (data === 4) {
+                return '<i class="fa fa-tag text-green"></i>' + locale_messages.acl_all;
+            }
+
+            return data;
+        }
+    }, {
+        'targets': 3,
+        'orderable': false,
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 4,
+        'orderable': false,
+        'render': function(data, type, full) {
+            if (data === 1) {
+                return '<i class="fa fa-feed text-red"></i>' + locale_messages.acl_sub;
+            } else if (data === 2) {
+                return '<i class="fa fa-feed text-yellow"></i>' + locale_messages.acl_pub;
+            } else if (data === 3) {
+                return '<i class="fa fa-feed text-aqua"></i>' + locale_messages.acl_subpub;
+            }
+
+            return data;
+        }
+    }, {
+        'targets': 5,
+        'orderable': false,
+        'render': function(data, type, full) {
+            var content = [];
+
+            if (data === 0) {
+                content.push('<div class="acl-deny">');
+                content.push('<i class="fa fa-times-circle" aria-hidden="true"></i>');
+                content.push('<span>');
+                content.push(locale_messages.acl_deny);
+                content.push('</span>');
+                content.push('</div>');
+
+                return content.join('');
+            } else if (data === 1) {
+                content.push('<div class="acl-allow">');
+                content.push('<i class="fa fa-check-circle" aria-hidden="true"></i>');
+                content.push('<span>');
+                content.push(locale_messages.acl_allow);
+                content.push('</span>');
+                content.push('</div>');
+
+                return content.join('');
+            }
+
+            return data;
+        }
+    }, {
+        'targets': 6,
+        'orderable': false,
+        'render': function(data, type, full) {
+            var content = [];
+
+            content.push('<button type="button" class="btn btn-xs btn-info acl-edit-btn">');
+            content.push('<i class="fa fa-fw fa-edit"></i>');
+            content.push(locale_messages.common_edit_btn);
+            content.push('</button>');
+
+            content.push('<button type="button" class="btn btn-xs btn-info acl-delete-btn">');
+            content.push('<i class="fa fa-fw fa-trash"></i>');
+            content.push(locale_messages.common_delete_btn);
+            content.push('</button>');
+
+            return content.join('');
+        }
+    }];
+
+    var aclValidation = $('#acl-form').validate({
+        debug: false,
+        rules: aclRules(),
+        errorPlacement: errorPlacement4Valid,
+        success: success4Valid
+    });
+
+    function initAclTable() {
+        var content = [];
+
+        content.push('<table class="table table-bordered table-striped table-hover" id="acl-info-table">');
+        content.push('<thead><tr>');
+        content.push('<th>');
+        content.push(locale_messages.acl_seq);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.acl_target);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.acl_type);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.acl_topic);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.acl_access);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.acl_authority);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.common_oper);
+        content.push('</th>');
+        content.push('</tr></thead>');
+        content.push('<tbody></tbody></table>');
+
+        $('#acl-table-container').html(content.join(''));
+    }
+
+    function queryAclDataTable() {
+        aclDataTable = $('#acl-info-table').DataTable({
+            'destroy': true,
+            'language': datatablesLanguage(),
+            'autoWidth': true,
+            'searching': false,
+            'lengthChange': false,
+            'info': false,
+            'paging': true,
+            'order': [0, 'desc'],
+            'processing': true,
+            'deferRender': true,
+            'scrollY': 470,
+            'scrollCollapse': true,
+            'scroller': true,
+            'rowReorder': true,
+            'aoColumns': queryAclCols,
+            'columnDefs': queryAclColDefs,
+            'ajax': function(data, callback, settings) {
+                var draw = data["draw"];
+
+                $.ajax({
+                    url: '/sys/acl/get',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({}),
+                    success: function(res) {
+                        var drawData = datatables_no_data;
+
+                        if (res && res.code === 1) {
+                            var total = res.result.total;
+                            var items = res.result.items;
+
+                            if (total && items) {
+                                drawData = {
+                                    "draw": draw,
+                                    "recordsTotal": total,
+                                    "recordsFiltered": total,
+                                    "data": items
+                                };
+                            }
+                        }
+
+                        callback(drawData);
+                    },
+                    error: function(xhr, status, error) {
+                        callback(datatables_no_data);
+                    }
+                });
+            }
+        });
+
+        aclDataTable.on('row-reorder', function(e, details, edit) {
+            var reorders = [];
+
+            for (var i = 0, len = details.length; i < len; ++i) {
+                var detail = details[i];
+                var row = aclDataTable.row($(detail.node)).data();
+
+                row[0] = detail.newData;
+
+                reorders.push(row);
+            }
+
+            var params = {
+                reorders: reorders
+            };
+
+            $.ajax({
+                url: '/sys/acl/reorder',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(params),
+                success: function(res) {
+                    // Do nothing...
+                },
+                error: function(xhr, status, error) {
+                    // show system exception message
+                    alertSystemException();
+                }
+            });
+        });
+    }
+
+    targetTypeCtrl = $('#acl-target-type').select2({
+        minimumResultsForSearch: -1,
+        width: '100%',
+        data: [{
+            id: 1,
+            text: locale_messages.acl_connect_user
+        }, {
+            id: 2,
+            text: locale_messages.acl_ip_addr
+        }, {
+            id: 3,
+            text: locale_messages.acl_client_id
+        }, {
+            id: 4,
+            text: locale_messages.acl_all
+        }]
+    });
+
+    targetTypeCtrl.on('select2:select', function(e) {
+        var id = e.params.data.id;
+        var $target = $('#acl-target');
+
+        if (id === "4") {
+            $target.attr('disabled', 'disabled');
+            $target.val('$all');
+        } else {
+            $target.removeAttr('disabled', 'disabled');
+            $target.val('');
+        }
+    });
+
+    accessTypeCtrl = $('#acl-access-type').select2({
+        minimumResultsForSearch: -1,
+        width: '100%',
+        data: [{
+            id: 1,
+            text: locale_messages.acl_sub
+        }, {
+            id: 2,
+            text: locale_messages.acl_pub
+        }, {
+            id: 3,
+            text: locale_messages.acl_subpub
+        }]
+    });
+
+    authorityTypeCtrl = $('#acl-authority').select2({
+        minimumResultsForSearch: -1,
+        width: '100%',
+        data: [{
+            id: 0,
+            text: locale_messages.acl_deny
+        }, {
+            id: 1,
+            text: locale_messages.acl_allow
+        }]
+    });
+
+    if (language === 'zh') {
+        $('#delete-show-acl').find('.col-sm-9').css({
+            'margin-left': '-30px'
+        });
+    } else {
+        $('#delete-show-acl').find('.col-sm-9').css({
+            'margin-left': '-10px'
+        });
+    }
+
+    $('#acl-save-btn').click(function() {
+        disableConfirm('#acl-save-btn');
+
+        if (!aclValidation.form()) {
+            enableConfirm('#acl-save-btn');
+
+            return false;
+        }
+
+        var oper = $(this).attr('oper');
+
+        var params = {
+            target: $('#acl-target').val(),
+            type: $('#acl-target-type').val(),
+            topic: $('#acl-topic').val(),
+            access: $('#acl-access-type').val(),
+            authority: $('#acl-authority').val()
+        };
+
+        if (oper === 'add') {
+            $.ajax({
+                url: '/sys/acl/add',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(params),
+                success: function(res) {
+                    if (res && res.code === 1 && res.result > 0) {
+                        // hide modal
+                        $('#modal-acl').modal('hide');
+                        // reload table
+                        aclDataTable.ajax.reload();
+                        // show succeeded message
+                        alertMessage(locale_messages.common_alert_title, locale_messages.user_add_succeeded);
+
+                        return false;
+                    }
+
+                    // hide modal
+                    $('#modal-acl').modal('hide');
+                    // show failed message
+                    alertMessage(locale_messages.common_alert_title, locale_messages.acl_add_failed, true);
+                },
+                error: function(xhr, status, error) {
+                    // hide modal
+                    $('#modal-acl').modal('hide');
+                    // show system exception message
+                    alertSystemException();
+                }
+            });
+        } else if (oper === 'update') {
+            params.seq = selectedAclData[0];
+
+            $.ajax({
+                url: '/sys/acl/update',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(params),
+                success: function(res) {
+                    if (res && res.code === 1 && res.result === 1) {
+                        // hide modal
+                        $('#modal-acl').modal('hide');
+                        // reload table
+                        aclDataTable.ajax.reload();
+                        // show succeeded message
+                        alertMessage(locale_messages.common_alert_title, locale_messages.user_edit_succeeded);
+
+                        return false;
+                    }
+
+                    // hide modal
+                    $('#modal-acl').modal('hide');
+                    // show failed message
+                    alertMessage(locale_messages.common_alert_title, locale_messages.acl_edit_failed, true);
+                },
+                error: function(xhr, status, error) {
+                    // hide modal
+                    $('#modal-acl').modal('hide');
+                    // show system exception message
+                    alertSystemException();
+                }
+            });
+        } else {
+            $('#modal-acl').modal('hide');
+        }
+    });
+
+    $('#add-acl').click(function() {
+        $('#acl-modal-title').text(locale_messages.acl_add_title);
+
+        targetTypeCtrl.val(1).trigger("change");
+        accessTypeCtrl.val(1).trigger("change");
+        authorityTypeCtrl.val(0).trigger("change");
+
+        $('#acl-target').removeAttr('disabled');
+
+        initializeModal('#modal-acl', '#acl-save-btn');
+
+        $saveBtn.attr('oper', 'add');
+
+        $('#modal-acl').modal('show');
+    });
+
+    $('#acl-table-container').delegate('.acl-edit-btn', 'click', function() {
+        selectedAclData = datatablesRowData(aclDataTable, this);
+
+        var type = selectedAclData[2];
+        var target = selectedAclData[1];
+        var topic = selectedAclData[3];
+        var access = selectedAclData[4];
+        var authority = selectedAclData[5];
+
+        initializeModal('#modal-acl', '#acl-save-btn');
+
+        $('#acl-modal-title').text(locale_messages.acl_edit_title);
+
+        $('#acl-target-type').select2('val', '' + type);
+        $('#acl-target').val(target);
+        $('#acl-topic').val(topic);
+        $('#acl-access-type').select2('val', '' + access);
+        $('#acl-authority').select2('val', '' + authority);
+
+        if (type === 4) {
+            $('#acl-target').attr('disabled', 'disabled');
+        } else {
+            $('#acl-target').removeAttr('disabled');
+        }
+
+        $saveBtn.attr('oper', 'update');
+
+        $('#modal-acl').modal('show');
+    });
+
+    $('#acl-table-container').delegate('.acl-delete-btn', 'click', function() {
+        selectedAclData = datatablesRowData(aclDataTable, this);
+
+        var target = selectedAclData[1];
+        var type = selectedAclData[2];
+        var topic = selectedAclData[3];
+        var access = selectedAclData[4];
+        var authority = selectedAclData[5];
+
+        $('#acl-delete-target').html(target);
+
+        if (type === 1) {
+            $('#acl-delete-type').html('<i class="fa fa-tag text-red"></i>' + locale_messages.acl_connect_user);
+        } else if (type === 2) {
+            $('#acl-delete-type').html('<i class="fa fa-tag text-yellow"></i>' + locale_messages.acl_ip_addr);
+        } else if (type === 3) {
+            $('#acl-delete-type').html('<i class="fa fa-tag text-aqua"></i>' + locale_messages.acl_client_id);
+        } else if (type === 4) {
+            $('#acl-delete-type').html('<i class="fa fa-tag text-green"></i>' + locale_messages.acl_all);
+        } else {
+            $('#acl-delete-type').html(type);
+        }
+
+        $('#acl-delete-topic').html(topic);
+
+        if (access === 1) {
+            $('#acl-delete-access').html('<i class="fa fa-feed text-red"></i>' + locale_messages.acl_sub);
+        } else if (access === 2) {
+            $('#acl-delete-access').html('<i class="fa fa-feed text-yellow"></i>' + locale_messages.acl_pub);
+        } else if (access === 3) {
+            $('#acl-delete-access').html('<i class="fa fa-feed text-aqua"></i>' + locale_messages.acl_subpub);
+        } else {
+            $('#acl-delete-access').html(access);
+        }
+
+        if (authority === 0) {
+            $('#acl-delete-authority').removeClass('acl-allow');
+            $('#acl-delete-authority').addClass('acl-deny');
+            $('#acl-delete-authority').html('<i class="fa fa-times-circle" aria-hidden="true"></i>' + locale_messages.acl_deny);
+        } else if (authority === 1) {
+            $('#acl-delete-authority').removeClass('acl-deny');
+            $('#acl-delete-authority').addClass('acl-allow');
+            $('#acl-delete-authority').html('<i class="fa fa-check-circle" aria-hidden="true"></i>' + locale_messages.acl_allow).addClass('acl-allow');
+        } else {
+            $('#acl-delete-authority').removeClass('acl-deny');
+            $('#acl-delete-authority').removeClass('acl-allow');
+            $('#acl-delete-authority').html(authority);
+        }
+
+        initializeModal('#modal-delete-acl', '#delete-acl-conf-btn');
+
+        $('#modal-delete-acl').modal('show');
+    });
+
+    $('#delete-acl-conf-btn').click(function() {
+        disableConfirm('#delete-acl-conf-btn');
+
+        var params = {
+            seq: selectedAclData[0]
+        };
+
+        $.ajax({
+            url: '/sys/acl/delete',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(params),
+            success: function(res) {
+                if (res && res.code === 1 && res.result === 1) {
+                    // hide modal
+                    $('#modal-delete-acl').modal('hide');
+                    // reload table
+                    aclDataTable.ajax.reload();
+                    // show succeeded message
+                    alertMessage(locale_messages.common_alert_title, locale_messages.user_delete_succeeded);
+
+                    return false;
+                }
+
+                // hide modal
+                $('#modal-delete-acl').modal('hide');
+                // show failed message
+                alertMessage(locale_messages.common_alert_title, locale_messages.acl_delete_failed, true);
+            },
+            error: function(xhr, status, error) {
+                // hide modal
+                $('#modal-delete-acl').modal('hide');
+                // show system exception message
+                alertSystemException();
+            }
+        });
+    });
+
+    initAclTable();
+
+    queryAclDataTable();
+</script>

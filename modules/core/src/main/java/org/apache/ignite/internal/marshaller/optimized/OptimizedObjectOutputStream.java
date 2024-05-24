@@ -35,9 +35,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.LinkedBlockingQueue;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.GridHandleTable;
@@ -450,6 +455,34 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
                 writeObject0(e.getValue());
         }
     }
+    
+    @SuppressWarnings("TypeMayBeWeakened")
+    void writeConcurrentMap(Map<?, ?> map, boolean set)
+        throws IOException {
+        int size = map.size();
+        
+        writeUTF(map.getClass().getName());
+        writeInt(size);
+        for (Map.Entry<?, ?> e : map.entrySet()) {
+            writeObject0(e.getKey());
+
+            if (!set)
+                writeObject0(e.getValue());
+        }
+    }
+    
+    @SuppressWarnings("TypeMayBeWeakened")
+    void writeConcurrentQueue(BlockingQueue<?> list, boolean set)
+        throws IOException {
+        int size = list.size();
+        writeUTF(list.getClass().getName());
+        writeInt(size);
+        writeInt(list.remainingCapacity()+size);     
+
+        for (Object obj : list)
+            writeObject0(obj);
+    }
+    
 
     /**
      * Writes {@link LinkedHashSet}.

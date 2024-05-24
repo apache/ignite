@@ -66,9 +66,18 @@ public class IgfsMapReduceExample {
         else if (args.length == 1)
             System.out.println("Please provide regular expression.");
         else {
-            try (Ignite ignite = Ignition.start("config/example-igfs.xml")) {
+        	File file0 = new File("./config/example-igfs.xml");
+        	String pwd = file0.getCanonicalPath();
+        	String url = file0.toURL().toString();
+            try (Ignite ignite = Ignition.start(url)) {
                 System.out.println();
                 System.out.println(">>> IGFS map reduce example started.");
+                
+                ignite.active(true);     
+                
+                while(!ignite.cluster().active()){
+                	Thread.sleep(100);
+                }
 
                 // Prepare arguments.
                 String fileName = args[0];

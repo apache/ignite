@@ -1,0 +1,6 @@
+/.settings/
+/.vertx/
+/target/
+.DS_Store
+.classpath
+.project

@@ -1,0 +1,839 @@
+<!--
+ * Copyright 2019 Yang Wang
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+
+<style type="text/css">
+    .box-cover {
+        border-radius: 2px;
+        background: #232429;
+        border-top: 0px solid #d2d6de !important;
+        margin-top: 10px;
+    }
+    
+    .box-header-cover {
+        color: #929299;
+    }
+    
+    .box-header-cover h3 {
+        font-weight: 400;
+    }
+    
+    .ws-f-row {
+        margin-top: 10px;
+    }
+    
+    .ws-s-row {
+        margin-top: 15px;
+        padding-bottom: 10px;
+    }
+    
+    .ws-ctrl-col {
+        width: 12.5%;
+    }
+    
+    .ws-ctrl-col-2 {
+        width: 11%;
+    }
+    
+    .ws-ctrl-col-3 {
+        width: 26.5%;
+    }
+    
+    input.labelauty+label {
+        display: inline-table !important;
+        background-color: #232429;
+        color: #232429;
+        border: 1px solid #929299;
+    }
+    
+    input.labelauty:not(:checked):not([disabled])+label:hover {
+        background-color: #232429;
+        color: #232429;
+    }
+    
+    input.labelauty+label>span.labelauty-unchecked-image {
+        background-image: none !important;
+    }
+    
+    .connect-status-col {
+        padding-top: 6px;
+    }
+    
+    .status-disconn {
+        color: #dd4b39;
+    }
+    
+    .status-conn {
+        color: #00a65a;
+    }
+    
+    .ws-pub-row {
+        padding-bottom: 10px;
+    }
+    
+    .ws-pub-btn-col {
+        padding-top: 27px;
+    }
+    
+    #ws-pub-btn {
+        width: 34%;
+        display: inline-table;
+        margin-left: 15px;
+    }
+    
+    .msg-refresh a {
+        cursor: pointer;
+        color: #00c0ef !important;
+    }
+    
+    .msg-refresh>a:hover {
+        background-color: #1d1e24 !important;
+        color: #00acd6 !important;
+    }
+</style>
+
+<section class="content-header">
+    <div class="row">
+        <div class="col-md-12 col-sm-12 col-xs-12">
+            <h1 class="content-wrapper-title content-wrapper-title-cover" data-locale="menu_tool_websocket">
+            </h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12 col-sm-12 col-xs-12">
+            <div class="box box-default box-cover">
+                <div class="box-header with-border box-header-cover">
+                    <h3 class="box-title" data-locale="ws_conn_title"></h3>
+                </div>
+                <div class="box-body">
+                    <div class="row">
+                        <div class="col-md-4 col-sm-6 col-xs-12">
+                            <div class="form-group">
+                                <label for="ws-connect-host" data-locale="common_host"></label>
+                                <input type="text" class="form-control" id="ws-conn-host">
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6 col-xs-12">
+                            <div class="form-group">
+                                <label for="ws-connect-port" data-locale="common_port"></label>
+                                <input type="text" class="form-control" id="ws-conn-port">
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6 col-xs-12">
+                            <div class="form-group">
+                                <label for="ws-connect-path" data-locale="ws_conn_path"></label>
+                                <input type="text" class="form-control" id="ws-conn-path">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 col-sm-6 col-xs-12">
+                            <div class="form-group">
+                                <label for="ws-connect-clientid" data-locale="common_client_id"></label>
+                                <input type="text" class="form-control" id="ws-conn-clientid">
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6 col-xs-12">
+                            <div class="form-group">
+                                <label for="ws-connect-username" data-locale="common_username"></label>
+                                <input type="text" class="form-control" id="ws-conn-username">
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6 col-xs-12">
+                            <div class="form-group">
+                                <label for="ws-connect-password" data-locale="common_password"></label>
+                                <input type="password" class="form-control" id="ws-conn-password">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 col-sm-6 col-xs-12">
+                            <div class="form-group">
+                                <label for="ws-conn-heartbeat" data-locale="common_keep_alive"></label>
+                                <input type="text" class="form-control" id="ws-conn-heartbeat">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row ws-f-row">
+                        <div class="col-md-1 col-sm-1 col-xs-2 ws-ctrl-col">
+                            <input type="checkbox" id="ws-clean-session" checked>
+                            <span data-locale="common_clean_session"></span>
+                        </div>
+                        <div class="col-md-1 col-sm-1 col-xs-2 ws-ctrl-col">
+                            <input type="checkbox" id="ws-ssl">
+                            <span data-locale="ws_conn_ssl"></span>
+                        </div>
+                    </div>
+                    <div class="row ws-s-row">
+                        <div class="col-md-1 col-sm-1 col-xs-2 ws-ctrl-col-2">
+                            <button type="button" class="btn btn-block btn-info btn-sm" id="ws-conn-btn">
+                                <i class="fa fa-fw fa-check"></i>
+                                <span data-locale="ws_connect_btn"></span>
+                            </button>
+                        </div>
+                        <div class="col-md-1 col-sm-1 col-xs-2 ws-ctrl-col-2">
+                            <button type="button" class="btn btn-block btn-info btn-sm disabled" id="ws-disconn-btn">
+                                <i class="fa fa-fw fa-close"></i>
+                                <span data-locale="ws_disconnect_btn"></span>
+                            </button>
+                        </div>
+                        <div class="col-md-3 col-sm-6 col-xs-8 connect-status-col">
+                            <span data-locale="ws_conn_status"></span>
+                            <span class="status-disconn" id="ws-conn-status"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12 col-sm-12 col-xs-12">
+            <div class="box box-default box-cover">
+                <div class="box-header with-border box-header-cover">
+                    <h3 class="box-title" data-locale="ws_sub_title"></h3>
+                </div>
+                <div class="box-body">
+                    <div class="row">
+                        <div class="col-md-5 col-sm-5 col-xs-12">
+                            <div class="row">
+                                <div class="col-md-12 col-sm-12 col-xs-12">
+                                    <div class="form-group">
+                                        <label for="ws-sub-topic" data-locale="common_topic"></label>
+                                        <input type="text" class="form-control" id="ws-sub-topic">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12 col-sm-12 col-xs-12">
+                                    <div class="form-group">
+                                        <label for="ws-sub-qos" data-locale="common_qos"></label>
+                                        <select class="select2" id="ws-sub-qos">
+                                            <option value="0" selected="selected">0</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row ws-f-row">
+                                <div class="col-md-4 col-sm-4 col-xs-8 ws-ctrl-col-3">
+                                    <button type="button" class="btn btn-block btn-info btn-sm disabled" id="ws-sub-btn">
+                                        <i class="fa fa-fw fa-check"></i>
+                                        <span data-locale="ws_subscribe_btn"></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-7 col-sm-7 col-xs-12">
+                            <div class="row">
+                                <div class="col-md-12 col-sm-12 col-xs-12">
+                                    <span data-locale="ws_sub_list"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12 col-sm-12 col-xs-12 table-cols">
+                                    <table class="table table-bordered table-striped table-hover" id="ws-sub-table">
+                                        <thead>
+                                            <tr>
+                                                <th data-locale="common_topic"></th>
+                                                <th data-locale="common_qos"></th>
+                                                <th data-locale="ws_sub_time"></th>
+                                                <th data-locale="common_oper"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row last-info-row">
+        <div class="col-md-12 col-sm-12 col-xs-12">
+            <div class="box box-default box-cover">
+                <div class="box-header with-border box-header-cover">
+                    <h3 class="box-title" data-locale="ws_msg_title"></h3>
+                </div>
+                <div class="box-body">
+                    <div class="row ws-pub-row">
+                        <div class="col-md-3 col-sm-6 col-xs-12">
+                            <div class="form-group">
+                                <label for="ws-pub-topic" data-locale="common_topic"></label>
+                                <input type="text" class="form-control" id="ws-pub-topic">
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 col-xs-12">
+                            <div class="form-group">
+                                <label for="ws-pub-msg" data-locale="common_message"></label>
+                                <input type="text" class="form-control" id="ws-pub-msg">
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 col-xs-12">
+                            <div class="form-group">
+                                <label for="ws-pub-qos" data-locale="common_qos"></label>
+                                <select class="select2" id="ws-pub-qos">
+                                    <option value="0" selected="selected">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 col-xs-12 ws-pub-btn-col">
+                            <input type="checkbox" id="ws-msg-retain">
+                            <span data-locale="ws_msg_retained"></span>
+                            <button type="button" class="btn btn-block btn-info btn-sm disabled" id="ws-pub-btn">
+                                <i class="fa fa-fw fa-check"></i>
+                                <span data-locale="ws_send_btn"></span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 col-sm-12 col-xs-12">
+                            <div class="row">
+                                <div class="col-md-12 col-sm-12 col-xs-12">
+                                    <span data-locale="ws_msg_pub_list"></span>
+                                    <span class="msg-refresh">
+                                        <a id="ws-pubmsg-refresh">
+                                            <i class="fa fa-fw fa-refresh"></i>
+                                        </a>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12 col-sm-12 col-xs-12 table-cols">
+                                    <table class="table table-bordered table-striped table-hover" id="ws-pubmsg-table">
+                                        <thead>
+                                            <tr>
+                                                <th data-locale="common_message"></th>
+                                                <th data-locale="common_topic"></th>
+                                                <th data-locale="common_qos"></th>
+                                                <th data-locale="ws_msg_time"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-sm-12 col-xs-12">
+                            <div class="row">
+                                <div class="col-md-12 col-sm-12 col-xs-12">
+                                    <span data-locale="ws_msg_sub_list"></span>
+                                    <span class="msg-refresh">
+                                        <a id="ws-submsg-refresh">
+                                            <i class="fa fa-fw fa-refresh"></i>
+                                        </a>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12 col-sm-12 col-xs-12 table-cols">
+                                    <table class="table table-bordered table-striped table-hover" id="ws-submsg-table">
+                                        <thead>
+                                            <tr>
+                                                <th data-locale="common_message"></th>
+                                                <th data-locale="common_topic"></th>
+                                                <th data-locale="common_qos"></th>
+                                                <th data-locale="ws_msg_time"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+</section>
+
+<script type="text/javascript">
+    var pahoMqttClient = null;
+    var globalCleanSession = false;
+    var globalSubscribes = [];
+    var globalPubMessages = [];
+    var globalSubMessages = [];
+
+    var subTableCols = [{
+        "sWidth": "45%"
+    }, {
+        "sWidth": "20%"
+    }, {
+        "sWidth": "25%"
+    }, {
+        "sWidth": "10%"
+    }];
+
+    var subTableColDefs = [{
+        'targets': 0,
+        'data': 'topic',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 1,
+        'data': 'qos',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 2,
+        'data': 'time',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 3,
+        'data': 'topic',
+        'render': function(data, type, full) {
+            var content = [];
+            content.push('<button type="button" class="btn btn-info btn-xs ws-unsub-btn" topic="');
+            content.push(data);
+            content.push('"><i class="fa fa-fw fa-close"></i></button>');
+            return content.join('');
+        }
+    }];
+
+    var pubMessageCols = [{
+        "sWidth": "30%"
+    }, {
+        "sWidth": "30%"
+    }, {
+        "sWidth": "13%"
+    }, {
+        "sWidth": "27%"
+    }];
+
+    var pubMessageColDefs = [{
+        'targets': 0,
+        'data': 'payload',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 1,
+        'data': 'topic',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 2,
+        'data': 'qos',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 3,
+        'data': 'time',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }];
+
+    var subMessageCols = [{
+        "sWidth": "30%"
+    }, {
+        "sWidth": "30%"
+    }, {
+        "sWidth": "13%"
+    }, {
+        "sWidth": "27%"
+    }];
+
+    var subMessageColDefs = [{
+        'targets': 0,
+        'data': 'payload',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 1,
+        'data': 'topic',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 2,
+        'data': 'qos',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 3,
+        'data': 'time',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }];
+
+    function subDataTable() {
+        $('#ws-sub-table').DataTable({
+            'destroy': true,
+            'language': datatablesLanguage(),
+            'autoWidth': true,
+            'searching': false,
+            'lengthChange': false,
+            'ordering': false,
+            'info': false,
+            'paging': false,
+            'processing': false,
+            'serverSide': false,
+            'aoColumns': subTableCols,
+            'columnDefs': subTableColDefs,
+            data: globalSubscribes
+        });
+    }
+
+    function pubMsgDataTalbe() {
+        $('#ws-pubmsg-table').DataTable({
+            'destroy': true,
+            'language': datatablesLanguage(),
+            'autoWidth': true,
+            'searching': false,
+            'lengthChange': false,
+            'ordering': false,
+            'info': false,
+            'paging': false,
+            'processing': false,
+            'serverSide': false,
+            'aoColumns': pubMessageCols,
+            'columnDefs': pubMessageColDefs,
+            data: globalPubMessages
+        });
+    }
+
+    function subMsgDataTable() {
+        $('#ws-submsg-table').DataTable({
+            'destroy': true,
+            'language': datatablesLanguage(),
+            'autoWidth': true,
+            'searching': false,
+            'lengthChange': false,
+            'ordering': false,
+            'info': false,
+            'paging': false,
+            'processing': false,
+            'serverSide': false,
+            'aoColumns': subMessageCols,
+            'columnDefs': subMessageColDefs,
+            data: globalSubMessages
+        });
+    }
+
+    function initWsPage() {
+        $('#ws-conn-host').val('127.0.0.1');
+        $('#ws-conn-port').val('8080');
+        $('#ws-conn-path').val('/mqtt');
+        $('#ws-conn-clientid').val('paho' + new Date().getTime());
+        $('#ws-conn-heartbeat').val('60');
+        $('#ws-sub-topic').val('/stuart/#');
+        $('#ws-pub-topic').val('/stuart/hello');
+        $('#ws-pub-msg').val('{"test":"world"}');
+
+        $('#ws-clean-session').labelauty({
+            label: false
+        });
+        $('#ws-ssl').labelauty({
+            label: false
+        });
+        $('#ws-msg-retain').labelauty({
+            label: false
+        });
+
+        $('#ws-sub-qos').select2({
+            minimumResultsForSearch: -1,
+            width: '100%'
+        });
+        $('#ws-pub-qos').select2({
+            minimumResultsForSearch: -1,
+            width: '100%'
+        });
+
+        $('#ws-conn-status').removeClass('status-conn');
+        $('#ws-conn-status').addClass('status-disconn');
+        $('#ws-conn-status').text(locale_messages.ws_conn_status_disconnected);
+    }
+
+    function init4Connected() {
+        $('#ws-conn-btn').addClass('disabled');
+        $('#ws-conn-btn i').removeClass('fa-spinner fa-pulse');
+        $('#ws-conn-btn i').addClass('fa-check');
+
+        $('#ws-disconn-btn').removeClass('disabled');
+
+        $('#ws-sub-btn').removeClass('disabled');
+        $('#ws-sub-btn i').removeClass('fa-spinner fa-pulse');
+        $('#ws-sub-btn i').addClass('fa-check');
+
+        $('#ws-pub-btn').removeClass('disabled');
+        $('#ws-pub-btn i').removeClass('fa-spinner fa-pulse');
+        $('#ws-pub-btn i').addClass('fa-check');
+
+        $('#ws-conn-status').removeClass('status-disconn');
+        $('#ws-conn-status').addClass('status-conn');
+        $('#ws-conn-status').text(locale_messages.ws_conn_status_connected);
+    }
+
+    function init4Disconnected() {
+        $('#ws-conn-btn').removeClass('disabled');
+        $('#ws-conn-btn i').removeClass('fa-spinner fa-pulse');
+        $('#ws-conn-btn i').addClass('fa-check');
+
+        $('#ws-disconn-btn').addClass('disabled');
+
+        $('#ws-sub-btn').addClass('disabled');
+        $('#ws-sub-btn i').removeClass('fa-spinner fa-pulse');
+        $('#ws-sub-btn i').addClass('fa-check');
+
+        $('#ws-pub-btn').addClass('disabled');
+        $('#ws-pub-btn i').removeClass('fa-spinner fa-pulse');
+        $('#ws-pub-btn i').addClass('fa-check');
+
+        $('#ws-conn-status').removeClass('status-conn');
+        $('#ws-conn-status').addClass('status-disconn');
+        $('#ws-conn-status').text(locale_messages.ws_conn_status_disconnected);
+    }
+
+    function processing4Btn(selector) {
+        $(selector).addClass('disabled');
+        $(selector).find('i').removeClass('fa-check');
+        $(selector).find('i').addClass('fa-spinner fa-pulse');
+    }
+
+    function endProcessing4Btn(selector) {
+        $(selector).removeClass('disabled');
+        $(selector).find('i').removeClass('fa-spinner fa-pulse');
+        $(selector).find('i').addClass('fa-check');
+    }
+
+    function connect() {
+        processing4Btn('#ws-conn-btn');
+
+        var pahoMqttHost = $('#ws-conn-host').val();
+        var pahoMqttPort = $('#ws-conn-port').val();
+        var pahoMqttPath = $('#ws-conn-path').val();
+        var pahoMqttClientId = $('#ws-conn-clientid').val();
+        var pahoMqttUsername = $('#ws-conn-username').val();
+        var pahoMqttPassword = $('#ws-conn-password').val();
+        var pahoMqttKeepAlive = $('#ws-conn-heartbeat').val();
+        var pahoMqttCleanSession = $('#ws-clean-session').is(':checked');
+        var pahoMqttSsl = $('#ws-ssl').is(':checked');
+        var connectOptions = {
+            timeout: Number('10'),
+            userName: pahoMqttUsername,
+            password: pahoMqttPassword,
+            keepAliveInterval: Number(pahoMqttKeepAlive),
+            cleanSession: pahoMqttCleanSession,
+            useSSL: pahoMqttSsl,
+            onSuccess: function(response) {
+                globalCleanSession = pahoMqttCleanSession;
+
+                init4Connected();
+                showNotify(locale_messages.ws_notify_connect_succeed, 'success');
+            },
+            onFailure: function(response) {
+                init4Disconnected();
+                showNotify(response.errorMessage, 'error');
+            }
+        };
+
+        pahoMqttClient = new Paho.MQTT.Client(pahoMqttHost, Number(pahoMqttPort), pahoMqttPath, pahoMqttClientId);
+        pahoMqttClient.onConnectionLost = function(response) {
+            init4Disconnected();
+        };
+        pahoMqttClient.onMessageDelivered = function(message) {
+            var pubItem = {
+                payload: message._getPayloadString(),
+                topic: message._getDestinationName(),
+                qos: message._getQos(),
+                time: getSmpFormatNowDate(true)
+            };
+            globalPubMessages.push(pubItem);
+
+            pubMsgDataTalbe();
+            showNotify(locale_messages.ws_notify_send_succeed, 'success');
+        };
+        pahoMqttClient.onMessageArrived = function(message) {
+            var subItem = {
+                payload: message._getPayloadString(),
+                topic: message._getDestinationName(),
+                qos: message._getQos(),
+                time: getSmpFormatNowDate(true)
+            };
+            globalSubMessages.push(subItem);
+
+            subMsgDataTable();
+        }
+        pahoMqttClient.connect(connectOptions);
+    }
+
+    function disconnect() {
+        if (globalCleanSession) {
+            globalSubscribes = [];
+            subDataTable();
+        }
+
+        if (pahoMqttClient) {
+            pahoMqttClient.disconnect();
+            pahoMqttClient = null;
+        }
+
+        init4Disconnected();
+    }
+
+    function subscribe() {
+        processing4Btn('#ws-sub-btn');
+
+        var pahoMqttTopic = $('#ws-sub-topic').val();
+        var pahoMqttQos = $('#ws-sub-qos').val();
+
+        if (pahoMqttClient) {
+            pahoMqttClient.subscribe(pahoMqttTopic, {
+                qos: Number(pahoMqttQos),
+                timeout: Number('10'),
+                onSuccess: function(response) {
+                    var item = {
+                        topic: pahoMqttTopic,
+                        qos: pahoMqttQos,
+                        time: getSmpFormatNowDate(true)
+                    };
+
+                    var hasSameTopic = false;
+                    if (!globalSubscribes) {
+                        globalSubscribes = [];
+                    }
+                    for (var subIndex = 0; subIndex < globalSubscribes.length; ++subIndex) {
+                        var oneSub = globalSubscribes[subIndex];
+                        if (item.topic == oneSub.topic) {
+                            oneSub.qos = item.qos;
+                            oneSub.time = item.time;
+                            hasSameTopic = true;
+                            break;
+                        }
+                    }
+                    if (!hasSameTopic) {
+                        globalSubscribes.push(item);
+                    }
+
+                    subDataTable();
+                    endProcessing4Btn('#ws-sub-btn');
+                    showNotify(locale_messages.ws_notify_sub_succeed, 'success');
+                },
+                onFailure: function(response) {
+                    endProcessing4Btn('#ws-sub-btn');
+                    showNotify(response.errorMessage, 'error');
+                }
+            });
+        }
+    }
+
+    function unsubscribe(btn) {
+        processing4Btn(btn);
+
+        var pahoMqttUnsubTopic = $(btn).attr('topic');
+
+        if (pahoMqttClient) {
+            pahoMqttClient.unsubscribe(pahoMqttUnsubTopic, {
+                timeout: Number('10'),
+                onSuccess: function(response) {
+                    var newGlobalSubscribes = [];
+                    if (!globalSubscribes) {
+                        globalSubscribes = [];
+                    }
+                    for (var subIndex = 0; subIndex < globalSubscribes.length; ++subIndex) {
+                        var oneSub = globalSubscribes[subIndex];
+                        if (pahoMqttUnsubTopic != oneSub.topic) {
+                            newGlobalSubscribes.push(oneSub);
+                        }
+                    }
+                    globalSubscribes = newGlobalSubscribes;
+
+                    subDataTable();
+                    showNotify(locale_messages.ws_notify_unsub_succeed, 'success');
+                },
+                onFailure: function(response) {
+                    endProcessing4Btn(btn);
+                    showNotify(response.errorMessage, 'error');
+                }
+            });
+        }
+    }
+
+    function send() {
+        processing4Btn('#ws-pub-btn');
+
+        var pahoMqttSendTopic = $('#ws-pub-topic').val();
+        var pahoMqttSendMessage = $('#ws-pub-msg').val();
+        var pahoMqttSendQos = $('#ws-pub-qos').val();
+        var pahoMqttSendRetained = $('#ws-msg-retain').is(':checked');
+
+        if (pahoMqttClient) {
+            pahoMqttClient.send(pahoMqttSendTopic, pahoMqttSendMessage, Number(pahoMqttSendQos), pahoMqttSendRetained);
+        }
+
+        endProcessing4Btn('#ws-pub-btn');
+    }
+
+    $('#ws-conn-btn').click(function() {
+        connect();
+        return false;
+    });
+
+    $('#ws-disconn-btn').click(function() {
+        disconnect();
+        return false;
+    });
+
+    $('#ws-sub-btn').click(function() {
+        subscribe();
+        return false;
+    });
+
+    $('#ws-sub-table').delegate('.ws-unsub-btn', 'click', function() {
+        unsubscribe(this);
+        return false;
+    });
+
+    $('#ws-pub-btn').click(function() {
+        send();
+        return false;
+    });
+
+    $('#ws-pubmsg-refresh').click(function() {
+        globalPubMessages = [];
+        pubMsgDataTalbe();
+        return false;
+    });
+
+    $('#ws-submsg-refresh').click(function() {
+        globalSubMessages = [];
+        subMsgDataTable();
+        return false;
+    });
+
+    initWsPage();
+    subDataTable();
+    pubMsgDataTalbe();
+    subMsgDataTable();
+</script>

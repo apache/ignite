@@ -19,7 +19,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
 import com.mongodb.MongoWriteException;
+import com.mongodb.ReadConcern;
 import com.mongodb.ServerAddress;
+import com.mongodb.TransactionOptions;
+import com.mongodb.WriteConcern;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
@@ -89,7 +92,8 @@ public class TransactionTest {
         
         ClientSession session = client.startSession();
         
-        collection = client.getDatabase(dbname).getCollection("test2");
+        collection = client.getDatabase(dbname).getCollection("test");
+        collection.createIndex(json("text: 'text'"), new IndexOptions().unique(false).sparse(true));
         collection.insertOne(session,json("_id: 0, text: 'init'"));
         
         BsonDocument id = session.getServerSession().getIdentifier();
@@ -103,7 +107,7 @@ public class TransactionTest {
         	return 1;
         });
         
-        session.startTransaction();
+        session.startTransaction(TransactionOptions.builder().readConcern(ReadConcern.SNAPSHOT).writeConcern(WriteConcern.JOURNALED).build());
         
         collection.insertOne(session,json("_id: 1, text: 'abc'"));
         collection.insertOne(session,json("_id: 2, text: 'def'"));

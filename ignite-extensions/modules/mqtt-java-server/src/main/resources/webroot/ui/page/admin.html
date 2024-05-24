@@ -1,0 +1,551 @@
+<!--
+ * Copyright 2019 Yang Wang
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+
+<style type="text/css">
+    .btn-col-width {
+        width: 25%;
+    }
+    
+    .admin-delete-btn {
+        margin-left: 5px;
+    }
+    
+    .edit-not-show {
+        display: none;
+    }
+</style>
+
+<section class="content-header">
+    <div class="row">
+        <div class="col-md-6 col-sm-6 col-xs-12">
+            <h1 class="content-wrapper-title content-wrapper-title-cover" data-locale="menu_system_admin">
+            </h1>
+        </div>
+        <div class="col-md-6 col-sm-6 col-xs-12 add-col section-btn-col btn-col-width">
+            <div class="input-group input-group-sm">
+                <input type="text" class="form-control" placeholder="" data-locale="admin_account" id="query-admin-account">
+                <span class="input-group-btn">
+                    <button type="button" class="btn btn-info btn-flat" id="query-admin">
+                        <i class="fa fa-search"></i>
+                        <font data-locale="common_search_btn"></font>
+                    </button>
+                    <button type="button" class="btn btn-info btn-sm" id="add-admin">
+                        <i class="fa fa-plus"></i>
+                        <font data-locale="common_add_btn"></font>
+                    </button>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row info-row info-row-cover last-info-row">
+        <div class="col-md-12 col-sm-12 col-xs-12 table-cols">
+            <div class="box-body table-box-body">
+                <table class="table table-bordered table-striped table-hover" id="admin-info-table">
+                    <thead>
+                        <tr>
+                            <th data-locale="admin_account"></th>
+                            <th data-locale="admin_desc"></th>
+                            <th data-locale="common_oper"></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-add-admin">
+        <div class="modal-dialog">
+            <div class="modal-content modal-content-cover">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" data-locale="admin_add_title"></h4>
+                </div>
+                <div class="modal-body">
+                    <form role="form" id="add-admin-form">
+                        <div class="box-body box-body-cover">
+                            <div class="form-group">
+                                <label for="add-admin-account" data-locale="admin_account"></label>
+                                <input type="text" class="form-control" id="add-admin-account" name="add-admin-account">
+                                <span class="help-block" id="add-admin-account-help"></span>
+                            </div>
+                        </div>
+                        <div class="box-body box-body-cover">
+                            <div class="form-group">
+                                <label for="add-admin-desc" data-locale="admin_desc"></label>
+                                <input type="text" class="form-control" id="add-admin-desc" name="add-admin-desc">
+                                <span class="help-block" id="add-admin-desc-help"></span>
+                            </div>
+                        </div>
+                        <div class="box-body box-body-cover">
+                            <div class="form-group">
+                                <label for="add-admin-passwd" data-locale="admin_passwd"></label>
+                                <input type="password" class="form-control" id="add-admin-passwd" name="add-admin-passwd">
+                                <span class="help-block" id="add-admin-passwd-help"></span>
+                            </div>
+                        </div>
+                        <div class="box-body box-body-cover">
+                            <div class="form-group">
+                                <label for="add-admin-passwd-conf" data-locale="admin_passwd_conf"></label>
+                                <input type="password" class="form-control" id="add-admin-passwd-conf" name="add-admin-passwd-conf">
+                                <span class="help-block" id="add-admin-passwd-conf-help"></span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" data-locale="common_cancel_btn"></button>
+                    <button type="button" class="btn btn-info" data-locale="common_save_btn" id="add-admin-save-btn"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-edit-admin">
+        <div class="modal-dialog">
+            <div class="modal-content modal-content-cover">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" data-locale="admin_edit_title"></h4>
+                </div>
+                <div class="modal-body">
+                    <form role="form" id="edit-admin-form">
+                        <div class="box-body box-body-cover">
+                            <div class="form-group">
+                                <label for="edit-admin-account" data-locale="admin_account"></label>
+                                <input type="text" class="form-control" id="edit-admin-account" disabled="disabled">
+                                <span class="help-block" id="edit-admin-account-help"></span>
+                            </div>
+                        </div>
+                        <div class="box-body box-body-cover">
+                            <div class="form-group">
+                                <label for="edit-admin-desc" data-locale="admin_desc"></label>
+                                <input type="text" class="form-control" id="edit-admin-desc" name="edit-admin-desc">
+                                <span class="help-block" id="edit-admin-desc-help"></span>
+                            </div>
+                        </div>
+                        <div class="box-body box-body-cover">
+                            <div class="form-group">
+                                <label for="edit-admin-passwd-update" data-locale="admin_passwd_change"></label>
+                                <div class="switch">
+                                    <input type="checkbox" id="edit-admin-passwd-update" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="box-body box-body-cover edit-not-show">
+                            <div class="form-group">
+                                <label for="edit-admin-old-passwd" data-locale="admin_passwd_old"></label>
+                                <input type="password" class="form-control" id="edit-admin-old-passwd" name="edit-admin-old-passwd">
+                                <span class="help-block" id="edit-admin-old-passwd-help"></span>
+                            </div>
+                        </div>
+                        <div class="box-body box-body-cover edit-not-show">
+                            <div class="form-group">
+                                <label for="edit-admin-passwd" data-locale="admin_passwd_new"></label>
+                                <input type="password" class="form-control" id="edit-admin-passwd" name="edit-admin-passwd">
+                                <span class="help-block" id="edit-admin-passwd-help"></span>
+                            </div>
+                        </div>
+                        <div class="box-body box-body-cover edit-not-show">
+                            <div class="form-group">
+                                <label for="edit-admin-passwd-conf" data-locale="admin_passwd_new_conf"></label>
+                                <input type="password" class="form-control" id="edit-admin-passwd-conf" name="edit-admin-passwd-conf">
+                                <span class="help-block" id="edit-admin-passwd-conf-help"></span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" data-locale="common_cancel_btn"></button>
+                    <button type="button" class="btn btn-info" data-locale="common_save_btn" id="edit-admin-save-btn"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-delete-admin">
+        <div class="modal-dialog">
+            <div class="modal-content modal-content-cover">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" data-locale="admin_delete_title"></h4>
+                </div>
+                <div class="modal-body">
+                    <p>
+                        <i class="fa fa-fw fa-exclamation-triangle text-yellow"></i>
+                        <font data-locale="admin_delete_conf_text"></font>
+                        <span id="delete-show-account"></span>&nbsp;
+                        <font data-locale="common_question_mark"></font>
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" data-locale="common_cancel_btn"></button>
+                    <button type="button" class="btn btn-info" data-locale="common_confirm_btn" id="delete-admin-conf-btn"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script type="text/javascript">
+    var adminDataTable;
+    var queryAdminAccount = null;
+    var queryAdminPageNum = null;
+    var queryAdminDataLen = null;
+    var selectedAdminData;
+    var editAdminChangePasswd = false;
+
+    var queryAdminCols = [{
+        "sWidth": "38%"
+    }, {
+        "sWidth": "50%"
+    }, {
+        "sWidth": "12%"
+    }];
+
+    var queryAdminColDefs = [{
+        'targets': 0,
+        'data': 'account',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 1,
+        'data': 'desc',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 2,
+        'data': 'account',
+        'render': function(data, type, full) {
+            var content = [];
+
+            content.push('<button type="button" class="btn btn-xs btn-info admin-edit-btn">');
+            content.push('<i class="fa fa-fw fa-edit"></i>');
+            content.push(locale_messages.common_edit_btn);
+            content.push('</button>');
+
+            if (data !== 'admin') {
+                content.push('<button type="button" class="btn btn-xs btn-info admin-delete-btn">');
+                content.push('<i class="fa fa-fw fa-trash"></i>');
+                content.push(locale_messages.common_delete_btn);
+                content.push('</button>');
+            }
+
+            return content.join('');
+        }
+    }];
+
+    var addAdminValidation = $('#add-admin-form').validate({
+        debug: false,
+        rules: addAdminRules(),
+        messages: addAdminMessages(),
+        errorPlacement: errorPlacement4Valid,
+        success: success4Valid
+    });
+
+    var editAdminValidation = $('#edit-admin-form').validate({
+        debug: false,
+        rules: editAdminRules(),
+        messages: editAdminMessages(),
+        errorPlacement: errorPlacement4Valid,
+        success: success4Valid
+    });
+
+    function queryAdminDataTable() {
+        adminDataTable = $('#admin-info-table').DataTable({
+            'destroy': true,
+            'language': datatablesLanguage(),
+            'pagingType': datatables_paging_type,
+            'pageLength': datatables_paging_len,
+            'autoWidth': true,
+            'searching': false,
+            'lengthChange': false,
+            'ordering': false,
+            'info': true,
+            'paging': true,
+            'processing': true,
+            'serverSide': true,
+            'aoColumns': queryAdminCols,
+            'columnDefs': queryAdminColDefs,
+            'ajax': function(data, callback, settings) {
+                var draw = data["draw"];
+                var start = data["start"];
+                var pageSize = data["length"];
+                var pageNum = start / pageSize + 1;
+
+                queryAdminPageNum = pageNum;
+
+                var params = {
+                    'account': queryAdminAccount,
+                    'pageNum': pageNum,
+                    'pageSize': pageSize
+                };
+
+                $.ajax({
+                    url: '/sys/admin/get',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(params),
+                    success: function(res) {
+                        queryAdminDataLen = 0;
+
+                        var drawData = datatables_no_data;
+
+                        if (res && res.code === 1) {
+                            var total = res.result.total;
+                            var items = res.result.items;
+
+                            if (total && items) {
+                                drawData = {
+                                    "draw": draw,
+                                    "recordsTotal": total,
+                                    "recordsFiltered": total,
+                                    "data": items
+                                };
+
+                                queryAdminDataLen = items.length;
+                            }
+                        }
+
+                        callback(drawData);
+                    },
+                    error: function(xhr, status, error) {
+                        callback(datatables_no_data);
+                    }
+                });
+            }
+        });
+    }
+
+    $('#edit-admin-passwd-update').bootstrapSwitch({
+        size: 'small',
+        animate: true,
+        onText: locale_messages.common_yes,
+        offText: locale_messages.common_no,
+        onColor: 'info',
+        onSwitchChange: function(event, state) {
+            if (state) {
+                editAdminChangePasswd = true;
+            } else {
+                editAdminChangePasswd = false;
+            }
+
+            setTimeout(function() {
+                if (state) {
+                    $('.edit-not-show').show();
+                } else {
+                    $('.edit-not-show').hide();
+                }
+            }, 150);
+        }
+    });
+
+    $('#query-admin').click(function() {
+        queryAdminAccount = $('#query-admin-account').val();
+
+        queryAdminDataTable();
+
+        return false;
+    });
+
+    $('#add-admin').click(function() {
+        var $modal = $('#modal-add-admin');
+
+        initializeModal('#modal-add-admin', '#add-admin-save-btn');
+
+        $modal.modal('show');
+    });
+
+    $('#add-admin-save-btn').click(function() {
+        disableConfirm('#add-admin-save-btn');
+
+        if (!addAdminValidation.form()) {
+            enableConfirm('#add-admin-save-btn');
+
+            return false;
+        }
+
+        var params = {
+            account: $('#add-admin-account').val(),
+            desc: $('#add-admin-desc').val(),
+            password: $('#add-admin-passwd').val()
+        };
+
+        $.ajax({
+            url: '/sys/admin/add',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(params),
+            success: function(res) {
+                if (res && res.code === 1) {
+                    if (res.result === 1) {
+                        // hide modal
+                        $('#modal-add-admin').modal('hide');
+                        // reload datatable
+                        datatablesReload(adminDataTable, queryAdminPageNum, queryAdminDataLen, false);
+                        // show succeeded message
+                        alertMessage(locale_messages.common_alert_title, locale_messages.admin_add_succeeded);
+
+                        return false;
+                    } else if (res.result === -1) {
+                        // show account existed help
+                        handleError4Valid(locale_messages.admin_existed_message, '#add-admin-account');
+                        // enable confirm button
+                        enableConfirm('#add-admin-save-btn');
+
+                        return false;
+                    }
+                }
+
+                // hide modal
+                $('#modal-add-admin').modal('hide');
+                // show failed message
+                alertMessage(locale_messages.common_alert_title, locale_messages.admin_add_failed, true);
+            },
+            error: function(xhr, status, error) {
+                // hide modal
+                $('#modal-add-admin').modal('hide');
+                // show system exception message
+                alertSystemException();
+            }
+        });
+    });
+
+    $('#admin-info-table').delegate('.admin-edit-btn', 'click', function() {
+        selectedAdminData = datatablesRowData(adminDataTable, this);
+
+        var $modal = $('#modal-edit-admin')
+
+        initializeModal('#modal-edit-admin', '#edit-admin-save-btn');
+
+        $('#edit-admin-passwd-update').bootstrapSwitch('state', false, false);
+
+        $('#edit-admin-account').val(selectedAdminData.account);
+        $('#edit-admin-desc').val(selectedAdminData.desc);
+
+        $modal.modal('show');
+    });
+
+    $('#edit-admin-save-btn').click(function() {
+        disableConfirm('#edit-admin-save-btn');
+
+        if (!editAdminValidation.form()) {
+            enableConfirm('#edit-admin-save-btn');
+
+            return false;
+        }
+
+        var params = {
+            account: selectedAdminData.account,
+            desc: $('#edit-admin-desc').val(),
+            oldPasswd: $('#edit-admin-old-passwd').val(),
+            newPasswd: $('#edit-admin-passwd').val()
+        };
+
+        $.ajax({
+            url: '/sys/admin/update',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(params),
+            success: function(res) {
+                if (res && res.code === 1) {
+                    if (res.result === 1) {
+                        // hide modal
+                        $('#modal-edit-admin').modal('hide');
+                        // reload datatable
+                        datatablesReload(adminDataTable, queryAdminPageNum, queryAdminDataLen, false);
+                        // show succeeded message
+                        alertMessage(locale_messages.common_alert_title, locale_messages.admin_edit_succeeded);
+
+                        return false;
+                    } else if (res.result === -99) {
+                        // show account existed help
+                        handleError4Valid(locale_messages.common_passwd_error, '#edit-admin-old-passwd');
+                        // enable confirm button
+                        enableConfirm('#edit-admin-save-btn');
+
+                        return false;
+                    }
+                }
+
+                // hide modal
+                $('#modal-edit-admin').modal('hide');
+                // show failed message
+                alertMessage(locale_messages.common_alert_title, locale_messages.admin_edit_failed, true);
+            },
+            error: function(xhr, status, error) {
+                // hide modal
+                $('#modal-edit-admin').modal('hide');
+                // show system exception message
+                alertSystemException();
+            }
+        });
+    });
+
+    $('#admin-info-table').delegate('.admin-delete-btn', 'click', function() {
+        selectedAdminData = datatablesRowData(adminDataTable, this);
+
+        initializeModal('#modal-delete-admin', '#delete-admin-conf-btn');
+
+        $('#delete-show-account').text(selectedAdminData.account);
+
+        $('#modal-delete-admin').modal('show');
+    });
+
+    $('#delete-admin-conf-btn').click(function() {
+        disableConfirm('#delete-admin-conf-btn');
+
+        var params = {
+            account: selectedAdminData.account
+        };
+
+        $.ajax({
+            url: '/sys/admin/delete',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(params),
+            success: function(res) {
+                if (res && res.code === 1 && res.result === 1) {
+                    // hide modal
+                    $('#modal-delete-admin').modal('hide');
+                    // reload datatable
+                    datatablesReload(adminDataTable, queryAdminPageNum, queryAdminDataLen, true);
+                    // show succeeded message
+                    alertMessage(locale_messages.common_alert_title, locale_messages.admin_delete_succeeded);
+                } else {
+                    // hide modal
+                    $('#modal-delete-admin').modal('hide');
+                    // show failed message
+                    alertMessage(locale_messages.common_alert_title, locale_messages.admin_delete_failed, true);
+                }
+            },
+            error: function(xhr, status, error) {
+                // hide modal
+                $('#modal-delete-admin').modal('hide');
+                // show system exception message
+                alertSystemException();
+            }
+        });
+    });
+
+    queryAdminDataTable();
+</script>

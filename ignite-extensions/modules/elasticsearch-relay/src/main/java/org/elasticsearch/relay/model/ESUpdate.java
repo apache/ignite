@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.elasticsearch.relay.ESRelay;
+import org.elasticsearch.relay.ResponseFormat;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -20,10 +21,15 @@ public class ESUpdate {
 	
 	private String format = "json";
 	
-	private String op = "cmd";
+	private ResponseFormat responseFormat = ResponseFormat.OPERATION;
 	
-	//index,type, op|id
-	private String[] fPath; 
+	private String op;
+	//PUT /{index}/_doc/{id}
+	private String indices; 
+	
+	private String action;
+	
+	private String docId; 
 
 	private Map<String, String> fParams;
 
@@ -32,13 +38,7 @@ public class ESUpdate {
 	private ArrayNode fAuthFilterOrArr;
 
 	private boolean fCancelled = false;
-
-	/**
-	 * Creates an empty query.
-	 */
-	public ESUpdate() {
-		this(null);
-	}
+	
 
 	/**
 	 * @param path
@@ -77,19 +77,48 @@ public class ESUpdate {
 	 *            query body
 	 */
 	public ESUpdate(String[] path, Map<String, String> params, ObjectNode body) {
-		fPath = path;
+		indices = path[0];
+		
+		if(path.length>=2) {
+			action = path[1];
+		}
+		
+		if(path.length>=3) {
+			docId = path[2];
+		}
 		fParams = params;
 		fBody = body;
 
 		fAuthFilterOrArr = new ArrayNode(ESRelay.jsonNodeFactory);
 	}
-
-	public String[] getQueryPath() {
-		return fPath;
+	
+	public ESUpdate(ESUpdate copy) {
+		indices = copy.indices;
+		action = copy.action;
+		docId = copy.docId;
+		op = copy.op;
+		
+		fBody = copy.fBody;
+		
+		fAuthFilterOrArr = new ArrayNode(ESRelay.jsonNodeFactory);
+		
+		this.setParams(copy.fParams);
 	}
 
-	public void setQueryPath(String[] path) {
-		fPath = path;
+	public String getIndices() {
+		return indices;
+	}
+
+	public void setIndices(String indices) {
+		this.indices = indices;
+	}
+
+	public String getAction() {
+		return action;
+	}
+
+	public String getDocId() {
+		return docId;
 	}
 
 	public Map<String, String> getParams() {
@@ -97,6 +126,10 @@ public class ESUpdate {
 	}
 
 	public void setParams(Map<String, String> params) {
+		String responseFormat = params.get("responseFormat");
+		if(responseFormat!=null) {
+			this.setResponseFormat(ResponseFormat.of(responseFormat));
+		}
 		fParams = params;
 	}
 
@@ -131,15 +164,29 @@ public class ESUpdate {
 	 */
 	public String getQueryUrl() {
 		StringBuffer urlBuff = new StringBuffer();
-
+		
 		// reconstruct request path
-		if (fPath != null) {
-			for (String frag : fPath) {
-				// skip empty elements
-				if (!frag.isEmpty()) {
-					urlBuff.append(frag);
-					urlBuff.append("/");
-				}
+		if (indices != null) {
+			// skip empty elements
+			if (!indices.isEmpty()) {
+				urlBuff.append("/");
+				urlBuff.append(indices);				
+			}
+		}
+		
+		if (action != null) {
+			// skip empty elements
+			if (!action.isEmpty()) {
+				urlBuff.append("/");
+				urlBuff.append(action);				
+			}
+		}
+		
+		if (docId != null) {
+			// skip empty elements
+			if (!docId.isEmpty()) {
+				urlBuff.append("/");
+				urlBuff.append(docId);				
 			}
 		}
 
@@ -172,6 +219,14 @@ public class ESUpdate {
 
 	public void setFormat(String format) {
 		this.format = format;
+	}
+	
+	public ResponseFormat getResponseFormat() {
+		return responseFormat;
+	}
+
+	public void setResponseFormat(ResponseFormat responseFormat) {
+		this.responseFormat = responseFormat;
 	}
 
 	public String getOp() {

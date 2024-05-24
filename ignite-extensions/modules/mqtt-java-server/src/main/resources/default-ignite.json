@@ -1,0 +1,19 @@
+{
+  "cacheConfiguration": [
+    {
+      "name": "__vertx.*",
+      "cacheMode": "REPLICATED",
+      "atomicityMode": "ATOMIC",
+      "writeSynchronizationMode": "FULL_SYNC"
+    }, {
+      "name": "*",
+      "cacheMode": "PARTITIONED",
+      "backups": 1,
+      "readFromBackup": false,
+      "atomicityMode": "ATOMIC",
+      "writeSynchronizationMode": "FULL_SYNC"
+    }
+  ],
+  "metricsLogFrequency": 0,
+  "shutdownOnSegmentation": true
+}

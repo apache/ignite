@@ -42,55 +42,34 @@ public class ESQueryClientIgniteHandler extends ESQueryHandler{
 	
 	public ESQueryClientIgniteHandler(ESRelayConfig config) throws Exception{
 		super(config);		
-		
-		igniteClient = new IgniteClient[2];
+		int size = config.getClusterSize();
+		igniteClient = new IgniteClient[size];
 		
 		//thin
-		String host = config.getElasticApiHost();	
-		int port =  config.getElasticApiPort();
-		if(host!=null && !host.isEmpty()){
-			
-			ClientConfiguration cfg = new ClientConfiguration().setAddresses(host+":"+port);	
-	        try {
-	        	IgniteClient igniteClient = Ignition.startClient(cfg);
-	        			
-	            System.out.println();
-	            System.out.println(">>> Thin client ignite started.");          
-	            this.igniteClient[0] = igniteClient;
-	        }
-	        catch (ClientException e) {
-	            System.err.println(e.getMessage());
-	            fLogger.log(Level.SEVERE, e.getMessage(), e);
-	        }
-	        catch (Exception e) {
-	            System.err.format("Unexpected failure: %s\n", e);
-	            fLogger.log(Level.SEVERE, e.getMessage(), e);
-	        }
-	        
-		}
-		
-		host = config.getEs2ElasticApiHost();	
-		port = config.getEs2ElasticApiPort();
-		if(host!=null && !host.isEmpty()){
-			
-			ClientConfiguration cfg = new ClientConfiguration().setAddresses(host+":"+port);	
-	        try {
-	        	IgniteClient igniteClient = Ignition.startClient(cfg);
-	        			
-	            System.out.println();
-	            System.out.println(">>> Thin client ignite started.");          
-	            this.igniteClient[1] = igniteClient;
-	        }
-	        catch (ClientException e) {
-	            System.err.println(e.getMessage());
-	            fLogger.log(Level.SEVERE, e.getMessage(), e);
-	        }
-	        catch (Exception e) {
-	            System.err.format("Unexpected failure: %s\n", e);
-	            fLogger.log(Level.SEVERE, e.getMessage(), e);
-	        }
-	        
-		}
+		for(int i=1;i<size+1;i++) {
+			String host = config.getElasticApiHost(i);	
+			int port =  config.getElasticApiPort(i);
+			if(host!=null && !host.isEmpty()){
+				
+				ClientConfiguration cfg = new ClientConfiguration().setAddresses(host+":"+port);	
+		        try {
+		        	IgniteClient igniteClient = Ignition.startClient(cfg);
+		        			
+		            System.out.println();
+		            System.out.println(">>> Thin client ignite started.");          
+		            this.igniteClient[i-1] = igniteClient;
+		        }
+		        catch (ClientException e) {
+		            System.err.println(e.getMessage());
+		            fLogger.log(Level.SEVERE, e.getMessage(), e);
+		        }
+		        catch (Exception e) {
+		            System.err.format("Unexpected failure: %s\n", e);
+		            fLogger.log(Level.SEVERE, e.getMessage(), e);
+		        }
+		        
+			}
+		}	
 		
 	}
 	

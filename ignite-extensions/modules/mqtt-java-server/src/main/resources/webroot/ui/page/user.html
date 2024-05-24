@@ -1,0 +1,549 @@
+<!--
+ * Copyright 2019 Yang Wang
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+
+<style type="text/css">
+    .btn-col-width {
+        width: 25%;
+    }
+    
+    .user-delete-btn {
+        margin-left: 5px;
+    }
+    
+    .edit-not-show {
+        display: none;
+    }
+</style>
+
+<section class="content-header">
+    <div class="row">
+        <div class="col-md-6 col-sm-6 col-xs-12">
+            <h1 class="content-wrapper-title content-wrapper-title-cover" data-locale="menu_management_user">
+            </h1>
+        </div>
+        <div class="col-md-6 col-sm-6 col-xs-12 section-btn-col btn-col-width">
+            <div class="input-group input-group-sm">
+                <input type="text" class="form-control" placeholder="" data-locale="user_username" id="query-conn-username">
+                <span class="input-group-btn">
+                    <button type="button" class="btn btn-info btn-flat" id="query-user">
+                        <i class="fa fa-search"></i>
+                        <font data-locale="common_search_btn"></font>
+                    </button>
+                    <button type="button" class="btn btn-info btn-sm" id="add-user">
+                        <i class="fa fa-plus"></i>
+                        <font data-locale="common_add_btn"></font>
+                    </button>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row info-row info-row-cover">
+        <div class="col-md-12 col-sm-12 col-xs-12 table-cols">
+            <div class="box-body table-box-body">
+                <table class="table table-bordered table-striped table-hover" id="user-info-table">
+                    <thead>
+                        <tr>
+                            <th data-locale="user_username"></th>
+                            <th data-locale="user_desc"></th>
+                            <th data-locale="common_oper"></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-add-user">
+        <div class="modal-dialog">
+            <div class="modal-content modal-content-cover">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" data-locale="user_add_title"></h4>
+                </div>
+                <div class="modal-body">
+                    <form role="form" id="add-user-form">
+                        <div class="box-body box-body-cover">
+                            <div class="form-group">
+                                <label for="add-conn-username" data-locale="user_username"></label>
+                                <input type="text" class="form-control" id="add-conn-username" name="add-conn-username">
+                                <span class="help-block" id="add-conn-username-help"></span>
+                            </div>
+                        </div>
+                        <div class="box-body box-body-cover">
+                            <div class="form-group">
+                                <label for="add-user-desc" data-locale="user_desc"></label>
+                                <input type="text" class="form-control" id="add-user-desc" name="add-user-desc">
+                                <span class="help-block" id="add-user-desc-help"></span>
+                            </div>
+                        </div>
+                        <div class="box-body box-body-cover">
+                            <div class="form-group">
+                                <label for="add-user-passwd" data-locale="user_passwd"></label>
+                                <input type="password" class="form-control" id="add-user-passwd" name="add-user-passwd">
+                                <span class="help-block" id="add-user-passwd-help"></span>
+                            </div>
+                        </div>
+                        <div class="box-body box-body-cover">
+                            <div class="form-group">
+                                <label for="add-user-passwd-conf" data-locale="user_passwd_conf"></label>
+                                <input type="password" class="form-control" id="add-user-passwd-conf" name="add-user-passwd-conf">
+                                <span class="help-block" id="add-user-passwd-conf-help"></span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" data-locale="common_cancel_btn"></button>
+                    <button type="button" class="btn btn-info" data-locale="common_save_btn" id="add-user-save-btn"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-edit-user">
+        <div class="modal-dialog">
+            <div class="modal-content modal-content-cover">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" data-locale="user_edit_title"></h4>
+                </div>
+                <div class="modal-body">
+                    <form role="form" id="edit-user-form">
+                        <div class="box-body box-body-cover">
+                            <div class="form-group">
+                                <label for="edit-conn-username" data-locale="user_username"></label>
+                                <input type="text" class="form-control" id="edit-conn-username" disabled="disabled">
+                                <span class="help-block" id="edit-conn-username-help"></span>
+                            </div>
+                        </div>
+                        <div class="box-body box-body-cover">
+                            <div class="form-group">
+                                <label for="edit-user-desc" data-locale="user_desc"></label>
+                                <input type="text" class="form-control" id="edit-user-desc" name="edit-user-desc">
+                                <span class="help-block" id="edit-user-desc-help"></span>
+                            </div>
+                        </div>
+                        <div class="box-body box-body-cover">
+                            <div class="form-group">
+                                <label for="edit-user-passwd-update" data-locale="user_passwd_change"></label>
+                                <div class="switch">
+                                    <input type="checkbox" id="edit-user-passwd-update" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="box-body box-body-cover edit-not-show">
+                            <div class="form-group">
+                                <label for="edit-user-admin-passwd" data-locale="user_admin_passwd"></label>
+                                <input type="password" class="form-control" id="edit-user-admin-passwd" name="edit-user-admin-passwd">
+                                <span class="help-block" id="edit-user-admin-passwd-help"></span>
+                            </div>
+                        </div>
+                        <div class="box-body box-body-cover edit-not-show">
+                            <div class="form-group">
+                                <label for="edit-user-passwd" data-locale="user_passwd_new"></label>
+                                <input type="password" class="form-control" id="edit-user-passwd" name="edit-user-passwd">
+                                <span class="help-block" id="edit-user-passwd-help"></span>
+                            </div>
+                        </div>
+                        <div class="box-body box-body-cover edit-not-show">
+                            <div class="form-group">
+                                <label for="edit-user-passwd-conf" data-locale="user_passwd_new_conf"></label>
+                                <input type="password" class="form-control" id="edit-user-passwd-conf" name="edit-user-passwd-conf">
+                                <span class="help-block" id="edit-user-passwd-conf-help"></span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" data-locale="common_cancel_btn"></button>
+                    <button type="button" class="btn btn-info" data-locale="common_save_btn" id="edit-user-save-btn"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-delete-user">
+        <div class="modal-dialog">
+            <div class="modal-content modal-content-cover">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" data-locale="user_delete_title"></h4>
+                </div>
+                <div class="modal-body">
+                    <p>
+                        <i class="fa fa-fw fa-exclamation-triangle text-yellow"></i>
+                        <font data-locale="user_delete_conf_text"></font>
+                        <span id="delete-show-user"></span>&nbsp;
+                        <font data-locale="common_question_mark"></font>
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" data-locale="common_cancel_btn"></button>
+                    <button type="button" class="btn btn-info" data-locale="common_confirm_btn" id="delete-user-conf-btn"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script type="text/javascript">
+    var userDataTable;
+    var queryConnUsername = null;
+    var queryUserPageNum = null;
+    var queryUserDataLen = null;
+    var selectedUserData;
+    var editUserChangePasswd = false;
+
+    var queryUserCols = [{
+        "sWidth": "38%"
+    }, {
+        "sWidth": "50%"
+    }, {
+        "sWidth": "12%"
+    }];
+
+    var queryUserColDefs = [{
+        'targets': 0,
+        'data': 'username',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 1,
+        'data': 'desc',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 2,
+        'data': 'username',
+        'render': function(data, type, full) {
+            var content = [];
+
+            content.push('<button type="button" class="btn btn-xs btn-info user-edit-btn">');
+            content.push('<i class="fa fa-fw fa-edit"></i>');
+            content.push(locale_messages.common_edit_btn);
+            content.push('</button>');
+
+            content.push('<button type="button" class="btn btn-xs btn-info user-delete-btn">');
+            content.push('<i class="fa fa-fw fa-trash"></i>');
+            content.push(locale_messages.common_delete_btn);
+            content.push('</button>');
+
+            return content.join('');
+        }
+    }];
+
+    var addUserValidation = $('#add-user-form').validate({
+        debug: false,
+        rules: addUserRules(),
+        messages: addUserMessages(),
+        errorPlacement: errorPlacement4Valid,
+        success: success4Valid
+    });
+
+    var editUserValidation = $('#edit-user-form').validate({
+        debug: false,
+        rules: editUserRules(),
+        messages: editUserMessages(),
+        errorPlacement: errorPlacement4Valid,
+        success: success4Valid
+    });
+
+    function queryUserDataTable() {
+        userDataTable = $('#user-info-table').DataTable({
+            'destroy': true,
+            'language': datatablesLanguage(),
+            'pagingType': datatables_paging_type,
+            'pageLength': datatables_paging_len,
+            'autoWidth': true,
+            'searching': false,
+            'lengthChange': false,
+            'ordering': false,
+            'info': true,
+            'paging': true,
+            'processing': true,
+            'serverSide': true,
+            'aoColumns': queryUserCols,
+            'columnDefs': queryUserColDefs,
+            'ajax': function(data, callback, settings) {
+                var draw = data["draw"];
+                var start = data["start"];
+                var pageSize = data["length"];
+                var pageNum = start / pageSize + 1;
+
+                queryUserPageNum = pageNum;
+
+                var params = {
+                    'username': queryConnUsername,
+                    'pageNum': pageNum,
+                    'pageSize': pageSize
+                };
+
+                $.ajax({
+                    url: '/sys/user/get',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(params),
+                    success: function(res) {
+                        queryUserDataLen = 0;
+
+                        var drawData = datatables_no_data;
+
+                        if (res && res.code === 1) {
+                            var total = res.result.total;
+                            var items = res.result.items;
+
+                            if (total && items) {
+                                drawData = {
+                                    "draw": draw,
+                                    "recordsTotal": total,
+                                    "recordsFiltered": total,
+                                    "data": items
+                                };
+
+                                queryUserDataLen = items.length;
+                            }
+                        }
+
+                        callback(drawData);
+                    },
+                    error: function(xhr, status, error) {
+                        callback(datatables_no_data);
+                    }
+                });
+            }
+        });
+    }
+
+    $('#edit-user-passwd-update').bootstrapSwitch({
+        size: 'small',
+        animate: true,
+        onText: locale_messages.common_yes,
+        offText: locale_messages.common_no,
+        onColor: 'info',
+        onSwitchChange: function(event, state) {
+            if (state) {
+                editUserChangePasswd = true;
+            } else {
+                editUserChangePasswd = false;
+            }
+
+            setTimeout(function() {
+                if (state) {
+                    $('.edit-not-show').show();
+                } else {
+                    $('.edit-not-show').hide();
+                }
+            }, 150);
+        }
+    });
+
+    $('#query-user').click(function() {
+        queryConnUsername = $('#query-conn-username').val();
+
+        queryUserDataTable();
+
+        return false;
+    });
+
+    $('#add-user').click(function() {
+        var $modal = $('#modal-add-user');
+
+        initializeModal('#modal-add-user', '#add-user-save-btn');
+
+        $modal.modal('show');
+    });
+
+    $('#add-user-save-btn').click(function() {
+        disableConfirm('#add-user-save-btn');
+
+        if (!addUserValidation.form()) {
+            enableConfirm('#add-user-save-btn');
+
+            return false;
+        }
+
+        var params = {
+            username: $('#add-conn-username').val(),
+            desc: $('#add-user-desc').val(),
+            password: $('#add-user-passwd').val()
+        };
+
+        $.ajax({
+            url: '/sys/user/add',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(params),
+            success: function(res) {
+                if (res && res.code === 1) {
+                    if (res.result === 1) {
+                        // hide modal
+                        $('#modal-add-user').modal('hide');
+                        // reload datatable
+                        datatablesReload(userDataTable, queryUserPageNum, queryUserDataLen, false);
+                        // show succeeded message
+                        alertMessage(locale_messages.common_alert_title, locale_messages.user_add_succeeded);
+
+                        return false;
+                    } else if (res.result === -1) {
+                        // show account existed help
+                        handleError4Valid(locale_messages.user_existed_message, '#add-conn-username');
+                        // enable confirm button
+                        enableConfirm('#add-user-save-btn');
+
+                        return false;
+                    }
+                }
+
+                // hide modal
+                $('#modal-add-user').modal('hide');
+                // show failed message
+                alertMessage(locale_messages.common_alert_title, locale_messages.user_add_failed, true);
+            },
+            error: function(xhr, status, error) {
+                // hide modal
+                $('#modal-add-user').modal('hide');
+                // show system exception message
+                alertSystemException();
+            }
+        });
+    });
+
+    $('#user-info-table').delegate('.user-edit-btn', 'click', function() {
+        selectedUserData = datatablesRowData(userDataTable, this);
+
+        var $modal = $('#modal-edit-user');
+
+        initializeModal('#modal-edit-user', '#edit-user-save-btn');
+
+        $('#edit-user-passwd-update').bootstrapSwitch('state', false, false);
+
+        $('#edit-conn-username').val(selectedUserData.username);
+        $('#edit-user-desc').val(selectedUserData.desc);
+
+        $modal.modal('show');
+    });
+
+    $('#edit-user-save-btn').click(function() {
+        disableConfirm('#edit-user-save-btn');
+
+        if (!editUserValidation.form()) {
+            enableConfirm('#edit-user-save-btn');
+
+            return false;
+        }
+
+        var params = {
+            username: selectedUserData.username,
+            desc: $('#edit-user-desc').val(),
+            adminPasswd: $('#edit-user-admin-passwd').val(),
+            userPasswd: $('#edit-user-passwd').val()
+        };
+
+        $.ajax({
+            url: '/sys/user/update',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(params),
+            success: function(res) {
+                if (res && res.code === 1) {
+                    if (res.result === 1) {
+                        // hide modal
+                        $('#modal-edit-user').modal('hide');
+                        // reload datatable
+                        datatablesReload(userDataTable, queryUserPageNum, queryUserDataLen, false);
+                        // show succeeded message
+                        alertMessage(locale_messages.common_alert_title, locale_messages.user_edit_succeeded);
+
+                        return false;
+                    } else if (res.result === -99) {
+                        // show account existed help
+                        handleError4Valid(locale_messages.common_passwd_error, '#edit-user-admin-passwd');
+                        // enable confirm button
+                        enableConfirm('#edit-user-save-btn');
+
+                        return false;
+                    }
+                }
+
+                // hide modal
+                $('#modal-edit-user').modal('hide');
+                // show failed message
+                alertMessage(locale_messages.common_alert_title, locale_messages.user_edit_failed, true);
+            },
+            error: function(xhr, status, error) {
+                // hide modal
+                $('#modal-edit-user').modal('hide');
+                // show system exception message
+                alertSystemException();
+            }
+        });
+    });
+
+    $('#user-info-table').delegate('.user-delete-btn', 'click', function() {
+        selectedUserData = datatablesRowData(userDataTable, this);
+
+        initializeModal('#modal-delete-user', '#delete-user-conf-btn');
+
+        $('#delete-show-user').text(selectedUserData.username);
+
+        $('#modal-delete-user').modal('show');
+    });
+
+    $('#delete-user-conf-btn').click(function() {
+        disableConfirm('#delete-user-conf-btn');
+
+        var params = {
+            username: selectedUserData.username
+        };
+
+        $.ajax({
+            url: '/sys/user/delete',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(params),
+            success: function(res) {
+                if (res && res.code === 1 && res.result === 1) {
+                    // hide modal
+                    $('#modal-delete-user').modal('hide');
+                    // reload datatable
+                    datatablesReload(userDataTable, queryUserPageNum, queryUserDataLen, true);
+                    // show succeeded message
+                    alertMessage(locale_messages.common_alert_title, locale_messages.user_delete_succeeded);
+                } else {
+                    // hide modal
+                    $('#modal-delete-user').modal('hide');
+                    // show failed message
+                    alertMessage(locale_messages.common_alert_title, locale_messages.user_delete_failed, true);
+                }
+            },
+            error: function(xhr, status, error) {
+                // hide modal
+                $('#modal-delete-user').modal('hide');
+                // show system exception message
+                alertSystemException();
+            }
+        });
+    });
+
+    queryUserDataTable();
+</script>

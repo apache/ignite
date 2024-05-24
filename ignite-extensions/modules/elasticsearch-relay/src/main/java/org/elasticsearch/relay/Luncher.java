@@ -98,10 +98,6 @@ public class Luncher {
 		ServerConnector connector = new ServerConnector(server);
 		connector.setPort(port);
 		server.setConnectors(new Connector[] { connector });
-
-		ServletContextHandler servlethandler = new ServletContextHandler();
-		servlethandler.setContextPath(contextPath);
-		servlethandler.addServlet(ESRelay.class, "/*");
 		
 
 		ProtectionDomain protectionDomain = Luncher.class.getProtectionDomain();
@@ -111,7 +107,7 @@ public class Luncher {
 	
 		String warFile = location.toExternalForm(); 
 		warFile = "target/es-relay/"; 
-		contextPath = "/";
+		
 		WebAppContext context = new	WebAppContext(warFile, contextPath); 
 		context.setServer(server);
 		
@@ -123,7 +119,7 @@ public class Luncher {
 
 		 // Create a handler list to store our static and servlet context handlers.
 		HandlerList handlers = new HandlerList();
-		handlers.setHandlers(new Handler[] { context,servlethandler });
+		handlers.setHandlers(new Handler[] { context });
 	
 		// Add the handlers to the server and start jetty.
 		//-server.setHandler(handlers);
@@ -133,8 +129,8 @@ public class Luncher {
 	}
 
 	class ServerConstant {
-		private static final String DEFAULT_CONTEXT_PATH = "/";
-		private static final String basePath = "/conf/jetty-conf.properties";
+		private static final String DEFAULT_CONTEXT_PATH = "/es-relay";
+		private static final String basePath = "/config/jetty-conf.properties";
 		private static final String PORT_STR = "port";
 		private static final int PORT_DEFAULT = 9200;
 		private static final String MAX_THREADS_STR = "maxThreads";

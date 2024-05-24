@@ -25,7 +25,8 @@ import com.fasterxml.jackson.databind.node.POJONode;
 
 
 public class ESUtil {
-	private static ObjectNode getFilterObject(ESQuery query) throws Exception {
+	
+	private static ObjectNode getFilterObject(ESQuery query) {
 		// check if there is a query
 		ObjectNode jsonQuery = query.getQuery();
 		if (jsonQuery == null) {
@@ -37,27 +38,27 @@ public class ESUtil {
 		ObjectNode queryObj = (ObjectNode)jsonQuery.get(ESConstants.Q_QUERY);
 		if (queryObj == null) {
 			queryObj = new ObjectNode(ESRelay.jsonNodeFactory);
-			jsonQuery.put(ESConstants.Q_QUERY, queryObj);
+			jsonQuery.set(ESConstants.Q_QUERY, queryObj);
 		}
 
 		// check if there is a filtered sub-object
 		ObjectNode filteredObj = (ObjectNode)queryObj.get(ESConstants.Q_FILTERED);
 		if (filteredObj == null) {
 			filteredObj = new ObjectNode(ESRelay.jsonNodeFactory);
-			queryObj.put(ESConstants.Q_FILTERED, filteredObj);
+			queryObj.set(ESConstants.Q_FILTERED, filteredObj);
 		}
 
 		// check if there is a filter sub-object
 		ObjectNode filterObj = (ObjectNode)filteredObj.get(ESConstants.Q_FILTER);
 		if (filterObj == null) {
 			filterObj = new ObjectNode(ESRelay.jsonNodeFactory);
-			filteredObj.put(ESConstants.Q_FILTER, filterObj);
+			filteredObj.set(ESConstants.Q_FILTER, filterObj);
 		}
 
 		return filterObj;
 	}
 
-	public static ArrayNode getOrCreateFilterArray(ESQuery query) throws Exception {
+	public static ArrayNode getOrCreateFilterArray(ESQuery query) {
 		ObjectNode filterObj = getFilterObject(query);
 
 		// actual array of filters

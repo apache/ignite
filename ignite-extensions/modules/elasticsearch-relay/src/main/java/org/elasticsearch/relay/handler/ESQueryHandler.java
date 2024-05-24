@@ -3,6 +3,7 @@ package org.elasticsearch.relay.handler;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -10,22 +11,28 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
+import javax.cache.Cache;
+
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheEntry;
+import org.apache.ignite.client.IgniteClient;
 import org.elasticsearch.relay.ESRelay;
 import org.elasticsearch.relay.ESRelayConfig;
 import org.elasticsearch.relay.ResponseFormat;
 import org.elasticsearch.relay.filters.BlacklistFilter;
 import org.elasticsearch.relay.filters.IFilter;
-import org.elasticsearch.relay.filters.ImapFilter;
 import org.elasticsearch.relay.filters.LiferayFilter;
 import org.elasticsearch.relay.filters.NuxeoFilter;
+import org.elasticsearch.relay.model.ESDelete;
 import org.elasticsearch.relay.model.ESQuery;
 import org.elasticsearch.relay.model.ESResponse;
 import org.elasticsearch.relay.model.ESUpdate;
@@ -46,8 +53,10 @@ import org.elasticsearch.relay.util.HttpUtil;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 
@@ -92,13 +101,22 @@ public class ESQueryHandler {
 	public ESQueryHandler(ESRelayConfig config) throws Exception {
 		this.config = config;
 		fLogRequests = config.getLogRequests();
-
-		fEsUrl = new String[] { config.getElasticUrl(), config.getEs2ElasticUrl() };
 		
+		int size = config.getClusterSize();		
 
-		fEsIndices = new Set[2];
-		fEsIndices[0] = config.getElasticIndices();
-		fEsIndices[1] = config.getEs2Indices();
+		fEsUrl = new String[size];	
+
+		fEsIndices = new Set[size];		
+		
+		fEsBlacklistFilter = new BlacklistFilter[size];
+		
+		// http
+		for(int i=1;i<size+1;i++) {
+			
+			fEsUrl[i-1] = config.getElasticUrl(i);
+			fEsIndices[i-1] = config.getElasticIndices(i);
+			fEsBlacklistFilter[i-1] = new BlacklistFilter(config.getEsBlacklistIndices(i), config.getEsBlacklistTypes(i));
+		}
 		
 		fLogger = Logger.getLogger(this.getClass().getName());
 
@@ -107,8 +125,7 @@ public class ESQueryHandler {
 
 		crawlers.add(new NuxeoCrawler(config.getNuxeoUrl(), config.getNuxeoUser(), config.getNuxeoPassword()));
 
-		crawlers.add(new LiferayCrawler(config.getLiferayUrl(), config.getLiferayCompanyId(), config.getLiferayUser(),
-				config.getLiferayPassword()));
+		crawlers.add(new LiferayCrawler(config.getLiferayUrl(), config.getLiferayCompanyId(), config.getLiferayUser(), config.getLiferayPassword()));
 
 		String permGetUrl = config.getPermissionsCrawlUrl();
 		fPermCrawler = new PermissionCrawler(permGetUrl, crawlers, config.getPermCrawlInterval());
@@ -120,17 +137,7 @@ public class ESQueryHandler {
 
 		fIndexFilters = new HashMap<String, IFilter>();
 		fTypeFilters = new HashMap<String, IFilter>();
-
-		// TODO: really initialize filters here?
-		fEsBlacklistFilter = new BlacklistFilter[2];
-		fEsBlacklistFilter[0] = new BlacklistFilter(config.getEs1BlacklistIndices(), config.getEs1BlacklistTypes());
-		fEsBlacklistFilter[1] = new BlacklistFilter(config.getEs2BlacklistIndices(), config.getEs2BlacklistTypes());
-
-		ImapFilter mailFilter = new ImapFilter(config.getMailTypes());
-		fIndexFilters.put(config.getMailIndex(), mailFilter);
-		for (String type : config.getMailTypes()) {
-			fTypeFilters.put(type, mailFilter);
-		}
+				
 
 		LiferayFilter lrFilter = new LiferayFilter(config.getLiferayTypes(), config.getLiferayPassthroughRoles());
 		fIndexFilters.put(config.getLiferayIndex(), lrFilter);
@@ -179,31 +186,41 @@ public class ESQueryHandler {
 	 *             if an internal error occurs
 	 */
 	public String handleRequest(ESUpdate query, String user) throws Exception {
-		Object es1Response = null;
-		Object es2Response = null;
-
-		// url index and type parameters and in-query parameters
-
-		// split queries between ES instances, cancel empty queries
-		ESUpdate es1Query = getInstanceUpdate(query, fEsIndices[0]);
-		ESUpdate es2Query = getInstanceUpdate(query, fEsIndices[1]);
-
-		// process requests and run through filters
-		// forward request to Elasticsearch instances
-		// don't send empty queries
-		if (!es1Query.isCancelled()) {
-			
-			es1Response = sendEsRequest(es1Query, 0);
+		IntStream s = IntStream.range(0, fEsIndices.length);
+		if(fEsIndices.length>=4) {
+			s = s.parallel();
 		}
-		if (!es2Query.isCancelled()) {
-			// remove incompatible nested path filter		
-			es2Response = sendEsRequest(es2Query, 1);
-		}		
+		
+		List<Object> result = s.mapToObj(i->{
+			// url index and type parameters and in-query parameters
+			ESUpdate es1Query = getInstanceUpdate(query, fEsIndices[i]);
+			Object es1Response = null;
+
+			// process requests and run through filters
+			// forward request to Elasticsearch instances
+			// don't send empty queries
+			if (!es1Query.isCancelled()) {
+				
+				try {
+					es1Response = sendEsRequest(es1Query, i);
+				} catch (Exception e) {
+					es1Response = makeObjectNode(e, 404);
+				}
+			}
+			
+        	return es1Response;
+        	
+        }).filter(r->!Objects.isNull(r)).collect(Collectors.toList()); 
+		
+		
 		
 		// merge results
-		String response = mergeOperationResultResponses(es1Response, es2Response);
-
+		// limit returned amount if size is specified
+		
+		String response = mergeOperationResultResponses(result, false, query.getResponseFormat());
+		
 		return response;
+		
 	}
 
 	/**
@@ -219,98 +236,143 @@ public class ESQueryHandler {
 	 *             if an internal error occurs
 	 */
 	public String handleRequest(ESQuery query, String user) throws Exception {
-		Object es1Response = null;
-		Object es2Response = null;
-
-		// url index and type parameters and in-query parameters
-
-		// split queries between ES instances, cancel empty queries
-		ESQuery es1Query = getInstanceQuery(query, fEsIndices[0]);
-		ESQuery es2Query = getInstanceQuery(query, fEsIndices[1]);
-
-		// process requests and run through filters
-		// forward request to Elasticsearch instances
-		// don't send empty queries
-		if (!es1Query.isCancelled()) {
-			es1Query = handleFiltering(user, es1Query, fEsBlacklistFilter[0]);
-			es1Response = sendEsRequest(es1Query, 0);
+		IntStream s = IntStream.range(0, fEsIndices.length);
+		if(fEsIndices.length>=4) {
+			s = s.parallel();
 		}
-		if (!es2Query.isCancelled()) {
-			// remove incompatible nested path filter
-			es2Query = removeNestedFilters(es2Query);
+		
+		List<Object> result = s.mapToObj(i->{
+			// url index and type parameters and in-query parameters
+			ESQuery es1Query = getInstanceQuery(query, fEsIndices[i]);
+			Object es1Response = null;
+			
+			es1Query = handleFiltering(user, es1Query, fEsBlacklistFilter[i]);
 
-			es2Query = handleFiltering(user, es2Query, fEsBlacklistFilter[1]);
-			es2Response = sendEsRequest(es2Query, 1);
-		}		
+			// process requests and run through filters
+			// forward request to Elasticsearch instances
+			// don't send empty queries
+			if (!es1Query.isCancelled()) {
+				
+				try {
+					es1Response = sendEsRequest(es1Query, i);
+					query.setResponseFormat(es1Query.getResponseFormat());
+					query.setResponseRootPath(es1Query.getResponseRootPath());
+				} catch (Exception e) {
+					es1Response = makeObjectNode(e, 404);
+				}
+			}
+			
+        	return es1Response;
+        	
+        }).filter(r->!Objects.isNull(r)).collect(Collectors.toList());
+		
+		
+		// merge results
+		// limit returned amount if size is specified		
+		String response = mergeQueryResultResponses(result, query);
+		
+		return response;
+	}
+	
+	/**
+	 * Handles and processes a query and its results, returning the merged
+	 * results from multiple ES instances.
+	 * 
+	 * @param query
+	 *            query sent by a user
+	 * @param user
+	 *            ID of the user that sent a query
+	 * @return result or error object
+	 * @throws Exception
+	 *             if an internal error occurs
+	 */
+	public String handleRequest(ESDelete query, String user) throws Exception {
+		
+		IntStream s = IntStream.range(0, fEsIndices.length);
+		if(fEsIndices.length>=4) {
+			s = s.parallel();
+		}
+		
+		List<Object> result = s.mapToObj(i->{
+			// url index and type parameters and in-query parameters
+			ESDelete es1Query = getInstanceQuery(query, fEsIndices[i]);
+			Object es1Response = null;
+
+			// process requests and run through filters
+			// forward request to Elasticsearch instances
+			// don't send empty queries
+			if (!es1Query.isCancelled()) {
+				
+				try {
+					es1Response = sendEsRequest(es1Query, i);
+				} catch (Exception e) {
+					es1Response = makeObjectNode(e,404);
+				}
+			}
+			
+        	return es1Response;
+        	
+        }).filter(r->!Objects.isNull(r)).collect(Collectors.toList()); 
+		
 		
 		
 		// merge results
 		// limit returned amount if size is specified
-		int limit = getLimit(query);
-		if(es1Response instanceof String || es2Response instanceof String) {
-			
-			String response = mergeResponses((String)es1Response, (String)es2Response, limit, query.getResponseFormat());
-	
-			return response;
-		}
-		else {
-			String response = mergeQueryResultResponses(es1Response, es2Response, limit, query.getResponseFormat());
-			
-			return response;
-		}
+		
+		String response = mergeOperationResultResponses(result, false, query.getResponseFormat());
+		
+		return response;
 	}
 	
 	public String handleRequest(ESViewQuery query, String user) throws Exception {
-		Object es1Response = null;
-		Object es2Response = null;
-
-		// url index and type parameters and in-query parameters
-
-		// split queries between ES instances, cancel empty queries
-		ESViewQuery es1Query = getInstanceQuery(query, fEsIndices[0]);
-		ESViewQuery es2Query = getInstanceQuery(query, fEsIndices[1]);
-
-		// process requests and run through filters
-		// forward request to Elasticsearch instances
-		// don't send empty queries
-		if (!es1Query.isCancelled()) {
-			//es1Query = handleFiltering(user, es1Query, fEs1BlacklistFilter);
-			es1Response = sendEsRequest(es1Query, 0);
+		IntStream s = IntStream.range(0, fEsIndices.length);
+		if(fEsIndices.length>=4) {
+			s = s.parallel();
 		}
-		if (!es2Query.isCancelled()) {
-			// remove incompatible nested path filter
-			//es2Query = removeNestedFilters(es2Query);
+		List<Object> result = s.mapToObj(i->{
+			// url index and type parameters and in-query parameters
+			ESViewQuery es1Query = getInstanceQuery(query, fEsIndices[i]);
+			Object es1Response = null;
 
-			//es2Query = handleFiltering(user, es2Query, fEs2BlacklistFilter);
-			es2Response = sendEsRequest(es2Query, 1);
-		}		
+			// process requests and run through filters
+			// forward request to Elasticsearch instances
+			// don't send empty queries
+			if (!es1Query.isCancelled()) {
+				
+				try {
+					es1Response = sendEsRequest(es1Query, i);
+					query.setResponseFormat(es1Query.getResponseFormat());
+					query.setResponseRootPath(es1Query.getResponseRootPath());
+				} catch (Exception e) {
+					es1Response = makeObjectNode(e, 404);
+				}
+			}
+			
+        	return es1Response;
+        	
+        }).filter(r->!Objects.isNull(r)).collect(Collectors.toList()); 
 		
-		int limit = getLimit(query);
-		if(es1Response instanceof String || es2Response instanceof String) {
-			
-			String response = mergeResponses((String)es1Response, (String)es2Response, limit, query.getResponseFormat());
-	
-			return response;
-		}
-		else {
-			String response = mergeQueryResultResponses(es1Response, es2Response, limit, query.getResponseFormat());
-			
-			return response;
-		}		
+		
+		
+		// merge results
+		// limit returned amount if size is specified		
+		
+		String response = mergeQueryResultResponses(result, query);
+		
+		return response;	
 	}
 
-	protected ESQuery getInstanceQuery(ESQuery query, Set<String> availIndices) throws Exception {
-		ESQuery esQuery = new ESQuery(query.getQueryPath(),query.getParams());
+	protected ESQuery getInstanceQuery(ESQuery query, Set<String> availIndices) {
+		ESQuery esQuery = new ESQuery(query);
 
 		ObjectNode request = query.getQuery();
-		String[] path = query.getQueryPath();
-		List<String> indices = getIndexNames(path);
+		List<String> indices = query.getIndexNames();
 
 		// only leave indices which are on this node
 		boolean removed = false;
 		String indicesFrag = "";
 		for (String index : indices) {
-			if (availIndices.contains(ESConstants.ALL_FRAGMENT) || availIndices.contains("*") || availIndices.contains(index) || index.equals(ESConstants.ALL_FRAGMENT)) {
+			if (availIndices.contains(ESConstants.ALL_FRAGMENT) || availIndices.contains(ESConstants.WILDCARD) || availIndices.contains(index) || index.equals(ESConstants.ALL_FRAGMENT)) {
 				indicesFrag += index + ",";
 			} else {
 				removed = true;
@@ -318,35 +380,46 @@ public class ESQueryHandler {
 		}
 		if (indicesFrag.length() > 0) {
 			indicesFrag = indicesFrag.substring(0, indicesFrag.length() - 1);
+			esQuery.setIndices(indicesFrag);
 		} else if (removed) {
 			// all indices were removed - cancel
 			esQuery.cancel();
 		}
 
-		// TODO: only works if there is an actual path
-		String[] newPath = path.clone();
-		newPath[0] = indicesFrag;
-		esQuery.setQueryPath(newPath);
+		return esQuery;
+	}
+	
+	protected ESDelete getInstanceQuery(ESDelete query, Set<String> availIndices) {
+		ESDelete esQuery = new ESDelete(query);
+		
+		List<String> indices = query.getIndexNames();
 
-		// TODO: also filter parameters and request body
-		esQuery.setParams(query.getParams());
-
-		// TODO: safely duplicate query body
-		if (query.getQuery() != null) {
-			//ObjectNode newQueryObj = new ObjectNode(query.getQuery().toString());
-			esQuery.setQuery(query.getQuery());
+		// only leave indices which are on this node
+		boolean removed = false;
+		String indicesFrag = "";
+		for (String index : indices) {
+			if (availIndices.contains(ESConstants.ALL_FRAGMENT) || availIndices.contains(ESConstants.WILDCARD) || availIndices.contains(index) || index.equals(ESConstants.ALL_FRAGMENT)) {
+				indicesFrag += index + ",";
+			} else {
+				removed = true;
+			}
+		}
+		if (indicesFrag.length() > 0) {
+			indicesFrag = indicesFrag.substring(0, indicesFrag.length() - 1);
+			esQuery.setIndices(indicesFrag);
+		} else if (removed) {
+			// all indices were removed - cancel
+			esQuery.cancel();
 		}
 
 		return esQuery;
 	}
 	
 
-	protected ESViewQuery getInstanceQuery(ESViewQuery query, Set<String> availIndices) throws Exception {
-		ESViewQuery esQuery = new ESViewQuery(query.getSchema(),query.getSQL());
-
-		String request = query.getSQL();
-		String[] path = query.getQueryPath();
-		List<String> indices = getIndexNames(path);
+	protected ESViewQuery getInstanceQuery(ESViewQuery query, Set<String> availIndices) {
+		ESViewQuery esQuery = new ESViewQuery(query);
+		String request = query.getSQL();		
+		List<String> indices = List.of(query.getSchema()==null?query.getName():query.getSchema());
 
 		// only leave indices which are on this node
 		boolean removed = false;
@@ -363,24 +436,7 @@ public class ESQueryHandler {
 		} else if (removed) {
 			// all indices were removed - cancel
 			esQuery.cancel();
-		}
-
-		// TODO: only works if there is an actual path
-		String[] newPath = path.clone();
-		newPath[0] = indicesFrag;
-		esQuery.setQueryPath(newPath);
-
-		// TODO: also filter parameters and request body
-		esQuery.setParams(query.getParams());
-
-		// TODO: safely duplicate query body
-		if (query.getSQL() != null) {		
-			esQuery.setSQL(query.getSQL());
-		}
-		
-		if (query.getNamedSQL() != null) {		
-			esQuery.setNamedSQL(query.getNamedSQL());
-		}
+		}		
 
 		return esQuery;
 	}
@@ -392,12 +448,12 @@ public class ESQueryHandler {
 	 * @return
 	 * @throws Exception
 	 */
-	protected ESUpdate getInstanceUpdate(ESUpdate query, Set<String> availIndices) throws Exception {
-		ESUpdate esQuery = new ESUpdate();
+	protected ESUpdate getInstanceUpdate(ESUpdate query, Set<String> availIndices) {
+		ESUpdate esQuery = new ESUpdate(query);
 
 		ObjectNode request = query.getQuery();
-		String[] path = query.getQueryPath();
-		List<String> indices = getIndexNames(path);
+		
+		List<String> indices = List.of(esQuery.getIndices());
 
 		// only leave indices which are on this node
 		boolean removed = false;
@@ -415,20 +471,6 @@ public class ESQueryHandler {
 		} else if (removed) {
 			// all indices were removed - cancel
 			esQuery.cancel();
-		}
-
-		// TODO: only works if there is an actual path
-		String[] newPath = path.clone();
-		newPath[0] = indicesFrag;
-		esQuery.setQueryPath(newPath);
-
-		// TODO: also filter parameters and request body
-		esQuery.setParams(query.getParams());
-		esQuery.setOp(query.getOp());
-		esQuery.setFormat(query.getFormat());
-		// TODO: safely duplicate query body
-		if (query.getQuery() != null) {			
-			esQuery.setQuery(query.getQuery());
 		}
 
 		return esQuery;
@@ -466,6 +508,28 @@ public class ESQueryHandler {
 				fLogger.log(Level.INFO, "sending GET to " + esReqUrl);
 			}
 		}
+
+		return es1Response;
+	}
+	
+	protected Object sendEsRequest(ESDelete query, int index) throws Exception {
+		String esReqUrl = this.fEsUrl[index] + query.buildQueryURL();
+
+		// replace spaces since they cause problems with proxies etc.
+		esReqUrl = esReqUrl.replaceAll(" ", "%20");
+
+		String es1Response = "";
+		if (fLogRequests) {
+			fLogger.log(Level.INFO, "sending DELETE to " + esReqUrl);
+		}
+		if (!query.getFormat().equals("json")) {			
+			
+			es1Response = HttpUtil.sendForm(new URL(esReqUrl), "DELETE", null);
+		}
+		else { // json format			
+
+			es1Response = HttpUtil.sendJson(new URL(esReqUrl), "DELETE", null);
+		} 
 
 		return es1Response;
 	}
@@ -540,144 +604,93 @@ public class ESQueryHandler {
 	}
 	
 
-	protected String mergeOperationResultResponses(Object es1Response, Object es2Response) throws Exception {
-		if(es2Response==null){
-			return es1Response.toString();
-		}
-		if(es1Response==null){
-			return es2Response.toString();
-		}
-		
-		ObjectNode es1Json = makeObjectNode(es1Response);		
-		
-		ObjectNode es2Json = makeObjectNode(es2Response);
-		
-		// 哪个节点出现错误，返回哪个
-		if (es1Json.has(ESConstants.R_ERROR)) {
-			return es1Response.toString();
-		} 
-
-		if (es2Json.has(ESConstants.R_ERROR)) {
-			return es2Response.toString();
+	protected String mergeOperationResultResponses(List<Object> es1Response,boolean returnSucess,ResponseFormat format) throws Exception {
+		for(int i=0;i<es1Response.size();i++){
+			ObjectNode es1Json = makeObjectNode(es1Response.get(i));
+			// 哪个节点出现错误，返回哪个
+			if (!returnSucess && es1Json.has(ESConstants.R_ERROR)) {
+				return es1Json.toPrettyString();
+			} 
+			// 哪个节点成功，返回哪个
+			if (returnSucess && !es1Json.has(ESConstants.R_ERROR)) {
+				return es1Json.toPrettyString();
+			}
 		}		
-		return es1Response.toString();
+		return "{}";
 	}
 	
-	protected String mergeQueryResultResponses(Object es1Response, Object es2Response, int limit, ResponseFormat format) throws Exception {
-		
-		// decode from string
-		ObjectNode es1Json = makeObjectNode(es1Response);		
-		
-		ObjectNode es2Json = makeObjectNode(es2Response);
-		
-		
-		ESResponse es1Resp = new ESResponse();
-		ESResponse es2Resp = new ESResponse();
-
-		// TODO: recognize non-result responses and only use valid responses?
-		if (es1Response != null) {			
-			if (es1Json.get(ESConstants.R_ERROR)!=null) {
-				es1Resp = new ESResponse(es1Json);
-			} else {
-				throw new Exception("ES 1.x error: " + es1Response);
-			}
-		}
-		if (es2Response != null) {			
-			if (es2Json.get(ESConstants.R_ERROR)!=null) {
-				es2Resp = new ESResponse(es2Json);
-			} else {
-				throw new Exception("ES 2.x error: " + es2Response);
-			}
-		}
-
+	protected String mergeQueryResultResponses(List<Object>  es1Response, ESQuery query) throws Exception {
 		List<ObjectNode> hits = new LinkedList<ObjectNode>();
-
-		// mix results 50:50 as far as possible
-		Iterator<ObjectNode> es1Hits = es1Resp.getHits().iterator();
-		Iterator<ObjectNode> es2Hits = es2Resp.getHits().iterator();
-
-		while ((es1Hits.hasNext() || es2Hits.hasNext()) && hits.size() < limit) {
-			if (es1Hits.hasNext()) {
-				addHit(hits, es1Hits.next());
-			}
-			if (es2Hits.hasNext()) {
-				addHit(hits, es2Hits.next());
-			}
-		}
-
-		// add up data
-		ESResponse mergedResponse = new ESResponse(hits);
-		mergedResponse.setShards(es1Resp.getShards() + es2Resp.getShards());
-		mergedResponse.setTotalHits(es1Resp.getTotalHits() + es2Resp.getTotalHits());
+		int totalHits = 0;
+		int shards = 0;
+		int limit = query.getLimit();
+		int offset = query.getFrom();
+		String rootPath = query.getResponseRootPath();
+		ResponseFormat format = query.getResponseFormat();
 		
-		if(format==ResponseFormat.DATASET) {
-			return mergedResponse.toDataset("items").toPrettyString();
-		}     
-		else {
-			return mergedResponse.toJSON().toPrettyString();	
-		}
-		
-	}
-
-	protected String mergeResponses(String es1Response, String es2Response, int limit, ResponseFormat format) throws Exception {
-		if(es2Response==null){
-			return es1Response;
-		}
-		if(es1Response==null){
-			return es2Response;
-		}
-		ESResponse es1Resp = new ESResponse();
-		ESResponse es2Resp = new ESResponse();
-
-		// TODO: recognize non-result responses and only use valid responses?
-		if (es1Response != null) {
-			ObjectNode es1Json = (ObjectNode)ESRelay.objectMapper.readTree(es1Response);
-
+		for(int i=0;i<es1Response.size();i++){
+			// decode from string
+			ObjectNode es1Json = makeObjectNode(es1Response.get(i));			
+			ESResponse es1Resp = new ESResponse();
 			if (!es1Json.has(ESConstants.R_ERROR)) {
-				es1Resp = new ESResponse(es1Json);
+				es1Resp = new ESResponse(es1Json,rootPath);
+				shards += es1Resp.getShards();
 			} else {
-				throw new Exception("ES 1.x error: " + es1Response);
+				continue;
 			}
-		}
-		if (es2Response != null) {
-			ObjectNode es2Json = (ObjectNode)ESRelay.objectMapper.readTree(es2Response);
-
-			if (!es2Json.has(ESConstants.R_ERROR)) {
-				es2Resp = new ESResponse(es2Json);
-			} else {
-				throw new Exception("ES 2.x error: " + es2Response);
-			}
-		}
-
-		List<ObjectNode> hits = new LinkedList<ObjectNode>();
-
-		// mix results 50:50 as far as possible
-		Iterator<ObjectNode> es1Hits = es1Resp.getHits().iterator();
-		Iterator<ObjectNode> es2Hits = es2Resp.getHits().iterator();
-
-		
-		while ((es1Hits.hasNext() || es2Hits.hasNext()) && hits.size() < limit) {
-			if (es1Hits.hasNext()) {
+			// mix results 50:50 as far as possible
+			Iterator<ObjectNode> es1Hits = es1Resp.getHits().iterator();			
+	
+			while (es1Hits.hasNext()) {
 				addHit(hits, es1Hits.next());
 			}
-			if (es2Hits.hasNext()) {
-				addHit(hits, es2Hits.next());
+			totalHits+=es1Resp.getTotalHits();
+		}
+		
+		if(format==ResponseFormat.OPERATION) {
+			if(rootPath==null) {
+				return ESRelay.objectMapper.writer().writeValueAsString(hits.get(0));
 			}
+			else {
+				ObjectNode res = ESRelay.jsonNodeFactory.objectNode();
+				
+				if(hits.size()>=1) {				
+					res.set(rootPath, hits.get(0));
+				}
+				else {
+					res.set(rootPath, ESRelay.jsonNodeFactory.objectNode());
+				}
+				return ESRelay.objectMapper.writer().writeValueAsString(res);
+			}
+		}
+		
+		if(hits.size() > offset+limit) {
+			hits = hits.subList(offset, offset+limit);
+		}
+		else {
+			hits = hits.subList(offset,hits.size());
 		}
 
 		// add up data
 		ESResponse mergedResponse = new ESResponse(hits);
-		mergedResponse.setShards(es1Resp.getShards() + es2Resp.getShards());
-		mergedResponse.setTotalHits(es1Resp.getTotalHits() + es2Resp.getTotalHits());
-
+		mergedResponse.setShards(shards);
+		mergedResponse.setSkip(this.fEsIndices.length-es1Response.size());
+		mergedResponse.setFail(es1Response.size()-shards);
+		mergedResponse.setTotalHits(totalHits);
+		
 		if(format==ResponseFormat.DATASET) {
-			return mergedResponse.toDataset("items").toPrettyString();
+			return mergedResponse.toDataset(rootPath).toPrettyString();
 		}     
-		else {
+		else if(format==ResponseFormat.HITS) {
 			return mergedResponse.toJSON().toPrettyString();	
+		}
+		else {
+			throw new IllegalArgumentException("ES 1.x error: Not support format " + format);
 		}
 		
 	}
+
+	
 
 	protected void addHit(List<ObjectNode> hits, ObjectNode hit) throws Exception {
 		// retrieve type and handle postprocessing
@@ -686,16 +699,22 @@ public class ESQueryHandler {
 		List<IPostProcessor> pp = fPostProcs.get(type);
 		if (pp != null) {
 			for(IPostProcessor gpp : pp) {
-				hit = gpp.process(hit);
+				if(hit!=null) {
+					hit = gpp.process(hit);
+				}
 			}
 		}
 
 		// postprocessors active for all types
 		for (IPostProcessor gpp : fGlobalPostProcs) {
-			hit = gpp.process(hit);
+			if(hit!=null) {
+				hit = gpp.process(hit);
+			}
 		}
-
-		hits.add(hit);
+		
+		if(hit!=null) {
+			hits.add(hit);
+		}
 	}
 
 	protected ESQuery removeNestedFilters(ESQuery query) throws Exception {
@@ -738,154 +757,87 @@ public class ESQueryHandler {
 		return query;
 	}
 
-	protected ESQuery handleFiltering(String user, ESQuery query, IFilter blacklist) throws Exception {
-		ObjectNode request = query.getQuery();
-		String[] path = query.getQueryPath();
-
-		List<String> indices = getIndexNames(path);
-		List<String> types = getTypeNames(path);
-
+	protected ESQuery handleFiltering(String user, ESQuery query, IFilter blacklist) {
+		ObjectNode request = query.getQuery();		
+		String action = query.getAction();
+		List<String> indices = query.getIndexNames();
+		List<String> types = query.getTypeNames();
+		if(indices.isEmpty()) {
+			return query;
+		}
 		// remove or block blacklisted indices and types
 		UserPermSet perms = fPermCrawler.getPermissions(user);
 
 		if (perms == null) {
 			fLogger.log(Level.WARNING, "user '" + user + "' not found in permissions cache");
 			perms = new UserPermSet(user);
-		}
+		}		
 
-		query = blacklist.addFilter(perms, query, indices, types);
+		if(action.equals(ESConstants.SEARCH_FRAGMENT) || action.equals(ESConstants.ALL_FRAGMENT)){
+			query = blacklist.addFilter(perms, query, indices, types);
 
-		// abort if query is already cancelled through blacklisting
-		if (query.isCancelled()) {
-			return query;
-		}
+			// abort if query is already cancelled through blacklisting
+			if (query.isCancelled()) {
+				return query;
+			}
 
-		// security and visibility filtering
-		boolean allIndices = false;
-		boolean allTypes = false;
+			// security and visibility filtering
+			boolean allIndices = false;
+			boolean allTypes = false;
 
-		// check if all indices are to be searched
-		if (indices.isEmpty() || indices.size() == 1
-				&& (indices.get(0).equals(ESConstants.ALL_FRAGMENT) || indices.get(0).equals(ESConstants.WILDCARD))) {
-			allIndices = true;
-		}
+			// check if all indices are to be searched
+			if (indices.isEmpty() || indices.size() == 1
+					&& (indices.get(0).equals(ESConstants.ALL_FRAGMENT) || indices.get(0).equals(ESConstants.WILDCARD))) {
+				allIndices = true;
+			}
 
-		// check if all types are to be searched
-		if (types.isEmpty() || types.size() == 1 && types.get(0).equals(ESConstants.ALL_FRAGMENT)) {
-			allTypes = true;
-		}
+			// check if all types are to be searched
+			if (types.isEmpty() || types.size() == 1 && types.get(0).equals(ESConstants.ALL_FRAGMENT)) {
+				allTypes = true;
+			}
 
-		// modify query accordingly
-		IFilter filter = null;
-		if (!allTypes) {
-			// search over specific types
-			// TODO: types should be sufficient as indicator
-			for (String type : types) {
-				filter = fTypeFilters.get(type);
-				if (filter != null) {
-					query = filter.addFilter(perms, query, indices, types);
+			// modify query accordingly
+			IFilter filter = null;
+			if (!allTypes) {
+				// search over specific types
+				// TODO: types should be sufficient as indicator
+				for (String type : types) {
+					filter = fTypeFilters.get(type);
+					if (filter != null) {
+						query = filter.addFilter(perms, query, indices, types);
+					}
+				}
+			} else if (!allIndices && !indices.contains(ESConstants.WILDCARD)) {
+				// search over specific indices
+				for (String index : indices) {
+					filter = fIndexFilters.get(index);
+					if (filter != null) {
+						query = filter.addFilter(perms, query, indices, types);
+					}
+				}
+			} else {
+				// search over all indices and types
+				// TODO: exclude filters for the other ES instance
+				for (IFilter iFilter : fIndexFilters.values()) {
+					query = iFilter.addFilter(perms, query, indices, types);
 				}
 			}
-		} else if (!allIndices && !indices.contains(ESConstants.WILDCARD)) {
-			// search over specific indices
-			for (String index : indices) {
-				filter = fIndexFilters.get(index);
-				if (filter != null) {
-					query = filter.addFilter(perms, query, indices, types);
-				}
-			}
-		} else {
-			// search over all indices and types
-			// TODO: exclude filters for the other ES instance
-			for (IFilter iFilter : fIndexFilters.values()) {
-				query = iFilter.addFilter(perms, query, indices, types);
+
+			// integrate "or" filter array into body if filled
+			ArrayNode authFilters = query.getAuthFilterOrArr();
+			if (authFilters.size() > 0) {
+				ArrayNode filters = ESUtil.getOrCreateFilterArray(query);
+
+				ObjectNode authOr = new ObjectNode(ESRelay.jsonNodeFactory);
+				authOr.set(ESConstants.Q_OR, authFilters);
+
+				filters.add(authOr);
 			}
 		}
-
-		// integrate "or" filter array into body if filled
-		ArrayNode authFilters = query.getAuthFilterOrArr();
-		if (authFilters.size() > 0) {
-			ArrayNode filters = ESUtil.getOrCreateFilterArray(query);
-
-			ObjectNode authOr = new ObjectNode(ESRelay.jsonNodeFactory);
-			authOr.put(ESConstants.Q_OR, authFilters);
-
-			filters.add(authOr);
-		}
+		
 
 		return query;
-	}
-
-	protected List<String> getIndexNames(String[] path) {
-		List<String> indices = new ArrayList<String>();
-
-		// extract from path
-		if (path.length > 0) {
-			String names = path[0];
-			if (names != null && !names.isEmpty()) {
-				if (names.contains(",")) {
-					String[] nameArr = names.split(",");
-					for (String n : nameArr) {
-						indices.add(n);
-					}
-				} else {
-					indices.add(names);
-				}
-			}
-		}
-
-		// TODO: extract from body
-
-		return indices;
-	}
-
-	protected List<String> getTypeNames(String[] path) {
-		List<String> types = new ArrayList<String>();
-
-		// extract from path
-		if (path.length > 1) {
-			String names = path[1];
-			if (names != null && !names.isEmpty()) {
-				if (names.contains(",")) {
-					String[] nameArr = names.split(",");
-					for (String n : nameArr) {
-						types.add(n);
-					}
-				} else {
-					types.add(names);
-				}
-			}
-		}
-
-		// TODO: extract from body
-
-		return types;
-	}
-
-	protected int getLimit(ESQuery query) {
-		int limit = Integer.MAX_VALUE;
-
-		String[] limitParam = query.getParams().get(ESConstants.MAX_ELEM_PARAM);
-		if (limitParam != null) {
-			limit = Integer.parseInt(limitParam[0]);
-		}
-
-		ObjectNode queryObj = query.getQuery();
-		if (queryObj != null && queryObj.has(ESConstants.MAX_ELEM_PARAM)) {
-			String requestLimit = queryObj.get(ESConstants.MAX_ELEM_PARAM).asText();
-			if (requestLimit != null && !requestLimit.isEmpty()) {
-				try {
-					int reqLim = Integer.parseInt(requestLimit);
-
-					limit = Math.min(limit, reqLim);
-				} catch (Exception e) {
-					fLogger.log(Level.WARNING, "invalid size limit: " + requestLimit);
-				}
-			}
-		}
-
-		return limit;
-	}
+	}	
 	
 
 	protected int getLimit(ESViewQuery query) {
@@ -932,14 +884,42 @@ public class ESQueryHandler {
 	    return $urlParams.toString();
 	}
 	
-	protected ObjectNode makeObjectNode(Object es1Response) throws Exception{
+	protected ObjectNode makeObjectNode(Object es1Response){
 		ObjectNode es1Json = null;
 		if (es1Response instanceof ObjectNode) {			
 			es1Json = (ObjectNode) es1Response;			
 		}
 		else if(es1Response instanceof CharSequence){
-			es1Json = (ObjectNode)ESRelay.objectMapper.readTree(es1Response.toString());
+			try {
+				es1Json = (ObjectNode)ESRelay.objectMapper.readTree(es1Response.toString());
+			} catch (JsonProcessingException e) {
+				ObjectNode value = ESRelay.jsonNodeFactory.objectNode();
+				value.put("data", es1Response.toString());
+				es1Json = value;
+			}
+		}
+		else if(es1Response instanceof Cache.Entry){
+			Cache.Entry<Object,BinaryObject> kv = (Cache.Entry)es1Response;			
+			BinaryObject source = (BinaryObject)kv.getValue();
+			ObjectNode value = ESRelay.jsonNodeFactory.objectNode();
+			value.put("_index", source.type().typeName());
+			value.put("_type", "_doc");
+			value.putPOJO("_id", kv.getKey());
+			value.put("_score", 1.0f);
+			ObjectNode sourceJson = ESRelay.objectMapper.convertValue(source, ObjectNode.class);
+			value.set("_source", sourceJson);
+			es1Json = value;
+		}
+		else {
+			es1Json = ESRelay.objectMapper.convertValue(es1Response, ObjectNode.class);
 		}
 		return es1Json;
+	}
+	
+	protected ObjectNode makeObjectNode(Exception e, int statusCode) {
+		ObjectNode error = ESRelay.jsonNodeFactory.objectNode();
+		error.put(ESConstants.R_ERROR, e.getMessage()+" cause by "+e.getClass());
+		error.put(ESConstants.R_STATUS,statusCode);
+		return error;
 	}
 }

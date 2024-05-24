@@ -172,8 +172,7 @@ export default class PageConfigureBasicController {
                 Atomicity:
                 <ul>
                     <li>ATOMIC - in this mode distributed transactions and distributed locking are not supported</li>
-                    <li>TRANSACTIONAL - in this mode specified fully ACID-compliant transactional cache behavior</li>
-                    <li>TRANSACTIONAL_SNAPSHOT - in this mode specified fully ACID-compliant transactional cache behavior for both key-value API and SQL transactions</li>
+                    <li>TRANSACTIONAL - in this mode specified fully ACID-compliant transactional cache behavior</li>                    
                 </ul>
             `},
             {name: 'Backups:', cellClass: 'pc-form-grid-col-10', tip: `

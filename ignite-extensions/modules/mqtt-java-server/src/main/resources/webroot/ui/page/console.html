@@ -1,0 +1,814 @@
+<!--
+ * Copyright 2019 Yang Wang
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+
+<style type="text/css">
+    .info-box-icon-cover {
+        background-color: #232429 !important;
+    }
+    
+    .info-box-icon {
+        color: #00c0ef;
+        background-color: #232429 !important;
+    }
+    
+    .info-detail-content {
+        text-align: right;
+        padding-top: 7%;
+    }
+    
+    .info-detail-text {
+        padding-top: 10px;
+        text-transform: none !important;
+    }
+    
+    .node-status-running {
+        color: #00a65a;
+    }
+    
+    .node-status-stopped {
+        color: #dd4b39;
+    }
+    
+    .metrics-value {
+        text-align: right;
+    }
+</style>
+
+<section class="content-header">
+    <h1 class="content-wrapper-title" data-locale="menu_monitor_console">
+    </h1>
+</section>
+<section class="content">
+    <div class="row title-row">
+        <div class="col-md-12 col-sm-12 col-xs-12 content-sub-title" data-locale="console_system_info">
+        </div>
+    </div>
+    <div class="row info-row">
+        <!-- information -->
+        <div class="col-md-3 col-sm-6 col-xs-12">
+            <div class="info-box">
+                <span class="info-box-icon bg-aqua info-box-icon-cover">
+                    <i class="ion ion-ios-home-outline info-box-icon"></i>
+                </span>
+                <div class="info-box-content info-detail-content">
+                    <span class="info-box-text" data-locale="console_name_label"></span>
+                    <span class="info-box-text info-detail-text" data-locale="console_name_desc"></span>
+                </div>
+            </div>
+        </div>
+        <!-- version -->
+        <div class="col-md-3 col-sm-6 col-xs-12">
+            <div class="info-box">
+                <span class="info-box-icon bg-aqua info-box-icon-cover">
+                    <i class="ion ion-pricetags info-box-icon"></i>
+                </span>
+                <div class="info-box-content info-detail-content">
+                    <span class="info-box-text" data-locale="console_version_label"></span>
+                    <span class="info-box-text info-detail-text" id="console-sys-version"></span>
+                </div>
+            </div>
+        </div>
+        <!-- fix for small devices only -->
+        <div class="clearfix visible-sm-block"></div>
+        <!-- total run time -->
+        <div class="col-md-3 col-sm-6 col-xs-12">
+            <div class="info-box">
+                <span class="info-box-icon bg-aqua info-box-icon-cover">
+                    <i class="ion ion-ios-timer-outline info-box-icon"></i>
+                </span>
+                <div class="info-box-content info-detail-content">
+                    <span class="info-box-text" data-locale="console_uptime_label"></span>
+                    <span class="info-box-text info-detail-text" id="console-sys-uptime"></span>
+                </div>
+            </div>
+        </div>
+        <!-- system time -->
+        <div class="col-md-3 col-sm-6 col-xs-12">
+            <div class="info-box">
+                <span class="info-box-icon bg-aqua info-box-icon-cover">
+                    <i class="ion ion-clock info-box-icon"></i>
+                </span>
+                <div class="info-box-content info-detail-content">
+                    <span class="info-box-text" data-locale="console_systime_label"></span>
+                    <span class="info-box-text info-detail-text" id="console-sys-time"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row title-row">
+        <div class="col-md-12 col-sm-12 col-xs-12 content-sub-title">
+            <font data-locale="console_nodes"></font>(<span id="console-node-count"></span>)
+        </div>
+    </div>
+    <div class="row info-row">
+        <div class="col-md-12 col-sm-12 col-xs-12 table-cols">
+            <div class="box-body table-box-body" id="console-node-table-container">
+            </div>
+        </div>
+    </div>
+
+    <div class="row title-row">
+        <div class="col-md-12 col-sm-12 col-xs-12 content-sub-title">
+            <font data-locale="console_stats"></font>(<span id="console-stats-count">3</span>)
+        </div>
+    </div>
+    <div class="row info-row">
+        <div class="col-md-12 col-sm-12 col-xs-12 table-cols">
+            <div class="box-body table-box-body" id="console-stats-table-container">
+            </div>
+        </div>
+    </div>
+
+    <div class="row title-row">
+        <div class="col-md-12 col-sm-12 col-xs-12 content-sub-title">
+            <font data-locale="console_metrics"></font>
+        </div>
+    </div>
+    <div class="row info-row last-info-row">
+        <div class="col-md-4 col-sm-6 col-xs-12 table-cols last-table-cols">
+            <div class="box-body table-box-body">
+                <table class="table table-bordered table-striped table-hover" id="mqtt-info-table">
+                    <thead>
+                        <tr>
+                            <th width="65%">
+                                <font data-locale="console_metrics_packets"></font>
+                            </th>
+                            <th width="35%">&nbsp;</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>received</td>
+                            <td class="metrics-value packetReceived"></td>
+                        </tr>
+                        <tr>
+                            <td>sent</td>
+                            <td class="metrics-value packetSent"></td>
+                        </tr>
+                        <tr>
+                            <td>connect</td>
+                            <td class="metrics-value packetConnect"></td>
+                        </tr>
+                        <tr>
+                            <td>connack</td>
+                            <td class="metrics-value packetConnack"></td>
+                        </tr>
+                        <tr>
+                            <td>disconnect</td>
+                            <td class="metrics-value packetDisconnect"></td>
+                        </tr>
+                        <tr>
+                            <td>pingreq</td>
+                            <td class="metrics-value packetPingreq"></td>
+                        </tr>
+                        <tr>
+                            <td>pingresp</td>
+                            <td class="metrics-value packetPingresp"></td>
+                        </tr>
+                        <tr>
+                            <td>publish/received</td>
+                            <td class="metrics-value packetPublishReceived"></td>
+                        </tr>
+                        <tr>
+                            <td>publish/sent</td>
+                            <td class="metrics-value packetPublishSent"></td>
+                        </tr>
+                        <tr>
+                            <td>puback/received</td>
+                            <td class="metrics-value packetPubackReceived"></td>
+                        </tr>
+                        <tr>
+                            <td>puback/sent</td>
+                            <td class="metrics-value packetPubackSent"></td>
+                        </tr>
+                        <tr>
+                            <td>puback/missed</td>
+                            <td class="metrics-value packetPubackMissed"></td>
+                        </tr>
+                        <tr>
+                            <td>pubcomp/received</td>
+                            <td class="metrics-value packetPubcompReceived"></td>
+                        </tr>
+                        <tr>
+                            <td>pubcomp/sent</td>
+                            <td class="metrics-value packetPubcompSent"></td>
+                        </tr>
+                        <tr>
+                            <td>pubcomp/missed</td>
+                            <td class="metrics-value packetPubcompMissed"></td>
+                        </tr>
+                        <tr>
+                            <td>pubrec/received</td>
+                            <td class="metrics-value packetPubrecReceived"></td>
+                        </tr>
+                        <tr>
+                            <td>pubrec/sent</td>
+                            <td class="metrics-value packetPubrecSent"></td>
+                        </tr>
+                        <tr>
+                            <td>pubrec/missed</td>
+                            <td class="metrics-value packetPubrecMissed"></td>
+                        </tr>
+                        <tr>
+                            <td>pubrel/received</td>
+                            <td class="metrics-value packetPubrelReceived"></td>
+                        </tr>
+                        <tr>
+                            <td>pubrel/sent</td>
+                            <td class="metrics-value packetPubrelSent"></td>
+                        </tr>
+                        <tr>
+                            <td>pubrel/missed</td>
+                            <td class="metrics-value packetPubrelMissed"></td>
+                        </tr>
+                        <tr>
+                            <td>subscribe</td>
+                            <td class="metrics-value packetSubscribe"></td>
+                        </tr>
+                        <tr>
+                            <td>suback</td>
+                            <td class="metrics-value packetSuback"></td>
+                        </tr>
+                        <tr>
+                            <td>unsubscribe</td>
+                            <td class="metrics-value packetUnsubscribe"></td>
+                        </tr>
+                        <tr>
+                            <td>unsuback</td>
+                            <td class="metrics-value packetUnsuback"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-4 col-sm-6 col-xs-12 table-cols last-table-cols">
+            <div class="box-body table-box-body">
+                <table class="table table-bordered table-striped table-hover" id="msg-info-table">
+                    <thead>
+                        <tr>
+                            <th width="65%">
+                                <font data-locale="console_metrics_messages"></font>
+                            </th>
+                            <th width="35%">&nbsp;</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>received</td>
+                            <td class="metrics-value messageReceived"></td>
+                        </tr>
+                        <tr>
+                            <td>sent</td>
+                            <td class="metrics-value messageSent"></td>
+                        </tr>
+                        <tr>
+                            <td>dropped</td>
+                            <td class="metrics-value messageDropped"></td>
+                        </tr>
+                        <tr>
+                            <td>retained</td>
+                            <td class="metrics-value messageRetained"></td>
+                        </tr>
+                        <tr>
+                            <td>qos0/received</td>
+                            <td class="metrics-value messageQos0Received"></td>
+                        </tr>
+                        <tr>
+                            <td>qos0/sent</td>
+                            <td class="metrics-value messageQos0Sent"></td>
+                        </tr>
+                        <tr>
+                            <td>qos1/received</td>
+                            <td class="metrics-value messageQos1Received"></td>
+                        </tr>
+                        <tr>
+                            <td>qos1/sent</td>
+                            <td class="metrics-value messageQos1Sent"></td>
+                        </tr>
+                        <tr>
+                            <td>qos2/received</td>
+                            <td class="metrics-value messageQos2Received"></td>
+                        </tr>
+                        <tr>
+                            <td>qos2/sent</td>
+                            <td class="metrics-value messageQos2Sent"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-4 col-sm-6 col-xs-12 table-cols last-table-cols">
+            <div class="box-body table-box-body">
+                <table class="table table-bordered table-striped table-hover" id="flow-info-table">
+                    <thead>
+                        <tr>
+                            <th width="65%">
+                                <font data-locale="console_metrics_bytes"></font>
+                            </th>
+                            <th width="35%">&nbsp;</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>received</td>
+                            <td class="metrics-value byteReceived"></td>
+                        </tr>
+                        <tr>
+                            <td>sent</td>
+                            <td class="metrics-value byteSent"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script type="text/javascript">
+    var queryNodeCols = [{
+        "sWidth": "13%"
+    }, {
+        "sWidth": "14%"
+    }, {
+        "sWidth": "10%"
+    }, {
+        "sWidth": "15%"
+    }, {
+        "sWidth": "13%"
+    }, {
+        "sWidth": "13%"
+    }, {
+        "sWidth": "12%"
+    }, {
+        "sWidth": "14%"
+    }];
+
+    var queryNodeColDefs = [{
+        'targets': 0,
+        'data': 'nodeId',
+        'render': function(data, type, full) {
+            return full.instanceId;
+        }
+    }, {
+        'targets': 1,
+        'data': 'javaVersion',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 2,
+        'data': 'thread',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 3,
+        'data': 'cpu',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 4,
+        'data': 'heap',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 5,
+        'data': 'offHeap',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 6,
+        'data': 'maxFileDescriptors',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 7,
+        'data': 'status',
+        'render': function(data, type, full) {
+            var content = [];
+
+            if (data == 1) {
+                content.push('<div class="node-status-running">');
+                content.push('<i class="fa fa-check-circle" aria-hidden="true"></i>');
+                content.push('<span>Running</span>');
+                content.push('</div>');
+            } else {
+                content.push('<div class="node-status-stopped">');
+                content.push('<i class="fa fa-exclamation-circle" aria-hidden="true"></i>');
+                content.push('<span>Stopped</span>');
+                content.push('</div>');
+            }
+
+            return content.join('');
+        }
+    }];
+
+    var queryStatsCols = [{
+        "sWidth": "13%"
+    }, {
+        "sWidth": "8%"
+    }, {
+        "sWidth": "9%"
+    }, {
+        "sWidth": "8%"
+    }, {
+        "sWidth": "9%"
+    }, {
+        "sWidth": "9%"
+    }, {
+        "sWidth": "10%"
+    }, {
+        "sWidth": "8%"
+    }, {
+        "sWidth": "9%"
+    }, {
+        "sWidth": "8%"
+    }, {
+        "sWidth": "9%"
+    }];
+
+    var queryStatsColDefs = [{
+        'targets': 0,
+        'data': 'nodeId',
+        'render': function(data, type, full) {
+            return full.instanceId;
+        }
+    }, {
+        'targets': 1,
+        'data': 'connCount',
+        'render': function(data, type, full) {
+            if (data) {
+                return data;
+            } else {
+                return 0;
+            }
+        }
+    }, {
+        'targets': 2,
+        'data': 'connMax',
+        'render': function(data, type, full) {
+            if (data) {
+                return data;
+            } else {
+                return 0;
+            }
+        }
+    }, {
+        'targets': 3,
+        'data': 'topicCount',
+        'render': function(data, type, full) {
+            if (data) {
+                return data;
+            } else {
+                return 0;
+            }
+        }
+    }, {
+        'targets': 4,
+        'data': 'topicMax',
+        'render': function(data, type, full) {
+            if (data) {
+                return data;
+            } else {
+                return 0;
+            }
+        }
+    }, {
+        'targets': 5,
+        'data': 'retainCount',
+        'render': function(data, type, full) {
+            if (data) {
+                return data;
+            } else {
+                return 0;
+            }
+        }
+    }, {
+        'targets': 6,
+        'data': 'retainMax',
+        'render': function(data, type, full) {
+            if (data) {
+                return data;
+            } else {
+                return 0;
+            }
+        }
+    }, {
+        'targets': 7,
+        'data': 'sessCount',
+        'render': function(data, type, full) {
+            if (data) {
+                return data;
+            } else {
+                return 0;
+            }
+        }
+    }, {
+        'targets': 8,
+        'data': 'sessMax',
+        'render': function(data, type, full) {
+            if (data) {
+                return data;
+            } else {
+                return 0;
+            }
+        }
+    }, {
+        'targets': 9,
+        'data': 'subCount',
+        'render': function(data, type, full) {
+            if (data) {
+                return data;
+            } else {
+                return 0;
+            }
+        }
+    }, {
+        'targets': 10,
+        'data': 'subMax',
+        'render': function(data, type, full) {
+            if (data) {
+                return data;
+            } else {
+                return 0;
+            }
+        }
+    }];
+
+    function initNodeTable() {
+        var content = [];
+
+        content.push('<table class="table table-bordered table-striped table-hover" id="console-node-table">');
+        content.push('<thead><tr>');
+        content.push('<th>');
+        content.push(locale_messages.common_node);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.console_java_version);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.console_thread);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.console_cpu);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.console_heap);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.console_off_heap);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.console_max_fds);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.console_status);
+        content.push('</th>');
+        content.push('</tr></thead>');
+        content.push('<tbody></tbody></table>');
+
+        $('#console-node-table-container').html(content.join(''));
+    }
+
+    function initStatsTable() {
+        var content = [];
+
+        content.push('<table class="table table-bordered table-striped table-hover" id="console-stats-table">');
+        content.push('<thead><tr>');
+        content.push('<th>');
+        content.push(locale_messages.common_node);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.console_stats_conn_count);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.console_stats_conn_max);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.console_stats_topic_count);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.console_stats_topic_max);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.console_stats_retain_count);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.console_stats_retain_max);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.console_stats_sess_count);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.console_stats_sess_max);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.console_stats_sub_count);
+        content.push('</th>');
+        content.push('<th>');
+        content.push(locale_messages.console_stats_sub_max);
+        content.push('</th>');
+        content.push('</tr></thead>');
+        content.push('<tbody></tbody></table>');
+
+        $('#console-stats-table-container').html(content.join(''));
+    }
+
+    function initMetricsTables() {
+        $('#mqtt-info-table').DataTable({
+            'destroy': true,
+            'autoWidth': true,
+            'searching': false,
+            'lengthChange': false,
+            'ordering': false,
+            'info': false,
+            'paging': false,
+            'processing': false,
+            'serverSide': false
+        });
+
+        $('#msg-info-table').DataTable({
+            'destroy': true,
+            'autoWidth': true,
+            'searching': false,
+            'lengthChange': false,
+            'ordering': false,
+            'info': false,
+            'paging': false,
+            'processing': false,
+            'serverSide': false
+        });
+
+        $('#flow-info-table').DataTable({
+            'destroy': true,
+            'autoWidth': true,
+            'searching': false,
+            'lengthChange': false,
+            'ordering': false,
+            'info': false,
+            'paging': false,
+            'processing': false,
+            'serverSide': false
+        });
+    }
+
+    function drawBasicInfo() {
+        $.ajax({
+            url: '/sys/console/info',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({}),
+            success: function(res) {
+                if (res && res.code === 1 && res.result) {
+                    $('#console-sys-version').text(res.result.version);
+                    $('#console-sys-uptime').text(res.result.uptime);
+                    $('#console-sys-time').text(res.result.systime);
+                }
+            },
+            error: function(xhr, status, error) {
+                // Do nothing...
+            }
+        });
+    }
+
+    function drawNodeDataTable() {
+        $('#console-node-table').DataTable({
+            'destroy': true,
+            'language': datatablesLanguage(),
+            'autoWidth': true,
+            'searching': false,
+            'lengthChange': false,
+            'ordering': false,
+            'info': false,
+            'paging': false,
+            'processing': true,
+            'serverSide': true,
+            'aoColumns': queryNodeCols,
+            'columnDefs': queryNodeColDefs,
+            'ajax': function(data, callback, settings) {
+                var draw = data["draw"];
+
+                $.ajax({
+                    url: '/sys/console/nodes',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({}),
+                    success: function(res) {
+                        var total = 0;
+                        var items = null;
+                        var drawData = datatables_no_data;
+
+                        if (res && res.code === 1) {
+                            total = res.result.total;
+                            items = res.result.items;
+
+                            if (total && items) {
+                                drawData = {
+                                    "draw": draw,
+                                    "recordsTotal": total,
+                                    "recordsFiltered": total,
+                                    "data": items
+                                };
+                            }
+                        }
+
+                        $('#console-node-count').text(total);
+                        $('#console-stats-count').text(total);
+                        callback(drawData);
+                        drawStatsTable(items);
+                    },
+                    error: function(xhr, status, error) {
+                        $('#console-node-count').text(0);
+                        $('#console-stats-count').text(0);
+                        callback(datatables_no_data);
+                        drawStatsTable([]);
+                    }
+                });
+            }
+        });
+    }
+
+    function drawStatsTable(data) {
+        $('#console-stats-table').DataTable({
+            'destroy': true,
+            'language': datatablesLanguage(),
+            'autoWidth': true,
+            'searching': false,
+            'lengthChange': false,
+            'ordering': false,
+            'info': false,
+            'paging': false,
+            'processing': false,
+            'serverSide': false,
+            'aoColumns': queryStatsCols,
+            'columnDefs': queryStatsColDefs,
+            data: data
+        });
+    }
+
+    function drawMetricsTables() {
+        $.ajax({
+            url: '/sys/console/mqtt',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({}),
+            success: function(res) {
+                if (res && res.code === 1 && res.result) {
+                    // get result
+                    var result = res.result;
+
+                    // set mqtt packet received count
+                    result.packetReceived = result.packetConnect + result.packetDisconnect + result.packetPingreq + result.packetPublishReceived +
+                        result.packetPubackReceived + result.packetPubcompReceived + result.packetPubrecReceived + result.packetPubrelReceived +
+                        result.packetSubscribe + result.packetUnsubscribe;
+
+                    // set mqtt packet sent count
+                    result.packetSent = result.packetConnack + result.packetPingresp + result.packetPublishSent +
+                        result.packetPubackSent + result.packetPubcompSent + result.packetPubrecSent + result.packetPubrelSent +
+                        result.packetSuback + result.packetUnsuback;
+
+                    // set message received count
+                    result.messageReceived = result.messageQos0Received + result.messageQos1Received + result.messageQos2Received;
+
+                    // set message sent count
+                    result.messageSent = result.messageQos0Sent + result.messageQos1Sent + result.messageQos2Sent;
+
+                    for (var key in result) {
+                        $('.' + key).text(result[key]);
+                    }
+                } else {
+                    $('.metrics-value').text(0);
+                }
+            },
+            error: function(xhr, status, error) {
+                // Do nothing...
+            }
+        });
+    }
+
+    initNodeTable();
+    initStatsTable();
+    initMetricsTables();
+
+    drawBasicInfo();
+    drawNodeDataTable();
+    drawMetricsTables();
+</script>

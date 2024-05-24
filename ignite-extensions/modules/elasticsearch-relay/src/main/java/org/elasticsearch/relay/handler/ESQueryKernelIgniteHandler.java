@@ -24,9 +24,14 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -37,19 +42,22 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.query.CacheQueryFieldsMetaResult;
 import org.apache.ignite.internal.processors.rest.handlers.query.CacheQueryResult;
-
+import org.apache.ignite.plugin.PluginProvider;
 import org.elasticsearch.relay.ESRelay;
 import org.elasticsearch.relay.ESRelayConfig;
 import org.elasticsearch.relay.ResponseFormat;
+import org.elasticsearch.relay.model.ESDelete;
 import org.elasticsearch.relay.model.ESQuery;
 import org.elasticsearch.relay.model.ESResponse;
 import org.elasticsearch.relay.model.ESUpdate;
 import org.elasticsearch.relay.model.ESViewQuery;
 import org.elasticsearch.relay.postprocess.IPostProcessor;
+import org.elasticsearch.relay.util.BinaryObjectMatch;
 import org.elasticsearch.relay.util.ESConstants;
 import org.elasticsearch.relay.util.ESUtil;
 import org.elasticsearch.relay.util.HttpUtil;
 import org.elasticsearch.relay.util.SqlTemplateParse;
+import org.springframework.util.StringUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -79,17 +87,20 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 	
 	private Ignite ignite(int index) {
 		try {
-			if(index==0) {
-			   return Ignition.ignite(config.getClusterName());			
+			String clusterName = config.getClusterName(index+1);
+			if(clusterName.isBlank()) {
+				return Ignition.ignite();			
 			}
-			else if(index==1) {
-			   return Ignition.ignite(config.getEs2ClusterName());	
-			}	
-			throw new IndexOutOfBoundsException(); 
+			else if(clusterName.equals("default")) {
+				return ctx.grid();		
+			}
+			else {
+			   return Ignition.ignite(clusterName);	
+			}
 		}
 		catch(IgniteIllegalStateException e) {			
-			fLogger.log(Level.SEVERE, "无法找到ignite集群", e);
-			throw e; 
+			fLogger.log(Level.WARNING, "无法找到ignite集群,使用默认实例", e);			 
+			return ctx.grid();
 		}
 	}
 	
@@ -101,23 +112,22 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 	}
 	
 	/**
-	 * 返回cacheName，如果是表，返回SQL_SCHEMA_TABLE
+	 * 返回cacheName，如果是表{schema.table}，返回SQL_SCHEMA_TABLE
 	 * @param path
 	 * @return
 	 */
 	protected String cacheName(Ignite ignite,String... path){		
-		String schema = path[0];
-		String table = path[1];		
-		if(table.length()==0){ // 只有一个路径片，则是cacheName
-			return schema;
+		String cacheName = path[0];			
+		if(cacheName.indexOf('.')<=0){ // 只有一个路径片，则是cacheName
+			return cacheName;
 		}				
 		for(String name: ignite.cacheNames()) {
-			if(name.equalsIgnoreCase(schema)) {
+			if(name.equalsIgnoreCase(cacheName)) {
 				return name;
 			}
 		}
-		String cacheName = "SQL_"+schema+"_"+table.toUpperCase();		
-		return cacheName;
+		String cacheName2 = "SQL_"+cacheName.toUpperCase().replace('.', '_');	
+		return cacheName2;
 	}
 	
 	/**
@@ -127,7 +137,11 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 	 */
 	protected String typeName(IgniteCache<?,?> cache,String defaultType){		
 		CacheConfiguration<?,?> config = cache.getConfiguration(CacheConfiguration.class);
+		int pos = defaultType.lastIndexOf(".");
 		String table = defaultType;	
+		if(pos>0) {
+			table = defaultType.substring(pos+1);
+		}
 		
 		if(config.getQueryEntities().size()==1){
 			return config.getQueryEntities().iterator().next().getValueType();
@@ -149,78 +163,140 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 	@Override
 	protected Object sendEsRequest(ESUpdate query, int index) throws Exception {
 		Ignite ignite = ignite(index);
-		String[] path = query.getQueryPath();
-		String cacheName = cacheName(ignite,path);
-		IgniteCache<?,?> cache0 = ignite.cache(cacheName);
-		if(cache0==null) {
-			throw new CacheServerNotFoundException(cacheName);
-		}
 		
-		String typeName = typeName(cache0,path[1]);
-		String key = path[2];
-		
-		boolean rv = false;
-		
-		ObjectNode jsonResq = new ObjectNode(ESRelay.jsonNodeFactory);
-		
-		IgniteCache<String, BinaryObject> cache = cache0.withKeepBinary();	
-		
-		//将json转为binaryObject
-		if(query.getOp().equals(ESConstants.INSERT_FRAGMENT)){			
-			
-			BinaryObject bobj = ESUtil.jsonToBinaryObject(ignite,typeName,query.getQuery());
-			
-			rv = cache.putIfAbsent(key, bobj);
-			if(rv){
-				jsonResq.put("_index", path[0]);
-				jsonResq.put("_type", path[1]);
-				jsonResq.put("_id", path[2]);
-				jsonResq.put("result", "created");
+		if(query.getAction().equals("_doc")) {
+			String cacheName = cacheName(ignite,query.getIndices());
+			IgniteCache<?,?> cache0 = ignite.cache(cacheName);
+			if(cache0==null) {
+				throw new CacheServerNotFoundException(cacheName);
 			}
-			else{
-				jsonResq.put("result", "existed");
+			
+			String typeName = typeName(cache0,query.getIndices());
+			String key = query.getDocId();
+			
+			boolean rv = false;
+			
+			ObjectNode jsonResq = new ObjectNode(ESRelay.jsonNodeFactory);
+			
+			IgniteCache<Object, BinaryObject> cache = cache0.withKeepBinary();	
+			
+			//将json转为binaryObject
+			if(query.getOp().equals(ESConstants.INSERT_FRAGMENT)){			
+				
+				BinaryObject bobj = ESUtil.jsonToBinaryObject(ignite,typeName,query.getQuery());
+				
+				rv = cache.putIfAbsent(key, bobj);
+				if(rv){
+					jsonResq.put("_index", cacheName);
+					jsonResq.put("_type", typeName);
+					jsonResq.put("_id", key);
+					jsonResq.put("result", "created");
+				}
+				else{
+					jsonResq.put("result", "existed");
+				}
+				return jsonResq;
 			}
-			return jsonResq;
-		}
-		else if(query.getOp().equals(ESConstants.UPDATE_FRAGMENT)){
-			
-			BinaryObject bobj = ESUtil.jsonToBinaryObject(ignite,typeName,query.getQuery());
-			
-			cache.put(key, bobj);
-			
-			jsonResq.put("_index", path[0]);
-			jsonResq.put("_type", path[1]);
-			jsonResq.put("_id", path[2]);
-			jsonResq.put("result", "updated");
-			return jsonResq;
-			
-		}
-		else if(query.getOp().equals(ESConstants.DELETE_FRAGMENT)){			
-			
-			cache.remove(key);
-			
-			jsonResq.put("_index", path[0]);
-			jsonResq.put("_type", path[1]);
-			jsonResq.put("_id", path[2]);
-			jsonResq.put("result", "deleted");
-			return jsonResq;
+			else if(query.getOp().equals(ESConstants.UPDATE_FRAGMENT)){
+				
+				BinaryObject bobj = ESUtil.jsonToBinaryObject(ignite,typeName,query.getQuery());
+				
+				cache.put(key, bobj);
+				
+				jsonResq.put("_index", cacheName);
+				jsonResq.put("_type", typeName);
+				jsonResq.put("_id", key);
+				jsonResq.put("result", "updated");
+				return jsonResq;
+				
+			}			
 			
 		}
-		else if(query.getOp().equals(ESConstants.BULK_FRAGMENT)){
+		else if(query.getAction().equals(ESConstants.BULK_FRAGMENT)){
+			ObjectNode jsonResq = new ObjectNode(ESRelay.jsonNodeFactory);
+			String cacheName = cacheName(ignite,query.getIndices());
+			IgniteCache<?,?> cache0 = ignite.cache(cacheName);
+			if(cache0==null) {
+				throw new CacheServerNotFoundException(cacheName);
+			}
+			String typeName = typeName(cache0,query.getIndices());
+			IgniteCache<Object, BinaryObject> cache = cache0.withKeepBinary();	
+			
 			ArrayNode list = query.getQuery().withArray(ESConstants.BULK_FRAGMENT);
 			
 			// TODO @byron
 			for(JsonNode o: list) {
 				BinaryObject bobj = ESUtil.jsonToBinaryObject(ignite,typeName,(ObjectNode)o);
-				String rowKey = o.get(key).asText();
+				Object rowKey = o.get("id");
 				cache.put(rowKey, bobj);
 			}
-			jsonResq.put("_index", path[0]);
-			jsonResq.put("_type", path[1]);			
+			jsonResq.put("_index", cacheName);
+			jsonResq.put("_type", typeName);
+			
 			jsonResq.put("result", list.size());
 			return jsonResq;
 		}
-
+		
+		else if(query.getAction().equals(ESConstants.INDICES_FRAGMENT)) {
+			
+			ObjectNode jsonResq = new ObjectNode(ESRelay.jsonNodeFactory);
+			
+			ObjectNode settings = query.getQuery().withObject("/settings");
+			ObjectNode mappings = query.getQuery().withObject("/mappings");
+			ObjectNode properties = mappings.withObject("/properties");
+			String cacheName = cacheName(ignite,query.getIndices());
+			IgniteCache<?,?> cache0 = ignite.cache(cacheName);
+			if(cache0==null) {
+				CacheConfiguration<String, BinaryObject> cfg = new CacheConfiguration<>();
+		        cfg.setName(cacheName);
+		        
+		        if(settings.has("atomicity_mode")) {
+		        	String atomicity_mode = settings.get("atomicity_mode").asText("atomic");
+		        	if(atomicity_mode.equals("atomic")) {
+		        		cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+		        	}
+		        	else {
+		        		cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+		        	}
+		        }
+		        if(settings.has("number_of_replicas")) {
+		        	cfg.setBackups(settings.get("number_of_replicas").asInt(2));		        	
+		        }
+		        if(settings.has("data_region_name")) {
+		        	cfg.setDataRegionName(settings.get("data_region_name").asText());		        	
+		        }
+		        
+		        
+		        if(properties.size()>0) {
+		        	List<QueryIndex> indexes = new ArrayList<>();
+		        	QueryEntity queryEntity = new QueryEntity();
+		        	queryEntity.setKeyFieldName("id");
+		        	queryEntity.setKeyType("java.lang.String");
+		        	queryEntity.setValueType(cacheName);
+		        	queryEntity.addQueryField("id", "java.lang.String", null);
+		        	properties.fields().forEachRemaining((kv)->{
+		        		String type = kv.getValue().get("type").asText("keyword");
+		        		queryEntity.addQueryField(kv.getKey(), type, null);
+		        		if(type.equals("keyword") || type.equals("text")) {
+		        			indexes.add(new QueryIndex(kv.getKey(),QueryIndexType.FULLTEXT));
+		        		}
+		        	});
+		        	queryEntity.setIndexes(indexes);
+		        	cfg.setQueryEntity(queryEntity);
+		        }
+		        
+		        cache0 = ignite.getOrCreateCache(cfg);
+		        
+		        jsonResq.put("result", "created");
+			}
+			else {
+				jsonResq.put("result", "existed");
+			}
+			jsonResq.put("index", cacheName);
+			jsonResq.put("shards_acknowledged", true);
+			jsonResq.put("acknowledged", true);
+			return jsonResq;
+		}
 		// replace spaces since they cause problems with proxies etc.
 		
 		query.setFormat("form");
@@ -228,57 +304,265 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 	}
 	
 	@Override
-	protected Object sendEsRequest(ESQuery query, int index) throws Exception {			
-		Ignite ignite = ignite(index);		
-		String[] path = query.getQueryPath();
-		String cacheName = cacheName(ignite,path);		
+	protected Object sendEsRequest(ESQuery query, int index) throws Exception {	
+		CacheQueryResult res = new CacheQueryResult();
+		Ignite ignite = ignite(index);
+		String path0 = query.getIndices();
+		
+		if(path0.isBlank()) {
+			// [name, version, cluster_name, cluster_uuid, tagline]
+			ArrayList<ObjectNode> items = new ArrayList<>();
+			ObjectNode cluster = ESRelay.jsonNodeFactory.objectNode();
+			String versionStr="{\r\n"
+					+ "    \"number\" : \"7.8.0\",\r\n"
+					+ "    \"build_flavor\" : \"default\",\r\n"
+					+ "    \"build_type\" : \"rpm\",\r\n"
+					+ "    \"build_hash\" : \"757314695644ea9a1dc2fecd26d1a43856725e65\",\r\n"
+					+ "    \"build_date\" : \"2020-06-14T19:35:50.234439Z\",\r\n"
+					+ "    \"build_snapshot\" : false,\r\n"
+					+ "    \"lucene_version\" : \"8.5.1\",\r\n"
+					+ "    \"minimum_wire_compatibility_version\" : \"6.8.0\",\r\n"
+					+ "    \"minimum_index_compatibility_version\" : \"6.0.0-beta1\"\r\n"
+					+ "}";
+			cluster.put("name", ignite.cluster().localNode().consistentId().toString());
+			cluster.set("version", ESRelay.objectMapper.readTree(versionStr));
+			cluster.put("cluster_name", ignite.name());
+			cluster.put("cluster_uuid", ignite.cluster().id().toString());
+			cluster.put("tagline", "You Know, for Search");
+			items.add(cluster);
+			res.setItems(items);
+			query.setResponseRootPath(null);
+			query.setResponseFormat(ResponseFormat.OPERATION);
+			return res;
+		}
+		else if(path0.equals("_nodes")) {
+			query.setResponseRootPath("nodes");
+			if(query.getAction().equals("plugins")) {
+				ArrayList<ObjectNode> items = new ArrayList<>();
+				ObjectNode plugins = ESRelay.jsonNodeFactory.objectNode();
+				if(ignite.configuration().getPluginProviders()!=null) {
+					for(PluginProvider<?> cfg: ignite.configuration().getPluginProviders()) {
+						ObjectNode pluginInfo = ESRelay.objectMapper.convertValue(cfg, ObjectNode.class);				
+						plugins.set(cfg.name(),pluginInfo);	
+					}
+				}
+				items.add(plugins);
+				res.setItems(items);
+				query.setResponseFormat(ResponseFormat.OPERATION);
+			}
+			else {
+				res.setItems(new ArrayList<>(ignite.cluster().nodes()));
+				query.setResponseFormat(ResponseFormat.DATASET);
+			}			
+			return res;
+			
+		}
+		else if(path0.equals("_cluster")) {
+			if(query.getAction().equals("_stats")) {
+				ObjectNode objectNode = ESRelay.objectMapper.convertValue(ignite.cluster().metrics(), ObjectNode.class);
+				query.setResponseRootPath("cluster");
+				query.setResponseFormat(ResponseFormat.OPERATION);
+				return objectNode;
+			}
+			// get all cached
+			ArrayList<ObjectNode> items = new ArrayList<>();
+			ObjectNode caches = ESRelay.jsonNodeFactory.objectNode();
+			for(CacheConfiguration<?,?> cacheCfg: ignite.configuration().getCacheConfiguration()) {
+				ObjectNode cacheInfo = ESRelay.objectMapper.convertValue(cacheCfg, ObjectNode.class);				
+				caches.set(cacheCfg.getName(),cacheInfo);				
+			}
+			items.add(caches);
+			res.setItems(items);
+			query.setResponseRootPath("index");
+			query.setResponseFormat(ResponseFormat.OPERATION);
+			return res;
+			
+		}
+		
+		// hava path0
+		String cacheName = cacheName(ignite,path0);		
 		IgniteCache<?,?> cache0 = ignite.cache(cacheName);
 		if(cache0==null) {
 			throw new CacheServerNotFoundException(cacheName);
 		}
 		
-		String typeName = typeName(cache0,path[1]);			
+		String typeName = typeName(cache0,path0);			
 		IgniteCache<?, BinaryObject> cache = cache0.withKeepBinary();	
 		
 		
+		if(query.getAction().equals("_stats")) {			
+			ObjectNode objectNode = ESRelay.objectMapper.convertValue(cache0.metrics(), ObjectNode.class);
+			query.setResponseRootPath(cacheName);
+			query.setResponseFormat(ResponseFormat.OPERATION);
+			return objectNode;
+		}
 		
-		String[] keywords = query.getParams().get("q");
-		String keyword = "";
-		if(keywords==null){
-			ObjectNode queryObj = query.getQuery().with("query");
-			if(queryObj.has("multi_match")){
-				ObjectNode multi_match = queryObj.with("multi_match");
-				ArrayNode fields = multi_match.withArray("fields");
-				String queryString = multi_match.get("query").asText();
-				keyword = "";
-				for(int i=0;i<fields.size();i++){
-					keyword+=fields.get(i)+":"+queryString+" ";
+		if(query.getAction().equals(ESConstants.INDICES_FRAGMENT)) {
+			CacheConfiguration<?,?> cfg = cache0.getConfiguration(CacheConfiguration.class);
+			ObjectNode objectNode = ESRelay.objectMapper.convertValue(cfg, ObjectNode.class);
+			query.setResponseRootPath(cacheName);
+			query.setResponseFormat(ResponseFormat.OPERATION);
+			return objectNode;			
+		}	
+		
+		else if(query.getAction().equals(ESConstants.SEARCH_FRAGMENT)) {
+			ObjectNode matchQurey = ESRelay.jsonNodeFactory.objectNode();
+			
+			String[] keywords = query.getParams().get("q");
+			String keyword = "";
+			if(keywords==null){
+				StringBuilder keywordBuilder = new StringBuilder();
+				ObjectNode queryObj = query.getQuery().withObject("/query");
+				if(queryObj.has("multi_match")){
+					ObjectNode multi_match = queryObj.withObject("/multi_match");
+					ArrayNode fields = multi_match.withArray("/fields");
+					String queryString = multi_match.get("query").asText();
+					
+					for(int i=0;i<fields.size();i++){
+						keywordBuilder.append(fields.get(i)+":"+queryString+" ");
+					}
 				}
+				else if(queryObj.has("match")){
+					ObjectNode match = queryObj.withObject("/match");
+					match.fields().forEachRemaining(kv->{
+						String field = kv.getKey();
+						String queryString = kv.getValue().get("query").asText();
+						String op = kv.getValue().get("operator").asText();
+						keywordBuilder.append(field+":"+queryString+" ");
+					});				
+					
+				}
+				else if(queryObj.has("terms")){
+					ObjectNode match = queryObj.withObject("/terms");
+					match.fields().forEachRemaining(kv->{
+						String field = kv.getKey();						
+						matchQurey.set(field, kv.getValue());
+					});				
+					
+				}
+				keyword = keywordBuilder.toString();
 			}
-		}
-		else {
-			keyword = String.join(" ", keywords);
-		}
-		TextQuery<Object, BinaryObject> qry = new TextQuery<>(typeName, keyword);
-		
-		for(Map.Entry<String, String[]> param: query.getParams().entrySet()) {
-			if(param.getKey().equals("pageSize")) {
-				String[] pageSize = query.getParams().get("pageSize");
-				if(pageSize!=null){
-					qry.setPageSize(Integer.valueOf(pageSize[0]));
-				}
+			else {
+				keyword = String.join(" ", keywords);
+			}
+			int iFrom = query.getFrom();
+			int iMaxSize = query.getLimit();
+			BinaryObjectMatch match = matchQurey.isEmpty()? null: new BinaryObjectMatch(matchQurey);
+			
+			Query<Cache.Entry<Object, BinaryObject>> qry;
+			if(StringUtils.hasText(keyword)) {
+				TextQuery<Object, BinaryObject> textQry = new TextQuery<>(typeName, keyword);
+				textQry.setFitler(match);							
+				textQry.setLimit(iFrom+iMaxSize);
+				qry = textQry;
+			}
+			else {
+				ScanQuery<Object, BinaryObject> scanfQry = new ScanQuery<>(match);
+				qry = scanfQry;
+			}
+			
+			
+			for(Map.Entry<String, String[]> param: query.getParams().entrySet()) {
+				if(param.getKey().equals("pageSize")) {
+					String[] pageSize = query.getParams().get("pageSize");
+					if(pageSize!=null){
+						qry.setPageSize(Integer.valueOf(pageSize[0]));
+					}
+				}				
 			}			
+			
+			
+	        QueryCursor<Cache.Entry<Object, BinaryObject>> qryCur = cache.query(qry);
+	        
+	        List<Cache.Entry<Object, BinaryObject>> all = new ArrayList<>();
+
+	        try {
+	            Iterator<Cache.Entry<Object, BinaryObject>> iter = qryCur.iterator(); // Implicitly calls iterator() to do all checks.
+	            int i=0;
+	            while (iter.hasNext() && all.size()<=iMaxSize+iFrom) {	            	
+	            	all.add(iter.next());
+	            	i++;
+	            }
+	            
+	            res.setItems(all);
+				List<GridQueryFieldMetadata> fieldsMeta = ((QueryCursorImpl)qryCur).fieldsMeta();
+		        res.setFieldsMetadata(convertMetadata(fieldsMeta));
+	        }
+	        finally {
+	        	qryCur.close();
+	        }
+		}
+		else if(query.getAction().equals(ESConstants.ALL_FRAGMENT)) {			
+			ObjectNode matchQurey = ESRelay.jsonNodeFactory.objectNode();
+			
+			matchQurey = query.getQuery().withObject("/query");
+			
+			BinaryObjectMatch match = matchQurey.isEmpty()? null: new BinaryObjectMatch(matchQurey);
+			
+			ScanQuery<Object, BinaryObject> qry = new ScanQuery<>(match);
+			int iFrom = query.getFrom();
+			int iMaxSize = query.getLimit();
+			for(Map.Entry<String, String[]> param: query.getParams().entrySet()) {
+				if(param.getKey().equals("pageSize")) {
+					String[] pageSize = query.getParams().get("pageSize");
+					if(pageSize!=null){
+						qry.setPageSize(Integer.valueOf(pageSize[0]));
+					}
+				}				
+			}
+			
+	        QueryCursor<Cache.Entry<Object, BinaryObject>> qryCur = cache.query(qry);	        
+	        
+	        List<Cache.Entry<Object, BinaryObject>> all = new ArrayList<>();
+
+	        try {
+	            Iterator<Cache.Entry<Object, BinaryObject>> iter = qryCur.iterator(); // Implicitly calls iterator() to do all checks.
+	            int i=0;
+	            while (iter.hasNext() && all.size()<=iMaxSize+iFrom) {	            	
+	            	all.add(iter.next());
+	            	i++;
+	            }
+	            
+	            res.setItems(all);
+				List<GridQueryFieldMetadata> fieldsMeta = ((QueryCursorImpl)qryCur).fieldsMeta();
+		        res.setFieldsMetadata(convertMetadata(fieldsMeta));
+	        }
+	        finally {
+	        	qryCur.close();
+	        }			
+			
+		}		
+
+        return res;
+		
+	}
+	
+	@Override
+	protected Object sendEsRequest(ESDelete query, int index) throws Exception {			
+		Ignite ignite = ignite(index);
+		String cacheName = cacheName(ignite,query.getIndices());		
+		IgniteCache<String,?> cache0 = ignite.cache(cacheName);
+		if(cache0==null) {
+			throw new CacheServerNotFoundException(cacheName);
 		}
 		
-        QueryCursor<Cache.Entry<Object, BinaryObject>> qryCur = cache.query(qry);
-        
-        List<Cache.Entry<Object, BinaryObject>> list = qryCur.getAll();
+		GridRestResponse res = new GridRestResponse();
 		
-		CacheQueryResult res = new CacheQueryResult();
-		res.setItems(list);
-		
-		List<GridQueryFieldMetadata> fieldsMeta = ((QueryCursorImpl)qryCur).fieldsMeta();
-        res.setFieldsMetadata(convertMetadata(fieldsMeta));
+		if(query.getDocId()==null && !query.getIndices().isBlank() && query.getAction().equals(ESConstants.INDICES_FRAGMENT)) {
+			cache0.destroy();
+			res.setResponse(true);
+		}
+		else if(query.getAction().equals("_doc")) {		// {index}/_doc/{id}	
+			
+			String id = query.getDocId();
+			if(id!=null) {
+				res.setResponse(cache0.remove(id));
+			}
+			else {
+				cache0.clear();
+				res.setResponse(true);
+			}
+		}		
 
         return res;
 		
@@ -286,15 +570,14 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 	
 	@Override
 	protected Object sendEsRequest(ESViewQuery query, int index) throws Exception {
-		Ignite ignite = ignite(index);	
-		String[] path = query.getQueryPath();
+		Ignite ignite = ignite(index);
 		
 		IgniteEx igniteEx = (IgniteEx) ignite;
 		
 		
 		SqlFieldsQuery qry = new SqlFieldsQuery(query.buildSQL());
 		qry.setSchema(query.getSchema());
-		qry.setPageSize(query.getPageSize());
+		qry.setPageSize(query.getLimit());
 		qry.setCollocated(true);
 		
         QueryCursor<List<?>> qryCur = igniteEx.context().query().querySqlFields(qry,true);
@@ -345,28 +628,34 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 			CacheQueryResult result = (CacheQueryResult) es1Response;			
 
 			// mix results 50:50 as far as possible
-			Iterator<List<?>> es1Hits = (Iterator)result.getItems().iterator();
+			Iterator<Object> es1Hits = (Iterator)result.getItems().iterator();
 			
 			List<GridQueryFieldMetadata> fieldsMeta = (List)result.getFieldsMetadata();			
 			
 			while (es1Hits.hasNext() && hits.size() < limit) {
-				ObjectNode node = ESUtil.getObjectNode(es1Hits.next(), fieldsMeta);
-				if (node!=null) {					
-					addHit(hits, node);
-				}				
+				Object item = es1Hits.next();
+				if(fieldsMeta.size()>0 && item instanceof List) {
+					ObjectNode node = ESUtil.getObjectNode((List)item, fieldsMeta);
+					if (node!=null) {					
+						addHit(hits, node);
+					}
+				}
+				else {
+					addHit(hits, makeObjectNode(item));
+				}
 			}
 			return result.getItems().size()>0? 1: 0;
 		}
 		if(es1Response instanceof List) {
-			List<ObjectNode> result = (List) es1Response;			
+			List<Object> result = (List) es1Response;			
 
 			// mix results 50:50 as far as possible
-			Iterator<ObjectNode> es1Hits = result.iterator();
+			Iterator<Object> es1Hits = result.iterator();
 			
 			while (es1Hits.hasNext() && hits.size() < limit) {
-				ObjectNode node = es1Hits.next();
+				Object node = es1Hits.next();
 				if (node!=null) {					
-					addHit(hits, node);
+					addHit(hits, makeObjectNode(node));
 				}				
 			}
 			return result.size()>0? 1: 0;
@@ -376,77 +665,121 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 	}
 	
 	@Override
-	protected String mergeQueryResultResponses(Object es1Response, Object es2Response, int limit, ResponseFormat format) throws Exception {
+	protected String mergeQueryResultResponses(List<Object> esResponses, ESQuery query) throws Exception {
+		List<ObjectNode> hits = new LinkedList<ObjectNode>();		
+		int totalHits = 0;
+		int shards = 0;
+		int limit = query.getLimit();
+		int offset = query.getFrom();
+		String rootPath = query.getResponseRootPath();
+		ResponseFormat format = query.getResponseFormat();
 		
-		if(es1Response instanceof CacheQueryResult || es2Response instanceof CacheQueryResult) {
-			CacheQueryResult result = (CacheQueryResult) es1Response;
-			CacheQueryResult result2 = (CacheQueryResult) es2Response;			
-			
-			CacheQueryResult mergedResult = null;
-			if(result!=null) {
-				mergedResult = result;
-				mergedResult.setFieldsMetadata(convertMetadata((Collection)result.getFieldsMetadata()));
-			}
-			if(result2!=null) {
+		CacheQueryResult mergedResult = null;
+		for(int i=0;i<esResponses.size();i++){
+			Object es1Response = esResponses.get(i);
+			if(es1Response instanceof CacheQueryResult) {
+				CacheQueryResult result = (CacheQueryResult) es1Response;				
 				if(mergedResult==null) {
-					mergedResult = result2;
-					mergedResult.setFieldsMetadata(convertMetadata((Collection)result2.getFieldsMetadata()));
+					mergedResult = result;
+					mergedResult.setFieldsMetadata(convertMetadata((Collection)result.getFieldsMetadata()));
 				}
 				else {					
-					mergedResult.getItems().addAll((Collection)result2.getItems());
+					mergedResult.getItems().addAll((Collection)result.getItems());
 				}
+				totalHits += result.getItems().size();
+				shards+=1;		
 			}
-			
-			GridRestResponse resultResponse = new GridRestResponse(mergedResult);   
+			else if(es1Response instanceof List) {
+				List<ObjectNode> result = (List) es1Response;
 				
-			String esResponse = ESRelay.objectMapper.writeValueAsString(resultResponse);
-			return esResponse;
-			
-					
-		}
-		else if(es1Response instanceof List || es2Response instanceof List) {
-			List<ObjectNode> result = (List) es1Response;
-			List<ObjectNode> result2 = (List) es2Response;			
-			
-			
-			List<ObjectNode> hits = new LinkedList<>();
-			int shard = _addQueryResultResponses(hits,result,limit);
-			shard+=_addQueryResultResponses(hits,result2,limit);
-			
-			int total = 0;
-			if(result!=null) total += result.size();
-			if(result2!=null) total += result2.size();
-			// add up data
-			ESResponse mergedResponse = new ESResponse(hits);
-			mergedResponse.setShards(shard);
-			mergedResponse.setTotalHits(total);
-			
-			if(format==ResponseFormat.DATASET) {
-				return mergedResponse.toDataset("items").toPrettyString();
-			}     
-			else {
-				return mergedResponse.toJSON().toPrettyString();	
+				shards += _addQueryResultResponses(hits,result,limit);
+				totalHits += result.size();			
 			}
-					
+			else if(es1Response instanceof ObjectNode) {
+				ObjectNode es1Json=(ObjectNode)es1Response;
+				if (es1Json.has(ESConstants.R_ERROR)) {
+					continue;
+				}
+				addHit(hits, es1Json);
+				shards+=1;
+				totalHits +=1;
+			}				
+			else {
+				return super.mergeQueryResultResponses(esResponses, query);
+			}
 		}
 		
-		if(es2Response==null && es1Response==null){
-			throw new Exception("ES 1.x error: " + "both null result");
-		}		
-
-		return super.mergeQueryResultResponses(es1Response, es2Response, limit, format);
+		if(format==ResponseFormat.FIELDSMETA) {
+			if(mergedResult==null) {
+				throw new IllegalArgumentException("ES 1.x error: mergedResult is null" + CacheQueryResult.class);
+			}
+			return ESRelay.objectMapper.writer().writeValueAsString(mergedResult);
+		}
+		else if(format==ResponseFormat.OPERATION) {
+			Object first = null;
+			if(mergedResult==null) {
+				first = hits.get(0);
+			}
+			else {
+				first = mergedResult.getItems().iterator().next();
+			}
+			if(rootPath!=null) {
+				ObjectNode res = ESRelay.jsonNodeFactory.objectNode();
+				res.set(rootPath, ESRelay.objectMapper.convertValue(first,ObjectNode.class));
+				
+				return ESRelay.objectMapper.writer().writeValueAsString(res);
+			}
+			else {
+				return ESRelay.objectMapper.writer().writeValueAsString(first);
+			}
+		}
+		
+		if(mergedResult!=null) {
+			_addQueryResultResponses(hits,mergedResult,limit);
+		}
+		
+		if(hits.size() > offset+limit) {
+			hits = hits.subList(offset, offset+limit);
+		}
+		else {
+			hits = hits.subList(offset,hits.size());
+		}
+		
+		// add up data
+		ESResponse mergedResponse = new ESResponse(hits);
+		mergedResponse.setShards(shards);
+		mergedResponse.setTotalHits(totalHits);
+		
+		if(format==ResponseFormat.DATASET) {
+			return mergedResponse.toDataset(rootPath).toPrettyString();
+		}
+		else if(format==ResponseFormat.HITS) {
+			return mergedResponse.toJSON().toPrettyString();	
+		}
+		else {
+			throw new IllegalArgumentException("ES 1.x error: Not support format " + format);
+		}
 	}
 
 	 /**
      * @param meta Internal query field metadata.
      * @return Rest query field metadata.
      */
-    private Collection<CacheQueryFieldsMetaResult> convertMetadata(Collection<GridQueryFieldMetadata> meta) {
+    private Collection<CacheQueryFieldsMetaResult> convertMetadata(Collection<?> meta) {
         List<CacheQueryFieldsMetaResult> res = new ArrayList<>();
 
         if (meta != null) {
-            for (GridQueryFieldMetadata info : meta)
-                res.add(new CacheQueryFieldsMetaResult(info));
+            for (Object info : meta) {
+            	if(info instanceof GridQueryFieldMetadata) {
+            		res.add(new CacheQueryFieldsMetaResult((GridQueryFieldMetadata)info));
+            	}
+            	else if(info instanceof String) {
+            		CacheQueryFieldsMetaResult metaData = new CacheQueryFieldsMetaResult();
+            		metaData.setFieldName(info.toString());
+            		res.add(metaData);
+            	}
+            }
+                
         }
 
         return res;

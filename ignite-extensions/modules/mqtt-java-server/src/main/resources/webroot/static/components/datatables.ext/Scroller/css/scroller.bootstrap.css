@@ -1,0 +1,34 @@
+div.DTS {
+    display: block !important;
+}
+
+div.DTS tbody th,
+div.DTS tbody td {
+    white-space: nowrap;
+}
+
+div.DTS div.DTS_Loading {
+    z-index: 1;
+}
+
+div.DTS div.dataTables_scrollBody {
+    /* background: repeating-linear-gradient(45deg, #edeeff, #edeeff 10px, white 10px, white 20px); */
+    background: repeating-linear-gradient(45deg, #313437, #313437 5px, #232429 10px, #232429 20px);
+}
+
+div.DTS div.dataTables_scrollBody table {
+    z-index: 2;
+}
+
+div.DTS div.dataTables_paginate,
+div.DTS div.dataTables_length {
+    display: none;
+}
+
+div.DTS tbody tr.even {
+    background-color: #232429;
+}
+
+div.DTS tbody tr.odd {
+    background-color: #232429;
+}

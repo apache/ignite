@@ -6,12 +6,12 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-        <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-parent-ext-internal</artifactId>
-        <version>1</version>
-        <relativePath>../../parent-internal/pom.xml</relativePath>
-    </parent>
-    
+		<groupId>org.apache.ignite</groupId>
+		<artifactId>ignite-parent-ext-internal</artifactId>
+		<version>1</version>
+		<relativePath>../../parent-internal/pom.xml</relativePath>
+	</parent>
+
 	<version>1.45.0-SNAPSHOT</version>
 	<artifactId>ignite-mongodb-realy</artifactId>
 
@@ -122,15 +122,15 @@
 		</dependency>
 
 		<dependency>
-			    <groupId>aias</groupId>
-			    <artifactId>sentence-encoder-100-sdk</artifactId>
-			    <version>0.23.0</version>
+			<groupId>aias</groupId>
+			<artifactId>sentence-encoder-100-sdk</artifactId>
+			<version>0.23.0</version>
 		</dependency>
-		
+
 		<dependency>
-			    <groupId>aias</groupId>
-			    <artifactId>sentence-encoder-15-sdk</artifactId>
-			    <version>0.23.0</version>
+			<groupId>aias</groupId>
+			<artifactId>sentence-encoder-15-sdk</artifactId>
+			<version>0.23.0</version>
 		</dependency>
 
 		<dependency>

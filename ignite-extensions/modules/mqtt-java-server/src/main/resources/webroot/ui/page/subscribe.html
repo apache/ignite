@@ -1,0 +1,156 @@
+<!--
+ * Copyright 2019 Yang Wang
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+
+<style type="text/css">
+
+</style>
+
+<section class="content-header">
+    <div class="row">
+        <div class="col-md-6 col-sm-6 col-xs-12">
+            <h1 class="content-wrapper-title content-wrapper-title-cover" data-locale="menu_monitor_subscribe">
+            </h1>
+        </div>
+        <div class="col-md-6 col-sm-6 col-xs-12 search-col">
+            <div class="input-group input-group-sm">
+                <input type="text" class="form-control" placeholder="" data-locale="common_client_id" id="query-subscribe-client-id">
+                <span class="input-group-btn">
+                    <button type="button" class="btn btn-info btn-flat" id="query-subscribe">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row info-row info-row-cover last-info-row">
+        <div class="col-md-12 col-sm-12 col-xs-12 table-cols">
+            <div class="box-body table-box-body">
+                <table class="table table-bordered table-striped table-hover" id="subscribe-info-table">
+                    <thead>
+                        <tr>
+                            <th data-locale="common_client_id"></th>
+                            <th data-locale="common_topic"></th>
+                            <th data-locale="common_qos"></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script type="text/javascript">
+    var subscribeDataTable;
+    var querySubscribeClientId = null;
+
+    var querySubscribeCols = [{
+        "sWidth": "40%"
+    }, {
+        "sWidth": "40%"
+    }, {
+        "sWidth": "20%"
+    }];
+
+    var querySubscribeColDefs = [{
+        'targets': 0,
+        'data': 'clientId',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 1,
+        'data': 'topic',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 2,
+        'data': 'qos',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }];
+
+    function querySubscribeDataTable() {
+        topicDataTable = $('#subscribe-info-table').DataTable({
+            'destroy': true,
+            'language': datatablesLanguage(),
+            'pagingType': datatables_paging_type,
+            'pageLength': datatables_paging_len,
+            'autoWidth': true,
+            'searching': false,
+            'lengthChange': false,
+            'ordering': false,
+            'info': true,
+            'paging': true,
+            'processing': true,
+            'serverSide': true,
+            'aoColumns': querySubscribeCols,
+            'columnDefs': querySubscribeColDefs,
+            'ajax': function(data, callback, settings) {
+                var draw = data["draw"];
+                var start = data["start"];
+                var pageSize = data["length"];
+                var pageNum = start / pageSize + 1;
+
+                var params = {
+                    'clientId': querySubscribeClientId,
+                    'pageNum': pageNum,
+                    'pageSize': pageSize
+                };
+
+                $.ajax({
+                    url: '/sys/sub/get',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(params),
+                    success: function(res) {
+                        var drawData = datatables_no_data;
+
+                        if (res && res.code === 1) {
+                            var total = res.result.total;
+                            var items = res.result.items;
+
+                            if (total && items) {
+                                drawData = {
+                                    "draw": draw,
+                                    "recordsTotal": total,
+                                    "recordsFiltered": total,
+                                    "data": items
+                                };
+                            }
+                        }
+
+                        callback(drawData);
+                    },
+                    error: function(xhr, status, error) {
+                        callback(datatables_no_data);
+                    }
+                });
+            }
+        });
+    }
+
+    $('#query-subscribe').click(function() {
+        querySubscribeClientId = $('#query-subscribe-client-id').val();
+
+        querySubscribeDataTable();
+    });
+
+    querySubscribeDataTable();
+</script>

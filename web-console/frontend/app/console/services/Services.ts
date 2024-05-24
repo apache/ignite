@@ -19,8 +19,7 @@ export default class Services {
 
     atomicityModes: Menu<AtomicityModes> = [
         {value: 'ATOMIC', label: 'ATOMIC'},
-        {value: 'TRANSACTIONAL', label: 'TRANSACTIONAL'},
-        {value: 'TRANSACTIONAL_SNAPSHOT', label: 'TRANSACTIONAL_SNAPSHOT'}
+        {value: 'TRANSACTIONAL', label: 'TRANSACTIONAL'}        
     ];
 
     constructor(private $http: ng.IHttpService) {}

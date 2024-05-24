@@ -1,0 +1,139 @@
+<!--
+ * Copyright 2019 Yang Wang
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+
+<style type="text/css">
+
+</style>
+
+<section class="content-header">
+    <div class="row">
+        <div class="col-md-12 col-sm-12 col-xs-12">
+            <h1 class="content-wrapper-title content-wrapper-title-cover" data-locale="menu_management_listener">
+            </h1>
+        </div>
+    </div>
+
+    <div class="row info-row info-row-cover last-info-row">
+        <div class="col-md-12 col-sm-12 col-xs-12 table-cols">
+            <div class="box-body table-box-body">
+                <table class="table table-bordered table-striped table-hover" id="listener-info-table">
+                    <thead>
+                        <tr>
+                            <th data-locale="listener_protocol"></th>
+                            <th data-locale="listener_address_port"></th>
+                            <th data-locale="listener_conn_max_limit"></th>
+                            <th data-locale="listener_conn_count"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script type="text/javascript">
+    var listenerDataTable;
+
+    var queryListenerCols = [{
+        "sWidth": "25%"
+    }, {
+        "sWidth": "25%"
+    }, {
+        "sWidth": "25%"
+    }, {
+        "sWidth": "25%"
+    }];
+
+    var queryListenerColDefs = [{
+        'targets': 0,
+        'data': 'protocol',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 1,
+        'data': 'addressAndPort',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 2,
+        'data': 'connMaxLimit',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 3,
+        'data': 'connCount',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }];
+
+    function queryListenerDataTable() {
+        listenerDataTable = $('#listener-info-table').DataTable({
+            'destroy': true,
+            'language': datatablesLanguage(),
+            'autoWidth': false,
+            'searching': false,
+            'lengthChange': false,
+            'ordering': false,
+            'info': false,
+            'paging': false,
+            'processing': true,
+            'serverSide': true,
+            'aoColumns': queryListenerCols,
+            'columnDefs': queryListenerColDefs,
+            'ajax': function(data, callback, settings) {
+                var draw = data["draw"];
+
+                $.ajax({
+                    url: '/sys/listener/get',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({}),
+                    success: function(res) {
+                        var drawData = datatables_no_data;
+
+                        if (res && res.code === 1) {
+                            var total = res.result.total;
+                            var items = res.result.items;
+
+                            if (total && items) {
+                                drawData = {
+                                    "draw": draw,
+                                    "recordsTotal": total,
+                                    "recordsFiltered": total,
+                                    "data": items
+                                };
+                            }
+                        }
+
+                        callback(drawData);
+                    },
+                    error: function(xhr, status, error) {
+                        callback(datatables_no_data);
+                    }
+                });
+            }
+        });
+    }
+
+    queryListenerDataTable();
+</script>

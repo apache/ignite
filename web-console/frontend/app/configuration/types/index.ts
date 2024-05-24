@@ -2,7 +2,7 @@
 
 // Cache
 export type CacheModes = 'PARTITIONED' | 'REPLICATED' ;
-export type AtomicityModes = 'ATOMIC' | 'TRANSACTIONAL' | 'TRANSACTIONAL_SNAPSHOT';
+export type AtomicityModes = 'ATOMIC' | 'TRANSACTIONAL' ;
 
 export interface ShortCache {
     id: string,

@@ -20,8 +20,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class BlacklistFilter implements IFilter {
 	private static final String TYPE_VALUE = "value";
 
-	private final Set<String> fIndices;
-	private final Set<String> fTypes;
+	private final Set<String> fIndices; // black indices
+	private final Set<String> fTypes; // black types
 
 	/**
 	 * Given blacklist sets must not be null.
@@ -42,20 +42,19 @@ public class BlacklistFilter implements IFilter {
 		boolean allTypes = false;
 
 		// check if all indices are to be searched
-		// TODO: wildcards
-		if (indices.isEmpty() || indices.size() == 1
-				&& (indices.get(0).equals(ESConstants.ALL_FRAGMENT) || indices.get(0).equals(ESConstants.WILDCARD))) {
+		
+		if (indices.isEmpty() || indices.size() == 1 && indices.get(0).equals(ESConstants.WILDCARD)) {
 			allIndices = true;
 		}
 
 		// check if all types are to be searched
-		if (types.isEmpty() || types.size() == 1 && types.get(0).equals(ESConstants.ALL_FRAGMENT)) {
+		if (types.isEmpty() || types.size() == 1 && types.get(0).equals(ESConstants.WILDCARD)) {
 			allTypes = true;
 		}
 
 		boolean removedLast = false;
 
-		if (!allIndices) {
+		if (fIndices.size()>0) {
 			// remove blacklisted indices
 			indices.removeAll(fIndices);
 
@@ -63,20 +62,11 @@ public class BlacklistFilter implements IFilter {
 				removedLast = true;
 			} else {
 				// repackage into request path
-				replaceInPath(query, indices, 0);
+				replaceInPath(query, indices);
 			}
-		} else {
-			// search all, but with negated entries
-			// TODO: problem - excluded indices must exist
-			indices.clear();
-			indices.add(ESConstants.WILDCARD);
-			for (String index : fIndices) {
-				indices.add("-" + index);
-			}
-			replaceInPath(query, indices, 0);
 		}
 
-		if (!allTypes) {
+		if (!allTypes && fTypes.size()>0) {
 			// remove blacklisted types
 			types.removeAll(fTypes);
 
@@ -84,19 +74,15 @@ public class BlacklistFilter implements IFilter {
 				removedLast = true;
 			} else {
 				// repackage into request path
-				replaceInPath(query, types, 1);
-			}
-		} else {
-			try {
-				filterTypes(query);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				try {
+					filterTypes(query);
+				} catch (Exception e) {				
+					e.printStackTrace();
+				}
 			}
 		}
-
-		// check that if all indices or types were removed the query won't pass
-		// as "get all"
+		
+		// check that if all indices or types were removed the query won't pass as "get all"
 		if (removedLast) {
 			query.cancel();
 		}
@@ -115,24 +101,19 @@ public class BlacklistFilter implements IFilter {
 
 			valueObject.put(TYPE_VALUE, type);
 
-			typeFilter.put(ESConstants.Q_TYPE, valueObject);
+			typeFilter.set(ESConstants.Q_TYPE, valueObject);
 
-			notObject.put(ESConstants.Q_NOT, typeFilter);
+			notObject.set(ESConstants.Q_NOT, typeFilter);
 			filters.add(notObject);
 		}
 	}
 
-	private void replaceInPath(ESQuery query, List<String> entries, int index) {
-		String[] path = query.getQueryPath();
-
+	private void replaceInPath(ESQuery query, List<String> entries) {
 		String fragment = "";
 		for (String entry : entries) {
 			fragment += entry + ",";
 		}
 		fragment = fragment.substring(0, fragment.length() - 1);
-
-		path[index] = fragment;
-
-		query.setQueryPath(path);
+		query.setIndices(fragment);
 	}
 }

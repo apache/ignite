@@ -1,0 +1,248 @@
+<!--
+ * Copyright 2019 Yang Wang
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Stuart | Admin UI</title>
+    <!-- Tell the browser to be responsive to screen width -->
+    <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+    <!-- Bootstrap 3.3.7 -->
+    <link rel="stylesheet" href="../../static/components/bootstrap/dist/css/bootstrap.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="../../static/components/font-awesome/css/font-awesome.min.css">
+    <!-- Ionicons -->
+    <link rel="stylesheet" href="../../static/components/Ionicons/css/ionicons.min.css">
+    <!-- DataTables -->
+    <link rel="stylesheet" href="../../static/components/datatables.net-bs/css/dataTables.bootstrap.css">
+    <!-- DataTables RowReorder -->
+    <link rel="stylesheet" href="../../static/components/datatables.ext/RowReorder/css/rowReorder.bootstrap.css">
+    <!-- DataTables Scroller -->
+    <link rel="stylesheet" href="../../static/components/datatables.ext/Scroller/css/scroller.bootstrap.css">
+    <!-- Select2 -->
+    <link rel="stylesheet" href="../../static/components/select2/dist/css/select2.css">
+    <!-- Switch -->
+    <link rel="stylesheet" href="../../static/components/bootstrap-switch/dist/css/bootstrap3/bootstrap-switch.css">
+    <!-- Labelauty -->
+    <link rel="stylesheet" href="../../static/components/jquery-labelauty/css/jquery-labelauty.css">
+    <!-- Bootstrap Notify -->
+    <link rel="stylesheet" href="../../static/components/bootstrap-notify/css/animate.min.css">
+    <!-- JSONView -->
+    <link rel="stylesheet" href="../../static/components/jquery-jsonview/dist/css/jquery.jsonview.css">
+    <!-- Theme style -->
+    <link rel="stylesheet" href="../../static/components/adminlte/css/AdminLTE.css">
+    <!-- AdminLTE Skins. Choose a skin from the css/skins
+       folder instead of downloading all of them to reduce the load. -->
+    <link rel="stylesheet" href="../../static/components/adminlte/css/skins/skin-blue.css">
+    <!-- Index style -->
+    <link rel="stylesheet" href="../css/index.css">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+
+<body class="hold-transition skin-blue sidebar-mini" style="height:auto;min-height:100%;">
+    <div class="wrapper">
+        <header class="main-header main-header-line">
+            <!-- Logo -->
+            <a class="logo">
+                <b>Stuart</b>
+                <sub class="logo-sub">
+                    <i class="fa fa-send" aria-hidden="true"></i>
+                </sub>
+            </a>
+
+            <!-- Header Navbar: style can be found in header.less -->
+            <nav class="navbar navbar-static-top">
+                <!-- Navbar Right Menu -->
+                <div class="navbar-custom-menu navbar-custom-menu-cover">
+                    <ul class="nav navbar-nav">
+                        <li class="node-select-container">
+                            <select class="select2" id="system-node-list">
+                            </select>
+                        </li>
+                        <li class="logout-li">
+                            <a id="logout-link">
+                                <i class="fa fa-sign-out"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </header>
+
+        <!-- Left side column. contains the logo and sidebar -->
+        <aside class="main-sidebar">
+            <!-- sidebar: style can be found in sidebar.less -->
+            <section class="sidebar">
+                <!-- sidebar menu: : style can be found in sidebar.less -->
+                <ul class="sidebar-menu" data-widget="tree">
+                    <li class="header first-header" data-locale="menu_monitor"></li>
+                    <li class="treeview">
+                        <a href="javascript:void(0);" id="console">
+                            <i class="fa fa-bar-chart"></i>
+                            <span data-locale="menu_monitor_console"></span>
+                        </a>
+                    </li>
+                    <li class="treeview">
+                        <a href="javascript:void(0);" id="connect">
+                            <i class="fa fa-microchip"></i>
+                            <span data-locale="menu_monitor_connect"></span>
+                        </a>
+                    </li>
+                    <li class="treeview">
+                        <a href="javascript:void(0);" id="session">
+                            <i class="fa fa-exchange"></i>
+                            <span data-locale="menu_monitor_session"></span>
+                        </a>
+                    </li>
+                    <li class="treeview">
+                        <a href="javascript:void(0);" id="topic">
+                            <i class="fa fa-tree"></i>
+                            <span data-locale="menu_monitor_topic"></span>
+                        </a>
+                    </li>
+                    <li class="treeview">
+                        <a href="javascript:void(0);" id="subscribe">
+                            <i class="fa fa-rss-square"></i>
+                            <span data-locale="menu_monitor_subscribe"></span>
+                        </a>
+                    </li>
+                    <li class="header" data-locale="menu_management"></li>
+                    <li class="treeview" style="display:none" id="user-treeview">
+                        <a href="javascript:void(0);" id="user">
+                            <i class="fa fa-vcard"></i>
+                            <span data-locale="menu_management_user"></span>
+                        </a>
+                    </li>
+                    <li class="treeview" style="display:none" id="acl-treeview">
+                        <a href="javascript:void(0);" id="acl">
+                            <i class="fa fa-list-ol"></i>
+                            <span data-locale="menu_management_acl"></span>
+                        </a>
+                    </li>
+                    <li class="treeview">
+                        <a href="javascript:void(0);" id="listener">
+                            <i class="fa fa-assistive-listening-systems"></i>
+                            <span data-locale="menu_management_listener"></span>
+                        </a>
+                    </li>
+                    <li class="header" data-locale="menu_tool"></li>
+                    <li class="treeview">
+                        <a href="javascript:void(0);" id="websocket">
+                            <i class="fa fa-html5"></i>
+                            <span data-locale="menu_tool_websocket"></span>
+                        </a>
+                    </li>
+                    <li class="treeview">
+                        <a href="javascript:void(0);" id="api">
+                            <i class="fa fa-code"></i>
+                            <span data-locale="menu_tool_restful"></span>
+                        </a>
+                    </li>
+                    <li class="header" data-locale="menu_system"></li>
+                    <li class="treeview">
+                        <a href="javascript:void(0);" id="admin">
+                            <i class="fa fa-user-circle"></i>
+                            <span data-locale="menu_system_admin"></span>
+                        </a>
+                    </li>
+                </ul>
+            </section>
+            <!-- /.sidebar -->
+        </aside>
+
+        <!-- Content Wrapper. Contains page content -->
+        <div class="content-wrapper">
+        </div>
+        <!-- /.content-wrapper -->
+
+        <footer class="main-footer">
+            <div class="pull-right hidden-xs">
+                All rights reserved.
+            </div>
+            <div>Copyright &copy; 2017-2018 Stuart Studio.</div>
+        </footer>
+
+        <div class="modal fade" id="modal-common-alert">
+            <div class="modal-dialog">
+                <div class="modal-content modal-content-cover">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="common-alert-title"></h4>
+                    </div>
+                    <div class="modal-body" id="common-alert-content">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal" data-locale="common_close_btn"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ./wrapper -->
+
+    <!-- Common -->
+    <script src="../../static/components/common/string.js"></script>
+    <!-- jQuery 3 -->
+    <script src="../../static/components/jquery/dist/jquery.js"></script>
+    <!-- Bootstrap 3.3.7 -->
+    <script src="../../static/components/bootstrap/dist/js/bootstrap.min.js"></script>
+    <!-- DataTables -->
+    <script src="../../static/components/datatables.net/js/jquery.dataTables.min.js"></script>
+    <script src="../../static/components/datatables.net-bs/js/dataTables.bootstrap.min.js"></script>
+    <!-- DataTables RowReorder -->
+    <script src="../../static/components/datatables.ext/RowReorder/js/dataTables.rowReorder.min.js"></script>
+    <!-- DataTables Scroller -->
+    <script src="../../static/components/datatables.ext/Scroller/js/dataTables.scroller.min.js"></script>
+    <!-- Select2 -->
+    <script src="../../static/components/select2/dist/js/select2.full.min.js"></script>
+    <!-- Switch -->
+    <script src="../../static/components/bootstrap-switch/dist/js/bootstrap-switch.min.js"></script>
+    <!-- Labelauty -->
+    <script src="../../static/components/jquery-labelauty/js/jquery-labelauty.js"></script>
+    <!-- Bootstrap Notify -->
+    <script src="../../static/components/bootstrap-notify/js/bootstrap-notify.min.js"></script>
+    <!-- JSONView -->
+    <script src="../../static/components/jquery-jsonview/dist/js/jquery.jsonview.min.js"></script>
+    <!-- Validation -->
+    <script src="../../static/components/jquery-validation/jquery.validate.min.js"></script>
+    <script src="../../static/components/jquery-validation/additional-methods.min.js"></script>
+    <!-- AdminLTE App -->
+    <script src="../../static/components/adminlte/js/adminlte.js"></script>
+    <!-- Paho MQTT -->
+    <script src="../../static/components/paho-mqtt/mqttws31.min.js"></script>
+    <!-- Language -->
+    <script src="../../static/components/Language/language.js"></script>
+    <!-- Date Extend -->
+    <script src="../js/date.ext.js"></script>
+    <!-- Common -->
+    <script src="../js/common.js"></script>
+    <!-- Validation Configuration -->
+    <script src="../js/validation.js"></script>
+    <!-- Index -->
+    <script src="../js/index.js"></script>
+</body>
+
+</html>

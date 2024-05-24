@@ -2,29 +2,37 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	
-	<parent>
-        <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-parent-ext-internal</artifactId>
-        <version>1</version>
-        <relativePath>../../parent-internal/pom.xml</relativePath>
-    </parent>
-    
+    <groupId>org.elasticsearch.relay</groupId>
 	<artifactId>elasticsearch-relay</artifactId>
+	<version>${ignite.version}</version>
 	
 	<build>
 		<finalName>es-relay</finalName>		
 	</build>
+	
+	<properties>
+	 	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    	<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>   
+    	<maven.compiler.source>11</maven.compiler.source>
+    	<maven.compiler.target>11</maven.compiler.target>
+        <httpclient.version>4.5.1</httpclient.version>
+        <ignite.version>2.16.999-SNAPSHOT</ignite.version>
+        <spring.version>5.3.19</spring.version>
+    </properties>
+    
 	<dependencies>
 
 		<dependency>
 			<groupId>org.apache.ignite</groupId>
-			<artifactId>ignite-core</artifactId>			
+			<artifactId>ignite-core</artifactId>
+			<version>${ignite.version}</version>		
 			<scope>provided</scope>
 		</dependency>
 		
 		<dependency>
 			<groupId>org.apache.ignite</groupId>
-			<artifactId>ignite-rest-http</artifactId>			
+			<artifactId>ignite-rest-http</artifactId>
+			<version>${ignite.version}</version>		
 			<scope>provided</scope>
 		</dependency>
 		
@@ -60,7 +68,35 @@
 			<groupId>org.jsoup</groupId>
 			<artifactId>jsoup</artifactId>
 			<version>1.9.2</version>
-		</dependency>		
+		</dependency>
+		
+		<dependency>
+            <groupId>org.elasticsearch.client</groupId>
+      		<artifactId>elasticsearch-rest-high-level-client</artifactId>
+            <version>7.17.3</version>
+            <scope>test</scope>           
+        </dependency>
+        
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+            <version>2.2</version>
+            <scope>test</scope>
+        </dependency>
+        
+        <dependency>
+        	<groupId>junit</groupId>
+  			<artifactId>junit</artifactId>
+  			<version>4.12</version>
+  			<scope>test</scope>
+        </dependency>
+        
+        <dependency>
+        	<groupId>org.mockito</groupId>
+  			<artifactId>mockito-core</artifactId>
+  			<version>4.9.0</version>
+  			<scope>test</scope>
+        </dependency>
 
 	</dependencies>
 	<packaging>war</packaging>

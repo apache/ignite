@@ -43,9 +43,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Queue;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -88,6 +93,8 @@ import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshalle
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.LONG_ARR;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.OBJ_ARR;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.PROPS;
+import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.CONCURRENT_MAP;
+import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.CONCURRENT_QUEUE;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.PROXY;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.SERIALIZABLE;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.SHORT;
@@ -360,6 +367,14 @@ class OptimizedClassDescriptor {
                 catch (NoSuchFieldException e) {
                     throw new IOException(e);
                 }
+            }            
+            else if (Map.class.isAssignableFrom(cls) && Serializable.class.isAssignableFrom(cls) && hasDeclaredConstructor(cls,false)) {
+                type = CONCURRENT_MAP;
+                
+            }
+            else if (BlockingQueue.class.isAssignableFrom(cls) && Serializable.class.isAssignableFrom(cls) && hasDeclaredConstructor(cls,true)) {
+                type = CONCURRENT_QUEUE;               
+                
             }
             else if (cls == LinkedHashSet.class) {
                 type = LINKED_HASH_SET;
@@ -826,6 +841,15 @@ class OptimizedClassDescriptor {
                 out.writeLinkedHashMap((LinkedHashMap<?, ?>)obj, loadFactorFieldOff, accessOrderFieldOff, false);
 
                 break;
+                
+            case CONCURRENT_MAP:
+                out.writeConcurrentMap((Map<?, ?>)obj, false);
+
+                break;
+            case CONCURRENT_QUEUE:
+            	out.writeConcurrentQueue((BlockingQueue<?>)obj,true);
+
+                break;
 
             case LINKED_HASH_SET:
                 out.writeLinkedHashSet((LinkedHashSet<?>)obj, HASH_SET_MAP_OFF, loadFactorFieldOff);
@@ -1037,6 +1061,20 @@ class OptimizedClassDescriptor {
             type = OptimizedFieldType.OTHER;
 
         return type;
+    }
+    
+    private boolean hasDeclaredConstructor(Class<?> loadCls,boolean size){        
+		try {
+			Constructor<?> c;
+			if(!size)
+				c = loadCls.getDeclaredConstructor();
+			else
+				c = loadCls.getDeclaredConstructor(int.class);
+			
+		} catch (Exception e) {			
+			return false;
+		}
+		return true;
     }
 
     /**

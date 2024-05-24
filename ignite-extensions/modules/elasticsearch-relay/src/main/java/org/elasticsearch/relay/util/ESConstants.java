@@ -7,6 +7,7 @@ public class ESConstants {
 	public static final String DELETE_FRAGMENT = "_delete";
 	public static final String INSERT_FRAGMENT = "_put";
 	public static final String BULK_FRAGMENT = "_bulk";
+	public static final String INDICES_FRAGMENT = "_index";
 
 	public static final String ALL_FRAGMENT = "_all";
 	public static final String WILDCARD = "*";
@@ -56,9 +57,11 @@ public class ESConstants {
 	public static final String R_STATUS = "status";
 
 	public static final String R_SHARDS = "_shards";
+	public static final String R_CLUSTERS = "_clusters";
 	public static final String R_SHARDS_TOT = "total";
-	public static final String R_SHARDS_SUC = "sucessful";
+	public static final String R_SHARDS_SUC = "successful";
 	public static final String R_SHARDS_FAIL = "failed";
+	public static final String R_SHARDS_SKIP = "skipped";
 
 	public static final String R_HITS = "hits";
 

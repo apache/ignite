@@ -1,0 +1,120 @@
+<!--
+ * Copyright 2019 Yang Wang
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Stuart | Admin UI</title>
+    <!-- Tell the browser to be responsive to screen width -->
+    <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+    <!-- Bootstrap 3.3.7 -->
+    <link rel="stylesheet" href="/static/components/bootstrap/dist/css/bootstrap.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="/static/components/font-awesome/css/font-awesome.min.css">
+    <!-- Ionicons -->
+    <link rel="stylesheet" href="/static/components/Ionicons/css/ionicons.min.css">
+    <!-- Theme style -->
+    <link rel="stylesheet" href="/static/components/adminlte/css/AdminLTE.min.css">
+    <!-- AdminLTE Skins. Choose a skin from the css/skins
+       folder instead of downloading all of them to reduce the load. -->
+    <link rel="stylesheet" href="/static/components/adminlte/css/skins/_all-skins.min.css">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <style type="text/css">
+        .content-wrapper-cover {
+            margin-left: 0px !important;
+            background-color: #1d1e24;
+            color: #929299;
+            padding-top: 18%;
+        }
+    </style>
+</head>
+
+<body class="hold-transition skin-blue sidebar-mini">
+    <div class="wrapper">
+        <!-- Content Wrapper. Contains page content -->
+        <div class="content-wrapper content-wrapper-cover">
+            <!-- Main content -->
+            <section class="content">
+                <div class="error-page">
+                    <h2 class="headline text-yellow"> 404</h2>
+
+                    <div class="error-content">
+                        <h3><i class="fa fa-warning text-yellow"></i> 抱歉，您要访问的页面不存在！</h3>
+
+                        <p style="font-weight: 200">
+                            错误原因可能是：网络信号差、文件不存在、网址不正确。 您可以点击此链接返回 <a href="./ui/page/index.html">
+                                服务器管理界面</a> 或通过百度搜索详细信息。
+                        </p>
+
+                        <form class="search-form">
+                            <div class="input-group">
+                                <input type="text" class="form-control" placeholder="搜索" id="search">
+
+                                <div class="input-group-btn">
+                                    <button class="btn btn-warning btn-flat" id="submit">
+                                        <i class="fa fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- /.input-group -->
+                        </form>
+                    </div>
+                    <!-- /.error-content -->
+                </div>
+                <!-- /.error-page -->
+            </section>
+            <!-- /.content -->
+        </div>
+    </div>
+    <!-- ./wrapper -->
+
+    <!-- jQuery 3 -->
+    <script src="/static/components/jquery/dist/jquery.min.js"></script>
+    <!-- Bootstrap 3.3.7 -->
+    <script src="/static/components/bootstrap/dist/js/bootstrap.min.js"></script>
+    <!-- FastClick -->
+    <script src="/static/components/fastclick/lib/fastclick.js"></script>
+    <!-- AdminLTE App -->
+    <script src="/static/components/adminlte/js/adminlte.min.js"></script>
+
+    <script type="text/javascript">
+        var baidu = 'https://www.baidu.com';
+
+        $('#submit').click(function() {
+            var value = $('#search').val();
+
+            if (value && $.trim(value) != '') {
+                window.location.href = baidu + '/s?wd=' + value;
+            } else {
+                window.location.href = baidu;
+            }
+
+            return false;
+        });
+    </script>
+</body>
+
+</html>

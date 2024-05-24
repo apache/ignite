@@ -24,25 +24,18 @@ public class ESRelayConfig {
 
 	private static final String LOG_REQUESTS = "elasticsearch.relay.log_requests";	
 
-	private static final String ES_CLUSTER = "elasticsearch.cluster.name";
-	private static final String ES_URL = "elasticsearch.url";
-	private static final String ES_API_HOST = "elasticsearch.api.host";
-	private static final String ES_API_PORT = "elasticsearch.api.port";
+	// indexed config
+	private static final String ES_CLUSTER = "elasticsearch%d.cluster.name";
+	private static final String ES_URL = "elasticsearch%d.url";
+	private static final String ES_API_HOST = "elasticsearch%d.api.host";
+	private static final String ES_API_PORT = "elasticsearch%d.api.port";
 
-	private static final String ES_INDICES = "elasticsearch.indices";
+	private static final String ES_INDICES = "elasticsearch%d.indices";
 
-	private static final String ES_BL_INDICES = "elasticsearch.indices.blacklist";
-	private static final String ES_BL_TYPES = "elasticsearch.types.blacklist";
+	private static final String ES_BL_INDICES = "elasticsearch%d.indices.blacklist";
+	private static final String ES_BL_TYPES = "elasticsearch%d.types.blacklist";
 
-	private static final String ES2_CLUSTER = "elasticsearch2.cluster.name";
-	private static final String ES2_URL = "elasticsearch2.url";
-	private static final String ES2_API_HOST = "elasticsearch2.api.host";
-	private static final String ES2_API_PORT = "elasticsearch2.api.port";
-
-	private static final String ES2_INDICES = "elasticsearch2.indices";
-
-	private static final String ES2_BL_INDICES = "elasticsearch2.indices.blacklist";
-	private static final String ES2_BL_TYPES = "elasticsearch2.types.blacklist";
+	
 
 	private static final String LIFERAY_INDEX = "elasticsearch.relay.liferay_index";
 	private static final String LIFERAY_TYPES = "elasticsearch.relay.liferay_types";
@@ -102,98 +95,65 @@ public class ESRelayConfig {
 	public boolean getLogRequests() {
 		return Boolean.parseBoolean(fProperties.get(LOG_REQUESTS));
 	}
-
-	public String getClusterName() {
-		return fProperties.get(ES_CLUSTER);
+	
+	// begin with 1
+	public int getClusterSize() {
+		for(int i=1;i<Integer.MAX_VALUE;i++) {
+			String name = this.getClusterName(i);
+			if(name==null) {
+				return i-1;
+			}
+		}
+		return Integer.MAX_VALUE;
 	}
 
-	public String getElasticUrl() {
-		return fProperties.get(ES_URL);
+	public String getClusterName(int i) {
+		return fProperties.get(String.format(ES_CLUSTER,i));
 	}
 
-	public String getElasticApiHost() {
-		return fProperties.get(ES_API_HOST);
+	public String getElasticUrl(int i) {
+		return fProperties.get(String.format(ES_URL,i));
 	}
 
-	public int getElasticApiPort() {
-		return Integer.parseInt(fProperties.get(ES_API_PORT));
+	public String getElasticApiHost(int i) {
+		return fProperties.get(String.format(ES_API_HOST,i));
 	}
 
-	public Set<String> getElasticIndices() {
+	public int getElasticApiPort(int i) {
+		return Integer.parseInt(fProperties.get(String.format(ES_API_PORT,i)));
+	}
+
+	public Set<String> getElasticIndices(int i) {
 		Set<String> indices = new HashSet<String>();
 
-		for (String index : fProperties.get(ES_INDICES).split(",")) {
+		for (String index : fProperties.get(String.format(ES_INDICES,i)).split(",")) {
 			indices.add(index);
 		}
 
 		return indices;
 	}
 
-	public Set<String> getEs1BlacklistIndices() {
+	public Set<String> getEsBlacklistIndices(int i) {
 		Set<String> indices = new HashSet<String>();
 
-		for (String index : fProperties.get(ES_BL_INDICES).split(",")) {
+		for (String index : fProperties.get(String.format(ES_BL_INDICES,i)).split(",")) {
 			indices.add(index);
 		}
 
 		return indices;
 	}
 
-	public Set<String> getEs1BlacklistTypes() {
+	public Set<String> getEsBlacklistTypes(int i) {
 		Set<String> indices = new HashSet<String>();
 
-		for (String index : fProperties.get(ES_BL_TYPES).split(",")) {
+		for (String index : fProperties.get(String.format(ES_BL_TYPES,i)).split(",")) {
 			indices.add(index);
 		}
 
 		return indices;
 	}
 
-	public String getEs2ClusterName() {
-		return fProperties.get(ES2_CLUSTER);
-	}
-
-	public String getEs2ElasticUrl() {
-		return fProperties.get(ES2_URL);
-	}
-
-	public String getEs2ElasticApiHost() {
-		return fProperties.get(ES2_API_HOST);
-	}
-
-	public int getEs2ElasticApiPort() {
-		return Integer.parseInt(fProperties.get(ES2_API_PORT));
-	}
-
-	public Set<String> getEs2Indices() {
-		Set<String> indices = new HashSet<String>();
-
-		for (String index : fProperties.get(ES2_INDICES).split(",")) {
-			indices.add(index);
-		}
-
-		return indices;
-	}
-
-	public Set<String> getEs2BlacklistIndices() {
-		Set<String> indices = new HashSet<String>();
-
-		for (String index : fProperties.get(ES2_BL_INDICES).split(",")) {
-			indices.add(index);
-		}
-
-		return indices;
-	}
-
-	public Set<String> getEs2BlacklistTypes() {
-		Set<String> indices = new HashSet<String>();
-
-		for (String index : fProperties.get(ES2_BL_TYPES).split(",")) {
-			indices.add(index);
-		}
-
-		return indices;
-	}
+	
 
 	public String getLiferayIndex() {
 		return fProperties.get(LIFERAY_INDEX);

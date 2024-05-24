@@ -1,0 +1,273 @@
+<!--
+ * Copyright 2019 Yang Wang
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+
+<style type="text/css">
+    .box-cover {
+        border-radius: 2px;
+        background: #232429;
+        border-top: 0px solid #d2d6de !important;
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .box-header-cover {
+        color: #929299;
+    }
+    
+    .box-header-cover h3 {
+        font-weight: 400;
+    }
+    
+    .box-table-cover {
+        margin-top: 0px !important;
+        margin-bottom: 0px !important;
+    }
+    
+    #api-back {
+        display: none;
+    }
+    
+    #api-back:hover,
+    #api-back:active,
+    #api-back:focus {
+        color: #00c0ef;
+        cursor: pointer;
+    }
+    
+    .box-body-table {
+        padding-top: 5px;
+        padding-right: 20px;
+        padding-left: 20px;
+        border-bottom-right-radius: 2px;
+        border-bottom-left-radius: 2px;
+    }
+    
+    .api-detail-link {
+        color: #00c0ef;
+        cursor: pointer;
+    }
+    
+    .api-detail-link:hover,
+    .api-detail-link:active,
+    .api-detail-link:focus {
+        color: #00c0ef !important;
+    }
+    
+    #api-detail-div {
+        display: none;
+    }
+    
+    #api-detail-div h3 {
+        font-size: 14px;
+        font-weight: 400;
+    }
+    
+    #api-detail-uri {
+        color: #00c0ef;
+    }
+</style>
+
+<section class="content-header">
+    <div class="row">
+        <div class="col-md-12 col-sm-12 col-xs-12">
+            <h1 class="content-wrapper-title content-wrapper-title-cover">
+                Restful接口
+            </h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12 col-sm-12 col-xs-12">
+            <div class="box box-default box-cover">
+                <div class="box-header with-border box-header-cover">
+                    <h3 class="box-title">说明</h3>
+                </div>
+                <div class="box-body">
+                    所有URI返回application/json格式的资源，每个请求都需要HTTP基本认证。默认用户/密码：admin/stuart。
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row info-row info-row-cover last-info-row">
+        <div class="col-md-12 col-sm-12 col-xs-12 table-cols">
+            <div class="box box-default box-cover box-table-cover">
+                <div class="box-header with-border box-header-cover">
+                    <h3 class="box-title" id="api-ref">参考</h3>
+                    <h3 class="box-title" id="api-back">
+                        <i class="fa fa-fw fa-angle-left"></i>返回
+                    </h3>
+                </div>
+                <div class="box-body box-body-table">
+                    <div id="api-table-div">
+                        <table class="table table-bordered table-striped table-hover" id="api-info-table">
+                            <thead>
+                                <tr>
+                                    <th width="15%">请求方法</th>
+                                    <th width="40%">路径</th>
+                                    <th width="45%">描述</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>GET</td>
+                                    <td><a class="api-detail-link">api/v1/management/nodes</a></td>
+                                    <td>获取全部节点的基本信息</td>
+                                </tr>
+                                <tr>
+                                    <td>GET</td>
+                                    <td><a class="api-detail-link">api/v1/management/nodes</a></td>
+                                    <td>获取全部节点的基本信息</td>
+                                </tr>
+                                <tr>
+                                    <td>GET</td>
+                                    <td><a class="api-detail-link">api/v1/management/nodes</a></td>
+                                    <td>获取全部节点的基本信息</td>
+                                </tr>
+                                <tr>
+                                    <td>GET</td>
+                                    <td><a class="api-detail-link">api/v1/management/nodes</a></td>
+                                    <td>获取全部节点的基本信息</td>
+                                </tr>
+                                <tr>
+                                    <td>GET</td>
+                                    <td><a class="api-detail-link">api/v1/management/nodes</a></td>
+                                    <td>获取全部节点的基本信息</td>
+                                </tr>
+                                <tr>
+                                    <td>GET</td>
+                                    <td><a class="api-detail-link">api/v1/management/nodes</a></td>
+                                    <td>获取全部节点的基本信息</td>
+                                </tr>
+                                <tr>
+                                    <td>GET</td>
+                                    <td><a class="api-detail-link">api/v1/management/nodes</a></td>
+                                    <td>获取全部节点的基本信息</td>
+                                </tr>
+                                <tr>
+                                    <td>GET</td>
+                                    <td><a class="api-detail-link">api/v1/management/nodes</a></td>
+                                    <td>获取全部节点的基本信息</td>
+                                </tr>
+                                <tr>
+                                    <td>GET</td>
+                                    <td><a class="api-detail-link">api/v1/management/nodes</a></td>
+                                    <td>获取全部节点的基本信息</td>
+                                </tr>
+                                <tr>
+                                    <td>GET</td>
+                                    <td><a class="api-detail-link">api/v1/management/nodes</a></td>
+                                    <td>获取全部节点的基本信息</td>
+                                </tr>
+                                <tr>
+                                    <td>GET</td>
+                                    <td><a class="api-detail-link">api/v1/management/nodes</a></td>
+                                    <td>获取全部节点的基本信息</td>
+                                </tr>
+                                <tr>
+                                    <td>GET</td>
+                                    <td><a class="api-detail-link">api/v1/management/nodes</a></td>
+                                    <td>获取全部节点的基本信息</td>
+                                </tr>
+                                <tr>
+                                    <td>GET</td>
+                                    <td><a class="api-detail-link">api/v1/management/nodes</a></td>
+                                    <td>获取全部节点的基本信息</td>
+                                </tr>
+                                <tr>
+                                    <td>GET</td>
+                                    <td><a class="api-detail-link">api/v1/management/nodes</a></td>
+                                    <td>获取全部节点的基本信息</td>
+                                </tr>
+                                <tr>
+                                    <td>GET</td>
+                                    <td><a class="api-detail-link">api/v1/management/nodes</a></td>
+                                    <td>获取全部节点的基本信息</td>
+                                </tr>
+                                <tr>
+                                    <td>GET</td>
+                                    <td><a class="api-detail-link">api/v1/management/nodes</a></td>
+                                    <td>获取全部节点的基本信息</td>
+                                </tr>
+                                <tr>
+                                    <td>GET</td>
+                                    <td><a class="api-detail-link">api/v1/management/nodes</a></td>
+                                    <td>获取全部节点的基本信息</td>
+                                </tr>
+                                <tr>
+                                    <td>GET</td>
+                                    <td><a class="api-detail-link">api/v1/management/nodes</a></td>
+                                    <td>获取全部节点的基本信息</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="api-detail-div">
+                        <h3>请求地址：<span id="api-detail-uri">api/v1/management/nodes</span></h3>
+                        <h3>响应数据：</h3>
+                        <div id="api-detail-resp"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script type="text/javascript">
+    $('#api-info-table').DataTable({
+        'searching': false,
+        'lengthChange': false,
+        'ordering': false,
+        'info': false,
+        'paging': false,
+        'autoWidth': false
+    });
+
+    $('#api-back').click(function() {
+        $('#api-back').hide();
+
+        $('#api-detail-div').hide();
+
+        $('#api-ref').show();
+
+        $('#api-table-div').show();
+    });
+
+    $('.api-detail-link').on('click', function() {
+        $('#api-ref').hide();
+
+        $('#api-table-div').hide();
+
+        $('#api-back').show();
+
+        $('#api-detail-div').show();
+
+        var json = {
+            "hey": "guy",
+            "anumber": 243,
+            "anobject": {
+                "whoa": "nuts",
+                "anarray": [1, 2, "thr<h1>ee"],
+                "more": "stuff"
+            },
+            "awesome": true,
+            "bogus": false,
+            "meaning": null
+        };
+
+        $('#api-detail-resp').JSONView(json);
+    });
+</script>

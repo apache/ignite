@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+  <bean class="org.apache.ignite.configuration.IgniteConfiguration">
+
+    <property name="localHost" value="127.0.0.1"/>
+
+    <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
+    <property name="discoverySpi">
+      <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+        <property name="ipFinder">
+          <!--
+              Ignite provides several options for automatic discovery that can be used
+              instead os static IP based discovery. For information on all options refer
+              to our documentation: http://apacheignite.readme.io/docs/cluster-config
+          -->
+          <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+            <property name="addresses">
+              <list>
+                <!-- In distributed environment, replace with actual host IP address. -->
+                <value>127.0.0.1:47500..47549</value>
+              </list>
+            </property>
+          </bean>
+
+        </property>
+      </bean>
+    </property>
+
+    <!-- Template cache configuration. -->
+    <property name="cacheConfiguration">
+      <list>
+        <bean class="org.apache.ignite.configuration.CacheConfiguration">
+          <property name="name" value="__vertx.*"/>
+          <property name="cacheMode" value="REPLICATED"/>
+          <property name="atomicityMode" value="ATOMIC"/>
+          <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+        </bean>
+        <bean class="org.apache.ignite.configuration.CacheConfiguration">
+          <property name="name" value="*"/>
+          <property name="cacheMode" value="PARTITIONED"/>
+          <property name="backups" value="1"/>
+          <property name="readFromBackup" value="false"/>
+          <property name="atomicityMode" value="ATOMIC"/>
+          <property name="affinity">
+            <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
+              <property name="partitions" value="128"/>
+            </bean>
+          </property>
+          <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+        </bean>
+      </list>
+    </property>
+
+    <!-- Logging configuration. -->
+    <property name="gridLogger">
+      <bean class="io.vertx.spi.cluster.ignite.impl.VertxLogger"/>
+    </property>
+
+    <property name="metricsLogFrequency" value="0"/>
+  </bean>
+</beans>

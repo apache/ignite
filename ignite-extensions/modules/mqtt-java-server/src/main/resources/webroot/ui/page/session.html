@@ -1,0 +1,261 @@
+<!--
+ * Copyright 2019 Yang Wang
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+
+<style type="text/css">
+
+</style>
+
+<section class="content-header">
+    <div class="row">
+        <div class="col-md-6 col-sm-6 col-xs-12">
+            <h1 class="content-wrapper-title content-wrapper-title-cover" data-locale="menu_monitor_session">
+                会话
+            </h1>
+        </div>
+        <div class="col-md-6 col-sm-6 col-xs-12 search-col">
+            <div class="input-group input-group-sm">
+                <input type="text" class="form-control" placeholder="" data-locale="common_client_id" id="query-session-client-id">
+                <span class="input-group-btn">
+                    <button type="button" class="btn btn-info btn-flat" id="query-session">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row info-row info-row-cover last-info-row">
+        <div class="col-md-12 col-sm-12 col-xs-12 table-cols">
+            <div class="box-body table-box-body">
+                <table class="table table-bordered table-striped table-hover" id="session-info-table">
+                    <thead>
+                        <tr>
+                            <th data-locale="common_client_id"></th>
+                            <th data-locale="common_clean_session"></th>
+                            <th data-locale="session_subscriptions"></th>
+                            <th data-locale="session_max_inflight"></th>
+                            <th data-locale="session_inflight_size"></th>
+                            <th data-locale="session_queue_size"></th>
+                            <th data-locale="session_droppeds"></th>
+                            <th data-locale="session_await_rels"></th>
+                            <th data-locale="session_delivers"></th>
+                            <th data-locale="session_enqueues"></th>
+                            <th data-locale="session_create_time"></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script type="text/javascript">
+    var sessionDataTable;
+    var querySessionClientId = null;
+
+    var querySessionCols = [{
+        "sWidth": "9%"
+    }, {
+        "sWidth": "7%"
+    }, {
+        "sWidth": "7%"
+    }, {
+        "sWidth": "9%"
+    }, {
+        "sWidth": "9%"
+    }, {
+        "sWidth": "9%"
+    }, {
+        "sWidth": "9%"
+    }, {
+        "sWidth": "9%"
+    }, {
+        "sWidth": "9%"
+    }, {
+        "sWidth": "9%"
+    }, {
+        "sWidth": "14%"
+    }];
+
+    var querySessionColDefs = [{
+        'targets': 0,
+        'data': 'clientId',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 1,
+        'data': 'cleanSession',
+        'render': function(data, type, full) {
+            return data;
+        }
+    }, {
+        'targets': 2,
+        'data': 'topicCount',
+        'render': function(data, type, full) {
+            if (data) {
+                return data;
+            } else {
+                return 0;
+            }
+        }
+    }, {
+        'targets': 3,
+        'data': 'maxInflightSize',
+        'render': function(data, type, full) {
+            if (data) {
+                return data;
+            } else {
+                return 0;
+            }
+        }
+    }, {
+        'targets': 4,
+        'data': 'inflightSize',
+        'render': function(data, type, full) {
+            if (data) {
+                return data;
+            } else {
+                return 0;
+            }
+        }
+    }, {
+        'targets': 5,
+        'data': 'queueSize',
+        'render': function(data, type, full) {
+            if (data) {
+                return data;
+            } else {
+                return 0;
+            }
+        }
+    }, {
+        'targets': 6,
+        'data': 'droppedCount',
+        'render': function(data, type, full) {
+            if (data) {
+                return data;
+            } else {
+                return 0;
+            }
+        }
+    }, {
+        'targets': 7,
+        'data': 'awaitSize',
+        'render': function(data, type, full) {
+            if (data) {
+                return data;
+            } else {
+                return 0;
+            }
+        }
+    }, {
+        'targets': 8,
+        'data': 'sentCount',
+        'render': function(data, type, full) {
+            if (data) {
+                return data;
+            } else {
+                return 0;
+            }
+        }
+    }, {
+        'targets': 9,
+        'data': 'enqueueCount',
+        'render': function(data, type, full) {
+            if (data) {
+                return data;
+            } else {
+                return 0;
+            }
+        }
+    }, {
+        'targets': 10,
+        'data': 'createTime',
+        'render': function(data, type, full) {
+            return getFormatDateByLong(data, 'yyyy-MM-dd hh:mm:ss');
+        }
+    }];
+
+    function querySessionDataTable() {
+        sessionDataTable = $('#session-info-table').DataTable({
+            'destroy': true,
+            'language': datatablesLanguage(),
+            'pagingType': datatables_paging_type,
+            'pageLength': datatables_paging_len,
+            'autoWidth': true,
+            'searching': false,
+            'lengthChange': false,
+            'ordering': false,
+            'info': true,
+            'paging': true,
+            'processing': true,
+            'serverSide': true,
+            'aoColumns': querySessionCols,
+            'columnDefs': querySessionColDefs,
+            'ajax': function(data, callback, settings) {
+                var draw = data["draw"];
+                var start = data["start"];
+                var pageSize = data["length"];
+                var pageNum = start / pageSize + 1;
+
+                var params = {
+                    'clientId': querySessionClientId,
+                    'pageNum': pageNum,
+                    'pageSize': pageSize
+                };
+
+                $.ajax({
+                    url: '/sys/session/get',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(params),
+                    success: function(res) {
+                        var drawData = datatables_no_data;
+
+                        if (res && res.code === 1) {
+                            var total = res.result.total;
+                            var items = res.result.items;
+
+                            if (total && items) {
+                                drawData = {
+                                    "draw": draw,
+                                    "recordsTotal": total,
+                                    "recordsFiltered": total,
+                                    "data": items
+                                };
+                            }
+                        }
+
+                        callback(drawData);
+                    },
+                    error: function(xhr, status, error) {
+                        callback(datatables_no_data);
+                    }
+                });
+            }
+        });
+    }
+
+    $('#query-session').click(function() {
+        querySessionClientId = $('#query-session-client-id').val();
+
+        querySessionDataTable();
+    });
+
+    querySessionDataTable();
+</script>

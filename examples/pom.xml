@@ -39,6 +39,12 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
         </dependency>
+        
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-igfs</artifactId>
+            <version>2.16.999-SNAPSHOT</version>
+        </dependency>
 
         <dependency>
             <groupId>${project.groupId}</groupId>

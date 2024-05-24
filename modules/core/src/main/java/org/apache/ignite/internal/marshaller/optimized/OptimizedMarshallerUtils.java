@@ -140,6 +140,11 @@ class OptimizedMarshallerUtils {
 
     /** */
     static final byte PROXY = 29;
+    
+    /** */
+    static final byte CONCURRENT_MAP = 31;
+    
+    static final byte CONCURRENT_QUEUE = 32;
 
     /** */
     static final byte ENUM = 100;

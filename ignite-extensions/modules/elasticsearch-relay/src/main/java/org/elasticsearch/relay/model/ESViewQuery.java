@@ -8,7 +8,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.elasticsearch.relay.ResponseFormat;
+import org.elasticsearch.relay.util.ESConstants;
 import org.elasticsearch.relay.util.SqlTemplateParse;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 
 /**
@@ -16,38 +19,48 @@ import org.elasticsearch.relay.util.SqlTemplateParse;
  * @author WBPC1158
  *
  */
-public class ESViewQuery {
-	private ResponseFormat responseFormat = ResponseFormat.HITS; // json, dataset, tri-tuple
+public class ESViewQuery extends ESQuery{	
+	
+	// GET /_views/{schema}/{name}?q=SQL
 	private String SQL;
-	private String schema;
-	private int pageSize = 100;
+	private String schema;	
+	private String name; // views name
+	
 
-	private Map<String,String> namedSQL;
+	private Map<String,String> namedSQL;	
 	
-	private String format = "json";
 	
-	private String[] fPath;
-
-	private Map<String, String[]> fParams;
-	
-	private boolean fCancelled = false;
-	
-	public ESViewQuery() {
-		
+	public ESViewQuery() {		
+		this.name = "";		
 	}
 	
-	public ESViewQuery(String sql) {
+	public ESViewQuery(String name) {
+		this.name = name;		
+	}	
+	
+	public ESViewQuery(String name, String sql) {
+		this.name = name;
 		this.SQL = sql;
 	}
 
-	public ESViewQuery(String schema, String sql) {
+	public ESViewQuery(String schema, String name, String sql) {
+		this.name = name;
 		this.SQL = sql;
 		this.schema = schema;
+	}
+	
+	public ESViewQuery(ESViewQuery copy) {
+		super(copy);
+		this.name = copy.name;
+		this.SQL = copy.SQL;
+		this.schema = copy.schema;		
+		this.namedSQL = copy.namedSQL;		
 	}
 	
 	public String getSQL() {
 		return SQL;
 	}
+	
 	public void setSQL(String sQL) {
 		SQL = sQL;
 	}
@@ -55,83 +68,26 @@ public class ESViewQuery {
 	public String getSchema() {
 		return schema;
 	}
-
-	public void setSchema(String searchPath) {
-		this.schema = searchPath;
-	}
 	
+	public void setSchema(String schema) {
+		this.schema = schema;
+	}
+
 	public Map<String, String> getNamedSQL() {
 		return namedSQL;
 	}
+	
 	public void setNamedSQL(Map<String, String> namedSQL) {
 		this.namedSQL = namedSQL;
 	}
 	
-	public String[] getQueryPath() {
-		return fPath;
-	}
-
-	public void setQueryPath(String[] path) {
-		fPath = path;
-	}
-
-	public Map<String, String[]> getParams() {
-		return fParams;
+	public String getName() {
+		return name;
 	}
 	
-	public String param(String... name) {
-		for(String nameOne: name) {
-			String[] value = fParams.get(nameOne);
-			if(value!=null) {
-				return value[0];
-			}
-		}
-		return null;
+	public void setName(String name) {
+		this.name = name;
 	}
-
-	public void setParams(Map<String, String[]> params) {
-		fParams = params;		
-	}
-
-	/**
-	 * @return whether this query has been cancelled internally
-	 */
-	public boolean isCancelled() {
-		return fCancelled;
-	}
-
-	/**
-	 * Cancel this query internally - do not process further and do not send.
-	 */
-	public void cancel() {
-		fCancelled = true;
-	}
-	
-	public String getFormat() {
-		return format;
-	}
-
-	public void setFormat(String format) {
-		this.format = format;
-	}
-
-	public ResponseFormat getResponseFormat() {
-		return responseFormat;
-	}
-
-	public void setResponseFormat(ResponseFormat responseFormat) {
-		this.responseFormat = responseFormat;
-	}
-	
-
-	public int getPageSize() {
-		return pageSize;
-	}
-
-	public void setPageSize(int pageSize) {
-		this.pageSize = pageSize;
-	}
-	
 
 	/**
 	 * @return reassembled query URL (without the server)
@@ -140,15 +96,21 @@ public class ESViewQuery {
 		StringBuffer urlBuff = new StringBuffer();
 
 		// reconstruct request path
-		if (fPath != null) {
-			for (String frag : fPath) {
-				// skip empty elements
-				if (!frag.isEmpty()) {
-					urlBuff.append(frag);
-					urlBuff.append("/");
-				}
+		if (schema != null) {
+			// skip empty elements
+			if (!schema.isEmpty()) {
+				urlBuff.append("/");
+				urlBuff.append(schema);				
 			}
 		}
+		if (name != null) {
+			// skip empty elements
+			if (!name.isEmpty()) {
+				urlBuff.append("/");
+				urlBuff.append(name);			
+			}
+		}
+		
 		urlBuff.append("?");
 		if(SQL !=null) {			
 			urlBuff.append("q=");
@@ -161,9 +123,9 @@ public class ESViewQuery {
 		}
 
 		// add parameters
-		if (fParams != null && !fParams.isEmpty()) {
+		if (this.getParams() != null && !this.getParams().isEmpty()) {
 			// construct URL with all parameters
-			Iterator<Entry<String, String[]>> paramIter = fParams.entrySet().iterator();
+			Iterator<Entry<String, String[]>> paramIter = this.getParams().entrySet().iterator();
 			Entry<String, String[]> entry = null;
 			
 			while (paramIter.hasNext()) {
@@ -182,24 +144,16 @@ public class ESViewQuery {
 	public String buildSQL() {
 		
 		StringBuilder where = new StringBuilder();
-		
+		int limit = this.getLimit();
+		int offset = this.getFrom();
 		for(Map.Entry<String, String[]> param: getParams().entrySet()) {
-			if(param.getKey().equals("pageSize") || param.getKey().equals("pagePer")) {
-				String[] pageSize = param.getValue();
-				if(pageSize!=null){
-					this.pageSize = Integer.valueOf(pageSize[0]);
-				}
-			}
-			else if(param.getKey().equals("responseFormat")) {
+			if(param.getKey().equals("responseFormat")) {
 				// have processed
 				String[] responseFormat = param.getValue();
 				if(responseFormat!=null) {
 					this.setResponseFormat(ResponseFormat.valueOf(responseFormat[0].toUpperCase()));
 				}
-			}
-			else if(param.getKey().equals("page") || param.getKey().equals("pageNo")) {
-				// not have processed
-			}
+			}			
 			else if(param.getKey().charAt(0)!='_'){
 				where.append(param.getKey());
 				if(param.getValue().getClass().isArray()) {
@@ -215,7 +169,13 @@ public class ESViewQuery {
 		
 		String sql = getSQL();
 		if(where.length()>1) {
-			sql = "select * from ("+sql+") where "+where.toString();
+			sql = "select * from ("+sql+") where " + where.toString();			
+		}
+		if(offset > 0) {
+			sql += " offset " + offset;
+		}
+		if(limit > 0) {
+			sql += " limit " + limit;
 		}
 		return sql;
 	}

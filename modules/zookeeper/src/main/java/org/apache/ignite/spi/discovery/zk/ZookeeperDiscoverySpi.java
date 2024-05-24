@@ -441,7 +441,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
         startStopwatch();
 
         if (sesTimeout == 0)
-            sesTimeout = ignite.configuration().getFailureDetectionTimeout().intValue();
+            sesTimeout = 1000 * ignite.configuration().getFailureDetectionTimeout().intValue();
         // add@byron support ignite cluster split by igniteInstanceName
         if(zkRootPath==null || zkRootPath.isBlank()) {
         	zkRootPath = DFLT_ROOT_PATH +'/'+ igniteInstanceName;        	
