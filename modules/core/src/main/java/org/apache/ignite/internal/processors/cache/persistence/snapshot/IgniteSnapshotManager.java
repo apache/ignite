@@ -46,13 +46,13 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -3806,7 +3806,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private volatile RemoteSnapshotFilesRecevier active;
 
         /** Queue of asynchronous tasks to execute. */
-        private final Queue<RemoteSnapshotFilesRecevier> queue = new ConcurrentLinkedDeque<>();
+        private final Deque<RemoteSnapshotFilesRecevier> queue = new ConcurrentLinkedDeque<>();
 
         /** {@code true} if the node is stopping. */
         private boolean stopping;
@@ -3890,7 +3890,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @return The set of currently scheduled tasks, some of them may be already completed.
          */
         private Set<RemoteSnapshotFilesRecevier> activeTasks() {
-            Set<RemoteSnapshotFilesRecevier> futs = new HashSet<>(queue);
+            Set<RemoteSnapshotFilesRecevier> futs = new LinkedHashSet<>();
+
+            queue.descendingIterator().forEachRemaining(futs::add);
 
             RemoteSnapshotFilesRecevier active0 = active;
 
@@ -4013,7 +4015,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public void onException(UUID nodeId, Throwable ex) {
+        @Override public synchronized void onException(UUID nodeId, Throwable ex) {
             RemoteSnapshotFilesRecevier task = active;
 
             if (task == null)
