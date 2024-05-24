@@ -55,7 +55,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static java.lang.Math.ceil;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.between;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
@@ -240,8 +239,8 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
                 int nodeOneEntries = cache.query(new ScanQuery<Integer, Person>().setLocal(true)).getAll().size();
                 int nodeTwoEntries = (CNT - NULLS_CNT) - nodeOneEntries;
 
-                int nodeOneExpectedReqs = (int)(ceil((float)nodeOneEntries / pageSize));
-                int nodeTwoExpectedReqs = (int)(ceil((float)nodeTwoEntries / pageSize));
+                int nodeOneExpectedReqs = (nodeOneEntries + pageSize - 1) / pageSize;
+                int nodeTwoExpectedReqs = (nodeTwoEntries + pageSize - 1) / pageSize;
 
                 int nodeOneLastPageEntries = nodeOneEntries % pageSize;
                 int nodeTwoLastPageEntries = nodeTwoEntries % pageSize;
