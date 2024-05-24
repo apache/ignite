@@ -40,18 +40,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS;
-
 /** */
 @RunWith(Parameterized.class)
-@WithSystemProperty(key = IGNITE_BINARY_SORT_OBJECT_FIELDS, value = "true")
-public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest {
+public class CrossObjectReferenceSerializationTest extends GridCommonAbstractTest {
     /** */
     private static Ignite srv;
 
@@ -117,10 +113,14 @@ public class CrossObjetReferenceSerializationTest extends GridCommonAbstractTest
 
         srvCache = srv.cache(DEFAULT_CACHE_NAME);
         cliCache = cli.cache(DEFAULT_CACHE_NAME);
+
+        BinaryClassDescriptor.foreSortedFieldsOrder = true;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
+        BinaryClassDescriptor.foreSortedFieldsOrder = false;
+
         super.afterTestsStopped();
 
         cli.close();

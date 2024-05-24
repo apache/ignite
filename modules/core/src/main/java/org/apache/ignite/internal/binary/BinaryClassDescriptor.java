@@ -61,6 +61,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.isLambda;
  * Binary class descriptor.
  */
 public class BinaryClassDescriptor {
+    /** For test use only. */
+    static boolean foreSortedFieldsOrder;
+
     /** */
     @GridToStringExclude
     private final BinaryContext ctx;
@@ -332,15 +335,15 @@ public class BinaryClassDescriptor {
                 else {
                     Map<Object, BinaryFieldAccessor> fields0;
 
-                    if (BinaryUtils.FIELDS_SORTED_ORDER) {
+                    if (BinaryUtils.FIELDS_SORTED_ORDER || foreSortedFieldsOrder) {
                         fields0 = new TreeMap<>();
 
-                        stableFieldsMeta = metaDataEnabled ? new TreeMap<String, BinaryFieldMetadata>() : null;
+                        stableFieldsMeta = metaDataEnabled ? new TreeMap<>() : null;
                     }
                     else {
                         fields0 = new LinkedHashMap<>();
 
-                        stableFieldsMeta = metaDataEnabled ? new LinkedHashMap<String, BinaryFieldMetadata>() : null;
+                        stableFieldsMeta = metaDataEnabled ? new LinkedHashMap<>() : null;
                     }
 
                     Set<String> duplicates = duplicateFields(cls);

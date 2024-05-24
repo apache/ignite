@@ -86,11 +86,8 @@ class ObjectDetachHelper {
                 boolean isFound = false;
 
                 while (reader.position() < objDataEndPos) {
-                    if (findInNextObject()) {
-                        isFound = true;
-
-                        break;
-                    }
+                    if (findInNextObject())
+                      return true;
                 }
 
                 reader.position(objEndPos);
