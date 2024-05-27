@@ -207,7 +207,7 @@ public class DmlUtils {
                 if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                     return 1;
                 else
-                    throw new IgniteSQLException("Failed to INSERT some keys because they are already in cache. [key="
+                    throw new IgniteSQLException("Failed to INSERT some keys because they are already in cache. [keys="
                             + t.getKey() + ']', DUPLICATE_KEY);
             }
         }
