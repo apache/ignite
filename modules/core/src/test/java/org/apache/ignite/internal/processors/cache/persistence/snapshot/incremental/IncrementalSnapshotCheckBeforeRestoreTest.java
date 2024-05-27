@@ -146,7 +146,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
                 log,
                 () -> snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_CHECK_ON_RESTORE).get(getTestTimeout()),
                 IgniteCheckedException.class,
-                "Failed to find single snapshot metafile for local node [locNodeId=" + srv.localNode().consistentId()
+                "Failed to find single snapshot metafile on local node [locNodeId=" + srv.localNode().consistentId()
             );
         }
     }
