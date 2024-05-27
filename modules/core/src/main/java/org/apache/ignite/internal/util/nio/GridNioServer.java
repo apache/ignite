@@ -55,7 +55,7 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
@@ -234,7 +234,7 @@ public class GridNioServer<T> {
     private final boolean directMode;
 
     /** */
-    @Nullable private final MetricRegistry mreg;
+    @Nullable private final MetricRegistryImpl mreg;
 
     /** Received bytes count metric. */
     @Nullable private final LongAdderMetric rcvdBytesCntMetric;
@@ -330,7 +330,7 @@ public class GridNioServer<T> {
         IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr,
         boolean readWriteSelectorsAssign,
         @Nullable GridWorkerListener workerLsnr,
-        @Nullable MetricRegistry mreg,
+        @Nullable MetricRegistryImpl mreg,
         Tracing tracing,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
@@ -3798,7 +3798,7 @@ public class GridNioServer<T> {
         private GridWorkerListener workerLsnr;
 
         /** Metrics registry. */
-        private MetricRegistry mreg;
+        private MetricRegistryImpl mreg;
 
         /** Tracing processor */
         private Tracing tracing;
@@ -4103,7 +4103,7 @@ public class GridNioServer<T> {
          * @param mreg Metrics registry.
          * @return This for chaining.
          */
-        public Builder<T> metricRegistry(MetricRegistry mreg) {
+        public Builder<T> metricRegistry(MetricRegistryImpl mreg) {
             this.mreg = mreg;
 
             return this;

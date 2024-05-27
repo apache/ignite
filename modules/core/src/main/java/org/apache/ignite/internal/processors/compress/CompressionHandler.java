@@ -115,9 +115,7 @@ public class CompressionHandler {
 
         CompressionProcessor comprProc = ctx.compress();
 
-        int lvl = cfg.getDiskPageCompressionLevel() == null ?
-            CompressionProcessor.getDefaultCompressionLevel(diskPageCompr) :
-            CompressionProcessor.checkCompressionLevelBounds(cfg.getDiskPageCompressionLevel(), diskPageCompr);
+        int lvl = CompressionProcessor.getCompressionLevel(cfg.getDiskPageCompressionLevel(), diskPageCompr);
 
         File dbPath = ctx.pdsFolderResolver().resolveFolders().persistentStoreRootPath();
 

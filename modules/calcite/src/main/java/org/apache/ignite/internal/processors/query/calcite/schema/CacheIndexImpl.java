@@ -202,7 +202,7 @@ public class CacheIndexImpl implements IgniteIndex {
 
             try {
                 for (int i = 0; i < iidx.segmentsCount(); ++i)
-                    cnt += iidx.count(i, new IndexQueryContext(filter, rowFilter, ectx.mvccSnapshot()));
+                    cnt += iidx.count(i, new IndexQueryContext(filter, rowFilter));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Unable to count index records.", e);

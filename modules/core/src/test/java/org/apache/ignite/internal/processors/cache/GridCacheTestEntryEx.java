@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -616,10 +615,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     @Override public boolean initialValue(
         CacheObject val,
         GridCacheVersion ver,
-        MvccVersion mvccVer,
-        MvccVersion newMvccVer,
-        byte mvccTxState,
-        byte newMvccTxState,
         long ttl,
         long expireTime,
         boolean preload,

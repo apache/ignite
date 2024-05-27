@@ -84,7 +84,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSn
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -96,6 +95,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.metric.MetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Optional.ofNullable;

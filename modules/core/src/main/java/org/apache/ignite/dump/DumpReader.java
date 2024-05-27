@@ -77,7 +77,7 @@ public class DumpReader implements Runnable {
     @Override public void run() {
         ackAsciiLogo();
 
-        try (Dump dump = new Dump(cfg.dumpRoot(), null, cfg.keepBinary(), false, encryptionSpi(), log)) {
+        try (Dump dump = new Dump(cfg.dumpRoot(), null, cfg.keepBinary(), cfg.keepRaw(), encryptionSpi(), log)) {
             DumpConsumer cnsmr = cfg.consumer();
 
             cnsmr.start();
@@ -97,7 +97,7 @@ public class DumpReader implements Runnable {
                     : null;
 
                 for (SnapshotMetadata meta : dump.metadata()) {
-                    for (Integer grp : meta.cacheGroupIds()) {
+                    for (Integer grp : meta.partitions().keySet()) {
                         if (cacheGrpIds == null || cacheGrpIds.contains(grp))
                             grpToNodes.computeIfAbsent(grp, key -> new ArrayList<>()).add(meta.folderName());
                     }

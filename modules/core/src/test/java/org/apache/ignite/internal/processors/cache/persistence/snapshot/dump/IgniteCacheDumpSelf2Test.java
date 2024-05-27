@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -33,7 +34,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,9 +44,11 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.ZipInputStream;
 import org.apache.commons.io.IOUtils;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryVersion;
@@ -83,6 +88,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEnt
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -104,12 +110,16 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_THREAD_CNT;
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_TIMEOUT;
+import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TMP_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
@@ -125,6 +135,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.d
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntrySerializer.HEADER_SZ;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
@@ -151,6 +162,8 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
         }
 
+        cfg.setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT);
+
         return cfg;
     }
 
@@ -168,6 +181,86 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /** */
+    @Test
+    public void testDumpRawData() throws Exception {
+        IgniteEx ign = startGrids(3);
+
+        Ignite cli = startClientGrid(G.allGrids().size());
+
+        cli.createCache(defaultCacheConfiguration());
+
+        for (int i = 0; i < KEYS_CNT; ++i)
+            cli.cache(DEFAULT_CACHE_NAME).put(i, USER_FACTORY.apply(i));
+
+        cli.snapshot().createDump(DMP_NAME, null).get();
+
+        AtomicBoolean keepRaw = new AtomicBoolean();
+        AtomicBoolean keepBinary = new AtomicBoolean();
+
+        DumpConsumer cnsmr = new DumpConsumer() {
+            @Override public void start() {
+                // No-op.
+            }
+
+            @Override public void onMappings(Iterator<TypeMapping> mappings) {
+                // No-op.
+            }
+
+            @Override public void onTypes(Iterator<BinaryType> types) {
+                // No-op.
+            }
+
+            @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
+                // No-op.
+            }
+
+            @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
+                data.forEachRemaining(de -> {
+                    if (keepRaw.get()) {
+                        assertTrue(de.key() instanceof KeyCacheObject);
+                        assertTrue(de.value() instanceof CacheObject);
+                    }
+                    else {
+                        assertTrue(de.key() instanceof Integer);
+
+                        if (keepBinary.get())
+                            assertTrue(de.value() instanceof BinaryObject);
+                        else
+                            assertTrue(de.value() instanceof User);
+                    }
+                });
+            }
+
+            @Override public void stop() {
+                // No-op.
+            }
+        };
+
+        for (boolean raw : Arrays.asList(true, false)) {
+            for (boolean binary : Arrays.asList(true, false)) {
+                keepRaw.set(raw);
+                keepBinary.set(binary);
+
+                new DumpReader(
+                    new DumpReaderConfiguration(
+                        dumpDirectory(ign, DMP_NAME),
+                        cnsmr,
+                        DFLT_THREAD_CNT,
+                        DFLT_TIMEOUT,
+                        true,
+                        keepBinary.get(),
+                        keepRaw.get(),
+                        null,
+                        false,
+                        null
+                    ),
+                    log
+                ).run();
+            }
+        }
     }
 
     /** Checks a dump when it is created with the data streamer just after a restart. */
@@ -490,6 +583,37 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testCancelDump() throws Exception {
+        persistence = true;
+
+        IgniteEx srv = startGrids(3);
+
+        Collection<Integer> locEvts = ConcurrentHashMap.newKeySet();
+
+        srv.events().localListen(e -> locEvts.add(e.type()), EVTS_CLUSTER_SNAPSHOT);
+
+        IgniteEx startCli = startClientGrid(G.allGrids().size());
+
+        IgniteEx killCli = startClientGrid(G.allGrids().size());
+
+        startCli.cluster().state(ClusterState.ACTIVE);
+
+        startCli.createCache(defaultCacheConfiguration());
+
+        try (IgniteDataStreamer<Integer, Integer> ds = startCli.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int i = 0; i < 1000; i++)
+                ds.addData(i, i);
+        }
+
+        doSnapshotCancellationTest(true, startCli, Collections.singletonList(srv),
+            srv.cache(DEFAULT_CACHE_NAME), snpName -> killCli.snapshot().cancelSnapshot(snpName).get());
+
+        waitForCondition(() -> locEvts.containsAll(Arrays.asList(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FAILED)),
+            getTestTimeout());
+    }
+
+    /** */
+    @Test
     public void testCustomLocation() throws Exception {
         try (IgniteEx ign = startGrid()) {
             IgniteCache<Integer, Integer> cache = ign.createCache(new CacheConfiguration<Integer, Integer>()
@@ -748,6 +872,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 DFLT_TIMEOUT,
                 true,
                 false,
+                false,
                 null,
                 false,
                 null
@@ -812,6 +937,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 DFLT_TIMEOUT,
                 true,
                 false,
+                false,
                 null,
                 false,
                 null
@@ -839,6 +965,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                         DFLT_THREAD_CNT,
                         DFLT_TIMEOUT,
                         true,
+                        false,
                         false,
                         null,
                         false,
@@ -870,6 +997,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 DFLT_THREAD_CNT,
                 DFLT_TIMEOUT,
                 true,
+                false,
                 false,
                 null,
                 false,

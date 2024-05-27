@@ -521,4 +521,24 @@ public class JavaThinClient {
     private static interface MyService {
         public void myServiceMethod();
     }
+
+    void entryProcessor() throws Exception {
+        ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
+
+        try (IgniteClient client = Ignition.startClient(clientCfg)) {
+            //tag::entry-processor[]
+            ClientCache<Integer, Integer> cache = client.getOrCreateCache("myCache");
+            cache.invoke(0, new IncrementProcessor());
+            //end::entry-processor[]
+        }
+    }
+
+    //tag::entry-processor-class[]
+    public class IncrementProcessor implements EntryProcessor<Integer, Integer, Integer> {
+        @Override public Integer process(MutableEntry<Integer, Integer> entry, Object... arguments) {
+            entry.setValue(entry.getValue() == null ? 1 : entry.getValue() + 1);
+            return entry.getValue();
+        }
+    }
+    //end::entry-processor-class[]
 }

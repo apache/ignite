@@ -55,7 +55,6 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLo
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -1349,10 +1348,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             try {
                                 if (entry.initialValue(info.value(),
                                     info.version(),
-                                    null,
-                                    null,
-                                    TxState.NA,
-                                    TxState.NA,
                                     info.ttl(),
                                     info.expireTime(),
                                     true,

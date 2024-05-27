@@ -30,7 +30,6 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.ExecutionNodeMemoryTracker;
@@ -194,13 +193,6 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
      */
     public boolean keepBinary() {
         return true; // TODO
-    }
-
-    /**
-     * @return MVCC snapshot.
-     */
-    public MvccSnapshot mvccSnapshot() {
-        return null; // TODO
     }
 
     /**

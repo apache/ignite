@@ -1317,6 +1317,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 if (anyIdxPartFile != null) {
                     memCfg.setPageSize(resolvePageSizeFromPartitionFile(anyIdxPartFile));
+                    log.info("The DataStorageConfiguration.pageSize property has been restored from persistence to: "
+                            + memCfg.getPageSize() + " bytes");
 
                     return;
                 }
@@ -1328,6 +1330,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             memCfg.setPageSize(DataStorageConfiguration.DFLT_PAGE_SIZE);
+            log.info("The DataStorageConfiguration.pageSize property has been set to: " + memCfg.getPageSize() + " bytes");
         }
     }
 
@@ -2428,7 +2431,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     break;
 
                 switch (rec.type()) {
-                    case MVCC_DATA_RECORD:
                     case DATA_RECORD:
                     case DATA_RECORD_V2:
                         checkpointReadLock();
@@ -2562,7 +2564,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         break;
 
-                    case MVCC_DATA_RECORD:
                     case DATA_RECORD:
                     case DATA_RECORD_V2:
                     case ENCRYPTED_DATA_RECORD:

@@ -61,10 +61,8 @@ import org.apache.ignite.internal.processors.cache.WalStateManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.GridMutableLong;
@@ -84,6 +82,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.jetbrains.annotations.Nullable;
 
@@ -823,10 +822,6 @@ public class GridDhtPartitionDemander {
             if (cached.initialValue(
                 row.value(),
                 row.version(),
-                null,
-                null,
-                TxState.NA,
-                TxState.NA,
                 TTL_ETERNAL,
                 row.expireTime(),
                 true,

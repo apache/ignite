@@ -1204,11 +1204,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         int cnt = 0;
 
-        while (cnt <= retryCnt) {
+        while (true) {
             try {
-                cnt++;
-
                 cctx.gridIO().sendToGridTopic(node, TOPIC_CACHE, msg, plc);
+
+                if (log.isDebugEnabled())
+                    log.debug("Sent cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
 
                 return;
             }
@@ -1219,7 +1220,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 if (!cctx.discovery().alive(node.id()) || !cctx.discovery().pingNode(node.id()))
                     throw new ClusterTopologyCheckedException("Node left grid while sending message to: " + node.id(), e);
 
-                if (cnt == retryCnt || cctx.kernalContext().isStopping())
+                if (cnt++ >= retryCnt || cctx.kernalContext().isStopping())
                     throw e;
                 else if (log.isDebugEnabled())
                     log.debug("Failed to send message to node (will retry): " + node.id());
@@ -1227,9 +1228,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             U.sleep(retryDelay);
         }
-
-        if (log.isDebugEnabled())
-            log.debug("Sent cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
     }
 
     /**
@@ -1267,10 +1265,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         int cnt = 0;
 
-        while (cnt <= retryCnt) {
+        while (true) {
             try {
-                cnt++;
-
                 cctx.gridIO().sendOrderedMessage(node, topic, msg, plc, timeout, false);
 
                 if (log.isDebugEnabled())
@@ -1286,7 +1282,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 if (cctx.discovery().node(node.id()) == null)
                     throw new ClusterTopologyCheckedException("Node left grid while sending ordered message to: " + node.id(), e);
 
-                if (cnt == retryCnt)
+                if (cnt++ >= retryCnt)
                     throw e;
                 else if (log.isDebugEnabled())
                     log.debug("Failed to send message to node (will retry): " + node.id());

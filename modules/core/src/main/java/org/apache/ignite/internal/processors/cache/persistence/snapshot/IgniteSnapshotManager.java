@@ -158,7 +158,6 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridBusyLock;
@@ -188,6 +187,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.systemview.view.SnapshotView;
@@ -401,7 +401,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private final BasicRateLimiter transferRateLimiter = new BasicRateLimiter(DFLT_SNAPSHOT_TRANSFER_RATE_BYTES);
 
     /** Resolved persistent data storage settings. */
-    private volatile PdsFolderSettings pdsSettings;
+    private volatile PdsFolderSettings<?> pdsSettings;
 
     /** Fully initialized metastorage. */
     private volatile ReadWriteMetastorage metaStorage;
@@ -1185,27 +1185,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 parts.put(grpId, null);
         }
 
-        IgniteInternalFuture<?> task0;
+        IgniteInternalFuture<?> task0 = registerSnapshotTask(req.snapshotName(),
+            req.snapshotPath(),
+            req.operationalNodeId(),
+            req.requestId(),
+            parts,
+            withMetaStorage,
+            req.dump(),
+            req.compress(),
+            req.encrypt(),
+            locSndrFactory.apply(req.snapshotName(), req.snapshotPath())
+        );
 
-        if (parts.isEmpty() && !withMetaStorage)
-            task0 = new GridFinishedFuture<>(Collections.emptySet());
-        else {
-            task0 = registerSnapshotTask(req.snapshotName(),
-                req.snapshotPath(),
-                req.operationalNodeId(),
-                req.requestId(),
-                parts,
-                withMetaStorage,
-                req.dump(),
-                req.compress(),
-                req.encrypt(),
-                locSndrFactory.apply(req.snapshotName(), req.snapshotPath())
-            );
+        if (withMetaStorage) {
+            assert task0 instanceof SnapshotFutureTask;
 
-            if (withMetaStorage && task0 instanceof SnapshotFutureTask) {
-                ((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage())
-                    .suspend(((SnapshotFutureTask)task0).started());
-            }
+            ((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage())
+                .suspend(((SnapshotFutureTask)task0).started());
         }
 
         return task0.chain(() -> {

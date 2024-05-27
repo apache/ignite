@@ -32,7 +32,6 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -58,7 +57,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -255,15 +253,6 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
                     cache.put(accountId2, balance2);
 
                     tx.commit();
-                }
-                catch (CacheException e) {
-                    assertTrue(e.getCause() instanceof TransactionSerializationException);
-
-                    if (!e.getMessage().contains(
-                        "Cannot serialize transaction due to write conflict (transaction is marked for rollback)"))
-                        throw new IllegalStateException(e);
-//                    else
-//                        U.warn(log, "Failed to commit TX, will ignore!");
                 }
             }
         }, 16, "updater");

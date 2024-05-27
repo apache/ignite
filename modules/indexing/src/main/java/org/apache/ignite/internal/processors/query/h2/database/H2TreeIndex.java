@@ -227,7 +227,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         if (qctx == null)
             return null;
 
-        return new IndexQueryContext(qctx.filter(), null, qctx.mvccSnapshot());
+        return new IndexQueryContext(qctx.filter(), null);
     }
 
     /** */

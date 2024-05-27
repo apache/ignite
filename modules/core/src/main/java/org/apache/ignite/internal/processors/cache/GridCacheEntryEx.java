@@ -26,8 +26,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -619,8 +617,7 @@ public interface GridCacheEntryEx {
         GridDrType drType,
         boolean fromStore,
         boolean primary) throws IgniteCheckedException, GridCacheEntryRemovedException {
-        return initialValue(val, ver, null, null, TxState.NA, TxState.NA,
-            ttl, expireTime, preload, topVer, drType, fromStore, primary);
+        return initialValue(val, ver, ttl, expireTime, preload, topVer, drType, fromStore, primary, null);
     }
 
     /**
@@ -628,47 +625,6 @@ public interface GridCacheEntryEx {
      *
      * @param val New value.
      * @param ver Version to use.
-     * @param mvccVer Mvcc version.
-     * @param newMvccVer New mvcc version.
-     * @param mvccTxState Tx state hint for mvcc version.
-     * @param newMvccTxState Tx state hint for new mvcc version.
-     * @param ttl Time to live.
-     * @param expireTime Expiration time.
-     * @param preload Flag indicating whether entry is being preloaded.
-     * @param topVer Topology version.
-     * @param drType DR type.
-     * @param fromStore {@code True} if value was loaded from store.
-     * @param primary {@code True} if current node is primary for partition.
-     * @return {@code True} if initial value was set.
-     * @throws IgniteCheckedException In case of error.
-     * @throws GridCacheEntryRemovedException If entry was removed.
-     */
-    default boolean initialValue(CacheObject val,
-        GridCacheVersion ver,
-        @Nullable MvccVersion mvccVer,
-        @Nullable MvccVersion newMvccVer,
-        byte mvccTxState,
-        byte newMvccTxState,
-        long ttl,
-        long expireTime,
-        boolean preload,
-        AffinityTopologyVersion topVer,
-        GridDrType drType,
-        boolean fromStore,
-        boolean primary) throws IgniteCheckedException, GridCacheEntryRemovedException {
-        return initialValue(val, ver, null, null, TxState.NA, TxState.NA,
-            ttl, expireTime, preload, topVer, drType, fromStore, primary, null);
-    }
-
-    /**
-     * Sets new value if current version is <tt>0</tt>
-     *
-     * @param val New value.
-     * @param ver Version to use.
-     * @param mvccVer Mvcc version.
-     * @param newMvccVer New mvcc version.
-     * @param mvccTxState Tx state hint for mvcc version.
-     * @param newMvccTxState Tx state hint for new mvcc version.
      * @param ttl Time to live.
      * @param expireTime Expiration time.
      * @param preload Flag indicating whether entry is being preloaded.
@@ -683,10 +639,6 @@ public interface GridCacheEntryEx {
      */
     public boolean initialValue(CacheObject val,
         GridCacheVersion ver,
-        @Nullable MvccVersion mvccVer,
-        @Nullable MvccVersion newMvccVer,
-        byte mvccTxState,
-        byte newMvccTxState,
         long ttl,
         long expireTime,
         boolean preload,
