@@ -15,16 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.configuration.QueryEngineConfiguration;
+import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 
 /**
- * Marker interface.
+ *
  */
-public interface DhtLockFuture<T> extends IgniteInternalFuture<T> {
-    /**
-     * @param error Error.
-     */
-    public void onError(Throwable error);
+public class DdlTransactionIndexingSelfTest extends DdlTransactionSelfTestBase {
+    /** {@inheritDoc} */
+    @Override protected QueryEngineConfiguration getQueryEngineConfiguration() {
+        return new IndexingQueryEngineConfiguration()
+            .setDefault(true);
+    }
 }

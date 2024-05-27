@@ -465,9 +465,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 if (cctx == null)
                     return;
 
-                if (!needNotify(false, cctx, -1, -1, evt))
-                    return;
-
                 // skipPrimaryCheck is set only when listen locally for replicated cache events.
                 assert !skipPrimaryCheck || (cctx.isReplicated() && ctx.localNodeId().equals(nodeId));
 
@@ -577,9 +574,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 if (skipCtx == null)
                     skipCtx = new CounterSkipContext(part, cntr, topVer);
 
-                if (!needNotify(true, cctx, part, cntr, null))
-                    return skipCtx;
-
                 if (loc) {
                     assert !locOnly;
 
@@ -665,27 +659,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
             @Override public boolean isPrimaryOnly() {
                 return locOnly && !skipPrimaryCheck;
-            }
-
-            /**
-             * Checks whether it is need to notify listeners.
-             *
-             * @param skipEvt {@code True} if this is a skip counter event.
-             * @param cctx Cache context.
-             * @param part Partition id.
-             * @param cntr Update counter.
-             * @param evt CQ event.
-             * @return {@code True} if notification should happen immediately, or {@code false} if it should be delayed.
-             */
-            private boolean needNotify(boolean skipEvt,
-                GridCacheContext cctx,
-                int part,
-                long cntr,
-                CacheContinuousQueryEvent evt) {
-                assert !skipEvt || evt == null;
-                assert skipEvt || part == -1 && cntr == -1; // part == -1 && cntr == -1 means skip counter.
-
-                return true;
             }
         };
 

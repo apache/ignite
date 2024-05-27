@@ -2158,7 +2158,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param skipVals Skip values flag.
      * @param keepCacheObjects Keep cache objects flag.
      * @param skipStore Skip store flag.
-     * @param recovery Recovery flag..
+     * @param recovery Recovery flag.
      * @return Enlisted keys.
      * @throws IgniteCheckedException If failed.
      */

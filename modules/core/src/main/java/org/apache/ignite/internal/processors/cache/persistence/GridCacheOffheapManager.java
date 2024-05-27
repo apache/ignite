@@ -1226,8 +1226,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         grp.groupId(),
                         grp.dataRegion().pageMemory(),
                         globalRemoveId(),
-                        reuseListForIndex(name),
-                        false
+                        reuseListForIndex(name)
                     );
 
                     indexStorage.dropIndex(name);
@@ -1643,11 +1642,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public int size() throws IgniteCheckedException {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int headerSize() {
             throw new UnsupportedOperationException();
         }
 

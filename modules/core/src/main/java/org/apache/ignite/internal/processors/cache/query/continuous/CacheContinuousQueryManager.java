@@ -66,7 +66,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridLongList;
@@ -207,15 +206,6 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                     log.debug("Failed to stop JCache entry listener: " + e.getMessage());
             }
         }
-    }
-
-    /**
-     * @param tx Transaction.
-     * @return {@code True} if should notify continuous query manager.
-     */
-    public boolean notifyContinuousQueries(@Nullable IgniteInternalTx tx) {
-        return cctx.isReplicated() ||
-            (!cctx.isNear() && !(tx != null && tx.onePhaseCommit() && !tx.local()));
     }
 
     /**

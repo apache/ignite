@@ -445,7 +445,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
             GridDistributedTxMapping nearMapping = nearMap.get(n.id());
 
-            if (!dhtMapping.queryUpdate() && dhtMapping.empty() && nearMapping != null && nearMapping.empty())
+            if (dhtMapping.empty() && nearMapping != null && nearMapping.empty())
                 // Nothing to send.
                 continue;
 

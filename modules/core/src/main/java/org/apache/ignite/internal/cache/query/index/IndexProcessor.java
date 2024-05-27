@@ -490,7 +490,6 @@ public class IndexProcessor extends GridProcessorAdapter {
      * @param pageMemory Page memory to work with.
      * @param removeId Global remove id.
      * @param reuseList Reuse list where free pages should be stored.
-     * @param mvccEnabled Whether mvcc is enabled.
      * @throws IgniteCheckedException If failed.
      */
     public void destroyOrphanIndex(
@@ -500,8 +499,7 @@ public class IndexProcessor extends GridProcessorAdapter {
         int grpId,
         PageMemory pageMemory,
         GridAtomicLong removeId,
-        ReuseList reuseList,
-        boolean mvccEnabled) throws IgniteCheckedException {
+        ReuseList reuseList) throws IgniteCheckedException {
 
         assert ctx.cache().context().database().checkpointLockIsHeldByThread();
 

@@ -950,7 +950,6 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
         ClusterTopologyException ex = X.cause(e, ClusterTopologyException.class);
         IgniteFuture f;
 
-        // For now in MVCC case the topology exception doesn't have a remap future.
         if (ex != null && (f = ex.retryReadyFuture()) != null)
             f.get();
     }

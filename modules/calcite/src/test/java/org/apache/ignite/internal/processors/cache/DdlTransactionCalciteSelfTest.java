@@ -15,21 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.transactions;
+package org.apache.ignite.internal.processors.cache;
 
-/**
- * Exception thrown whenever transaction concurrency level is not supported.
- */
-public class TransactionUnsupportedConcurrencyException extends TransactionException {
-    /** */
-    private static final long serialVersionUID = 0L;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.configuration.QueryEngineConfiguration;
 
-    /**
-     * Creates new exception with given error message.
-     *
-     * @param msg Error message.
-     */
-    public TransactionUnsupportedConcurrencyException(String msg) {
-        super(msg);
+/** */
+public class DdlTransactionCalciteSelfTest extends DdlTransactionSelfTestBase {
+    /** {@inheritDoc} */
+    @Override protected QueryEngineConfiguration getQueryEngineConfiguration() {
+        return new CalciteQueryEngineConfiguration()
+            .setDefault(true);
     }
 }

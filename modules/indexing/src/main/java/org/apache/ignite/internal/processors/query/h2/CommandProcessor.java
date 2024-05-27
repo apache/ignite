@@ -240,8 +240,6 @@ public class CommandProcessor extends SqlCommandProcessor {
         IgniteInternalFuture fut = null;
 
         try {
-            finishActiveTxIfNecessary();
-
             if (cmdH2 instanceof GridSqlCreateTable) {
                 GridSqlCreateTable cmd = (GridSqlCreateTable)cmdH2;
 
