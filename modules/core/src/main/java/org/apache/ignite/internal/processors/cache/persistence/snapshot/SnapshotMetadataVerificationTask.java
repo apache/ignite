@@ -249,17 +249,16 @@ public class SnapshotMetadataVerificationTask
     }
 
     /** {@inheritDoc} */
-    @Override public SnapshotMetadataVerificationTaskResult reduce(
-        List<ComputeJobResult> results) throws IgniteException {
+    @Override public SnapshotMetadataVerificationTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {
         Map<ClusterNode, List<SnapshotMetadata>> reduceRes = new HashMap<>();
-        Map<ClusterNode, Exception> exceptions = new HashMap<>();
+        Map<ClusterNode, Exception> exs = new HashMap<>();
 
         SnapshotMetadata first = null;
         Set<String> baselineMetasLeft = Collections.emptySet();
 
         for (ComputeJobResult res : results) {
             if (res.getException() != null) {
-                exceptions.put(res.getNode(), res.getException());
+                exs.put(res.getNode(), res.getException());
 
                 continue;
             }
@@ -276,18 +275,19 @@ public class SnapshotMetadataVerificationTask
                 baselineMetasLeft.remove(meta.consistentId());
 
                 if (!first.sameSnapshot(meta)) {
-                    exceptions.put(res.getNode(),
+                    exs.put(res.getNode(),
                         new IgniteException("An error occurred during comparing snapshot metadata from cluster nodes " +
                             "[first=" + first + ", meta=" + meta + ", nodeId=" + res.getNode().id() + ']'));
 
                     continue;
                 }
 
-                reduceRes.computeIfAbsent(res.getNode(), n -> new ArrayList<>()).add(meta);
+                reduceRes.computeIfAbsent(res.getNode(), n -> new ArrayList<>())
+                        .add(meta);
             }
         }
 
-        if (first == null && exceptions.isEmpty()) {
+        if (first == null && exs.isEmpty()) {
             assert !results.isEmpty();
 
             for (ComputeJobResult res : results) {
@@ -295,16 +295,16 @@ public class SnapshotMetadataVerificationTask
                     + (arg.snapshotPath() != null ? ", baseDir=" + arg.snapshotPath() : "") + ", consistentId="
                     + res.getNode().consistentId() + ']');
 
-                exceptions.put(res.getNode(), e);
+                exs.put(res.getNode(), e);
             }
         }
 
-        if (!F.isEmpty(baselineMetasLeft) && F.isEmpty(exceptions)) {
-            exceptions.put(ignite.localNode(), new IgniteException("No snapshot metadatas found for the baseline nodes " +
+        if (!F.isEmpty(baselineMetasLeft) && F.isEmpty(exs)) {
+            exs.put(ignite.localNode(), new IgniteException("No snapshot metadatas found for the baseline nodes " +
                 "with consistent ids: " + String.join(", ", baselineMetasLeft)));
         }
 
-        return new SnapshotMetadataVerificationTaskResult(reduceRes, exceptions);
+        return new SnapshotMetadataVerificationTaskResult(reduceRes, exs);
     }
 
     /** {@inheritDoc} */
