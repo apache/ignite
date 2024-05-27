@@ -249,8 +249,7 @@ public class CdcResendCommandTest extends GridCommandHandlerAbstractTest {
 
     /** */
     private static class AlwaysNewResolutionManager<K, V>
-        extends GridCacheManagerAdapter<K, V> implements CacheConflictResolutionManager<K, V>
-    {
+        extends GridCacheManagerAdapter<K, V> implements CacheConflictResolutionManager<K, V> {
         /** */
         private final CacheVersionConflictResolver rslv;
 
