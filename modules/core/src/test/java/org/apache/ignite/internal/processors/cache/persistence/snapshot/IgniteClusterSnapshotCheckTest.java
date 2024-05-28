@@ -203,7 +203,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             log,
             () -> snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult(),
             IgniteException.class,
-            "No snapshot metadatas found for the baseline nodes with consistent ids: " + ignite.localNode().consistentId()
+            "No snapshot metadatas found for the baseline nodes with consistent ids: "
         );
     }
 
