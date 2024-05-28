@@ -19,11 +19,11 @@ public interface IFilter {
 	 *            permissions and other info for the current user
 	 * @param query
 	 *            query to an Elasticsearch instance
-	 * @param indices
-	 *            indices that are being queried
-	 * @param types
-	 *            types that are being queried
+	 * @param indice
+	 *            indice that are being queried
+	 * @param type
+	 *            type that are being queried
 	 * @return filtered/modified query
 	 */
-	public ESQuery addFilter(UserPermSet perms, ESQuery query, List<String> indices, List<String> types);
+	public ESQuery addFilter(UserPermSet perms, ESQuery query, String indice, String type);
 }

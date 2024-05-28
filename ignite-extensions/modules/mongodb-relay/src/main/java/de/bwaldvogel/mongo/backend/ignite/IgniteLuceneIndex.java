@@ -278,42 +278,22 @@ public class IgniteLuceneIndex extends Index<Object> {
 		boolean stringsFound = false;
 
 		Object[] row = new Object[idxdFields.length];
+		
+		
 		for (int i = 0, last = idxdFields.length; i < last; i++) {
-			Object fieldVal = document.get(idxdFields[i]);
-			if (fieldVal == null) {
-				continue;
-			}
-			if (idxdTypes[i].tokenized() && fieldVal instanceof CharSequence) {
-				row[i] = new TextField(idxdFields[i],fieldVal.toString(),Store.NO);				
-			}
-			else if(fieldVal instanceof Number) {
-				Number obj = (Number) fieldVal;
-				if (obj instanceof Long) {
-					row[i] = new LongPoint(idxdFields[i], (obj).longValue());					
-				} 
-				else if (obj instanceof Integer || obj instanceof Short) {
-					row[i] = new IntPoint(idxdFields[i], (obj).intValue());					
-				} 
-				else if (obj instanceof Float) {
-					row[i] = new FloatPoint(idxdFields[i], (obj).floatValue());					
-				}
-				else {
-					double d = ((Number) obj).doubleValue();						
-					row[i] = new DoublePoint(idxdFields[i], d);
-				}
-			} 
-			else {
-				//byte[] keyBytes = marshaller.marshal(ctx.grid().binary().toBinary(fieldVal), false);
-				//BytesRef keyByteRef = new BytesRef(keyBytes);
-				row[i] = fieldVal;
-			}
+			Object fieldVal = document.get(idxdFields[i]);			
+			
+			//byte[] keyBytes = marshaller.marshal(ctx.grid().binary().toBinary(fieldVal), false);
+			//BytesRef keyByteRef = new BytesRef(keyBytes);
+			row[i] = fieldVal;
 		}
+		
 		
 		BytesRef keyByteRef = marshalKeyField(position);
 		Term term = new Term(KEY_FIELD_NAME, keyByteRef);
 		// build doc body
 		try {
-			stringsFound = FullTextLucene.buildDocument(doc, this.idxdFields, idxdTypes, null, row);
+			stringsFound = FullTextLucene.buildDocument(doc, idxdFields, idxdTypes, null, row);
 			if (!stringsFound) {
 				indexAccess.writer.deleteDocuments(term);
 
@@ -360,7 +340,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 	public boolean canHandle(Document query) {
 
 		if (this.isTextIndex() && BsonRegularExpression.isTextSearchExpression(query)) {
-			return true;
+			return !true;
 		}
 		
 		if (this.isTextIndex() && BsonRegularExpression.isRegularExpression(query)) {

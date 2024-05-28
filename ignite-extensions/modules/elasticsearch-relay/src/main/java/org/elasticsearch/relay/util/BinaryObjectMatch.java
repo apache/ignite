@@ -1,5 +1,6 @@
 package org.elasticsearch.relay.util;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -79,11 +80,12 @@ public class BinaryObjectMatch implements IgniteBiPredicate<Object, BinaryObject
     public boolean matches(BinaryObject document, ObjectNode query) {
     	List<String> fields = convertToList(query.fieldNames());
         for (String key : fields) {
-            Object queryValue = query.get(key);
+        	boolean matched = false;
+        	JsonNode queryValue = query.get(key);
             //-validateQueryValue(queryValue, key);
             List<String> keys = splitKey(key);
-            if(keys.size()!=1) {
-            	continue;
+            if(keys.size()>1) { // field.keyword
+            	key = keys.get(0);
             }
             
             if(!document.hasField(key)) {
@@ -94,14 +96,14 @@ public class BinaryObjectMatch implements IgniteBiPredicate<Object, BinaryObject
                 Collection<?> documentValues = (Collection<?>) documentValue;
                 if (queryValue instanceof ObjectNode) {
                 	ObjectNode queryDocument = (ObjectNode) queryValue;
-                    boolean matches = checkMatchesAnyValue(queryDocument, documentValues);
-                    if (matches) {
+                	matched = checkMatchesAnyValue(queryDocument, documentValues);
+                    if (matched) {
                         continue;
                     }
                     return false;
                 } else if (queryValue instanceof ArrayNode) {
-                	boolean matches = checkMatchesValue(queryValue, documentValues);
-                	if (matches) {
+                	matched = checkMatchesAnyValue(queryValue, documentValues);
+                	if (matched) {
                         continue;
                     }
                     return false;
@@ -110,24 +112,75 @@ public class BinaryObjectMatch implements IgniteBiPredicate<Object, BinaryObject
                 }
             }
             else if (documentValue instanceof Map) {
-            	documentValue = ESRelay.objectMapper.convertValue((Map)documentValue,ObjectNode.class);
+            	ObjectNode jsonValue = ESRelay.objectMapper.convertValue((Map)documentValue,ObjectNode.class);
+            	matched = checkMatchesValue(queryValue, jsonValue);
+                if (matched) {
+                    continue;
+                }
+                return false;
             }
-
-            return checkMatchesValue(queryValue, documentValue);
+            else if (documentValue instanceof Comparable) {
+	            matched = checkMatchesValue(queryValue, documentValue);
+	            if (matched) {
+	                continue;
+	            }
+	            else {
+	            	return false;
+	            }
+            }
         }
 
         return true;
     }
     
-    private boolean checkMatchesValue(Object queryValue, Object value) {
+    private boolean checkMatchesValue(JsonNode queryValue, Object value) {
+        if (value instanceof JsonNode) {        	
+        	JsonNode valueObject = (JsonNode) value;            
+            return checkMatchesValue(queryValue,valueObject);
+        }        
+        
+        if (queryValue instanceof ArrayNode) {        	
+        	ArrayNode querySet = (ArrayNode) queryValue;
+        	for (JsonNode term : querySet) {
+                if (checkMatchesValue(term, value)) {                
+                    return true;
+                }               
+            }
+        	return false;
+        }
+        else if (queryValue instanceof ObjectNode && value instanceof Comparable) {
+        	ObjectNode queryObject = (ObjectNode) queryValue; 
+        	String op = "OR";
+        	if(queryObject.has("operator")) {
+            	op = queryObject.get("operator").asText();
+            }
+            if(op.equals("OR") && queryObject.has("query")) {
+            	return nullAwareEquals(value.toString(), queryObject.get("query"));
+            }
+            if(op.equals("NOT") && queryObject.has("query")) {
+            	return !nullAwareEquals(value.toString(), queryObject.get("query"));
+            }
+            return true;
+        }
+
+        return nullAwareEquals(value, queryValue);
+    }
+    
+    /**
+     * 
+     * @param queryValue
+     * @param value 只可能是object或者标量
+     * @return
+     */
+    private boolean checkMatchesValue(JsonNode queryValue, JsonNode value) {
         if (queryValue instanceof ObjectNode && value instanceof ObjectNode) {
         	ObjectNode queryObject = (ObjectNode) queryValue;
         	ObjectNode valueObject = (ObjectNode) value;
             
             List<String> fields = convertToList(queryObject.fieldNames());
             for (String key : fields) {
-                Object querySubvalue = queryObject.get(key);
-                Object valueSub = valueObject.get(key);
+            	JsonNode querySubvalue = queryObject.get(key);
+            	JsonNode valueSub = valueObject.get(key);
                 if (key.startsWith("$")) {
                     
                 } else if (isNullOrMissing(querySubvalue) && !isNullOrMissing(valueSub)) {
@@ -155,6 +208,20 @@ public class BinaryObjectMatch implements IgniteBiPredicate<Object, BinaryObject
         	boolean matches = checkMatchesAnyValue(value, valueObject);            
             return matches;
         }
+        else if (queryValue instanceof ObjectNode && !value.isObject()) {
+        	ObjectNode queryObject = (ObjectNode) queryValue; 
+        	String op = "OR";
+        	if(queryObject.has("operator")) {
+            	op = queryObject.get("operator").asText();
+            }
+            if(op.equals("OR") && queryObject.has("query")) {
+            	return nullAwareEquals(value.asText(), queryObject.get("query"));
+            }
+            if(op.equals("NOT") && queryObject.has("query")) {
+            	return !nullAwareEquals(value.asText(), queryObject.get("query"));
+            }
+            return true;
+        }
 
         return nullAwareEquals(value, queryValue);
     }
@@ -174,7 +241,7 @@ public class BinaryObjectMatch implements IgniteBiPredicate<Object, BinaryObject
         return true;
     }
     
-    protected boolean checkMatchesAnyValue(Object queryValue, Collection<?> values) {      
+    protected boolean checkMatchesAnyValue(JsonNode queryValue, Collection<?> values) {      
 
         int i = 0;
         for (Object value : values) {
@@ -186,9 +253,9 @@ public class BinaryObjectMatch implements IgniteBiPredicate<Object, BinaryObject
         return false;
     }
     
-    protected boolean checkMatchesAnyValue(Object queryValue, ArrayNode values) {
+    protected boolean checkMatchesAnyValue(JsonNode queryValue, ArrayNode values) {
         int i = 0;
-        for (Object value : values) {
+        for (JsonNode value : values) {
             if (checkMatchesValue(queryValue, value)) {                
                 return true;
             }
@@ -196,24 +263,55 @@ public class BinaryObjectMatch implements IgniteBiPredicate<Object, BinaryObject
         }
         return false;
     }
-    
-    public static boolean nullAwareEquals(Object a, Object b) {
+    /**
+     * 
+     * @param a is value
+     * @param b is query
+     * @return
+     */
+    public static boolean nullAwareEquals(Object a, JsonNode b) {
         if (a == b || a!=null && a.equals(b)) {
             return true;
         } else if (isNullOrMissing(a) && isNullOrMissing(b)) {
             return true;
         } else if (isNullOrMissing(a) || isNullOrMissing(b)) {
             return false;
-        } else if (a instanceof byte[] && b instanceof byte[]) {
+        } else if (a instanceof byte[]) {
             byte[] bytesA = (byte[]) a;
-            byte[] bytesB = (byte[]) b;
-            return Arrays.equals(bytesA, bytesB);
-        } else {
+            if(b.isArray()) {
+	            ArrayNode bytesB = (ArrayNode) b;
+	            if(bytesA.length==bytesB.size()) {
+	            	return Arrays.toString(bytesA).equals(bytesB.toString());
+	            }
+	            return false;
+            }
+            else {
+            	a = new String(bytesA,StandardCharsets.UTF_8);
+            	return a.equals(b.toString());
+            }
+        } else if(b.isNumber()) {
             Object normalizedA = normalizeValue(a);
-            Object normalizedB = normalizeValue(b);
-            return Objects.equals(normalizedA, normalizedB);
+            Object normalizedB = b;
+            return Objects.equals(normalizedA.toString(), normalizedB.toString());
+        } else if(b.isTextual()) {
+            Object normalizedA = normalizeValue(a);            
+            return Objects.equals(normalizedA.toString(), b.asText());
+        }
+        return false;
+    }
+    
+    public static boolean nullAwareEquals(String a, JsonNode b) {
+        if (a!=null && a.equals(b)) {
+            return true;
+        } else if (isNullOrMissing(a) && isNullOrMissing(b)) {
+            return true;
+        } else if (isNullOrMissing(a) || isNullOrMissing(b)) {
+            return false;       
+        } else {            
+            return a.equals(b.asText());
         }
     }
+    
     
     public static Object normalizeValue(Object value) {
         if (isNullOrMissing(value)) {

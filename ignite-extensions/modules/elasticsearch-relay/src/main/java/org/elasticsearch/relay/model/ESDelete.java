@@ -79,10 +79,17 @@ public class ESDelete {
 		indices = copy.indices;
 		action = copy.action;
 		docId = copy.docId;
+		this.format = copy.format;
+		this.responseFormat = copy.responseFormat;
 		
 		fAuthFilterOrArr = new ArrayNode(ESRelay.jsonNodeFactory);
+		if(copy.fParams!=null) {
+			this.setParams(copy.fParams);
+		}
+	}
+	
+	public ESDelete() {
 		
-		this.setParams(copy.fParams);
 	}
 	
 
@@ -219,28 +226,20 @@ public class ESDelete {
 		return indices;
 	}
 
-	public List<String> getTypeNames() {
-		List<String> types = new ArrayList<String>();
-
-		// extract from path
+	/**
+	 * schema.Table
+	 * @return Table
+	 */
+	public String getTypeName() {
+		// extract type from path
 		String names = this.indices;
 		if (names != null && !names.isEmpty()) {
-			if (names.contains(",")) {
-				String[] nameArr = names.split(",");
-				for (String n : nameArr) {
-					int pos = n.lastIndexOf('.');
-					if(pos>0) {
-						types.add(n.substring(pos+1));
-					}
-				}
-			} else {
-				int pos = names.lastIndexOf('.');
-				if(pos>0) {
-					types.add(names.substring(pos+1));
-				}				
-			}
+			int pos = names.lastIndexOf('.');
+			if(pos>0) {
+				return names.substring(pos+1);
+			}		
 		}
 
-		return types;
+		return names;
 	}
 }

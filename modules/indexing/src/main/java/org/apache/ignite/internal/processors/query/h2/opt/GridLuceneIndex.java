@@ -233,7 +233,7 @@ public class GridLuceneIndex implements AutoCloseable {
             // Next implies remove than add atomically operation.
             indexAccess.writer.updateDocument(term, doc);
         }
-        catch (IOException | SQLException e) {
+        catch (Exception e) {
             throw new IgniteCheckedException(e);
         }
         finally {

@@ -188,6 +188,10 @@ public class ESRelay extends HttpServlet {
 				fixedPath[0] = path[0];
 				fixedPath[1] = ESConstants.ALL_FRAGMENT;
 			}
+			else if(path[0].charAt(0)=='_') {
+				fixedPath[0] = "";
+				fixedPath[1] = path[0];
+			}
 			else {
 				fixedPath[0] = path[0];
 				fixedPath[1] = ESConstants.INDICES_FRAGMENT;
@@ -223,13 +227,11 @@ public class ESRelay extends HttpServlet {
 			if("_cmd".equalsIgnoreCase(path[0])){
 				Map<String, String> parameters = getParams(request);
 				parameters.put("cmd", path[1]);				
-				path[2] = path[1];
-				path[1] = path[0];
-				path[0] = "ignite";
+
 				// read request body
 				ObjectNode jsonRequest = getJSONBody(path[0],request);
 					
-				ESUpdate query = new ESUpdate(path, parameters, jsonRequest);
+				ESUpdate query = new ESUpdate(new String[] {"","_cmd"}, parameters, jsonRequest);
 				
 				// process request, forward to ES instances
 				result = fHandler.handleRequest(query, user);	
@@ -263,7 +265,8 @@ public class ESRelay extends HttpServlet {
 			}
 			else if(request.getMethod().equals("GET") 
 					|| action.equalsIgnoreCase(ESConstants.SEARCH_FRAGMENT) 
-					|| action.equalsIgnoreCase(ESConstants.ALL_FRAGMENT)){ 
+					|| action.equalsIgnoreCase(ESConstants.ALL_FRAGMENT)
+					|| action.equalsIgnoreCase(ESConstants.GET_FRAGMENT)){
 				
 				
 				if(!request.getMethod().equals("GET")){
@@ -339,12 +342,23 @@ public class ESRelay extends HttpServlet {
 			fLogger.log(Level.SEVERE, "Error during error JSON generation", e);
 			
 		} catch (Exception e) {
-			response.setStatus(500);
+			
 			response.resetBuffer();
 
 			ObjectNode jsonError = new ObjectNode(jsonNodeFactory);
 			jsonError.put(ESConstants.R_ERROR, e.getMessage());
 			jsonError.put(ESConstants.R_STATUS, 500);
+			if(e.getClass().getSimpleName().indexOf("NotFound")>=0) {
+				jsonError.put(ESConstants.R_STATUS, 404);
+				response.setStatus(404);
+			}
+			if(e.getClass().getSimpleName().indexOf("Access")>=0) {
+				jsonError.put(ESConstants.R_STATUS, 402);
+				response.setStatus(402);
+			}
+			else {
+				response.setStatus(500);
+			}
 			
 			out.println(jsonError.toPrettyString());
 			

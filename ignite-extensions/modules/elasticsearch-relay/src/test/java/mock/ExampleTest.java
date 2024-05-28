@@ -4,7 +4,10 @@ import org.apache.http.HttpHost;
 import org.apache.http.entity.ContentType;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.get.MultiGetRequest;
+import org.elasticsearch.action.get.MultiGetResponse;
 import org.elasticsearch.client.Request;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -55,6 +58,23 @@ public class ExampleTest {
     	Response response = lClient.performRequest(request);
     	
     	System.out.println(response.getEntity());
+    }
+    
+    @Test
+    public void testMGet() throws IOException {
+    	
+    	Request request = new Request(
+    		    "GET",  
+    		    "/test/_all");   
+    	Response response = lClient.performRequest(request);
+    	
+    	MultiGetRequest multiGetRequest = new MultiGetRequest();
+    	multiGetRequest.add("index","1");
+    	multiGetRequest.add("index","2");
+    	
+    	MultiGetResponse resp = hClient.mget(multiGetRequest, RequestOptions.DEFAULT);
+    	
+    	System.out.println(resp.getResponses());
     }
 
     

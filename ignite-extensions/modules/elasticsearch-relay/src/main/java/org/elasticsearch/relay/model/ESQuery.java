@@ -50,6 +50,7 @@ public class ESQuery {
 	public ESQuery() {
 		indices = "";
 		action = "_all";
+		responseFormat = ResponseFormat.DATASET;
 	}
 	
 	/**
@@ -112,10 +113,13 @@ public class ESQuery {
 		docId = copy.docId;
 		
 		fBody = copy.fBody;
+		this.format = copy.format;
+		this.responseFormat = copy.responseFormat;
 		
 		fAuthFilterOrArr = new ArrayNode(ESRelay.jsonNodeFactory);
-		
-		this.setParams(copy.fParams);
+		if(copy.fParams!=null) {
+			this.setParams(copy.fParams);
+		}
 	}
 	
 
@@ -308,29 +312,21 @@ public class ESQuery {
 		return indices;
 	}
 
-	public List<String> getTypeNames() {
-		List<String> types = new ArrayList<String>();
-
-		// extract from path
+	/**
+	 * schema.Table
+	 * @return Table
+	 */
+	public String getTypeName() {
+		// extract type from path
 		String names = this.indices;
 		if (names != null && !names.isEmpty()) {
-			if (names.contains(",")) {
-				String[] nameArr = names.split(",");
-				for (String n : nameArr) {
-					int pos = n.lastIndexOf('.');
-					if(pos>0) {
-						types.add(n.substring(pos+1));
-					}
-				}
-			} else {
-				int pos = names.lastIndexOf('.');
-				if(pos>0) {
-					types.add(names.substring(pos+1));
-				}				
-			}
+			int pos = names.lastIndexOf('.');
+			if(pos>0) {
+				return names.substring(pos+1);
+			}		
 		}
 
-		return types;
+		return names;
 	}
 
 	public String getResponseRootPath() {

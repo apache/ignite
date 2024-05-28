@@ -5,6 +5,7 @@ package de.bwaldvogel.examples;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.InetSocketAddress;
+import java.util.Map;
 
 import org.apache.ignite.internal.processors.mongo.MongoPluginConfiguration;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -263,6 +264,8 @@ public class SimpleTest {
         	Document doc = it.next();
         	System.out.println(doc);
         }
+        
+        Map emptyMap = java.util.Collections.EMPTY_MAP;
     }
     
 

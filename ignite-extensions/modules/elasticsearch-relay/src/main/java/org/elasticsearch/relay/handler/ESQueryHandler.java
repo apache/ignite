@@ -25,6 +25,7 @@ import javax.cache.Cache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.elasticsearch.relay.ESRelay;
 import org.elasticsearch.relay.ESRelayConfig;
 import org.elasticsearch.relay.ResponseFormat;
@@ -142,13 +143,13 @@ public class ESQueryHandler {
 		LiferayFilter lrFilter = new LiferayFilter(config.getLiferayTypes(), config.getLiferayPassthroughRoles());
 		fIndexFilters.put(config.getLiferayIndex(), lrFilter);
 		for (String type : config.getLiferayTypes()) {
-			fTypeFilters.put(type, lrFilter);
+			fTypeFilters.put(config.getLiferayIndex()+'.'+type, lrFilter);
 		}
 
 		NuxeoFilter nxFilter = new NuxeoFilter(config.getNuxeoTypes());
 		fIndexFilters.put(config.getNuxeoIndex(), nxFilter);
 		for (String type : config.getNuxeoTypes()) {
-			fTypeFilters.put(type, nxFilter);
+			fTypeFilters.put(config.getNuxeoIndex()+'.'+type, nxFilter);
 		}
 
 		// initialize and register post processors
@@ -186,15 +187,30 @@ public class ESQueryHandler {
 	 *             if an internal error occurs
 	 */
 	public String handleRequest(ESUpdate query, String user) throws Exception {
-		IntStream s = IntStream.range(0, fEsIndices.length);
-		if(fEsIndices.length>=4) {
-			s = s.parallel();
-		}
+		final List<T2<Integer,ESUpdate>> querys = new ArrayList<>();
 		
-		List<Object> result = s.mapToObj(i->{
+		IntStream.range(0, fEsIndices.length).forEach(i->{
 			// url index and type parameters and in-query parameters
-			ESUpdate es1Query = getInstanceUpdate(query, fEsIndices[i]);
+			List<ESUpdate> es1Query = getInstanceUpdate(query,user,fEsIndices[i],fEsBlacklistFilter[i]);
+			for(ESUpdate q: es1Query) {
+				querys.add(new T2<>(i,q));
+			}
+        	
+        });
+		
+		Stream<T2<Integer,ESUpdate>> s;
+		if(querys.size()<=4) {
+			s = querys.stream();
+		}
+		else {
+			s = querys.parallelStream();
+		}		
+		
+		List<Object> result = s.map(taskQuery->{
+			
 			Object es1Response = null;
+			int i = taskQuery.getKey();
+			ESUpdate es1Query = taskQuery.getValue();
 
 			// process requests and run through filters
 			// forward request to Elasticsearch instances
@@ -217,7 +233,7 @@ public class ESQueryHandler {
 		// merge results
 		// limit returned amount if size is specified
 		
-		String response = mergeOperationResultResponses(result, false, query.getResponseFormat());
+		String response = mergeOperationResultResponses(result, true, query.getResponseFormat());
 		
 		return response;
 		
@@ -236,17 +252,32 @@ public class ESQueryHandler {
 	 *             if an internal error occurs
 	 */
 	public String handleRequest(ESQuery query, String user) throws Exception {
-		IntStream s = IntStream.range(0, fEsIndices.length);
-		if(fEsIndices.length>=4) {
-			s = s.parallel();
-		}
 		
-		List<Object> result = s.mapToObj(i->{
+		
+		final List<T2<Integer,ESQuery>> querys = new ArrayList<>();
+		
+		IntStream.range(0, fEsIndices.length).forEach(i->{
 			// url index and type parameters and in-query parameters
-			ESQuery es1Query = getInstanceQuery(query, fEsIndices[i]);
-			Object es1Response = null;
+			List<ESQuery> es1Query = getInstanceQuery(query,user,fEsIndices[i],fEsBlacklistFilter[i]);
+			for(ESQuery q: es1Query) {
+				querys.add(new T2<>(i,q));
+			}
+        	
+        });
+		
+		Stream<T2<Integer,ESQuery>> s;
+		if(querys.size()<=4) {
+			s = querys.stream();
+		}
+		else {
+			s = querys.parallelStream();
+		}		
+		
+		List<Object> result = s.map(taskQuery->{
 			
-			es1Query = handleFiltering(user, es1Query, fEsBlacklistFilter[i]);
+			Object es1Response = null;
+			int i = taskQuery.getKey();
+			ESQuery es1Query = taskQuery.getValue();
 
 			// process requests and run through filters
 			// forward request to Elasticsearch instances
@@ -288,15 +319,31 @@ public class ESQueryHandler {
 	 */
 	public String handleRequest(ESDelete query, String user) throws Exception {
 		
-		IntStream s = IntStream.range(0, fEsIndices.length);
-		if(fEsIndices.length>=4) {
-			s = s.parallel();
+		final List<T2<Integer,ESDelete>> querys = new ArrayList<>();
+		
+		IntStream.range(0, fEsIndices.length).forEach(i->{
+			// url index and type parameters and in-query parameters
+			List<ESDelete> es1Query = getInstanceQuery(query,user,fEsIndices[i],fEsBlacklistFilter[i]);
+			for(ESDelete q: es1Query) {
+				querys.add(new T2<>(i,q));
+			}
+        	
+        });
+		
+		Stream<T2<Integer,ESDelete>> s;
+		if(querys.size()<=4) {
+			s = querys.stream();
+		}
+		else {
+			s = querys.parallelStream();
 		}
 		
-		List<Object> result = s.mapToObj(i->{
-			// url index and type parameters and in-query parameters
-			ESDelete es1Query = getInstanceQuery(query, fEsIndices[i]);
+		List<Object> result = s.map(taskQuery->{
+			
 			Object es1Response = null;
+			int i = taskQuery.getKey();
+			ESDelete es1Query = taskQuery.getValue();
+
 
 			// process requests and run through filters
 			// forward request to Elasticsearch instances
@@ -362,77 +409,102 @@ public class ESQueryHandler {
 		return response;	
 	}
 
-	protected ESQuery getInstanceQuery(ESQuery query, Set<String> availIndices) {
-		ESQuery esQuery = new ESQuery(query);
+	protected List<ESQuery> getInstanceQuery(ESQuery query,String user,Set<String> availIndices,BlacklistFilter blacklist) {
+		List<ESQuery> list = new ArrayList<>();
 
-		ObjectNode request = query.getQuery();
-		List<String> indices = query.getIndexNames();
+		String index0 = query.getIndices();
+		if(index0.isBlank()) {
+			list.add(query);
+		}
+		else if (index0.equals(ESConstants.ALL_FRAGMENT) || index0.equals(ESConstants.WILDCARD)) {
+			for(String indicesFrag : availIndices) {
+				if (!indicesFrag.equals(ESConstants.ALL_FRAGMENT) && !indicesFrag.equals(ESConstants.WILDCARD)) {
+					ESQuery esQuery = new ESQuery(query);
+					esQuery.setIndices(indicesFrag);
+					
+					esQuery = blacklist.addFilter(esQuery);
 
-		// only leave indices which are on this node
-		boolean removed = false;
-		String indicesFrag = "";
-		for (String index : indices) {
-			if (availIndices.contains(ESConstants.ALL_FRAGMENT) || availIndices.contains(ESConstants.WILDCARD) || availIndices.contains(index) || index.equals(ESConstants.ALL_FRAGMENT)) {
-				indicesFrag += index + ",";
-			} else {
-				removed = true;
+					// abort if query is already cancelled through blacklisting
+					if (!esQuery.isCancelled()) {
+						esQuery = handleFiltering(user, esQuery);
+						if(!esQuery.isCancelled()) {
+							list.add(esQuery);
+						}
+					}
+					
+				}
 			}
+			return list;
 		}
-		if (indicesFrag.length() > 0) {
-			indicesFrag = indicesFrag.substring(0, indicesFrag.length() - 1);
-			esQuery.setIndices(indicesFrag);
-		} else if (removed) {
-			// all indices were removed - cancel
-			esQuery.cancel();
-		}
-
-		return esQuery;
-	}
-	
-	protected ESDelete getInstanceQuery(ESDelete query, Set<String> availIndices) {
-		ESDelete esQuery = new ESDelete(query);
 		
 		List<String> indices = query.getIndexNames();
+		for(String index: indices) {
+			// only leave indices which are on this node
+			
+			if (availIndices.contains(ESConstants.ALL_FRAGMENT) || availIndices.contains(ESConstants.WILDCARD) || availIndices.contains(index)) {				
+				
+				ESQuery esQuery = new ESQuery(query);
+				esQuery.setIndices(index);
+				list.add(esQuery);				
+			}			
+		}
+		return list;
+	}
+	
+	protected List<ESDelete> getInstanceQuery(ESDelete query, String user, Set<String> availIndices,BlacklistFilter blacklist) {
+		List<ESDelete> list = new ArrayList<>();
 
-		// only leave indices which are on this node
-		boolean removed = false;
-		String indicesFrag = "";
-		for (String index : indices) {
-			if (availIndices.contains(ESConstants.ALL_FRAGMENT) || availIndices.contains(ESConstants.WILDCARD) || availIndices.contains(index) || index.equals(ESConstants.ALL_FRAGMENT)) {
-				indicesFrag += index + ",";
-			} else {
-				removed = true;
+		String index0 = query.getIndices();
+		if (index0.equals(ESConstants.ALL_FRAGMENT) || index0.equals(ESConstants.WILDCARD)) {
+			for(String indicesFrag : availIndices) {
+				if (!indicesFrag.equals(ESConstants.ALL_FRAGMENT) && !indicesFrag.equals(ESConstants.WILDCARD)) {
+					ESDelete esQuery = new ESDelete(query);
+					esQuery.setIndices(indicesFrag);
+					esQuery = blacklist.addFilter(esQuery);
+
+					// abort if query is already cancelled through blacklisting
+					if (!esQuery.isCancelled()) {
+						esQuery = handleFiltering(user, esQuery);
+						if(!esQuery.isCancelled()) {
+							list.add(esQuery);
+						}
+					}
+					
+				}
 			}
+			return list;
 		}
-		if (indicesFrag.length() > 0) {
-			indicesFrag = indicesFrag.substring(0, indicesFrag.length() - 1);
-			esQuery.setIndices(indicesFrag);
-		} else if (removed) {
-			// all indices were removed - cancel
-			esQuery.cancel();
+		
+		List<String> indices = query.getIndexNames();
+		for(String index: indices) {
+			// only leave indices which are on this node
+			
+			if (availIndices.contains(ESConstants.ALL_FRAGMENT) || availIndices.contains(ESConstants.WILDCARD) || availIndices.contains(index)) {				
+				
+				ESDelete esQuery = new ESDelete(query);
+				esQuery.setIndices(index);
+				list.add(esQuery);				
+			}			
 		}
-
-		return esQuery;
+		return list;
 	}
 	
 
 	protected ESViewQuery getInstanceQuery(ESViewQuery query, Set<String> availIndices) {
 		ESViewQuery esQuery = new ESViewQuery(query);
 		String request = query.getSQL();		
-		List<String> indices = List.of(query.getSchema()==null?query.getName():query.getSchema());
+		String index = query.getSchema()==null?query.getName():query.getSchema();
 
 		// only leave indices which are on this node
 		boolean removed = false;
 		String indicesFrag = "";
-		for (String index : indices) {
-			if (availIndices.contains(ESConstants.ALL_FRAGMENT) || availIndices.contains("*") || availIndices.contains(index) || index.equals(ESConstants.ALL_FRAGMENT)) {
-				indicesFrag += index + ",";
-			} else {
-				removed = true;
-			}
+		if (availIndices.contains(ESConstants.ALL_FRAGMENT) || availIndices.contains("*") || availIndices.contains(index) || index.equals(ESConstants.ALL_FRAGMENT)) {
+			indicesFrag = index;
+		} else {
+			removed = true;
 		}
 		if (indicesFrag.length() > 0) {
-			indicesFrag = indicesFrag.substring(0, indicesFrag.length() - 1);
+			esQuery.setIndices(indicesFrag);
 		} else if (removed) {
 			// all indices were removed - cancel
 			esQuery.cancel();
@@ -448,32 +520,46 @@ public class ESQueryHandler {
 	 * @return
 	 * @throws Exception
 	 */
-	protected ESUpdate getInstanceUpdate(ESUpdate query, Set<String> availIndices) {
-		ESUpdate esQuery = new ESUpdate(query);
+	protected List<ESUpdate> getInstanceUpdate(ESUpdate query, String user, Set<String> availIndices,BlacklistFilter blacklist) {
+		List<ESUpdate> list = new ArrayList<>();
 
-		ObjectNode request = query.getQuery();
-		
-		List<String> indices = List.of(esQuery.getIndices());
+		String index0 = query.getIndices();
+		if(index0.isBlank()) {
+			list.add(query);
+		}
+		if (index0.equals(ESConstants.ALL_FRAGMENT) || index0.equals(ESConstants.WILDCARD)) {
+			for(String indicesFrag : availIndices) {
+				if (!indicesFrag.equals(ESConstants.ALL_FRAGMENT) && !indicesFrag.equals(ESConstants.WILDCARD)) {
+					ESUpdate esQuery = new ESUpdate(query);
+					esQuery.setIndices(indicesFrag);
+					
+					esQuery = blacklist.addFilter(esQuery);
 
-		// only leave indices which are on this node
-		boolean removed = false;
-		String indicesFrag = "";
-		for (String index : indices) {
-			if (availIndices.contains(index) || availIndices.contains("*") || availIndices.contains(ESConstants.ALL_FRAGMENT) ) {
-				indicesFrag = index;
-				break;
-			} else {
-				removed = true;
+					// abort if query is already cancelled through blacklisting
+					if (!esQuery.isCancelled()) {
+						esQuery = handleFiltering(user, esQuery);
+						if(!esQuery.isCancelled()) {
+							list.add(esQuery);
+						}
+					}
+					
+				}
 			}
+			return list;
 		}
-		if (indicesFrag.length() > 0) {
+		
+		List<String> indices = query.getIndexNames();
+		for(String index: indices) {
+			// only leave indices which are on this node
 			
-		} else if (removed) {
-			// all indices were removed - cancel
-			esQuery.cancel();
+			if (availIndices.contains(ESConstants.ALL_FRAGMENT) || availIndices.contains(ESConstants.WILDCARD) || availIndices.contains(index)) {				
+				
+				ESUpdate esQuery = new ESUpdate(query);
+				esQuery.setIndices(index);
+				list.add(esQuery);				
+			}			
 		}
-
-		return esQuery;
+		return list;
 	}
 
 	protected Object sendEsRequest(ESUpdate query, int index) throws Exception {
@@ -608,11 +694,11 @@ public class ESQueryHandler {
 		for(int i=0;i<es1Response.size();i++){
 			ObjectNode es1Json = makeObjectNode(es1Response.get(i));
 			// 哪个节点出现错误，返回哪个
-			if (!returnSucess && es1Json.has(ESConstants.R_ERROR)) {
+			if (!returnSucess && es1Json.has(ESConstants.R_ERROR) && !es1Json.get(ESConstants.R_ERROR).isNull()) {
 				return es1Json.toPrettyString();
 			} 
 			// 哪个节点成功，返回哪个
-			if (returnSucess && !es1Json.has(ESConstants.R_ERROR)) {
+			if (returnSucess && (!es1Json.has(ESConstants.R_ERROR) || es1Json.get(ESConstants.R_ERROR).isNull())) {
 				return es1Json.toPrettyString();
 			}
 		}		
@@ -623,6 +709,7 @@ public class ESQueryHandler {
 		List<ObjectNode> hits = new LinkedList<ObjectNode>();
 		int totalHits = 0;
 		int shards = 0;
+		int fails = 0;
 		int limit = query.getLimit();
 		int offset = query.getFrom();
 		String rootPath = query.getResponseRootPath();
@@ -636,6 +723,7 @@ public class ESQueryHandler {
 				es1Resp = new ESResponse(es1Json,rootPath);
 				shards += es1Resp.getShards();
 			} else {
+				fails++;
 				continue;
 			}
 			// mix results 50:50 as far as possible
@@ -674,8 +762,8 @@ public class ESQueryHandler {
 		// add up data
 		ESResponse mergedResponse = new ESResponse(hits);
 		mergedResponse.setShards(shards);
-		mergedResponse.setSkip(this.fEsIndices.length-es1Response.size());
-		mergedResponse.setFail(es1Response.size()-shards);
+		mergedResponse.setSkip(es1Response.size()-shards-fails);
+		mergedResponse.setFail(fails);
 		mergedResponse.setTotalHits(totalHits);
 		
 		if(format==ResponseFormat.DATASET) {
@@ -757,12 +845,21 @@ public class ESQueryHandler {
 		return query;
 	}
 
-	protected ESQuery handleFiltering(String user, ESQuery query, IFilter blacklist) {
+	protected ESDelete handleFiltering(String user, ESDelete query) {
+		return query;
+	}
+	
+	protected ESUpdate handleFiltering(String user, ESUpdate query) {
+		return query;
+	}
+	
+	
+	protected ESQuery handleFiltering(String user, ESQuery query) {
 		ObjectNode request = query.getQuery();		
 		String action = query.getAction();
-		List<String> indices = query.getIndexNames();
-		List<String> types = query.getTypeNames();
-		if(indices.isEmpty()) {
+		String index = query.getIndices();
+		String types = query.getTypeName();
+		if(index.isEmpty()) {
 			return query;
 		}
 		// remove or block blacklisted indices and types
@@ -773,53 +870,21 @@ public class ESQueryHandler {
 			perms = new UserPermSet(user);
 		}		
 
-		if(action.equals(ESConstants.SEARCH_FRAGMENT) || action.equals(ESConstants.ALL_FRAGMENT)){
-			query = blacklist.addFilter(perms, query, indices, types);
-
-			// abort if query is already cancelled through blacklisting
-			if (query.isCancelled()) {
-				return query;
-			}
-
+		if(action.equals(ESConstants.SEARCH_FRAGMENT) || action.equals(ESConstants.ALL_FRAGMENT) || action.equals(ESConstants.GET_FRAGMENT)){
+			
 			// security and visibility filtering
-			boolean allIndices = false;
-			boolean allTypes = false;
-
-			// check if all indices are to be searched
-			if (indices.isEmpty() || indices.size() == 1
-					&& (indices.get(0).equals(ESConstants.ALL_FRAGMENT) || indices.get(0).equals(ESConstants.WILDCARD))) {
-				allIndices = true;
-			}
-
-			// check if all types are to be searched
-			if (types.isEmpty() || types.size() == 1 && types.get(0).equals(ESConstants.ALL_FRAGMENT)) {
-				allTypes = true;
-			}
+			
 
 			// modify query accordingly
-			IFilter filter = null;
-			if (!allTypes) {
-				// search over specific types
-				// TODO: types should be sufficient as indicator
-				for (String type : types) {
-					filter = fTypeFilters.get(type);
-					if (filter != null) {
-						query = filter.addFilter(perms, query, indices, types);
-					}
+			IFilter filter = fIndexFilters.get(index);			
+			
+			if (filter != null) {
+				IFilter typeFilter = fTypeFilters.get(index+'.'+types);
+				if(typeFilter!=null) {
+					query = typeFilter.addFilter(perms, query, index, types);
 				}
-			} else if (!allIndices && !indices.contains(ESConstants.WILDCARD)) {
-				// search over specific indices
-				for (String index : indices) {
-					filter = fIndexFilters.get(index);
-					if (filter != null) {
-						query = filter.addFilter(perms, query, indices, types);
-					}
-				}
-			} else {
-				// search over all indices and types
-				// TODO: exclude filters for the other ES instance
-				for (IFilter iFilter : fIndexFilters.values()) {
-					query = iFilter.addFilter(perms, query, indices, types);
+				else {
+					query = filter.addFilter(perms, query, index, types);
 				}
 			}
 

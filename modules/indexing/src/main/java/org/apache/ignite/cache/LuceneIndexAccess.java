@@ -173,12 +173,13 @@ public class LuceneIndexAccess {
         	if(qtextIdx!=null){
         		//-fields.clear();
         		for(String field: type.textIndex().fields()) {
+        			Class fieldType = type.fields().get(field);
         			if(config.isStoreTextFieldValue()) {
         				fields.put(field,TextField.TYPE_STORED);
         			}
         			else {
         				fields.put(field,TextField.TYPE_NOT_STORED);
-        			}        			
+        			}    			
         		}
             }        	
         	

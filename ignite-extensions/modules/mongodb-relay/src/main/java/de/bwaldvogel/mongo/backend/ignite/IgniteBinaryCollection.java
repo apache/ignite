@@ -213,7 +213,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 		for (Index<Object> index : getIndexes()) {
 			if (index.canHandle(query)) {
 				Iterable<Object> positions = index.getPositions(query);
-				if(index.isUnique() || (positions instanceof List && ((List)positions).size()==0)) {
+				if(index.isUnique() || (positions instanceof List && ((List)positions).size()<=100)) {
 					return matchDocuments(query, positions, orderBy, numberToSkip, limit, batchSize, fieldSelector);
 				}
 				else {

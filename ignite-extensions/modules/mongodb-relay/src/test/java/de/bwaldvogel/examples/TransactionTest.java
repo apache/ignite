@@ -127,13 +127,19 @@ public class TransactionTest {
         
         session.close();
 
-        FindIterable<Document>  ret = collection.find(json("$text: {$search: 'def'}"));
+        FindIterable<Document>  ret = collection.find(json("$text: {$search: 'dwef'}, title: '标题'"));
         MongoCursor<Document> it = ret.cursor();
         while(it.hasNext()) {
         	Document doc = it.next();
         	System.out.println(doc);
         }
         
+        ret = collection.find(json("text: 'dwef', title: '标题'"));
+        it = ret.cursor();
+        while(it.hasNext()) {
+        	Document doc = it.next();
+        	System.out.println(doc);
+        }
         System.out.println("finish full text");
     }
     

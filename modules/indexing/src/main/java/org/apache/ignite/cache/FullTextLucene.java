@@ -56,12 +56,19 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleDocValuesField;
+import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FloatDocValuesField;
+import org.apache.lucene.document.FloatPoint;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -1198,7 +1205,7 @@ public class FullTextLucene {
      * @return
      * @throws SQLException
      */
-    public static boolean buildDocument(Document doc,String[] idxdFields,FieldType[] idxdTypes,int[] indexColumns,Object[] row) throws SQLException {
+    public static boolean buildDocument(Document doc,String[] idxdFields,FieldType[] idxdTypes,int[] indexColumns,Object[] row) {
     	boolean stringsFound = false;
         for (int i = 0, last = idxdFields.length; i < last; i++) {
         	int col = indexColumns!=null? indexColumns[i]:i;
@@ -1207,33 +1214,7 @@ public class FullTextLucene {
 
             if (fieldVal != null) {
             	if(fieldVal.getClass().isArray()){ // fieldval is array type
-            		if(fieldVal instanceof String[]){
-                		String[] terms = (String[])fieldVal;
-                		for(int j=0;j<terms.length;j++){
-                			if(terms[j]!=null)
-                				buildDocumentField(doc,idxdFields[i],idxdTypes[i],terms[j]);  
-                		}
-                	}
-            		else if(fieldVal instanceof byte[]){  //convert to string
-            			byte[] bytes = (byte[])fieldVal;
-            			String keyByteRef = new String(bytes,StandardCharsets.UTF_8);
-            			doc.add(new Field(idxdFields[i], keyByteRef, idxdTypes[i]));    
-                	}
-            		else if(fieldVal instanceof char[]){  //convert to text field
-            			char[] bytes = (char[])fieldVal;
-            			String keyByteRef = new String(bytes);
-            			doc.add(new Field(idxdFields[i], keyByteRef, idxdTypes[i]));    
-                	}
-                	else if(fieldVal instanceof Object[]){
-                		Object[] terms = (Object[])fieldVal;
-                		for(int j=0;j<terms.length;j++){
-                			if(terms[j]!=null)
-                				buildDocumentField(doc,idxdFields[i],idxdTypes[i],terms[j]);
-                		}
-                	}
-                	else {
-                		ctx.log("暂时不支持索引数值数组");
-                	}
+            		buildDocumentArrayField(doc,idxdFields[i],idxdTypes[i],fieldVal);
             	}
             	else if(fieldVal instanceof Collection) {
             		Collection<?> terms = (Collection<?>) fieldVal;
@@ -1259,8 +1240,9 @@ public class FullTextLucene {
         return stringsFound;
     }
 
-    public static boolean buildDocumentField(Document doc,String idxdField,FieldType idxdType, Object fieldVal) throws SQLException {
+    public static boolean buildDocumentField(Document doc,String idxdField,FieldType idxdType, Object fieldVal) {
     	Object data = fieldVal;
+    	Field row = null;
 		try {
 			if(fieldVal instanceof BytesRef) {
 				doc.add(new Field(idxdField, (BytesRef)fieldVal, idxdType));
@@ -1279,9 +1261,93 @@ public class FullTextLucene {
             else if(data instanceof CharSequence) {
             	doc.add(new Field(idxdField, fieldVal.toString(), idxdType));
             }
-        } catch (Exception e) {
-			// TODO Auto-generated catch block
-        	throw convertException(e);
+            else if(fieldVal instanceof Number){            	
+    			 
+				Number obj = (Number) fieldVal;
+				if (obj instanceof Long) {
+					row = new LongPoint(idxdField, (obj).longValue());
+					doc.add(row);
+				} 
+				else if (obj instanceof Integer || obj instanceof Short) {
+					row = new IntPoint(idxdField, (obj).intValue());
+					doc.add(row);
+				} 
+				else if (obj instanceof Float) {    					
+					row = new FloatPoint(idxdField, obj.floatValue());
+					doc.add(row);
+					row = new FloatDocValuesField(idxdField,obj.floatValue());
+					doc.add(row);
+				}
+				else {    									
+					row = new DoublePoint(idxdField, obj.doubleValue());
+					doc.add(row);
+					row = new DoubleDocValuesField(idxdField,  obj.doubleValue());
+					doc.add(row);
+				}    				
+    		   			
+            }
+        } catch (Exception e) {			
+        	//throw convertException(e);
+        	ctx.log("Faid to index field "+ idxdField + ", Cause by "+e.getMessage());
+		}
+		return true;
+    }
+    
+    public static boolean buildDocumentArrayField(Document doc,String idxdField,FieldType idxdType, Object fieldVal) {
+    	Field row = null;
+		try {
+			Object obj = fieldVal;
+			if(fieldVal instanceof String[]){
+        		String[] terms = (String[])fieldVal;
+        		for(int j=0;j<terms.length;j++){
+        			if(terms[j]!=null)
+        				buildDocumentField(doc,idxdField,idxdType,terms[j]);  
+        		}
+        	}
+    		else if(fieldVal instanceof byte[]){  //convert to BytesRef
+    			byte[] bytes = (byte[])fieldVal;
+    			BytesRef keyByteRef = new BytesRef(bytes);
+    			doc.add(new Field(idxdField, keyByteRef, idxdType));    
+        	}
+    		else if(fieldVal instanceof char[]){  //convert to text field
+    			char[] bytes = (char[])fieldVal;
+    			String keyByteRef = new String(bytes);
+    			doc.add(new Field(idxdField, keyByteRef, idxdType));    
+        	}
+        	else if(fieldVal instanceof Object[]){
+        		Object[] terms = (Object[])fieldVal;
+        		for(int j=0;j<terms.length;j++){
+        			if(terms[j]!=null)
+        				buildDocumentField(doc,idxdField,idxdType,terms[j]);
+        		}
+        	}
+        	else if (obj instanceof long[]) {
+				row = new LongPoint(idxdField, (long[])obj);
+				doc.add(row);
+			} 
+			else if (obj instanceof int[]) {
+				row = new IntPoint(idxdField, (int[])obj);
+				doc.add(row);
+			}
+			else if (obj instanceof short[]) {				
+				short[] sArr = (short[])obj;
+				int[] intArr = new int[sArr.length];
+				for(int i=0;i<sArr.length;i++)
+					intArr[i] = sArr[i];
+				row = new IntPoint(idxdField, intArr);
+				doc.add(row);
+			} 
+			else if (obj instanceof float[]) {    					
+				row = new FloatPoint(idxdField, (float[])obj);
+				doc.add(row);				
+			}
+			else if (obj instanceof double[]) { 									
+				row = new DoublePoint(idxdField, (double[])obj);
+				doc.add(row);				
+			}    		
+        } catch (Exception e) {			
+        	//throw convertException(e);
+        	ctx.log("Faid to index field "+ idxdField + ", Cause by "+e.getMessage());
 		}
 		return true;
     }

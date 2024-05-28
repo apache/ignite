@@ -196,13 +196,21 @@ public class ESResponse {
 		totalObj.put("relation", "eq");		
 		hitsObj.set(ESConstants.R_HITS_TOTAL, totalObj);		
 		
-		hitsObj.set("max_score", NullNode.getInstance());
+		double maxScore = 0;
 
 		// actual hit entries
 		ArrayNode hits = new ArrayNode(ESRelay.jsonNodeFactory,fHits.size());
 		for (ObjectNode hit : fHits) {
 			hits.add(hit);
+			if(hit.has("_score")) {
+				double score = hit.get("_score").asDouble(0.0);
+				if(score>maxScore) {
+					maxScore = score;
+				}
+			}
 		}
+		
+		hitsObj.put("max_score", maxScore);
 		hitsObj.set(ESConstants.R_HITS, hits);
 
 		result.set(ESConstants.R_HITS, hitsObj);

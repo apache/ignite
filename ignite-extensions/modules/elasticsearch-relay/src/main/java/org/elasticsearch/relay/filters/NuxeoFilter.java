@@ -31,8 +31,11 @@ public class NuxeoFilter implements IFilter {
 	}
 
 	@Override
-	public ESQuery addFilter(UserPermSet perms, ESQuery query, List<String> indices, List<String> types) {
+	public ESQuery addFilter(UserPermSet perms, ESQuery query, String indices, String types) {
 		String user = perms.getUserName();
+		if(fTypes!=null && !fTypes.isEmpty() && !fTypes.contains(types)) {
+			return query;
+		}
 
 		try {
 			ArrayNode filters = query.getAuthFilterOrArr();
@@ -45,7 +48,7 @@ public class NuxeoFilter implements IFilter {
 
 			// TODO: what if permissions are taken away from a user
 
-			creatorFilter.put(ESConstants.Q_TERM, termObj);
+			creatorFilter.set(ESConstants.Q_TERM, termObj);
 
 			filters.add(creatorFilter);
 
@@ -55,7 +58,7 @@ public class NuxeoFilter implements IFilter {
 			termObj = new ObjectNode(ESRelay.jsonNodeFactory);
 			termObj.put(NX_ACL, user);
 
-			aclFilter.put(ESConstants.Q_TERM, termObj);
+			aclFilter.set(ESConstants.Q_TERM, termObj);
 
 			filters.add(aclFilter);
 
@@ -66,7 +69,7 @@ public class NuxeoFilter implements IFilter {
 				termObj = new ObjectNode(ESRelay.jsonNodeFactory);
 				termObj.put(NX_ACL, group);
 
-				aclFilter.put(ESConstants.Q_TERM, termObj);
+				aclFilter.set(ESConstants.Q_TERM, termObj);
 
 				filters.add(aclFilter);
 			}

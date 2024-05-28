@@ -3,6 +3,7 @@ package org.elasticsearch.relay.util;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -12,6 +13,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.rest.handlers.query.CacheQueryFieldsMetaResult;
 import org.elasticsearch.relay.ESRelay;
 import org.elasticsearch.relay.model.ESQuery;
 
@@ -63,7 +65,7 @@ public class ESUtil {
 
 		// actual array of filters
 		// check if there is a logical 'and' array
-		ArrayNode andArray = filterObj.withArray(ESConstants.Q_AND);
+		ArrayNode andArray = filterObj.withArray("/"+ESConstants.Q_AND);
 		if (andArray == null) {
 			andArray = new ArrayNode(ESRelay.jsonNodeFactory);
 			filterObj.set(ESConstants.Q_AND, andArray);
@@ -82,7 +84,7 @@ public class ESUtil {
 		if (andArray == null) {
 			andArray = new ArrayNode(ESRelay.jsonNodeFactory);
 		}
-		filterObj.put(ESConstants.Q_AND, andArray);
+		filterObj.set(ESConstants.Q_AND, andArray);
 	}
 	
 	public static ObjectNode getObjectNode(List<?> row, List<GridQueryFieldMetadata> fieldsMeta) throws Exception {
@@ -174,6 +176,10 @@ public class ESUtil {
 	    return bb.build();
 	}
 	
+	public static Object jsonNodeToObject(JsonNode json){
+		return jsonToObject(json,0);
+	}
+	
 	protected static Object jsonToObject(JsonNode json,int depth){
 		Object ret = null;
 		depth++;
@@ -230,5 +236,28 @@ public class ESUtil {
 		return ret;
 	}
 	
+	 /**
+     * @param meta Internal query field metadata.
+     * @return Rest query field metadata.
+     */
+    public static Collection<CacheQueryFieldsMetaResult> convertMetadata(Collection<?> meta) {
+        List<CacheQueryFieldsMetaResult> res = new ArrayList<>();
+
+        if (meta != null) {
+            for (Object info : meta) {
+            	if(info instanceof GridQueryFieldMetadata) {
+            		res.add(new CacheQueryFieldsMetaResult((GridQueryFieldMetadata)info));
+            	}
+            	else if(info instanceof String) {
+            		CacheQueryFieldsMetaResult metaData = new CacheQueryFieldsMetaResult();
+            		metaData.setFieldName(info.toString());
+            		res.add(metaData);
+            	}
+            }
+                
+        }
+
+        return res;
+    }
 	
 }

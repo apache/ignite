@@ -368,11 +368,11 @@ class OptimizedClassDescriptor {
                     throw new IOException(e);
                 }
             }            
-            else if (Map.class.isAssignableFrom(cls) && Serializable.class.isAssignableFrom(cls) && hasDeclaredConstructor(cls,false)) {
+            else if (Map.class.isAssignableFrom(cls) && !Externalizable.class.isAssignableFrom(cls) && hasPublicConstructor(cls,false)) {
                 type = CONCURRENT_MAP;
                 
             }
-            else if (BlockingQueue.class.isAssignableFrom(cls) && Serializable.class.isAssignableFrom(cls) && hasDeclaredConstructor(cls,true)) {
+            else if (BlockingQueue.class.isAssignableFrom(cls) && !Externalizable.class.isAssignableFrom(cls) && hasPublicConstructor(cls,true)) {
                 type = CONCURRENT_QUEUE;               
                 
             }
@@ -1063,13 +1063,19 @@ class OptimizedClassDescriptor {
         return type;
     }
     
-    private boolean hasDeclaredConstructor(Class<?> loadCls,boolean size){        
+    private boolean hasPublicConstructor(Class<?> loadCls,boolean size){        
 		try {
+			if(!loadCls.getModule().isNamed()) {
+				return false;
+			}
+			if(!Modifier.isPublic(loadCls.getModifiers())){
+				return false;
+			}
 			Constructor<?> c;
 			if(!size)
-				c = loadCls.getDeclaredConstructor();
+				c = loadCls.getConstructor();
 			else
-				c = loadCls.getDeclaredConstructor(int.class);
+				c = loadCls.getConstructor(int.class);
 			
 		} catch (Exception e) {			
 			return false;

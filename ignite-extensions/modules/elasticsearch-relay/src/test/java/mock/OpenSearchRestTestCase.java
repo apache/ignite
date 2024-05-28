@@ -847,6 +847,10 @@ public abstract class OpenSearchRestTestCase extends ExceptionUtils {
             socketTimeoutString == null ? "600s" : socketTimeoutString,
             CLIENT_SOCKET_TIMEOUT
         );
+        builder.setRequestConfigCallback((b)->{
+        	b.setSocketTimeout((int)socketTimeout.getMillis());
+        	return b;
+        });
         
         if (settings.hasValue(CLIENT_PATH_PREFIX)) {
             builder.setPathPrefix(settings.get(CLIENT_PATH_PREFIX));

@@ -1,6 +1,8 @@
 package org.elasticsearch.relay.model;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -97,12 +99,15 @@ public class ESUpdate {
 		action = copy.action;
 		docId = copy.docId;
 		op = copy.op;
+		this.format = copy.format;
+		this.responseFormat = copy.responseFormat;
 		
 		fBody = copy.fBody;
 		
 		fAuthFilterOrArr = new ArrayNode(ESRelay.jsonNodeFactory);
-		
-		this.setParams(copy.fParams);
+		if(copy.fParams!=null) {
+			this.setParams(copy.fParams);
+		}
 	}
 
 	public String getIndices() {
@@ -174,7 +179,7 @@ public class ESUpdate {
 			}
 		}
 		
-		if (action != null) {
+		if (action != null && !action.equals("_cmd")) {
 			// skip empty elements
 			if (!action.isEmpty()) {
 				urlBuff.append("/");
@@ -235,5 +240,40 @@ public class ESUpdate {
 
 	public void setOp(String op) {
 		this.op = op;
+	}
+	
+	public List<String> getIndexNames() {
+		List<String> indices = new ArrayList<String>();
+
+		// extract from path
+		String names = this.indices;
+		if (names != null && !names.isEmpty()) {
+			if (names.contains(",")) {
+				String[] nameArr = names.split(",");
+				for (String n : nameArr) {
+					indices.add(n);
+				}
+			} else {
+				indices.add(names);
+			}
+		}
+		return indices;
+	}
+	
+	/**
+	 * schema.Table
+	 * @return Table
+	 */
+	public String getTypeName() {
+		// extract type from path
+		String names = this.indices;
+		if (names != null && !names.isEmpty()) {
+			int pos = names.lastIndexOf('.');
+			if(pos>0) {
+				return names.substring(pos+1);
+			}		
+		}
+
+		return names;
 	}
 }

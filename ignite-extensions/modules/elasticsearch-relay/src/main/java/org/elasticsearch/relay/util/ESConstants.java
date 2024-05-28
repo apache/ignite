@@ -8,6 +8,7 @@ public class ESConstants {
 	public static final String INSERT_FRAGMENT = "_put";
 	public static final String BULK_FRAGMENT = "_bulk";
 	public static final String INDICES_FRAGMENT = "_index";
+	public static final String GET_FRAGMENT = "_mget";
 
 	public static final String ALL_FRAGMENT = "_all";
 	public static final String WILDCARD = "*";

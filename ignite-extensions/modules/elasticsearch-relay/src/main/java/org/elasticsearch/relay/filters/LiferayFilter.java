@@ -35,8 +35,11 @@ public class LiferayFilter implements IFilter {
 	}
 
 	@Override
-	public ESQuery addFilter(UserPermSet perms, ESQuery query, List<String> indices, List<String> types) {
+	public ESQuery addFilter(UserPermSet perms, ESQuery query, String indices, String types) {
 		ArrayNode filters = query.getAuthFilterOrArr();
+		if(fTypes!=null && !fTypes.isEmpty() && !fTypes.contains(types)) {
+			return query;
+		}
 
 		String userId = perms.getLiferayId();
 		List<String> roleIds = perms.getLiferayRoles();
