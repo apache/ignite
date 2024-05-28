@@ -19,7 +19,13 @@ package org.apache.ignite.internal.metric;
 
 import java.util.Arrays;
 import java.util.Collection;
+import javax.cache.configuration.Factory;
+import javax.cache.configuration.FactoryBuilder;
+import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
+import javax.cache.expiry.EternalExpiryPolicy;
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.expiry.ModifiedExpiryPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
@@ -30,52 +36,48 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 
-/** Tests for {@link CacheView} expiry policy factory representation */
+/** Tests for {@link CacheView} expiry policy factory representation. */
 @RunWith(Parameterized.class)
 public class SystemViewCacheExpiryPolicyTest extends GridCommonAbstractTest {
-    /**Create ttl {@link Duration}*/
+    /** {@link Factory} instances for test with different expiry policy. */
+    @SuppressWarnings("unchecked")
+    private static final Factory[] TTL_FACTORIES = {
+        null,
+        new FactoryBuilder.SingletonFactory<ExpiryPolicy>(new EternalExpiryPolicy()),
+        new FactoryBuilder.SingletonFactory<ExpiryPolicy>(new CreatedExpiryPolicy(new Duration(MILLISECONDS, 100L))),
+        new FactoryBuilder.SingletonFactory<ExpiryPolicy>(new ModifiedExpiryPolicy(new Duration(MILLISECONDS, 5L))),
+        new PlatformExpiryPolicyFactory(2, 4, 8),
+        new PlatformExpiryPolicyFactory(1, -2, -1),
+        new PlatformExpiryPolicyFactory(-1, 0, -1),
+        new PlatformExpiryPolicyFactory(0, 1, -1)
+    };
+
+    /** {@link Factory} instance. */
     @Parameterized.Parameter
-    public long create;
+    public Factory<ExpiryPolicy> factory;
 
-    /** Access ttl {@link Duration}*/
+    /** Anticipated {@link String} expiry policy factory representation. */
     @Parameterized.Parameter(1)
-    public long update;
-
-    /** Update ttl {@link Duration}*/
-    @Parameterized.Parameter(2)
-    public long access;
-
-    /** Anticipated {@link String} expiry policy factory representation*/
-    @Parameterized.Parameter(3)
     public String actual;
 
     /**
      * @return Test parameters.
      */
-    @Parameterized.Parameters(name = "create={0}, update={1}, access={2}, actual={3}")
+    @Parameterized.Parameters(name = "factory={0}, actual={1}")
     public static Collection parameters() {
         return Arrays.asList(new Object[][] {
-            {2, 4, 8, "[create=2MILLISECONDS][update=4MILLISECONDS][access=8MILLISECONDS]"},
-            {1, -2, -1, "[create=1MILLISECONDS]"},
-            {-1, 0, -1, "Eternal"},
-            {0, 1, -1, "[update=1MILLISECONDS]"}
+            {TTL_FACTORIES[0], "Eternal"},
+            {TTL_FACTORIES[1], "Eternal"},
+            {TTL_FACTORIES[2], "[create=100 MILLISECONDS]"},
+            {TTL_FACTORIES[3], "[create=5 MILLISECONDS][update=5 MILLISECONDS]"},
+            {TTL_FACTORIES[4], "[create=2 MILLISECONDS][update=4 MILLISECONDS][access=8 MILLISECONDS]"},
+            {TTL_FACTORIES[5], "[create=1 MILLISECONDS]"},
+            {TTL_FACTORIES[6], "Eternal"},
+            {TTL_FACTORIES[7], "[update=1 MILLISECONDS]"}
         });
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        cleanPersistenceDir();
     }
 
     /**
@@ -88,15 +90,17 @@ public class SystemViewCacheExpiryPolicyTest extends GridCommonAbstractTest {
         try (IgniteEx g = startGrid()) {
             CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
             ccfg.setName("cache");
-            ccfg.setExpiryPolicyFactory(new PlatformExpiryPolicyFactory(create, update, access));
+            ccfg.setExpiryPolicyFactory(factory);
 
             g.getOrCreateCache(ccfg);
 
             SystemView<CacheView> caches = g.context().systemView().view(CACHES_VIEW);
 
             for (CacheView row : caches)
-                if (row.cacheName().equals("cache"))
+                if (row.cacheName().equals("cache")) {
+                    log.info(row.expiryPolicyFactory());
                     assertEquals(actual, row.expiryPolicyFactory());
+                }
         }
     }
 }

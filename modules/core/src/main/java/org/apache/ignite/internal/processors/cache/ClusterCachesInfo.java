@@ -1738,8 +1738,7 @@ public class ClusterCachesInfo {
                 grpData.persistenceEnabled(),
                 grpData.walEnabled(),
                 grpData.walChangeRequests(),
-                grpData.cacheConfigurationEnrichment(),
-                ctx.cache().context().cache()
+                grpData.cacheConfigurationEnrichment()
             );
 
             if (locCacheGrps.containsKey(grpDesc.groupId())) {
@@ -2482,8 +2481,6 @@ public class ClusterCachesInfo {
             walGloballyEnabled = drCfg != null && drCfg.isCdcEnabled();
         }
 
-        GridCacheProcessor cacheProc = ctx.cache().context().cache();
-
         CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(
             startedCacheCfg,
             startedCacheCfg.getGroupName(),
@@ -2495,8 +2492,7 @@ public class ClusterCachesInfo {
             persistent,
             walGloballyEnabled,
             null,
-            cacheCfgEnrichment,
-            cacheProc
+            cacheCfgEnrichment
         );
 
         if (startedCacheCfg.isEncryptionEnabled())

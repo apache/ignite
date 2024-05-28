@@ -152,21 +152,4 @@ public class CacheGroupView {
     public int backups() {
         return ccfg.getBackups();
     }
-
-    /** @return {@code Yes} if group has expired entries, {@code No} otherwise. If {@code eagerTtl = true} returns 'Unknown'*/
-    public String hasEntriesPendingExpire() {
-        if (!ccfg.isEagerTtl())
-            return "Unknown";
-
-        CacheGroupContext grpCtx = grp.cache().cacheGroup(cacheGroupId());
-        if (grpCtx == null)
-            return "No";
-
-        try {
-            return grpCtx.offheap().hasEntriesPendingExpire() ? "Yes" : "No";
-        }
-        catch (IgniteCheckedException e) {
-            return e.getMessage();
-        }
-    }
 }

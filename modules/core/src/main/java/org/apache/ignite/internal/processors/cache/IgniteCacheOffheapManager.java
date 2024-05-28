@@ -172,14 +172,6 @@ public interface IgniteCacheOffheapManager {
     public long expiredSize() throws IgniteCheckedException;
 
     /**
-     * Checks if there are entries pending expire.
-     *
-     * @return {@code True} if there are entries pending expire.
-     * @throws IgniteCheckedException If failed to get number of pending entries.
-     */
-    public boolean hasEntriesPendingExpire() throws IgniteCheckedException;
-
-    /**
      * Checks if the cache has entries pending expire.
      *
      * @return {@code True} if there are entries pending expire.

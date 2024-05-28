@@ -1133,15 +1133,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasEntriesPendingExpire() throws IgniteCheckedException {
-        for (CacheDataStore store : cacheDataStores())
-            if (((GridCacheDataStore)store).hasEntriesPendingExpire())
-                return true;
-
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean hasEntriesPendingExpire(int cacheId) throws IgniteCheckedException {
         for (CacheDataStore store : cacheDataStores())
             if (((GridCacheDataStore)store).hasEntriesPendingExpire(cacheId))
@@ -2710,18 +2701,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /**
-         * Checks if there are entries pending expire.
-         *
-         * @return {@code True} if there are entries pending expire.
-         * @throws IgniteCheckedException If failed to get number of pending entries.
-         */
-        public boolean hasEntriesPendingExpire() throws IgniteCheckedException {
-            CacheDataStore delegate0 = init0(true);
-
-            return delegate0 != null && !pendingTree.isEmpty();
-        }
-
-        /**
          * Checks if the cache has entries pending expire.
          *
          * @return {@code True} if there are entries pending expire.
@@ -2737,14 +2716,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (grp.sharedGroup())
                 cur = pendingTree.find(row, row, PendingEntriesTree.WITHOUT_KEY);
             else
-                return hasEntriesPendingExpire();
+                return init0(true) != null && !pendingTree.isEmpty();
 
-            while (cur.next()) {
-                if (pendingTree.findOne(cur.get()) != null)
-                    return true;
-            }
-
-            return false;
+            return cur.next();
         }
 
         /**

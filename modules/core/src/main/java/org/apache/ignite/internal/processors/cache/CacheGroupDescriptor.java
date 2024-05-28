@@ -57,10 +57,6 @@ public class CacheGroupDescriptor {
     private volatile CacheConfiguration<?, ?> cacheCfg;
 
     /** */
-    @GridToStringExclude
-    private volatile GridCacheProcessor cacheProc;
-
-    /** */
     @GridToStringInclude
     private Map<String, Integer> caches;
 
@@ -107,8 +103,7 @@ public class CacheGroupDescriptor {
         boolean persistenceEnabled,
         boolean walEnabled,
         @Nullable Collection<WalStateProposeMessage> walChangeReqs,
-        CacheConfigurationEnrichment cacheCfgEnrichment,
-        GridCacheProcessor cacheProc
+        CacheConfigurationEnrichment cacheCfgEnrichment
     ) {
         assert cacheCfg != null;
         assert grpId != 0;
@@ -124,7 +119,6 @@ public class CacheGroupDescriptor {
         this.walEnabled = walEnabled;
         this.walChangeReqs = walChangeReqs == null ? new LinkedList<>() : new LinkedList<>(walChangeReqs);
         this.cacheCfgEnrichment = cacheCfgEnrichment;
-        this.cacheProc = cacheProc;
     }
 
     /**
@@ -276,13 +270,6 @@ public class CacheGroupDescriptor {
      */
     public void config(CacheConfiguration cacheCfg) {
         this.cacheCfg = cacheCfg;
-    }
-
-    /**
-     * @return Cache Group Context.
-     */
-    public GridCacheProcessor cache() {
-        return cacheProc;
     }
 
     /**

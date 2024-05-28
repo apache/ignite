@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import javax.cache.Cache;
-import javax.cache.expiry.AccessedExpiryPolicy;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.EternalExpiryPolicy;
@@ -264,32 +263,33 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Tests work of {@link SystemView} for cache expiry policy info with in-memory configuration */
+    /** Tests work of {@link SystemView} for cache expiry policy info with in-memory configuration. */
     @Test
     public void testCacheViewExpiryPolicyWithInMemory() throws Exception {
         testCacheViewExpiryPolicy(false);
     }
 
-    /** Tests work of {@link SystemView} for cache expiry policy info with persist configuration*/
+    /** Tests work of {@link SystemView} for cache expiry policy info with persist configuration. */
     @Test
     public void testCacheViewExpiryPolicyWithPersist() throws Exception {
         testCacheViewExpiryPolicy(true);
     }
 
-    /** Tests work of {@link SystemView} for cache groups expiry policy info */
-    private void testCacheViewExpiryPolicy(boolean withPersistance) throws Exception {
-        try (IgniteEx g = !withPersistance ? startGrid() : startGrid(getConfiguration().setDataStorageConfiguration(
+    /** Tests work of {@link SystemView} for cache groups expiry policy info. */
+    private void testCacheViewExpiryPolicy(boolean withPersistence) throws Exception {
+        try (IgniteEx g = !withPersistence ? startGrid() : startGrid(getConfiguration().setDataStorageConfiguration(
             new DataStorageConfiguration().setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration().setPersistenceEnabled(true)
             )))) {
 
-            if (withPersistance)
+            if (withPersistence)
                 g.cluster().state(ClusterState.ACTIVE);
 
             String eternalCacheName = "eternalCache";
             String createdCacheName = "createdCache";
             String eagerTtlCacheName = "eagerTtlCache";
             String withoutGrpCacheName = "withoutGrpCache";
+            String dfltCacheName = "defaultCache";
 
             CacheConfiguration<Long, Long> eternalCache = new CacheConfiguration<Long, Long>(eternalCacheName)
                 .setGroupName("group1")
@@ -307,169 +307,67 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             CacheConfiguration<Long, Long> withoutGrpCache = new CacheConfiguration<Long, Long>(withoutGrpCacheName)
                 .setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.MILLISECONDS, 500L)));
 
+            CacheConfiguration<Long, Long> dfltCache = new CacheConfiguration<Long, Long>(dfltCacheName)
+                .setGroupName("group3");
+
             g.createCache(eternalCache);
             g.createCache(createdCache);
             g.createCache(eagerTtlCache);
             g.createCache(withoutGrpCache);
+            g.createCache(dfltCache);
 
             SystemView<CacheView> caches = g.context().systemView().view(CACHES_VIEW);
 
             for (CacheView row : caches) {
                 switch (row.cacheName()) {
+                    case "defaultCache":
                     case "eternalCache":
-                        assertTrue(row.hasEntriesPendingExpire().equals("No"));
+                        assertEquals("No", row.expiryPolicyEntry());
 
-                        g.cache(eternalCacheName).put(0, 0);
+                        g.cache(row.cacheName()).put(0, 0);
 
-                        assertTrue(row.hasEntriesPendingExpire().equals("No"));
+                        assertEquals("No", row.expiryPolicyEntry());
 
-                        g.cache(eternalCacheName)
+                        g.cache(row.cacheName())
                             .withExpiryPolicy(new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 200L)))
                             .put(1, 1);
 
-                        assertTrue(row.hasEntriesPendingExpire().equals("Yes"));
-                        assertTrue(waitForCondition(() -> row.hasEntriesPendingExpire().equals("No"), getTestTimeout()));
+                        assertEquals("Yes", row.expiryPolicyEntry());
+                        assertTrue(waitForCondition(() -> row.expiryPolicyEntry().equals("No"), getTestTimeout()));
 
                         break;
 
                     case "createdCache":
-                        assertTrue(row.hasEntriesPendingExpire().equals("No"));
+                        assertEquals("No", row.expiryPolicyEntry());
 
                         g.cache(createdCacheName).put(0, 0);
 
-                        assertTrue(row.hasEntriesPendingExpire().equals("Yes"));
-                        assertTrue(waitForCondition(() -> row.hasEntriesPendingExpire().equals("No"), getTestTimeout()));
+                        assertEquals("Yes", row.expiryPolicyEntry());
+                        assertTrue(waitForCondition(() -> row.expiryPolicyEntry().equals("No"), getTestTimeout()));
 
                         g.cache(createdCacheName)
                             .withExpiryPolicy(new ModifiedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 200L)))
                             .put(1, 1);
 
-                        assertTrue(row.hasEntriesPendingExpire().equals("Yes"));
-                        assertTrue(waitForCondition(() -> row.hasEntriesPendingExpire().equals("No"), getTestTimeout()));
+                        assertEquals("Yes", row.expiryPolicyEntry());
+                        assertTrue(waitForCondition(() -> row.expiryPolicyEntry().equals("No"), getTestTimeout()));
 
                         g.cache(eagerTtlCacheName).put(2, 2);
-                        assertTrue(row.hasEntriesPendingExpire().equals("No"));
+                        assertEquals("No", row.expiryPolicyEntry());
 
                         break;
 
                     case "eagerTtlCache":
-                    case "withoutGrpCache":
-                        assertTrue(row.hasEntriesPendingExpire().equals("Unknown"));
+                        assertEquals("Unknown", row.expiryPolicyEntry());
 
                         break;
 
+                    case "withoutGrpCache":
+                        assertEquals("There is no cache group related data", row.expiryPolicyEntry());
+
+                        break;
                 }
             }
-        }
-    }
-
-    /** Tests work of {@link SystemView} for cache groups expiry policy info with in-memory configuration */
-    @Test
-    public void testCacheGroupsViewExpiryPolicyWithInMemory() throws Exception {
-        testCacheGroupsViewExpiryPolicy(false);
-    }
-
-    /** Tests work of {@link SystemView} for cache groups expiry policy info with persist configuration*/
-    @Test
-    public void testCacheGroupsViewExpiryPolicyWithPersist() throws Exception {
-        testCacheGroupsViewExpiryPolicy(true);
-    }
-
-    /** Tests work of {@link SystemView} for cache groups expiry policy info */
-    private void testCacheGroupsViewExpiryPolicy(boolean withPersistance) throws Exception {
-        try (IgniteEx g = !withPersistance ? startGrid() : startGrid(getConfiguration().setDataStorageConfiguration(
-            new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setPersistenceEnabled(true)
-            )))) {
-
-            if (withPersistance)
-                g.cluster().state(ClusterState.ACTIVE);
-
-            String eternalCacheName = "eternalCache";
-            String createdCacheName = "createdCache";
-            String eagerTtlCacheName = "eagerTtlCache";
-            String eagerTtlCacheName2 = "eagerTtlCache2";
-
-            CacheConfiguration<Long, Long> eternalCache = new CacheConfiguration<Long, Long>(eternalCacheName)
-                .setGroupName("group")
-                .setExpiryPolicyFactory(EternalExpiryPolicy.factoryOf());
-
-            CacheConfiguration<Long, Long> createdCache = new CacheConfiguration<Long, Long>(createdCacheName)
-                .setGroupName("group")
-                .setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.MILLISECONDS, 500L)));
-
-            CacheConfiguration<Long, Long> eagerTtlCache = new CacheConfiguration<Long, Long>(eagerTtlCacheName)
-                .setGroupName("group")
-                .setEagerTtl(false)
-                .setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.MILLISECONDS, 500L)));
-
-            CacheConfiguration<Long, Long> eagerTtlCache2 = new CacheConfiguration<Long, Long>(eagerTtlCacheName2)
-                .setGroupName("group2")
-                .setEagerTtl(false)
-                .setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.MILLISECONDS, 500L)));
-
-            g.createCache(eternalCache);
-            g.createCache(createdCache);
-            g.createCache(eagerTtlCache);
-            g.createCache(eagerTtlCache2);
-
-            Iterator<Object> grps = g.context().systemView().view(CACHE_GRPS_VIEW).iterator();
-
-            grps.next();
-
-            CacheGroupView cacheGrpView2 = (CacheGroupView)grps.next();
-            CacheGroupView cacheGrpView = (CacheGroupView)grps.next();
-
-            assertTrue(cacheGrpView.hasEntriesPendingExpire().equals("No"));
-            assertTrue(cacheGrpView2.hasEntriesPendingExpire().equals("Unknown"));
-
-            // Group check with eternal cache manipulation
-
-            g.cache(eternalCacheName).put(0, 0);
-
-            assertTrue(cacheGrpView.hasEntriesPendingExpire().equals("No"));
-
-            g.cache(eternalCacheName)
-                .withExpiryPolicy(new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 200L)))
-                .put(1, 1);
-
-            assertTrue(cacheGrpView.hasEntriesPendingExpire().equals("Yes"));
-            assertTrue(waitForCondition(() -> cacheGrpView.hasEntriesPendingExpire().equals("No"), getTestTimeout()));
-
-            // Group check with created cache manipulation
-
-            g.cache(createdCacheName).put(0, 0);
-
-            assertTrue(cacheGrpView.hasEntriesPendingExpire().equals("Yes"));
-            assertTrue(waitForCondition(() -> cacheGrpView.hasEntriesPendingExpire().equals("No"), getTestTimeout()));
-
-            g.cache(createdCacheName)
-                .withExpiryPolicy(new ModifiedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 200L)))
-                .put(1, 1);
-
-            assertTrue(cacheGrpView.hasEntriesPendingExpire().equals("Yes"));
-
-            g.cache(createdCacheName).put(1, 2);
-
-            assertTrue(cacheGrpView.hasEntriesPendingExpire().equals("Yes"));
-            assertTrue(waitForCondition(() -> cacheGrpView.hasEntriesPendingExpire().equals("No"), getTestTimeout()));
-
-            // Group check with eager Ttl cache manipulation
-
-            g.cache(eagerTtlCacheName).put(0, 0);
-
-            assertTrue(cacheGrpView.hasEntriesPendingExpire().equals("Yes"));
-            assertTrue(waitForCondition(() -> g.cache(eagerTtlCacheName).get(0) == null, getTestTimeout()));
-            assertTrue(cacheGrpView.hasEntriesPendingExpire().equals("No"));
-
-            g.cache(eagerTtlCacheName)
-                .withExpiryPolicy(new AccessedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 200L)))
-                .put(1, 1);
-
-            assertTrue(cacheGrpView.hasEntriesPendingExpire().equals("Yes"));
-            Thread.sleep(300);
-            assertTrue(g.cache(eagerTtlCacheName).get(1) == null);
-            assertTrue(cacheGrpView.hasEntriesPendingExpire().equals("No"));
         }
     }
 
