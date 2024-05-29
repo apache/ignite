@@ -81,7 +81,7 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check if the number of next page requests is correct while executing an index query.
+     * Check if the number and the size of next page requests and responses are correct while executing an index query.
      */
     @Test
     public void nextPageRequestsTest() {
@@ -93,10 +93,10 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
 
             insertData(grid, cache, entries);
 
-            int localNodeEntries = cache.query(new ScanQuery<Integer, Person>().setLocal(true)).getAll().size();
-            int remoteNodeEntries = entries - localNodeEntries;
+            int locNodeEntries = cache.query(new ScanQuery<Integer, Person>().setLocal(true)).getAll().size();
+            int remNodeEntries = entries - locNodeEntries;
 
-            int remoteNodelastPageEntries = remoteNodeEntries % PAGE_SIZE;
+            int remNodelastPageEntries = remNodeEntries % PAGE_SIZE;
 
             for (int i = 0; i < NODES; i++) {
                 TestRecordingCommunicationSpi.spi(grid(i)).record(
@@ -105,8 +105,7 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
             }
 
             QueryCursor<Cache.Entry<Integer, Person>> cursor = cache.query(
-                new IndexQuery<Integer, Person>(Person.class)
-                    .setPageSize(PAGE_SIZE));
+                new IndexQuery<Integer, Person>(Person.class).setPageSize(PAGE_SIZE));
 
             assert entries == cursor.getAll().size();
 
@@ -128,8 +127,8 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
 
                 assert reqPage == PAGE_SIZE;
 
-                if (i == reqsSize - 1 && remoteNodelastPageEntries != 0)
-                    assert respData == remoteNodelastPageEntries;
+                if (i == reqsSize - 1 && remNodelastPageEntries != 0)
+                    assert respData == remNodelastPageEntries;
                 else
                     assert respData == reqPage;
             }
