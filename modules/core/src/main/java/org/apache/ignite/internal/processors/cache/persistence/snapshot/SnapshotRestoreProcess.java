@@ -402,12 +402,8 @@ public class SnapshotRestoreProcess {
                 return;
             }
 
-            if (!reqGrpIds.isEmpty()) {
-                finishProcess(fut0.rqId, new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not " +
-                    "found in the snapshot [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
-
-                return;
-            }
+            assert reqGrpIds.isEmpty() : "Cache group(s) was not found in the snapshot [groups=" + reqGrpIds.values()
+                + ", snapshot=" + snpName + ']';
 
             Collection<UUID> bltNodes = F.viewReadOnly(ctx.discovery().discoCache().aliveBaselineNodes(), F.node2id());
 
@@ -778,7 +774,6 @@ public class SnapshotRestoreProcess {
 
         // Collect the cache configurations and prepare a temporary directory for copying files.
         // Metastorage can be restored only manually by directly copying files.
-        boolean skipCompressCheck = false;
         for (SnapshotMetadata meta : metas) {
             for (File snpCacheDir : cctx.snapshotMgr().snapshotCacheDirectories(req.snapshotName(), req.snapshotPath(), meta.folderName(),
                 name -> !METASTORAGE_CACHE_NAME.equals(name))) {
@@ -786,29 +781,6 @@ public class SnapshotRestoreProcess {
 
                 if (!F.isEmpty(req.groups()) && !req.groups().contains(grpName))
                     continue;
-
-                if (!skipCompressCheck && meta.isGroupWithCompression(CU.cacheId(grpName))) {
-                    try {
-                        File path = ctx.pdsFolderResolver().resolveFolders().persistentStoreRootPath();
-
-                        ctx.compress().checkPageCompressionSupported(path.toPath(), meta.pageSize());
-                    }
-                    catch (Exception e) {
-                        String grpWithCompr = F.isEmpty(req.groups()) ? ""
-                            : req.groups().stream().filter(s -> meta.isGroupWithCompression(CU.cacheId(grpName)))
-                                .collect(Collectors.joining(", "));
-
-                        String msg = "Requested cache groups [" + grpWithCompr + "] for restore " +
-                            "from snapshot '" + meta.snapshotName() + "' are compressed while " +
-                            "disk page compression is disabled. To restore these groups please " +
-                            "start Ignite with configured disk page compression";
-
-                        throw new IgniteCheckedException(msg);
-                    }
-                    finally {
-                        skipCompressCheck = true;
-                    }
-                }
 
                 File cacheDir = pageStore.cacheWorkDir(snpCacheDir.getName().startsWith(CACHE_GRP_DIR_PREFIX), grpName);
 
@@ -971,8 +943,6 @@ public class SnapshotRestoreProcess {
 
             Set<SnapshotMetadata> allMetas =
                 opCtx0.metasPerNode.values().stream().flatMap(List::stream).collect(Collectors.toSet());
-
-            AbstractSnapshotVerificationTask.checkMissedMetadata(allMetas);
 
             IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
 

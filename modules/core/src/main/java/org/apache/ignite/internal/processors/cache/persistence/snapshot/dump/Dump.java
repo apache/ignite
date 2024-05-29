@@ -287,7 +287,7 @@ public class Dump implements AutoCloseable {
         boolean encrypted = meta.encryptionKey() != null;
 
         if (encrypted && !Arrays.equals(meta.masterKeyDigest(), encSpi.masterKeyDigest())) {
-            throw new IllegalArgumentException("Dump '" +
+            throw new IllegalStateException("Dump '" +
                 meta.snapshotName() + "' has different master key digest. To restore this " +
                 "dump, provide the same master key.");
         }

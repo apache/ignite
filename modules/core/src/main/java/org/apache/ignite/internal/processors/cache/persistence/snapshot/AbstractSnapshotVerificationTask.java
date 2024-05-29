@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -64,14 +63,6 @@ public abstract class AbstractSnapshotVerificationTask extends
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
         Set<SnapshotMetadata> allMetas = new HashSet<>();
         clusterMetas.values().forEach(allMetas::addAll);
-
-        try {
-            checkMissedMetadata(allMetas);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteSnapshotVerifyException(F.asMap(ignite.localNode(), new IgniteException(e.getMessage())));
-        }
-
         metas.putAll(clusterMetas);
 
         while (!allMetas.isEmpty()) {
@@ -105,29 +96,6 @@ public abstract class AbstractSnapshotVerificationTask extends
     @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
         // Handle all exceptions during the `reduce` operation.
         return ComputeJobResultPolicy.WAIT;
-    }
-
-    /**
-     * Ensures that all parts of the snapshot are available according to the metadata.
-     *
-     * @param clusterMetas List of snapshot metadata found in the cluster.
-     * @throws IgniteCheckedException If some metadata is missing.
-     */
-    public static void checkMissedMetadata(Collection<SnapshotMetadata> clusterMetas) throws IgniteCheckedException {
-        Set<String> missed = null;
-
-        for (SnapshotMetadata meta : clusterMetas) {
-            if (missed == null)
-                missed = new HashSet<>(meta.baselineNodes());
-
-            missed.remove(meta.consistentId());
-
-            if (missed.isEmpty())
-                break;
-        }
-
-        if (!missed.isEmpty())
-            throw new IgniteCheckedException("Some metadata is missing from the snapshot: " + missed);
     }
 
     /**
