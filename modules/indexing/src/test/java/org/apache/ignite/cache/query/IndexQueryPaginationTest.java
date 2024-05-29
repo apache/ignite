@@ -1,9 +1,9 @@
 package org.apache.ignite.cache.query;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -14,13 +14,19 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.cache.query.ThinClientIndexQueryTest.getFilteredMessages;
 
 /** */
 public class IndexQueryPaginationTest extends GridCommonAbstractTest {
     /** */
     private static final int PAGE_SIZE = 512;
+
+    /** */
+    private static final int NODES = 2;
 
     /** */
     private Map<Integer, Integer> entriesAndReqs;
@@ -39,7 +45,7 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
             put(100_000, 100);
         }};
 
-        grid = startGrids(2);
+        grid = startGrids(NODES);
     }
 
     /** {@inheritDoc} */
@@ -87,7 +93,16 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
 
             insertData(grid, cache, entries);
 
-            TestRecordingCommunicationSpi.spi(grid).record(GridCacheQueryRequest.class);
+            int localNodeEntries = cache.query(new ScanQuery<Integer, Person>().setLocal(true)).getAll().size();
+            int remoteNodeEntries = entries - localNodeEntries;
+
+            int remoteNodelastPageEntries = remoteNodeEntries % PAGE_SIZE;
+
+            for (int i = 0; i < NODES; i++) {
+                TestRecordingCommunicationSpi.spi(grid(i)).record(
+                    GridCacheQueryRequest.class,
+                    GridCacheQueryResponse.class);
+            }
 
             QueryCursor<Cache.Entry<Integer, Person>> cursor = cache.query(
                 new IndexQuery<Integer, Person>(Person.class)
@@ -95,13 +110,29 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
 
             assert entries == cursor.getAll().size();
 
-            List<GridCacheQueryRequest> reqs = TestRecordingCommunicationSpi.spi(grid).recordedMessages(true)
-                .stream().map(msg -> (GridCacheQueryRequest)msg).collect(Collectors.toList());
+            List<Object> msgs = new ArrayList<>();
 
-            assert reqs.size() == reqsExpected;
+            for (int i = 0; i < NODES; i++)
+                msgs.addAll(TestRecordingCommunicationSpi.spi(grid(i)).recordedMessages(true));
 
-            for (int i = 0; i < reqs.size(); i++)
-                assert reqs.get(i).pageSize() == PAGE_SIZE;
+            List<GridCacheQueryRequest> reqs = getFilteredMessages(msgs, GridCacheQueryRequest.class);
+            List<GridCacheQueryResponse> resp = getFilteredMessages(msgs, GridCacheQueryResponse.class);
+
+            int reqsSize = reqs.size();
+
+            assert reqsSize == reqsExpected && reqsSize == resp.size();
+
+            for (int i = 0; i < reqsSize; i++) {
+                int reqPage = reqs.get(i).pageSize();
+                int respData = resp.get(i).data().size();
+
+                assert reqPage == PAGE_SIZE;
+
+                if (i == reqsSize - 1 && remoteNodelastPageEntries != 0)
+                    assert respData == remoteNodelastPageEntries;
+                else
+                    assert respData == reqPage;
+            }
 
             cache.clear();
         }
