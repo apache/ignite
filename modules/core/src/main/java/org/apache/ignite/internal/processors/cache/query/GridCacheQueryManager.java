@@ -1532,26 +1532,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
             }
 
-            Collection<ClusterNode> nodes = new ArrayList<>(qry.nodes());
-
-            if (nodes.isEmpty()) {
-                if (part != null) {
-                    if (qry.forceLocal()) {
-                        throw new IgniteCheckedException("No queryable nodes for partition " + part
-                            + " [forced local query=" + qry + "]");
-                    }
-                }
-
+            if (qry.nodes().isEmpty())
                 throw new IgniteException(new ClusterGroupEmptyException());
-            }
 
             if (cctx.deploymentEnabled())
                 cctx.deploy().registerClasses(qry.scanFilter());
 
-            if (log.isDebugEnabled()) {
-                log.debug("Executing query [query=" + qry + ", nodes=" + nodes + ']');
+            if (log.isDebugEnabled())
                 log.debug("Running local index query: " + qry);
-            }
 
             if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                 cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
