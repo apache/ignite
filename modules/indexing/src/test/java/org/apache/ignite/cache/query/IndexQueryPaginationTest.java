@@ -31,12 +31,12 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         entriesAndReqs = new HashMap<Integer, Integer>() {{
-            put(100, 0);
-            put(1000, 0);
-            put(5000, 4);
-            put(10_000, 9);
-            put(50_000, 49);
-            put(100_000, 99);
+            put(100, 1);
+            put(1000, 1);
+            put(5000, 5);
+            put(10_000, 10);
+            put(50_000, 50);
+            put(100_000, 100);
         }};
 
         grid = startGrids(2);
@@ -93,15 +93,15 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
                 new IndexQuery<Integer, Person>(Person.class)
                     .setPageSize(PAGE_SIZE));
 
-            assertEquals(entries, cursor.getAll().size());
+            assert entries == cursor.getAll().size();
 
-            List<Object> reqs = TestRecordingCommunicationSpi.spi(grid).recordedMessages(true)
-                .stream()
-                .map(o -> (GridCacheQueryRequest)o)
-                .filter(o -> o.type() == null)
-                .collect(Collectors.toList());
+            List<GridCacheQueryRequest> reqs = TestRecordingCommunicationSpi.spi(grid).recordedMessages(true)
+                .stream().map(msg -> (GridCacheQueryRequest)msg).collect(Collectors.toList());
 
-            assertEquals(reqsExpected, reqs.size());
+            assert reqs.size() == reqsExpected;
+
+            for (int i = 0; i < reqs.size(); i++)
+                assert reqs.get(i).pageSize() == PAGE_SIZE;
 
             cache.clear();
         }
