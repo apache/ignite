@@ -9671,6 +9671,7 @@ public abstract class IgniteUtils {
 
             neighbors.add(n);
         }
+
         return map;
     }
 
