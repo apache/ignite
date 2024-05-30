@@ -400,4 +400,44 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
             }
         }
     }
+
+    /** */
+    @Test
+    public void testGetAll() {
+        // getAll for 800 rows.
+        assertQuery("SELECT id, b FROM tbl WHERE id < 800")
+            .withRowsIterator(false)
+            .resultSize(800)
+            .check();
+
+        // getAll + collect for 1000 rows.
+        assertThrows("SELECT id, b FROM tbl",
+            IgniteException.class, "Query quota exceeded");
+
+        // Collect for 800 rows.
+        assertQuery("SELECT ARRAY(SELECT b FROM tbl WHERE id < 800)")
+            .resultSize(1)
+            .check();
+
+        // getAll + collect for 400 rows.
+        assertQuery("SELECT ARRAY(SELECT b FROM tbl WHERE id < 400)")
+            .withRowsIterator(false)
+            .resultSize(1)
+            .check();
+
+        // getAll + collect for 800 rows.
+        assertThrows("SELECT ARRAY(SELECT b FROM tbl WHERE id < 800)",
+            IgniteException.class, "Query quota exceeded");
+
+        // getAll + sort for 800 rows (sort node release memory after passing rows to iterator).
+        assertQuery("SELECT id, b FROM tbl WHERE id < 800 ORDER BY id")
+            .withRowsIterator(false)
+            .resultSize(800)
+            .check();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected QueryChecker assertQuery(String qry) {
+        return super.assertQuery(qry).withRowsIterator(true);
+    }
 }
