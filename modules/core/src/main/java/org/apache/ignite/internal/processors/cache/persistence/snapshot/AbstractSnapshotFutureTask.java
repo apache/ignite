@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public abstract class AbstractSnapshotFuture<T> extends GridFutureAdapter<T> {
+public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
     /** Ignite logger. */
     @GridToStringExclude
     @Nullable protected final IgniteLogger log;
@@ -52,7 +52,7 @@ public abstract class AbstractSnapshotFuture<T> extends GridFutureAdapter<T> {
      * @param reqId Snapshot operation request id.
      * @param snpName Snapshot name.
      */
-    protected AbstractSnapshotFuture(@Nullable IgniteLogger log, UUID srcNodeId, UUID reqId, String snpName) {
+    protected AbstractSnapshotFutureTask(@Nullable IgniteLogger log, UUID srcNodeId, UUID reqId, String snpName) {
         this.log = log;
         this.srcNodeId = srcNodeId;
         this.reqId = reqId;
@@ -112,6 +112,6 @@ public abstract class AbstractSnapshotFuture<T> extends GridFutureAdapter<T> {
 
     /** */
     @Override public String toString() {
-        return S.toString(AbstractSnapshotFuture.class, this);
+        return S.toString(AbstractSnapshotFutureTask.class, this);
     }
 }
