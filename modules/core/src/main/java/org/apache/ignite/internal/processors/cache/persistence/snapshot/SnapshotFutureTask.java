@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -136,9 +135,6 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     /** Pointer to {@link ClusterSnapshotRecord}. */
     private volatile @Nullable WALPointer snpPtr;
 
-    /** Flag indicates that task already scheduled on checkpoint. */
-    private final AtomicBoolean started = new AtomicBoolean();
-
     /** Estimated snapshot size in bytes. The value may grow during snapshot creation. */
     private final AtomicLong totalSize = new AtomicLong();
 
@@ -172,7 +168,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         boolean withMetaStorage,
         ThreadLocal<ByteBuffer> locBuff
     ) {
-        super(cctx, srcNodeId, reqId, snpName, snpSndr, parts);
+        super(cctx, cctx.logger(SnapshotFutureTask.class), srcNodeId, reqId, snpName, snpSndr, parts);
 
         assert snpName != null : "Snapshot name cannot be empty or null.";
         assert snpSndr != null : "Snapshot sender which handles execution tasks must be not null.";
@@ -239,14 +235,11 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
      *
      * @return {@code true} if task started by this call.
      */
-    @Override public boolean start() {
+    @Override protected boolean doStart() {
         if (stopping())
             return false;
 
         try {
-            if (!started.compareAndSet(false, true))
-                return false;
-
             tmpConsIdDir = U.resolveWorkDirectory(tmpSnpWorkDir.getAbsolutePath(),
                 databaseRelativePath(cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName()),
                 false);
