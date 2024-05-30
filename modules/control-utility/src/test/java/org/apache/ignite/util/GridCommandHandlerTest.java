@@ -3313,8 +3313,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         createCacheAndPreload(ig, 1000);
 
-        snp(ig).createSnapshot(snpName)
-            .get();
+        snp(ig).createSnapshot(snpName).get();
 
         TestCommandHandler h = newCommandHandler();
 

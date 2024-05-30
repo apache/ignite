@@ -2813,11 +2813,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         try {
-            if (locSnpTasks.containsKey(rqId)) {
-                return new SnapshotFinishedFutureTask(new IgniteCheckedException("Snapshot with requested name is already scheduled: " +
-                    rqId));
-            }
-
             AbstractSnapshotFutureTask<?> prev = locSnpTasks.putIfAbsent(rqId, task);
 
             if (prev != null)
