@@ -43,7 +43,6 @@ import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACH
 @RunWith(Parameterized.class)
 public class SystemViewCacheExpiryPolicyTest extends GridCommonAbstractTest {
     /** {@link Factory} instances for test with different expiry policy. */
-    @SuppressWarnings("unchecked")
     private static final Factory[] TTL_FACTORIES = {
         null,
         new FactoryBuilder.SingletonFactory<ExpiryPolicy>(new EternalExpiryPolicy()),
@@ -99,7 +98,7 @@ public class SystemViewCacheExpiryPolicyTest extends GridCommonAbstractTest {
             SystemView<CacheView> caches = g.context().systemView().view(CACHES_VIEW);
 
             for (CacheView row : caches)
-                if (row.cacheName().equals("cache")) {
+                if ("cache".equals(row.cacheName())) {
                     log.info(row.expiryPolicyFactory());
                     assertEquals(actual, row.expiryPolicyFactory());
                 }

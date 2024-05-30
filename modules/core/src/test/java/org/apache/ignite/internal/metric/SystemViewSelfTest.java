@@ -333,7 +333,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                             .put(1, 1);
 
                         assertEquals("Yes", row.hasExpiringEntries());
-                        assertTrue(waitForCondition(() -> row.hasExpiringEntries().equals("No"), getTestTimeout()));
+                        assertTrue(waitForCondition(() -> "No".equals(row.hasExpiringEntries()), getTestTimeout()));
 
                         break;
 
@@ -344,16 +344,16 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                         g.cache(row.cacheName()).put(0, 0);
 
                         assertEquals("Yes", row.hasExpiringEntries());
-                        assertTrue(waitForCondition(() -> row.hasExpiringEntries().equals("No"), getTestTimeout()));
+                        assertTrue(waitForCondition(() -> "No".equals(row.hasExpiringEntries()), getTestTimeout()));
 
                         g.cache(row.cacheName())
                             .withExpiryPolicy(new ModifiedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 200L)))
                             .put(1, 1);
 
                         assertEquals("Yes", row.hasExpiringEntries());
-                        assertTrue(waitForCondition(() -> row.hasExpiringEntries().equals("No"), getTestTimeout()));
+                        assertTrue(waitForCondition(() -> "No".equals(row.hasExpiringEntries()), getTestTimeout()));
 
-                        if(row.cacheName().equals(createdCacheName)) {
+                        if (row.cacheName().equals(createdCacheName)) {
                             g.cache(eagerTtlCacheName).put(2, 2);
                             assertEquals("No", row.hasExpiringEntries());
                         }

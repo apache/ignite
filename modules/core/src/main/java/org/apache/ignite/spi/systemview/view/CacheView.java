@@ -344,7 +344,7 @@ public class CacheView {
 
         ExpiryPolicy expiryPlc = (ExpiryPolicy)cache.cacheConfiguration().getExpiryPolicyFactory().create();
 
-        Function<Duration, String> func = (duration) ->  {
+        Function<Duration, String> func = (duration) -> {
             if (duration == null)
                 return null;
 
