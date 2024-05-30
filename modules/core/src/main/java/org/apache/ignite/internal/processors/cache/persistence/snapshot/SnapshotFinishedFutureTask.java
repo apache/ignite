@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import org.apache.ignite.IgniteCheckedException;
 
 /** */
-public class SnapshotFinishedFutureTask extends AbstractSnapshotFuture<Void> {
+public class SnapshotFinishedFutureTask extends AbstractSnapshotFutureTask<Void> {
     /**
      * @param e Finished snapshot task future with particular exception.
      */

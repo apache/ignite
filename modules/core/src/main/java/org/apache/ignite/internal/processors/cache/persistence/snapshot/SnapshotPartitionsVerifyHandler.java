@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -62,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
@@ -102,6 +104,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** Shared context. */
     protected final GridCacheSharedContext<?, ?> cctx;
 
+    /** */
+    protected final MetricRegistryImpl mreg;
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -110,6 +115,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         this.cctx = cctx;
 
         log = cctx.logger(getClass());
+
+        mreg = cctx.kernalContext().metric().registry(METRIC_REG_NAME);
     }
 
     /** {@inheritDoc} */
@@ -141,50 +148,67 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         Map<Integer, File> grpDirs = new HashMap<>();
 
-        for (File dir : cacheDirectories(new File(opCtx.snapshotDirectory(), databaseRelativePath(meta.folderName())), name -> true)) {
-            int grpId = CU.cacheId(cacheGroupName(dir));
+        try {
+            registerMetrics(opCtx.reqId(), meta.snapshotName());
 
-            if (!grps.remove(grpId))
-                continue;
+            for (File dir : cacheDirectories(new File(opCtx.snapshotDirectory(), databaseRelativePath(meta.folderName())), name -> true)) {
+                int grpId = CU.cacheId(cacheGroupName(dir));
 
-            Set<Integer> parts = meta.partitions().get(grpId) == null ? Collections.emptySet() :
-                new HashSet<>(meta.partitions().get(grpId));
-
-            for (File part : cachePartitionFiles(dir,
-                (meta.dump() ? DUMP_FILE_EXT : FILE_SUFFIX) + (meta.compressPartitions() ? ZIP_SUFFIX : "")
-            )) {
-                int partId = partId(part.getName());
-
-                if (!parts.remove(partId))
+                if (!grps.remove(grpId))
                     continue;
 
-                partFiles.add(part);
-            }
+                Set<Integer> parts = meta.partitions().get(grpId) == null ? Collections.emptySet() :
+                    new HashSet<>(meta.partitions().get(grpId));
 
-            if (!parts.isEmpty()) {
-                throw new IgniteException("Snapshot data doesn't contain required cache group partition " +
-                    "[grpId=" + grpId + ", snpName=" + meta.snapshotName() + ", consId=" + meta.consistentId() +
-                    ", missed=" + parts + ", meta=" + meta + ']');
-            }
+                for (File part : cachePartitionFiles(dir,
+                            (meta.dump() ? DUMP_FILE_EXT : FILE_SUFFIX) + (meta.compressPartitions() ? ZIP_SUFFIX : "")
+                        )) {
+                            int partId = partId(part.getName());
 
-            grpDirs.put(grpId, dir);
+                            if (!parts.remove(partId))
+                                continue;
+
+                            partFiles.add(part);
+                        }
+
+                        if (!parts.isEmpty()) {
+                            throw new IgniteException("Snapshot data doesn't contain required cache group partition " +
+                                "[grpId=" + grpId + ", snpName=" + meta.snapshotName() + ", consId=" + meta.consistentId() +
+                                ", missed=" + parts + ", meta=" + meta + ']');
+                        }
+
+                        grpDirs.put(grpId, dir);
+                    }
+
+                    if (!grps.isEmpty()) {
+                        throw new IgniteException("Snapshot data doesn't contain required cache groups " +
+                            "[grps=" + grps + ", snpName=" + meta.snapshotName() + ", consId=" + meta.consistentId() +
+                            ", meta=" + meta + ']');
+                    }
+
+                    if (!opCtx.check()) {
+                        log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
+
+                        return Collections.emptyMap();
+                    }
+
+                    return meta.dump()
+                        ? checkDumpFiles(opCtx, partFiles)
+                        : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles, isPunchHoleEnabled(opCtx, grpDirs.keySet()));
+
+        } finally {
+            clearMetrics();
         }
+    }
 
-        if (!grps.isEmpty()) {
-            throw new IgniteException("Snapshot data doesn't contain required cache groups " +
-                "[grps=" + grps + ", snpName=" + meta.snapshotName() + ", consId=" + meta.consistentId() +
-                ", meta=" + meta + ']');
-        }
+    /** */
+    private void registerMetrics(UUID reqId, String snpName) {
 
-        if (!opCtx.check()) {
-            log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
+    }
 
-            return Collections.emptyMap();
-        }
+    /** */
+    private void clearMetrics() {
 
-        return meta.dump()
-            ? checkDumpFiles(opCtx, partFiles)
-            : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles, isPunchHoleEnabled(opCtx, grpDirs.keySet()));
     }
 
     /** */

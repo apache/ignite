@@ -374,7 +374,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private final ThreadLocal<ByteBuffer> locBuff;
 
     /** Map of registered cache snapshot processes and their corresponding contexts. */
-    private final ConcurrentMap<String, AbstractSnapshotFuture<?>> locSnpTasks = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, AbstractSnapshotFutureTask<?>> locSnpTasks = new ConcurrentHashMap<>();
 
     /** Lock to protect the resources is used. */
     private final GridBusyLock busyLock = new GridBusyLock();
@@ -658,7 +658,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         endSnpProc.start(snpReq.requestId(), snpReq);
                     }
 
-                    for (AbstractSnapshotFuture<?> sctx : locSnpTasks.values()) {
+                    for (AbstractSnapshotFutureTask<?> sctx : locSnpTasks.values()) {
                         if (sctx.sourceNodeId().equals(leftNodeId) ||
                             (reqNodeLeft && snpReq.snapshotName().equals(sctx.snapshotName())))
                             sctx.acceptException(new ClusterTopologyCheckedException(err));
@@ -725,7 +725,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             restoreCacheGrpProc.interrupt(new NodeStoppingException("Node is stopping."));
 
             // Try stop all snapshot processing if not yet.
-            for (AbstractSnapshotFuture<?> sctx : locSnpTasks.values())
+            for (AbstractSnapshotFutureTask<?> sctx : locSnpTasks.values())
                 sctx.acceptException(new NodeStoppingException(SNP_NODE_STOPPING_ERR_MSG));
 
             locSnpTasks.clear();
@@ -1103,7 +1103,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         cctx.kernalContext().pools().getSnapshotExecutorService().submit(() -> {
             SnapshotOperationRequest snpReq = clusterSnpReq;
 
-            AbstractSnapshotFuture<?> task = locSnpTasks.get(snpReq.snapshotName());
+            AbstractSnapshotFutureTask<?> task = locSnpTasks.get(snpReq.snapshotName());
 
             if (task == null)
                 return;
@@ -1765,14 +1765,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param filter Snapshot task filter.
      * @return {@code True} if the snapshot operation was canceled.
      */
-    private boolean cancelLocalSnapshotTask0(Function<AbstractSnapshotFuture<?>, Boolean> filter) {
+    private boolean cancelLocalSnapshotTask0(Function<AbstractSnapshotFutureTask<?>, Boolean> filter) {
         ClusterSnapshotFuture fut0 = null;
         boolean canceled = false;
 
         busyLock.enterBusy();
 
         try {
-            for (AbstractSnapshotFuture<?> sctx : locSnpTasks.values()) {
+            for (AbstractSnapshotFutureTask<?> sctx : locSnpTasks.values()) {
                 if (filter.apply(sctx))
                     canceled |= sctx.cancel();
             }
@@ -2479,7 +2479,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (snpReq.incremental())
             return;
 
-        AbstractSnapshotFuture<?> task = locSnpTasks.get(snpReq.snapshotName());
+        AbstractSnapshotFutureTask<?> task = locSnpTasks.get(snpReq.snapshotName());
 
         if (task == null)
             return;
@@ -2686,7 +2686,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @return Snapshot operation task which should be registered on checkpoint to run.
      */
-    AbstractSnapshotFuture<?> registerSnapshotTask(
+    AbstractSnapshotFutureTask<?> registerSnapshotTask(
         String snpName,
         @Nullable String snpPath,
         UUID srcNodeId,
@@ -2698,7 +2698,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean encrypt,
         SnapshotSender snpSndr
     ) {
-        AbstractSnapshotFuture<?> task = registerTask(snpName, dump
+        AbstractSnapshotFutureTask<?> task = registerTask(snpName, dump
             ? new CreateDumpFutureTask(cctx,
                 srcNodeId,
                 requestId,
@@ -2735,18 +2735,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param task Snapshot operation task to be executed.
      * @return Snapshot operation task which should be registered.
      */
-    private <T, FUT extends AbstractSnapshotFuture<T>> FUT registerTask(String rqId, FUT task) {
+    AbstractSnapshotFutureTask<?> registerTask(String rqId, AbstractSnapshotFutureTask<?> task) {
         if (!busyLock.enterBusy()) {
-            return (FUT)new SnapshotFinishedFutureTask(new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" +
+            return new SnapshotFinishedFutureTask(new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" +
                 cctx.localNodeId() + ']'));
         }
 
         try {
-            AbstractSnapshotFuture<?> prev = locSnpTasks.putIfAbsent(rqId, task);
+            if (locSnpTasks.containsKey(rqId)) {
+                return new SnapshotFinishedFutureTask(new IgniteCheckedException("Snapshot with requested name is already scheduled: " +
+                    rqId));
+            }
+
+            AbstractSnapshotFutureTask<?> prev = locSnpTasks.putIfAbsent(rqId, task);
 
             if (prev != null)
-                return (FUT)new SnapshotFinishedFutureTask(new IgniteCheckedException("Snapshot with requested name is " +
-                    "already scheduled: " + rqId));
+                return new SnapshotFinishedFutureTask(new IgniteCheckedException("Snapshot with requested name is already scheduled: " +
+                    rqId));
 
             if (log.isInfoEnabled()) {
                 log.info("Snapshot task has been registered on local node [sctx=" + this +
@@ -2764,13 +2769,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** @return Current snapshot task. */
-    public <T extends AbstractSnapshotFuture<?>> T currentSnapshotTask(Class<T> snpTaskCls) {
+    public <T extends AbstractSnapshotFutureTask<?>> T currentSnapshotTask(Class<T> snpTaskCls) {
         SnapshotOperationRequest req = clusterSnpReq;
 
         if (req == null)
             return null;
 
-        AbstractSnapshotFuture<?> task = locSnpTasks.get(req.snapshotName());
+        AbstractSnapshotFutureTask<?> task = locSnpTasks.get(req.snapshotName());
 
         if (task == null || task.getClass() != snpTaskCls)
             return null;
@@ -2952,7 +2957,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param nodeId Remote node id on which requests has been registered.
      * @return Snapshot future related to given node id.
      */
-    AbstractSnapshotFuture<?> lastScheduledSnapshotResponseRemoteTask(UUID nodeId) {
+    AbstractSnapshotFutureTask<?> lastScheduledSnapshotResponseRemoteTask(UUID nodeId) {
         return locSnpTasks.values().stream()
             .filter(t -> t instanceof SnapshotResponseRemoteFutureTask)
             .filter(t -> t.sourceNodeId().equals(nodeId))
@@ -3841,7 +3846,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                     try {
                         synchronized (this) {
-                            AbstractSnapshotFuture<?> task = lastScheduledSnapshotResponseRemoteTask(nodeId);
+                            AbstractSnapshotFutureTask<?> task = lastScheduledSnapshotResponseRemoteTask(nodeId);
 
                             if (task != null) {
                                 // Task will also be removed from local map due to the listener on future done.
@@ -3852,7 +3857,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             }
                         }
 
-                        AbstractSnapshotFuture<?> task = registerTask(rqId,
+                        AbstractSnapshotFutureTask<?> task = registerTask(rqId,
                             new SnapshotResponseRemoteFutureTask(cctx,
                                 nodeId,
                                 reqMsg0.requestId(),
