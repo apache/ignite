@@ -72,11 +72,16 @@ public class SystemViewCacheExpiryPolicyTest extends GridCommonAbstractTest {
             {TTL_FACTORIES[0], "SingletonFactory [expiryPlc=EternalExpiryPolicy [create=0 MILLISECONDS, update=null, access=null]]"},
             {TTL_FACTORIES[1], "SingletonFactory [expiryPlc=EternalExpiryPolicy [create=0 MILLISECONDS, update=null, access=null]]"},
             {TTL_FACTORIES[2], "SingletonFactory [expiryPlc=CreatedExpiryPolicy [create=100 MILLISECONDS, update=null, access=null]]"},
-            {TTL_FACTORIES[3], "SingletonFactory [expiryPlc=ModifiedExpiryPolicy [create=5 MILLISECONDS, update=5 MILLISECONDS, access=null]]"},
-            {TTL_FACTORIES[4], "PlatformExpiryPolicyFactory [create=2, update=4, access=8, expiryPlc=PlatformExpiryPolicy [create=2 MILLISECONDS, update=4 MILLISECONDS, access=8 MILLISECONDS]]"},
-            {TTL_FACTORIES[5], "PlatformExpiryPolicyFactory [create=1, update=-2, access=-1, expiryPlc=PlatformExpiryPolicy [create=1 MILLISECONDS, update=null, access=0 MILLISECONDS]]"},
-            {TTL_FACTORIES[6], "PlatformExpiryPolicyFactory [create=-1, update=0, access=-1, expiryPlc=PlatformExpiryPolicy [create=0 MILLISECONDS, update=0 SECONDS, access=0 MILLISECONDS]]"},
-            {TTL_FACTORIES[7], "PlatformExpiryPolicyFactory [create=0, update=1, access=-1, expiryPlc=PlatformExpiryPolicy [create=0 SECONDS, update=1 MILLISECONDS, access=0 MILLISECONDS]]"},
+            {TTL_FACTORIES[3], "SingletonFactory [expiryPlc=ModifiedExpiryPolicy" +
+                "[create=5 MILLISECONDS, update=5 MILLISECONDS, access=null]]"},
+            {TTL_FACTORIES[4], "PlatformExpiryPolicyFactory [create=2, update=4, access=8," +
+                "expiryPlc=PlatformExpiryPolicy [create=2 MILLISECONDS, update=4 MILLISECONDS, access=8 MILLISECONDS]]"},
+            {TTL_FACTORIES[5], "PlatformExpiryPolicyFactory [create=1, update=-2, access=-1," +
+                "expiryPlc=PlatformExpiryPolicy [create=1 MILLISECONDS, update=null, access=0 MILLISECONDS]]"},
+            {TTL_FACTORIES[6], "PlatformExpiryPolicyFactory [create=-1, update=0, access=-1," +
+                "expiryPlc=PlatformExpiryPolicy [create=0 MILLISECONDS, update=0 SECONDS, access=0 MILLISECONDS]]"},
+            {TTL_FACTORIES[7], "PlatformExpiryPolicyFactory [create=0, update=1, access=-1," +
+                "expiryPlc=PlatformExpiryPolicy [create=0 SECONDS, update=1 MILLISECONDS, access=0 MILLISECONDS]]"},
             {TTL_FACTORIES[8], "SingletonFactory [expiryPlc=EternalExpiryPolicy [create=0 MILLISECONDS, update=null, access=null]]"}
         });
     }
