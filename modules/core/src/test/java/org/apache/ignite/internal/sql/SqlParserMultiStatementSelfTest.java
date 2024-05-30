@@ -45,9 +45,9 @@ public class SqlParserMultiStatementSelfTest extends SqlParserAbstractSelfTest {
         assertEquals("CREATE INDEX TEST on TABLE1(id)", parser.lastCommandSql());
         assertEquals(" ;   DROP USER test   ;;;", parser.remainingSql());
 
-        SqlCommand begin = parser.nextCommand();
+        SqlCommand dropUser = parser.nextCommand();
 
-        assertTrue(begin instanceof SqlDropUserCommand);
+        assertTrue(dropUser instanceof SqlDropUserCommand);
         assertEquals("DROP USER test", parser.lastCommandSql());
         assertEquals(";;", parser.remainingSql());
 

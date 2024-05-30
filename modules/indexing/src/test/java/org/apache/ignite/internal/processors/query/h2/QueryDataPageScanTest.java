@@ -214,7 +214,6 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
                 if (accountId1 == accountId2)
                     continue;
 
-                // Sort to avoid MVCC deadlock.
                 if (accountId1 > accountId2) {
                     long tmp = accountId1;
                     accountId1 = accountId2;

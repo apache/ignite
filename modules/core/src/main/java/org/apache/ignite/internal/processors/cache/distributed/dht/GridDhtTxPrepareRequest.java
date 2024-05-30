@@ -132,7 +132,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param addDepInfo Deployment info flag.
      * @param storeWriteThrough Cache store write through flag.
      * @param retVal Need return value flag
-     * @param updCntrs Update counters for mvcc Tx.
+     * @param updCntrs Update counters for Tx.
      */
     public GridDhtTxPrepareRequest(
         IgniteUuid futId,

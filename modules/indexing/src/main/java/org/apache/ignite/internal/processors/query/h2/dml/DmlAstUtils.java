@@ -362,7 +362,7 @@ public final class DmlAstUtils {
 
         GridSqlElement where = update.where();
 
-        // On no MVCC mode we cannot use lazy mode when UPDATE query contains index with updated columns
+        // We cannot use lazy mode when UPDATE query contains index with updated columns
         // and that index may be chosen to scan by WHERE condition
         // because in this case any rows update may be updated several times.
         // e.g. in the cases below we cannot use lazy mode:

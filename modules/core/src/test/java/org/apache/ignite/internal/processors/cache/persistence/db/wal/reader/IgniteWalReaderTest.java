@@ -62,10 +62,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.MarshalledDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -1657,12 +1656,12 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                             Object unwrappedKeyObj;
                             Object unwrappedValObj;
 
-                            if (entry instanceof UnwrappedDataEntry) {
-                                UnwrappedDataEntry unwrapDataEntry = (UnwrappedDataEntry)entry;
+                            if (entry instanceof UnwrapDataEntry) {
+                                UnwrapDataEntry unwrapDataEntry = (UnwrapDataEntry)entry;
                                 unwrappedKeyObj = unwrapDataEntry.unwrappedKey();
                                 unwrappedValObj = unwrapDataEntry.unwrappedValue();
                             }
-                            else if (entry instanceof MarshalledDataEntry) {
+                            else if (entry instanceof LazyDataEntry) {
                                 unwrappedKeyObj = null;
                                 unwrappedValObj = null;
                                 //can't check value

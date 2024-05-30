@@ -32,7 +32,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.LongAdder;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
@@ -560,30 +559,6 @@ public class GridCacheUtils {
 
             @Override public String toString() {
                 return "Bool reducer: " + bool;
-            }
-        };
-    }
-
-    /**
-     * @return Long reducer.
-     */
-    public static IgniteReducer<Long, Long> longReducer() {
-        return new IgniteReducer<Long, Long>() {
-            private final LongAdder res = new LongAdder();
-
-            @Override public boolean collect(Long l) {
-                if (l != null)
-                    res.add(l);
-
-                return true;
-            }
-
-            @Override public Long reduce() {
-                return res.sum();
-            }
-
-            @Override public String toString() {
-                return "Long reducer: " + res;
             }
         };
     }
@@ -2090,25 +2065,6 @@ public class GridCacheUtils {
         return pageSize
             - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
             - encSpi.blockSize(); /* For CRC and encryption key ID. */
-    }
-
-    /**
-     * @param sctx Shared context.
-     * @param cacheIds Cache ids.
-     * @return First partitioned cache or {@code null} in case no partitioned cache ids are in list.
-     */
-    public static GridCacheContext<?, ?> firstPartitioned(GridCacheSharedContext<?, ?> sctx, int[] cacheIds) {
-        for (int i = 0; i < cacheIds.length; i++) {
-            GridCacheContext<?, ?> cctx = sctx.cacheContext(cacheIds[i]);
-
-            if (cctx == null)
-                throw new CacheException("Failed to find cache.");
-
-            if (!cctx.isReplicated())
-                return cctx;
-        }
-
-        return null;
     }
 
     /**

@@ -351,7 +351,8 @@ public class GridMapQueryExecutor {
             IoStatisticsQueryHelper.startGatheringQueryStatistics();
 
         // Prepare to run queries.
-        GridCacheContext<?, ?> mainCctx = mainCacheContext(cacheIds);
+        GridCacheContext<?, ?> mainCctx = !F.isEmpty(cacheIds) ? ctx.cache().context().cacheContext(cacheIds.get(0))
+            : null;
 
         MapNodeResults nodeRess = resultsForNode(node.id());
 
@@ -611,14 +612,6 @@ public class GridMapQueryExecutor {
                 }
             }
         }
-    }
-
-    /**
-     * @param cacheIds Cache ids.
-     * @return Id of the first cache in list, or {@code null} if list is empty.
-     */
-    private GridCacheContext mainCacheContext(List<Integer> cacheIds) {
-        return !F.isEmpty(cacheIds) ? ctx.cache().context().cacheContext(cacheIds.get(0)) : null;
     }
 
     /**

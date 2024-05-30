@@ -352,10 +352,12 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence();
 
-        GridTestUtils.assertThrowsAnyCause(log, () ->
-            grid(0).snapshot().restoreSnapshot(SNP, null, 2).get(getTestTimeout()),
-            IgniteSnapshotVerifyException.class,
-            "No incremental snapshot found");
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> grid(0).snapshot().restoreSnapshot(SNP, null, 2).get(getTestTimeout()),
+            IllegalArgumentException.class,
+            "No incremental snapshot found"
+        );
     }
 
     /** */

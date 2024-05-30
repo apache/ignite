@@ -29,7 +29,6 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -144,8 +143,8 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         assertThrowsAnyCause(
             log,
             () -> snp(ig1).restoreSnapshot(SNAPSHOT_NAME, Collections.singletonList(dfltCacheCfg.getName())).get(TIMEOUT),
-            IgniteCheckedException.class,
-            "different master key digest"
+            IllegalStateException.class,
+            "Snapshot '" + SNAPSHOT_NAME + "' has different master key digest."
         );
     }
 
@@ -200,16 +199,14 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         masterKeyName = AbstractEncryptionTest.MASTER_KEY_NAME_2;
 
-        ig = startGrids(2);
+        IgniteEx ig2 = startGrids(2);
 
-        IdleVerifyResultV2 snpCheckRes = snp(ig).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
-
-        for (Exception e : snpCheckRes.exceptions().values()) {
-            if (e.getMessage().contains("different master key digest"))
-                return;
-        }
-
-        throw new IllegalStateException("Snapshot validation must contain error due to different master key.");
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> snp(ig2).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult(),
+            IllegalStateException.class,
+            "Snapshot '" + SNAPSHOT_NAME + "' has different master key digest."
+        );
     }
 
     /** @throws Exception If fails. */
@@ -244,15 +241,12 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
             ig.cluster().state(ACTIVE);
 
-            IdleVerifyResultV2 snpCheckRes = snp(ig).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
-
-            for (Exception e : snpCheckRes.exceptions().values()) {
-                if (e.getMessage().contains("has encrypted caches while encryption is disabled"))
-                    return;
-            }
-
-            throw new IllegalStateException("Snapshot validation must contain error due to encryption is currently " +
-                "disabled.");
+            GridTestUtils.assertThrowsAnyCause(
+                log,
+                () -> snp(ig).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult(),
+                IllegalStateException.class,
+                "has encrypted caches while encryption is disabled"
+            );
         }
         finally {
             if (tmpSnpDir != null)

@@ -54,7 +54,6 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
@@ -183,7 +182,8 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
         assertContains(log, testOut.toString(), "--increment argument specified twice");
 
         // Non existent increment.
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(cmd, "--snapshot", "check", SNP, "--increment", "2"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(cmd, "--snapshot", "check", SNP, "--increment", "2"));
+        assertContains(log, testOut.toString(), "No incremental snapshot found [snpName=" + SNP);
 
         autoConfirmation = true;
     }
