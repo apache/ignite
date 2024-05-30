@@ -2710,15 +2710,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (pendingTree == null)
                 return false;
 
-            PendingRow row = new PendingRow(cacheId);
-            GridCursor<PendingRow> cur;
+            if (grp.sharedGroup()) {
+                PendingRow row = new PendingRow(cacheId);
 
-            if (grp.sharedGroup())
-                cur = pendingTree.find(row, row, PendingEntriesTree.WITHOUT_KEY);
+                GridCursor<PendingRow> cur = pendingTree.find(row, row, PendingEntriesTree.WITHOUT_KEY);
+
+                return cur.next();
+            }
             else
-                return init0(true) != null && !pendingTree.isEmpty();
-
-            return cur.next();
+                return !pendingTree.isEmpty();
         }
 
         /**

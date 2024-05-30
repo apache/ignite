@@ -1185,11 +1185,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         if (pendingEntries == null)
             return false;
 
-        PendingRow row = new PendingRow(cacheId);
+        if (grp.sharedGroup()) {
+            PendingRow row = new PendingRow(cacheId);
 
-        GridCursor<PendingRow> cursor = pendingEntries.find(row, row, PendingEntriesTree.WITHOUT_KEY);
+            GridCursor<PendingRow> cursor = pendingEntries.find(row, row, PendingEntriesTree.WITHOUT_KEY);
 
-        return cursor.next();
+            return cursor.next();
+        }
+        else
+            return !pendingEntries.isEmpty();
     }
 
     /**

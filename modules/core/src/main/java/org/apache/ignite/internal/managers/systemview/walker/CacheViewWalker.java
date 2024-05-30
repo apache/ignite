@@ -53,8 +53,8 @@ public class CacheViewWalker implements SystemViewRowAttributeWalker<CacheView> 
         v.accept(15, "defaultLockTimeout", long.class);
         v.accept(16, "evictionFilter", String.class);
         v.accept(17, "evictionPolicyFactory", String.class);
-        v.accept(18, "expiryPolicyEntry", String.class);
-        v.accept(19, "expiryPolicyFactory", String.class);
+        v.accept(18, "expiryPolicyFactory", String.class);
+        v.accept(19, "hasExpiringEntries", String.class);
         v.accept(20, "interceptor", String.class);
         v.accept(21, "isCopyOnRead", boolean.class);
         v.accept(22, "isEagerTtl", boolean.class);
@@ -120,8 +120,8 @@ public class CacheViewWalker implements SystemViewRowAttributeWalker<CacheView> 
         v.acceptLong(15, "defaultLockTimeout", row.defaultLockTimeout());
         v.accept(16, "evictionFilter", String.class, row.evictionFilter());
         v.accept(17, "evictionPolicyFactory", String.class, row.evictionPolicyFactory());
-        v.accept(18, "expiryPolicyEntry", String.class, row.expiryPolicyEntry());
-        v.accept(19, "expiryPolicyFactory", String.class, row.expiryPolicyFactory());
+        v.accept(18, "expiryPolicyFactory", String.class, row.expiryPolicyFactory());
+        v.accept(19, "hasExpiringEntries", String.class, row.hasExpiringEntries());
         v.accept(20, "interceptor", String.class, row.interceptor());
         v.acceptBoolean(21, "isCopyOnRead", row.isCopyOnRead());
         v.acceptBoolean(22, "isEagerTtl", row.isEagerTtl());

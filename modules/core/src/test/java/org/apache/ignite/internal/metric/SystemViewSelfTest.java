@@ -322,48 +322,46 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 switch (row.cacheName()) {
                     case "defaultCache":
                     case "eternalCache":
-                        assertEquals("No", row.expiryPolicyEntry());
+                        assertEquals("No", row.hasExpiringEntries());
 
                         g.cache(row.cacheName()).put(0, 0);
 
-                        assertEquals("No", row.expiryPolicyEntry());
+                        assertEquals("No", row.hasExpiringEntries());
 
                         g.cache(row.cacheName())
                             .withExpiryPolicy(new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 200L)))
                             .put(1, 1);
 
-                        assertEquals("Yes", row.expiryPolicyEntry());
-                        assertTrue(waitForCondition(() -> row.expiryPolicyEntry().equals("No"), getTestTimeout()));
-
-                        break;
-
-                    case "createdCache":
-                        assertEquals("No", row.expiryPolicyEntry());
-
-                        g.cache(createdCacheName).put(0, 0);
-
-                        assertEquals("Yes", row.expiryPolicyEntry());
-                        assertTrue(waitForCondition(() -> row.expiryPolicyEntry().equals("No"), getTestTimeout()));
-
-                        g.cache(createdCacheName)
-                            .withExpiryPolicy(new ModifiedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 200L)))
-                            .put(1, 1);
-
-                        assertEquals("Yes", row.expiryPolicyEntry());
-                        assertTrue(waitForCondition(() -> row.expiryPolicyEntry().equals("No"), getTestTimeout()));
-
-                        g.cache(eagerTtlCacheName).put(2, 2);
-                        assertEquals("No", row.expiryPolicyEntry());
-
-                        break;
-
-                    case "eagerTtlCache":
-                        assertEquals("Unknown", row.expiryPolicyEntry());
+                        assertEquals("Yes", row.hasExpiringEntries());
+                        assertTrue(waitForCondition(() -> row.hasExpiringEntries().equals("No"), getTestTimeout()));
 
                         break;
 
                     case "withoutGrpCache":
-                        assertEquals("There is no cache group related data", row.expiryPolicyEntry());
+                    case "createdCache":
+                        assertEquals("No", row.hasExpiringEntries());
+
+                        g.cache(row.cacheName()).put(0, 0);
+
+                        assertEquals("Yes", row.hasExpiringEntries());
+                        assertTrue(waitForCondition(() -> row.hasExpiringEntries().equals("No"), getTestTimeout()));
+
+                        g.cache(row.cacheName())
+                            .withExpiryPolicy(new ModifiedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 200L)))
+                            .put(1, 1);
+
+                        assertEquals("Yes", row.hasExpiringEntries());
+                        assertTrue(waitForCondition(() -> row.hasExpiringEntries().equals("No"), getTestTimeout()));
+
+                        if(row.cacheName().equals(createdCacheName)) {
+                            g.cache(eagerTtlCacheName).put(2, 2);
+                            assertEquals("No", row.hasExpiringEntries());
+                        }
+
+                        break;
+
+                    case "eagerTtlCache":
+                        assertEquals("Unknown", row.hasExpiringEntries());
 
                         break;
                 }

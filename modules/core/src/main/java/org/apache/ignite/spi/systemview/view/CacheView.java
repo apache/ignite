@@ -17,7 +17,9 @@
 
 package org.apache.ignite.spi.systemview.view;
 
-import java.util.function.BiFunction;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import javax.cache.configuration.Factory;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
@@ -39,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 
@@ -341,34 +344,34 @@ public class CacheView {
 
         ExpiryPolicy expiryPlc = (ExpiryPolicy)cache.cacheConfiguration().getExpiryPolicyFactory().create();
 
-        StringBuilder expiryPlcFactoryStrBld = new StringBuilder();
+        Function<Duration, String> func = (duration) ->  {
+            if (duration == null)
+                return null;
 
-        BiFunction<String, Duration, StringBuilder> func = (msg, duration) -> {
-            StringBuilder result = new StringBuilder();
-
-            if (duration == null || duration.getTimeUnit() == null || duration.getDurationAmount() == 0)
-                return result;
-
-            return result
-                .append('[').append(msg).append('=').append(duration.getDurationAmount())
-                .append(' ').append(duration.getTimeUnit()).append(']');
+            return new StringBuilder()
+                .append(duration.getDurationAmount())
+                .append(' ')
+                .append(duration.getTimeUnit() == null ? TimeUnit.MILLISECONDS : duration.getTimeUnit())
+                .toString();
         };
 
-        expiryPlcFactoryStrBld.append(func.apply("create", expiryPlc.getExpiryForCreation()));
-        expiryPlcFactoryStrBld.append(func.apply("update", expiryPlc.getExpiryForUpdate()));
-        expiryPlcFactoryStrBld.append(func.apply("access", expiryPlc.getExpiryForAccess()));
+        String expiryPlcStr = new StringBuilder(expiryPlc.getClass().getSimpleName())
+            .append(" [create=").append(func.apply(expiryPlc.getExpiryForCreation()))
+            .append(", update=").append(func.apply(expiryPlc.getExpiryForUpdate()))
+            .append(", access=").append(func.apply(expiryPlc.getExpiryForAccess()))
+            .append(']').toString();
 
-        return expiryPlcFactoryStrBld.length() == 0 ? "Eternal" : expiryPlcFactoryStrBld.toString();
+        return S.toString((Class<Factory<?>>)cache.cacheConfiguration().getExpiryPolicyFactory().getClass(),
+            cache.cacheConfiguration().getExpiryPolicyFactory(),
+            "expiryPlc", expiryPlcStr);
     }
 
     /** @return {@code Yes} if cache has expired entries, {@code No} otherwise. If {@code eagerTtl = true} returns 'Unknown'. */
-    public String expiryPolicyEntry() {
+    public String hasExpiringEntries() {
         CacheGroupContext grpCtx = ctx.cache().cacheGroup(cache.groupId());
 
         if (!cache.cacheConfiguration().isEagerTtl() || grpCtx == null)
             return "Unknown";
-        else if (grpCtx.name() == null)
-            return "There is no cache group related data";
 
         try {
             return grpCtx.offheap().hasEntriesPendingExpire(cache.cacheId()) ? "Yes" : "No";
