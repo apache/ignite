@@ -41,4 +41,9 @@ public class BinaryReaderHandlesHolderImpl implements BinaryReaderHandlesHolder 
 
         return hnds;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean isEmpty() {
+        return hnds == null || hnds.isEmpty();
+    }
 }
