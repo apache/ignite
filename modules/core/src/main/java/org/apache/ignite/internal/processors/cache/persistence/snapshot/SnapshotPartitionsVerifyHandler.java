@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -63,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
@@ -98,25 +98,26 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  * Default snapshot restore handler for checking snapshot partitions consistency.
  */
 public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<PartitionKeyV2, PartitionHashRecordV2>> {
-    /** */
-    public static final String METRIC_REG_NAME = metricName(SNAPSHOT_METRICS, "check");
+    /** Progress metric registry name prefix. */
+    public static final String METRIC_REG_NAME_PREF = metricName(SNAPSHOT_METRICS, "check");
 
     /** Shared context. */
     protected final GridCacheSharedContext<?, ?> cctx;
 
-    /** */
-    protected final MetricRegistryImpl mreg;
-
     /** Logger. */
     private final IgniteLogger log;
+
+    /** */
+    private final AtomicLong total = new AtomicLong();
+
+    /** */
+    private final AtomicLong processed = new AtomicLong();
 
     /** @param cctx Shared context. */
     public SnapshotPartitionsVerifyHandler(GridCacheSharedContext<?, ?> cctx) {
         this.cctx = cctx;
 
         log = cctx.logger(getClass());
-
-        mreg = cctx.kernalContext().metric().registry(METRIC_REG_NAME);
     }
 
     /** {@inheritDoc} */
@@ -161,54 +162,72 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     new HashSet<>(meta.partitions().get(grpId));
 
                 for (File part : cachePartitionFiles(dir,
-                            (meta.dump() ? DUMP_FILE_EXT : FILE_SUFFIX) + (meta.compressPartitions() ? ZIP_SUFFIX : "")
-                        )) {
-                            int partId = partId(part.getName());
+                    (meta.dump() ? DUMP_FILE_EXT : FILE_SUFFIX) + (meta.compressPartitions() ? ZIP_SUFFIX : "")
+                )) {
+                    int partId = partId(part.getName());
 
-                            if (!parts.remove(partId))
-                                continue;
+                    if (!parts.remove(partId))
+                        continue;
 
-                            partFiles.add(part);
-                        }
+                    partFiles.add(part);
+                }
 
-                        if (!parts.isEmpty()) {
-                            throw new IgniteException("Snapshot data doesn't contain required cache group partition " +
-                                "[grpId=" + grpId + ", snpName=" + meta.snapshotName() + ", consId=" + meta.consistentId() +
-                                ", missed=" + parts + ", meta=" + meta + ']');
-                        }
+                if (!parts.isEmpty()) {
+                    throw new IgniteException("Snapshot data doesn't contain required cache group partition " +
+                        "[grpId=" + grpId + ", snpName=" + meta.snapshotName() + ", consId=" + meta.consistentId() +
+                        ", missed=" + parts + ", meta=" + meta + ']');
+                }
 
-                        grpDirs.put(grpId, dir);
-                    }
+                grpDirs.put(grpId, dir);
+            }
 
-                    if (!grps.isEmpty()) {
-                        throw new IgniteException("Snapshot data doesn't contain required cache groups " +
-                            "[grps=" + grps + ", snpName=" + meta.snapshotName() + ", consId=" + meta.consistentId() +
-                            ", meta=" + meta + ']');
-                    }
+            if (!grps.isEmpty()) {
+                throw new IgniteException("Snapshot data doesn't contain required cache groups " +
+                    "[grps=" + grps + ", snpName=" + meta.snapshotName() + ", consId=" + meta.consistentId() +
+                    ", meta=" + meta + ']');
+            }
 
-                    if (!opCtx.check()) {
-                        log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
+            if (!opCtx.check()) {
+                log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
 
-                        return Collections.emptyMap();
-                    }
+                return Collections.emptyMap();
+            }
 
-                    return meta.dump()
-                        ? checkDumpFiles(opCtx, partFiles)
-                        : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles, isPunchHoleEnabled(opCtx, grpDirs.keySet()));
-
-        } finally {
+            return meta.dump()
+                ? checkDumpFiles(opCtx, partFiles)
+                : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles, isPunchHoleEnabled(opCtx, grpDirs.keySet()));
+        }
+        finally {
             clearMetrics();
         }
     }
 
     /** */
     private void registerMetrics(UUID reqId, String snpName) {
-
+        // No-op.
     }
 
     /** */
     private void clearMetrics() {
+        // No-op.
+    }
 
+    /** */
+    protected void addTotal(long add) {
+        assert add > 0;
+
+        long val = total.addAndGet(add);
+
+        assert val >= processed.get();
+    }
+
+    /** */
+    protected void addProcessed(long add) {
+        assert add > 0;
+
+        long val = processed.addAndGet(add);
+
+        assert val <= total.get();
     }
 
     /** */

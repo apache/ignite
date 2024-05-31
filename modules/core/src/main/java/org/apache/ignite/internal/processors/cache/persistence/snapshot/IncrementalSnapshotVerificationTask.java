@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
@@ -36,13 +38,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -57,8 +55,6 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
@@ -70,14 +66,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerificationTask {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
-
-    /** Ignite instance. */
-    @IgniteInstanceResource
-    private IgniteEx ignite;
-
-    /** Injected logger. */
-    @LoggerResource
-    private IgniteLogger log;
 
     /** {@inheritDoc} */
     @Override public SnapshotPartitionsVerifyTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {
@@ -147,7 +135,8 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
     }
 
     /** {@inheritDoc} */
-    @Override protected ComputeJob createJob(
+    @Override protected VerifyIncrementalSnapshotJob createJob(
+        UUID reqId,
         String name,
         @Nullable String path,
         int incIdx,
@@ -155,53 +144,37 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
         Collection<String> groups,
         boolean check
     ) {
-        return new VerifyIncrementalSnapshotJob(name, path, incIdx, constId);
+        return new VerifyIncrementalSnapshotJob(reqId, name, path, incIdx, constId);
     }
 
     /** */
-    private static class VerifyIncrementalSnapshotJob extends ComputeJobAdapter {
+    private static class VerifyIncrementalSnapshotJob extends AbstractSnapshotPartitionsVerifyJob {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
-        /** Ignite instance. */
-        @IgniteInstanceResource
-        private IgniteEx ignite;
-
-        /** Injected logger. */
-        @LoggerResource
-        private IgniteLogger log;
-
-        /** Snapshot name to validate. */
-        private final String snpName;
-
-        /** Snapshot directory path. */
-        private final String snpPath;
-
         /** Incremental snapshot index. */
         private final int incIdx;
-
-        /** Consistent ID. */
-        private final String consId;
 
         /** */
         private LongAdder procEntriesCnt;
 
         /**
+         * @param reqId Snapshot operation request Id.
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
          * @param incIdx Incremental snapshot index.
          * @param consId Consistent ID.
          */
         public VerifyIncrementalSnapshotJob(
+            UUID reqId,
             String snpName,
             @Nullable String snpPath,
             int incIdx,
             String consId
         ) {
-            this.snpName = snpName;
-            this.snpPath = snpPath;
+            super(reqId, snpName, snpPath, consId, Collections.emptySet(), true);
+
             this.incIdx = incIdx;
-            this.consId = consId;
         }
 
         /**

@@ -23,15 +23,19 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -48,6 +52,10 @@ public abstract class AbstractSnapshotVerificationTask extends
     /** Ignite instance. */
     @IgniteInstanceResource
     protected IgniteEx ignite;
+
+    /** Injected logger. */
+    @LoggerResource
+    protected IgniteLogger log;
 
     /** {@inheritDoc} */
     @Override public Map<ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, SnapshotPartitionsVerifyTaskArg arg) {
@@ -74,6 +82,7 @@ public abstract class AbstractSnapshotVerificationTask extends
 
                 jobs.put(
                     createJob(
+                        arg.requestId(),
                         meta.snapshotName(),
                         arg.snapshotPath(),
                         arg.incrementIndex(),
@@ -99,6 +108,7 @@ public abstract class AbstractSnapshotVerificationTask extends
     }
 
     /**
+     * @param reqId Snapshot request id.
      * @param name Snapshot name.
      * @param path Snapshot directory path.
      * @param incIdx Incremental snapshot index.
@@ -107,7 +117,8 @@ public abstract class AbstractSnapshotVerificationTask extends
      * @param check If {@code true} check snapshot before restore.
      * @return Compute job.
      */
-    protected abstract ComputeJob createJob(
+    protected abstract AbstractSnapshotPartitionsVerifyJob createJob(
+        UUID reqId,
         String name,
         @Nullable String path,
         int incIdx,
@@ -115,4 +126,60 @@ public abstract class AbstractSnapshotVerificationTask extends
         Collection<String> groups,
         boolean check
     );
+
+    /** */
+    abstract static class AbstractSnapshotPartitionsVerifyJob extends ComputeJobAdapter {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Ignite instance. */
+        @IgniteInstanceResource
+        protected IgniteEx ignite;
+
+        /** Injected logger. */
+        @LoggerResource
+        protected IgniteLogger log;
+
+        /** Snapshot operation request id. */
+        protected final UUID reqId;
+
+        /** Snapshot name. */
+        protected final String snpName;
+
+        /** Snapshot directory path. */
+        @Nullable protected final String snpPath;
+
+        /** Consistent ID. */
+        protected final String consId;
+
+        /** Set of cache groups to be checked in the snapshot or {@code empty} to check everything. */
+        protected final Collection<String> rqGrps;
+
+        /** If {@code true} check snapshot before restore. */
+        protected final boolean check;
+
+        /**
+         * @param reqId Snapshot operation request id.
+         * @param snpName Snapshot name.
+         * @param snpPath Snapshot directory path.
+         * @param consId Consistent snapshot metadata file name.
+         * @param rqGrps Set of cache groups to be checked in the snapshot or {@code empty} to check everything.
+         * @param check If {@code true} check snapshot before restore.
+         */
+        protected AbstractSnapshotPartitionsVerifyJob(
+            UUID reqId,
+            String snpName,
+            @Nullable String snpPath,
+            String consId,
+            Collection<String> rqGrps,
+            boolean check
+        ) {
+            this.reqId = reqId;
+            this.snpName = snpName;
+            this.snpPath = snpPath;
+            this.consId = consId;
+            this.rqGrps = rqGrps;
+            this.check = check;
+        }
+    }
 }

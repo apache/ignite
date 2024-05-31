@@ -329,6 +329,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
             notifyListeners(mreg, metricRegCreationLsnrs, log);
 
+            log.error("TEST | new mreg: " + name);
+
             return mreg;
         });
     }
