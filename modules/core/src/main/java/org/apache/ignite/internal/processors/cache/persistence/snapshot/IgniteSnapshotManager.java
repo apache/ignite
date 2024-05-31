@@ -1236,8 +1236,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     encKey == null ? null : encSpi.encryptKey(encKey)
                 );
 
-                SnapshotHandlerContext ctx = new SnapshotHandlerContext(req.requestId(), meta, req.groups(), cctx.localNode(),
-                    snpDir, req.streamerWarning(), true);
+                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir,
+                    req.streamerWarning(), true);
 
                 req.meta(meta);
 
@@ -1868,7 +1868,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * entirety and partitions consistency. The result future will be completed with an exception if this
      * exception is not related to the check procedure, and will be completed normally with the {@code IdleVerifyResult}.
      *
-     * @param reqId Snapshot operation requestId. If {@code null}, a random value is generated.
      * @param name Snapshot name.
      * @param snpPath Snapshot directory path.
      * @param grps Collection of cache group names to check.
@@ -1880,7 +1879,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
      */
     public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(
-        @Nullable UUID reqId,
         String name,
         @Nullable String snpPath,
         @Nullable Collection<String> grps,
@@ -1928,7 +1926,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 kctx0.task().execute(
                         cls,
-                        new SnapshotPartitionsVerifyTaskArg(reqId == null ? UUID.randomUUID() : reqId, grps, metas, snpPath, incIdx, check),
+                        new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath, incIdx, check),
                         options(new ArrayList<>(metas.keySet()))
                     ).listen(f1 -> {
                         if (f1.error() == null)
@@ -1957,32 +1955,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         return res;
-    }
-
-    /**
-     * The check snapshot procedure performs compute operation over the whole cluster to verify the snapshot
-     * entirety and partitions consistency. The result future will be completed with an exception if this
-     * exception is not related to the check procedure, and will be completed normally with the {@code IdleVerifyResult}.
-     *
-     * @param name Snapshot name.
-     * @param snpPath Snapshot directory path.
-     * @param grps Collection of cache group names to check.
-     * @param includeCustomHandlers {@code True} to invoke all user-defined {@link SnapshotHandlerType#RESTORE}
-     *                              handlers, otherwise only system consistency check will be performed.
-     * @param incIdx Incremental snapshot index.
-     * @param check If {@code true} check snapshot integrity.
-     * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
-     *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
-     */
-    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(
-        String name,
-        @Nullable String snpPath,
-        @Nullable Collection<String> grps,
-        boolean includeCustomHandlers,
-        int incIdx,
-        boolean check
-    ) {
-        return checkSnapshot(null, name, snpPath, grps, includeCustomHandlers, incIdx, check);
     }
 
     /**
@@ -2575,10 +2547,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param grps List of cache groups which will be destroyed.
      */
     public void onCacheGroupsStopped(List<Integer> grps) {
-        Collection<AbstractSnapshotCacheAffectingFuture<?>> tasks = F.viewReadOnly(locSnpTasks.values(),
-            t -> (AbstractSnapshotCacheAffectingFuture<?>)t, t -> t instanceof AbstractSnapshotCacheAffectingFuture);
+        Collection<AbstractSnapshotFutureTask<?>> tasks =
+            F.view(locSnpTasks.values(), t -> t instanceof SnapshotFutureTask || t instanceof CreateDumpFutureTask);
 
-        for (AbstractSnapshotCacheAffectingFuture<?> sctx : tasks) {
+        for (AbstractSnapshotFutureTask<?> sctx : tasks) {
             Set<Integer> retain = new HashSet<>(grps);
 
             retain.retainAll(sctx.affectedCacheGroups());
@@ -2763,7 +2735,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param task Snapshot operation task to be executed.
      * @return Snapshot operation task which should be registered.
      */
-    AbstractSnapshotFutureTask<?> registerTask(String rqId, AbstractSnapshotFutureTask<?> task) {
+    private AbstractSnapshotFutureTask<?> registerTask(String rqId, AbstractSnapshotFutureTask<?> task) {
         if (!busyLock.enterBusy()) {
             return new SnapshotFinishedFutureTask(new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" +
                 cctx.localNodeId() + ']'));

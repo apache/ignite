@@ -17,20 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
-/** */
-public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
+/**
+ * @param <T> Type of snapshot processing result.
+ */
+abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
+    /** Shared context. */
+    protected final GridCacheSharedContext<?, ?> cctx;
+
     /** Ignite logger. */
-    @GridToStringExclude
-    @Nullable protected final IgniteLogger log;
+    protected final IgniteLogger log;
 
     /** Node id which cause snapshot operation. */
     protected final UUID srcNodeId;
@@ -41,22 +47,71 @@ public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T>
     /** Unique identifier of snapshot process. */
     protected final String snpName;
 
-    /** */
+    /** Snapshot data sender. */
     @GridToStringExclude
-    private final AtomicBoolean started = new AtomicBoolean();
+    protected final SnapshotSender snpSndr;
+
+    /** Partition to be processed. */
+    protected final Map<Integer, Set<Integer>> parts;
+
+    /** An exception which has been occurred during snapshot processing. */
+    protected final AtomicReference<Throwable> err = new AtomicReference<>();
 
     /**
-     * Ctor.
-     * @param log Logger.
-     * @param srcNodeId Snapshot operation originator node id.
-     * @param reqId Snapshot operation request id.
-     * @param snpName Snapshot name.
+     * @param cctx Shared context.
+     * @param srcNodeId Node id which cause snapshot task creation.
+     * @param reqId Snapshot operation request ID.
+     * @param snpName Unique identifier of snapshot process.
+     * @param snpSndr Factory which produces snapshot receiver instance.
+     * @param parts Partition to be processed.
      */
-    protected AbstractSnapshotFutureTask(@Nullable IgniteLogger log, UUID srcNodeId, UUID reqId, String snpName) {
-        this.log = log;
+    protected AbstractSnapshotFutureTask(
+        GridCacheSharedContext<?, ?> cctx,
+        UUID srcNodeId,
+        UUID reqId,
+        String snpName,
+        SnapshotSender snpSndr,
+        Map<Integer, Set<Integer>> parts
+    ) {
+        assert snpName != null : "Snapshot name cannot be empty or null.";
+        assert snpSndr != null : "Snapshot sender which handles execution tasks must be not null.";
+        assert snpSndr.executor() != null : "Executor service must be not null.";
+
+        this.cctx = cctx;
+        this.log = cctx.logger(this.getClass());
         this.srcNodeId = srcNodeId;
         this.reqId = reqId;
         this.snpName = snpName;
+        this.snpSndr = snpSndr;
+        this.parts = parts;
+    }
+
+    /**
+     * @return Snapshot name.
+     */
+    public String snapshotName() {
+        return snpName;
+    }
+
+    /**
+     * @return Node id which triggers this operation.
+     */
+    public UUID sourceNodeId() {
+        return srcNodeId;
+    }
+
+    /**
+     * @return Snapshot operation request ID.
+     */
+    public UUID requestId() {
+        return reqId;
+    }
+
+    /**
+     * @return Set of cache groups included into snapshot operation.
+     */
+    public Set<Integer> affectedCacheGroups() {
+        return parts.keySet();
     }
 
     /**
@@ -64,21 +119,12 @@ public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T>
      *
      * @return {@code true} if task started by this call.
      */
-    public final boolean start() {
-        return !isDone() && started.compareAndSet(false, true) && doStart();
-    }
-
-    /** */
-    protected abstract boolean doStart();
+    public abstract boolean start();
 
     /**
      * @param th An exception which occurred during snapshot processing.
      */
-    public void acceptException(Throwable th) {
-        assert th != null;
-
-        onDone(null, th, false);
-    }
+    public abstract void acceptException(Throwable th);
 
     /** {@inheritDoc} */
     @Override public boolean cancel() {
@@ -89,28 +135,7 @@ public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T>
         return true;
     }
 
-    /**
-     * @return Snapshot name.
-     */
-    public final String snapshotName() {
-        return snpName;
-    }
-
-    /**
-     * @return Node id which triggers this operation.
-     */
-    public final UUID sourceNodeId() {
-        return srcNodeId;
-    }
-
-    /**
-     * @return Snapshot operation request ID.
-     */
-    public final UUID requestId() {
-        return reqId;
-    }
-
-    /** */
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(AbstractSnapshotFutureTask.class, this);
     }

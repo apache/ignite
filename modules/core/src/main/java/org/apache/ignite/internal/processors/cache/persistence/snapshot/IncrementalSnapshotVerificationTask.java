@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
@@ -135,16 +134,8 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
     }
 
     /** {@inheritDoc} */
-    @Override protected VerifyIncrementalSnapshotJob createJob(
-        UUID reqId,
-        String name,
-        @Nullable String path,
-        int incIdx,
-        String constId,
-        Collection<String> groups,
-        boolean check
-    ) {
-        return new VerifyIncrementalSnapshotJob(reqId, name, path, incIdx, constId);
+    @Override protected VerifyIncrementalSnapshotJob createJob(String name, String constId, SnapshotPartitionsVerifyTaskArg args) {
+        return new VerifyIncrementalSnapshotJob(name, args.snapshotPath(), args.incrementIndex(), constId);
     }
 
     /** */
@@ -159,20 +150,18 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
         private LongAdder procEntriesCnt;
 
         /**
-         * @param reqId Snapshot operation request Id.
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
          * @param incIdx Incremental snapshot index.
          * @param consId Consistent ID.
          */
         public VerifyIncrementalSnapshotJob(
-            UUID reqId,
             String snpName,
             @Nullable String snpPath,
             int incIdx,
             String consId
         ) {
-            super(reqId, snpName, snpPath, consId, Collections.emptySet(), true);
+            super(snpName, snpPath, consId, Collections.emptySet(), true);
 
             this.incIdx = incIdx;
         }

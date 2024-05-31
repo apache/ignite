@@ -173,7 +173,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     ) {
         super(
             cctx,
-            cctx.logger(CreateDumpFutureTask.class),
             srcNodeId,
             reqId,
             dumpName,
@@ -192,7 +191,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean doStart() {
+    @Override public boolean start() {
         try {
             if (log.isInfoEnabled())
                 log.info("Start cache dump [name=" + snpName + ", grps=" + parts.keySet() + ']');

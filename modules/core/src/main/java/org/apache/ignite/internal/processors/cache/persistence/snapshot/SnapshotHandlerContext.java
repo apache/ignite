@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.util.Collection;
-import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,9 +26,6 @@ import org.jetbrains.annotations.Nullable;
  * Snapshot operation handler context.
  */
 public class SnapshotHandlerContext {
-    /** Snapshot metadata. */
-    private final UUID reqId;
-
     /** Snapshot metadata. */
     private final SnapshotMetadata metadata;
 
@@ -49,7 +45,6 @@ public class SnapshotHandlerContext {
     private final boolean check;
 
     /**
-     * @param reqId Snapshot operation request id.
      * @param metadata Snapshot metadata.
      * @param grps The names of the cache groups on which the operation is performed.
      * {@code False} otherwise. Always {@code false} for snapshot restoration.
@@ -59,7 +54,6 @@ public class SnapshotHandlerContext {
      * @param check If {@code true} check snapshot integrity.
      */
     public SnapshotHandlerContext(
-        UUID reqId,
         SnapshotMetadata metadata,
         @Nullable Collection<String> grps,
         ClusterNode locNode,
@@ -67,20 +61,12 @@ public class SnapshotHandlerContext {
         boolean streamerWrn,
         boolean check
     ) {
-        this.reqId = reqId;
         this.metadata = metadata;
         this.grps = grps;
         this.locNode = locNode;
         this.snpDir = snpDir;
         this.streamerWrn = streamerWrn;
         this.check = check;
-    }
-
-    /**
-     * @return Snapshot operation request id.
-     */
-    public UUID reqId() {
-        return reqId;
     }
 
     /**

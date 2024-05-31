@@ -22,7 +22,6 @@ import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -37,16 +36,13 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache group names to be verified. */
-    private Collection<String> grpNames;
+    @Nullable private Collection<String> grpNames;
 
     /** The map of distribution of snapshot metadata pieces across the cluster. */
     private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
 
-    /** Snapshot operation request id. Might be {@code null} for the protocol version V1. */
-    @Nullable private UUID reqId;
-
     /** Snapshot directory path. */
-    private String snpPath;
+    @Nullable private String snpPath;
 
     /** If {@code true} check snapshot integrity. */
     private boolean check;
@@ -60,7 +56,6 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     }
 
     /**
-     * @param reqId Snapshot operation request id.
      * @param grpNames Cache group names to be verified.
      * @param clusterMetas The map of distribution of snapshot metadata pieces across the cluster.
      * @param snpPath Snapshot directory path.
@@ -68,14 +63,12 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
      * @param check If {@code true} check snapshot integrity.
      */
     public SnapshotPartitionsVerifyTaskArg(
-        UUID reqId,
-        Collection<String> grpNames,
+        @Nullable Collection<String> grpNames,
         Map<ClusterNode, List<SnapshotMetadata>> clusterMetas,
         @Nullable String snpPath,
         int incIdx,
         boolean check
     ) {
-        this.reqId = reqId;
         this.grpNames = grpNames;
         this.clusterMetas = clusterMetas;
         this.snpPath = snpPath;
@@ -84,16 +77,9 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     }
 
     /**
-     * @return Snapshot operation request id. Might be {@code null} for the protocol version V1.
-     */
-    @Nullable public UUID requestId() {
-        return reqId;
-    }
-
-    /**
      * @return Cache group names to be verified.
      */
-    public Collection<String> cacheGroupNames() {
+    @Nullable public Collection<String> cacheGroupNames() {
         return grpNames;
     }
 
@@ -107,7 +93,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     /**
      * @return Snapshot directory path.
      */
-    public String snapshotPath() {
+    @Nullable public String snapshotPath() {
         return snpPath;
     }
 
@@ -130,7 +116,6 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
         U.writeString(out, snpPath);
         out.writeBoolean(check);
         out.writeInt(incIdx);
-        U.writeUuid(out, reqId);
     }
 
     /** {@inheritDoc} */
@@ -140,14 +125,6 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
         snpPath = U.readString(in);
         check = in.readBoolean();
         incIdx = in.readInt();
-
-        if (protoVer > V1)
-            reqId = U.readUuid(in);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V2;
     }
 
     /** {@inheritDoc} */
