@@ -65,6 +65,8 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
         grid = startGrids(NODES);
 
         cache = grid.cache("cache");
+
+        insertData(grid, cache, entries);
     }
 
     /** {@inheritDoc} */
@@ -102,8 +104,6 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
      */
     @Test
     public void nextPageTest() {
-        insertData(grid, cache, entries);
-
         int locNodeEntries = cache.query(new ScanQuery<Integer, Person>().setLocal(true)).getAll().size();
         int remNodeEntries = entries - locNodeEntries;
 
