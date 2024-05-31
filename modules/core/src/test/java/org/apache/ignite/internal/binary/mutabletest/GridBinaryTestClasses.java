@@ -26,9 +26,11 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.UUID;
 import com.google.common.base.Throwables;
@@ -316,6 +318,79 @@ public class GridBinaryTestClasses {
             enumArr = new TestObjectEnum[] {TestObjectEnum.B};
 
             entry = new GridMapEntry<>(1, "a");
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof TestObjectAllTypes))
+                return false;
+
+            TestObjectAllTypes allTypesObj = (TestObjectAllTypes)o;
+
+            return b == allTypesObj.b
+                && s == allTypesObj.s
+                && i == allTypesObj.i
+                && l == allTypesObj.l
+                && Float.compare(f, allTypesObj.f) == 0
+                && Double.compare(d, allTypesObj.d) == 0
+                && c == allTypesObj.c
+                && z == allTypesObj.z
+                && Objects.equals(b_, allTypesObj.b_)
+                && Objects.equals(s_, allTypesObj.s_)
+                && Objects.equals(i_, allTypesObj.i_)
+                && Objects.equals(bi_, allTypesObj.bi_)
+                && Objects.equals(l_, allTypesObj.l_)
+                && Objects.equals(f_, allTypesObj.f_)
+                && Objects.equals(d_, allTypesObj.d_)
+                && (bd_ == null ? allTypesObj.bd_ == null : bd_.compareTo(allTypesObj.bd_) == 0)
+                && Objects.equals(c_, allTypesObj.c_)
+                && Objects.equals(z_, allTypesObj.z_)
+                && Objects.equals(str, allTypesObj.str)
+                && Objects.equals(uuid, allTypesObj.uuid)
+                && Objects.equals(date, allTypesObj.date)
+                && Objects.equals(ts, allTypesObj.ts)
+                && Arrays.equals(bArr, allTypesObj.bArr)
+                && Arrays.equals(sArr, allTypesObj.sArr)
+                && Arrays.equals(iArr, allTypesObj.iArr)
+                && Arrays.equals(lArr, allTypesObj.lArr)
+                && Arrays.equals(fArr, allTypesObj.fArr)
+                && Arrays.equals(dArr, allTypesObj.dArr)
+                && Arrays.equals(cArr, allTypesObj.cArr)
+                && Arrays.equals(zArr, allTypesObj.zArr)
+                && Arrays.equals(bdArr, allTypesObj.bdArr)
+                && Arrays.equals(strArr, allTypesObj.strArr)
+                && Arrays.equals(uuidArr, allTypesObj.uuidArr)
+                && Arrays.equals(dateArr, allTypesObj.dateArr)
+                && Arrays.equals(tsArr, allTypesObj.tsArr)
+                && anEnum == allTypesObj.anEnum
+                && Arrays.equals(enumArr, allTypesObj.enumArr)
+                && Objects.equals(entry, allTypesObj.entry);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res =
+                Objects.hash(b_, s_, i_, bi_, l_, f_, d_, bd_, c_, z_, b, s, i, l, f, d, c, z, str, uuid, date, ts, anEnum, entry);
+
+            res = 31 * res + Arrays.hashCode(bArr);
+            res = 31 * res + Arrays.hashCode(sArr);
+            res = 31 * res + Arrays.hashCode(iArr);
+            res = 31 * res + Arrays.hashCode(lArr);
+            res = 31 * res + Arrays.hashCode(fArr);
+            res = 31 * res + Arrays.hashCode(dArr);
+            res = 31 * res + Arrays.hashCode(cArr);
+            res = 31 * res + Arrays.hashCode(zArr);
+            res = 31 * res + Arrays.hashCode(bdArr);
+            res = 31 * res + Arrays.hashCode(strArr);
+            res = 31 * res + Arrays.hashCode(uuidArr);
+            res = 31 * res + Arrays.hashCode(dateArr);
+            res = 31 * res + Arrays.hashCode(tsArr);
+            res = 31 * res + Arrays.hashCode(enumArr);
+
+            return res;
         }
     }
 
