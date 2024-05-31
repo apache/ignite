@@ -58,7 +58,9 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
 
     /** */
     @Parameterized.Parameters(name = "entries={0}")
-    public static Object[] params() { return new Object[] {100, 1000, 5000, 10_000, 50_000, 100_000}; }
+    public static Object[] params() {
+        return new Object[] {100, 1000, 5000, 10_000, 50_000, 100_000};
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
