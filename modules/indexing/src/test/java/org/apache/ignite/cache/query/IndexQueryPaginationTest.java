@@ -1,9 +1,24 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.cache.query;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -17,10 +32,13 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.query.ThinClientIndexQueryTest.getFilteredMessages;
 
 /** */
+@RunWith(Parameterized.class)
 public class IndexQueryPaginationTest extends GridCommonAbstractTest {
     /** */
     private static final int PAGE_SIZE = 512;
@@ -29,23 +47,24 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
     private static final int NODES = 2;
 
     /** */
-    private Map<Integer, Integer> entriesAndReqs;
+    private Ignite grid;
 
     /** */
-    private Ignite grid;
+    private IgniteCache<Integer, Person> cache;
+
+    /** */
+    @Parameterized.Parameter
+    public int entries;
+
+    /** */
+    @Parameterized.Parameters(name = "entries={0}")
+    public static Object[] params() { return new Object[] {100, 1000, 5000, 10_000, 50_000, 100_000}; }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        entriesAndReqs = new HashMap<Integer, Integer>() {{
-            put(100, 1);
-            put(1000, 1);
-            put(5000, 5);
-            put(10_000, 10);
-            put(50_000, 50);
-            put(100_000, 100);
-        }};
-
         grid = startGrids(NODES);
+
+        cache = grid.cache("cache");
     }
 
     /** {@inheritDoc} */
@@ -85,55 +104,45 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
      */
     @Test
     public void nextPageRequestsTest() {
-        final IgniteCache<Integer, Person> cache = grid.cache("cache");
+        insertData(grid, cache, entries);
 
-        for (Map.Entry<Integer, Integer> e : entriesAndReqs.entrySet()) {
-            int entries = e.getKey();
-            int reqsExpected = e.getValue();
+        int locNodeEntries = cache.query(new ScanQuery<Integer, Person>().setLocal(true)).getAll().size();
+        int remNodeEntries = entries - locNodeEntries;
 
-            insertData(grid, cache, entries);
+        int reqsExpected = (remNodeEntries + PAGE_SIZE - 1) / PAGE_SIZE;
 
-            int locNodeEntries = cache.query(new ScanQuery<Integer, Person>().setLocal(true)).getAll().size();
-            int remNodeEntries = entries - locNodeEntries;
+        int remNodeLastPageEntries = remNodeEntries % PAGE_SIZE;
 
-            int remNodelastPageEntries = remNodeEntries % PAGE_SIZE;
+        for (int i = 0; i < NODES; i++)
+            TestRecordingCommunicationSpi.spi(grid(i)).record(GridCacheQueryRequest.class, GridCacheQueryResponse.class);
 
-            for (int i = 0; i < NODES; i++) {
-                TestRecordingCommunicationSpi.spi(grid(i)).record(
-                    GridCacheQueryRequest.class,
-                    GridCacheQueryResponse.class);
-            }
+        QueryCursor<Cache.Entry<Integer, Person>> cursor = cache.query(
+            new IndexQuery<Integer, Person>(Person.class).setPageSize(PAGE_SIZE));
 
-            QueryCursor<Cache.Entry<Integer, Person>> cursor = cache.query(
-                new IndexQuery<Integer, Person>(Person.class).setPageSize(PAGE_SIZE));
+        assert entries == cursor.getAll().size();
 
-            assert entries == cursor.getAll().size();
+        List<Object> msgs = new ArrayList<>();
 
-            List<Object> msgs = new ArrayList<>();
+        for (int i = 0; i < NODES; i++)
+            msgs.addAll(TestRecordingCommunicationSpi.spi(grid(i)).recordedMessages(true));
 
-            for (int i = 0; i < NODES; i++)
-                msgs.addAll(TestRecordingCommunicationSpi.spi(grid(i)).recordedMessages(true));
+        List<GridCacheQueryRequest> reqs = getFilteredMessages(msgs, GridCacheQueryRequest.class);
+        List<GridCacheQueryResponse> resp = getFilteredMessages(msgs, GridCacheQueryResponse.class);
 
-            List<GridCacheQueryRequest> reqs = getFilteredMessages(msgs, GridCacheQueryRequest.class);
-            List<GridCacheQueryResponse> resp = getFilteredMessages(msgs, GridCacheQueryResponse.class);
+        int reqsSize = reqs.size();
 
-            int reqsSize = reqs.size();
+        assert reqsSize == reqsExpected && reqsSize == resp.size();
 
-            assert reqsSize == reqsExpected && reqsSize == resp.size();
+        for (int i = 0; i < reqsSize; i++) {
+            int reqPage = reqs.get(i).pageSize();
+            int respData = resp.get(i).data().size();
 
-            for (int i = 0; i < reqsSize; i++) {
-                int reqPage = reqs.get(i).pageSize();
-                int respData = resp.get(i).data().size();
+            assert reqPage == PAGE_SIZE;
 
-                assert reqPage == PAGE_SIZE;
-
-                if (i == reqsSize - 1 && remNodelastPageEntries != 0)
-                    assert respData == remNodelastPageEntries;
-                else
-                    assert respData == reqPage;
-            }
-
-            cache.clear();
+            if (i == reqsSize - 1 && remNodeLastPageEntries != 0)
+                assert respData == remNodeLastPageEntries;
+            else
+                assert respData == reqPage;
         }
     }
 
