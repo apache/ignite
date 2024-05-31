@@ -78,11 +78,9 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
             .setIndexedTypes(Integer.class, Person.class)
             .setCacheMode(CacheMode.PARTITIONED);
 
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
+        return super.getConfiguration(igniteInstanceName)
             .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setCacheConfiguration(ccfg);
-
-        return cfg;
     }
 
     /**
@@ -103,7 +101,7 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
      * Check if the number and the size of next page requests and responses are correct while executing an index query.
      */
     @Test
-    public void nextPageRequestsTest() {
+    public void nextPageTest() {
         insertData(grid, cache, entries);
 
         int locNodeEntries = cache.query(new ScanQuery<Integer, Person>().setLocal(true)).getAll().size();
