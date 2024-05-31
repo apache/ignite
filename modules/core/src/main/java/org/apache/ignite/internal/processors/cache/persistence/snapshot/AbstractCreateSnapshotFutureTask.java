@@ -89,9 +89,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotP
     protected abstract List<CompletableFuture<Void>> saveGroup(int grpId, Set<Integer> grpParts) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Override public boolean cancel() {
-        super.cancel();
-
+    @Override protected boolean doStop() {
         try {
             closeAsync().get();
         }

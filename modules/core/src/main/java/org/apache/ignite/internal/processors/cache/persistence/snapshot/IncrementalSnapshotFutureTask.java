@@ -99,6 +99,11 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotCacheAffectingFuture
     }
 
     /** {@inheritDoc} */
+    @Override protected boolean doStop() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override protected boolean doStart() {
         try {
             File incSnpDir = cctx.snapshotMgr().incrementalSnapshotLocalDir(snpName, snpPath, incIdx);

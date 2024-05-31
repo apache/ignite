@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -71,6 +70,9 @@ public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T>
     /** */
     protected abstract boolean doStart();
 
+    /** */
+    protected abstract boolean doStop();
+
     /**
      * @param th An exception which occurred during snapshot processing.
      */
@@ -81,12 +83,8 @@ public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cancel() {
-        // Cancellation of snapshot future should not throw an exception.
-        acceptException(new IgniteFutureCancelledCheckedException("Snapshot operation has been cancelled " +
-            "by external process [snpName=" + snpName + ']'));
-
-        return true;
+    @Override public final boolean cancel() {
+        return onDone(null, null, true) && doStop();
     }
 
     /**

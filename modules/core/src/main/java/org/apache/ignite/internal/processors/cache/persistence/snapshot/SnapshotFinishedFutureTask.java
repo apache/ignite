@@ -34,4 +34,9 @@ public class SnapshotFinishedFutureTask extends AbstractSnapshotFutureTask<Void>
     @Override protected boolean doStart() {
         return false;
     }
+
+    /** {@inheritDoc} */
+    @Override protected boolean doStop() {
+        return true;
+    }
 }
