@@ -491,7 +491,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             this::processLocalSnapshotEndStageResult, (reqId, req) -> new InitMessage<>(reqId, END_SNAPSHOT, req, true));
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
-        marshClsLdr = U.resolveClassLoader(cctx.gridConfig());
+        marshClsLdr = U.resolveClassLoader(ctx.config());
 
         restoreCacheGrpProc = new SnapshotRestoreProcess(ctx, locBuff);
 
