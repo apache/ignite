@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -44,6 +45,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -414,7 +416,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         stopLoading.set(true);
         loadFut.cancel();
-        loadFut.get(getTestTimeout());
+        waitForCondition(loadFut::isDone, getTestTimeout());
 
         if (allowOverwrite)
             createAndCheckSnapshot(snpHnd, true, null, null);
@@ -451,6 +453,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
                         proceed.countDown();
                     }
                 }
+
+                proceed.countDown();
             }
         }, "load-thread");
 
