@@ -88,7 +88,7 @@ abstract class AbstractSnapshotFuture<T> extends GridFutureAdapter<T> {
     /**
      * @param th An exception which occurred during snapshot processing.
      */
-    public void acceptException(Throwable th){
+    public void acceptException(Throwable th) {
         onDone(th);
     }
 

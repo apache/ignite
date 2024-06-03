@@ -2576,7 +2576,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public void onCacheGroupsStopped(List<Integer> grps) {
         Collection<AbstractSnapshotFutureTask<?>> tasks =
-            F.viewReadOnly(locSnpTasks.values(), t -> (AbstractCreateSnapshotFutureTask)t, t -> t instanceof AbstractCreateSnapshotFutureTask);
+            F.viewReadOnly(locSnpTasks.values(), t -> (AbstractSnapshotFutureTask<?>)t,
+                t -> t instanceof AbstractCreateSnapshotFutureTask);
 
         for (AbstractSnapshotFutureTask<?> sctx : tasks) {
             Set<Integer> retain = new HashSet<>(grps);
@@ -2777,7 +2778,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             if (prev != null) {
                 return unique || prev.getClass() != task.getClass()
-                    ? new SnapshotFinishedFutureTask<>(task, new IgniteCheckedException("Snapshot with requested name is already scheduled: " + futureId))
+                    ? new SnapshotFinishedFutureTask<>(task,
+                        new IgniteCheckedException("Snapshot with requested name is already scheduled: " + futureId))
                     : (AbstractSnapshotFuture<T>)prev;
             }
 

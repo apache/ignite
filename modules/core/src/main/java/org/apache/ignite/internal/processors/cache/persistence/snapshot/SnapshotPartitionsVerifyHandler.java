@@ -104,7 +104,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     public static final String METRIC_REG_NAME_PREF = metricName(SNAPSHOT_METRICS, "check");
 
     /** Unique snapshot check future name prefix. */
-    public static final String SNP_FUTURE_NAME_PREF = SnapshotPartitionsVerifyHandler.class.getSimpleName() + ".CHECK." + UUID.randomUUID() + '.';
+    public static final String SNP_FUTURE_NAME_PREF = SnapshotPartitionsVerifyHandler.class.getSimpleName() + ".CHECK."
+        + UUID.randomUUID() + '.';
 
     /** Shared context. */
     protected final GridCacheSharedContext<?, ?> cctx;
@@ -144,147 +145,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
     /** */
     public static String metricsRegName(UUID snpOpReqId, String snpName) {
-        return metricName(METRIC_REG_NAME_PREF, snpName, snpOpReqId.toString());
-    }
-
-    /** */
-    private Map<PartitionKeyV2, PartitionHashRecordV2> checkSnapshotFiles(
-        SnapshotHandlerContext opCtx,
-        Map<Integer, File> grpDirs,
-        SnapshotMetadata meta,
-        Set<File> partFiles,
-        boolean punchHoleEnabled
-    ) throws IgniteCheckedException {
-        Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();
-        ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
-            .order(ByteOrder.nativeOrder()));
-
-        IgniteSnapshotManager snpMgr = cctx.snapshotMgr();
-
-        GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(cctx.kernalContext().compress(),
-            opCtx.snapshotDirectory(), meta.folderName());
-
-        FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
-
-        EncryptionCacheKeyProvider snpEncrKeyProvider = new SnapshotEncryptionKeyProvider(cctx.kernalContext(), grpDirs);
-
-        startAllComponents(snpCtx);
-
-        try {
-            U.doInParallel(
-                snpMgr.snapshotExecutorService(),
-                partFiles,
-                part -> {
-                    String grpName = cacheGroupName(part.getParentFile());
-                    int grpId = CU.cacheId(grpName);
-                    int partId = partId(part.getName());
-
-                    try (FilePageStore pageStore =
-                             (FilePageStore)storeMgr.getPageStoreFactory(grpId, snpEncrKeyProvider.getActiveKey(grpId) != null ?
-                                 snpEncrKeyProvider : null).createPageStore(getTypeByPartId(partId), part::toPath, val -> {})
-                    ) {
-                        pageStore.init();
-
-                        if (punchHoleEnabled && meta.isGroupWithCompression(grpId) && type() == SnapshotHandlerType.CREATE) {
-                            byte pageType = partId == INDEX_PARTITION ? FLAG_IDX : FLAG_DATA;
-
-                            checkPartitionsPageCrcSum(() -> pageStore, partId, pageType, (id, buffer) -> {
-                                if (PageIO.getCompressionType(buffer) == CompressionProcessor.UNCOMPRESSED_PAGE)
-                                    return;
-
-                                int comprPageSz = PageIO.getCompressedSize(buffer);
-
-                                if (comprPageSz < pageStore.getPageSize()) {
-                                    try {
-                                        pageStore.punchHole(id, comprPageSz);
-                                    }
-                                    catch (Exception ignored) {
-                                        // No-op.
-                                    }
-                                }
-                            });
-                        }
-
-                        if (partId == INDEX_PARTITION) {
-                            if (!skipHash())
-                                checkPartitionsPageCrcSum(() -> pageStore, INDEX_PARTITION, FLAG_IDX);
-
-                            return null;
-                        }
-
-                        if (grpId == MetaStorage.METASTORAGE_CACHE_ID) {
-                            if (!skipHash())
-                                checkPartitionsPageCrcSum(() -> pageStore, partId, FLAG_DATA);
-
-                            return null;
-                        }
-
-                        ByteBuffer pageBuff = buff.get();
-                        pageBuff.clear();
-                        pageStore.read(0, pageBuff, true);
-
-                        long pageAddr = GridUnsafe.bufferAddress(pageBuff);
-
-                        if (PageIO.getCompressionType(pageBuff) != CompressionProcessor.UNCOMPRESSED_PAGE)
-                            snpCtx.compress().decompressPage(pageBuff, pageStore.getPageSize());
-
-                        PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
-                        GridDhtPartitionState partState = fromOrdinal(io.getPartitionState(pageAddr));
-
-                        if (partState != OWNING) {
-                            throw new IgniteCheckedException("Snapshot partitions must be in the OWNING " +
-                                "state only: " + partState);
-                        }
-
-                        long updateCntr = io.getUpdateCounter(pageAddr);
-                        long size = io.getSize(pageAddr);
-
-                        if (log.isDebugEnabled()) {
-                            log.debug("Partition [grpId=" + grpId
-                                + ", id=" + partId
-                                + ", counter=" + updateCntr
-                                + ", size=" + size + "]");
-                        }
-
-                        // Snapshot partitions must always be in OWNING state.
-                        // There is no `primary` partitions for snapshot.
-                        PartitionKeyV2 key = new PartitionKeyV2(grpId, partId, grpName);
-
-                        PartitionHashRecordV2 hash = calculatePartitionHash(key,
-                            updateCntr,
-                            meta.consistentId(),
-                            GridDhtPartitionState.OWNING,
-                            false,
-                            size,
-                            skipHash() ? F.emptyIterator()
-                                : snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore));
-
-                        assert hash != null : "OWNING must have hash: " + key;
-
-                        // We should skip size comparison if there are entries to expire exist.
-                        if (hasExpiringEntries(snpCtx, pageStore, pageBuff, io.getPendingTreeRoot(pageAddr)))
-                            hash.hasExpiringEntries(true);
-
-                        res.put(key, hash);
-                    }
-                    catch (IOException e) {
-                        throw new IgniteCheckedException(e);
-                    }
-
-                    return null;
-                }
-            );
-        }
-        catch (Throwable t) {
-            log.error("Error executing handler: ", t);
-
-            throw t;
-        }
-        finally {
-            closeAllComponents(snpCtx);
-        }
-
-        return res;
+        return metricName(METRIC_REG_NAME_PREF, snpName);
     }
 
     /** */
@@ -319,36 +180,6 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         BPlusIO<?> rootIO = PageIO.getPageIO(pageBuff);
 
         return rootIO.getCount(pageAddr) != 0;
-    }
-
-    /** */
-    private Map<PartitionKeyV2, PartitionHashRecordV2> checkDumpFiles(
-        SnapshotHandlerContext opCtx,
-        Set<File> partFiles
-    ) {
-        try {
-            String consistentId = cctx.kernalContext().pdsFolderResolver().resolveFolders().consistentId().toString();
-
-            EncryptionSpi encSpi = opCtx.metadata().encryptionKey() != null ? cctx.gridConfig().getEncryptionSpi() : null;
-
-            try (Dump dump = new Dump(opCtx.snapshotDirectory(), consistentId, true, true, encSpi, log)) {
-                Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
-                    cctx.snapshotMgr().snapshotExecutorService(),
-                    partFiles,
-                    part -> calculateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()))
-                );
-
-                return partitionHashRecordV2s.stream().collect(Collectors.toMap(PartitionHashRecordV2::partitionKey, r -> r));
-            }
-            catch (Throwable t) {
-                log.error("Error executing handler: ", t);
-
-                throw new IgniteException(t);
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
     }
 
     /** */
@@ -537,7 +368,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         private volatile MetricRegistry mreg;
 
         /** */
-        protected CalculateSnapshotHashesFuture(SnapshotHandlerContext opCtx){
+        protected CalculateSnapshotHashesFuture(SnapshotHandlerContext opCtx) {
             super(SnapshotPartitionsVerifyHandler.this.log, opCtx.reqId(), opCtx.metadata().snapshotName(), null);
 
             this.opCtx = opCtx;
@@ -561,6 +392,42 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             assert val <= total.get();
         }
 
+        /** */
+        private Map<PartitionKeyV2, PartitionHashRecordV2> checkDumpFiles(
+            SnapshotHandlerContext opCtx,
+            Set<File> partFiles
+        ) {
+            try {
+                String consistentId = cctx.kernalContext().pdsFolderResolver().resolveFolders().consistentId().toString();
+
+                EncryptionSpi encSpi = opCtx.metadata().encryptionKey() != null ? cctx.gridConfig().getEncryptionSpi() : null;
+
+                try (Dump dump = new Dump(opCtx.snapshotDirectory(), consistentId, true, true, encSpi, log)) {
+                    Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
+                        cctx.snapshotMgr().snapshotExecutorService(),
+                        partFiles,
+                        part -> {
+                            try {
+                                return calculateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()));
+                            }
+                            finally {
+                                processed.addAndGet(part.length());
+                            }
+                        }
+                    );
+
+                    return partitionHashRecordV2s.stream().collect(Collectors.toMap(PartitionHashRecordV2::partitionKey, r -> r));
+                }
+                catch (Throwable t) {
+                    log.error("Error executing handler: ", t);
+
+                    throw new IgniteException(t);
+                }
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
 
         /** {@inheritDoc} */
         @Override public boolean start() {
@@ -577,7 +444,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
                 CompletableFuture.runAsync(
                     () -> {
-                        for (File dir : cacheDirectories(new File(opCtx.snapshotDirectory(), databaseRelativePath(meta.folderName())), name -> true)) {
+                        for (File dir : cacheDirectories(new File(opCtx.snapshotDirectory(), databaseRelativePath(meta.folderName())),
+                            name -> true)) {
                             int grpId = CU.cacheId(cacheGroupName(dir));
 
                             if (!grps.remove(grpId))
@@ -595,6 +463,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                                     continue;
 
                                 partFiles.add(part);
+
+                                if (opCtx.check())
+                                    total.addAndGet(part.length());
                             }
 
                             if (!parts.isEmpty()) {
@@ -644,6 +515,149 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         }
 
         /** */
+        private Map<PartitionKeyV2, PartitionHashRecordV2> checkSnapshotFiles(
+            SnapshotHandlerContext opCtx,
+            Map<Integer, File> grpDirs,
+            SnapshotMetadata meta,
+            Set<File> partFiles,
+            boolean punchHoleEnabled
+        ) throws IgniteCheckedException {
+            Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();
+            ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
+                .order(ByteOrder.nativeOrder()));
+
+            IgniteSnapshotManager snpMgr = cctx.snapshotMgr();
+
+            GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(cctx.kernalContext().compress(),
+                opCtx.snapshotDirectory(), meta.folderName());
+
+            FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
+
+            EncryptionCacheKeyProvider snpEncrKeyProvider = new SnapshotEncryptionKeyProvider(cctx.kernalContext(), grpDirs);
+
+            startAllComponents(snpCtx);
+
+            try {
+                U.doInParallel(
+                    snpMgr.snapshotExecutorService(),
+                    partFiles,
+                    part -> {
+                        String grpName = cacheGroupName(part.getParentFile());
+                        int grpId = CU.cacheId(grpName);
+                        int partId = partId(part.getName());
+
+                        try (FilePageStore pageStore =
+                                 (FilePageStore)storeMgr.getPageStoreFactory(grpId, snpEncrKeyProvider.getActiveKey(grpId) != null ?
+                                     snpEncrKeyProvider : null).createPageStore(getTypeByPartId(partId), part::toPath, val -> {})
+                        ) {
+                            pageStore.init();
+
+                            if (punchHoleEnabled && meta.isGroupWithCompression(grpId) && type() == SnapshotHandlerType.CREATE) {
+                                byte pageType = partId == INDEX_PARTITION ? FLAG_IDX : FLAG_DATA;
+
+                                checkPartitionsPageCrcSum(() -> pageStore, partId, pageType, (id, buffer) -> {
+                                    if (PageIO.getCompressionType(buffer) == CompressionProcessor.UNCOMPRESSED_PAGE)
+                                        return;
+
+                                    int comprPageSz = PageIO.getCompressedSize(buffer);
+
+                                    if (comprPageSz < pageStore.getPageSize()) {
+                                        try {
+                                            pageStore.punchHole(id, comprPageSz);
+                                        }
+                                        catch (Exception ignored) {
+                                            // No-op.
+                                        }
+                                    }
+                                });
+                            }
+
+                            if (partId == INDEX_PARTITION) {
+                                if (!skipHash())
+                                    checkPartitionsPageCrcSum(() -> pageStore, INDEX_PARTITION, FLAG_IDX);
+
+                                return null;
+                            }
+
+                            if (grpId == MetaStorage.METASTORAGE_CACHE_ID) {
+                                if (!skipHash())
+                                    checkPartitionsPageCrcSum(() -> pageStore, partId, FLAG_DATA);
+
+                                return null;
+                            }
+
+                            ByteBuffer pageBuff = buff.get();
+                            pageBuff.clear();
+                            pageStore.read(0, pageBuff, true);
+
+                            long pageAddr = GridUnsafe.bufferAddress(pageBuff);
+
+                            if (PageIO.getCompressionType(pageBuff) != CompressionProcessor.UNCOMPRESSED_PAGE)
+                                snpCtx.compress().decompressPage(pageBuff, pageStore.getPageSize());
+
+                            PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
+                            GridDhtPartitionState partState = fromOrdinal(io.getPartitionState(pageAddr));
+
+                            if (partState != OWNING) {
+                                throw new IgniteCheckedException("Snapshot partitions must be in the OWNING " +
+                                    "state only: " + partState);
+                            }
+
+                            long updateCntr = io.getUpdateCounter(pageAddr);
+                            long size = io.getSize(pageAddr);
+
+                            if (log.isDebugEnabled()) {
+                                log.debug("Partition [grpId=" + grpId
+                                    + ", id=" + partId
+                                    + ", counter=" + updateCntr
+                                    + ", size=" + size + "]");
+                            }
+
+                            // Snapshot partitions must always be in OWNING state.
+                            // There is no `primary` partitions for snapshot.
+                            PartitionKeyV2 key = new PartitionKeyV2(grpId, partId, grpName);
+
+                            PartitionHashRecordV2 hash = calculatePartitionHash(key,
+                                updateCntr,
+                                meta.consistentId(),
+                                GridDhtPartitionState.OWNING,
+                                false,
+                                size,
+                                skipHash() ? F.emptyIterator()
+                                    : snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore));
+
+                            assert hash != null : "OWNING must have hash: " + key;
+
+                            // We should skip size comparison if there are entries to expire exist.
+                            if (hasExpiringEntries(snpCtx, pageStore, pageBuff, io.getPendingTreeRoot(pageAddr)))
+                                hash.hasExpiringEntries(true);
+
+                            res.put(key, hash);
+                        }
+                        catch (IOException e) {
+                            throw new IgniteCheckedException(e);
+                        }
+                        finally {
+                            processed.addAndGet(part.length());
+                        }
+
+                        return null;
+                    }
+                );
+            }
+            catch (Throwable t) {
+                log.error("Error executing handler: ", t);
+
+                throw t;
+            }
+            finally {
+                closeAllComponents(snpCtx);
+            }
+
+            return res;
+        }
+
+        /** */
         private Set<Integer> filterGroups(SnapshotMetadata meta) {
             Set<Integer> grps = F.isEmpty(opCtx.groups())
                 ? new HashSet<>(meta.partitions().keySet())
@@ -662,9 +676,11 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         }
 
         /** {@inheritDoc} */
-        @Override
-        protected boolean onDone(@Nullable Map<PartitionKeyV2, PartitionHashRecordV2> res, @Nullable Throwable err, boolean cancel) {
+        @Override protected boolean onDone(@Nullable Map<PartitionKeyV2, PartitionHashRecordV2> res, @Nullable Throwable err,
+            boolean cancel) {
             clearMetrics();
+
+            assert processed.equals(total);
 
             return super.onDone(res, err, cancel);
         }
@@ -672,6 +688,17 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         /** */
         private void registerMetrics(UUID reqId, String snpName) {
             mreg = cctx.kernalContext().metric().registry(metricsRegName(reqId, snpName));
+
+            assert mreg.findMetric("startTime") == null;
+            assert mreg.findMetric("requestId") == null;
+
+            mreg.register("requestId", this::requestId, UUID.class, "Snapshot operation request.");
+            mreg.register("snapshotName", this::snapshotName, String.class, "Snapshot name.");
+            mreg.register("startTime", System::currentTimeMillis, "Snapshot check start time in milliseconds.");
+            mreg.register("calculateHashesFlag", opCtx::check, "Flag of entire snapshot check (partitions hash calculation).");
+
+            if (opCtx.check())
+                mreg.register("progress", () -> 100.0 * total.get() / processed.get(), "% of checked data amount.");
         }
 
         /** */
