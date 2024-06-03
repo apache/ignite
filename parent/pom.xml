@@ -144,6 +144,7 @@
         <surefire.version>3.1.2</surefire.version>
         <tomcat.version>9.0.63</tomcat.version>
         <twitter.hbc.version>2.2.0</twitter.hbc.version>
+        <xstream.version>1.4.20</xstream.version>
         <yammer.metrics.annotation.version>2.2.0</yammer.metrics.annotation.version>
         <yammer.metrics.core.version>2.2.0</yammer.metrics.core.version>
         <yardstick.version>0.8.3</yardstick.version>
