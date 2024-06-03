@@ -1518,25 +1518,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
-            GridDhtCacheAdapter<?, ?> cacheAdapter = cctx.isNear() ? cctx.near().dht() : cctx.dht();
-
-            Set<Integer> lostParts = cacheAdapter.topology().lostPartitions();
-
-            Integer part = qry.partition();
-
-            if (!lostParts.isEmpty()) {
-                if (part == null || lostParts.contains(part)) {
-                    throw new CacheException(new CacheInvalidStateException("Failed to execute query because cache partition " +
-                        "has been lost [cacheName=" + cctx.name() +
-                        ", part=" + (part == null ? lostParts.iterator().next() : part) + ']'));
-                }
-            }
-
             if (qry.nodes().isEmpty())
                 throw new IgniteException(new ClusterGroupEmptyException());
-
-            if (cctx.deploymentEnabled())
-                cctx.deploy().registerClasses(qry.scanFilter());
 
             if (log.isDebugEnabled())
                 log.debug("Running local index query: " + qry);
@@ -1559,16 +1542,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             int[] parts = null;
 
-            if (part != null)
-                parts = new int[] {part};
+            if (qry.partition() != null)
+                parts = new int[] {qry.partition()};
 
             IndexQueryResult<K, V> idxQryRes = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(),
                 qry.scanFilter(), filter(qry, parts, parts != null), qry.keepBinary(), qry.taskHash());
 
             return new IndexQueryIterator(idxQryRes.iter());
-        }
-        catch (Exception e) {
-            throw e;
         }
         finally {
             leaveBusy();
@@ -3505,7 +3485,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /** */
-    public static final class IndexQueryIterator<K, V> extends GridCloseableIteratorAdapter<Object> {
+    private static final class IndexQueryIterator<K, V> extends GridCloseableIteratorAdapter<Object> {
         /** */
         private static final long serialVersionUID = 0L;
 

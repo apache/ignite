@@ -566,7 +566,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                         }
                     }, true);
 
-                return new QueryCursorImpl<>(iter);
+                return new QueryCursorImpl(iter);
             }
 
             fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.INDEX, q.getValueType(), ctx,
