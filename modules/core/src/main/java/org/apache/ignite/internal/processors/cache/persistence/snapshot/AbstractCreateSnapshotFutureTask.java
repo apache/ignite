@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -57,6 +58,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
     protected volatile CompletableFuture<Void> closeFut;
 
     /**
+     * @param log Logger.
      * @param cctx Shared context.
      * @param srcNodeId Node id which cause snapshot task creation.
      * @param reqId Snapshot operation request ID.
@@ -65,6 +67,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
      * @param parts Partitions to be processed.
      */
     protected AbstractCreateSnapshotFutureTask(
+        IgniteLogger log,
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         UUID reqId,
@@ -72,7 +75,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts
     ) {
-        super(cctx, srcNodeId, reqId, snpName, snpSndr, parts);
+        super(log, cctx, srcNodeId, reqId, snpName, snpSndr, parts);
     }
 
     /** */

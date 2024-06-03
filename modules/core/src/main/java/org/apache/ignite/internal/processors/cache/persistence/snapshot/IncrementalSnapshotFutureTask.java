@@ -78,6 +78,7 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
         IgniteInternalFuture<WALPointer> highPtrFut
     ) {
         super(
+            cctx.logger(IncrementalSnapshotFutureTask.class),
             cctx,
             srcNodeId,
             reqNodeId,

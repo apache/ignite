@@ -172,6 +172,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         boolean encrypt
     ) {
         super(
+            cctx.logger(CreateDumpFutureTask.class),
             cctx,
             srcNodeId,
             reqId,
