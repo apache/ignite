@@ -391,9 +391,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Marshaller. */
     private final Marshaller marsh;
 
-    /** Marshaller class loader. */
-    private final ClassLoader marshClsLdr;
-
     /** Distributed process to restore cache group from the snapshot. */
     private final SnapshotRestoreProcess restoreCacheGrpProc;
 
@@ -491,7 +488,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             this::processLocalSnapshotEndStageResult, (reqId, req) -> new InitMessage<>(reqId, END_SNAPSHOT, req, true));
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
-        marshClsLdr = U.resolveClassLoader(ctx.config());
 
         restoreCacheGrpProc = new SnapshotRestoreProcess(ctx, locBuff);
 
@@ -2013,7 +2009,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             throw new IgniteCheckedException("Snapshot metafile cannot be read due to it doesn't exist: " + smf);
 
         try (InputStream in = new BufferedInputStream(Files.newInputStream(smf.toPath()))) {
-            return marsh.unmarshal(in, marshClsLdr);
+            return marsh.unmarshal(in, U.resolveClassLoader(cctx.gridConfig()));
         }
     }
 
