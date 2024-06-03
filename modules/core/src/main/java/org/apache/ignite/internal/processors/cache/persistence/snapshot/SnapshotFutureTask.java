@@ -190,7 +190,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         if (err == null)
             err = error();
 
-        boolean startStop = startedFut.onDone(err);
+        boolean startFutStop = startedFut.onDone(err);
 
         for (PageStoreSerialWriter writer : partDeltaWriters.values())
             U.closeQuiet(writer);
@@ -212,7 +212,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
             log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + tmpSnpWorkDir + ']');
         }
 
-        return startStop;
+        return startFutStop;
     }
 
     /**

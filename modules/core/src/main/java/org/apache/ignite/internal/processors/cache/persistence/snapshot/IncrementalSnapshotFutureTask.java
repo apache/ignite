@@ -99,14 +99,6 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotCacheAffectingFuture
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean doStop() {
-        if (error() != null)
-            cctx.cache().configManager().removeConfigurationChangeListener(this);
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override protected boolean doStart() {
         try {
             File incSnpDir = cctx.snapshotMgr().incrementalSnapshotLocalDir(snpName, snpPath, incIdx);
@@ -221,6 +213,14 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotCacheAffectingFuture
                 // Skip, file might exist in case the marshaller directory is shared between multiple Ignite nodes.
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean doStop() {
+        if (isFailed())
+            cctx.cache().configManager().removeConfigurationChangeListener(this);
+
+        return true;
     }
 
     /** {@inheritDoc} */

@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -95,10 +94,9 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotP
             U.error(log, "Snapshot task has accepted exception to stop", th);
 
         try {
-            if (err.compareAndSet(null, th))
-                closeAsync().get();
+            closeAsync().get();
         }
-        catch (InterruptedException | ExecutionException e) {
+        catch (Throwable e) {
             U.error(log, "SnapshotFutureTask cancellation failed", e);
 
             return false;

@@ -47,6 +47,7 @@ public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T>
 
     /**
      * Ctor.
+     *
      * @param log Logger.
      * @param srcNodeId Snapshot operation originator node id.
      * @param reqId Snapshot operation request id.
@@ -78,9 +79,13 @@ public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T>
 
     /**
      * Is called once when the future stops.
+     *
      * @see #onDone(Object, Throwable, boolean)
      * @see #onDone(Object, Throwable)
      * @see #acceptException(Throwable)
+     * @see #isCancelled()
+     * @see #isFailed()
+     * @see #error()
      */
     protected abstract boolean doStop();
 

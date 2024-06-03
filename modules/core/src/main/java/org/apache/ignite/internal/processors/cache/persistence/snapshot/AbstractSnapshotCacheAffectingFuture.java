@@ -45,7 +45,7 @@ public abstract class AbstractSnapshotCacheAffectingFuture<T> extends AbstractSn
     ) {
         super(log, srcNodeId, reqId, snpName);
 
-        this.cctx = sharedCacheCtx;
+        cctx = sharedCacheCtx;
     }
 
     /**
