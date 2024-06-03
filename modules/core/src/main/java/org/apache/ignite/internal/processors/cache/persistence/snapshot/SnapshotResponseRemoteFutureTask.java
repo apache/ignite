@@ -75,7 +75,12 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotPartsSende
 
     /** {@inheritDoc} */
     @Override protected boolean doStop() {
-        close(null);
+        Throwable th = error();
+
+        if (err.compareAndSet(null, th))
+            close(th);
+        else
+            close(err.get());
 
         return true;
     }
@@ -164,12 +169,6 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotPartsSende
 
             return false;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void acceptException(Throwable th) {
-        if (err.compareAndSet(null, th))
-            close(th);
     }
 
     /**

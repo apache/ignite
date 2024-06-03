@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -62,29 +63,51 @@ public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T>
      * Initiates snapshot task.
      *
      * @return {@code true} if task started by this call.
+     * @see #doStart()
      */
     public final boolean start() {
         return !isDone() && started.compareAndSet(false, true) && doStart();
     }
 
-    /** */
+    /**
+     * Is called once when the future starts.
+     *
+     * @see #start()
+     */
     protected abstract boolean doStart();
 
-    /** */
+    /**
+     * Is called once when the future stops.
+     * @see #onDone(Object, Throwable, boolean)
+     * @see #onDone(Object, Throwable)
+     * @see #acceptException(Throwable)
+     */
     protected abstract boolean doStop();
 
     /**
      * @param th An exception which occurred during snapshot processing.
+     * @see #doStop()
      */
-    public void acceptException(Throwable th) {
+    public final boolean acceptException(Throwable th) {
         assert th != null;
 
-        onDone(null, th, false);
+        return onDone(null, th, th instanceof IgniteFutureCancelledCheckedException);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected final boolean onDone(@Nullable T res, @Nullable Throwable err, boolean cancel) {
+        return super.onDone(res, err, cancel) && doStop();
+    }
+
+    /** {@inheritDoc} */
+    @Override public final boolean onDone(@Nullable T res, @Nullable Throwable err) {
+        return super.onDone(res, err) && doStop();
     }
 
     /** {@inheritDoc} */
     @Override public final boolean cancel() {
-        return onDone(null, null, true) && doStop();
+        return acceptException(new IgniteFutureCancelledCheckedException("Snapshot operation has been cancelled " +
+            "by external process [snpName=" + snpName + ']'));
     }
 
     /**

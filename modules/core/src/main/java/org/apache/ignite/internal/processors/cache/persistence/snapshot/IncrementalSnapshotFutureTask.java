@@ -100,6 +100,9 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotCacheAffectingFuture
 
     /** {@inheritDoc} */
     @Override protected boolean doStop() {
+        if (error() != null)
+            cctx.cache().configManager().removeConfigurationChangeListener(this);
+
         return true;
     }
 
@@ -218,13 +221,6 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotCacheAffectingFuture
                 // Skip, file might exist in case the marshaller directory is shared between multiple Ignite nodes.
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void acceptException(Throwable th) {
-        cctx.cache().configManager().removeConfigurationChangeListener(this);
-
-        onDone(th);
     }
 
     /** {@inheritDoc} */
