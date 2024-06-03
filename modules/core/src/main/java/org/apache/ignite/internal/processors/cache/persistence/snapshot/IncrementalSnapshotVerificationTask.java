@@ -38,9 +38,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -55,6 +57,8 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.marshaller.MarshallerUtils;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
@@ -66,6 +70,14 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerificationTask {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
+
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private IgniteEx ignite;
+
+    /** Injected logger. */
+    @LoggerResource
+    private IgniteLogger log;
 
     /** {@inheritDoc} */
     @Override public SnapshotPartitionsVerifyTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {

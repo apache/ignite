@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -38,13 +37,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 
 /** */
-public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotPartsSenderFuture<Void> {
-    /** */
-    private final GridCacheSharedContext<?, ?> cctx;
-
-    /** */
-    private final AtomicReference<Throwable> err = new AtomicReference<>();
-
+public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask<Void> {
     /** Snapshot directory path. */
     private final String snpPath;
 
@@ -66,15 +59,13 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotPartsSende
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts
     ) {
-        super(cctx, cctx.logger(SnapshotResponseRemoteFutureTask.class), srcNodeId, reqId, snpName, snpSndr, parts);
-
-        this.cctx = cctx;
+        super(cctx, srcNodeId, reqId, snpName, snpSndr, parts);
 
         this.snpPath = snpPath;
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean doStart() {
+    @Override public boolean start() {
         if (F.isEmpty(parts))
             return false;
 

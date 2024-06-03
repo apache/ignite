@@ -35,6 +35,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
@@ -45,7 +46,7 @@ import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBina
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
 
 /** */
-class IncrementalSnapshotFutureTask extends AbstractSnapshotCacheAffectingFuture<Void> implements BiConsumer<String, File> {
+class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> implements BiConsumer<String, File> {
     /** Index of incremental snapshot. */
     private final int incIdx;
 
@@ -78,10 +79,26 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotCacheAffectingFuture
     ) {
         super(
             cctx,
-            cctx.logger(IncrementalSnapshotFutureTask.class),
             srcNodeId,
             reqNodeId,
-            meta.snapshotName()
+            meta.snapshotName(),
+            new SnapshotSender(
+                cctx.logger(IncrementalSnapshotFutureTask.class),
+                cctx.kernalContext().pools().getSnapshotExecutorService()
+            ) {
+                @Override protected void init(int partsCnt) {
+                    // No-op.
+                }
+
+                @Override protected void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                    // No-op.
+                }
+
+                @Override protected void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
+                    // No-op.
+                }
+            },
+            null
         );
 
         this.incIdx = incIdx;
@@ -99,7 +116,7 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotCacheAffectingFuture
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean doStart() {
+    @Override public boolean start() {
         try {
             File incSnpDir = cctx.snapshotMgr().incrementalSnapshotLocalDir(snpName, snpPath, incIdx);
 

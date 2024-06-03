@@ -3179,7 +3179,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             logLsnr.accept(testOut.toString());
             logLsnr.check();
 
-            code = execute(new ArrayList<>(F.asList("--snapshot", "check", "testDsSnp", "--sync")));
+            code = execute(new ArrayList<>(F.asList("--snapshot", "check", "testDsSnp")));
 
             assertEquals(EXIT_CODE_OK, code);
 

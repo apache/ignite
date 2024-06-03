@@ -28,9 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -47,7 +45,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
 /** */
-public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotPartsSenderFuture<SnapshotFutureTaskResult> {
+public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotFutureTask<SnapshotFutureTaskResult> {
     /**
      * Cache group and corresponding partitions collected under the PME lock.
      * For full snapshot additional checkpoint write lock required.
@@ -58,12 +56,8 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotP
     /** Future which will be completed when task requested to be closed. Will be executed on system pool. */
     protected volatile CompletableFuture<Void> closeFut;
 
-    /** */
-    protected final AtomicReference<Throwable> err = new AtomicReference<>();
-
     /**
      * @param cctx Shared context.
-     * @param log Logger.
      * @param srcNodeId Node id which cause snapshot task creation.
      * @param reqId Snapshot operation request ID.
      * @param snpName Snapshot name.
@@ -72,14 +66,13 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotP
      */
     protected AbstractCreateSnapshotFutureTask(
         GridCacheSharedContext<?, ?> cctx,
-        IgniteLogger log,
         UUID srcNodeId,
         UUID reqId,
         String snpName,
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts
     ) {
-        super(cctx, log, srcNodeId, reqId, snpName, snpSndr, parts);
+        super(cctx, srcNodeId, reqId, snpName, snpSndr, parts);
     }
 
     /** */

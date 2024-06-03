@@ -2575,10 +2575,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param grps List of cache groups which will be destroyed.
      */
     public void onCacheGroupsStopped(List<Integer> grps) {
-        Collection<AbstractSnapshotCacheAffectingFuture<?>> tasks = F.viewReadOnly(locSnpTasks.values(),
-            t -> (AbstractSnapshotCacheAffectingFuture<?>)t, t -> t instanceof AbstractSnapshotCacheAffectingFuture);
+        Collection<AbstractSnapshotFutureTask<?>> tasks =
+            F.view(locSnpTasks.values(), t -> t instanceof SnapshotFutureTask || t instanceof CreateDumpFutureTask);
 
-        for (AbstractSnapshotCacheAffectingFuture<?> sctx : tasks) {
+        for (AbstractSnapshotFutureTask<?> sctx : tasks) {
             Set<Integer> retain = new HashSet<>(grps);
 
             retain.retainAll(sctx.affectedCacheGroups());
@@ -2763,7 +2763,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param task Snapshot operation task to be executed.
      * @return Snapshot operation task which should be registered.
      */
-    AbstractSnapshotFutureTask<?> registerTask(String rqId, AbstractSnapshotFutureTask<?> task) {
+    private AbstractSnapshotFutureTask<?> registerTask(String rqId, AbstractSnapshotFutureTask<?> task) {
         if (!busyLock.enterBusy()) {
             return new SnapshotFinishedFutureTask(new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" +
                 cctx.localNodeId() + ']'));
