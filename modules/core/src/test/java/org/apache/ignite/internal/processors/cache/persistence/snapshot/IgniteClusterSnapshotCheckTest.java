@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -318,9 +319,25 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         snp(ig).createSnapshot(SNAPSHOT_NAME).get();
 
-        AtomicBoolean delyaFileIo = injectSlowFileIo(G.allGrids(), getTestTimeout());
+        AtomicBoolean delyaFileIo = new AtomicBoolean();
 
-        U.TEST = true;
+        MetricRegistry mreg = ig.context().metric().registry(SnapshotPartitionsVerifyHandler.metricsRegName(SNAPSHOT_NAME));
+
+        assertNull(mreg.<LongMetric>findMetric("snapshotName"));
+        assertNull(mreg.<LongMetric>findMetric("progress"));
+
+        Collection<Double> detectedProgress = new TreeSet<>();
+
+        injectSlowFileIo(
+            G.allGrids(),
+            delyaFileIo,
+            () -> {
+                DoubleMetric m = mreg.findMetric("progress");
+
+                if (m != null)
+                    detectedProgress.add(m.value());
+            }
+        );
 
         delyaFileIo.set(true);
 
@@ -328,18 +345,26 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkFut = snp(ig).checkSnapshot(SNAPSHOT_NAME, null);
 
-        MetricRegistry mreg = ig.context().metric().registry(SnapshotPartitionsVerifyHandler.metricsRegName(SNAPSHOT_NAME));
-
         assertTrue(waitForCondition(() -> mreg.findMetric("startTime") != null, getTestTimeout()));
 
         assertTrue(mreg.<LongMetric>findMetric("startTime").value() >= timeBeforeStart);
         assertTrue(mreg.<LongMetric>findMetric("startTime").value() <= System.currentTimeMillis());
 
         assertEquals(SNAPSHOT_NAME, mreg.findMetric("snapshotName").getAsString());
-        assertNotNull(UUID.fromString(mreg.findMetric("requestId").getAsString()));
+
+        // Check that there is a valid UUID.
+        UUID.fromString(mreg.findMetric("requestId").getAsString());
+
         assertEquals(0.0, mreg.<DoubleMetric>findMetric("progress").value());
 
+        delyaFileIo.set(false);
+
         checkFut.get();
+
+        assertEquals(100.0, mreg.<DoubleMetric>findMetric("progress").value());
+
+        // Must be 0, 100 and at least 1 value in the middle.
+        assertTrue(detectedProgress.size() > 3);
 
         MetricRegistry mreg2 = ig.context().metric().registry(SnapshotPartitionsVerifyHandler.metricsRegName(SNAPSHOT_NAME));
 

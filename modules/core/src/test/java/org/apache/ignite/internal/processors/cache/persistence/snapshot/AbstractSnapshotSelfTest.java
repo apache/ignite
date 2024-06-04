@@ -106,6 +106,7 @@ import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -936,35 +937,58 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static AtomicBoolean injectSlowFileIo(Collection<Ignite> grids, long readFileDelayMills) {
-        AtomicBoolean slow = new AtomicBoolean();
-
+    public static void injectSlowFileIo(Collection<Ignite> grids, AtomicBoolean waitFlag, @Nullable Runnable beforeProceed) {
         for (Ignite ig : grids) {
             FilePageStoreManager pageStore = (FilePageStoreManager)((IgniteEx)ig).context().cache().context().pageStore();
 
             FileIOFactory old = pageStore.getPageStoreFileIoFactory();
 
             FileIOFactory testFactory = new FileIOFactory() {
+                /** */
+                private void doWait() {
+                    if (waitFlag.get()) {
+                        try {
+                            while (waitFlag.get()) {
+                                synchronized (waitFlag) {
+                                    waitFlag.wait(50);
+                                }
+                            }
+                        }
+                        catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+
+                    if (beforeProceed != null)
+                        beforeProceed.run();
+                }
+
                 @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+                    doWait();
+
                     FileIO fileIo = old.create(file, modes);
 
                     return new FileIODecorator(fileIo) {
-                        @Override
-                        public int readFully(ByteBuffer destBuf, long position) throws IOException {
+                        @Override public int readFully(ByteBuffer destBuf, long position) throws IOException {
+                            doWait();
+
                             return super.readFully(destBuf, position);
                         }
 
                         @Override public int read(ByteBuffer destBuf) throws IOException {
+                            doWait();
+
                             return super.read(destBuf);
                         }
 
                         @Override public int read(ByteBuffer destBuf, long position) throws IOException {
+                            doWait();
+
                             return super.read(destBuf, position);
                         }
 
                         @Override public int readFully(ByteBuffer destBuf) throws IOException {
-                            if (slow.get())
-                                doSleep(readFileDelayMills);
+                            doWait();
 
                             return super.readFully(destBuf);
                         }
@@ -974,8 +998,6 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
             pageStore.setPageStoreFileIOFactories(testFactory, testFactory);
         }
-
-        return slow;
     }
 
     /** */

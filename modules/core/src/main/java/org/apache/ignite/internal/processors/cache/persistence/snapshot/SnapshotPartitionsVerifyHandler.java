@@ -444,8 +444,6 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
                 CompletableFuture.runAsync(
                     () -> {
-                        System.err.println("TEST | start sync");
-
                         for (File dir : cacheDirectories(new File(opCtx.snapshotDirectory(), databaseRelativePath(meta.folderName())),
                             name -> true)) {
                             int grpId = CU.cacheId(cacheGroupName(dir));
@@ -493,8 +491,6 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                             return;
                         }
 
-                        System.err.println("TEST | start sync before checking");
-
                         try {
                             onDone(meta.dump() ? checkDumpFiles(opCtx, partFiles) : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles,
                                 isPunchHoleEnabled(opCtx, grpDirs.keySet())));
@@ -505,8 +501,6 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     },
                     snpMgr.snapshotExecutorService()
                 ).whenComplete((noRes, err) -> {
-                    System.err.println("TEST | whenComplete, err: " + err + ", error(): " + error());
-
                     if (err != null)
                         onDone(err);
 
@@ -514,8 +508,6 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 });
             }
             catch (Throwable th) {
-                System.err.println("TEST | clearMetrics() 1");
-
                 clearMetrics();
             }
 
@@ -662,8 +654,6 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 closeAllComponents(snpCtx);
             }
 
-            System.err.println("TEST | checkSnapshotFiles() finished");
-
             return res;
         }
 
@@ -686,26 +676,18 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean onDone(@Nullable Map<PartitionKeyV2, PartitionHashRecordV2> res, @Nullable Throwable err, boolean cancel) {
-            if (super.onDone(res, err, cancel)) {
-                System.err.println("TEST | clearMetrics() 2");
+        @Override protected boolean onDone(@Nullable Map<PartitionKeyV2, PartitionHashRecordV2> res, @Nullable Throwable err,
+            boolean cancel) {
 
-                clearMetrics();
+            clearMetrics();
 
-                assert processed.get() == total.get() || isCancelled() || isFailed();
+            assert processed.get() == total.get() || isCancelled() || isFailed();
 
-                System.err.println("TEST | onDone");
-
-                return false;
-            }
-
-            return false;
+            return super.onDone(res, err, cancel);
         }
 
         /** */
         private void registerMetrics(String snpName) {
-            System.err.println("TEST | registerMetrics() 1");
-
             mreg = cctx.kernalContext().metric().registry(metricsRegName(snpName));
 
             assert mreg.findMetric("startTime") == null;
