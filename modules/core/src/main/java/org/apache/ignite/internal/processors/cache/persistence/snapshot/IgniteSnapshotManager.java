@@ -398,7 +398,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private final BasicRateLimiter transferRateLimiter = new BasicRateLimiter(DFLT_SNAPSHOT_TRANSFER_RATE_BYTES);
 
     /** Resolved persistent data storage settings. */
-    private volatile PdsFolderSettings pdsSettings;
+    private volatile PdsFolderSettings<?> pdsSettings;
 
     /** Fully initialized metastorage. */
     private volatile ReadWriteMetastorage metaStorage;
@@ -1236,8 +1236,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     encKey == null ? null : encSpi.encryptKey(encKey)
                 );
 
-                SnapshotHandlerContext ctx = new SnapshotHandlerContext(req.requestId(), meta, req.groups(), cctx.localNode(),
-                    snpDir, req.streamerWarning(), true);
+                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir,
+                    req.streamerWarning(), true);
 
                 req.meta(meta);
 
@@ -1809,8 +1809,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> createDump(String name, @Nullable Collection<String> cacheGroupNames) {
-        return createSnapshot(name, null, cacheGroupNames, false, false, true, false, false);
+    @Override public IgniteFuture<Void> createDump(String name, @Nullable Collection<String> cacheGrpNames) {
+        return createSnapshot(name, null, cacheGrpNames, false, false, true, false, false);
     }
 
     /**
@@ -2172,7 +2172,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      *
      * @param name Snapshot unique name which satisfies the following name pattern [a-zA-Z0-9_].
      * @param snpPath Snapshot directory path.
-     * @param cacheGroupNames Cache groups to include in snapshot or {@code null} to include all.
+     * @param cacheGrpNames Cache groups to include in snapshot or {@code null} to include all.
      * @param incremental Incremental snapshot flag.
      * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
      * @param dump If {@code true} cache dump must be created.
@@ -2183,7 +2183,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public IgniteFutureImpl<Void> createSnapshot(
         String name,
         @Nullable String snpPath,
-        @Nullable Collection<String> cacheGroupNames,
+        @Nullable Collection<String> cacheGrpNames,
         boolean incremental,
         boolean onlyPrimary,
         boolean dump,
@@ -2194,7 +2194,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
         A.ensure(!(incremental && onlyPrimary), "Only primary not supported for incremental snapshots");
         A.ensure(!(dump && incremental), "Incremental dump not supported");
-        A.ensure(!(cacheGroupNames != null && !dump), "Cache group names filter supported only for dump");
+        A.ensure(!(cacheGrpNames != null && !dump), "Cache group names filter supported only for dump");
         A.ensure(!compress || dump, "Compression is supported only for dumps");
 
         try {
@@ -2220,7 +2220,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return new IgniteSnapshotFutureImpl(cctx.kernalContext().closure()
                     .callAsync(
                         BALANCE,
-                        new CreateSnapshotCallable(name, cacheGroupNames, incremental, onlyPrimary, dump, compress, encrypt),
+                        new CreateSnapshotCallable(name, cacheGrpNames, incremental, onlyPrimary, dump, compress, encrypt),
                         options(Collections.singletonList(crd)).withFailoverDisabled()
                     ));
             }
@@ -2286,7 +2286,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     lastSeenSnpFut = snpFut0;
             }
 
-            Set<String> cacheGrpNames0 = cacheGroupNames == null ? null : new HashSet<>(cacheGroupNames);
+            Set<String> cacheGrpNames0 = cacheGrpNames == null ? null : new HashSet<>(cacheGrpNames);
 
             List<String> grps = (dump ? cctx.cache().cacheGroupDescriptors().values() : cctx.cache().persistentGroups()).stream()
                 .map(CacheGroupDescriptor::cacheOrGroupName)
@@ -2706,7 +2706,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpName Unique snapshot name.
      * @param snpPath Snapshot path.
      * @param srcNodeId Node id which cause snapshot operation.
-     * @param requestId Snapshot operation request ID.
+     * @param reqId Snapshot operation request ID.
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
      * @param withMetaStorage {@code true} if all metastorage data must be also included into snapshot.
      * @param dump {@code true} if cache group dump must be created.
@@ -2719,7 +2719,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         String snpName,
         @Nullable String snpPath,
         UUID srcNodeId,
-        UUID requestId,
+        UUID reqId,
         Map<Integer, Set<Integer>> parts,
         boolean withMetaStorage,
         boolean dump,
@@ -2730,7 +2730,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         AbstractSnapshotFuture<?> task = registerTask(snpName, dump
             ? new CreateDumpFutureTask(cctx,
                 srcNodeId,
-                requestId,
+                reqId,
                 snpName,
                 snapshotLocalDir(snpName, snpPath),
                 ioFactory,
@@ -2740,7 +2740,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 compress,
                 encrypt
             )
-            : new SnapshotFutureTask(cctx, srcNodeId, requestId, snpName, tmpWorkDir, ioFactory, snpSndr, parts, withMetaStorage, locBuff));
+            : new SnapshotFutureTask(cctx, srcNodeId, reqId, snpName, tmpWorkDir, ioFactory, snpSndr, parts, withMetaStorage, locBuff));
 
         if (!withMetaStorage) {
             for (Integer grpId : parts.keySet()) {
@@ -4565,14 +4565,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private final boolean needExchange;
 
         /**
-         * @param processId Unique process id.
+         * @param procId Unique process id.
          * @param req Snapshot initial request.
          */
-        public SnapshotStartDiscoveryMessage(
-            UUID processId,
-            SnapshotOperationRequest req
-        ) {
-            super(processId, START_SNAPSHOT, req, req.incremental());
+        public SnapshotStartDiscoveryMessage(UUID procId, SnapshotOperationRequest req) {
+            super(procId, START_SNAPSHOT, req, req.incremental());
 
             needExchange = !req.incremental();
         }
@@ -4674,7 +4671,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private final String snpName;
 
         /** Cache group names to include in snapshot. */
-        private final @Nullable Collection<String> cacheGroupNames;
+        private final @Nullable Collection<String> cacheGrpNames;
 
         /** Incremental flag. */
         private final boolean incremental;
@@ -4697,7 +4694,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /**
          * @param snpName Snapshot name.
-         * @param cacheGroupNames Cache group names to include in snapshot.
+         * @param cacheGrpNames Cache group names to include in snapshot.
          * @param incremental If {@code true} then incremental snapshot must be created.
          * @param onlyPrimary If {@code true} then only copy of primary partitions will be created.
          * @param dump If {@code true} then cache dump must be created.
@@ -4706,7 +4703,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          */
         public CreateSnapshotCallable(
             String snpName,
-            @Nullable Collection<String> cacheGroupNames,
+            @Nullable Collection<String> cacheGrpNames,
             boolean incremental,
             boolean onlyPrimary,
             boolean dump,
@@ -4714,7 +4711,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             boolean encrypt
         ) {
             this.snpName = snpName;
-            this.cacheGroupNames = cacheGroupNames;
+            this.cacheGrpNames = cacheGrpNames;
             this.incremental = incremental;
             this.onlyPrimary = onlyPrimary;
             this.dump = dump;
@@ -4730,7 +4727,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 ignite.context().cache().context().snapshotMgr().createSnapshot(
                     snpName,
                     null,
-                    cacheGroupNames,
+                    cacheGrpNames,
                     false,
                     onlyPrimary,
                     dump,

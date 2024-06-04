@@ -629,7 +629,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 && state.previousBaselineTopology() == null;
                     }
 
-                    exchFut.listen(f -> onClusterStateChangeFinish(f, exchActions, baselineChanging));
+                    exchFut.listen(f -> onClusterStateChangeFinish(exchActions, baselineChanging));
                 }
             }
             else if (customMsg instanceof DynamicCacheChangeBatch) {
@@ -735,8 +735,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /** */
-    private void onClusterStateChangeFinish(IgniteInternalFuture<AffinityTopologyVersion> fut,
-        ExchangeActions exchActions, boolean baselineChanging) {
+    private void onClusterStateChangeFinish(ExchangeActions exchActions, boolean baselineChanging) {
         A.notNull(exchActions, "exchActions");
 
         GridEventStorageManager evtMngr = cctx.kernalContext().event();

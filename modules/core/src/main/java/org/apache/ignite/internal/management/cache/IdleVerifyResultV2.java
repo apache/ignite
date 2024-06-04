@@ -97,8 +97,8 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
      */
     public IdleVerifyResultV2(
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
-        List<List<TransactionsHashRecord>> txHashConflicts,
-        Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs
+        @Nullable List<List<TransactionsHashRecord>> txHashConflicts,
+        @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs
     ) {
         this(clusterHashes, Collections.emptyMap());
 

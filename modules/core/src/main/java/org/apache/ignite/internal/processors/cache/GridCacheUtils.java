@@ -1642,8 +1642,7 @@ public class GridCacheUtils {
      * @throws IgniteCheckedException If configuration is not valid.
      */
     public static void initializeConfigDefaults(IgniteLogger log, CacheConfiguration cfg,
-        CacheObjectContext cacheObjCtx)
-        throws IgniteCheckedException {
+        CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         if (cfg.getCacheMode() == null)
             cfg.setCacheMode(DFLT_CACHE_MODE);
 

@@ -46,7 +46,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     private static final long serialVersionUID = 0L;
 
     /** Snapshot operation request ID. */
-    private UUID requestId;
+    private UUID reqId;
 
     /** Snapshot name to request. */
     private String snpName;
@@ -83,7 +83,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
 
         assert parts != null && !parts.isEmpty();
 
-        this.requestId = requestId;
+        this.reqId = requestId;
         this.snpName = snpName;
         this.snpPath = snpPath;
         this.parts = new HashMap<>();
@@ -122,7 +122,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
      * @return Snapshot operation request ID.
      */
     public UUID requestId() {
-        return requestId;
+        return reqId;
     }
 
     /** {@inheritDoc} */
@@ -147,7 +147,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeUuid("requestId", requestId))
+                if (!writer.writeUuid("requestId", reqId))
                     return false;
 
                 writer.incrementState();
@@ -189,7 +189,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
                 reader.incrementState();
 
             case 2:
-                requestId = reader.readUuid("requestId");
+                reqId = reader.readUuid("requestId");
 
                 if (!reader.isLastRead())
                     return false;
