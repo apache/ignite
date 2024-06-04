@@ -54,7 +54,7 @@ public abstract class AbstractSnapshotPartsSenderFuture<T> extends AbstractSnaps
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts
     ) {
-        super(sharedCacheCtx, log, srcNodeId, reqId, snpName);
+        super(sharedCacheCtx, srcNodeId, reqId, snpName);
 
         this.snpSndr = snpSndr;
         this.parts = parts;

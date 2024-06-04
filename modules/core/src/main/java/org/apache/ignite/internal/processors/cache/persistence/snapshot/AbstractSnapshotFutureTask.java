@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -28,10 +27,6 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
-    /** Ignite logger. */
-    @GridToStringExclude
-    @Nullable protected final IgniteLogger log;
-
     /** Node id which cause snapshot operation. */
     protected final UUID srcNodeId;
 
@@ -48,13 +43,11 @@ public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T>
     /**
      * Ctor.
      *
-     * @param log Logger.
      * @param srcNodeId Snapshot operation originator node id.
      * @param reqId Snapshot operation request id.
      * @param snpName Snapshot name.
      */
-    protected AbstractSnapshotFutureTask(@Nullable IgniteLogger log, UUID srcNodeId, UUID reqId, String snpName) {
-        this.log = log;
+    protected AbstractSnapshotFutureTask(UUID srcNodeId, UUID reqId, String snpName) {
         this.srcNodeId = srcNodeId;
         this.reqId = reqId;
         this.snpName = snpName;

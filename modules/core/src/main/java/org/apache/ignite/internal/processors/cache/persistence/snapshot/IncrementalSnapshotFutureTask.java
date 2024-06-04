@@ -78,7 +78,6 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotCacheAffectingFuture
     ) {
         super(
             cctx,
-            cctx.logger(IncrementalSnapshotFutureTask.class),
             srcNodeId,
             reqNodeId,
             meta.snapshotName()

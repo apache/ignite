@@ -184,7 +184,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     }
 
     /** {@inheritDoc} */
-    @Override protected final boolean doStop() {
+    @Override protected boolean doStop() {
         Throwable err = this.err.get();
 
         if (err == null)
