@@ -237,6 +237,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                 s.WriteLong(ptr);
                 s.WriteLong(_prj.TopologyVersion);
                 s.WriteString(GetComputeExecutableName(task));
+                s.WriteBoolean(holder.TaskSessionFullSupport);
             });
 
             var future = holder.Future;

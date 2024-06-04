@@ -43,8 +43,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Perform map step.
         /// </summary>
         /// <param name="stream">Stream with IN data (topology info) and for OUT data (map result).</param>
+        /// <param name="taskSes">Optional compute task session</param>
         /// <returns>Map with produced jobs.</returns>
-        void Map(PlatformMemoryStream stream);
+        void Map(PlatformMemoryStream stream, IComputeTaskSession taskSes);
 
         /// <summary>
         /// Process local job result.
@@ -104,6 +105,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** Task future. */
         private readonly Future<TR> _fut = new Future<TR>();
 
+        /** Resource descriptor. */
+        private readonly ResourceTypeDescriptor _resDesc;
+
         /** Jobs whose results are cached. */
         private ISet<object> _resJobs;
 
@@ -125,29 +129,35 @@ namespace Apache.Ignite.Core.Impl.Compute
             _compute = compute;
             _arg = arg;
             _task = task;
-
-            ResourceTypeDescriptor resDesc = ResourceProcessor.Descriptor(task.GetType());
+            _resDesc = ResourceProcessor.Descriptor(task.GetType());
 
             IComputeResourceInjector injector = task as IComputeResourceInjector;
 
             if (injector != null)
                 injector.Inject(grid);
             else
-                resDesc.InjectIgnite(task, grid);
+                _resDesc.InjectIgnite(task, grid);
 
-            _resCache = !resDesc.TaskNoResultCache;
+            _resCache = !_resDesc.TaskNoResultCache;
+            TaskSessionFullSupport = _resDesc.TaskSessionFullSupport;
         }
+        
+        /// <inheritdoc cref="ResourceTypeDescriptor.TaskSessionFullSupport"/>
+        public bool TaskSessionFullSupport { get; }
 
         /** <inheritDoc /> */
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
             Justification = "User code can throw any exception")]
-        public void Map(PlatformMemoryStream stream)
+        public void Map(PlatformMemoryStream stream, IComputeTaskSession taskSes)
         {
             IList<IClusterNode> subgrid;
 
             ClusterGroupImpl prj = (ClusterGroupImpl)_compute.ClusterGroup;
 
             var ignite = (Ignite) prj.Ignite;
+
+            // 0. Inject session
+            _resDesc.InjectTaskSession(_task, taskSes);
 
             // 1. Unmarshal topology info if topology changed.
             var reader = prj.Marshaller.StartUnmarshal(stream);
