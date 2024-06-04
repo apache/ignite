@@ -43,7 +43,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 import javax.cache.Cache;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -53,7 +52,6 @@ import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.QueryMetrics;
-import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
@@ -1519,7 +1517,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
             if (qry.nodes().isEmpty())
-                throw new IgniteException(new ClusterGroupEmptyException());
+                return new GridEmptyCloseableIterator();
 
             if (log.isDebugEnabled())
                 log.debug("Running local index query: " + qry);

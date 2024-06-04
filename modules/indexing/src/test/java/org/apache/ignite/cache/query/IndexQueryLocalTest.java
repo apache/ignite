@@ -21,11 +21,9 @@ import java.util.Objects;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -111,8 +109,7 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
             .setCriteria(lt("id", CNT / 2));
 
-        GridTestUtils.assertThrows(null, () -> cache.query(qry.setLocal(true)).getAll(),
-            IgniteException.class, "Cluster group is empty");
+        assert cache.query(qry.setLocal(true)).getAll().isEmpty();
     }
 
     /** */
