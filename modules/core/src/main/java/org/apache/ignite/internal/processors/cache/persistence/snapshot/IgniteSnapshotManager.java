@@ -2815,7 +2815,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param fut Snapshot operation task to be executed.
      * @return Actual snapshot operation task.
      */
-    <T> AbstractSnapshotFuture<T> registerExternalSnapshotFuture(String futId, AbstractSnapshotFuture<T> fut) {
+    <T> AbstractSnapshotFuture<T> startExternalSnapshotFuture(String futId, AbstractSnapshotFuture<T> fut) {
         AbstractSnapshotFuture<T> res = registerTask(futId, fut, false);
 
         res.start();

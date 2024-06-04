@@ -311,9 +311,30 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             "The check procedure has failed, conflict partitions has been found: [counterConflicts=1, hashConflicts=0]");
     }
 
+    /** Ensures that check metrics doesn't affect create snapshot. */
+    @Test
+    public void testCreateSnapshotCheckMetrics() throws Exception {
+        IgniteEx ig = startGridsWithCache(3, dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 16)),
+            100);
+
+        MetricRegistry mreg = ig.context().metric().registry(SnapshotPartitionsVerifyHandler.metricsRegName(SNAPSHOT_NAME));
+
+        assertNull(mreg.<LongMetric>findMetric("snapshotName"));
+        assertNull(mreg.<LongMetric>findMetric("progress"));
+        assertNull(mreg.<LongMetric>findMetric("requestId"));
+
+        snp(ig).createSnapshot(SNAPSHOT_NAME).get();
+
+        assertNull(mreg.<LongMetric>findMetric("snapshotName"));
+        assertNull(mreg.<LongMetric>findMetric("progress"));
+        assertNull(mreg.<LongMetric>findMetric("requestId"));
+
+        assertEquals(mreg, ig.context().metric().registry(SnapshotPartitionsVerifyHandler.metricsRegName(SNAPSHOT_NAME)));
+    }
+
     /** */
     @Test
-    public void testCheckSnapshotMetrics() throws Exception {
+    public void testCheckSnapshotCheckMetrics() throws Exception {
         IgniteEx ig = startGridsWithCache(3, dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 16)),
             100);
 

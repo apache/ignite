@@ -103,9 +103,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** Progress metric registry name prefix. */
     private static final String METRIC_REG_NAME_PREF = metricName(SNAPSHOT_METRICS, "check");
 
-    /** Unique snapshot check future name prefix. */
-    private static final String SNP_FUTURE_NAME_PREF = SnapshotPartitionsVerifyHandler.class.getSimpleName() + ".CHECK."
-        + UUID.randomUUID() + '.';
+    /** Unique snapshot future name sign. Makes the future name difficult to repeat. */
+    protected static final String SNP_FUTURE_NAME_SIGN = '.' + UUID.randomUUID().toString() + '.';
 
     /** Shared context. */
     protected final GridCacheSharedContext<?, ?> cctx;
@@ -132,15 +131,17 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         IgniteSnapshotManager snpMgr = cctx.cache().context().snapshotMgr();
 
-        return snpMgr.registerExternalSnapshotFuture(
-            futureName(opCtx.metadata().snapshotName()),
-            new CalculateSnapshotHashesFuture(opCtx)
-        ).get();
+        return snpMgr.startExternalSnapshotFuture(futureName(opCtx), createFuture(opCtx)).get();
     }
 
     /** */
-    private static String futureName(String snpName) {
-        return SNP_FUTURE_NAME_PREF + snpName;
+    protected String futureName(SnapshotHandlerContext opCtx) {
+        return getClass().getSimpleName() + SNP_FUTURE_NAME_SIGN + opCtx.metadata().snapshotName();
+    }
+
+    /** */
+    protected CalculateSnapshotHashesFuture createFuture(SnapshotHandlerContext opCtx) {
+        return new CalculateSnapshotHashesFuture(opCtx);
     }
 
     /** */
@@ -362,10 +363,10 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         private final AtomicLong processed = new AtomicLong();
 
         /** */
-        private final SnapshotHandlerContext opCtx;
+        protected final SnapshotHandlerContext opCtx;
 
         /** */
-        private volatile MetricRegistry mreg;
+        protected volatile MetricRegistry mreg;
 
         /** */
         protected CalculateSnapshotHashesFuture(SnapshotHandlerContext opCtx) {
@@ -687,7 +688,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         }
 
         /** */
-        private void registerMetrics(String snpName) {
+        protected void registerMetrics(String snpName) {
             mreg = cctx.kernalContext().metric().registry(metricsRegName(snpName));
 
             assert mreg.findMetric("startTime") == null;
@@ -703,7 +704,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         }
 
         /** */
-        private void clearMetrics() {
+        protected void clearMetrics() {
             MetricRegistry mreg = this.mreg;
 
             if (mreg != null)
