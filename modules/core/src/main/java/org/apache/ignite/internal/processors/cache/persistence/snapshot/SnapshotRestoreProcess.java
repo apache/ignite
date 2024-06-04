@@ -1050,9 +1050,8 @@ public class SnapshotRestoreProcess {
                             .orElse(Collections.emptySet())
                             .contains(partFut.partId);
 
-                        if (doCopy) {
+                        if (doCopy)
                             copyLocalAsync(opCtx0, snpCacheDir, tmpCacheDir, partFut);
-                        }
 
                         return doCopy;
                     });
@@ -1333,6 +1332,8 @@ public class SnapshotRestoreProcess {
         if (!U.isLocalNodeCoordinator(ctx.discovery()))
             return new GridFinishedFuture<>();
 
+        assert opCtx.reqId == reqId;
+
         SnapshotRestoreContext opCtx0 = opCtx;
 
         Collection<String> stopCaches = opCtx0.cfgs.values()
@@ -1341,7 +1342,7 @@ public class SnapshotRestoreProcess {
             .collect(Collectors.toSet());
 
         if (log.isInfoEnabled())
-            log.info("Stopping caches [reqId=" + opCtx0.reqId + ", caches=" + stopCaches + ']');
+            log.info("Stopping caches [reqId=" + reqId + ", caches=" + stopCaches + ']');
 
         // Skip deleting cache files as they will be removed during rollback.
         return ctx.cache().dynamicDestroyCaches(stopCaches, false, false)

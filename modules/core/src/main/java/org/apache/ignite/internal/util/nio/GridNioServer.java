@@ -170,7 +170,7 @@ public class GridNioServer<T> {
     public static final String SESSIONS_CNT_METRIC_NAME = "ActiveSessionsCount";
 
     /** Defines how many times selector should do {@code selectNow()} before doing {@code select(long)}. */
-    private long selectorSpins;
+    private final long selectorSpins;
 
     /** Accept worker. */
     @GridToStringExclude
@@ -1478,7 +1478,6 @@ public class GridNioServer<T> {
                         }
                     }
 
-                    Message msg;
                     boolean finished = false;
 
                     List<SessionWriteRequest> pendingRequests = new ArrayList<>(2);
