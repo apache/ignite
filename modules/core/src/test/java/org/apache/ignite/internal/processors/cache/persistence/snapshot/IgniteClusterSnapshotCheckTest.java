@@ -49,6 +49,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.management.cache.CacheFilterEnum;
@@ -77,9 +78,13 @@ import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.DoubleMetric;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.Before;
@@ -303,6 +308,44 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertTrue(F.isEmpty(res.exceptions()));
         assertContains(log, b.toString(),
             "The check procedure has failed, conflict partitions has been found: [counterConflicts=1, hashConflicts=0]");
+    }
+
+    /** */
+    @Test
+    public void testCheckSnapshotMetrics() throws Exception {
+        IgniteEx ig = startGridsWithCache(3, dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 16)),
+            100);
+
+        snp(ig).createSnapshot(SNAPSHOT_NAME).get();
+
+        AtomicBoolean delyaFileIo = injectSlowFileIo(G.allGrids(), getTestTimeout());
+
+        U.TEST = true;
+
+        delyaFileIo.set(true);
+
+        long timeBeforeStart = System.currentTimeMillis();
+
+        IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkFut = snp(ig).checkSnapshot(SNAPSHOT_NAME, null);
+
+        MetricRegistry mreg = ig.context().metric().registry(SnapshotPartitionsVerifyHandler.metricsRegName(SNAPSHOT_NAME));
+
+        assertTrue(waitForCondition(() -> mreg.findMetric("startTime") != null, getTestTimeout()));
+
+        assertTrue(mreg.<LongMetric>findMetric("startTime").value() >= timeBeforeStart);
+        assertTrue(mreg.<LongMetric>findMetric("startTime").value() <= System.currentTimeMillis());
+
+        assertEquals(SNAPSHOT_NAME, mreg.findMetric("snapshotName").getAsString());
+        assertNotNull(UUID.fromString(mreg.findMetric("requestId").getAsString()));
+        assertEquals(0.0, mreg.<DoubleMetric>findMetric("progress").value());
+
+        checkFut.get();
+
+        MetricRegistry mreg2 = ig.context().metric().registry(SnapshotPartitionsVerifyHandler.metricsRegName(SNAPSHOT_NAME));
+
+        assertNull(mreg2.findMetric("startTime"));
+        assertNull(mreg2.findMetric("snapshotName"));
+        assertNull(mreg2.findMetric("requestId"));
     }
 
     /** @throws Exception If fails. */

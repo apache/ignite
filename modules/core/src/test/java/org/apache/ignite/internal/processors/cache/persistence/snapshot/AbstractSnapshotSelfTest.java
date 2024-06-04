@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
@@ -37,6 +39,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -77,6 +80,9 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -927,6 +933,49 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      */
     protected static BlockingCustomMessageDiscoverySpi discoSpi(IgniteEx ignite) {
         return (BlockingCustomMessageDiscoverySpi)ignite.context().discovery().getInjectedDiscoverySpi();
+    }
+
+    /** */
+    public static AtomicBoolean injectSlowFileIo(Collection<Ignite> grids, long readFileDelayMills) {
+        AtomicBoolean slow = new AtomicBoolean();
+
+        for (Ignite ig : grids) {
+            FilePageStoreManager pageStore = (FilePageStoreManager)((IgniteEx)ig).context().cache().context().pageStore();
+
+            FileIOFactory old = pageStore.getPageStoreFileIoFactory();
+
+            FileIOFactory testFactory = new FileIOFactory() {
+                @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+                    FileIO fileIo = old.create(file, modes);
+
+                    return new FileIODecorator(fileIo) {
+                        @Override
+                        public int readFully(ByteBuffer destBuf, long position) throws IOException {
+                            return super.readFully(destBuf, position);
+                        }
+
+                        @Override public int read(ByteBuffer destBuf) throws IOException {
+                            return super.read(destBuf);
+                        }
+
+                        @Override public int read(ByteBuffer destBuf, long position) throws IOException {
+                            return super.read(destBuf, position);
+                        }
+
+                        @Override public int readFully(ByteBuffer destBuf) throws IOException {
+                            if (slow.get())
+                                doSleep(readFileDelayMills);
+
+                            return super.readFully(destBuf);
+                        }
+                    };
+                }
+            };
+
+            pageStore.setPageStoreFileIOFactories(testFactory, testFactory);
+        }
+
+        return slow;
     }
 
     /** */

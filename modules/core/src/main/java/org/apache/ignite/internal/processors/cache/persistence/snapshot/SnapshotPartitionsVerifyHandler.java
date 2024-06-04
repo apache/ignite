@@ -101,10 +101,10 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  */
 public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<PartitionKeyV2, PartitionHashRecordV2>> {
     /** Progress metric registry name prefix. */
-    public static final String METRIC_REG_NAME_PREF = metricName(SNAPSHOT_METRICS, "check");
+    private static final String METRIC_REG_NAME_PREF = metricName(SNAPSHOT_METRICS, "check");
 
     /** Unique snapshot check future name prefix. */
-    public static final String SNP_FUTURE_NAME_PREF = SnapshotPartitionsVerifyHandler.class.getSimpleName() + ".CHECK."
+    private static final String SNP_FUTURE_NAME_PREF = SnapshotPartitionsVerifyHandler.class.getSimpleName() + ".CHECK."
         + UUID.randomUUID() + '.';
 
     /** Shared context. */
@@ -144,7 +144,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** */
-    public static String metricsRegName(UUID snpOpReqId, String snpName) {
+    public static String metricsRegName(String snpName) {
         return metricName(METRIC_REG_NAME_PREF, snpName);
     }
 
@@ -376,7 +376,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         /** */
         protected void addTotal(long add) {
-            assert add > 0;
+            assert add >= 0;
 
             long val = total.addAndGet(add);
 
@@ -385,7 +385,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         /** */
         protected void addProcessed(long add) {
-            assert add > 0;
+            assert add >= 0;
 
             long val = processed.addAndGet(add);
 
@@ -435,7 +435,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             SnapshotMetadata meta = opCtx.metadata();
 
             try {
-                registerMetrics(reqId, meta.snapshotName());
+                registerMetrics(meta.snapshotName());
 
                 Set<Integer> grps = filterGroups(meta);
 
@@ -444,6 +444,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
                 CompletableFuture.runAsync(
                     () -> {
+                        System.err.println("TEST | start sync");
+
                         for (File dir : cacheDirectories(new File(opCtx.snapshotDirectory(), databaseRelativePath(meta.folderName())),
                             name -> true)) {
                             int grpId = CU.cacheId(cacheGroupName(dir));
@@ -491,6 +493,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                             return;
                         }
 
+                        System.err.println("TEST | start sync before checking");
+
                         try {
                             onDone(meta.dump() ? checkDumpFiles(opCtx, partFiles) : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles,
                                 isPunchHoleEnabled(opCtx, grpDirs.keySet())));
@@ -501,6 +505,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     },
                     snpMgr.snapshotExecutorService()
                 ).whenComplete((noRes, err) -> {
+                    System.err.println("TEST | whenComplete, err: " + err + ", error(): " + error());
+
                     if (err != null)
                         onDone(err);
 
@@ -508,6 +514,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 });
             }
             catch (Throwable th) {
+                System.err.println("TEST | clearMetrics() 1");
+
                 clearMetrics();
             }
 
@@ -654,6 +662,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 closeAllComponents(snpCtx);
             }
 
+            System.err.println("TEST | checkSnapshotFiles() finished");
+
             return res;
         }
 
@@ -676,18 +686,27 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean onDone(@Nullable Map<PartitionKeyV2, PartitionHashRecordV2> res, @Nullable Throwable err,
-            boolean cancel) {
-            clearMetrics();
+        @Override protected boolean onDone(@Nullable Map<PartitionKeyV2, PartitionHashRecordV2> res, @Nullable Throwable err, boolean cancel) {
+            if (super.onDone(res, err, cancel)) {
+                System.err.println("TEST | clearMetrics() 2");
 
-            assert processed.equals(total);
+                clearMetrics();
 
-            return super.onDone(res, err, cancel);
+                assert processed.get() == total.get() || isCancelled() || isFailed();
+
+                System.err.println("TEST | onDone");
+
+                return false;
+            }
+
+            return false;
         }
 
         /** */
-        private void registerMetrics(UUID reqId, String snpName) {
-            mreg = cctx.kernalContext().metric().registry(metricsRegName(reqId, snpName));
+        private void registerMetrics(String snpName) {
+            System.err.println("TEST | registerMetrics() 1");
+
+            mreg = cctx.kernalContext().metric().registry(metricsRegName(snpName));
 
             assert mreg.findMetric("startTime") == null;
             assert mreg.findMetric("requestId") == null;
@@ -698,7 +717,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             mreg.register("calculateHashesFlag", opCtx::check, "Flag of entire snapshot check (partitions hash calculation).");
 
             if (opCtx.check())
-                mreg.register("progress", () -> 100.0 * total.get() / processed.get(), "% of checked data amount.");
+                mreg.register("progress", () -> total.get() > 0 ? 100.0 * processed.get() / total.get() : 0.0, "% of checked data amount.");
         }
 
         /** */
