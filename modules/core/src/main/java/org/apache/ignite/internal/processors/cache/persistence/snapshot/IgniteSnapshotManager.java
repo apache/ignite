@@ -1236,7 +1236,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     encKey == null ? null : encSpi.encryptKey(encKey)
                 );
 
-                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir,
+                SnapshotHandlerContext ctx = new SnapshotHandlerContext(req.requestId(), meta, req.groups(), cctx.localNode(), snpDir,
                     req.streamerWarning(), true);
 
                 req.meta(meta);
