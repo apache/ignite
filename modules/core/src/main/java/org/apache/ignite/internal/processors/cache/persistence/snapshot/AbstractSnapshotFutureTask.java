@@ -96,7 +96,7 @@ public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T>
     public final boolean acceptException(Throwable th) {
         assert th != null;
 
-        return onDone(null, th, th instanceof IgniteFutureCancelledCheckedException);
+        return onDone(null, th, false);
     }
 
     /** {@inheritDoc} */
