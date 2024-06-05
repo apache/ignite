@@ -492,7 +492,7 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
      * @param cls Class of messages that need to be filtered.
      * @return List of messages filtered by the specified class.
      */
-    public <T> List<T> getFilteredMessages(List<Object> msgs, Class<T> cls) {
+    public static <T> List<T> getFilteredMessages(List<Object> msgs, Class<T> cls) {
         return msgs.stream()
             .filter(msg -> msg.getClass().equals(cls))
             .map(msg -> (T)msg)

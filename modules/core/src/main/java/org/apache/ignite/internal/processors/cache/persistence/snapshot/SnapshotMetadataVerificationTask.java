@@ -282,8 +282,7 @@ public class SnapshotMetadataVerificationTask
                     continue;
                 }
 
-                reduceRes.computeIfAbsent(res.getNode(), n -> new ArrayList<>())
-                        .add(meta);
+                reduceRes.computeIfAbsent(res.getNode(), n -> new ArrayList<>()).add(meta);
             }
         }
 

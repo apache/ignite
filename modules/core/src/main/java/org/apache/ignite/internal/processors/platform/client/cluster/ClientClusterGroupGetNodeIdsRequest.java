@@ -68,9 +68,10 @@ public class ClientClusterGroupGetNodeIdsRequest extends ClientRequest {
         Collection<ClusterNode> nodes = clusterGrp.nodes();
         UUID[] nodeIds = new UUID[nodes.size()];
         int i = 0;
-        for (ClusterNode node : nodes) {
+
+        for (ClusterNode node : nodes)
             nodeIds[i++] = node.id();
-        }
+
         return nodeIds;
     }
 }
