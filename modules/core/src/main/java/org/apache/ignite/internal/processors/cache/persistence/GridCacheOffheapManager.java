@@ -2708,7 +2708,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @throws IgniteCheckedException If failed to get number of pending entries.
          */
         public boolean hasEntriesPendingExpire(int cacheId) throws IgniteCheckedException {
-            if (pendingTree == null)
+            CacheDataStore delegate0 = init0(true);
+
+            if(delegate0 == null)
                 return false;
 
             if (grp.sharedGroup()) {
