@@ -41,7 +41,6 @@ import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
@@ -87,15 +86,17 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotP
     protected abstract List<CompletableFuture<Void>> saveGroup(int grpId, Set<Integer> grpParts) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Override protected boolean onDone(@Nullable SnapshotFutureTaskResult res, @Nullable Throwable err, boolean cancel) {
+    @Override public boolean cancel() {
         try {
             closeAsync().get();
         }
         catch (Throwable e) {
             U.error(log, "SnapshotFutureTask cancellation failed", e);
+
+            return false;
         }
 
-        return super.onDone(res, err, cancel);
+        return true;
     }
 
     /** @return Future which will be completed when operations truly stopped. */

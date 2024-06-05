@@ -193,7 +193,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable SnapshotFutureTaskResult res, @Nullable Throwable err) {
+    @Override public boolean onDone(@Nullable SnapshotFutureTaskResult res, @Nullable Throwable err, boolean cancel) {
         for (PageStoreSerialWriter writer : partDeltaWriters.values())
             U.closeQuiet(writer);
 
@@ -217,7 +217,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         if (err != null)
             startedFut.onDone(err);
 
-        return super.onDone(res, err);
+        return super.onDone(res, err, cancel);
     }
 
     /**

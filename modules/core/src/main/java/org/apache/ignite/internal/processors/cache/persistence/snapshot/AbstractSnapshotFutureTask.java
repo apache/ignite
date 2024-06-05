@@ -55,15 +55,6 @@ public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T>
     }
 
     /**
-     * Initiates snapshot task.
-     *
-     * @return {@code true} if task started by this call.
-     */
-    public final boolean start() {
-        return !isDone() && started.compareAndSet(false, true) && doStart();
-    }
-
-    /**
      * @return Snapshot name.
      */
     public String snapshotName() {
@@ -84,6 +75,15 @@ public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T>
         return reqId;
     }
 
+    /**
+     * Initiates snapshot task.
+     *
+     * @return {@code true} if task started by this call.
+     */
+    public final boolean start() {
+        return !isDone() && started.compareAndSet(false, true) && doStart();
+    }
+
     /** */
     protected abstract boolean doStart();
 
@@ -97,7 +97,7 @@ public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T>
     }
 
     /** {@inheritDoc} */
-    @Override public final boolean cancel() {
+    @Override public boolean cancel() {
         return onDone(null, new IgniteFutureCancelledCheckedException("Snapshot operation has been cancelled " +
             "by external process [snpName=" + snpName + ']'), false);
     }
