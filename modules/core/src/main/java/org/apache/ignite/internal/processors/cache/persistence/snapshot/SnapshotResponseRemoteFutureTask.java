@@ -74,13 +74,6 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotPartsSende
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean doStop() {
-        close(null);
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override protected boolean doStart() {
         if (F.isEmpty(parts))
             return false;

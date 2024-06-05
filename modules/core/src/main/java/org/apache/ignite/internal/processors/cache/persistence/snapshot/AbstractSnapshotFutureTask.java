@@ -19,43 +19,39 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
-/** */
+/**
+ * @param <T> Type of snapshot processing result.
+ */
 public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
-    /** Ignite logger. */
-    @GridToStringExclude
-    @Nullable protected final IgniteLogger log;
-
-    /** Node id which cause snapshot operation. */
-    protected final UUID srcNodeId;
-
     /** Snapshot operation request ID. */
     protected final UUID reqId;
 
     /** Unique identifier of snapshot process. */
     protected final String snpName;
 
+    /** Node id which cause snapshot operation. */
+    protected final UUID srcNodeId;
+
     /** */
     @GridToStringExclude
-    private final AtomicBoolean started = new AtomicBoolean();
+    private final AtomicBoolean started = new AtomicBoolean();    /** Ignite logger. */
 
     /**
      * Ctor.
-     * @param log Logger.
-     * @param srcNodeId Snapshot operation originator node id.
+     *
      * @param reqId Snapshot operation request id.
      * @param snpName Snapshot name.
+     * @param srcNodeId Snapshot operation originator node id.
      */
-    protected AbstractSnapshotFutureTask(@Nullable IgniteLogger log, UUID srcNodeId, UUID reqId, String snpName) {
-        this.log = log;
-        this.srcNodeId = srcNodeId;
+    protected AbstractSnapshotFutureTask(UUID reqId, String snpName, UUID srcNodeId) {
         this.reqId = reqId;
         this.snpName = snpName;
+        this.srcNodeId = srcNodeId;
     }
 
     /**
@@ -67,11 +63,29 @@ public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T>
         return !isDone() && started.compareAndSet(false, true) && doStart();
     }
 
-    /** */
-    protected abstract boolean doStart();
+    /**
+     * @return Snapshot name.
+     */
+    public String snapshotName() {
+        return snpName;
+    }
+
+    /**
+     * @return Node id which triggers this operation.
+     */
+    public UUID sourceNodeId() {
+        return srcNodeId;
+    }
+
+    /**
+     * @return Snapshot operation request ID.
+     */
+    public UUID requestId() {
+        return reqId;
+    }
 
     /** */
-    protected abstract boolean doStop();
+    protected abstract boolean doStart();
 
     /**
      * @param th An exception which occurred during snapshot processing.
@@ -84,28 +98,8 @@ public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T>
 
     /** {@inheritDoc} */
     @Override public final boolean cancel() {
-        return onDone(null, null, true) && doStop();
-    }
-
-    /**
-     * @return Snapshot name.
-     */
-    public final String snapshotName() {
-        return snpName;
-    }
-
-    /**
-     * @return Node id which triggers this operation.
-     */
-    public final UUID sourceNodeId() {
-        return srcNodeId;
-    }
-
-    /**
-     * @return Snapshot operation request ID.
-     */
-    public final UUID requestId() {
-        return reqId;
+        return onDone(null, new IgniteFutureCancelledCheckedException("Snapshot operation has been cancelled " +
+            "by external process [snpName=" + snpName + ']'), false);
     }
 
     /** */

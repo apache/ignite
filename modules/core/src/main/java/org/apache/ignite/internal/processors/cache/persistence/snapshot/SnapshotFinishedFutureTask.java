@@ -25,7 +25,7 @@ public class SnapshotFinishedFutureTask extends AbstractSnapshotFutureTask<Void>
      * @param e Finished snapshot task future with particular exception.
      */
     public SnapshotFinishedFutureTask(IgniteCheckedException e) {
-        super(null, null, null, null);
+        super(null, null, null);
 
         onDone(e);
     }
@@ -33,10 +33,5 @@ public class SnapshotFinishedFutureTask extends AbstractSnapshotFutureTask<Void>
     /** {@inheritDoc} */
     @Override protected boolean doStart() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean doStop() {
-        return true;
     }
 }

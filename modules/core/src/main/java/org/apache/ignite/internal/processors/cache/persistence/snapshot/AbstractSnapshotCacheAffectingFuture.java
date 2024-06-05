@@ -21,16 +21,19 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public abstract class AbstractSnapshotCacheAffectingFuture<T> extends AbstractSnapshotFutureTask<T> {
     /** */
     protected final GridCacheSharedContext<?, ?> cctx;
 
+    /** */
+    @Nullable protected final IgniteLogger log;
+
     /**
      * Ctor.
      *
-     * @param log Logger.
      * @param sharedCacheCtx Shared cache context.
      * @param srcNodeId Snapshot operation originator node id.
      * @param reqId Snapshot operation request id.
@@ -38,14 +41,14 @@ public abstract class AbstractSnapshotCacheAffectingFuture<T> extends AbstractSn
      */
     protected AbstractSnapshotCacheAffectingFuture(
         GridCacheSharedContext<?, ?> sharedCacheCtx,
-        IgniteLogger log,
-        UUID srcNodeId,
         UUID reqId,
-        String snpName
+        String snpName,
+        UUID srcNodeId
     ) {
-        super(log, srcNodeId, reqId, snpName);
+        super(reqId, snpName, srcNodeId);
 
-        this.cctx = sharedCacheCtx;
+        cctx = sharedCacheCtx;
+        log = cctx.logger(getClass());
     }
 
     /**

@@ -187,9 +187,6 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
      * @param th An exception which occurred during snapshot processing.
      */
     @Override public void acceptException(Throwable th) {
-        if (th == null)
-            return;
-
         super.acceptException(th);
 
         startedFut.onDone(th);

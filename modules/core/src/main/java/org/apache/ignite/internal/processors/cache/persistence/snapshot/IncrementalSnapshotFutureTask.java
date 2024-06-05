@@ -78,10 +78,9 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotCacheAffectingFuture
     ) {
         super(
             cctx,
-            cctx.logger(IncrementalSnapshotFutureTask.class),
-            srcNodeId,
             reqNodeId,
-            meta.snapshotName()
+            meta.snapshotName(),
+            srcNodeId
         );
 
         this.incIdx = incIdx;
@@ -96,11 +95,6 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotCacheAffectingFuture
     /** {@inheritDoc} */
     @Override public Set<Integer> affectedCacheGroups() {
         return affectedCacheGrps;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean doStop() {
-        return true;
     }
 
     /** {@inheritDoc} */

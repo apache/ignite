@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -43,6 +42,7 @@ import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
@@ -89,17 +89,15 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotP
     protected abstract List<CompletableFuture<Void>> saveGroup(int grpId, Set<Integer> grpParts) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Override protected boolean doStop() {
+    @Override protected boolean onDone(@Nullable SnapshotFutureTaskResult res, @Nullable Throwable err, boolean cancel) {
         try {
             closeAsync().get();
         }
-        catch (InterruptedException | ExecutionException e) {
+        catch (Throwable e) {
             U.error(log, "SnapshotFutureTask cancellation failed", e);
-
-            return false;
         }
 
-        return true;
+        return super.onDone(res, err, cancel);
     }
 
     /** @return Future which will be completed when operations truly stopped. */
@@ -215,8 +213,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotP
 
     /** {@inheritDoc} */
     @Override public void acceptException(Throwable th) {
-        if (th == null)
-            return;
+        assert th != null;
 
         if (!(th instanceof IgniteFutureCancelledCheckedException))
             U.error(log, "Snapshot task has accepted exception to stop", th);
