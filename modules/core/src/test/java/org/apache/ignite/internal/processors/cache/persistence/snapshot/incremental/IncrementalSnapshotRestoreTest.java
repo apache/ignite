@@ -433,13 +433,11 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         // Corrupted WAL segment leads to different errors.
         if (ex instanceof IgniteException) {
             if (ex.getMessage().contains("Failed to read WAL record at position")
-                || ex.getMessage().contains("WAL tail reached not in the last available segment")) {
+                || ex.getMessage().contains("WAL tail reached not in the last available segment"))
                 expExc = true;
-            }
         }
-        else if (ex instanceof AssertionError) {
+        else if (ex instanceof AssertionError)
             expExc = true;
-        }
 
         assertTrue(ex.getMessage(), expExc);
 

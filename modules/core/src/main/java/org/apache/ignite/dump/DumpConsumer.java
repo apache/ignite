@@ -62,7 +62,7 @@ public interface DumpConsumer {
 
     /**
      * Handles cache data.
-     * This method can be invoced by several threads concurrently.
+     * This method can be invoked by several threads concurrently.
      * Note, there can be several copies of group partition in the dump.
      * This can happen if dump contains data from several nodes.
      * In this case callback will be invoked several time for the same pair of [grp, part] values.
