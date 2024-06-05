@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
@@ -47,16 +46,8 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VerifySnapshotPartitionsJob createJob(
-        UUID reqId,
-        String name,
-        String path,
-        int incIdx,
-        String constId,
-        Collection<String> groups,
-        boolean check
-    ) {
-        return new VerifySnapshotPartitionsJob(reqId, name, path, constId, groups, check);
+    @Override protected VerifySnapshotPartitionsJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args) {
+        return new VerifySnapshotPartitionsJob(name, args.snapshotPath(), consId, args.cacheGroupNames(), args.check());
     }
 
     /** {@inheritDoc} */
@@ -65,27 +56,25 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     }
 
     /** Job that collects update counters of snapshot partitions on the node it executes. */
-    private static class VerifySnapshotPartitionsJob extends AbstractSnapshotPartitionsVerifyJob {
+    private static class VerifySnapshotPartitionsJob extends AbstractSnapshotVerificationJob {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param reqId Snapshot operation request id.
          * @param snpName Snapshot name to validate.
-         * @param consId Consistent snapshot metadata file name.
+         * @param consId Consistent id of the related node.
          * @param rqGrps Set of cache groups to be checked in the snapshot or {@code empty} to check everything.
          * @param snpPath Snapshot directory path.
          * @param check If {@code true} check snapshot before restore.
          */
         public VerifySnapshotPartitionsJob(
-            UUID reqId,
             String snpName,
             @Nullable String snpPath,
             String consId,
             Collection<String> rqGrps,
             boolean check
         ) {
-            super(reqId, snpName, snpPath, consId, rqGrps, check);
+            super(snpName, snpPath, consId, rqGrps, check);
         }
 
         /** {@inheritDoc} */
@@ -102,7 +91,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
                 SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpDir, consId);
 
                 return new SnapshotPartitionsVerifyHandler(cctx)
-                    .invoke(new SnapshotHandlerContext(reqId, meta, rqGrps, ignite.localNode(), snpDir, false, check));
+                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false, check));
             }
             catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -30,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
@@ -147,20 +145,12 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
     }
 
     /** {@inheritDoc} */
-    @Override protected VerifyIncrementalSnapshotJob createJob(
-        UUID reqId,
-        String name,
-        @Nullable String path,
-        int incIdx,
-        String constId,
-        Collection<String> groups,
-        boolean check
-    ) {
-        return new VerifyIncrementalSnapshotJob(reqId, name, path, incIdx, constId);
+    @Override protected VerifyIncrementalSnapshotJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args) {
+        return new VerifyIncrementalSnapshotJob(name, args.snapshotPath(), args.incrementIndex(), consId);
     }
 
     /** */
-    private static class VerifyIncrementalSnapshotJob extends AbstractSnapshotPartitionsVerifyJob {
+    private static class VerifyIncrementalSnapshotJob extends AbstractSnapshotVerificationJob {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -171,20 +161,18 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
         private LongAdder procEntriesCnt;
 
         /**
-         * @param reqId Snapshot operation request Id.
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
          * @param incIdx Incremental snapshot index.
-         * @param consId Consistent ID.
+         * @param consId Consistent id of the related node.
          */
         public VerifyIncrementalSnapshotJob(
-            UUID reqId,
             String snpName,
             @Nullable String snpPath,
             int incIdx,
             String consId
         ) {
-            super(reqId, snpName, snpPath, consId, Collections.emptySet(), true);
+            super(snpName, snpPath, consId, null, true);
 
             this.incIdx = incIdx;
         }

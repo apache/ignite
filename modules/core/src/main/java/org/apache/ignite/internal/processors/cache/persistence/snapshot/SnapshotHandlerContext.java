@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.util.Collection;
-import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,9 +26,6 @@ import org.jetbrains.annotations.Nullable;
  * Snapshot operation handler context.
  */
 public class SnapshotHandlerContext {
-    /** Snapshot metadata. */
-    private final UUID reqId;
-
     /** Snapshot metadata. */
     private final SnapshotMetadata metadata;
 
@@ -45,21 +41,19 @@ public class SnapshotHandlerContext {
     /** Warning flag of concurrent inconsistent-by-nature streamer updates. */
     private final boolean streamerWrn;
 
-    /** If {@code true} check snapshot integrity. */
+    /** If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched.*/
     private final boolean check;
 
     /**
-     * @param reqId Snapshot operation request id.
      * @param metadata Snapshot metadata.
      * @param grps The names of the cache groups on which the operation is performed.
      * {@code False} otherwise. Always {@code false} for snapshot restoration.
      * @param locNode Local node.
      * @param snpDir The full path to the snapshot files.
      * @param streamerWrn {@code True} if concurrent streaming updates occurred during snapshot operation.
-     * @param check If {@code true} check snapshot integrity.
+     * @param check If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched.
      */
     public SnapshotHandlerContext(
-        UUID reqId,
         SnapshotMetadata metadata,
         @Nullable Collection<String> grps,
         ClusterNode locNode,
@@ -67,20 +61,12 @@ public class SnapshotHandlerContext {
         boolean streamerWrn,
         boolean check
     ) {
-        this.reqId = reqId;
         this.metadata = metadata;
         this.grps = grps;
         this.locNode = locNode;
         this.snpDir = snpDir;
         this.streamerWrn = streamerWrn;
         this.check = check;
-    }
-
-    /**
-     * @return Snapshot operation request id.
-     */
-    public UUID reqId() {
-        return reqId;
     }
 
     /**
@@ -119,7 +105,7 @@ public class SnapshotHandlerContext {
         return streamerWrn;
     }
 
-    /** @return If {@code true} check snapshot integrity. */
+    /** @return If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched. */
     public boolean check() {
         return check;
     }

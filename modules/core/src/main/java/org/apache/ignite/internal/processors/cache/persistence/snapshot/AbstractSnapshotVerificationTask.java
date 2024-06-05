@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -80,18 +79,7 @@ public abstract class AbstractSnapshotVerificationTask extends
                 if (meta == null)
                     continue;
 
-                jobs.put(
-                    createJob(
-                        arg.requestId(),
-                        meta.snapshotName(),
-                        arg.snapshotPath(),
-                        arg.incrementIndex(),
-                        meta.consistentId(),
-                        arg.cacheGroupNames(),
-                        arg.check()
-                    ),
-                    e.getKey()
-                );
+                jobs.put(createJob(meta.snapshotName(), meta.consistentId(), arg), e.getKey());
 
                 if (allMetas.isEmpty())
                     break;
@@ -108,27 +96,16 @@ public abstract class AbstractSnapshotVerificationTask extends
     }
 
     /**
-     * @param reqId Snapshot request id.
      * @param name Snapshot name.
-     * @param path Snapshot directory path.
-     * @param incIdx Incremental snapshot index.
-     * @param constId Snapshot metadata file name.
-     * @param groups Cache groups to be restored from the snapshot. May be empty if all cache groups are being restored.
-     * @param check If {@code true} check snapshot before restore.
+     * @param consId Consistent id of the related node.
+     * @param args Check snapshot parameters.
+     *
      * @return Compute job.
      */
-    protected abstract AbstractSnapshotPartitionsVerifyJob createJob(
-        UUID reqId,
-        String name,
-        @Nullable String path,
-        int incIdx,
-        String constId,
-        Collection<String> groups,
-        boolean check
-    );
+    protected abstract AbstractSnapshotVerificationJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args);
 
     /** */
-    abstract static class AbstractSnapshotPartitionsVerifyJob extends ComputeJobAdapter {
+    protected abstract static class AbstractSnapshotVerificationJob extends ComputeJobAdapter {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -140,41 +117,35 @@ public abstract class AbstractSnapshotVerificationTask extends
         @LoggerResource
         protected IgniteLogger log;
 
-        /** Snapshot operation request id. */
-        protected final UUID reqId;
-
         /** Snapshot name. */
         protected final String snpName;
 
         /** Snapshot directory path. */
         @Nullable protected final String snpPath;
 
-        /** Consistent ID. */
+        /** Consistent id of the related node. */
         protected final String consId;
 
-        /** Set of cache groups to be checked in the snapshot or {@code empty} to check everything. */
-        protected final Collection<String> rqGrps;
+        /** Set of cache groups to be checked in the snapshot. {@code Null} or empty to check everything. */
+        @Nullable protected final Collection<String> rqGrps;
 
-        /** If {@code true} check snapshot before restore. */
+        /** If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched. */
         protected final boolean check;
 
         /**
-         * @param reqId Snapshot operation request id.
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
-         * @param consId Consistent snapshot metadata file name.
-         * @param rqGrps Set of cache groups to be checked in the snapshot or {@code empty} to check everything.
-         * @param check If {@code true} check snapshot before restore.
+         * @param consId Consistent id of the related node.
+         * @param rqGrps Set of cache groups to be checked in the snapshot. {@code Null} or empty to check everything.
+         * @param check If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched.
          */
-        protected AbstractSnapshotPartitionsVerifyJob(
-            UUID reqId,
+        protected AbstractSnapshotVerificationJob(
             String snpName,
             @Nullable String snpPath,
             String consId,
-            Collection<String> rqGrps,
+            @Nullable Collection<String> rqGrps,
             boolean check
         ) {
-            this.reqId = reqId;
             this.snpName = snpName;
             this.snpPath = snpPath;
             this.consId = consId;
