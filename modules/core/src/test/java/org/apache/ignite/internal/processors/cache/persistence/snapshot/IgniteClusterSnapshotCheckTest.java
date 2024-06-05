@@ -316,7 +316,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** Ensures that check metrics doesn't affect create snapshot. */
     @Test
-    public void testCreateSnapshotCheckMetrics() throws Exception {
+    public void testCreateSnapshotNoValidateMetrics() throws Exception {
         IgniteEx ig = startGridsWithCache(3, dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 16)),
             100);
 
@@ -414,7 +414,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         Collection<Double> detectedProgress = new TreeSet<>();
 
-        injectSlowFileIo(
+        injectSnapshotSlowFileIo(
             G.allGrids(),
             delyaFileIo,
             () -> {
@@ -422,7 +422,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
                 if (m != null)
                     detectedProgress.add(m.value());
-            }
+            },
+            null
         );
 
         delyaFileIo.set(true);

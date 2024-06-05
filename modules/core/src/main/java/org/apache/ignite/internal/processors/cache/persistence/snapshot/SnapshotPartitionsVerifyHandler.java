@@ -355,7 +355,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** */
-    protected class CalculateSnapshotHashesFuture extends AbstractSnapshotFuture<Map<PartitionKeyV2, PartitionHashRecordV2>> {
+    protected class CalculateSnapshotHashesFuture extends AbstractSnapshotFutureTask<Map<PartitionKeyV2, PartitionHashRecordV2>> {
         /** */
         private final AtomicLong total = new AtomicLong();
 
@@ -370,7 +370,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         /** */
         protected CalculateSnapshotHashesFuture(SnapshotHandlerContext opCtx) {
-            super(SnapshotPartitionsVerifyHandler.this.log, opCtx.reqId(), opCtx.metadata().snapshotName(), null);
+            super(opCtx.reqId(), opCtx.metadata().snapshotName(), null);
 
             this.opCtx = opCtx;
         }
@@ -431,7 +431,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         }
 
         /** {@inheritDoc} */
-        @Override public boolean start() {
+        @Override protected boolean doStart() {
             IgniteSnapshotManager snpMgr = cctx.snapshotMgr();
             SnapshotMetadata meta = opCtx.metadata();
 

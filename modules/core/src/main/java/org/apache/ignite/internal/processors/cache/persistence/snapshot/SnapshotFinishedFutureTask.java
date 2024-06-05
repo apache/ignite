@@ -20,18 +20,19 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import org.apache.ignite.IgniteCheckedException;
 
 /** */
-public class SnapshotFinishedFutureTask<T> extends AbstractSnapshotFuture<T> {
+public class SnapshotFinishedFutureTask<T> extends AbstractSnapshotFutureTask<T> {
     /**
+     * @param origin Original task to replace.
      * @param e Finished snapshot task future with particular exception.
      */
-    public SnapshotFinishedFutureTask(AbstractSnapshotFuture<T> originalFut, IgniteCheckedException e) {
-        super(null, originalFut.requestId(), originalFut.snapshotName(), originalFut.sourceNodeId());
+    public SnapshotFinishedFutureTask(AbstractSnapshotFutureTask<T> origin, IgniteCheckedException e) {
+        super(origin.requestId(), origin.snapshotName(), origin.sourceNodeId());
 
         onDone(e);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean start() {
+    @Override protected boolean doStart() {
         return false;
     }
 }

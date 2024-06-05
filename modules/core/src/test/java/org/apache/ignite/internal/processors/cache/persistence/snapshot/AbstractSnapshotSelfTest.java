@@ -848,7 +848,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         boolean withMetaStorage,
         SnapshotSender snpSndr
     ) throws IgniteCheckedException {
-        AbstractSnapshotFuture<?> task = cctx.snapshotMgr().registerSnapshotTask(snpName,
+        AbstractSnapshotFutureTask<?> task = cctx.snapshotMgr().registerSnapshotTask(snpName,
             null,
             cctx.localNodeId(),
             null,

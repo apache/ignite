@@ -17,69 +17,92 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * @param <T> Type of snapshot processing result.
  */
-abstract class AbstractSnapshotFutureTask<T> extends AbstractSnapshotFuture<T> {
-    /** Shared context. */
-    protected final GridCacheSharedContext<?, ?> cctx;
+public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
+    /** Snapshot operation request ID. */
+    protected final UUID reqId;
 
-    /** Snapshot data sender. */
+    /** Unique identifier of snapshot process. */
+    protected final String snpName;
+
+    /** Node id which cause snapshot operation. */
+    protected final UUID srcNodeId;
+
+    /** */
     @GridToStringExclude
-    protected final SnapshotSender snpSndr;
-
-    /** Partition to be processed. */
-    protected final Map<Integer, Set<Integer>> parts;
-
-    /** An exception which has been occurred during snapshot processing. */
-    protected final AtomicReference<Throwable> err = new AtomicReference<>();
+    private final AtomicBoolean started = new AtomicBoolean();    /** Ignite logger. */
 
     /**
-     * @param log Logger.
-     * @param cctx Shared context.
-     * @param srcNodeId Node id which cause snapshot task creation.
-     * @param reqId Snapshot operation request ID.
-     * @param snpName Unique identifier of snapshot process.
-     * @param snpSndr Factory which produces snapshot receiver instance.
-     * @param parts Partition to be processed.
+     * Ctor.
+     *
+     * @param reqId Snapshot operation request id.
+     * @param snpName Snapshot name.
+     * @param srcNodeId Snapshot operation originator node id.
      */
-    protected AbstractSnapshotFutureTask(
-        IgniteLogger log,
-        GridCacheSharedContext<?, ?> cctx,
-        UUID srcNodeId,
-        UUID reqId,
-        String snpName,
-        SnapshotSender snpSndr,
-        Map<Integer, Set<Integer>> parts
-    ) {
-        super(log, reqId, snpName, srcNodeId);
-
-        assert snpName != null : "Snapshot name cannot be empty or null.";
-        assert snpSndr != null : "Snapshot sender which handles execution tasks must be not null.";
-        assert snpSndr.executor() != null : "Executor service must be not null.";
-
-        this.cctx = cctx;
-        this.snpSndr = snpSndr;
-        this.parts = parts;
+    protected AbstractSnapshotFutureTask(UUID reqId, String snpName, UUID srcNodeId) {
+        this.reqId = reqId;
+        this.snpName = snpName;
+        this.srcNodeId = srcNodeId;
     }
 
     /**
-     * @return Set of cache groups included into snapshot operation.
+     * Initiates snapshot task.
+     *
+     * @return {@code true} if task started by this call.
      */
-    public Set<Integer> affectedCacheGroups() {
-        return parts.keySet();
+    public final boolean start() {
+        return !isDone() && started.compareAndSet(false, true) && doStart();
+    }
+
+    /**
+     * @return Snapshot name.
+     */
+    public String snapshotName() {
+        return snpName;
+    }
+
+    /**
+     * @return Node id which triggers this operation.
+     */
+    public UUID sourceNodeId() {
+        return srcNodeId;
+    }
+
+    /**
+     * @return Snapshot operation request ID.
+     */
+    public UUID requestId() {
+        return reqId;
+    }
+
+    /** */
+    protected abstract boolean doStart();
+
+    /**
+     * @param th An exception which occurred during snapshot processing.
+     */
+    public void acceptException(Throwable th) {
+        assert th != null;
+
+        onDone(null, th, false);
     }
 
     /** {@inheritDoc} */
+    @Override public final boolean cancel() {
+        return onDone(null, new IgniteFutureCancelledCheckedException("Snapshot operation has been cancelled " +
+            "by external process [snpName=" + snpName + ']'), false);
+    }
+
+    /** */
     @Override public String toString() {
         return S.toString(AbstractSnapshotFutureTask.class, this);
     }

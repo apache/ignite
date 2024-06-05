@@ -27,9 +27,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -42,11 +41,12 @@ import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
 /** */
-public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotFutureTask<SnapshotFutureTaskResult> {
+public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotPartsSenderFuture<SnapshotFutureTaskResult> {
     /**
      * Cache group and corresponding partitions collected under the PME lock.
      * For full snapshot additional checkpoint write lock required.
@@ -57,9 +57,12 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
     /** Future which will be completed when task requested to be closed. Will be executed on system pool. */
     protected volatile CompletableFuture<Void> closeFut;
 
+    /** */
+    protected final AtomicReference<Throwable> err = new AtomicReference<>();
+
     /**
-     * @param log Logger.
      * @param cctx Shared context.
+     * @param log Logger.
      * @param srcNodeId Node id which cause snapshot task creation.
      * @param reqId Snapshot operation request ID.
      * @param snpName Snapshot name.
@@ -67,7 +70,6 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
      * @param parts Partitions to be processed.
      */
     protected AbstractCreateSnapshotFutureTask(
-        IgniteLogger log,
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         UUID reqId,
@@ -75,7 +77,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts
     ) {
-        super(log, cctx, srcNodeId, reqId, snpName, snpSndr, parts);
+        super(cctx, srcNodeId, reqId, snpName, snpSndr, parts);
     }
 
     /** */
@@ -85,19 +87,15 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
     protected abstract List<CompletableFuture<Void>> saveGroup(int grpId, Set<Integer> grpParts) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Override public boolean cancel() {
-        super.cancel();
-
+    @Override protected boolean onDone(@Nullable SnapshotFutureTaskResult res, @Nullable Throwable err, boolean cancel) {
         try {
             closeAsync().get();
         }
-        catch (InterruptedException | ExecutionException e) {
+        catch (Throwable e) {
             U.error(log, "SnapshotFutureTask cancellation failed", e);
-
-            return false;
         }
 
-        return true;
+        return super.onDone(res, err, cancel);
     }
 
     /** @return Future which will be completed when operations truly stopped. */
@@ -213,8 +211,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
 
     /** {@inheritDoc} */
     @Override public void acceptException(Throwable th) {
-        if (th == null)
-            return;
+        assert th != null;
 
         if (!(th instanceof IgniteFutureCancelledCheckedException))
             U.error(log, "Snapshot task has accepted exception to stop", th);
