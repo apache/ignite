@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
@@ -146,7 +147,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
 
     /** {@inheritDoc} */
     @Override protected VerifyIncrementalSnapshotJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args) {
-        return new VerifyIncrementalSnapshotJob(name, args.snapshotPath(), args.incrementIndex(), consId);
+        return new VerifyIncrementalSnapshotJob(args.requestId(), name, args.snapshotPath(), args.incrementIndex(), consId);
     }
 
     /** */
@@ -161,18 +162,20 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
         private LongAdder procEntriesCnt;
 
         /**
+         * @param reqId Snapshot operation request id.
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
          * @param incIdx Incremental snapshot index.
          * @param consId Consistent id of the related node.
          */
         public VerifyIncrementalSnapshotJob(
+            UUID reqId,
             String snpName,
             @Nullable String snpPath,
             int incIdx,
             String consId
         ) {
-            super(snpName, snpPath, consId, null, true);
+            super(reqId, snpName, snpPath, consId, null, true);
 
             this.incIdx = incIdx;
         }

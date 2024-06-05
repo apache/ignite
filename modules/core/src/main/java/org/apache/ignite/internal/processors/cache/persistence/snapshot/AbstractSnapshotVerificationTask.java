@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -117,6 +118,9 @@ public abstract class AbstractSnapshotVerificationTask extends
         @LoggerResource
         protected IgniteLogger log;
 
+        /** Snapshot operation request id. */
+        protected final UUID reqId;
+
         /** Snapshot name. */
         protected final String snpName;
 
@@ -133,6 +137,7 @@ public abstract class AbstractSnapshotVerificationTask extends
         protected final boolean check;
 
         /**
+         * @param reqId Snapshot operation request id.
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
          * @param consId Consistent id of the related node.
@@ -140,12 +145,14 @@ public abstract class AbstractSnapshotVerificationTask extends
          * @param check If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched.
          */
         protected AbstractSnapshotVerificationJob(
+            UUID reqId,
             String snpName,
             @Nullable String snpPath,
             String consId,
             @Nullable Collection<String> rqGrps,
             boolean check
         ) {
+            this.reqId = reqId;
             this.snpName = snpName;
             this.snpPath = snpPath;
             this.consId = consId;

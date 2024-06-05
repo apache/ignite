@@ -40,7 +40,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
 
     /** {@inheritDoc} */
     @Override protected SnapshotHandlerRestoreJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args) {
-        return new SnapshotHandlerRestoreJob(name, args.snapshotPath(), consId, args.cacheGroupNames(), args.check());
+        return new SnapshotHandlerRestoreJob(args.requestId(), name, args.snapshotPath(), consId, args.cacheGroupNames(), args.check());
     }
 
     /** {@inheritDoc} */
@@ -88,6 +88,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         private static final long serialVersionUID = 0L;
 
         /**
+         * @param reqId Snapshot operation request id.
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
          * @param consId Consistent id of the related node.
@@ -95,13 +96,14 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
          * @param check If {@code true} check snapshot before restore.
          */
         public SnapshotHandlerRestoreJob(
+            UUID reqId,
             String snpName,
             @Nullable String snpPath,
             String consId,
             Collection<String> grps,
             boolean check
         ) {
-            super(snpName, snpPath, consId, grps, check);
+            super(reqId, snpName, snpPath, consId, grps, check);
         }
 
         /** {@inheritDoc} */
@@ -112,7 +114,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
                 SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpDir, consId);
 
                 return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE,
-                    new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false, check));
+                    new SnapshotHandlerContext(reqId, meta, rqGrps, ignite.localNode(), snpDir, false, check));
             }
             catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);

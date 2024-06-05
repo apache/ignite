@@ -616,6 +616,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         IdleVerifyResultV2 snpVerifyRes = ignite.compute().execute(
             new TestSnapshotPartitionsVerifyTask(),
             new SnapshotPartitionsVerifyTaskArg(
+                null,
                 new HashSet<>(),
                 Collections.singletonMap(ignite.cluster().localNode(),
                 Collections.singletonList(snp(ignite).readSnapshotMetadata(
