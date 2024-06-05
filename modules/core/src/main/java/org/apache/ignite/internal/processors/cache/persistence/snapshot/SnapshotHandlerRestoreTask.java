@@ -39,8 +39,8 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected SnapshotHandlerRestoreJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args) {
-        return new SnapshotHandlerRestoreJob(name, args.snapshotPath(), consId, args.cacheGroupNames(), args.check());
+    @Override protected SnapshotHandlerRestoreJob createJob(String name, String metaFileName, SnapshotPartitionsVerifyTaskArg args) {
+        return new SnapshotHandlerRestoreJob(name, args.snapshotPath(), metaFileName, args.cacheGroupNames(), args.check());
     }
 
     /** {@inheritDoc} */

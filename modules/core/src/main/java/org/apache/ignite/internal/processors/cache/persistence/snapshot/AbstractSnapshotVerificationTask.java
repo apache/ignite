@@ -97,12 +97,12 @@ public abstract class AbstractSnapshotVerificationTask extends
 
     /**
      * @param name Snapshot name.
-     * @param consId Snapshot metadata file name.
+     * @param metaFileName Name of the snapshot metadata file.
      * @param args Check snapshot parameters.
      *
      * @return Compute job.
      */
-    protected abstract AbstractSnapshotVerificationJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args);
+    protected abstract AbstractSnapshotVerificationJob createJob(String name, String metaFileName, SnapshotPartitionsVerifyTaskArg args);
 
     /** */
     protected abstract static class AbstractSnapshotVerificationJob extends ComputeJobAdapter {

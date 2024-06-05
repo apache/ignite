@@ -133,8 +133,8 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
     }
 
     /** {@inheritDoc} */
-    @Override protected VerifyIncrementalSnapshotJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args) {
-        return new VerifyIncrementalSnapshotJob(name, args.snapshotPath(), args.incrementIndex(), consId);
+    @Override protected VerifyIncrementalSnapshotJob createJob(String name, String metaFileName, SnapshotPartitionsVerifyTaskArg args) {
+        return new VerifyIncrementalSnapshotJob(name, args.snapshotPath(), args.incrementIndex(), metaFileName);
     }
 
     /** */

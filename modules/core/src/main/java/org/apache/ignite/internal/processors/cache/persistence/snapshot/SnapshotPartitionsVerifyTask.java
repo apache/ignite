@@ -46,8 +46,8 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VerifySnapshotPartitionsJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args) {
-        return new VerifySnapshotPartitionsJob(name, args.snapshotPath(), consId, args.cacheGroupNames(), args.check());
+    @Override protected VerifySnapshotPartitionsJob createJob(String name, String metaFileName, SnapshotPartitionsVerifyTaskArg args) {
+        return new VerifySnapshotPartitionsJob(name, args.snapshotPath(), metaFileName, args.cacheGroupNames(), args.check());
     }
 
     /** {@inheritDoc} */
