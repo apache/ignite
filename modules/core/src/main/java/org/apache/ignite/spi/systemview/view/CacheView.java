@@ -358,7 +358,6 @@ public class CacheView {
             cache.cacheConfiguration().getExpiryPolicyFactory(), "expiryPlc", expiryPlcStrBld);
     }
 
-
     /**
      * @param out {@link StringBuilder} to append to.
      * @param fieldName create/update/access expiry policy field name.
