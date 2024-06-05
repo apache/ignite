@@ -2768,7 +2768,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     private <T> AbstractSnapshotFutureTask<T> registerTask(String futId, AbstractSnapshotFutureTask<T> task, boolean unique) {
         if (!busyLock.enterBusy()) {
-            return new SnapshotFinishedFutureTask<>(task, new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" +
+            return new SnapshotFinishedFutureTask<>(new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" +
                 cctx.localNodeId() + ']'));
         }
 
@@ -2777,8 +2777,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             if (prev != null) {
                 return unique || prev.getClass() != task.getClass()
-                    ? new SnapshotFinishedFutureTask<>(task,
-                        new IgniteCheckedException("Snapshot with requested name is already scheduled: " + futId))
+                    ? new SnapshotFinishedFutureTask<>(new IgniteCheckedException("Snapshot with requested name is already " +
+                        "scheduled: " + futId))
                     : (AbstractSnapshotFutureTask<T>)prev;
             }
 
@@ -3011,7 +3011,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param nodeId Remote node id on which requests has been registered.
      * @return Snapshot future related to given node id.
      */
-    AbstractSnapshotFutureTask<?> lastScheduledSnapshotResponseRemoteTask(UUID nodeId) {
+    SnapshotResponseRemoteFutureTask lastScheduledSnapshotResponseRemoteTask(UUID nodeId) {
         return locSnpTasks.values().stream()
             .filter(t -> (t instanceof SnapshotResponseRemoteFutureTask) && Objects.equals(nodeId, t.sourceNodeId()))
             .map(t -> (SnapshotResponseRemoteFutureTask)t)

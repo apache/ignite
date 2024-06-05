@@ -373,7 +373,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         checkNoSnapshotValidationMetrics(ig, null);
     }
 
-
     /** Checks that there is no any snapshot validation metrics. */
     protected @Nullable IgniteFuture<?> checkNoSnapshotValidationMetrics(IgniteEx ig, @Nullable Supplier<IgniteFuture<?>> snpOperation) {
         MetricRegistry mreg = ig.context().metric().registry(SnapshotPartitionsVerifyHandler.metricsRegName(SNAPSHOT_NAME));

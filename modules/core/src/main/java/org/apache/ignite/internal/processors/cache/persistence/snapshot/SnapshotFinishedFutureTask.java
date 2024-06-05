@@ -22,11 +22,10 @@ import org.apache.ignite.IgniteCheckedException;
 /** */
 public class SnapshotFinishedFutureTask<T> extends AbstractSnapshotFutureTask<T> {
     /**
-     * @param origin Original task to replace.
      * @param e Finished snapshot task future with particular exception.
      */
-    public SnapshotFinishedFutureTask(AbstractSnapshotFutureTask<T> origin, IgniteCheckedException e) {
-        super(origin.requestId(), origin.snapshotName(), origin.sourceNodeId());
+    public SnapshotFinishedFutureTask(IgniteCheckedException e) {
+        super(null, null, null);
 
         onDone(e);
     }
