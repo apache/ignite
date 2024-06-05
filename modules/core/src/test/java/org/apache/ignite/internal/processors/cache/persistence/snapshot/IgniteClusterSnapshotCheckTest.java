@@ -37,8 +37,10 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import org.apache.ignite.IgniteCache;
@@ -83,6 +85,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -332,6 +335,68 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertEquals(mreg, ig.context().metric().registry(SnapshotPartitionsVerifyHandler.metricsRegName(SNAPSHOT_NAME)));
     }
 
+    /** Tests there is no snapshot validation metrics on stapshot restore by default. */
+    @Test
+    public void testRestoreSnapshotNoCheckMetrics() throws Exception {
+        IgniteEx ig = startGridsWithCache(3, dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 16)),
+            100);
+
+        snp(ig).createSnapshot(SNAPSHOT_NAME).get();
+
+        ig.destroyCache(dfltCacheCfg.getName());
+
+        awaitPartitionMapExchange();
+
+        CountDownLatch waited = new CountDownLatch(1);
+
+        AtomicBoolean delay = injectSnapshotSlowFileIo(G.allGrids(), waited::countDown);
+
+        delay.set(true);
+
+        IgniteFuture<?> fut = checkNoSnapshotValidationMetrics(ig, () -> {
+            IgniteFuture<Void> res = snp(ig).restoreSnapshot(SNAPSHOT_NAME, null);
+
+            try {
+                waited.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+            }
+            catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            return res;
+        });
+
+        delay.set(false);
+
+        fut.get();
+
+        checkNoSnapshotValidationMetrics(ig, null);
+    }
+
+
+    /** Checks that there is no any snapshot validation metrics. */
+    protected @Nullable IgniteFuture<?> checkNoSnapshotValidationMetrics(IgniteEx ig, @Nullable Supplier<IgniteFuture<?>> snpOperation) {
+        MetricRegistry mreg = ig.context().metric().registry(SnapshotPartitionsVerifyHandler.metricsRegName(SNAPSHOT_NAME));
+
+        assertNull(mreg.<LongMetric>findMetric("snapshotName"));
+        assertNull(mreg.<LongMetric>findMetric("progress"));
+        assertNull(mreg.<LongMetric>findMetric("requestId"));
+
+        if (snpOperation != null) {
+            IgniteFuture<?> fut = snpOperation.get();
+
+            assertNull(mreg.<LongMetric>findMetric("snapshotName"));
+            assertNull(mreg.<LongMetric>findMetric("progress"));
+            assertNull(mreg.<LongMetric>findMetric("requestId"));
+
+            assertEquals(mreg, ig.context().metric().registry(SnapshotPartitionsVerifyHandler.metricsRegName(SNAPSHOT_NAME)));
+
+            return fut;
+        }
+
+        return null;
+    }
+
     /** */
     @Test
     public void testCheckSnapshotCheckMetrics() throws Exception {
@@ -392,25 +457,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertNull(mreg2.findMetric("startTime"));
         assertNull(mreg2.findMetric("snapshotName"));
         assertNull(mreg2.findMetric("requestId"));
-    }
-
-    /** */
-    @Test
-    public void testRestoreSnapshotCheckMetrics() throws Exception {
-        IgniteEx ig = startGridsWithCache(3, dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 16)),
-            100);
-
-        snp(ig).createSnapshot(SNAPSHOT_NAME).get();
-
-        ig.destroyCache(dfltCacheCfg.getName());
-
-        awaitPartitionMapExchange();
-
-        AtomicBoolean delay = injectSlowFileIo(G.allGrids());
-
-        delay.set(true);
-
-        snp(ig).restoreSnapshot(SNAPSHOT_NAME, null).get();
     }
 
     /** @throws Exception If fails. */

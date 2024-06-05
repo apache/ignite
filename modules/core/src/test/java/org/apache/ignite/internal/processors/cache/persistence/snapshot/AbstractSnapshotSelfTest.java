@@ -937,16 +937,17 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static AtomicBoolean injectSlowFileIo(Collection<Ignite> grids) {
+    public static AtomicBoolean injectSnapshotSlowFileIo(Collection<Ignite> grids, @Nullable Runnable beforeWait) {
         AtomicBoolean waitFlag = new AtomicBoolean();
 
-        injectSlowFileIo(grids, waitFlag, null);
+        injectSnapshotSlowFileIo(grids, waitFlag, null, beforeWait);
 
         return waitFlag;
     }
 
     /** */
-    public static void injectSlowFileIo(Collection<Ignite> grids, AtomicBoolean waitFlag, @Nullable Runnable beforeProceed) {
+    public static void injectSnapshotSlowFileIo(Collection<Ignite> grids, AtomicBoolean waitFlag, @Nullable Runnable beforeProceed,
+        @Nullable Runnable beforeWait) {
         for (Ignite ig : grids) {
             FilePageStoreManager pageStore = (FilePageStoreManager)((IgniteEx)ig).context().cache().context().pageStore();
 
@@ -956,6 +957,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 /** */
                 private void doWait() {
                     if (waitFlag.get()) {
+                        if (beforeWait != null)
+                            beforeWait.run();
+
                         try {
                             while (waitFlag.get()) {
                                 synchronized (waitFlag) {
