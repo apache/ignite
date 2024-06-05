@@ -19,9 +19,11 @@ package org.apache.ignite.spi.systemview.view;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
+import com.sun.tools.javac.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -344,26 +346,54 @@ public class CacheView {
 
         ExpiryPolicy expiryPlc = (ExpiryPolicy)cache.cacheConfiguration().getExpiryPolicyFactory().create();
 
-        Function<Duration, String> func = (duration) -> {
-            if (duration == null)
-                return null;
+        Function<Duration, StringBuilder> durationToStr = (duration) -> {
+            if (duration.isEternal())
+                return new StringBuilder("ETERNAL");
 
-            return new StringBuilder()
-                .append(duration.getDurationAmount())
-                .append(' ')
-                .append(duration.getTimeUnit() == null ? TimeUnit.MILLISECONDS : duration.getTimeUnit())
-                .toString();
+            if (duration.isZero())
+                return new StringBuilder("ZERO");
+
+            return new StringBuilder().append(duration.getDurationAmount()).append(' ')
+                .append(duration.getTimeUnit() == null ? TimeUnit.MILLISECONDS : duration.getTimeUnit());
         };
 
-        String expiryPlcStr = new StringBuilder(expiryPlc.getClass().getSimpleName())
-            .append(" [create=").append(func.apply(expiryPlc.getExpiryForCreation()))
-            .append(", update=").append(func.apply(expiryPlc.getExpiryForUpdate()))
-            .append(", access=").append(func.apply(expiryPlc.getExpiryForAccess()))
-            .append(']').toString();
+        boolean first = true;
+
+        StringBuilder expiryPlcStrBld = new StringBuilder(expiryPlc.getClass().getSimpleName());
+
+        Supplier<Duration> getDuration = () -> null;
+
+        for (String field : List.of("create", "update", "access")) {
+            switch (field) {
+                case "create":
+                    getDuration = expiryPlc::getExpiryForCreation;
+                    break;
+
+                case "update":
+                    getDuration = expiryPlc::getExpiryForUpdate;
+                    break;
+
+                case "access":
+                    getDuration = expiryPlc::getExpiryForAccess;
+            }
+
+            if (getDuration.get() != null) {
+                if (!first)
+                    expiryPlcStrBld.append(", ");
+                else {
+                    expiryPlcStrBld.append(" [");
+                    first = false;
+                }
+
+                expiryPlcStrBld.append(field).append('=').append(durationToStr.apply(getDuration.get()));
+            }
+        }
+
+        if (!first)
+            expiryPlcStrBld.append(']');
 
         return S.toString((Class<Factory<?>>)cache.cacheConfiguration().getExpiryPolicyFactory().getClass(),
-            cache.cacheConfiguration().getExpiryPolicyFactory(),
-            "expiryPlc", expiryPlcStr);
+            cache.cacheConfiguration().getExpiryPolicyFactory(), "expiryPlc", expiryPlcStrBld);
     }
 
     /** @return {@code Yes} if cache has expired entries, {@code No} otherwise. If {@code eagerTtl = true} returns 'Unknown'. */

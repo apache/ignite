@@ -1134,9 +1134,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override public boolean hasEntriesPendingExpire(int cacheId) throws IgniteCheckedException {
-        for (CacheDataStore store : cacheDataStores())
+        for (CacheDataStore store : cacheDataStores()) {
             if (((GridCacheDataStore)store).hasEntriesPendingExpire(cacheId))
                 return true;
+        }
 
         return false;
     }

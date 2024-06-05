@@ -20,7 +20,7 @@ package org.apache.ignite.internal.metric;
 import java.util.Arrays;
 import java.util.Collection;
 import javax.cache.configuration.Factory;
-import javax.cache.configuration.FactoryBuilder;
+import javax.cache.expiry.AccessedExpiryPolicy;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.EternalExpiryPolicy;
@@ -37,6 +37,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 
 /** Tests for {@link CacheView} expiry policy factory representation. */
@@ -45,14 +46,14 @@ public class SystemViewCacheExpiryPolicyTest extends GridCommonAbstractTest {
     /** {@link Factory} instances for test with different expiry policy. */
     private static final Factory[] TTL_FACTORIES = {
         null,
-        new FactoryBuilder.SingletonFactory<ExpiryPolicy>(new EternalExpiryPolicy()),
-        new FactoryBuilder.SingletonFactory<ExpiryPolicy>(new CreatedExpiryPolicy(new Duration(MILLISECONDS, 100L))),
-        new FactoryBuilder.SingletonFactory<ExpiryPolicy>(new ModifiedExpiryPolicy(new Duration(MILLISECONDS, 5L))),
+        EternalExpiryPolicy.factoryOf(),
+        CreatedExpiryPolicy.factoryOf(new Duration(MILLISECONDS, 100L)),
+        ModifiedExpiryPolicy.factoryOf(new Duration(MILLISECONDS, 5L)),
+        AccessedExpiryPolicy.factoryOf(new Duration(MINUTES, 10L)),
         new PlatformExpiryPolicyFactory(2, 4, 8),
         new PlatformExpiryPolicyFactory(1, -2, -1),
         new PlatformExpiryPolicyFactory(-1, 0, -1),
-        new PlatformExpiryPolicyFactory(0, 1, -1),
-        EternalExpiryPolicy.factoryOf()
+        new PlatformExpiryPolicyFactory(0, 1, -1)
     };
 
     /** {@link Factory} instance. */
@@ -69,20 +70,19 @@ public class SystemViewCacheExpiryPolicyTest extends GridCommonAbstractTest {
     @Parameterized.Parameters(name = "factory={0}, actual={1}")
     public static Collection parameters() {
         return Arrays.asList(new Object[][] {
-            {TTL_FACTORIES[0], "SingletonFactory [expiryPlc=EternalExpiryPolicy [create=0 MILLISECONDS, update=null, access=null]]"},
-            {TTL_FACTORIES[1], "SingletonFactory [expiryPlc=EternalExpiryPolicy [create=0 MILLISECONDS, update=null, access=null]]"},
-            {TTL_FACTORIES[2], "SingletonFactory [expiryPlc=CreatedExpiryPolicy [create=100 MILLISECONDS, update=null, access=null]]"},
-            {TTL_FACTORIES[3], "SingletonFactory [expiryPlc=ModifiedExpiryPolicy" +
-                "[create=5 MILLISECONDS, update=5 MILLISECONDS, access=null]]"},
-            {TTL_FACTORIES[4], "PlatformExpiryPolicyFactory [create=2, update=4, access=8," +
-                "expiryPlc=PlatformExpiryPolicy [create=2 MILLISECONDS, update=4 MILLISECONDS, access=8 MILLISECONDS]]"},
-            {TTL_FACTORIES[5], "PlatformExpiryPolicyFactory [create=1, update=-2, access=-1," +
-                "expiryPlc=PlatformExpiryPolicy [create=1 MILLISECONDS, update=null, access=0 MILLISECONDS]]"},
-            {TTL_FACTORIES[6], "PlatformExpiryPolicyFactory [create=-1, update=0, access=-1," +
-                "expiryPlc=PlatformExpiryPolicy [create=0 MILLISECONDS, update=0 SECONDS, access=0 MILLISECONDS]]"},
-            {TTL_FACTORIES[7], "PlatformExpiryPolicyFactory [create=0, update=1, access=-1," +
-                "expiryPlc=PlatformExpiryPolicy [create=0 SECONDS, update=1 MILLISECONDS, access=0 MILLISECONDS]]"},
-            {TTL_FACTORIES[8], "SingletonFactory [expiryPlc=EternalExpiryPolicy [create=0 MILLISECONDS, update=null, access=null]]"}
+            {TTL_FACTORIES[0], "SingletonFactory [expiryPlc=EternalExpiryPolicy [create=ETERNAL]]"},
+            {TTL_FACTORIES[1], "SingletonFactory [expiryPlc=EternalExpiryPolicy [create=ETERNAL]]"},
+            {TTL_FACTORIES[2], "SingletonFactory [expiryPlc=CreatedExpiryPolicy [create=100 MILLISECONDS]]"},
+            {TTL_FACTORIES[3], "SingletonFactory [expiryPlc=ModifiedExpiryPolicy [create=5 MILLISECONDS, update=5 MILLISECONDS]]"},
+            {TTL_FACTORIES[4], "SingletonFactory [expiryPlc=AccessedExpiryPolicy [create=10 MINUTES, access=10 MINUTES]]"},
+            {TTL_FACTORIES[5], "PlatformExpiryPolicyFactory [create=2, update=4, access=8," +
+                " expiryPlc=PlatformExpiryPolicy [create=2 MILLISECONDS, update=4 MILLISECONDS, access=8 MILLISECONDS]]"},
+            {TTL_FACTORIES[6], "PlatformExpiryPolicyFactory [create=1, update=-2, access=-1," +
+                " expiryPlc=PlatformExpiryPolicy [create=1 MILLISECONDS, access=ETERNAL]]"},
+            {TTL_FACTORIES[7], "PlatformExpiryPolicyFactory [create=-1, update=0, access=-1," +
+                " expiryPlc=PlatformExpiryPolicy [create=ETERNAL, update=ZERO, access=ETERNAL]]"},
+            {TTL_FACTORIES[8], "PlatformExpiryPolicyFactory [create=0, update=1, access=-1," +
+                " expiryPlc=PlatformExpiryPolicy [create=ZERO, update=1 MILLISECONDS, access=ETERNAL]]"}
         });
     }
 
