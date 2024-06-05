@@ -97,12 +97,12 @@ public abstract class AbstractSnapshotVerificationTask extends
 
     /**
      * @param name Snapshot name.
-     * @param metaFileName Name of the snapshot metadata file.
+     * @param consId Consistent id of the related node.
      * @param args Check snapshot parameters.
      *
      * @return Compute job.
      */
-    protected abstract AbstractSnapshotVerificationJob createJob(String name, String metaFileName, SnapshotPartitionsVerifyTaskArg args);
+    protected abstract AbstractSnapshotVerificationJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args);
 
     /** */
     protected abstract static class AbstractSnapshotVerificationJob extends ComputeJobAdapter {
@@ -123,8 +123,8 @@ public abstract class AbstractSnapshotVerificationTask extends
         /** Snapshot directory path. */
         @Nullable protected final String snpPath;
 
-        /** Name of the snapshot metadata file. */
-        protected final String metaFileName;
+        /** Consistent id of the related node. */
+        protected final String consId;
 
         /** Set of cache groups to be checked in the snapshot. {@code Null} or empty to check everything. */
         @Nullable protected final Collection<String> rqGrps;
@@ -135,20 +135,20 @@ public abstract class AbstractSnapshotVerificationTask extends
         /**
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
-         * @param metaFileName Name of the snapshot metadata file.
+         * @param consId Consistent id of the related node.
          * @param rqGrps Set of cache groups to be checked in the snapshot. {@code Null} or empty to check everything.
          * @param check If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched.
          */
         protected AbstractSnapshotVerificationJob(
             String snpName,
             @Nullable String snpPath,
-            String metaFileName,
+            String consId,
             @Nullable Collection<String> rqGrps,
             boolean check
         ) {
             this.snpName = snpName;
             this.snpPath = snpPath;
-            this.metaFileName = metaFileName;
+            this.consId = consId;
             this.rqGrps = rqGrps;
             this.check = check;
         }

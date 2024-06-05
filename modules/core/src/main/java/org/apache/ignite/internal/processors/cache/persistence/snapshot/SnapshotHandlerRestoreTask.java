@@ -39,8 +39,8 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected SnapshotHandlerRestoreJob createJob(String name, String metaFileName, SnapshotPartitionsVerifyTaskArg args) {
-        return new SnapshotHandlerRestoreJob(name, args.snapshotPath(), metaFileName, args.cacheGroupNames(), args.check());
+    @Override protected SnapshotHandlerRestoreJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args) {
+        return new SnapshotHandlerRestoreJob(name, args.snapshotPath(), consId, args.cacheGroupNames(), args.check());
     }
 
     /** {@inheritDoc} */
@@ -90,18 +90,18 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         /**
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
-         * @param metaFileName Name of the snapshot metadata file.
+         * @param consId Consistent id of the related node.
          * @param grps Cache group names.
          * @param check If {@code true} check snapshot before restore.
          */
         public SnapshotHandlerRestoreJob(
             String snpName,
             @Nullable String snpPath,
-            String metaFileName,
+            String consId,
             Collection<String> grps,
             boolean check
         ) {
-            super(snpName, snpPath, metaFileName, grps, check);
+            super(snpName, snpPath, consId, grps, check);
         }
 
         /** {@inheritDoc} */
@@ -109,7 +109,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
             try {
                 IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
                 File snpDir = snpMgr.snapshotLocalDir(snpName, snpPath);
-                SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpDir, metaFileName);
+                SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpDir, consId);
 
                 return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE,
                     new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false, check));
