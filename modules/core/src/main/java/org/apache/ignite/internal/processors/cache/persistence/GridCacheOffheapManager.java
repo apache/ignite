@@ -2710,7 +2710,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         public boolean hasEntriesPendingExpire(int cacheId) throws IgniteCheckedException {
             CacheDataStore delegate0 = init0(true);
 
-            if(delegate0 == null)
+            if (delegate0 == null)
                 return false;
 
             if (grp.sharedGroup()) {
