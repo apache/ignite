@@ -52,7 +52,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.management.cache.CacheFilterEnum;
@@ -79,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -314,30 +314,32 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             "The check procedure has failed, conflict partitions has been found: [counterConflicts=1, hashConflicts=0]");
     }
 
-    /** Ensures that check metrics doesn't affect create snapshot. */
+    /** Checks that snapshot validation metrics aren't affected by a snapshot creation. */
     @Test
-    public void testCreateSnapshotNoValidateMetrics() throws Exception {
+    public void testCreateSnapshotNoValidationMetrics() throws Exception {
         IgniteEx ig = startGridsWithCache(3, dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 16)),
             100);
 
-        MetricRegistry mreg = ig.context().metric().registry(SnapshotPartitionsVerifyHandler.metricsRegName(SNAPSHOT_NAME));
+        List<BlockingExecutor> execs = setBlockingSnapshotExecutor(G.allGrids());
 
-        assertNull(mreg.<LongMetric>findMetric("snapshotName"));
-        assertNull(mreg.<LongMetric>findMetric("progress"));
-        assertNull(mreg.<LongMetric>findMetric("requestId"));
+        IgniteFuture<?> fut = doTestNoSnapshotCheckMetrics(ig, () -> {
+            IgniteFuture<?> fut0 = snp(ig).createSnapshot(SNAPSHOT_NAME);
 
-        snp(ig).createSnapshot(SNAPSHOT_NAME).get();
+            execs.forEach(e -> e.waitForBlocked(getTestTimeout()));
 
-        assertNull(mreg.<LongMetric>findMetric("snapshotName"));
-        assertNull(mreg.<LongMetric>findMetric("progress"));
-        assertNull(mreg.<LongMetric>findMetric("requestId"));
+            return fut0;
+        });
 
-        assertEquals(mreg, ig.context().metric().registry(SnapshotPartitionsVerifyHandler.metricsRegName(SNAPSHOT_NAME)));
+        execs.forEach(BlockingExecutor::unblock);
+
+        fut.get();
     }
 
-    /** Tests there is no snapshot validation metrics on stapshot restore by default. */
+    /**
+     * Tests there is no snapshot validation metrics on stapshot restore by default.
+     */
     @Test
-    public void testRestoreSnapshotNoCheckMetrics() throws Exception {
+    public void testRestoreSnapshotNoValidationMetrics() throws Exception {
         IgniteEx ig = startGridsWithCache(3, dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 16)),
             100);
 
@@ -353,7 +355,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         delay.set(true);
 
-        IgniteFuture<?> fut = checkNoSnapshotValidationMetrics(ig, () -> {
+        IgniteFuture<?> fut = doTestNoSnapshotCheckMetrics(ig, () -> {
             IgniteFuture<Void> res = snp(ig).restoreSnapshot(SNAPSHOT_NAME, null);
 
             try {
@@ -370,11 +372,14 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         fut.get();
 
-        checkNoSnapshotValidationMetrics(ig, null);
+        doTestNoSnapshotCheckMetrics(ig, null);
     }
 
-    /** Checks that there is no any snapshot validation metrics. */
-    protected @Nullable IgniteFuture<?> checkNoSnapshotValidationMetrics(IgniteEx ig, @Nullable Supplier<IgniteFuture<?>> snpOperation) {
+    /**
+     * Checks that there is no any snapshot validation metrics.
+     */
+    protected @Nullable IgniteFuture<?> doTestNoSnapshotCheckMetrics(IgniteEx ig,
+        @Nullable Supplier<IgniteFuture<?>> snpOperation) {
         MetricRegistry mreg = ig.context().metric().registry(SnapshotPartitionsVerifyHandler.metricsRegName(SNAPSHOT_NAME));
 
         assertNull(mreg.<LongMetric>findMetric("snapshotName"));
@@ -398,11 +403,39 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** */
     @Test
-    public void testCheckSnapshotCheckMetrics() throws Exception {
+    public void testCheckSnapshotValidationMetrics() throws Exception {
+        doTestSnapshotValidationMetrics(3, () -> new IgniteFutureImpl<>(snp(grid(0)).checkSnapshot(SNAPSHOT_NAME, null)));
+    }
+
+    /** */
+    @Test
+    public void testRestoreSnapshotValidationMetrics() throws Exception {
         IgniteEx ig = startGridsWithCache(3, dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 16)),
             100);
 
         snp(ig).createSnapshot(SNAPSHOT_NAME).get();
+
+        ig.destroyCache(dfltCacheCfg.getName());
+
+        awaitPartitionMapExchange();
+
+        doTestSnapshotValidationMetrics(0, () -> snp(ig).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, true));
+    }
+
+    /**
+     *
+     */
+    protected <T> void doTestSnapshotValidationMetrics(int gridsWithSnapshot, Supplier<IgniteFuture<?>> snpOperation) throws Exception {
+        IgniteEx ig;
+
+        if (gridsWithSnapshot > 0) {
+            ig = startGridsWithCache(gridsWithSnapshot, dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 16)),
+                100);
+
+            snp(ig).createSnapshot(SNAPSHOT_NAME).get();
+        }
+        else
+            ig = grid(0);
 
         AtomicBoolean delyaFileIo = new AtomicBoolean();
 
@@ -429,7 +462,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         long timeBeforeStart = System.currentTimeMillis();
 
-        IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkFut = snp(ig).checkSnapshot(SNAPSHOT_NAME, null);
+        IgniteFuture<?> checkFut = snpOperation.get();
 
         assertTrue(waitForCondition(() -> mreg.findMetric("startTime") != null, getTestTimeout()));
 
@@ -459,7 +492,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertNull(mreg2.findMetric("requestId"));
     }
 
-    /** @throws Exception If fails. */
+    /**
+     * @throws Exception If fails.
+     */
     @Test
     public void testClusterSnapshotCheckOtherCluster() throws Exception {
         IgniteEx ig0 = startGridsWithCache(3, dfltCacheCfg.
