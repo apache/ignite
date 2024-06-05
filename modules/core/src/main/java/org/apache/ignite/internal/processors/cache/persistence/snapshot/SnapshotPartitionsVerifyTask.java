@@ -46,8 +46,8 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VerifySnapshotPartitionsJob createJob(String name, String constId, SnapshotPartitionsVerifyTaskArg args) {
-        return new VerifySnapshotPartitionsJob(name, args.snapshotPath(), constId, args.cacheGroupNames(), args.check());
+    @Override protected VerifySnapshotPartitionsJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args) {
+        return new VerifySnapshotPartitionsJob(name, args.snapshotPath(), consId, args.cacheGroupNames(), args.check());
     }
 
     /** {@inheritDoc} */
@@ -56,13 +56,13 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     }
 
     /** Job that collects update counters of snapshot partitions on the node it executes. */
-    private static class VerifySnapshotPartitionsJob extends AbstractSnapshotPartitionsVerifyJob {
+    private static class VerifySnapshotPartitionsJob extends AbstractSnapshotVerificationJob {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /**
          * @param snpName Snapshot name to validate.
-         * @param consId Consistent snapshot metadata file name.
+         * @param metaFileName Name of the snapshot metadata file.
          * @param rqGrps Set of cache groups to be checked in the snapshot or {@code empty} to check everything.
          * @param snpPath Snapshot directory path.
          * @param check If {@code true} check snapshot before restore.
@@ -70,11 +70,11 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
         public VerifySnapshotPartitionsJob(
             String snpName,
             @Nullable String snpPath,
-            String consId,
+            String metaFileName,
             Collection<String> rqGrps,
             boolean check
         ) {
-            super(snpName, snpPath, consId, rqGrps, check);
+            super(snpName, snpPath, metaFileName, rqGrps, check);
         }
 
         /** {@inheritDoc} */
@@ -83,12 +83,12 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
 
             if (log.isInfoEnabled()) {
                 log.info("Verify snapshot partitions procedure has been initiated " +
-                    "[snpName=" + snpName + ", consId=" + consId + ']');
+                    "[snpName=" + snpName + ", consId=" + metaFileName + ']');
             }
 
             try {
                 File snpDir = cctx.snapshotMgr().snapshotLocalDir(snpName, snpPath);
-                SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpDir, consId);
+                SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpDir, metaFileName);
 
                 return new SnapshotPartitionsVerifyHandler(cctx)
                     .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false, check));
@@ -99,7 +99,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
             finally {
                 if (log.isInfoEnabled()) {
                     log.info("Verify snapshot partitions procedure has been finished " +
-                        "[snpName=" + snpName + ", consId=" + consId + ']');
+                        "[snpName=" + snpName + ", consId=" + metaFileName + ']');
                 }
             }
         }
@@ -114,14 +114,14 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
 
             VerifySnapshotPartitionsJob job = (VerifySnapshotPartitionsJob)o;
 
-            return snpName.equals(job.snpName) && consId.equals(job.consId) &&
+            return snpName.equals(job.snpName) && metaFileName.equals(job.metaFileName) &&
                 Objects.equals(rqGrps, job.rqGrps) && Objects.equals(snpPath, job.snpPath) &&
                 Objects.equals(check, job.check);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return Objects.hash(snpName, consId, rqGrps, snpPath, check);
+            return Objects.hash(snpName, metaFileName, rqGrps, snpPath, check);
         }
     }
 }

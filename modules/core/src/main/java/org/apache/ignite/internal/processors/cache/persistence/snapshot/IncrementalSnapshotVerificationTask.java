@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -134,12 +133,12 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
     }
 
     /** {@inheritDoc} */
-    @Override protected VerifyIncrementalSnapshotJob createJob(String name, String constId, SnapshotPartitionsVerifyTaskArg args) {
-        return new VerifyIncrementalSnapshotJob(name, args.snapshotPath(), args.incrementIndex(), constId);
+    @Override protected VerifyIncrementalSnapshotJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args) {
+        return new VerifyIncrementalSnapshotJob(name, args.snapshotPath(), args.incrementIndex(), consId);
     }
 
     /** */
-    private static class VerifyIncrementalSnapshotJob extends AbstractSnapshotPartitionsVerifyJob {
+    private static class VerifyIncrementalSnapshotJob extends AbstractSnapshotVerificationJob {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -153,15 +152,15 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
          * @param incIdx Incremental snapshot index.
-         * @param consId Consistent ID.
+         * @param metaFileName Name of the snapshot metadata file.
          */
         public VerifyIncrementalSnapshotJob(
             String snpName,
             @Nullable String snpPath,
             int incIdx,
-            String consId
+            String metaFileName
         ) {
-            super(snpName, snpPath, consId, Collections.emptySet(), true);
+            super(snpName, snpPath, metaFileName, null, true);
 
             this.incIdx = incIdx;
         }
@@ -173,7 +172,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
             try {
                 if (log.isInfoEnabled()) {
                     log.info("Verify incremental snapshot procedure has been initiated " +
-                        "[snpName=" + snpName + ", incrementIndex=" + incIdx + ", consId=" + consId + ']');
+                        "[snpName=" + snpName + ", incrementIndex=" + incIdx + ", metaFileName=" + metaFileName + ']');
                 }
 
                 if (incIdx <= 0)
@@ -203,7 +202,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                     }
                 };
 
-                short locNodeId = blt.consistentIdMapping().get(consId);
+                short locNodeId = blt.consistentIdMapping().get(metaFileName);
 
                 Set<GridCacheVersion> activeDhtTxs = new HashSet<>();
                 Map<GridCacheVersion, Set<Short>> txPrimParticipatingNodes = new HashMap<>();
@@ -321,7 +320,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
 
                 Map<Object, TransactionsHashRecord> txHashRes = nodesTxHash.entrySet().stream()
                     .map(e -> new TransactionsHashRecord(
-                        consId,
+                        metaFileName,
                         blt.compactIdMapping().get(e.getKey()),
                         e.getValue().hash
                     ))
@@ -336,7 +335,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                         e -> new PartitionHashRecordV2(
                             e.getKey(),
                             false,
-                            consId,
+                            metaFileName,
                             null,
                             0,
                             null,
@@ -346,7 +345,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
 
                 if (log.isInfoEnabled()) {
                     log.info("Verify incremental snapshot procedure finished " +
-                        "[snpName=" + snpName + ", incrementIndex=" + incIdx + ", consId=" + consId +
+                        "[snpName=" + snpName + ", incrementIndex=" + incIdx + ", metaFileName=" + metaFileName +
                         ", txCnt=" + procTxCnt.sum() + ", dataEntries=" + procEntriesCnt.sum() +
                         ", walSegments=" + procSegCnt.get() + ']');
                 }
@@ -401,12 +400,12 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
             VerifyIncrementalSnapshotJob job = (VerifyIncrementalSnapshotJob)o;
 
             return snpName.equals(job.snpName) && Objects.equals(incIdx, job.incIdx) && Objects.equals(snpPath, job.snpPath)
-                && consId.equals(job.consId);
+                && metaFileName.equals(job.metaFileName);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return Objects.hash(snpName, incIdx, snpPath, consId);
+            return Objects.hash(snpName, incIdx, snpPath, metaFileName);
         }
     }
 

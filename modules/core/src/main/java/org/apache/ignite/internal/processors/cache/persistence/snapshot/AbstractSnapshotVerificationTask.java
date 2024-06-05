@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -98,15 +97,15 @@ public abstract class AbstractSnapshotVerificationTask extends
 
     /**
      * @param name Snapshot name.
-     * @param constId Snapshot metadata file name.
+     * @param consId Snapshot metadata file name.
      * @param args Check snapshot parameters.
      *
      * @return Compute job.
      */
-    protected abstract AbstractSnapshotPartitionsVerifyJob createJob(String name, String constId, SnapshotPartitionsVerifyTaskArg args);
+    protected abstract AbstractSnapshotVerificationJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args);
 
     /** */
-    protected abstract static class AbstractSnapshotPartitionsVerifyJob extends ComputeJobAdapter {
+    protected abstract static class AbstractSnapshotVerificationJob extends ComputeJobAdapter {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -124,33 +123,33 @@ public abstract class AbstractSnapshotVerificationTask extends
         /** Snapshot directory path. */
         @Nullable protected final String snpPath;
 
-        /** Consistent ID. */
-        protected final String consId;
+        /** Name of the snapshot metadata file. */
+        protected final String metaFileName;
 
-        /** Set of cache groups to be checked in the snapshot or {@code empty} to check everything. */
-        protected final Collection<String> rqGrps;
+        /** Set of cache groups to be checked in the snapshot. {@code Null} or empty to check everything. */
+        @Nullable protected final Collection<String> rqGrps;
 
-        /** If {@code true} check snapshot before restore. */
+        /** If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched. */
         protected final boolean check;
 
         /**
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
-         * @param consId Consistent snapshot metadata file name.
-         * @param rqGrps Set of cache groups to be checked in the snapshot or {@code empty} to check everything.
-         * @param check If {@code true} check snapshot before restore.
+         * @param metaFileName Name of the snapshot metadata file.
+         * @param rqGrps Set of cache groups to be checked in the snapshot. {@code Null} or empty to check everything.
+         * @param check If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched.
          */
-        protected AbstractSnapshotPartitionsVerifyJob(
+        protected AbstractSnapshotVerificationJob(
             String snpName,
             @Nullable String snpPath,
-            String consId,
+            String metaFileName,
             @Nullable Collection<String> rqGrps,
             boolean check
         ) {
             this.snpName = snpName;
             this.snpPath = snpPath;
-            this.consId = consId;
-            this.rqGrps = F.isEmpty(rqGrps) ? Collections.emptyList() : Collections.unmodifiableCollection(rqGrps);
+            this.metaFileName = metaFileName;
+            this.rqGrps = rqGrps;
             this.check = check;
         }
     }

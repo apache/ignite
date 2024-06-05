@@ -39,8 +39,8 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected SnapshotHandlerRestoreJob createJob(String name, String constId, SnapshotPartitionsVerifyTaskArg args) {
-        return new SnapshotHandlerRestoreJob(name, args.snapshotPath(), constId, args.cacheGroupNames(), args.check());
+    @Override protected SnapshotHandlerRestoreJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args) {
+        return new SnapshotHandlerRestoreJob(name, args.snapshotPath(), consId, args.cacheGroupNames(), args.check());
     }
 
     /** {@inheritDoc} */
@@ -83,25 +83,25 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
     }
 
     /** Invokes all {@link SnapshotHandlerType#RESTORE} handlers locally. */
-    private static class SnapshotHandlerRestoreJob extends AbstractSnapshotPartitionsVerifyJob {
+    private static class SnapshotHandlerRestoreJob extends AbstractSnapshotVerificationJob {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /**
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
-         * @param consistentId String representation of the consistent node ID.
+         * @param metaFileName Name of the snapshot metadata file.
          * @param grps Cache group names.
          * @param check If {@code true} check snapshot before restore.
          */
         public SnapshotHandlerRestoreJob(
             String snpName,
             @Nullable String snpPath,
-            String consistentId,
+            String metaFileName,
             Collection<String> grps,
             boolean check
         ) {
-            super(snpName, snpPath, consistentId, grps, check);
+            super(snpName, snpPath, metaFileName, grps, check);
         }
 
         /** {@inheritDoc} */
@@ -109,7 +109,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
             try {
                 IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
                 File snpDir = snpMgr.snapshotLocalDir(snpName, snpPath);
-                SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpDir, consId);
+                SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpDir, metaFileName);
 
                 return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE,
                     new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false, check));
