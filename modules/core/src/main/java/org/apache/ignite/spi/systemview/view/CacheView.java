@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.systemview.view;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
@@ -348,9 +347,9 @@ public class CacheView {
 
         StringBuilder expiryPlcStrBld = new StringBuilder(expiryPlc.getClass().getSimpleName());
 
-        appendField(expiryPlcStrBld, "create", expiryPlc::getExpiryForCreation, first);
-        appendField(expiryPlcStrBld, "update", expiryPlc::getExpiryForUpdate, first);
-        appendField(expiryPlcStrBld, "access", expiryPlc::getExpiryForAccess, first);
+        appendField(expiryPlcStrBld, "create", expiryPlc.getExpiryForCreation(), first);
+        appendField(expiryPlcStrBld, "update", expiryPlc.getExpiryForUpdate(), first);
+        appendField(expiryPlcStrBld, "access", expiryPlc.getExpiryForAccess(), first);
 
         if (!first.get())
             expiryPlcStrBld.append(']');
@@ -363,15 +362,16 @@ public class CacheView {
     /**
      * @param out {@link StringBuilder} to append to.
      * @param fieldName create/update/access expiry policy field name.
-     * @param durationSupplier Duration supplier for specified expiry policy field name.
+     * @param duration {@link Duration} for specified expiry policy field name.
      * @param first {@link AtomicBoolean} flag indicating whether the field is the first in sequence.
      */
     private static void appendField(
         StringBuilder out,
         String fieldName,
-        Supplier<Duration> durationSupplier,
-        AtomicBoolean first) {
-        if (durationSupplier.get() != null) {
+        Duration duration,
+        AtomicBoolean first
+    ) {
+        if (duration != null) {
             if (!first.get())
                 out.append(", ");
             else {
@@ -380,7 +380,7 @@ public class CacheView {
             }
 
             out.append(fieldName).append('=');
-            appendDuration(out, durationSupplier.get());
+            appendDuration(out, duration);
         }
     }
 
