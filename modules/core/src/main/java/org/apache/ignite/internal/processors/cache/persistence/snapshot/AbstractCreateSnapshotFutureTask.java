@@ -27,12 +27,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -90,10 +88,15 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotP
 
     /** {@inheritDoc} */
     @Override protected boolean doStop() {
+        Throwable th = error();
+
+        if (th != null && !isCancelled())
+            U.error(log, "Snapshot task has accepted exception to stop", th);
+
         try {
             closeAsync().get();
         }
-        catch (InterruptedException | ExecutionException e) {
+        catch (Throwable e) {
             U.error(log, "SnapshotFutureTask cancellation failed", e);
 
             return false;
@@ -211,18 +214,6 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotP
         catch (IgniteCheckedException e) {
             acceptException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void acceptException(Throwable th) {
-        if (th == null)
-            return;
-
-        if (!(th instanceof IgniteFutureCancelledCheckedException))
-            U.error(log, "Snapshot task has accepted exception to stop", th);
-
-        if (err.compareAndSet(null, th))
-            closeAsync();
     }
 
     /**

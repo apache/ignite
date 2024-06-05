@@ -27,10 +27,12 @@ public abstract class AbstractSnapshotCacheAffectingFuture<T> extends AbstractSn
     /** */
     protected final GridCacheSharedContext<?, ?> cctx;
 
+    /** */
+    protected final IgniteLogger log;
+
     /**
      * Ctor.
      *
-     * @param log Logger.
      * @param sharedCacheCtx Shared cache context.
      * @param srcNodeId Snapshot operation originator node id.
      * @param reqId Snapshot operation request id.
@@ -38,14 +40,14 @@ public abstract class AbstractSnapshotCacheAffectingFuture<T> extends AbstractSn
      */
     protected AbstractSnapshotCacheAffectingFuture(
         GridCacheSharedContext<?, ?> sharedCacheCtx,
-        IgniteLogger log,
         UUID srcNodeId,
         UUID reqId,
         String snpName
     ) {
-        super(log, srcNodeId, reqId, snpName);
+        super(srcNodeId, reqId, snpName);
 
-        this.cctx = sharedCacheCtx;
+        cctx = sharedCacheCtx;
+        log = cctx.logger(getClass());
     }
 
     /**

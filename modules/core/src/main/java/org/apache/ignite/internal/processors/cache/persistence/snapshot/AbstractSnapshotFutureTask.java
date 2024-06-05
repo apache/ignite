@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -27,10 +27,6 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
-    /** Ignite logger. */
-    @GridToStringExclude
-    @Nullable protected final IgniteLogger log;
-
     /** Node id which cause snapshot operation. */
     protected final UUID srcNodeId;
 
@@ -46,13 +42,12 @@ public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T>
 
     /**
      * Ctor.
-     * @param log Logger.
+     *
      * @param srcNodeId Snapshot operation originator node id.
      * @param reqId Snapshot operation request id.
      * @param snpName Snapshot name.
      */
-    protected AbstractSnapshotFutureTask(@Nullable IgniteLogger log, UUID srcNodeId, UUID reqId, String snpName) {
-        this.log = log;
+    protected AbstractSnapshotFutureTask(UUID srcNodeId, UUID reqId, String snpName) {
         this.srcNodeId = srcNodeId;
         this.reqId = reqId;
         this.snpName = snpName;
@@ -62,29 +57,55 @@ public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T>
      * Initiates snapshot task.
      *
      * @return {@code true} if task started by this call.
+     * @see #doStart()
      */
     public final boolean start() {
         return !isDone() && started.compareAndSet(false, true) && doStart();
     }
 
-    /** */
+    /**
+     * Is called once when the future starts.
+     *
+     * @see #start()
+     */
     protected abstract boolean doStart();
 
-    /** */
+    /**
+     * Is called once when the future stops.
+     *
+     * @see #onDone(Object, Throwable, boolean)
+     * @see #onDone(Object, Throwable)
+     * @see #acceptException(Throwable)
+     * @see #isCancelled()
+     * @see #isFailed()
+     * @see #error()
+     */
     protected abstract boolean doStop();
 
     /**
      * @param th An exception which occurred during snapshot processing.
+     * @see #doStop()
      */
-    public void acceptException(Throwable th) {
+    public final boolean acceptException(Throwable th) {
         assert th != null;
 
-        onDone(null, th, false);
+        return onDone(null, th, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected final boolean onDone(@Nullable T res, @Nullable Throwable err, boolean cancel) {
+        return super.onDone(res, err, cancel) && doStop();
+    }
+
+    /** {@inheritDoc} */
+    @Override public final boolean onDone(@Nullable T res, @Nullable Throwable err) {
+        return super.onDone(res, err) && doStop();
     }
 
     /** {@inheritDoc} */
     @Override public final boolean cancel() {
-        return onDone(null, null, true) && doStop();
+        return acceptException(new IgniteFutureCancelledCheckedException("Snapshot operation has been cancelled " +
+            "by external process [snpName=" + snpName + ']'));
     }
 
     /**

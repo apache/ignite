@@ -183,20 +183,15 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         this.locBuff = locBuff;
     }
 
-    /**
-     * @param th An exception which occurred during snapshot processing.
-     */
-    @Override public void acceptException(Throwable th) {
-        if (th == null)
-            return;
-
-        super.acceptException(th);
-
-        startedFut.onDone(th);
-    }
-
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable SnapshotFutureTaskResult res, @Nullable Throwable err) {
+    @Override protected boolean doStop() {
+        Throwable err = this.err.get();
+
+        if (err == null)
+            err = error();
+
+        startedFut.onDone(err);
+
         for (PageStoreSerialWriter writer : partDeltaWriters.values())
             U.closeQuiet(writer);
 
@@ -210,17 +205,14 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
         // Delete snapshot directory if no other files exists.
         try {
-            if (U.fileCount(tmpSnpWorkDir.toPath()) == 0 || err != null)
+            if (U.fileCount(tmpSnpWorkDir.toPath()) == 0 || this.err != null)
                 U.delete(tmpSnpWorkDir.toPath());
         }
         catch (IOException e) {
             log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + tmpSnpWorkDir + ']');
         }
 
-        if (err != null)
-            startedFut.onDone(err);
-
-        return super.onDone(res, err);
+        return true;
     }
 
     /**
