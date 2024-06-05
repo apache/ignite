@@ -394,6 +394,25 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertNull(mreg2.findMetric("requestId"));
     }
 
+    /** */
+    @Test
+    public void testRestoreSnapshotCheckMetrics() throws Exception {
+        IgniteEx ig = startGridsWithCache(3, dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 16)),
+            100);
+
+        snp(ig).createSnapshot(SNAPSHOT_NAME).get();
+
+        ig.destroyCache(dfltCacheCfg.getName());
+
+        awaitPartitionMapExchange();
+
+        AtomicBoolean delay = injectSlowFileIo(G.allGrids());
+
+        delay.set(true);
+
+        snp(ig).restoreSnapshot(SNAPSHOT_NAME, null).get();
+    }
+
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckOtherCluster() throws Exception {

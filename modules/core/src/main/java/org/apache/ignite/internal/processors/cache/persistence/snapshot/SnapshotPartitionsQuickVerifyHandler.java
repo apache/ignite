@@ -111,7 +111,7 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
     @Override protected CalculateSnapshotHashesFuture createFuture(SnapshotHandlerContext opCtx) {
         return new CalculateSnapshotHashesFuture(opCtx) {
             // Prevents metric creation.
-            @Override protected void registerMetrics(String snpName) {
+            @Override protected void registerMetrics() {
                 // No-op.
             }
         };

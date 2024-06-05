@@ -937,6 +937,15 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public static AtomicBoolean injectSlowFileIo(Collection<Ignite> grids) {
+        AtomicBoolean waitFlag = new AtomicBoolean();
+
+        injectSlowFileIo(grids, waitFlag, null);
+
+        return waitFlag;
+    }
+
+    /** */
     public static void injectSlowFileIo(Collection<Ignite> grids, AtomicBoolean waitFlag, @Nullable Runnable beforeProceed) {
         for (Ignite ig : grids) {
             FilePageStoreManager pageStore = (FilePageStoreManager)((IgniteEx)ig).context().cache().context().pageStore();

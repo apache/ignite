@@ -436,7 +436,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             SnapshotMetadata meta = opCtx.metadata();
 
             try {
-                registerMetrics(meta.snapshotName());
+                registerMetrics();
 
                 Set<Integer> grps = filterGroups(meta);
 
@@ -688,7 +688,10 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         }
 
         /** */
-        protected void registerMetrics(String snpName) {
+        protected void registerMetrics() {
+            if (!opCtx.check())
+                return;
+
             mreg = cctx.kernalContext().metric().registry(metricsRegName(snpName));
 
             assert mreg.findMetric("startTime") == null;
