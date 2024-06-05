@@ -25,6 +25,7 @@ import com.github.benmanes.caffeine.cache.RemovalListener;
 import de.kp.works.ignite.IgniteAdmin;
 import de.kp.works.ignite.IgniteConf;
 import de.kp.works.ignite.IgniteConstants;
+import de.kp.works.ignite.IndexMetadata;
 import de.kp.works.ignite.ValueUtils;
 
 import de.kp.works.ignite.graph.ElementType;
@@ -248,18 +249,21 @@ public class IgniteGraph implements Graph {
     public Vertex addIndex(final IndexMetadata indexMeta) {
     	// save index define
     	Vertex index = this.addDocument(
-			T.label,"index",
+			T.label,IgniteAdmin.INDEX_DEFINE_CACHE_NAME,
 			T.id,indexMeta.key().toString(),
-			"label",indexMeta.label(),
+			"key",indexMeta.key().propertyKey(),
+			"keyLabel",indexMeta.label(),
 			"isUnique",indexMeta.isUnique(),
-			"createdAt",indexMeta.createdAt(),
-			"updateAt",indexMeta.updatedAt()
+			IgniteConstants.CREATED_AT_COL_NAME,indexMeta.createdAt(),
+			IgniteConstants.UPDATED_AT_COL_NAME,indexMeta.updatedAt()
 		);
     	// do create index
     	IgnitePut put = new IgnitePut(indexMeta.key(), ElementType.DOCUMENT);
         put.addColumn(IgniteConstants.ID_COL_NAME, "String", indexMeta.key().propertyKey());
         put.addColumn(IgniteConstants.LABEL_COL_NAME, "String", indexMeta.key().label());
-        put.addColumn(IgniteConstants.PROPERTY_VALUE_COL_NAME, "Boolean", indexMeta.isUnique());
+        put.addColumn(IgniteConstants.PROPERTY_KEY_COL_NAME, "Boolean", "isUnique");
+        put.addColumn("isUnique", "Boolean", indexMeta.isUnique());
+        put.addColumn("state", "State", indexMeta.state());
         
     	try {
 			this.getDocumentModel(indexMeta.label()).getTable().createIndex(put);

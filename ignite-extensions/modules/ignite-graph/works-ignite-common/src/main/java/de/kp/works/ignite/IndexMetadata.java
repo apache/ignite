@@ -1,4 +1,4 @@
-package de.kp.works.ignite.gremlin;
+package de.kp.works.ignite;
 
 import de.kp.works.ignite.graph.ElementType;
 

@@ -49,7 +49,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        SET,SETEXPIRE,SETNX,HSET,HSETNX
+        SET,SETEX,SETNX,HSET,HSETNX
     );
 
     /** Value position in Redis message. */
@@ -101,10 +101,17 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
         	restReq.command(CACHE_PUT_IF_ABSENT);
         }
         restReq.cacheName(msg.cacheName());
+        
+        
+        if(cmd == SETEX) {   	
+        	restReq.ttl(Long.valueOf(msg.aux(2)) * 1000);
+        	restReq.value(msg.aux(3));
+        }
+        else {
+        	restReq.value(msg.aux(VAL_POS));
+        }
 
-        restReq.value(msg.aux(VAL_POS));
-
-        if (msg.messageSize() >= 4) {
+        if (cmd == SET && msg.messageSize() >= 4) {
             List<String> params = msg.aux();
 
             // get rid of SET value.

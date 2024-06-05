@@ -121,7 +121,7 @@ public class IgniteBaseTable {
     
     public void createIndex(IgnitePut ignitePut) throws Exception {
         Object vertexId = ignitePut.getId();
-        this.admin.createIndex(ignitePut, this.name);        	
+        this.admin.createIndex(ignitePut, this.name);   	
     }
 
 

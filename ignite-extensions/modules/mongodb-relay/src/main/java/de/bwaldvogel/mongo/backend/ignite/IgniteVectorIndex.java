@@ -640,7 +640,7 @@ public class IgniteVectorIndex extends Index<Object> {
 					LabeledVector<Object> sd = docs.get(i);				
 					float score = sd.weight();
 					if(score<=scoreMax) {		// 越小越好	
-						result.add(new IdWithMeta(sd.label(),true,new Document("searchScore",score)));
+						result.add(new IdWithMeta(sd.label(),true,new Document("vectorScore",score)));
 					}
 				}
 				n++;
@@ -718,7 +718,7 @@ public class IgniteVectorIndex extends Index<Object> {
 					Object k = doc.label();
 					Vector v = doc.features();
 					
-					result.add(new IdWithMeta(k,true,new Document("searchScore",score)));
+					result.add(new IdWithMeta(k,true,new Document("vectorScore",score)));
 				}
 				
 			}

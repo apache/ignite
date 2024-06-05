@@ -77,7 +77,7 @@ public enum GridRedisCommand {
     PEXPIRE("PEXPIRE"),    
     // add@byron
     /** SET and EXPIRE. */ 
-    SETEXPIRE("SETEX"),
+    SETEX("SETEX"),
     
     /** SET no override. */ 
     SETNX("SETNX"),
@@ -130,22 +130,62 @@ public enum GridRedisCommand {
     /** hEXISTS. */
     HEXISTS("hEXISTS"),
     
-    /** suport use */
+    // List commands 
+    
+    LSET,
+    LREM,  // LREM key count element
+    LPUSH,
+    LPUSHX,
+    LPOP,
+    RPOP,
+    BLPOP, // 是 LPOP 的阻塞版本
+    BRPOP, // 是 RPOP 的阻塞版本
+    LPOS,
+    LRANGE, // 指定区间内的元素，区间以偏移量 START 和 END 指定
+    
+    // Set commands 
+    SADD,
+    SREM,
+    SPOP,	// 移除并返回集合中的一个随机元素
+    SISMEMBER,	// 判断 member 元素是否是集合 key 的成员
+    SMEMBERS,	// 返回集合中的所有成员
+    
+    // OrderedSet commands 
+    ZADD,
+    ZREM,
+    ZPOPMAX,
+    ZPOPMIN, // 删除并返回最多count个有序集合key中最低得分的成员。
+    ZRANGE,
+    
+    /** support use */
     AUTH("AUTH"),
+    
+    // 发布订阅命令
+ 	PSUBSCRIBE,	// 订阅一个或多个符合给定模式的频道。
+ 	PUBSUB,	//	查看订阅与发布系统状态。
+ 	PUBLISH,	//	将信息发送到指定的频道。
+ 	PUNSUBSCRIBE,	//	退订所有给定模式的频道。
+ 	SUBSCRIBE,	//	订阅给定的一个或多个频道的信息。
+ 	UNSUBSCRIBE,	//	指退订给定的频道。
+ 	
     //end@
     
     // Server commands.
+ 	CLIENT,
     /** DBSIZE. */
     DBSIZE("DBSIZE"),
     /** FLUSHDB. */
-    FLUSHDB("FLUSHDB"),
-    /** FLUSHALL. */
-    FLUSHALL("FLUSHALL");
-	
+    FLUSHDB("FLUSHDB 删除当前数据库的所有 key"),
+    /** FLUSHALL. 删除所有数据库的所有key */
+    FLUSHALL("FLUSHALL");	
 	
 
     /** String for command. */
     private final String cmd;
+	
+	GridRedisCommand() {
+        this.cmd = null;
+    }
 
     /** Constructor. */
     GridRedisCommand(String cmd) {

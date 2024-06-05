@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.rest.handlers.redis;
 
 import java.util.Collection;
+
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -27,6 +30,7 @@ import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisC
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisNioListener;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
@@ -47,7 +51,8 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
         QUIT,
         ECHO,
         SELECT,
-        AUTH
+        AUTH,
+        CLIENT
     );
 
     /** Grid context. */
@@ -101,20 +106,52 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
                 else {
                     String cacheName = GridRedisMessage.CACHE_NAME_PREFIX + "-" + cacheIdx;
 
-                    CacheConfiguration ccfg = ctx.cache().cacheConfiguration(GridRedisMessage.DFLT_CACHE_NAME);
+                    CacheConfiguration<String,String> ccfg0 = ctx.cache().cacheConfiguration(GridRedisMessage.DFLT_CACHE_NAME);
+                    CacheConfiguration<String,String> ccfg = new CacheConfiguration<>(ccfg0);
                     ccfg.setName(cacheName);
+                    
 
-                    ctx.grid().getOrCreateCache(ccfg);
+                    IgniteCache<String, String> cache = ctx.grid().getOrCreateCache(ccfg);
 
-                    ses.addMeta(GridRedisNioListener.CONN_CTX_META_KEY, cacheName);
+                    ses.addMeta(GridRedisNioListener.CONN_CTX_META_KEY, cache.getName());
 
                     msg.setResponse(GridRedisProtocolParser.oKString());
                 }
                 return new GridFinishedFuture<>(msg);
+                
             case AUTH:
 			    // add@byron
+            	
+            	String password = msg.aux(1);
+            	IgniteSecurity security = ctx.security();
+				try {					
+					security.authenticatedSubject(msg.clientId());
+				} 
+				catch (IgniteCheckedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
             	msg.setResponse(GridRedisProtocolParser.oKString());
-            	//ses..addMeta(pass, msg.aux(1));
+            	
+                return new GridFinishedFuture<>(msg);
+                
+            case CLIENT:
+            	// add@byron
+            	String op = msg.aux(1).toUpperCase();
+            	msg.setResponse(GridRedisProtocolParser.oKString());
+            	
+            	if(op.equals("SETNAME")) {
+            		ses.addMeta(GridRedisNioListener.CONN_NAME_META_KEY, msg.aux(2));
+            	}
+            	else if(op.equals("GETNAME")) {
+            		Object name = ses.meta(GridRedisNioListener.CONN_NAME_META_KEY);
+            		if(name!=null) {
+            			msg.setResponse(GridRedisProtocolParser.toSimpleString(name.toString()));
+            		}
+            		else {
+            			msg.setResponse(GridRedisProtocolParser.nil());
+            		}
+            	}
                 return new GridFinishedFuture<>(msg);
         }
 

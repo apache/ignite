@@ -11,10 +11,14 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
@@ -29,7 +33,8 @@ import javax.cache.CacheException;
 
 public class IgniteAdmin {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(IgniteAdmin.class);    
+    private static final Logger LOGGER = LoggerFactory.getLogger(IgniteAdmin.class); 
+    public static String INDEX_DEFINE_CACHE_NAME = "index";
     
     private IgniteConnect connect = null;
     
@@ -435,28 +440,75 @@ public class IgniteAdmin {
     
 
     /**
-     * Supports create and update operations for vertices index
+     * Supports create and update operations for vertices index for document
      */
     public void createIndex(IgnitePut entry, String cacheName) {
 
         Ignite ignite = connect.getIgnite();
         IgniteCache<String, BinaryObject> cache = ignite.cache(cacheName);
 
-        
-        BinaryObjectBuilder valueBuilder = ignite.binary().builder(cacheName);
+        String indexField = null;
+        String fieldType = "java.lang.String";
+        Map<String,Object> properties = new HashMap<>();
         
         for (IgniteColumn column : entry.getColumns()) {
         	if(IgniteConstants.ID_COL_NAME.equals(column.getColName())){
+        		indexField = column.getColValue().toString();
         		continue;
         	}
         	if(IgniteConstants.LABEL_COL_NAME.equals(column.getColName())){
         		continue;
         	}
-        	valueBuilder.setField(column.getColName(), column.getColValue());
+        	properties.put(column.getColName(), column.getColValue());
+        }        
+        
+        
+        CacheConfiguration<String, BinaryObject> cfg = cache.getConfiguration(CacheConfiguration.class);
+        QueryEntity queryEntity;
+        List<QueryIndex> indexes;
+        if(cfg.getQueryEntities().size()>0) {
+        	
+        	queryEntity = cfg.getQueryEntities().iterator().next();
+        	indexes = new ArrayList<>(queryEntity.getIndexes());
+        	
+        }
+		
+		else {
+        	indexes = new ArrayList<>();
+        	queryEntity = new QueryEntity();
+        	queryEntity.setKeyFieldName("id");
+        	queryEntity.setKeyType("java.lang.String");
+        	queryEntity.setValueType(cacheName);
+        	queryEntity.addQueryField("id", "java.lang.String", null);
+        	
         }
         
-        BinaryObject cacheValue = valueBuilder.build();
+        if(properties.containsKey("type")) {        			
+			String type = properties.get("type").toString();
+			if(type.equals("keyword") || type.equals("text")) {
+    			indexes.add(new QueryIndex(indexField,QueryIndexType.FULLTEXT));
+    		}
+			else {
+				fieldType = type;
+			}
+		}
+    	
+		if(properties.containsKey("isUnique")) {      			
+			
+		}   		
         
+        IndexMetadata.State state = (IndexMetadata.State)properties.get("state");
+		if(state==null) {      			
+			state = IndexMetadata.State.BUILDING;
+		}
+		if(state==IndexMetadata.State.BUILDING) {
+			queryEntity.addQueryField(indexField, fieldType, null);
+			queryEntity.setIndexes(indexes);
+		}
+		else if(state==IndexMetadata.State.INACTIVE) {
+			queryEntity.getFields().remove(indexField);    			
+		}
+    	cfg.setQueryEntity(queryEntity);
             
     }
     

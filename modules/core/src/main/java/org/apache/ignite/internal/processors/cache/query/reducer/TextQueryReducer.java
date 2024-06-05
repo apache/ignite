@@ -39,7 +39,7 @@ public class TextQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
     @Override protected CompletableFuture<Comparator<NodePage<R>>> pageComparator() {
         CompletableFuture<Comparator<NodePage<R>>> f = new CompletableFuture<>();
 
-        f.complete((o1, o2) -> -Float.compare(
+        f.complete((o1, o2) -> -Double.compare(
             ((ScoredCacheEntry<?, ?>)o1.head()).score(), ((ScoredCacheEntry<?, ?>)o2.head()).score()));
 
         return f;

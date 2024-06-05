@@ -12,11 +12,12 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import de.kp.works.ignite.IndexMetadata;
 import de.kp.works.ignite.graph.ElementType;
 import de.kp.works.ignite.graph.IgniteEdgeEntry;
 import de.kp.works.ignite.gremlin.CloseableIteratorUtils;
 import de.kp.works.ignite.gremlin.IgniteGraph;
-import de.kp.works.ignite.gremlin.IndexMetadata;
+
 import de.kp.works.ignite.gremlin.models.DocumentModel;
 import de.kp.works.ignite.query.IgniteResult;
 

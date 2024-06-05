@@ -18,14 +18,18 @@
 package org.apache.ignite.internal.util.nio;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
@@ -83,6 +87,8 @@ public class GridNioSessionImpl implements GridNioSession {
 
     /** For debug purposes. */
     private volatile boolean markedForClose;
+    
+    private IgniteBiPredicate<UUID, ByteBuffer> listener;
 
     /**
      * @param filterChain Chain.
@@ -388,6 +394,20 @@ public class GridNioSessionImpl implements GridNioSession {
     /** {@inheritDoc} */
     @Override public void systemMessage(Object msg) {
         throw new UnsupportedOperationException();
+    }  
+
+    
+    @Override public IgniteBiPredicate<UUID, ByteBuffer> messageListener(){
+    	if(listener==null) {
+    		listener = (UUID nodeId,ByteBuffer buf) -> {    	
+    			//-System.out.println("Received ordered message [msg=" + buf + ", from=" + nodeId + ']');		   
+    		    GridRedisMessage redisResp = new GridRedisMessage(buf.limit());
+    		    redisResp.setResponse(buf.duplicate());
+    		    this.send(redisResp);
+    		    return true; // Return true to continue listening.		
+    	    };
+    	}
+    	return listener;
     }
 
     /** {@inheritDoc} */

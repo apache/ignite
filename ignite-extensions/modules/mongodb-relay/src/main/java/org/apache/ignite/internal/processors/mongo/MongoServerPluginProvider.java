@@ -69,7 +69,7 @@ public class MongoServerPluginProvider implements PluginProvider<MongoPluginConf
 
     /** {@inheritDoc} */
     @Override public String version() {
-        return "3.6";
+        return "3.6.4";
     }
 
     /** {@inheritDoc} */

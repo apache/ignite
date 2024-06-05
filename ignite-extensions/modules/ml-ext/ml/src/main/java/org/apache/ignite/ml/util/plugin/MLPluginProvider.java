@@ -75,7 +75,7 @@ public class MLPluginProvider implements PluginProvider<MLPluginConfiguration> {
 
     /** {@inheritDoc} */
     @Override public String copyright() {
-        return null;
+        return "1.1.0";
     }
 
     /** {@inheritDoc} */

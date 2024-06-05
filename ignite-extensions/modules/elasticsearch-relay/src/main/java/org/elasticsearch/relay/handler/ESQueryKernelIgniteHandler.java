@@ -249,8 +249,10 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 			ObjectNode properties = mappings.withObject("/properties");
 			String cacheName = cacheName(ignite,query.getIndices());
 			IgniteCache<?,?> cache0 = ignite.cache(cacheName);
+			CacheConfiguration<Object, BinaryObject> cfg = null;
+						
 			if(cache0==null) {
-				CacheConfiguration<Object, BinaryObject> cfg = new CacheConfiguration<>();
+				cfg = new CacheConfiguration<>();
 		        cfg.setName(cacheName);
 		        
 		        if(settings.has("atomicity_mode")) {
@@ -267,10 +269,32 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 		        }
 		        if(settings.has("data_region_name")) {
 		        	cfg.setDataRegionName(settings.get("data_region_name").asText());		        	
+		        }		        
+		        
+		        jsonResq.put("result", "created");
+			}
+			else {
+				cfg = cache0.getConfiguration(CacheConfiguration.class);
+				
+				if(properties.size()>0 && cfg.getQueryEntities().size()>0) {
+		        	
+		        	QueryEntity queryEntity = cfg.getQueryEntities().iterator().next();
+		        	List<QueryIndex> indexes = new ArrayList<>(queryEntity.getIndexes());
+		        	
+		        	properties.fields().forEachRemaining((kv)->{
+		        		String type = kv.getValue().get("type").asText("keyword");
+		        		queryEntity.addQueryField(kv.getKey(), type, null);
+		        		if(type.equals("keyword") || type.equals("text")) {
+		        			indexes.add(new QueryIndex(kv.getKey(),QueryIndexType.FULLTEXT));
+		        		}
+		        	});
+		        	queryEntity.setIndexes(indexes);
+		        	cfg.setQueryEntity(queryEntity);
+		        	
+		        	// todo reindex
 		        }
-		        
-		        
-		        if(properties.size()>0) {
+				
+				else if(properties.size()>0) {
 		        	List<QueryIndex> indexes = new ArrayList<>();
 		        	QueryEntity queryEntity = new QueryEntity();
 		        	queryEntity.setKeyFieldName("id");
@@ -286,15 +310,16 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler {
 		        	});
 		        	queryEntity.setIndexes(indexes);
 		        	cfg.setQueryEntity(queryEntity);
-		        }
+		        }		        
 		        
-		        cache0 = ignite.getOrCreateCache(cfg);
-		        
-		        jsonResq.put("result", "created");
-			}
-			else {
 				jsonResq.put("result", "existed");
+				
 			}
+			
+			if(cache0==null) {
+				cache0 = ignite.getOrCreateCache(cfg);
+			}
+			
 			jsonResq.put("index", cacheName);
 			jsonResq.put("shards_acknowledged", true);
 			jsonResq.put("acknowledged", true);

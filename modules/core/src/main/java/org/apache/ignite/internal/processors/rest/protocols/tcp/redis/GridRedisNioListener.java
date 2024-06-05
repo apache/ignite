@@ -33,6 +33,11 @@ import org.apache.ignite.internal.processors.rest.handlers.redis.key.GridRedisDe
 import org.apache.ignite.internal.processors.rest.handlers.redis.key.GridRedisExistsCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.key.GridRedisExpireCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.key.GridRedisKeysCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.list.GridRedisListAddCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.list.GridRedisListFindCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.list.GridRedisListPopCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.list.GridRedisListRemCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.pubsub.GridRedisSubscribeCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.server.GridRedisDbSizeCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.server.GridRedisFlushCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedisAppendCommandHandler;
@@ -61,12 +66,15 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
     private final IgniteLogger log;
     
     private final GridKernalContext ctx;
+    
+    private final GridRedisSubscribeCommandHandler subscribeHandler;
 
     /** Redis-specific handlers. */
     protected final Map<GridRedisCommand, GridRedisCommandHandler> handlers = new EnumMap<>(GridRedisCommand.class);
 
     /** Connection-related metadata key. Used for cache name only. */
     public static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    public static final int CONN_NAME_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /**
      * @param log Logger.
@@ -76,6 +84,7 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
     public GridRedisNioListener(IgniteLogger log, GridRestProtocolHandler hnd, GridKernalContext ctx) {
         this.log = log;
         this.ctx = ctx;
+        this.subscribeHandler = new GridRedisSubscribeCommandHandler(log,ctx);
 
         // connection commands.
         addCommandHandler(new GridRedisConnectionCommandHandler(log, hnd, ctx));
@@ -101,6 +110,16 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
         // server commands.
         addCommandHandler(new GridRedisDbSizeCommandHandler(log, hnd, ctx));
         addCommandHandler(new GridRedisFlushCommandHandler(log, hnd, ctx));
+        
+        // list commands
+        addCommandHandler(new GridRedisListAddCommandHandler(log,ctx));
+        addCommandHandler(new GridRedisListPopCommandHandler(log,ctx));
+        addCommandHandler(new GridRedisListRemCommandHandler(log,ctx));
+        addCommandHandler(new GridRedisListFindCommandHandler(log,ctx));
+        
+        // pubsub commands
+        addCommandHandler(subscribeHandler);
+        
     }
 
     /**
@@ -125,14 +144,13 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
 
     /** {@inheritDoc} */
     @Override public void onConnected(GridNioSession ses) {
-        // No-op, never called.
-        assert false;
+        // No-op, never called.       
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
         // No-op, never called.
-        assert false;
+    	subscribeHandler.removeChanelInfoOfClient(ses.remoteAddress().toString());        
     }
 
     /** {@inheritDoc} */
@@ -152,16 +170,17 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
                 msg.cacheName(cacheName);
             
             //add@byron
-            String  cmd = msg.aux(0);
+            String cmd = msg.aux(0);
             if(cmd.charAt(0)=='h' || cmd.charAt(0)=='H') { //Hashsets
             	cacheName = msg.standardizeParams(cmd);     
             	msg.cacheName(cacheName); // hash_name as cachename
             	
-            	if(cacheName!=null && cacheName.length()<=64) {
-            		CacheConfiguration ccfg = ctx.cache().cacheConfiguration(GridRedisMessage.DFLT_CACHE_NAME);
+            	if(cacheName!=null) {
+            		CacheConfiguration<String,?> ccfg0 = ctx.cache().cacheConfiguration(GridRedisMessage.DFLT_CACHE_NAME);
+            		CacheConfiguration<String,?> ccfg = new CacheConfiguration<>(ccfg0);
             		ccfg.setName(cacheName);
             		ccfg.setGroupName(GridRedisMessage.CACHE_NAME_PREFIX);
-            		IgniteCache cache = ctx.grid().getOrCreateCache(ccfg);
+            		IgniteCache<String,?> cache = ctx.grid().getOrCreateCache(ccfg);
             	}                
             }
             //end@

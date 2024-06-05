@@ -291,8 +291,12 @@ public class GridRedisProtocolParser {
      * @return Bulk string.
      */
     public static ByteBuffer toBulkString(Object val) {
-        assert val != null;
-
+        assert val != null;        
+        
+        if(val instanceof Short || val instanceof Integer || val instanceof Long) {
+        	return toInteger(val.toString());
+        }
+        
         byte[] b = String.valueOf(val).getBytes();
         byte[] l = String.valueOf(b.length).getBytes();
 
@@ -308,6 +312,41 @@ public class GridRedisProtocolParser {
         return buf;
     }
 	
+    /**
+     * Converts a resultant object to a bulk string.
+     *
+     * @param val Object.
+     * @return Bulk string.
+     */
+    public static ByteBuffer toBulkList(Collection<Object[]> multResult) {
+        assert multResult != null;
+        ArrayList<ByteBuffer> fullRes = new ArrayList<>();
+        int fullCapacity = 0;
+        for(Object[] val: multResult ) {
+        	int capacity = 0;
+        	ArrayList<ByteBuffer> res = new ArrayList<>();
+        	Object[] list = (Object[]) val;
+        	for(Object item: list) {
+        		ByteBuffer buf = toBulkString(item.toString());
+        		res.add(buf);
+        		capacity += buf.limit();
+        	}
+        	byte[] arrSize = String.valueOf(res.size()).getBytes();
+
+            ByteBuffer buf = ByteBuffer.allocateDirect(capacity + arrSize.length + 1 + CRLF.length);
+            buf.put(ARRAY);
+            buf.put(arrSize);
+            buf.put(CRLF);
+            res.forEach(o -> buf.put(o));
+            fullRes.add(buf);
+            fullCapacity += buf.limit();
+        	
+        }
+        ByteBuffer buf = ByteBuffer.allocateDirect(fullCapacity);        
+        fullRes.forEach(o -> buf.put(o));
+        buf.flip();
+        return buf;
+    }
 	
     /**
      * Converts a resultant map response to an array.
@@ -381,7 +420,7 @@ public class GridRedisProtocolParser {
      * @param vals Array elements.
      * @return Array response.
      */
-    public static ByteBuffer toArray(Collection<Object> vals) {
+    public static ByteBuffer toArray(Collection<?> vals) {
         assert vals != null;
         int capacity = 0;
         ArrayList<ByteBuffer> res = new ArrayList<>();

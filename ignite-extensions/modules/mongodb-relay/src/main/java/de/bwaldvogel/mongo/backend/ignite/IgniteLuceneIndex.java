@@ -57,6 +57,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -804,7 +805,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 
 				Object k = unmarshalKeyField(doc.getBinaryValue(KEY_FIELD_NAME), cache, ldr);
 				
-				Document meta = new Document("textScore",score);
+				Document meta = new Document("searchScore",score);
 				if(i==0) {
 					meta.append("totalHits", docs.totalHits.value);
 				}
@@ -851,18 +852,28 @@ public class IgniteLuceneIndex extends Index<Object> {
 			// also allows subclasses to control the analyzer used.
 			SortField sortField = null;
 			Object text = exp;
-			SimpleQueryParser parser = new SimpleQueryParser(access.getFieldAnalyzer(field), field); // 定义查询分析器
+			Query textQuery = null;
 			if (exp instanceof Map) {
 				Map<String, Object> opt = ((Map) exp);
 				if(opt.containsKey(BsonRegularExpression.REGEX)) {
 					text = opt.get(BsonRegularExpression.REGEX);
+					RegexpQuery regQuery = new RegexpQuery(new Term(field,text.toString()));					
+					textQuery = regQuery;
 				}
 				else if(opt.containsKey(BsonRegularExpression.TEXT)) {
 					text = opt.get(BsonRegularExpression.TEXT);
+					SimpleQueryParser parser = new SimpleQueryParser(access.getFieldAnalyzer(field), field); // 定义查询分析器
 					parser.setDefaultOperator(BooleanClause.Occur.MUST);
+					textQuery = parser.parse(text.toString());
 				}
 				else if(opt.containsKey(BsonRegularExpression.SEARCH)) {
 					text = opt.get(BsonRegularExpression.SEARCH);
+					// 更复杂，支持多种字段
+					
+					StandardQueryParser parser = new StandardQueryParser(access.analyzerWrapper); // 定义查询分析器
+					parser.setFieldsBoost(weights);
+					textQuery = parser.parse(text.toString(),field);
+					
 				}
 				
 				if(opt.containsKey("$limit")) {
@@ -874,8 +885,11 @@ public class IgniteLuceneIndex extends Index<Object> {
 					sortField = new SortField(sortOpt,Type.DOUBLE, true);
 				}
 			}
+			if(textQuery==null) {
+				throw new IllegalArgumentException("Query strign is not set!");
+			}
 			
-			Query query = parser.parse(text.toString());
+			Query query = textQuery;
 			
 			// Lucene 3 insists on a hard limit and will not provide
 			// a total hits value. Take at least 100 which is
@@ -900,7 +914,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 				Object k = unmarshalKeyField(doc.getBinaryValue(KEY_FIELD_NAME), cache, ldr);
 				String v = doc.get(field);
 				
-				Document meta = new Document("textScore",score);
+				Document meta = new Document("searchScore",score);
 				if(i==0) {
 					meta.append("totalHits", docs.totalHits.value);
 				}

@@ -198,11 +198,15 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
     /** {@inheritDoc} */
     @Override public void onConnected(GridNioSession ses) {
-        // No-op.
+        // No-op.    	
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
+    	// add@byron
+    	memcachedLsnr.onDisconnected(ses, e);
+    	redisLsnr.onDisconnected(ses, e);
+    	// end@
         onSessionClosed(ses);
 
         if (e != null) {
@@ -552,6 +556,10 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
      * @param ses Session, that was inactive.
      */
     @Override public void onSessionIdleTimeout(GridNioSession ses) {
-        onSessionClosed(ses);
+    	// add@byron
+    	String cacheName = (String)ses.meta(GridRedisNioListener.CONN_CTX_META_KEY);
+    	if(cacheName==null || !cacheName.startsWith(GridRedisMessage.CACHE_NAME_PREFIX)) {
+    		onSessionClosed(ses);
+    	}
     }
 }

@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_SIZE;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.DBSIZE;
 
+
 /**
  * Redis DBSIZE command handler.
  */
