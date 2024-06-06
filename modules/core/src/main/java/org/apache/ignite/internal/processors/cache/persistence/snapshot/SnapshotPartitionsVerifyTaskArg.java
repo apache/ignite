@@ -124,6 +124,11 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, grpNames);
         U.writeMap(out, clusterMetas);
