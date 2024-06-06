@@ -936,18 +936,39 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         return (BlockingCustomMessageDiscoverySpi)ignite.context().discovery().getInjectedDiscoverySpi();
     }
 
-    /** */
-    public static AtomicBoolean injectSnapshotSlowFileIo(Collection<Ignite> grids, @Nullable Runnable beforeWait) {
+    /**
+     * Injects delayed-read {@link FileIO} into {@link GridCacheSharedContext}'s {@link FilePageStoreManager}.
+     *
+     * @param grids Nodes to affect.
+     * @param beforeWait If not {@code null}, is called before the delay.
+     * @return Delay-read lever.
+     * @see #injectSnapshotReadDelayedIo(Collection, AtomicBoolean, Consumer, Consumer)
+     */
+    public static AtomicBoolean injectSnapshotReadDelayedIo(Collection<Ignite> grids, @Nullable Consumer<Ignite> beforeWait) {
         AtomicBoolean waitFlag = new AtomicBoolean();
 
-        injectSnapshotSlowFileIo(grids, waitFlag, null, beforeWait);
+        injectSnapshotReadDelayedIo(grids, waitFlag, null, beforeWait);
 
         return waitFlag;
     }
 
-    /** */
-    public static void injectSnapshotSlowFileIo(Collection<Ignite> grids, AtomicBoolean waitFlag, @Nullable Runnable beforeProceed,
-        @Nullable Runnable beforeWait) {
+    /**
+     * Injects delayed-read {@link FileIO} into {@link GridCacheSharedContext}'s {@link FilePageStoreManager}.
+     *
+     * @param grids Nodes to affect.
+     * @param waitFlag Delay-read lever.
+     * @param beforeProceed If not {@code null}, is called after the delay.
+     * @param beforeWait If not {@code null}, is called before the delay.
+     * @see GridCacheSharedContext#pageStore()
+     * @see FileIOFactory#create(File, OpenOption...)
+     * @see FileIO
+     */
+    public static void injectSnapshotReadDelayedIo(
+        Collection<Ignite> grids,
+        AtomicBoolean waitFlag,
+        @Nullable Consumer<Ignite> beforeProceed,
+        @Nullable Consumer<Ignite> beforeWait
+    ) {
         for (Ignite ig : grids) {
             FilePageStoreManager pageStore = (FilePageStoreManager)((IgniteEx)ig).context().cache().context().pageStore();
 
@@ -958,7 +979,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 private void doWait() {
                     if (waitFlag.get()) {
                         if (beforeWait != null)
-                            beforeWait.run();
+                            beforeWait.accept(ig);
 
                         try {
                             while (waitFlag.get()) {
@@ -973,12 +994,10 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                     }
 
                     if (beforeProceed != null)
-                        beforeProceed.run();
+                        beforeProceed.accept(ig);
                 }
 
                 @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-                    doWait();
-
                     FileIO fileIo = old.create(file, modes);
 
                     return new FileIODecorator(fileIo) {
