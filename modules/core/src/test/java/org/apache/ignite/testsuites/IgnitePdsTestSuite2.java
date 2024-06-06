@@ -29,6 +29,7 @@ import org.apache.ignite.cdc.CdcPushMetricsExporterTest;
 import org.apache.ignite.cdc.CdcSelfTest;
 import org.apache.ignite.cdc.RestartWithWalForceArchiveTimeoutTest;
 import org.apache.ignite.cdc.TransformedCdcSelfTest;
+import org.apache.ignite.cdc.TtlClientPutAllConflictTest;
 import org.apache.ignite.cdc.WalForCdcTest;
 import org.apache.ignite.cdc.WalRolloverOnStopTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.HistoricalRebalanceCheckpointTest;
@@ -168,6 +169,7 @@ public class IgnitePdsTestSuite2 {
         GridTestUtils.addTestIfNeeded(suite, CdcManagerTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CdcIgniteNodeActiveModeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CdcPushMetricsExporterTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TtlClientPutAllConflictTest.class, ignoredTests);
 
         // new style folders with generated consistent ID test
         GridTestUtils.addTestIfNeeded(suite, IgniteUidAsConsistentIdMigrationTest.class, ignoredTests);
