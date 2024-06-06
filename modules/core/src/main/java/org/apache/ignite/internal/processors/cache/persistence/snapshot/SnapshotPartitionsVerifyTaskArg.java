@@ -130,6 +130,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
         U.writeString(out, snpPath);
         out.writeBoolean(check);
         out.writeInt(incIdx);
+        U.writeUuid(out, reqId);
     }
 
     /** {@inheritDoc} */
@@ -139,6 +140,9 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
         snpPath = U.readString(in);
         check = in.readBoolean();
         incIdx = in.readInt();
+
+        if (protoVer > V1)
+            reqId = U.readUuid(in);
     }
 
     /** {@inheritDoc} */
