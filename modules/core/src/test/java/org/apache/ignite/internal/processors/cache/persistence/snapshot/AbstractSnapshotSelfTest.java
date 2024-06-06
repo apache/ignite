@@ -942,12 +942,12 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @param grids Nodes to affect.
      * @param beforeWait If not {@code null}, is called before the delay.
      * @return Delay-read lever.
-     * @see #injectSnapshotReadDelayedIo(Collection, AtomicBoolean, Consumer, Consumer)
+     * @see #injectPausedReadsIo(Collection, AtomicBoolean, Consumer, Consumer)
      */
-    public static AtomicBoolean injectSnapshotReadDelayedIo(Collection<Ignite> grids, @Nullable Consumer<Ignite> beforeWait) {
+    public static AtomicBoolean injectPausedReadsIo(Collection<Ignite> grids, @Nullable Consumer<Ignite> beforeWait) {
         AtomicBoolean waitFlag = new AtomicBoolean();
 
-        injectSnapshotReadDelayedIo(grids, waitFlag, beforeWait, null);
+        injectPausedReadsIo(grids, waitFlag, beforeWait, null);
 
         return waitFlag;
     }
@@ -956,16 +956,16 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * Injects delayed-read {@link FileIO} into {@link GridCacheSharedContext}'s {@link FilePageStoreManager}.
      *
      * @param grids Nodes to affect.
-     * @param waitFlag Delay-read lever.
+     * @param waitLevel Delay-read lever.
      * @param beforeWait If not {@code null}, is called before the delay.
      * @param beforeProceed If not {@code null}, is called every time before the main action (reads etc.).
      * @see GridCacheSharedContext#pageStore()
      * @see FileIOFactory#create(File, OpenOption...)
      * @see FileIO
      */
-    public static void injectSnapshotReadDelayedIo(
+    public static void injectPausedReadsIo(
         Collection<Ignite> grids,
-        AtomicBoolean waitFlag,
+        AtomicBoolean waitLevel,
         @Nullable Consumer<Ignite> beforeWait,
         @Nullable Consumer<Ignite> beforeProceed
     ) {
@@ -977,15 +977,14 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             FileIOFactory testFactory = new FileIOFactory() {
                 /** */
                 private void doWait() {
-                    if (waitFlag.get()) {
+                    if (waitLevel.get()) {
                         if (beforeWait != null)
                             beforeWait.accept(ig);
 
                         try {
-                            while (waitFlag.get()) {
-                                synchronized (waitFlag) {
-                                    waitFlag.wait(50);
-                                }
+                            synchronized (waitLevel) {
+                                while (waitLevel.get())
+                                    waitLevel.wait(50);
                             }
                         }
                         catch (InterruptedException e) {

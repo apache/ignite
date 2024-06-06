@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -54,7 +55,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
@@ -320,58 +320,108 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             "The check procedure has failed, conflict partitions has been found: [counterConflicts=1, hashConflicts=0]");
     }
 
-    /** */
+    /**
+     * Simultaneously runs two snapshot checks of the same snapshot. Ensures that the check metrics and the check futures
+     * appear once.
+     */
     @Test
-    public void testTwoSameSnapshotCheckValidationMetrics() throws Exception {
+    public void testSimultaneousChecksValidationMetrics() throws Exception {
+        doTestTwoSimultaneousSnapshotValidations(
+            () -> new IgniteFutureImpl<>(snp(grid(0)).checkSnapshot(SNAPSHOT_NAME, null)),
+            () -> new IgniteFutureImpl<>(snp(grid(0)).checkSnapshot(SNAPSHOT_NAME, null))
+        );
+    }
+
+    /**
+     * Simultaneously runs a snapshot check and restoration of the same snapshot. Ensures that the check metrics and
+     * the check futures appear once.
+     */
+    @Test
+    public void testSimultaneousCheckAndRestoreValidationMetrics() throws Exception {
+        doTestTwoSimultaneousSnapshotValidations(
+            () -> new IgniteFutureImpl<>(snp(grid(0)).checkSnapshot(SNAPSHOT_NAME, null)),
+            () -> snp(grid(0)).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, true)
+        );
+    }
+
+    /**
+     * Simultaneously runs a snapshot restoration and a check of the same snapshot. Ensures that the check metrics
+     * and the check futures appear once.
+     */
+    @Test
+    public void testSimultaneousRestoreAndCheckValidationMetrics() throws Exception {
+        doTestTwoSimultaneousSnapshotValidations(
+            () -> snp(grid(0)).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, true),
+            () -> new IgniteFutureImpl<>(snp(grid(0)).checkSnapshot(SNAPSHOT_NAME, null))
+        );
+    }
+
+    /**
+     * Simultaneously runs and pauses two snapshot operations. Ensures that the check metrics and the check futures
+     * appear once.
+     */
+    private void doTestTwoSimultaneousSnapshotValidations(
+        Supplier<IgniteFuture<?>> snpOp1,
+        Supplier<IgniteFuture<?>> snpOp2
+    ) throws Exception {
         int grids = 3;
 
         IgniteEx ig = startGridsWithCache(grids, dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 16)),
             100);
 
-        // Lever to stop snapshot checking at this progress %.
-        final double stopProgress = 50.0;
+        // Lever to pause snapshot checking at this progress %.
+        int stopProgress = 50;
 
         snp(ig).createSnapshot(SNAPSHOT_NAME).get();
 
-        Set<UUID> stoppedNodes = ConcurrentHashMap.newKeySet(grids);
+        ig.destroyCache(dfltCacheCfg.getName());
 
-        AtomicBoolean waitLever = new AtomicBoolean();
+        Set<UUID> pausedNodes = ConcurrentHashMap.newKeySet(grids);
 
-        String checkSnpFutName = SnapshotPartitionsVerifyHandler.futureName(SNAPSHOT_NAME);
+        AtomicBoolean pauseReads = new AtomicBoolean();
+        AtomicBoolean releaseFutures = new AtomicBoolean();
+
+        String checkSnpFutName = new SnapshotPartitionsVerifyHandler(ig.context().cache().context()).futureName(SNAPSHOT_NAME);
+        List<AbstractSnapshotFutureTask<?>> checkSnpFuts = new ArrayList<>();
+
         String regName = SnapshotPartitionsVerifyHandler.metricsRegName(SNAPSHOT_NAME);
 
-        List<AbstractSnapshotFutureTask<?>> checkFuts = new ArrayList<>();
-
-        // Check progresses per node.
+        // Check progress per node.
         Map<UUID, Double> progresses = new ConcurrentHashMap<>();
 
-        injectSnapshotReadDelayedIo(
+        injectPausedReadsIo(
             G.allGrids(),
-            waitLever,
+            pauseReads,
             grid -> {
-                stoppedNodes.add(grid.cluster().localNode().id());
+                pausedNodes.add(grid.cluster().localNode().id());
 
                 try {
-                    assertTrue(waitForCondition(() -> stoppedNodes.size() == grids, getTestTimeout()));
+                    assertTrue(waitForCondition(() -> pausedNodes.size() == grids, getTestTimeout()));
                 }
                 catch (IgniteInterruptedCheckedException e) {
                     throw new RuntimeException("Failed to wait until every node starts to read the snapshot.", e);
                 }
             },
             grid -> {
-                // Ensures there is no new check future registered.
-                assertTrue(checkFuts.contains(snp((IgniteEx)grid).currentSnapshotFuture(checkSnpFutName)));
+                if (releaseFutures.get())
+                    return;
 
-                // Stores maximal progress for the node.
+                assertTrue(checkSnpFuts.contains(snp((IgniteEx)grid).currentSnapshotFuture(checkSnpFutName)));
+
+                DoubleMetric m = ((IgniteEx)grid).context().metric().registry(regName).findMetric("progress");
+
+                assertNotNull("No snapshot check operation or progress snapshot check metrics found.", m);
+
+                // Stores maximal progress for current node.
                 double nodeProgress = progresses.compute(
                     grid.cluster().localNode().id(),
-                    (nodeId, prgrs) -> prgrs == null ? 0.0 : Math.max(prgrs,
-                        ((IgniteEx)grid).context().metric().registry(regName).<DoubleMetric>findMetric("progress").value())
+                    (nodeId, prgrs) -> prgrs == null ? 0.0 : Math.max(prgrs, m.value())
                 );
 
                 if (nodeProgress < stopProgress)
                     return;
 
+                // Wait til all the nodes reaches required snapshot check progress.
                 try {
                     assertTrue(waitForCondition(() -> progresses.values().stream().filter(p -> p >= stopProgress).count() == grids,
                         getTestTimeout()));
@@ -380,18 +430,18 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     throw new RuntimeException("Failed to wait until every node starts to read the snapshot.", e);
                 }
 
-                // Stop when all the nodes reached the required progress.
-                waitLever.set(true);
+                // If not releasing the futures, pause again after all nodes reached required progress.
+                pauseReads.set(!releaseFutures.get());
             }
         );
 
-        waitLever.set(true);
+        pauseReads.set(true);
 
-        IgniteInternalFuture<?> fut1 = snp(ig).checkSnapshot(SNAPSHOT_NAME, null);
+        IgniteFuture<?> fut1 = snpOp1.get();
 
-        assertTrue(waitForCondition(() -> stoppedNodes.size() == grids, getTestTimeout()));
+        assertTrue(waitForCondition(() -> pausedNodes.size() == grids, getTestTimeout()));
 
-        // The request ids and the start times.
+        // The request ids and the snapshot check start times per node.
         List<IgniteBiTuple<UUID, Long>> metrics1 = G.allGrids().stream()
             .sorted(Comparator.comparingInt(g -> (int)g.cluster().localNode().order()))
             .map(g -> {
@@ -403,34 +453,41 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             .collect(Collectors.toList());
 
         // Snapshot check futures registered by the first check operation.
-        checkFuts.addAll(G.allGrids().stream().map(grid -> snp((IgniteEx)grid).currentSnapshotFuture(checkSnpFutName))
-            .collect(Collectors.toList()));
+        checkSnpFuts.addAll(G.allGrids().stream().map(grid -> snp((IgniteEx)grid).currentSnapshotFuture(checkSnpFutName))
+            .filter(Objects::nonNull).collect(Collectors.toList()));
 
-        assert checkFuts.size() == grids;
+        assertEquals("Not all nodes started snapshot check.", checkSnpFuts.size(), grids);
+
+        // Waits until every node begins reading snapshot.
+        assertTrue(waitForCondition(() -> pausedNodes.size() == grids, getTestTimeout()));
 
         // Advance possible new check operation start time.
         U.sleep(3000);
 
-        IgniteInternalFuture<?> fut2 = snp(ig).checkSnapshot(SNAPSHOT_NAME, null);
+        IgniteFuture<?> fut2 = snpOp2.get();
 
-        waitLever.set(false);
+        // Resume snapshot reads.
+        pausedNodes.clear();
+        pauseReads.set(false);
 
-        // Waits until every node reaches progress of {@code stopAtProgress}.
-        assertTrue(waitForCondition(() -> stoppedNodes.size() == grids, getTestTimeout()));
+        // Waits until every node reaches the progress of {@code stopAtProgress}.
+        assertTrue(waitForCondition(() -> pausedNodes.size() == grids, getTestTimeout()));
 
-        // Ensure metrics didn't change by the second snapshot check.
+        // Ensure that the metrics didn't change by the second snapshot check.
         for (int i = 0; i < grids; ++i) {
             MetricRegistry mreg = grid(i).context().metric().registry(regName);
 
             IgniteBiTuple<UUID, Long> prevMetrics = metrics1.get(i);
 
-            // Requests id.
             assertEquals(prevMetrics.get1(), mreg.<ObjectMetric<UUID>>findMetric("requestId").value());
-            // Start time.
             assertTrue(prevMetrics.get2() == mreg.<LongMetric>findMetric("startTime").value());
         }
 
-        assertEquals(fut1.get(), fut2.get());
+        releaseFutures.set(true);
+        pauseReads.set(false);
+
+        fut1.get();
+        fut2.get();
     }
 
     /** Checks that snapshot validation metrics aren't affected by a snapshot creation. */
@@ -466,7 +523,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         Set<UUID> waited = ConcurrentHashMap.newKeySet(G.allGrids().size());
 
-        AtomicBoolean delay = injectSnapshotReadDelayedIo(G.allGrids(), grid -> waited.add(grid.cluster().localNode().id()));
+        AtomicBoolean delay = injectPausedReadsIo(G.allGrids(), grid -> waited.add(grid.cluster().localNode().id()));
 
         delay.set(true);
 
@@ -534,7 +591,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         List<List<Double>> nodeProgresses = Stream.generate(() -> new ArrayList<Double>()).limit(mregs.size())
             .collect(Collectors.toList());
 
-        injectSnapshotReadDelayedIo(
+        injectPausedReadsIo(
             G.allGrids(),
             delyaFileIo,
             null,

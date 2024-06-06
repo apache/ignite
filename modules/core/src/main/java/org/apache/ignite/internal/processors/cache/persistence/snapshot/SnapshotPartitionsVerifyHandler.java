@@ -103,10 +103,6 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** Progress metric registry name prefix. */
     private static final String METRIC_REG_NAME_PREF = metricName(SNAPSHOT_METRICS, "check");
 
-    /** Unique snapshot future name prefix. Makes the future name difficult to repeat. */
-    private static final String SNP_FUTURE_NAME_PREF = SnapshotPartitionsVerifyHandler.class.getSimpleName() + '.' +
-        UUID.randomUUID() + '.';
-
     /** Shared context. */
     protected final GridCacheSharedContext<?, ?> cctx;
 
@@ -136,8 +132,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** */
-    static String futureName(String snapshotName) {
-        return SNP_FUTURE_NAME_PREF + snapshotName;
+    String futureName(String snapshotName) {
+        return getClass().getSimpleName() + '.' + snapshotName;
     }
 
     /** */
