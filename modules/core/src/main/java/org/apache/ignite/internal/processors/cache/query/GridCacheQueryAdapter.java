@@ -623,7 +623,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * @return Nodes to execute on.
      */
-    public Collection<ClusterNode> nodes() throws IgniteCheckedException {
+    private Collection<ClusterNode> nodes() throws IgniteCheckedException {
         CacheMode cacheMode = cctx.config().getCacheMode();
 
         Integer part = partition();

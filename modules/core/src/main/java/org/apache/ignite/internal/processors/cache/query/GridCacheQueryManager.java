@@ -1516,7 +1516,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
-            if (qry.nodes().isEmpty())
+            if (cctx.localNode().isClient())
                 return new GridEmptyCloseableIterator();
 
             if (log.isDebugEnabled())
