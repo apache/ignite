@@ -164,7 +164,6 @@ import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -3857,19 +3856,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             while ((r = queue.poll()) != null)
                 r.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
-
-            Set<RemoteSnapshotFilesRecevier> futs = activeTasks();
-            GridCompoundFuture<Void, Void> stopFut = new GridCompoundFuture<>();
-
-            try {
-                for (IgniteInternalFuture<Void> fut : futs)
-                    stopFut.add(fut);
-
-                stopFut.markInitialized().get();
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
         }
 
         /**
@@ -3969,20 +3955,26 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 else if (msg instanceof SnapshotFilesFailureMessage) {
                     SnapshotFilesFailureMessage respMsg0 = (SnapshotFilesFailureMessage)msg;
 
-                    RemoteSnapshotFilesRecevier task = active;
+                    synchronized (this) {
+                        RemoteSnapshotFilesRecevier task = active;
 
-                    if (task == null || !task.reqId.equals(respMsg0.id())) {
-                        if (log.isInfoEnabled()) {
-                            log.info("A stale snapshot response message has been received. Will be ignored " +
-                                "[fromNodeId=" + nodeId + ", response=" + respMsg0 + ']');
+                        if (task == null || !task.reqId.equals(respMsg0.id())) {
+                            if (log.isInfoEnabled()) {
+                                log.info("A stale snapshot response message has been received. Will be ignored " +
+                                    "[fromNodeId=" + nodeId + ", response=" + respMsg0 + ']');
+                            }
+
+                            return;
                         }
 
-                        return;
-                    }
+                        if (respMsg0.errorMessage() != null) {
+                            IgniteCheckedException e = new IgniteCheckedException("Request cancelled. The snapshot operation stopped " +
+                                "on the remote node with an error: " + respMsg0.errorMessage());
 
-                    if (respMsg0.errorMessage() != null) {
-                        task.acceptException(new IgniteCheckedException("Request cancelled. The snapshot operation stopped " +
-                            "on the remote node with an error: " + respMsg0.errorMessage()));
+                            cctx.kernalContext().io().interruptTransmissionReceiver(task.rmtNodeId, e);
+
+                            task.acceptException(e);
+                        }
                     }
                 }
             }
@@ -4021,7 +4013,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (task == null)
                 return;
 
-            assert task.isDone() || task.stopChecker.getAsBoolean() || task.rmtNodeId.equals(nodeId);
+            assert task.rmtNodeId.equals(nodeId);
 
             task.acceptException(ex);
         }

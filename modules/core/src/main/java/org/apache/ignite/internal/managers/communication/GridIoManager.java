@@ -1959,6 +1959,28 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
+     * @param nodeId The remote node ID.
+     * @param ex Exception.
+     */
+    public void interruptTransmissionReceiver(UUID nodeId, Exception ex) {
+        synchronized (rcvMux) {
+            Iterator<Entry<Object, ReceiverContext>> it = rcvCtxs.entrySet().iterator();
+
+            while (it.hasNext()) {
+                Map.Entry<Object, ReceiverContext> e = it.next();
+
+                if (nodeId.equals(e.getValue().rmtNodeId)) {
+                    it.remove();
+
+                    log.info("MY interruptTransmissionReceiver=" + e.getValue().rmtNodeId);
+
+                    interruptReceiver(e.getValue(), ex);
+                }
+            }
+        }
+    }
+
+    /**
      * This method must be used prior to opening a {@link TransmissionSender} by calling
      * {@link #openTransmissionSender(UUID, Object)} to ensure that remote and local nodes
      * are fully support direct {@link SocketChannel} connection to transfer data.
