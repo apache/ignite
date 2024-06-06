@@ -101,7 +101,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param addDepInfo Deployment info flag.
      * @param retVal Need return value
      * @param waitRemoteTxs Wait remote transactions flag
-     * @param updCntrs Update counters for mvcc Tx.
+     * @param updCntrs Update counters for Tx.
      */
     public GridDhtTxFinishRequest(
         UUID nearNodeId,
@@ -187,7 +187,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param addDepInfo Deployment info flag.
      * @param retVal Need return value
      * @param waitRemoteTxs Wait remote transactions flag
-     * @param updCntrs Update counters for mvcc Tx.
+     * @param updCntrs Update counters for Tx.
      */
     public GridDhtTxFinishRequest(
         UUID nearNodeId,

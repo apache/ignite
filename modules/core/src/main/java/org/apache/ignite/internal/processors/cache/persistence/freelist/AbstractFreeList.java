@@ -803,32 +803,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /** {@inheritDoc} */
-    @Override public <S, R> R updateDataRow(long link, PageHandler<S, R> pageHnd, S arg,
-        IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        assert link != 0;
-
-        try {
-            long pageId = PageIdUtils.pageId(link);
-            int itemId = PageIdUtils.itemId(link);
-
-            R updRes = write(pageId, pageHnd, arg, itemId, null, statHolder);
-
-            assert updRes != null; // Can't fail here.
-
-            return updRes;
-        }
-        catch (AssertionError e) {
-            throw corruptedFreeListException(e);
-        }
-        catch (IgniteCheckedException | Error e) {
-            throw e;
-        }
-        catch (Throwable t) {
-            throw new CorruptedFreeListException("Failed to update data row", t, grpId);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void removeDataRowByLink(long link, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert link != 0;
 

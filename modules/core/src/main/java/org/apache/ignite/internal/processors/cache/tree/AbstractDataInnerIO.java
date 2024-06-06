@@ -56,7 +56,6 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
             assert row.cacheId() != CU.UNDEFINED_CACHE_ID : row;
 
             PageUtils.putInt(pageAddr, off, row.cacheId());
-            off += 4;
         }
     }
 
@@ -99,7 +98,6 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
             assert cacheId != CU.UNDEFINED_CACHE_ID;
 
             PageUtils.putInt(dstPageAddr, off, cacheId);
-            off += 4;
         }
     }
 

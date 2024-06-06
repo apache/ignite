@@ -608,16 +608,12 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 
-        GridCloseableIterator it;
-
         if (loc)
-            it = qryMgr.scanQueryLocal(this, true);
+            return qryMgr.scanQueryLocal(this, true);
         else if (part != null)
-            it = new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
+            return new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
         else
-            it = qryMgr.scanQueryDistributed(this, nodes);
-
-        return it;
+            return qryMgr.scanQueryDistributed(this, nodes);
     }
 
     /**

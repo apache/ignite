@@ -3313,8 +3313,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         createCacheAndPreload(ig, 1000);
 
-        snp(ig).createSnapshot(snpName)
-            .get();
+        snp(ig).createSnapshot(snpName).get();
 
         TestCommandHandler h = newCommandHandler();
 
@@ -3582,7 +3581,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             assertContains(log, testOut.toString(), "--increment argument specified twice");
 
             // Non existent increment.
-            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--snapshot", "restore", snpName, "--increment", "2", "--sync"));
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "restore", snpName, "--increment", "2", "--sync"));
+            assertContains(log, testOut.toString(), "No incremental snapshot found [snpName=" + snpName);
         }
         finally {
             autoConfirmation = autoConfirmation0;
@@ -3647,8 +3647,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 execute("--snapshot", "restore", snpName, "--src", "A", "--src", "B"));
             assertContains(log, testOut.toString(), "--src argument specified twice");
 
-            // The check command simply prints the results of the check, it always ends with a zero exit code.
-            assertEquals(EXIT_CODE_OK, execute("--snapshot", "check", snpName));
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "check", snpName));
             assertContains(log, testOut.toString(), "Snapshot does not exists [snapshot=" + snpName);
 
             assertEquals(EXIT_CODE_OK, execute("--snapshot", "check", snpName, "--src", snpDir.getAbsolutePath()));

@@ -264,11 +264,6 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
-    @Override public int headerSize() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         SB sb = new SB("Row@");
 

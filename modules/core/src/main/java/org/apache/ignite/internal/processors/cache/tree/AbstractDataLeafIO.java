@@ -55,7 +55,6 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
             assert row.cacheId() != CU.UNDEFINED_CACHE_ID;
 
             PageUtils.putInt(pageAddr, off, row.cacheId());
-            off += 4;
         }
     }
 
@@ -83,7 +82,6 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
             assert cacheId != CU.UNDEFINED_CACHE_ID;
 
             PageUtils.putInt(dstPageAddr, off, cacheId);
-            off += 4;
         }
     }
 

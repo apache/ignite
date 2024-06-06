@@ -367,9 +367,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         assert row.key() != null : row;
 
-        cmp = compareKeys(row.key(), link);
-
-        return cmp;
+        return compareKeys(row.key(), link);
     }
 
     /** {@inheritDoc} */

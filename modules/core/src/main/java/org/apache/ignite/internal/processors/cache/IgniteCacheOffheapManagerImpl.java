@@ -913,7 +913,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             @Override protected boolean onHasNext() throws IgniteCheckedException {
                 if (cur == null)
-                    cur = data.cursor(CacheDataRowAdapter.RowData.FULL_WITH_HINTS);
+                    cur = data.cursor();
 
                 if (next != null)
                     return true;

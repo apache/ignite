@@ -559,7 +559,7 @@ public class PageMemoryTracker implements IgnitePlugin {
      * @param checkAll Check all tracked pages, otherwise check until first error.
      * @param checkPageCnt Check tracked and allocated pages count. This check can be done only if there is no
      * concurrent modification of pages in the system (for example when checkpointWriteLock is held). Some threads
-     * (for example MVCC vacuum cleaner) can modify pages even if there is no activity from a users point of view.
+     * can modify pages even if there is no activity from a users point of view.
      * @return {@code true} if content of all tracked pages equals to content of these pages in the ignite instance.
      */
     private boolean checkPages(boolean checkAll, boolean checkPageCnt) throws IgniteCheckedException {
