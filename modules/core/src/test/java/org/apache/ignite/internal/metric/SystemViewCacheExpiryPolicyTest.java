@@ -107,10 +107,8 @@ public class SystemViewCacheExpiryPolicyTest extends GridCommonAbstractTest {
             SystemView<CacheView> caches = g.context().systemView().view(CACHES_VIEW);
 
             for (CacheView row : caches)
-                if ("cache".equals(row.cacheName())) {
-                    log.info(row.expiryPolicyFactory());
+                if ("cache".equals(row.cacheName()))
                     assertEquals(actual, row.expiryPolicyFactory());
-                }
         }
     }
 }
