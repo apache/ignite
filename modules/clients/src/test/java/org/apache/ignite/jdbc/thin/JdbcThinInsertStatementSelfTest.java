@@ -190,6 +190,30 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
     }
 
     /**
+     * Checks whether it's impossible to insert single duplicate key.
+     */
+    @Test
+    public void testDuplicateKey() throws InterruptedException, SQLException {
+        stmt.execute(SQL);
+
+        LogListener lsnr = LogListener
+                .matches("Failed to execute SQL query")
+                .build();
+
+        srvLog.registerListener(lsnr);
+
+        GridTestUtils.assertThrowsAnyCause(log,
+                () -> stmt.execute("insert into Person(_key, id, firstName, lastName, age) values " +
+                        "('p2', 2, 'Joe', 'Black', 35)"),
+                SQLException.class,
+                "Failed to INSERT some keys because they are already in cache [keys=[p2]]");
+
+        assertFalse(lsnr.check(1000L));
+
+        assertEquals(3, jcache(0).withKeepBinary().getAll(new HashSet<>(Arrays.asList("p1", "p2", "p3"))).size());
+    }
+
+    /**
      *
      */
     @Test

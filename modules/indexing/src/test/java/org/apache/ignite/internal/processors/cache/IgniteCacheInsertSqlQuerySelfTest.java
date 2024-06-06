@@ -25,6 +25,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -169,6 +170,33 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
         assertEquals(2, (int)p.get(1));
 
         assertEquals(4, (int)p.get(3));
+    }
+
+    /**
+     * Checks whether it's impossible to insert single duplicate key.
+     */
+    @Test
+    public void testDuplicateKeyException() {
+        final IgniteCache<Integer, Integer> p = ignite(0).cache("I2I");
+
+        p.clear();
+
+        p.query(new SqlFieldsQuery("insert into Integer(_key, _val) values (1, ?), " +
+                "(?, 4), (5, 6)").setArgs(2, 3));
+
+        Throwable reason = GridTestUtils.assertThrows(log,
+                () -> p.query(new SqlFieldsQuery("insert into Integer(_key, _val) values (?, ?)").setArgs(3, 5)),
+                CacheException.class, "Failed to INSERT some keys because they are already in cache [keys=[3]]");
+
+        reason = reason.getCause();
+
+        assertNotNull(reason);
+
+        assertEquals(IgniteSQLException.class, reason.getClass());
+
+        assertEquals(2, (int)p.get(1));
+        assertEquals(4, (int)p.get(3));
+        assertEquals(6, (int)p.get(5));
     }
 
     /**

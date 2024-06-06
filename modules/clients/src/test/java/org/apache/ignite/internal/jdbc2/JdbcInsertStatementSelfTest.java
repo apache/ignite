@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.concurrent.Callable;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -151,6 +152,31 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
         boolean res = stmt.execute(SQL);
 
         assertEquals(false, res);
+    }
+
+    /**
+     * Checks whether it's impossible to insert single duplicate key.
+     */
+    @Test
+    public void testDuplicateKey() throws SQLException {
+        stmt.execute(SQL);
+
+        Throwable reason = GridTestUtils.assertThrows(log,
+                () -> stmt.execute("insert into Person(_key, id, firstName, lastName, age, data) values " +
+                    "('p2', 2, 'Joe', 'Black', 35, RAWTOHEX('Black'))"),
+                SQLException.class,
+                null);
+
+        reason = reason.getCause();
+
+        assertNotNull(reason);
+
+        assertEquals(IgniteSQLException.class, reason.getClass());
+
+        assertTrue(reason.getMessage().contains(
+                "Failed to INSERT some keys because they are already in cache [keys=[p2]]"));
+
+        assertEquals(3, jcache(0).withKeepBinary().getAll(new HashSet<>(Arrays.asList("p1", "p2", "p3"))).size());
     }
 
     /**
