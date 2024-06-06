@@ -501,8 +501,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     protected @Nullable IgniteFuture<?> doTestNoSnapshotCheckMetrics(@Nullable Supplier<IgniteFuture<?>> snpOperation) {
         List<MetricRegistry> mregs = new ArrayList<>(G.allGrids().size());
 
-        G.allGrids().forEach(grid -> {
-            MetricRegistry mreg = ((IgniteEx)grid).context().metric().registry(SnapshotPartitionsVerifyHandler.metricsRegName(SNAPSHOT_NAME));
+        G.allGrids().forEach(ig -> {
+            MetricRegistry mreg = ((IgniteEx)ig).context().metric().registry(SnapshotPartitionsVerifyHandler.metricsRegName(SNAPSHOT_NAME));
 
             assertNull(mreg.<LongMetric>findMetric("snapshotName"));
             assertNull(mreg.<LongMetric>findMetric("progress"));
@@ -510,16 +510,16 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
             mregs.add(mreg);
 
-            ((IgniteEx)grid).context().metric().remove(mreg.name());
+            ((IgniteEx)ig).context().metric().remove(mreg.name());
         });
 
         if (snpOperation != null) {
             IgniteFuture<?> fut = snpOperation.get();
 
             for (int g = 0; g < G.allGrids().size(); ++g) {
-                IgniteEx grid = grid(g);
+                IgniteEx ig = grid(g);
 
-                MetricRegistry mreg = grid.context().metric().registry(SnapshotPartitionsVerifyHandler.metricsRegName(SNAPSHOT_NAME));
+                MetricRegistry mreg = ig.context().metric().registry(SnapshotPartitionsVerifyHandler.metricsRegName(SNAPSHOT_NAME));
 
                 assertNull(mreg.<LongMetric>findMetric("snapshotName"));
                 assertNull(mreg.<LongMetric>findMetric("progress"));

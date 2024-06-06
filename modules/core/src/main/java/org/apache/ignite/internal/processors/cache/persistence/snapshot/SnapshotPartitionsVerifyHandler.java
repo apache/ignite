@@ -682,9 +682,11 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
             clearMetrics();
 
-            assert processed.get() == total.get() || isCancelled() || isFailed();
+            boolean done = super.onDone(res, err, cancel);
 
-            return super.onDone(res, err, cancel);
+            assert isCancelled() || isFailed() ? processed.get() <= total.get() : processed.get() == total.get();
+
+            return done;
         }
 
         /** */
