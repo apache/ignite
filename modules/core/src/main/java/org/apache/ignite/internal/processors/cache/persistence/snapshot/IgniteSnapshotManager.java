@@ -2592,7 +2592,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Iterator over partition.
      * @throws IgniteCheckedException If and error occurs.
      */
-    public GridCloseableIterator<CacheDataRow> partitionRowIterator(GridKernalContext ctx,
+    public GridCloseableIterator<CacheDataRow> partitionRowIterator(
+        GridKernalContext ctx,
         String grpName,
         int partId,
         FilePageStore pageStore
@@ -3751,9 +3752,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return;
             }
 
-            RemoteSnapshotFilesRecevier curr = active;
-
-            if (curr == null || curr.isDone()) {
+            if (active == null || active.isDone()) {
                 next.listen(this::scheduleNext);
 
                 active = next;

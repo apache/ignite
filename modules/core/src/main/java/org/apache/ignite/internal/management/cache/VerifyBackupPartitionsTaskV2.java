@@ -58,11 +58,11 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import static java.util.Collections.emptyMap;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
@@ -81,9 +81,6 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
  */
 @GridInternal
 public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVerifyCommandArg, IdleVerifyResultV2> {
-    /** First version of Ignite that is capable of executing Idle Verify V2. */
-    public static final IgniteProductVersion V2_SINCE_VER = IgniteProductVersion.fromString("2.5.3");
-
     /** Injected logger. */
     @LoggerResource
     private IgniteLogger log;

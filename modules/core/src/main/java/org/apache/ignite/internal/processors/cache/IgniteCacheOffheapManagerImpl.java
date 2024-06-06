@@ -1643,7 +1643,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param oldRow Old row if available.
          * @throws IgniteCheckedException If failed.
          */
-        private void finishUpdate(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow oldRow)
+        private void finishUpdate(GridCacheContext<?, ?> cctx, CacheDataRow newRow, @Nullable CacheDataRow oldRow)
             throws IgniteCheckedException {
             finishUpdate(cctx, newRow, oldRow, false);
         }
@@ -1655,12 +1655,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param oldRowExpired Old row expiration flag
          * @throws IgniteCheckedException If failed.
          */
-        private void finishUpdate(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow oldRow, boolean oldRowExpired)
+        private void finishUpdate(GridCacheContext<?, ?> cctx, CacheDataRow newRow, @Nullable CacheDataRow oldRow, boolean oldRowExpired)
             throws IgniteCheckedException {
             if (oldRow == null && !oldRowExpired)
                 incrementSize(cctx.cacheId());
 
-            GridCacheQueryManager qryMgr = cctx.queries();
+            GridCacheQueryManager<?,?> qryMgr = cctx.queries();
 
             if (qryMgr.enabled())
                 qryMgr.store(newRow, oldRow, true);
@@ -1682,7 +1682,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @throws IgniteCheckedException If failed.
          */
         private void updatePendingEntries(
-            GridCacheContext cctx,
+            GridCacheContext<?, ?> cctx,
             CacheDataRow newRow,
             @Nullable CacheDataRow oldRow
         ) throws IgniteCheckedException {
@@ -1706,7 +1706,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheContext cctx, KeyCacheObject key, int partId) throws IgniteCheckedException {
+        @Override public void remove(GridCacheContext<?, ?> cctx, KeyCacheObject key, int partId) throws IgniteCheckedException {
             if (!busyLock.enterBusy())
                 throw operationCancelledException();
 

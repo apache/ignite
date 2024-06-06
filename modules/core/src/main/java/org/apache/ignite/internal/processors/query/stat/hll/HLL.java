@@ -83,7 +83,6 @@ public class HLL implements Cloneable {
     public static final int MAXIMUM_EXPLICIT_THRESHOLD = (1 << (MAXIMUM_EXPTHRESH_PARAM - 1)/*per storage spec*/);
 
     // ************************************************************************
-    // Storage
     // storage used when #type is EXPLICIT, null otherwise
     private HashSet<Long> explicitStorage;
 

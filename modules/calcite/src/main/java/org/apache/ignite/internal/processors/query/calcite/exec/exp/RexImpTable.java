@@ -74,6 +74,7 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.adapter.enumerable.EnumUtils.generateCollatorExpression;
 import static org.apache.calcite.linq4j.tree.ExpressionType.Add;
@@ -565,26 +566,26 @@ public class RexImpTable {
     }
 
     /** */
-    private void defineMethod(SqlOperator operator, String functionName, NullPolicy nullPolicy) {
-        map.put(operator, new MethodNameImplementor(functionName, nullPolicy, false));
+    private void defineMethod(SqlOperator operator, String functionName, NullPolicy nullPlc) {
+        map.put(operator, new MethodNameImplementor(functionName, nullPlc, false));
     }
 
     /** */
-    private void defineMethod(SqlOperator operator, Method method, NullPolicy nullPolicy) {
-        map.put(operator, new MethodImplementor(method, nullPolicy, false));
+    private void defineMethod(SqlOperator operator, Method method, NullPolicy nullPlc) {
+        map.put(operator, new MethodImplementor(method, nullPlc, false));
     }
 
     /** */
     private void defineUnary(SqlOperator operator, ExpressionType expressionType,
-        NullPolicy nullPolicy, String backupMethodName) {
-        map.put(operator, new UnaryImplementor(expressionType, nullPolicy, backupMethodName));
+        NullPolicy nullPlc, String backupMethodName) {
+        map.put(operator, new UnaryImplementor(expressionType, nullPlc, backupMethodName));
     }
 
     /** */
     private void defineBinary(SqlOperator operator, ExpressionType expressionType,
-        NullPolicy nullPolicy, String backupMethodName) {
+        NullPolicy nullPlc, String backupMethodName) {
         map.put(operator,
-            new BinaryImplementor(nullPolicy, true, expressionType,
+            new BinaryImplementor(nullPlc, true, expressionType,
                 backupMethodName));
     }
 
@@ -593,7 +594,7 @@ public class RexImpTable {
         final CallImplementor implementor) {
         return new AbstractRexCallImplementor("udf", NullPolicy.NONE, false) {
             @Override Expression implementSafe(RexToLixTranslator translator,
-                RexCall call, List<Expression> argValueList) {
+                RexCall call, List<Expression> argValList) {
                 return implementor.implement(translator, call, RexImpTable.NullAs.NULL);
             }
         };
@@ -801,8 +802,8 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(RexToLixTranslator translator,
-                                 RexCall call, List<Expression> argValueList) {
-            Expression operand = argValueList.get(0);
+                                 RexCall call, List<Expression> argValList) {
+            Expression operand = argValList.get(0);
             final RelDataType type = call.operands.get(0).getType();
             switch (type.getSqlTypeName()) {
                 case TIMESTAMP:
@@ -827,9 +828,9 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
+            final RexCall call, final List<Expression> argValList) {
             final boolean strict = !translator.conformance.allowExtendedTrim();
-            final Object val = translator.getLiteralValue(argValueList.get(0));
+            final Object val = translator.getLiteralValue(argValList.get(0));
             SqlTrimFunction.Flag flag = (SqlTrimFunction.Flag)val;
             return Expressions.call(
                 BuiltInMethod.TRIM.method,
@@ -839,8 +840,8 @@ public class RexImpTable {
                 Expressions.constant(
                     flag == SqlTrimFunction.Flag.BOTH
                         || flag == SqlTrimFunction.Flag.TRAILING),
-                argValueList.get(1),
-                argValueList.get(2),
+                argValList.get(1),
+                argValList.get(2),
                 Expressions.constant(strict));
         }
     }
@@ -871,8 +872,8 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
-            Expression operand = argValueList.get(0);
+            final RexCall call, final List<Expression> argValList) {
+            Expression operand = argValList.get(0);
             final RelDataType type = call.operands.get(0).getType();
             switch (type.getSqlTypeName()) {
                 case TIMESTAMP:
@@ -916,7 +917,7 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
+            final RexCall call, final List<Expression> argValList) {
             switch (call.getOperands().size()) {
                 case 1:
                     switch (call.getType().getSqlTypeName()) {
@@ -924,16 +925,16 @@ public class RexImpTable {
                         case INTEGER:
                         case SMALLINT:
                         case TINYINT:
-                            return argValueList.get(0);
+                            return argValList.get(0);
                         default:
-                            return super.implementSafe(translator, call, argValueList);
+                            return super.implementSafe(translator, call, argValList);
                     }
 
                 case 2:
                     final Type type;
                     final Method floorMethod;
                     final boolean preFloor;
-                    Expression operand = argValueList.get(0);
+                    Expression operand = argValList.get(0);
                     switch (call.getType().getSqlTypeName()) {
                         case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                             operand = Expressions.call(
@@ -952,7 +953,7 @@ public class RexImpTable {
                             preFloor = false;
                     }
                     final TimeUnitRange timeUnitRange =
-                        (TimeUnitRange)translator.getLiteralValue(argValueList.get(1));
+                        (TimeUnitRange)translator.getLiteralValue(argValList.get(1));
                     switch (timeUnitRange) {
                         case YEAR:
                         case QUARTER:
@@ -962,7 +963,7 @@ public class RexImpTable {
                             final Expression operand1 =
                                 preFloor ? call(operand, type, TimeUnit.DAY) : operand;
                             return Expressions.call(floorMethod,
-                                translator.getLiteral(argValueList.get(1)), operand1);
+                                translator.getLiteral(argValList.get(1)), operand1);
                         case NANOSECOND:
                         default:
                             return call(operand, type, timeUnitRange.startUnit);
@@ -989,21 +990,21 @@ public class RexImpTable {
         protected final Method method;
 
         /** */
-        MethodImplementor(Method method, NullPolicy nullPolicy, boolean harmonize) {
-            super("method_call", nullPolicy, harmonize);
+        MethodImplementor(Method method, NullPolicy nullPlc, boolean harmonize) {
+            super("method_call", nullPlc, harmonize);
             this.method = method;
         }
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(RexToLixTranslator translator,
-            RexCall call, List<Expression> argValueList) {
+            RexCall call, List<Expression> argValList) {
             final Expression expression;
-            Class clazz = method.getDeclaringClass();
+            Class<?> clazz = method.getDeclaringClass();
             if (Modifier.isStatic(method.getModifiers()))
-                expression = EnumUtils.call(null, clazz, method.getName(), argValueList);
+                expression = EnumUtils.call(null, clazz, method.getName(), argValList);
             else {
-                expression = EnumUtils.call(argValueList.get(0), clazz, method.getName(),
-                    Util.skip(argValueList, 1));
+                expression = EnumUtils.call(argValList.get(0), clazz, method.getName(),
+                    Util.skip(argValList, 1));
             }
             return expression;
         }
@@ -1024,10 +1025,10 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(RexToLixTranslator translator,
-            RexCall call, List<Expression> argValueList) {
-            assert argValueList.size() == 2;
+            RexCall call, List<Expression> argValList) {
+            assert argValList.size() == 2;
             // Add extra parameter (caseSensitive boolean flag), required by SqlFunctions#posixRegex.
-            final List<Expression> newOperands = new ArrayList<>(argValueList);
+            final List<Expression> newOperands = new ArrayList<>(argValList);
             newOperands.add(Expressions.constant(caseSensitive));
             return super.implementSafe(translator, call, newOperands);
         }
@@ -1048,12 +1049,12 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(RexToLixTranslator translator,
-            RexCall call, List<Expression> argValueList) {
+            RexCall call, List<Expression> argValList) {
             final Expression expression;
             final List<Expression> newOperands = new ArrayList<>();
-            newOperands.add(argValueList.get(0));
-            newOperands.add(argValueList.get(1));
-            List<Expression> leftExprs = Util.skip(argValueList, 2);
+            newOperands.add(argValList.get(0));
+            newOperands.add(argValList.get(1));
+            List<Expression> leftExprs = Util.skip(argValList, 2);
             // Default value for JSON_VALUE behaviors.
             Expression emptyBehavior = Expressions.constant(SqlJsonValueEmptyOrErrorBehavior.NULL);
             Expression dfltValOnEmpty = Expressions.constant(null);
@@ -1113,18 +1114,18 @@ public class RexImpTable {
         protected final String methodName;
 
         /** */
-        MethodNameImplementor(String methodName, NullPolicy nullPolicy, boolean harmonize) {
-            this("method_name_call", methodName, nullPolicy, harmonize);
+        MethodNameImplementor(String methodName, NullPolicy nullPlc, boolean harmonize) {
+            this("method_name_call", methodName, nullPlc, harmonize);
         }
 
         /** */
         MethodNameImplementor(
             String variableName,
             String methodName,
-            NullPolicy nullPolicy,
+            NullPolicy nullPlc,
             boolean harmonize
         ) {
-            super(variableName, nullPolicy, harmonize);
+            super(variableName, nullPlc, harmonize);
             this.methodName = methodName;
         }
 
@@ -1135,12 +1136,12 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(RexToLixTranslator translator,
-            RexCall call, List<Expression> argValueList) {
+            RexCall call, List<Expression> argValList) {
             return EnumUtils.call(
                 null,
                 SqlFunctions.class,
                 methodName,
-                argValueList);
+                argValList);
         }
     }
 
@@ -1184,12 +1185,12 @@ public class RexImpTable {
 
         /** */
         BinaryImplementor(
-            NullPolicy nullPolicy,
+            NullPolicy nullPlc,
             boolean harmonize,
             ExpressionType expressionType,
             String backupMethodName
         ) {
-            super("binary_call", nullPolicy, harmonize);
+            super("binary_call", nullPlc, harmonize);
             this.expressionType = expressionType;
             this.backupMethodName = backupMethodName;
         }
@@ -1198,7 +1199,8 @@ public class RexImpTable {
         @Override Expression implementSafe(
             final RexToLixTranslator translator,
             final RexCall call,
-            final List<Expression> argValueList) {
+            final List<Expression> argValList
+        ) {
             // neither nullable:
             //   return x OP y
             // x nullable
@@ -1215,15 +1217,15 @@ public class RexImpTable {
                 // If one or both operands have ANY type, use the late-binding backup
                 // method.
                 if (anyAnyOperands(call))
-                    return callBackupMethodAnyType(translator, call, argValueList);
+                    return callBackupMethodAnyType(translator, call, argValList);
 
-                final Type type0 = argValueList.get(0).getType();
-                final Type type1 = argValueList.get(1).getType();
+                final Type type0 = argValList.get(0).getType();
+                final Type type1 = argValList.get(1).getType();
                 final SqlBinaryOperator op = (SqlBinaryOperator)call.getOperator();
                 final RelDataType relDataType0 = call.getOperands().get(0).getType();
                 final Expression fieldComparator = generateCollatorExpression(relDataType0.getCollation());
                 if (fieldComparator != null)
-                    argValueList.add(fieldComparator);
+                    argValList.add(fieldComparator);
 
                 final Primitive primitive = Primitive.ofBoxOr(type0);
                 if (primitive == null
@@ -1231,7 +1233,7 @@ public class RexImpTable {
                     || COMPARISON_OPERATORS.contains(op)
                     && !COMP_OP_TYPES.contains(primitive)) {
                     return Expressions.call(SqlFunctions.class, backupMethodName,
-                        argValueList);
+                        argValList);
                 }
                 // When checking equals or not equals on two primitive boxing classes
                 // (i.e. Long x, Long y), we should fall back to call `SqlFunctions.eq(x, y)`
@@ -1241,11 +1243,11 @@ public class RexImpTable {
                 if (EQUALS_OPERATORS.contains(op)
                     && boxPrimitive0 != null && boxPrimitive1 != null) {
                     return Expressions.call(SqlFunctions.class, backupMethodName,
-                        argValueList);
+                        argValList);
                 }
             }
             return Expressions.makeBinary(expressionType,
-                argValueList.get(0), argValueList.get(1));
+                argValList.get(0), argValList.get(1));
         }
 
         /** Returns whether any of a call's operands have ANY type. */
@@ -1291,18 +1293,18 @@ public class RexImpTable {
         /** */
         UnaryImplementor(
             ExpressionType expressionType,
-            NullPolicy nullPolicy,
+            NullPolicy nullPlc,
             String backupMethodName
         ) {
-            super("unary_call", nullPolicy, false);
+            super("unary_call", nullPlc, false);
             this.expressionType = expressionType;
             this.backupMethodName = backupMethodName;
         }
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(RexToLixTranslator translator,
-            RexCall call, List<Expression> argValueList) {
-            final Expression argVal = argValueList.get(0);
+            RexCall call, List<Expression> argValList) {
+            final Expression argVal = argValList.get(0);
 
             final Expression e;
             //Special case for implementing unary minus with BigDecimal type
@@ -1331,11 +1333,11 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
+            final RexCall call, final List<Expression> argValList) {
             final TimeUnitRange timeUnitRange =
-                (TimeUnitRange)translator.getLiteralValue(argValueList.get(0));
+                (TimeUnitRange)translator.getLiteralValue(argValList.get(0));
             final TimeUnit unit = timeUnitRange.startUnit;
-            Expression operand = argValueList.get(1);
+            Expression operand = argValList.get(1);
             final SqlTypeName sqlTypeName =
                 call.operands.get(1).getType().getSqlTypeName();
             final boolean isIntervalType = SqlTypeUtil.isInterval(call.operands.get(1).getType());
@@ -1380,7 +1382,7 @@ public class RexImpTable {
                             // fall through
                         case DATE:
                             return Expressions.call(BuiltInMethod.UNIX_DATE_EXTRACT.method,
-                                argValueList.get(0), operand);
+                                argValList.get(0), operand);
                         default:
                             throw new AssertionError("unexpected " + sqlTypeName);
                     }
@@ -1502,20 +1504,20 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
-            return implementRecurse(translator, argValueList);
+            final RexCall call, final List<Expression> argValList) {
+            return implementRecurse(translator, argValList);
         }
 
         /** */
         private Expression implementRecurse(RexToLixTranslator translator,
-            final List<Expression> argValueList) {
-            if (argValueList.size() == 1)
-                return argValueList.get(0);
+            final List<Expression> argValList) {
+            if (argValList.size() == 1)
+                return argValList.get(0);
             else {
                 return Expressions.condition(
-                    translator.checkNotNull(argValueList.get(0)),
-                    argValueList.get(0),
-                    implementRecurse(translator, Util.skip(argValueList)));
+                    translator.checkNotNull(argValList.get(0)),
+                    argValList.get(0),
+                    implementRecurse(translator, Util.skip(argValList)));
             }
         }
     }
@@ -1529,7 +1531,7 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
+            final RexCall call, final List<Expression> argValList) {
             assert call.getOperands().size() == 1;
             final RelDataType srcType = call.getOperands().get(0).getType();
 
@@ -1537,7 +1539,7 @@ public class RexImpTable {
             RexNode arg = call.getOperands().get(0);
             if (call.getType().equals(srcType)) {
                 // No cast required, omit cast
-                return argValueList.get(0);
+                return argValList.get(0);
             }
             if (SqlTypeUtil.equalSansNullability(translator.typeFactory,
                 call.getType(), arg.getType())
@@ -1549,7 +1551,7 @@ public class RexImpTable {
             final RelDataType targetType =
                 nullifyType(translator.typeFactory, call.getType(), false);
             return translator.translateCast(srcType,
-                targetType, argValueList.get(0));
+                targetType, argValList.get(0));
         }
 
         /** */
@@ -1574,9 +1576,9 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
+            final RexCall call, final List<Expression> argValList) {
             assert call.getOperands().size() == 1;
-            return argValueList.get(0);
+            return argValList.get(0);
         }
     }
 
@@ -1591,7 +1593,7 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
+            final RexCall call, final List<Expression> argValList) {
             SqlKind kind = call.getOperator().getKind();
             final BlockBuilder blockBuilder = translator.getBlockBuilder();
             switch (kind) {
@@ -1599,9 +1601,9 @@ public class RexImpTable {
                     Expression map =
                         blockBuilder.append("map", Expressions.new_(LinkedHashMap.class),
                             false);
-                    for (int i = 0; i < argValueList.size(); i++) {
-                        Expression key = argValueList.get(i++);
-                        Expression val = argValueList.get(i);
+                    for (int i = 0; i < argValList.size(); i++) {
+                        Expression key = argValList.get(i++);
+                        Expression val = argValList.get(i);
                         blockBuilder.add(
                             Expressions.statement(
                                 Expressions.call(map, BuiltInMethod.MAP_PUT.method,
@@ -1612,7 +1614,7 @@ public class RexImpTable {
                     Expression lyst =
                         blockBuilder.append("list", Expressions.new_(ArrayList.class),
                             false);
-                    for (Expression val : argValueList) {
+                    for (Expression val : argValList) {
                         blockBuilder.add(
                             Expressions.statement(
                                 Expressions.call(lyst, BuiltInMethod.COLLECTION_ADD.method,
@@ -1638,21 +1640,21 @@ public class RexImpTable {
         // throws an exception.)
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
+            final RexCall call, final List<Expression> argValList) {
             final MethodImplementor implementor =
                 getImplementor(call.getOperands().get(0).getType().getSqlTypeName());
-            return implementor.implementSafe(translator, call, argValueList);
+            return implementor.implementSafe(translator, call, argValList);
         }
 
         /** */
         private MethodImplementor getImplementor(SqlTypeName sqlTypeName) {
             switch (sqlTypeName) {
                 case ARRAY:
-                    return new MethodImplementor(BuiltInMethod.ARRAY_ITEM.method, nullPolicy, false);
+                    return new MethodImplementor(BuiltInMethod.ARRAY_ITEM.method, nullPlc, false);
                 case MAP:
-                    return new MethodImplementor(BuiltInMethod.MAP_ITEM.method, nullPolicy, false);
+                    return new MethodImplementor(BuiltInMethod.MAP_ITEM.method, nullPlc, false);
                 default:
-                    return new MethodImplementor(BuiltInMethod.ANY_ITEM.method, nullPolicy, false);
+                    return new MethodImplementor(BuiltInMethod.ANY_ITEM.method, nullPlc, false);
             }
         }
     }
@@ -1672,7 +1674,7 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
+            final RexCall call, final List<Expression> argValList) {
             final SqlOperator op = call.getOperator();
             final Expression root = translator.getRoot();
             if (op == CURRENT_TIMESTAMP)
@@ -1711,24 +1713,24 @@ public class RexImpTable {
     /** Implementor for the {@code NOT} operator. */
     private static class NotImplementor extends AbstractRexCallImplementor {
         /** */
-        private AbstractRexCallImplementor implementor;
+        private final AbstractRexCallImplementor implementor;
 
         /** */
-        private NotImplementor(NullPolicy nullPolicy, AbstractRexCallImplementor implementor) {
-            super("not", nullPolicy, false);
+        private NotImplementor(NullPolicy nullPlc, AbstractRexCallImplementor implementor) {
+            super("not", nullPlc, false);
             this.implementor = implementor;
         }
 
         /** */
         static AbstractRexCallImplementor of(AbstractRexCallImplementor implementor) {
-            return new NotImplementor(implementor.nullPolicy, implementor);
+            return new NotImplementor(implementor.nullPlc, implementor);
         }
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
+            final RexCall call, final List<Expression> argValList) {
             final Expression expression =
-                implementor.implementSafe(translator, call, argValueList);
+                implementor.implementSafe(translator, call, argValList);
             return Expressions.not(expression);
         }
     }
@@ -1743,12 +1745,12 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
+            final RexCall call, final List<Expression> argValList) {
             final RexNode operand0 = call.getOperands().get(0);
-            Expression trop0 = argValueList.get(0);
+            Expression trop0 = argValList.get(0);
             final SqlTypeName typeName1 =
                 call.getOperands().get(1).getType().getSqlTypeName();
-            Expression trop1 = argValueList.get(1);
+            Expression trop1 = argValList.get(1);
             final SqlTypeName typeName = call.getType().getSqlTypeName();
             switch (operand0.getType().getSqlTypeName()) {
                 case DATE:
@@ -1833,7 +1835,7 @@ public class RexImpTable {
                             TimeUnit toUnit = TimeUnit.MILLISECOND;
                             return multiplyDivide(
                                 Expressions.convert_(Expressions.subtract(trop0, trop1),
-                                    (Class)long.class),
+                                    long.class),
                                 fromUnit.multiplier, toUnit.multiplier);
                         default:
                             throw new AssertionError(call);
@@ -1880,7 +1882,8 @@ public class RexImpTable {
     private abstract static class AbstractRexCallImplementor
         implements RexCallImplementor {
         /** */
-        final NullPolicy nullPolicy;
+        final NullPolicy nullPlc;
+        F
 
         /** */
         final String variableName;
@@ -1889,9 +1892,9 @@ public class RexImpTable {
         private final boolean harmonize;
 
         /** */
-        AbstractRexCallImplementor(String variableName, NullPolicy nullPolicy, boolean harmonize) {
+        AbstractRexCallImplementor(String variableName, NullPolicy nullPlc, boolean harmonize) {
             this.variableName = variableName;
-            this.nullPolicy = nullPolicy;
+            this.nullPlc = nullPlc;
             this.harmonize = harmonize;
         }
 
@@ -1923,11 +1926,11 @@ public class RexImpTable {
         /** Figures out conditional expression according to NullPolicy. */
         Expression getCondition(final List<Expression> argIsNullList) {
             if (argIsNullList.isEmpty()
-                || nullPolicy == null
-                || nullPolicy == NullPolicy.NONE)
+                || nullPlc == null
+                || nullPlc == NullPolicy.NONE)
                 return FALSE_EXPR;
 
-            if (nullPolicy == NullPolicy.ARG0)
+            if (nullPlc == NullPolicy.ARG0)
                 return argIsNullList.get(0);
 
             return Expressions.foldOr(argIsNullList);
@@ -1937,9 +1940,9 @@ public class RexImpTable {
         // E.g., "final Integer xxx_value = (a_isNull || b_isNull) ? null : plus(a, b)"
         private ParameterExpression genValueStatement(
             final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList,
+            final RexCall call, final List<Expression> argValList,
             final Expression condition) {
-            List<Expression> optimizedArgValList = argValueList;
+            List<Expression> optimizedArgValList = argValList;
             if (harmonize) {
                 optimizedArgValList =
                     harmonize(optimizedArgValList, translator, call);
@@ -1967,7 +1970,7 @@ public class RexImpTable {
 
             final Expression valExpression =
                 Expressions.condition(condition,
-                    getIfTrue(convertedCallVal.getType(), argValueList),
+                    getIfTrue(convertedCallVal.getType(), argValList),
                     convertedCallVal);
             final ParameterExpression val =
                 Expressions.parameter(convertedCallVal.getType(),
@@ -1978,25 +1981,25 @@ public class RexImpTable {
         }
 
         /** */
-        Expression getIfTrue(Type type, final List<Expression> argValueList) {
+        Expression getIfTrue(Type type, final List<Expression> argValList) {
             return getDefaultValue(type);
         }
 
         /** */
         // E.g., "final boolean xxx_isNull = xxx_value == null"
         private ParameterExpression genIsNullStatement(
-            final RexToLixTranslator translator, final ParameterExpression value) {
+            final RexToLixTranslator translator, final ParameterExpression val) {
             final ParameterExpression isNullVariable =
                 Expressions.parameter(Boolean.TYPE,
                     translator.getBlockBuilder().newName(getVariableName() + "_isNull"));
-            final Expression isNullExpression = translator.checkNull(value);
+            final Expression isNullExpression = translator.checkNull(val);
             translator.getBlockBuilder().add(
                 Expressions.declare(Modifier.FINAL, isNullVariable, isNullExpression));
             return isNullVariable;
         }
 
         /** Ensures that operands have identical type. */
-        private List<Expression> harmonize(final List<Expression> argValueList,
+        private List<Expression> harmonize(final List<Expression> argValList,
             final RexToLixTranslator translator, final RexCall call) {
             int nullCnt = 0;
             final List<RelDataType> types = new ArrayList<>();
@@ -2015,20 +2018,20 @@ public class RexImpTable {
             if (allSame(types)) {
                 // Operands have the same nullability and type. Return them
                 // unchanged.
-                return argValueList;
+                return argValList;
             }
             final RelDataType type = typeFactory.leastRestrictive(types);
             if (type == null) {
                 // There is no common type. Presumably this is a binary operator with
                 // asymmetric arguments (e.g. interval / integer) which is not intended
                 // to be harmonized.
-                return argValueList;
+                return argValList;
             }
             assert (nullCnt > 0) == type.isNullable();
             final Type javaCls =
                 translator.typeFactory.getJavaClass(type);
             final List<Expression> harmonizedArgValues = new ArrayList<>();
-            for (Expression argVal : argValueList) {
+            for (Expression argVal : argValList) {
                 harmonizedArgValues.add(
                     EnumUtils.convert(argVal, javaCls));
             }
@@ -2038,15 +2041,15 @@ public class RexImpTable {
         /**
          * Under null check, it is safe to unbox the operands before entering the implementor.
          */
-        private List<Expression> unboxIfNecessary(final List<Expression> argValueList) {
-            List<Expression> unboxValList = argValueList;
-            if (nullPolicy == NullPolicy.STRICT || nullPolicy == NullPolicy.ANY
-                || nullPolicy == NullPolicy.SEMI_STRICT) {
-                unboxValList = argValueList.stream()
+        private List<Expression> unboxIfNecessary(final List<Expression> argValList) {
+            List<Expression> unboxValList = argValList;
+            if (nullPlc == NullPolicy.STRICT || nullPlc == NullPolicy.ANY
+                || nullPlc == NullPolicy.SEMI_STRICT) {
+                unboxValList = argValList.stream()
                     .map(this::unboxExpression)
                     .collect(Collectors.toList());
             }
-            if (nullPolicy == NullPolicy.ARG0 && !argValueList.isEmpty()) {
+            if (nullPlc == NullPolicy.ARG0 && !argValList.isEmpty()) {
                 final Expression unboxArg0 = unboxExpression(unboxValList.get(0));
                 unboxValList.set(0, unboxArg0);
             }
@@ -2054,27 +2057,27 @@ public class RexImpTable {
         }
 
         /** */
-        private Expression unboxExpression(final Expression argValue) {
-            Primitive fromBox = Primitive.ofBox(argValue.getType());
+        private Expression unboxExpression(final Expression argVal) {
+            Primitive fromBox = Primitive.ofBox(argVal.getType());
             if (fromBox == null || fromBox == Primitive.VOID)
-                return argValue;
+                return argVal;
 
             // Optimization: for "long x";
             // "Long.valueOf(x)" generates "x"
-            if (argValue instanceof MethodCallExpression) {
-                MethodCallExpression mce = (MethodCallExpression)argValue;
+            if (argVal instanceof MethodCallExpression) {
+                MethodCallExpression mce = (MethodCallExpression)argVal;
                 if (mce.method.getName().equals("valueOf") && mce.expressions.size() == 1) {
                     Expression originArg = mce.expressions.get(0);
                     if (Primitive.of(originArg.type) == fromBox)
                         return originArg;
                 }
             }
-            return NullAs.NOT_POSSIBLE.handle(argValue);
+            return NullAs.NOT_POSSIBLE.handle(argVal);
         }
 
         /** */
         abstract Expression implementSafe(RexToLixTranslator translator,
-            RexCall call, List<Expression> argValueList);
+            RexCall call, List<Expression> argValList);
     }
 
     /**
@@ -2127,7 +2130,7 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
+            final RexCall call, final List<Expression> argValList) {
             return null;
         }
     }
@@ -2181,7 +2184,7 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
+            final RexCall call, final List<Expression> argValList) {
             return null;
         }
     }
@@ -2200,8 +2203,8 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
-            return Expressions.call(BuiltInMethod.NOT.method, argValueList);
+            final RexCall call, final List<Expression> argValList) {
+            return Expressions.call(BuiltInMethod.NOT.method, argValList);
         }
     }
 
@@ -2216,15 +2219,15 @@ public class RexImpTable {
         protected final Method method;
 
         /** */
-        ReflectiveImplementor(Method method, NullPolicy nullPolicy) {
-            super("reflective_" + method.getName(), nullPolicy, false);
+        ReflectiveImplementor(Method method, NullPolicy nullPlc) {
+            super("reflective_" + method.getName(), nullPlc, false);
             this.method = method;
         }
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(RexToLixTranslator translator,
-            RexCall call, List<Expression> argValueList) {
-            List<Expression> argValList0 = ConverterUtils.fromInternal(method.getParameterTypes(), argValueList);
+            RexCall call, List<Expression> argValList) {
+            List<Expression> argValList0 = ConverterUtils.fromInternal(method.getParameterTypes(), argValList);
             if ((method.getModifiers() & Modifier.STATIC) != 0)
                 return Expressions.call(method, argValList0);
 
@@ -2239,8 +2242,8 @@ public class RexImpTable {
     private static class RandImplementor extends AbstractRexCallImplementor {
         /** */
         private final AbstractRexCallImplementor[] implementors = {
-            new ReflectiveImplementor(BuiltInMethod.RAND.method, nullPolicy),
-            new ReflectiveImplementor(BuiltInMethod.RAND_SEED.method, nullPolicy)
+            new ReflectiveImplementor(BuiltInMethod.RAND.method, nullPlc),
+            new ReflectiveImplementor(BuiltInMethod.RAND_SEED.method, nullPlc)
         };
 
         /** */
@@ -2250,9 +2253,9 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
+            final RexCall call, final List<Expression> argValList) {
             return implementors[call.getOperands().size()]
-                .implementSafe(translator, call, argValueList);
+                .implementSafe(translator, call, argValList);
         }
     }
 
@@ -2261,8 +2264,8 @@ public class RexImpTable {
         /** */
         private final AbstractRexCallImplementor[] implementors = {
             null,
-            new ReflectiveImplementor(BuiltInMethod.RAND_INTEGER.method, nullPolicy),
-            new ReflectiveImplementor(BuiltInMethod.RAND_INTEGER_SEED.method, nullPolicy)
+            new ReflectiveImplementor(BuiltInMethod.RAND_INTEGER.method, nullPlc),
+            new ReflectiveImplementor(BuiltInMethod.RAND_INTEGER_SEED.method, nullPlc)
         };
 
         /** */
@@ -2272,9 +2275,9 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
+            final RexCall call, final List<Expression> argValList) {
             return implementors[call.getOperands().size()]
-                .implementSafe(translator, call, argValueList);
+                .implementSafe(translator, call, argValList);
         }
     }
 
@@ -2287,7 +2290,7 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
+            final RexCall call, final List<Expression> argValList) {
             return Expressions.constant(Math.PI);
         }
     }
@@ -2300,14 +2303,14 @@ public class RexImpTable {
         }
 
         /** {@inheritDoc} */
-        @Override Expression getIfTrue(Type type, final List<Expression> argValueList) {
+        @Override Expression getIfTrue(Type type, final List<Expression> argValList) {
             return Expressions.constant(false, type);
         }
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
-            return Expressions.equal(argValueList.get(0), FALSE_EXPR);
+            final RexCall call, final List<Expression> argValList) {
+            return Expressions.equal(argValList.get(0), FALSE_EXPR);
         }
     }
 
@@ -2319,14 +2322,14 @@ public class RexImpTable {
         }
 
         /** {@inheritDoc} */
-        @Override Expression getIfTrue(Type type, final List<Expression> argValueList) {
+        @Override Expression getIfTrue(Type type, final List<Expression> argValList) {
             return Expressions.constant(true, type);
         }
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
-            return Expressions.notEqual(argValueList.get(0), FALSE_EXPR);
+            final RexCall call, final List<Expression> argValList) {
+            return Expressions.notEqual(argValList.get(0), FALSE_EXPR);
         }
     }
 
@@ -2338,14 +2341,14 @@ public class RexImpTable {
         }
 
         /** {@inheritDoc} */
-        @Override Expression getIfTrue(Type type, final List<Expression> argValueList) {
+        @Override Expression getIfTrue(Type type, final List<Expression> argValList) {
             return Expressions.constant(false, type);
         }
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
-            return Expressions.notEqual(argValueList.get(0), NULL_EXPR);
+            final RexCall call, final List<Expression> argValList) {
+            return Expressions.notEqual(argValList.get(0), NULL_EXPR);
         }
     }
 
@@ -2357,14 +2360,14 @@ public class RexImpTable {
         }
 
         /** {@inheritDoc} */
-        @Override Expression getIfTrue(Type type, final List<Expression> argValueList) {
+        @Override Expression getIfTrue(Type type, final List<Expression> argValList) {
             return Expressions.constant(true, type);
         }
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
-            return Expressions.notEqual(argValueList.get(0), TRUE_EXPR);
+            final RexCall call, final List<Expression> argValList) {
+            return Expressions.notEqual(argValList.get(0), TRUE_EXPR);
         }
     }
 
@@ -2376,14 +2379,14 @@ public class RexImpTable {
         }
 
         /** {@inheritDoc} */
-        @Override Expression getIfTrue(Type type, final List<Expression> argValueList) {
+        @Override Expression getIfTrue(Type type, final List<Expression> argValList) {
             return Expressions.constant(true, type);
         }
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
-            return Expressions.equal(argValueList.get(0), NULL_EXPR);
+            final RexCall call, final List<Expression> argValList) {
+            return Expressions.equal(argValList.get(0), NULL_EXPR);
         }
     }
 
@@ -2395,14 +2398,14 @@ public class RexImpTable {
         }
 
         /** {@inheritDoc} */
-        @Override Expression getIfTrue(Type type, final List<Expression> argValueList) {
+        @Override Expression getIfTrue(Type type, final List<Expression> argValList) {
             return Expressions.constant(false, type);
         }
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
-            return Expressions.equal(argValueList.get(0), TRUE_EXPR);
+            final RexCall call, final List<Expression> argValList) {
+            return Expressions.equal(argValList.get(0), TRUE_EXPR);
         }
     }
 
@@ -2410,10 +2413,10 @@ public class RexImpTable {
     private static class RegexpReplaceImplementor extends AbstractRexCallImplementor {
         /** Implementors. */
         private final AbstractRexCallImplementor[] implementors = {
-            new ReflectiveImplementor(BuiltInMethod.REGEXP_REPLACE3.method, nullPolicy),
-            new ReflectiveImplementor(BuiltInMethod.REGEXP_REPLACE4.method, nullPolicy),
-            new ReflectiveImplementor(BuiltInMethod.REGEXP_REPLACE5.method, nullPolicy),
-            new ReflectiveImplementor(BuiltInMethod.REGEXP_REPLACE6.method, nullPolicy),
+            new ReflectiveImplementor(BuiltInMethod.REGEXP_REPLACE3.method, nullPlc),
+            new ReflectiveImplementor(BuiltInMethod.REGEXP_REPLACE4.method, nullPlc),
+            new ReflectiveImplementor(BuiltInMethod.REGEXP_REPLACE5.method, nullPlc),
+            new ReflectiveImplementor(BuiltInMethod.REGEXP_REPLACE6.method, nullPlc),
         };
 
         /** */
@@ -2423,9 +2426,9 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(RexToLixTranslator translator,
-            RexCall call, List<Expression> argValueList) {
+            RexCall call, List<Expression> argValList) {
             return implementors[call.getOperands().size() - 3]
-                .implementSafe(translator, call, argValueList);
+                .implementSafe(translator, call, argValList);
         }
     }
 
@@ -2438,7 +2441,7 @@ public class RexImpTable {
 
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
-            final RexCall call, final List<Expression> argValueList) {
+            final RexCall call, final List<Expression> argValList) {
             return Expressions.constant(null);
         }
     }
@@ -2476,11 +2479,11 @@ public class RexImpTable {
     /** */
     public static CallImplementor createImplementor(
         final NotNullImplementor implementor,
-        final NullPolicy nullPolicy,
+        final NullPolicy nullPlc,
         final boolean harmonize) {
         return (translator, call, nullAs) -> {
             final RexImpTable.RexCallImplementor rexCallImplementor
-                = createRexCallImplementor(implementor, nullPolicy, harmonize);
+                = createRexCallImplementor(implementor, nullPlc, harmonize);
             final List<RexToLixTranslator.Result> args = translator.getCallOperandResult(call);
             assert args != null;
             final RexToLixTranslator.Result result = rexCallImplementor.implement(translator, call, args);
@@ -2491,12 +2494,13 @@ public class RexImpTable {
     /** */
     private static RexCallImplementor createRexCallImplementor(
         final NotNullImplementor implementor,
-        final NullPolicy nullPolicy,
-        final boolean harmonize) {
-        return new AbstractRexCallImplementor("not_null_udf", nullPolicy, harmonize) {
+        final NullPolicy nullPlc,
+        final boolean harmonize
+    ) {
+        return new AbstractRexCallImplementor("not_null_udf", nullPlc, harmonize) {
             @Override Expression implementSafe(RexToLixTranslator translator,
-                RexCall call, List<Expression> argValueList) {
-                return implementor.implement(translator, call, argValueList);
+                RexCall call, List<Expression> argValList) {
+                return implementor.implement(translator, call, argValList);
             }
         };
     }
