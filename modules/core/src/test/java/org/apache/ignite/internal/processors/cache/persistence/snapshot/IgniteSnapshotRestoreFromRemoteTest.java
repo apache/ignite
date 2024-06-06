@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -339,6 +341,8 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
         emptyNode.cache(DEFAULT_CACHE_NAME).destroy();
         awaitPartitionMapExchange();
 
+        CountDownLatch latch = new CountDownLatch(1);
+
         IgniteSnapshotManager mgr = snp(coord);
         mgr.remoteSnapshotSenderFactory(new BiFunction<String, UUID, SnapshotSender>() {
             @Override public SnapshotSender apply(String s, UUID uuid) {
@@ -346,7 +350,7 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
                     @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                         delegate.sendPart0(part, cacheDirName, pair, length);
 
-                        GridTestUtils.runAsync(coord::close);
+                        latch.countDown();
                     }
                 };
             }
@@ -354,6 +358,10 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
 
         // Restore all cache groups.
         IgniteFuture<Void> fut = emptyNode.snapshot().restoreSnapshot(SNAPSHOT_NAME, null);
+
+        latch.await(TIMEOUT, TimeUnit.MILLISECONDS);
+
+        coord.close();
 
         assertThrowsWithCause(() -> fut.get(TIMEOUT), IgniteException.class);
     }
