@@ -46,13 +46,13 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -3733,7 +3733,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private volatile RemoteSnapshotFilesRecevier active;
 
         /** Queue of asynchronous tasks to execute. */
-        private final Deque<RemoteSnapshotFilesRecevier> queue = new ConcurrentLinkedDeque<>();
+        private final Queue<RemoteSnapshotFilesRecevier> queue = new ConcurrentLinkedDeque<>();
 
         /** {@code true} if the node is stopping. */
         private boolean stopping;
@@ -3790,30 +3790,26 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param nodeId A node left the cluster.
          */
         public synchronized void onNodeLeft(UUID nodeId) {
-            Set<RemoteSnapshotFilesRecevier> futs = activeTasks();
+            if (active == null || active.isDone())
+                return;
+
             ClusterTopologyCheckedException ex = new ClusterTopologyCheckedException("The node from which a snapshot has been " +
                 "requested left the grid");
 
-            futs.forEach(t -> {
+            if (active.rmtNodeId.equals(nodeId))
+                interruptActive(ex);
+
+            queue.forEach(t -> {
                 if (t.rmtNodeId.equals(nodeId))
                     t.acceptException(ex);
             });
         }
 
-        /**
-         * @return The set of currently scheduled tasks, some of them may be already completed.
-         */
-        private Set<RemoteSnapshotFilesRecevier> activeTasks() {
-            Set<RemoteSnapshotFilesRecevier> futs = new LinkedHashSet<>();
+        /** Interrupts current active task (if present) to safely shedule next. */
+        private void interruptActive(Exception e) {
+            cctx.kernalContext().io().interruptTransmissionReceiver(DFLT_INITIAL_SNAPSHOT_TOPIC, e);
 
-            queue.descendingIterator().forEachRemaining(futs::add);
-
-            RemoteSnapshotFilesRecevier active0 = active;
-
-            if (active0 != null)
-                futs.add(active0);
-
-            return futs;
+            active.acceptException(e);
         }
 
         /** {@inheritDoc} */
@@ -3896,12 +3892,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         }
 
                         if (respMsg0.errorMessage() != null) {
-                            IgniteCheckedException e = new IgniteCheckedException("Request cancelled. The snapshot operation stopped " +
-                                "on the remote node with an error: " + respMsg0.errorMessage());
-
-                            cctx.kernalContext().io().interruptTransmissionReceiver(task.rmtNodeId, e);
-
-                            task.acceptException(e);
+                            interruptActive(new IgniteCheckedException("Request cancelled. The snapshot operation " +
+                                "stopped on the remote node with an error: " + respMsg0.errorMessage()));
                         }
                     }
                 }

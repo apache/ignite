@@ -1959,25 +1959,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
-     * @param nodeId The remote node ID.
+     * @param topic The topic to interrupt receiver from.
      * @param ex Exception.
      */
-    public void interruptTransmissionReceiver(UUID nodeId, Exception ex) {
-        synchronized (rcvMux) {
-            Iterator<Entry<Object, ReceiverContext>> it = rcvCtxs.entrySet().iterator();
-
-            while (it.hasNext()) {
-                Map.Entry<Object, ReceiverContext> e = it.next();
-
-                if (nodeId.equals(e.getValue().rmtNodeId)) {
-                    it.remove();
-
-                    log.info("MY interruptTransmissionReceiver=" + e.getValue().rmtNodeId);
-
-                    interruptReceiver(e.getValue(), ex);
-                }
-            }
-        }
+    public void interruptTransmissionReceiver(Object topic, Exception ex) {
+        interruptReceiver(rcvCtxs.remove(topic), ex);
     }
 
     /**
