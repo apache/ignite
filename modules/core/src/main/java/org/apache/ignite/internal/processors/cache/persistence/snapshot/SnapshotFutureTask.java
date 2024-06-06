@@ -168,7 +168,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         boolean withMetaStorage,
         ThreadLocal<ByteBuffer> locBuff
     ) {
-        super(cctx, cctx.logger(SnapshotFutureTask.class), srcNodeId, reqId, snpName, snpSndr, parts);
+        super(cctx, srcNodeId, reqId, snpName, snpSndr, parts);
 
         assert snpName != null : "Snapshot name cannot be empty or null.";
         assert snpSndr != null : "Snapshot sender which handles execution tasks must be not null.";

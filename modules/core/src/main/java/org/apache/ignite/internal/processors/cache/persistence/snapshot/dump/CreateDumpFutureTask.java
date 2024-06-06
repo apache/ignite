@@ -173,7 +173,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     ) {
         super(
             cctx,
-            cctx.logger(CreateDumpFutureTask.class),
             srcNodeId,
             reqId,
             dumpName,

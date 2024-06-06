@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -38,7 +37,6 @@ public abstract class AbstractSnapshotPartsSenderFuture<T> extends AbstractSnaps
      * Ctor.
      *
      * @param sharedCacheCtx Shared cache context.
-     * @param log Logger.
      * @param srcNodeId Node id which cause snapshot task creation.
      * @param reqId Snapshot operation request ID.
      * @param snpName Unique identifier of snapshot process.
@@ -47,7 +45,6 @@ public abstract class AbstractSnapshotPartsSenderFuture<T> extends AbstractSnaps
      */
     protected AbstractSnapshotPartsSenderFuture(
         GridCacheSharedContext<?, ?> sharedCacheCtx,
-        IgniteLogger log,
         UUID srcNodeId,
         UUID reqId,
         String snpName,

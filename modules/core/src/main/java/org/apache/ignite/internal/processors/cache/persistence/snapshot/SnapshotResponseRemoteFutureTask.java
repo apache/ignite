@@ -66,7 +66,7 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotPartsSende
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts
     ) {
-        super(cctx, cctx.logger(SnapshotResponseRemoteFutureTask.class), srcNodeId, reqId, snpName, snpSndr, parts);
+        super(cctx, srcNodeId, reqId, snpName, snpSndr, parts);
 
         this.cctx = cctx;
 
