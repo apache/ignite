@@ -86,6 +86,8 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotP
 
     /** {@inheritDoc} */
     @Override public boolean cancel() {
+        super.cancel();
+
         try {
             closeAsync().get();
         }
