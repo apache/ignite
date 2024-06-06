@@ -1897,7 +1897,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         if (log.isInfoEnabled()) {
             log.info("The check snapshot procedure started [snpName=" + name + ", snpPath=" + snpPath +
-                ", incIdx=" + incIdx + ", grps=" + grps + ']');
+                ", incIdx=" + incIdx + ", grps=" + grps + ", requestId=" + reqId + ']');
         }
 
         GridKernalContext kctx0 = cctx.kernalContext();
@@ -2817,24 +2817,30 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     <T> AbstractSnapshotFutureTask<T> startExternalSnapshotFuture(String futId, AbstractSnapshotFutureTask<T> fut) {
         AbstractSnapshotFutureTask<T> res = registerTask(futId, fut, false);
 
-        res.start();
+        if (!res.isDone())
+            res.start();
 
         return res;
     }
 
-    /** @return Current snapshot task. */
+    /** @return Current snapshot operation future of the given type. */
     public <T extends AbstractSnapshotFutureTask<?>> T currentSnapshotTask(Class<T> snpTaskCls) {
         SnapshotOperationRequest req = clusterSnpReq;
 
         if (req == null)
             return null;
 
-        AbstractSnapshotFutureTask<?> task = locSnpTasks.get(req.snapshotName());
+        AbstractSnapshotFutureTask<?> task = currentSnapshotFuture(req.snapshotName());
 
         if (task == null || task.getClass() != snpTaskCls)
             return null;
 
         return (T)task;
+    }
+
+    /** @return Any current snapshot future. */
+    AbstractSnapshotFutureTask<?> currentSnapshotFuture(String opId) {
+        return locSnpTasks.get(opId);
     }
 
     /**

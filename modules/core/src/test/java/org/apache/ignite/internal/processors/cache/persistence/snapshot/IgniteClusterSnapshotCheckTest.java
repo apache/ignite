@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,7 +37,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -54,6 +54,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
@@ -88,10 +89,12 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.ObjectMetric;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.Before;
@@ -317,6 +320,119 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             "The check procedure has failed, conflict partitions has been found: [counterConflicts=1, hashConflicts=0]");
     }
 
+    /** */
+    @Test
+    public void testTwoSameSnapshotCheckValidationMetrics() throws Exception {
+        int grids = 3;
+
+        IgniteEx ig = startGridsWithCache(grids, dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 16)),
+            100);
+
+        // Lever to stop snapshot checking at this progress %.
+        final double stopProgress = 50.0;
+
+        snp(ig).createSnapshot(SNAPSHOT_NAME).get();
+
+        Set<UUID> stoppedNodes = ConcurrentHashMap.newKeySet(grids);
+
+        AtomicBoolean waitLever = new AtomicBoolean();
+
+        String checkSnpFutName = SnapshotPartitionsVerifyHandler.futureName(SNAPSHOT_NAME);
+        String regName = SnapshotPartitionsVerifyHandler.metricsRegName(SNAPSHOT_NAME);
+
+        List<AbstractSnapshotFutureTask<?>> checkFuts = new ArrayList<>();
+
+        // Check progresses per node.
+        Map<UUID, Double> progresses = new ConcurrentHashMap<>();
+
+        injectSnapshotReadDelayedIo(
+            G.allGrids(),
+            waitLever,
+            grid -> {
+                stoppedNodes.add(grid.cluster().localNode().id());
+
+                try {
+                    assertTrue(waitForCondition(() -> stoppedNodes.size() == grids, getTestTimeout()));
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    throw new RuntimeException("Failed to wait until every node starts to read the snapshot.", e);
+                }
+            },
+            grid -> {
+                // Ensures there is no new check future registered.
+                assertTrue(checkFuts.contains(snp((IgniteEx)grid).currentSnapshotFuture(checkSnpFutName)));
+
+                // Stores maximal progress for the node.
+                double nodeProgress = progresses.compute(
+                    grid.cluster().localNode().id(),
+                    (nodeId, prgrs) -> prgrs == null ? 0.0 : Math.max(prgrs,
+                        ((IgniteEx)grid).context().metric().registry(regName).<DoubleMetric>findMetric("progress").value())
+                );
+
+                if (nodeProgress < stopProgress)
+                    return;
+
+                try {
+                    assertTrue(waitForCondition(() -> progresses.values().stream().filter(p -> p >= stopProgress).count() == grids,
+                        getTestTimeout()));
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    throw new RuntimeException("Failed to wait until every node starts to read the snapshot.", e);
+                }
+
+                // Stop when all the nodes reached the required progress.
+                waitLever.set(true);
+            }
+        );
+
+        waitLever.set(true);
+
+        IgniteInternalFuture<?> fut1 = snp(ig).checkSnapshot(SNAPSHOT_NAME, null);
+
+        assertTrue(waitForCondition(() -> stoppedNodes.size() == grids, getTestTimeout()));
+
+        // The request ids and the start times.
+        List<IgniteBiTuple<UUID, Long>> metrics1 = G.allGrids().stream()
+            .sorted(Comparator.comparingInt(g -> (int)g.cluster().localNode().order()))
+            .map(g -> {
+                MetricRegistry mreg = ((IgniteEx)g).context().metric().registry(regName);
+
+                return new IgniteBiTuple<>(mreg.<ObjectMetric<UUID>>findMetric("requestId").value(),
+                    mreg.<LongMetric>findMetric("startTime").value());
+            })
+            .collect(Collectors.toList());
+
+        // Snapshot check futures registered by the first check operation.
+        checkFuts.addAll(G.allGrids().stream().map(grid -> snp((IgniteEx)grid).currentSnapshotFuture(checkSnpFutName))
+            .collect(Collectors.toList()));
+
+        assert checkFuts.size() == grids;
+
+        // Advance possible new check operation start time.
+        U.sleep(3000);
+
+        IgniteInternalFuture<?> fut2 = snp(ig).checkSnapshot(SNAPSHOT_NAME, null);
+
+        waitLever.set(false);
+
+        // Waits until every node reaches progress of {@code stopAtProgress}.
+        assertTrue(waitForCondition(() -> stoppedNodes.size() == grids, getTestTimeout()));
+
+        // Ensure metrics didn't change by the second snapshot check.
+        for (int i = 0; i < grids; ++i) {
+            MetricRegistry mreg = grid(i).context().metric().registry(regName);
+
+            IgniteBiTuple<UUID, Long> prevMetrics = metrics1.get(i);
+
+            // Requests id.
+            assertEquals(prevMetrics.get1(), mreg.<ObjectMetric<UUID>>findMetric("requestId").value());
+            // Start time.
+            assertTrue(prevMetrics.get2() == mreg.<LongMetric>findMetric("startTime").value());
+        }
+
+        assertEquals(fut1.get(), fut2.get());
+    }
+
     /** Checks that snapshot validation metrics aren't affected by a snapshot creation. */
     @Test
     public void testCreateSnapshotNoValidationMetrics() throws Exception {
@@ -348,11 +464,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         ig.destroyCache(dfltCacheCfg.getName());
 
-        awaitPartitionMapExchange();
+        Set<UUID> waited = ConcurrentHashMap.newKeySet(G.allGrids().size());
 
-        CountDownLatch waited = new CountDownLatch(G.allGrids().size());
-
-        AtomicBoolean delay = injectSnapshotReadDelayedIo(G.allGrids(), grid -> waited.countDown());
+        AtomicBoolean delay = injectSnapshotReadDelayedIo(G.allGrids(), grid -> waited.add(grid.cluster().localNode().id()));
 
         delay.set(true);
 
@@ -360,9 +474,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             IgniteFuture<Void> res = snp(ig).restoreSnapshot(SNAPSHOT_NAME, null);
 
             try {
-                waited.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+                assertTrue(waitForCondition(() -> waited.size() == G.allGrids().size(), getTestTimeout()));
             }
-            catch (InterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 throw new RuntimeException(e);
             }
 
@@ -423,6 +537,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         injectSnapshotReadDelayedIo(
             G.allGrids(),
             delyaFileIo,
+            null,
             grid -> {
                 int dridIdx = G.allGrids().lastIndexOf(grid);
 
@@ -437,8 +552,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
                 if (progresses.isEmpty() || Double.compare(progresses.get(progresses.size() - 1), nextProgress) != 0)
                     progresses.add(nextProgress);
-            },
-            null
+            }
         );
 
         delyaFileIo.set(true);

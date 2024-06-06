@@ -947,7 +947,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     public static AtomicBoolean injectSnapshotReadDelayedIo(Collection<Ignite> grids, @Nullable Consumer<Ignite> beforeWait) {
         AtomicBoolean waitFlag = new AtomicBoolean();
 
-        injectSnapshotReadDelayedIo(grids, waitFlag, null, beforeWait);
+        injectSnapshotReadDelayedIo(grids, waitFlag, beforeWait, null);
 
         return waitFlag;
     }
@@ -957,8 +957,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      *
      * @param grids Nodes to affect.
      * @param waitFlag Delay-read lever.
-     * @param beforeProceed If not {@code null}, is called after the delay.
      * @param beforeWait If not {@code null}, is called before the delay.
+     * @param beforeProceed If not {@code null}, is called every time before the main action (reads etc.).
      * @see GridCacheSharedContext#pageStore()
      * @see FileIOFactory#create(File, OpenOption...)
      * @see FileIO
@@ -966,8 +966,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     public static void injectSnapshotReadDelayedIo(
         Collection<Ignite> grids,
         AtomicBoolean waitFlag,
-        @Nullable Consumer<Ignite> beforeProceed,
-        @Nullable Consumer<Ignite> beforeWait
+        @Nullable Consumer<Ignite> beforeWait,
+        @Nullable Consumer<Ignite> beforeProceed
     ) {
         for (Ignite ig : grids) {
             FilePageStoreManager pageStore = (FilePageStoreManager)((IgniteEx)ig).context().cache().context().pageStore();

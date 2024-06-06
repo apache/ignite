@@ -103,8 +103,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** Progress metric registry name prefix. */
     private static final String METRIC_REG_NAME_PREF = metricName(SNAPSHOT_METRICS, "check");
 
-    /** Unique snapshot future name sign. Makes the future name difficult to repeat. */
-    protected static final String SNP_FUTURE_NAME_SIGN = '.' + UUID.randomUUID().toString() + '.';
+    /** Unique snapshot future name prefix. Makes the future name difficult to repeat. */
+    private static final String SNP_FUTURE_NAME_PREF = SnapshotPartitionsVerifyHandler.class.getSimpleName() + '.' +
+        UUID.randomUUID() + '.';
 
     /** Shared context. */
     protected final GridCacheSharedContext<?, ?> cctx;
@@ -131,12 +132,12 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         IgniteSnapshotManager snpMgr = cctx.cache().context().snapshotMgr();
 
-        return snpMgr.startExternalSnapshotFuture(futureName(opCtx), createFuture(opCtx)).get();
+        return snpMgr.startExternalSnapshotFuture(futureName(opCtx.metadata().snapshotName()), createFuture(opCtx)).get();
     }
 
     /** */
-    protected String futureName(SnapshotHandlerContext opCtx) {
-        return getClass().getSimpleName() + SNP_FUTURE_NAME_SIGN + opCtx.metadata().snapshotName();
+    static String futureName(String snapshotName) {
+        return SNP_FUTURE_NAME_PREF + snapshotName;
     }
 
     /** */
@@ -694,6 +695,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             if (!opCtx.check())
                 return;
 
+            long startTime = System.currentTimeMillis();
+
             mreg = cctx.kernalContext().metric().registry(metricsRegName(snpName));
 
             assert mreg.findMetric("startTime") == null;
@@ -701,7 +704,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
             mreg.register("requestId", this::requestId, UUID.class, "Snapshot operation request.");
             mreg.register("snapshotName", this::snapshotName, String.class, "Snapshot name.");
-            mreg.register("startTime", System::currentTimeMillis, "Snapshot check start time in milliseconds.");
+            mreg.register("startTime", () -> startTime, "Snapshot check start time in milliseconds.");
             mreg.register("calculateHashesFlag", opCtx::check, "Flag of entire snapshot check (partitions hash calculation).");
 
             if (opCtx.check())
