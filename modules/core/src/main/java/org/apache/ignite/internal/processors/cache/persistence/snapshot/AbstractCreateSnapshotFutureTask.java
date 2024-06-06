@@ -61,7 +61,6 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotP
 
     /**
      * @param cctx Shared context.
-     * @param log Logger.
      * @param srcNodeId Node id which cause snapshot task creation.
      * @param reqId Snapshot operation request ID.
      * @param snpName Snapshot name.
@@ -87,6 +86,8 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotP
 
     /** {@inheritDoc} */
     @Override public boolean cancel() {
+        super.cancel();
+
         try {
             closeAsync().get();
         }
