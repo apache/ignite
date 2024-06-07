@@ -185,10 +185,31 @@ public class DataReplicationOperationsTest extends AbstractThinClientTest {
     }
 
     /** */
+    @Test
+    public void testMixedExpiry() {
+        Map<Object, T3<Object, GridCacheVersion, Long>> put0 = createPutAllData(System.currentTimeMillis() + TTL);
+        Map<Object, T3<Object, GridCacheVersion, Long>> put1 = createPutAllData(KEYS_CNT, CU.EXPIRE_TIME_ETERNAL);
+
+        Map<Object, T3<Object, GridCacheVersion, Long>> drMap = new HashMap<>();
+        drMap.putAll(put0);
+        drMap.putAll(put1);
+
+        cache.putAllConflict(drMap);
+
+        assertTrue(cache.containsKeys(put0.keySet()));
+        assertTrue(cache.containsKeys(put1.keySet()));
+    }
+
+    /** */
     private Map<Object, T3<Object, GridCacheVersion, Long>> createPutAllData(long expireTime) {
+        return createPutAllData(0, expireTime);
+    }
+
+    /** */
+    private Map<Object, T3<Object, GridCacheVersion, Long>> createPutAllData(int startKey, long expireTime) {
         Map<Object, T3<Object, GridCacheVersion, Long>> map = new HashMap<>();
 
-        for (int i = 0; i < KEYS_CNT; i++) {
+        for (int i = startKey; i < startKey + KEYS_CNT; i++) {
             Person key = new Person(i, "Person-" + i);
             Person val = new Person(i, "Person-" + i);
 
