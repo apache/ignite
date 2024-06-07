@@ -67,7 +67,6 @@
 
         <!-- Dependency versions -->
         <activemq.version>5.12.0</activemq.version>
-        <asm.version>4.2</asm.version>
         <aspectj.bundle.version>1.8.13_1</aspectj.bundle.version>
         <aspectj.version>1.8.13</aspectj.version>
         <netty.version>4.1.101.Final</netty.version>
@@ -105,8 +104,6 @@
         <jotm.version>2.3.1-M1</jotm.version>
         <jsch.bundle.version>0.1.54_1</jsch.bundle.version>
         <jsch.version>0.1.54</jsch.version>
-        <jsonlib.bundle.version>2.4_1</jsonlib.bundle.version>
-        <jsonlib.version>2.4</jsonlib.version>
         <jtidy.version>r938</jtidy.version>
         <kafka.version>3.4.0</kafka.version>
         <log4j2.version>2.22.0</log4j2.version>
@@ -124,10 +121,6 @@
         <oro.bundle.version>2.0.8_6</oro.bundle.version>
         <paho.version>1.0.2</paho.version>
         <postgres.connector.version>42.6.0</postgres.connector.version>
-        <scala210.jline.version>2.10.7</scala210.jline.version>
-        <scala210.library.version>2.10.7</scala210.library.version>
-        <scala.library.version>2.11.12</scala.library.version>
-        <scala.test.version>2.2.6</scala.test.version>
         <slf4j.version>1.7.33</slf4j.version>
         <slf4j16.version>1.6.4</slf4j16.version>
         <snappy.version>1.1.10.4</snappy.version>
@@ -135,9 +128,6 @@
         <storm.version>1.1.1</storm.version>
         <surefire.version>3.1.2</surefire.version>
         <tomcat.version>9.0.63</tomcat.version>
-        <twitter.hbc.version>2.2.0</twitter.hbc.version>
-        <yammer.metrics.annotation.version>2.2.0</yammer.metrics.annotation.version>
-        <yammer.metrics.core.version>2.2.0</yammer.metrics.core.version>
         <yardstick.version>0.8.3</yardstick.version>
         <zkclient.version>0.5</zkclient.version>
         <zookeeper.version>3.8.3</zookeeper.version>
