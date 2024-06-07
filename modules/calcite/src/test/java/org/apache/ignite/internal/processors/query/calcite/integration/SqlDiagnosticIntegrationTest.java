@@ -52,7 +52,7 @@ import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecuto
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -160,8 +161,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testParserMetrics() {
-        MetricRegistry mreg0 = grid(0).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
-        MetricRegistry mreg1 = grid(1).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
+        MetricRegistryImpl mreg0 = grid(0).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
+        MetricRegistryImpl mreg1 = grid(1).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
         mreg0.reset();
         mreg1.reset();
 
@@ -200,8 +201,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     public void testBatchParserMetrics() throws Exception {
         withSecurityContextOnAllNodes(secCtxDflt);
 
-        MetricRegistry mreg0 = grid(0).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
-        MetricRegistry mreg1 = grid(1).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
+        MetricRegistryImpl mreg0 = grid(0).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
+        MetricRegistryImpl mreg1 = grid(1).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
         mreg0.reset();
         mreg1.reset();
 
@@ -269,8 +270,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     public void testUserQueriesMetrics() throws Exception {
         sql(grid(0), "CREATE TABLE test_metric (a INT)");
 
-        MetricRegistry mreg0 = grid(0).context().metric().registry(SQL_USER_QUERIES_REG_NAME);
-        MetricRegistry mreg1 = grid(1).context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        MetricRegistryImpl mreg0 = grid(0).context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        MetricRegistryImpl mreg1 = grid(1).context().metric().registry(SQL_USER_QUERIES_REG_NAME);
         mreg0.reset();
         mreg1.reset();
 
@@ -359,7 +360,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         Set<UUID> dataNodesIds = new HashSet<>(F.asList(grid(0).localNode().id(), grid(1).localNode().id()));
         Set<UUID> readsNodes = new HashSet<>(dataNodesIds);
         Set<Long> readsQueries = new HashSet<>();
-        Map<Long, Long> rowsFetchedPerQuery = new HashMap<>();
+        Map<Long, Long> rowsFetchedPerQry = new HashMap<>();
         AtomicLong firstQryId = new AtomicLong(-1);
         AtomicLong lastQryId = new AtomicLong();
 
@@ -420,7 +421,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
                 }
                 else if ("Fetched".equals(action)) {
                     assertEquals(grid(0).localNode().id(), nodeId);
-                    assertNull(rowsFetchedPerQuery.put(id, rows));
+                    assertNull(rowsFetchedPerQry.put(id, rows));
                 }
             }
         });
@@ -428,8 +429,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         assertEquals(4, qryCnt.get());
         assertTrue("Query reads expected on nodes: " + readsNodes, readsNodes.isEmpty());
         assertEquals(Collections.singleton(lastQryId.get()), readsQueries);
-        assertEquals((Long)1000L, rowsFetchedPerQuery.get(firstQryId.get()));
-        assertEquals((Long)4L, rowsFetchedPerQuery.get(lastQryId.get()));
+        assertEquals((Long)1000L, rowsFetchedPerQry.get(firstQryId.get()));
+        assertEquals((Long)4L, rowsFetchedPerQry.get(lastQryId.get()));
         assertEquals(5L, rowsScanned.get());
     }
 

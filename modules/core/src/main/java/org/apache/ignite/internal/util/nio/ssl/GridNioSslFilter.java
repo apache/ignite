@@ -26,7 +26,7 @@ import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.util.nio.GridNioException;
@@ -105,7 +105,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         boolean directBuf,
         ByteOrder order,
         IgniteLogger log,
-        @Nullable MetricRegistry mreg
+        @Nullable MetricRegistryImpl mreg
     ) {
         super("SSL filter");
 

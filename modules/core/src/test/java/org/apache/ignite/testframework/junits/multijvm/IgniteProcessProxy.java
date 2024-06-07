@@ -91,6 +91,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -221,11 +222,11 @@ public class IgniteProcessProxy implements IgniteEx {
      */
     private static void validateRemoteJre(@Nullable String javaHome) throws IOException, InterruptedException {
         int remoteMajorVer = new JavaVersionCommand().majorVersion(javaHome);
-        int localMajorVer = U.majorJavaVersion(System.getProperty("java.version"));
+        int locMajorVer = U.majorJavaVersion(System.getProperty("java.version"));
 
-        if (localMajorVer != remoteMajorVer) {
+        if (locMajorVer != remoteMajorVer) {
             fail("Version of remote java with home at '" + javaHome + "' (" + remoteMajorVer +
-                ") is different from local java version (" + localMajorVer + "). " +
+                ") is different from local java version (" + locMajorVer + "). " +
                 "Make sure test.multijvm.java.home property specifies a path to a correct Java installation");
         }
     }
@@ -561,6 +562,11 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public IgniteCompute compute() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteMetrics metrics() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
@@ -910,17 +916,17 @@ public class IgniteProcessProxy implements IgniteEx {
      * @return {@link IgniteCompute} instance to communicate with remote node.
      */
     public IgniteCompute remoteCompute() {
-        Ignite localJvmGrid = localJvmGrid();
+        Ignite locJvmGrid = localJvmGrid();
 
-        if (localJvmGrid == null)
+        if (locJvmGrid == null)
             return null;
 
-        ClusterGroup grp = localJvmGrid.cluster().forNodeId(id);
+        ClusterGroup grp = locJvmGrid.cluster().forNodeId(id);
 
         if (grp.nodes().isEmpty())
             throw new IllegalStateException("Could not found node with id=" + id + ".");
 
-        return localJvmGrid.compute(grp);
+        return locJvmGrid.compute(grp);
     }
 
     /**

@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
@@ -261,10 +260,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** UUID to consistent id mapper. */
     protected final ConsistentIdMapper consistentIdMapper;
 
-    /** Mvcc tx update snapshot. */
-    @GridToStringInclude
-    protected volatile MvccSnapshot mvccSnapshot;
-
     /** Incremental snapshot ID. */
     private @Nullable UUID incSnpId;
 
@@ -418,18 +413,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     public void setParentTx(GridNearTxLocal parentTx) {
         this.parentTx = parentTx;
-    }
-
-    /**
-     * @return Mvcc info.
-     */
-    @Override @Nullable public MvccSnapshot mvccSnapshot() {
-        return mvccSnapshot;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void mvccSnapshot(MvccSnapshot mvccSnapshot) {
-        this.mvccSnapshot = mvccSnapshot;
     }
 
     /**

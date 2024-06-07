@@ -951,7 +951,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Updates MVCC cache update counter on backup node.
+     * Updates cache update counter on backup node.
      *
      * @param start Start position
      * @param delta Delta.

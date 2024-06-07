@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
  */
 public class CliCommandInvoker<A extends IgniteDataTransferObject> extends CommandInvoker<A> implements AutoCloseable {
     /** Client configuration. */
-    private GridClientConfiguration clientCfg;
+    private final GridClientConfiguration clientCfg;
 
     /** Client. */
     private GridClient client;
@@ -220,15 +220,5 @@ public class CliCommandInvoker<A extends IgniteDataTransferObject> extends Comma
             throw new GridClientDisconnectedException("Connectable node not found", null);
 
         return compute.balancer().balancedNode(nodes);
-    }
-
-    /** */
-    public void clientConfiguration(GridClientConfiguration clientCfg) {
-        this.clientCfg = clientCfg;
-    }
-
-    /** */
-    public GridClientConfiguration clientConfiguration() {
-        return clientCfg;
     }
 }

@@ -62,7 +62,8 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneSpiContext;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
@@ -74,6 +75,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.platform.PlatformType;
+import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
@@ -188,7 +190,7 @@ public class CdcMain implements Runnable {
     private final GridSpringResourceContext ctx;
 
     /** CDC metrics registry. */
-    private MetricRegistry mreg;
+    private MetricRegistryImpl mreg;
 
     /** Current segment index metric. */
     private AtomicLongMetric curSegmentIdx;
@@ -416,6 +418,10 @@ public class CdcMain implements Runnable {
 
         startAllComponents(kctx);
 
+        for (IgniteSpi metricSpi : kctx.config().getMetricExporterSpi()) {
+            metricSpi.onContextInitialized(new StandaloneSpiContext());
+        }
+
         mreg = kctx.metric().registry("cdc");
 
         return kctx;
@@ -634,6 +640,9 @@ public class CdcMain implements Runnable {
 
                     case CDC_MANAGER_STOP_RECORD:
                         state.saveCdcMode((cdcModeState = CdcMode.CDC_UTILITY_ACTIVE));
+
+                        if (log.isInfoEnabled())
+                            log.info("CDC mode switched [mode=" + cdcModeState + ']');
 
                         return true;
 

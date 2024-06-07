@@ -218,14 +218,14 @@ public class P2PClassLoadingFailureHandlingTest extends GridCommonAbstractTest {
     public void continuousQueryRemoteFilterP2PClassLoadingProblemShouldNotCauseFailureHandling() throws Exception {
         IgniteCache<Integer, String> cache = client.createCache(CACHE_NAME);
 
-        ContinuousQuery<Integer, String> query = new ContinuousQuery<>();
-        query.setLocalListener(entry -> {});
-        query.setRemoteFilterFactory(instantiateClassLoadedWithExternalClassLoader(
+        ContinuousQuery<Integer, String> qry = new ContinuousQuery<>();
+        qry.setLocalListener(entry -> {});
+        qry.setRemoteFilterFactory(instantiateClassLoadedWithExternalClassLoader(
             "org.apache.ignite.tests.p2p.classloadproblem.RemoteFilterFactoryCausingP2PClassLoadProblem"
         ));
 
         Throwable ex = assertThrows(log, () -> {
-            try (QueryCursor<Cache.Entry<Integer, String>> ignored = cache.query(query)) {
+            try (QueryCursor<Cache.Entry<Integer, String>> ignored = cache.query(qry)) {
                 cache.put(1, "1");
             }
         }, IgniteException.class, "Failed to update keys");
@@ -239,14 +239,14 @@ public class P2PClassLoadingFailureHandlingTest extends GridCommonAbstractTest {
     public void continuousQueryRemoteTransformerP2PClassLoadingProblemShouldNotCauseFailureHandling() throws Exception {
         IgniteCache<Integer, String> cache = client.createCache(CACHE_NAME);
 
-        ContinuousQueryWithTransformer<Integer, String, String> query = new ContinuousQueryWithTransformer<>();
-        query.setLocalListener(entry -> {});
-        query.setRemoteTransformerFactory(instantiateClassLoadedWithExternalClassLoader(
+        ContinuousQueryWithTransformer<Integer, String, String> qry = new ContinuousQueryWithTransformer<>();
+        qry.setLocalListener(entry -> {});
+        qry.setRemoteTransformerFactory(instantiateClassLoadedWithExternalClassLoader(
             "org.apache.ignite.tests.p2p.classloadproblem.RemoteTransformerFactoryCausingP2PClassLoadProblem"
         ));
 
         Throwable ex = assertThrows(log, () -> {
-            try (QueryCursor<Cache.Entry<Integer, String>> ignored = cache.query(query)) {
+            try (QueryCursor<Cache.Entry<Integer, String>> ignored = cache.query(qry)) {
                 cache.put(1, "1");
             }
         }, IgniteException.class, "Failed to update keys");

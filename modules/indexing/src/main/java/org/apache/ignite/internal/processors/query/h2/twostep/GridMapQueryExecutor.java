@@ -48,7 +48,6 @@ import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -83,7 +82,6 @@ import org.h2.api.ErrorCode;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl.calculateSegment;
@@ -269,7 +267,6 @@ public class GridMapQueryExecutor {
                                 timeout,
                                 params,
                                 lazy,
-                                req.mvccSnapshot(),
                                 dataPageScanEnabled,
                                 treatReplicatedAsPartitioned
                             );
@@ -298,7 +295,6 @@ public class GridMapQueryExecutor {
                 timeout,
                 params,
                 lazy,
-                req.mvccSnapshot(),
                 dataPageScanEnabled,
                 treatReplicatedAsPartitioned
             );
@@ -326,7 +322,6 @@ public class GridMapQueryExecutor {
      * @param timeout Query timeout.
      * @param params Query parameters.
      * @param lazy Streaming flag.
-     * @param mvccSnapshot MVCC snapshot.
      * @param dataPageScanEnabled If data page scan is enabled.
      */
     private void onQueryRequest0(
@@ -347,7 +342,6 @@ public class GridMapQueryExecutor {
         final int timeout,
         final Object[] params,
         boolean lazy,
-        @Nullable final MvccSnapshot mvccSnapshot,
         Boolean dataPageScanEnabled,
         boolean treatReplicatedAsPartitioned
     ) {
@@ -357,7 +351,8 @@ public class GridMapQueryExecutor {
             IoStatisticsQueryHelper.startGatheringQueryStatistics();
 
         // Prepare to run queries.
-        GridCacheContext<?, ?> mainCctx = mainCacheContext(cacheIds);
+        GridCacheContext<?, ?> mainCctx = !F.isEmpty(cacheIds) ? ctx.cache().context().cacheContext(cacheIds.get(0))
+            : null;
 
         MapNodeResults nodeRess = resultsForNode(node.id());
 
@@ -409,7 +404,6 @@ public class GridMapQueryExecutor {
                 segmentId,
                 h2.backupFilter(topVer, parts, treatReplicatedAsPartitioned),
                 distributedJoinCtx,
-                mvccSnapshot,
                 reserved,
                 true);
 
@@ -621,14 +615,6 @@ public class GridMapQueryExecutor {
     }
 
     /**
-     * @param cacheIds Cache ids.
-     * @return Id of the first cache in list, or {@code null} if list is empty.
-     */
-    private GridCacheContext mainCacheContext(List<Integer> cacheIds) {
-        return !F.isEmpty(cacheIds) ? ctx.cache().context().cacheContext(cacheIds.get(0)) : null;
-    }
-
-    /**
      * Releases reserved partitions.
      *
      * @param qctx Query context.
@@ -698,7 +684,7 @@ public class GridMapQueryExecutor {
             if (req.timeout() > 0 || req.explicitTimeout())
                 fldsQry.setTimeout(req.timeout(), TimeUnit.MILLISECONDS);
 
-            boolean local = true;
+            boolean loc = true;
 
             final boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
 
@@ -706,15 +692,15 @@ public class GridMapQueryExecutor {
                 CU.firstPartitioned(ctx.cache().context(), cacheIds).config().getQueryParallelism() > 1) {
                 fldsQry.setDistributedJoins(true);
 
-                local = false;
+                loc = false;
             }
 
-            UpdateResult updRes = h2.executeUpdateOnDataNode(req.schemaName(), fldsQry, filter, cancel, local);
+            UpdateResult updRes = h2.executeUpdateOnDataNode(req.schemaName(), fldsQry, filter, cancel, loc);
 
             GridCacheContext<?, ?> mainCctx =
                 !F.isEmpty(cacheIds) ? ctx.cache().context().cacheContext(cacheIds.get(0)) : null;
 
-            boolean evt = local && mainCctx != null && mainCctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED);
+            boolean evt = loc && mainCctx != null && mainCctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED);
 
             if (evt) {
                 ctx.event().record(new CacheQueryExecutedEvent<>(

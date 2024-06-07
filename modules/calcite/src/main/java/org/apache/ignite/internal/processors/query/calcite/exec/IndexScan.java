@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
@@ -80,9 +79,6 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
 
     /** */
     private final int[] parts;
-
-    /** */
-    private final MvccSnapshot mvccSnapshot;
 
     /** */
     private volatile List<GridDhtLocalPartition> reserved;
@@ -152,7 +148,6 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         factory = ectx.rowHandler().factory(ectx.getTypeFactory(), rowType);
         topVer = ectx.topologyVersion();
         this.parts = parts;
-        mvccSnapshot = ectx.mvccSnapshot();
         this.requiredColumns = requiredColumns;
         this.idxFieldMapping = idxFieldMapping;
 
@@ -372,7 +367,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
 
         BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = isInlineScan() ? null : createNotExpiredRowFilter();
 
-        return new IndexQueryContext(filter, rowFilter, rowFactory, mvccSnapshot);
+        return new IndexQueryContext(filter, rowFilter, rowFactory);
     }
 
     /** */

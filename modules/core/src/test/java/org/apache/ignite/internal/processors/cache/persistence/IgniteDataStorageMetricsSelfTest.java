@@ -51,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableCon
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
@@ -60,6 +59,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -247,15 +247,15 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             Collection<MetricRegistry> grpRegs = F.viewReadOnly(ig.context().cache().cacheGroups(),
                 ctx -> ig.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, ctx.cacheOrGroupName())));
 
-            ToLongFunction<String> sumByGroups = metric -> grpRegs.stream()
+            ToLongFunction<String> sumByGrps = metric -> grpRegs.stream()
                 .map(grpReg -> grpReg.<LongMetric>findMetric(metric).value()).mapToLong(v -> v)
                 .sum();
 
             long storageSize = dsMetricRegistry(ig).<LongMetric>findMetric("StorageSize").value();
             long sparseStorageSize = dsMetricRegistry(ig).<LongMetric>findMetric("SparseStorageSize").value();
 
-            assertEquals(sumByGroups.applyAsLong("StorageSize"), storageSize);
-            assertEquals(sumByGroups.applyAsLong("SparseStorageSize"), sparseStorageSize);
+            assertEquals(sumByGrps.applyAsLong("StorageSize"), storageSize);
+            assertEquals(sumByGrps.applyAsLong("SparseStorageSize"), sparseStorageSize);
         }
         finally {
             stopAllGrids();

@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.Frameworks;
@@ -70,6 +71,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTr
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.PerformanceStatisticsIoTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.QueryMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
@@ -88,12 +90,20 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadataImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentPlan;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteRelShuttle;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PrepareServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.CreateTableCommand;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
@@ -568,6 +578,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         List<Fragment> fragments = execPlan.fragments();
 
+        if (ctx.security().enabled()) {
+            for (Fragment fragment : fragments)
+                checkPermissions(fragment.root());
+        }
+
         // Local execution
         Fragment fragment = F.first(fragments);
 
@@ -597,6 +612,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             execPlan.target(fragment),
             execPlan.remotes(fragment));
 
+        MemoryTracker qryMemoryTracker = qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota());
+
         ExecutionContext<Row> ectx = new ExecutionContext<>(
             qry.context(),
             taskExecutor(),
@@ -606,7 +623,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             mapCtx.topologyVersion(),
             fragmentDesc,
             handler,
-            qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
+            qryMemoryTracker,
             createIoTracker(locNodeId, qry.localQueryId()),
             timeout,
             qryParams);
@@ -738,7 +755,47 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         Iterator<List<?>> it = new ConvertingClosableIterator<>(iteratorsHolder().iterator(qry.iterator()), ectx,
             fieldConverter, rowConverter, onClose);
 
-        return new ListFieldsQueryCursor<>(plan, it, ectx);
+        // Make yet another tracking layer for cursor.getAll(), so tracking hierarchy will look like:
+        // Row tracker -> Cursor memory tracker -> Query memory tracker -> Global memory tracker.
+        // It's required, since query memory tracker can be closed concurrently during getAll() and
+        // tracked data for cursor can be lost without additional tracker.
+        MemoryTracker curMemoryTracker = QueryMemoryTracker.create(qryMemoryTracker, cfg.getQueryMemoryQuota());
+
+        return new ListFieldsQueryCursor<>(plan, it, ectx, curMemoryTracker);
+    }
+
+    /** */
+    private void checkPermissions(IgniteRel root) {
+        IgniteRelShuttle shuttle = new IgniteRelShuttle() {
+            @Override public IgniteRel visit(IgniteTableModify rel) {
+                return authorize(rel, rel.getOperation() == TableModify.Operation.DELETE ?
+                    IgniteTable.Operation.REMOVE : IgniteTable.Operation.PUT);
+            }
+
+            @Override public IgniteRel visit(IgniteTableScan rel) {
+                return authorize(rel, IgniteTable.Operation.READ);
+            }
+
+            @Override public IgniteRel visit(IgniteIndexScan rel) {
+                return authorize(rel, IgniteTable.Operation.READ);
+            }
+
+            @Override public IgniteRel visit(IgniteIndexCount rel) {
+                return authorize(rel, IgniteTable.Operation.READ);
+            }
+
+            @Override public IgniteRel visit(IgniteIndexBound rel) {
+                return authorize(rel, IgniteTable.Operation.READ);
+            }
+
+            private IgniteRel authorize(IgniteRel rel, IgniteTable.Operation op) {
+                rel.getTable().unwrap(IgniteTable.class).authorize(op);
+
+                return rel;
+            }
+        };
+
+        shuttle.visit(root);
     }
 
     /** */

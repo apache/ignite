@@ -134,16 +134,16 @@ public class CacheIndexImpl implements IgniteIndex {
         ColocationGroup grp,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        UUID localNodeId = ectx.localNodeId();
+        UUID locNodeId = ectx.localNodeId();
 
-        if (grp.nodeIds().contains(localNodeId) && idx != null) {
+        if (grp.nodeIds().contains(locNodeId) && idx != null) {
             return new IndexFirstLastScan<>(
                 first,
                 ectx,
                 tbl.descriptor(),
                 idx.unwrap(InlineIndexImpl.class),
                 collation.getKeys(),
-                grp.partitions(localNodeId),
+                grp.partitions(locNodeId),
                 requiredColumns
             );
         }
@@ -202,7 +202,7 @@ public class CacheIndexImpl implements IgniteIndex {
 
             try {
                 for (int i = 0; i < iidx.segmentsCount(); ++i)
-                    cnt += iidx.count(i, new IndexQueryContext(filter, rowFilter, ectx.mvccSnapshot()));
+                    cnt += iidx.count(i, new IndexQueryContext(filter, rowFilter));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Unable to count index records.", e);

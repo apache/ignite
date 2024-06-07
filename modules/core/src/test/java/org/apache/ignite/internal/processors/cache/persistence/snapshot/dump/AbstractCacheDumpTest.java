@@ -313,11 +313,11 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     void checkDump(
         IgniteEx ign,
         String name,
-        String[] cacheGroupNames,
+        String[] cacheGrpNames,
         Set<String> expectedFoundCaches,
         int expectedDfltDumpSz,
         int expectedGrpDumpSz,
-        int expectedCount,
+        int expectedCnt,
         boolean skipCopies,
         boolean expectedComprParts
     ) throws Exception {
@@ -417,7 +417,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 assertEquals(expectedDfltDumpSz, dfltDumpSz);
                 assertEquals(expectedGrpDumpSz, grpDumpSz);
 
-                IntStream.range(0, expectedCount).forEach(key -> assertTrue(keys.contains(key)));
+                IntStream.range(0, expectedCnt).forEach(key -> assertTrue(keys.contains(key)));
             }
         };
 
@@ -428,7 +428,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 DFLT_THREAD_CNT, DFLT_TIMEOUT,
                 true,
                 false,
-                cacheGroupNames,
+                false,
+                cacheGrpNames,
                 skipCopies,
                 null
             ),
@@ -556,14 +557,14 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    void createDump(IgniteEx ign, String name, @Nullable Collection<String> cacheGroupNames) {
-        createDump(ign, name, cacheGroupNames, false);
+    void createDump(IgniteEx ign, String name, @Nullable Collection<String> cacheGrpNames) {
+        createDump(ign, name, cacheGrpNames, false);
     }
 
     /** */
-    void createDump(IgniteEx ign, String name, @Nullable Collection<String> cacheGroupNames, boolean comprParts) {
+    void createDump(IgniteEx ign, String name, @Nullable Collection<String> cacheGrpNames, boolean comprParts) {
         ign.context().cache().context().snapshotMgr()
-            .createSnapshot(name, null, cacheGroupNames, false, onlyPrimary, true, comprParts, encrypted).get();
+            .createSnapshot(name, null, cacheGrpNames, false, onlyPrimary, true, comprParts, encrypted).get();
     }
 
     /** */
@@ -588,7 +589,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         private boolean typesCb;
 
         /** */
-        private boolean mappingcCb;
+        private boolean mappingCb;
 
         /** */
         private boolean cacheCfgCb;
@@ -596,7 +597,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void start() {
             assertFalse(started);
-            assertFalse(mappingcCb);
+            assertFalse(mappingCb);
             assertFalse(typesCb);
             assertFalse(cacheCfgCb);
             assertFalse(stopped);
@@ -607,18 +608,18 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void onMappings(Iterator<TypeMapping> mappings) {
             assertTrue(started);
-            assertFalse(mappingcCb);
+            assertFalse(mappingCb);
             assertFalse(typesCb);
             assertFalse(cacheCfgCb);
             assertFalse(stopped);
 
-            mappingcCb = true;
+            mappingCb = true;
         }
 
         /** {@inheritDoc} */
         @Override public void onTypes(Iterator<BinaryType> types) {
             assertTrue(started);
-            assertTrue(mappingcCb);
+            assertTrue(mappingCb);
             assertFalse(typesCb);
             assertFalse(cacheCfgCb);
             assertFalse(stopped);
@@ -629,7 +630,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
             assertTrue(started);
-            assertTrue(mappingcCb);
+            assertTrue(mappingCb);
             assertTrue(typesCb);
             assertFalse(cacheCfgCb);
             assertFalse(stopped);
@@ -641,7 +642,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         @Override public void stop() {
             assertTrue(started);
             assertTrue(typesCb);
-            assertTrue(mappingcCb);
+            assertTrue(mappingCb);
             assertTrue(cacheCfgCb);
             assertFalse(stopped);
 
@@ -652,7 +653,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         public void check() {
             assertTrue(started);
             assertTrue(typesCb);
-            assertTrue(mappingcCb);
+            assertTrue(mappingCb);
             assertTrue(cacheCfgCb);
             assertTrue(stopped);
         }

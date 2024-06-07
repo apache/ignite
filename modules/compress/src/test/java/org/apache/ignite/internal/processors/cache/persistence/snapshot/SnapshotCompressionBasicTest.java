@@ -217,9 +217,14 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
 
         G.allGrids().forEach(this::failCompressionProcessor);
 
-        for (String snpName: Arrays.asList(SNAPSHOT_WITH_HOLES, SNAPSHOT_WITHOUT_HOLES)) {
-            GridTestUtils.assertThrows(log, () -> ignite.snapshot().restoreSnapshot(snpName, null).get(TIMEOUT),
-                IgniteException.class, "Snapshot contains compressed cache groups");
+        for (String snpName : Arrays.asList(SNAPSHOT_WITH_HOLES, SNAPSHOT_WITHOUT_HOLES)) {
+            GridTestUtils.assertThrowsAnyCause(
+                log,
+                () -> ignite.snapshot().restoreSnapshot(snpName, null).get(TIMEOUT),
+                IllegalStateException.class,
+                "from snapshot '" + snpName + "' are compressed while disk page compression is disabled. To check " +
+                    "these groups please start Ignite with ignite-compress"
+            );
         }
     }
 
@@ -232,14 +237,14 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
 
         G.allGrids().forEach(i -> failCompressionProcessor(i));
 
-        Collection<String> groupsWithoutCompression = CACHES.entrySet().stream()
+        Collection<String> grpsWithoutCompression = CACHES.entrySet().stream()
             .filter(e -> !COMPRESSED_CACHES.contains(e.getKey()))
             .map(e -> e.getValue() != null ? e.getValue() : e.getKey())
             .distinct().collect(Collectors.toList());
 
         for (String snpName: Arrays.asList(SNAPSHOT_WITH_HOLES, SNAPSHOT_WITHOUT_HOLES)) {
             try {
-                ignite.snapshot().restoreSnapshot(snpName, groupsWithoutCompression).get(TIMEOUT);
+                ignite.snapshot().restoreSnapshot(snpName, grpsWithoutCompression).get(TIMEOUT);
 
                 waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED);
 
@@ -483,9 +488,9 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            Value value = (Value)o;
+            Value val = (Value)o;
 
-            return Objects.equals(name, value.name);
+            return Objects.equals(name, val.name);
         }
 
         /** {@inheritDoc} */

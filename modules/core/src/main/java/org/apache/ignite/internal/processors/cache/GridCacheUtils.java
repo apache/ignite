@@ -32,7 +32,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.LongAdder;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
@@ -565,30 +564,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * @return Long reducer.
-     */
-    public static IgniteReducer<Long, Long> longReducer() {
-        return new IgniteReducer<Long, Long>() {
-            private final LongAdder res = new LongAdder();
-
-            @Override public boolean collect(Long l) {
-                if (l != null)
-                    res.add(l);
-
-                return true;
-            }
-
-            @Override public Long reduce() {
-                return res.sum();
-            }
-
-            @Override public String toString() {
-                return "Long reducer: " + res;
-            }
-        };
-    }
-
-    /**
      * Gets reducer that aggregates maps into one.
      *
      * @param size Predicted size of the resulting map to avoid resizings.
@@ -858,16 +833,6 @@ public class GridCacheUtils {
         assert ctx != null;
 
         ctx.ttl().expire(TTL_BATCH_SIZE);
-    }
-
-    /**
-     * @param ctx Shared cache context.
-     */
-    public static <K, V> void unwindEvicts(GridCacheSharedContext<K, V> ctx) {
-        assert ctx != null;
-
-        for (GridCacheContext<K, V> cacheCtx : ctx.cacheContexts())
-            unwindEvicts(cacheCtx);
     }
 
     /**
@@ -1461,9 +1426,9 @@ public class GridCacheUtils {
 
         Map<UUID, Collection<ClusterNode>> neighbors = new HashMap<>(topSnapshot.size(), 1.0f);
 
-        for (Collection<ClusterNode> group : macMap.values())
-            for (ClusterNode node : group)
-                neighbors.put(node.id(), group);
+        for (Collection<ClusterNode> grp : macMap.values())
+            for (ClusterNode node : grp)
+                neighbors.put(node.id(), grp);
 
         return neighbors;
     }
@@ -1677,8 +1642,7 @@ public class GridCacheUtils {
      * @throws IgniteCheckedException If configuration is not valid.
      */
     public static void initializeConfigDefaults(IgniteLogger log, CacheConfiguration cfg,
-        CacheObjectContext cacheObjCtx)
-        throws IgniteCheckedException {
+        CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         if (cfg.getCacheMode() == null)
             cfg.setCacheMode(DFLT_CACHE_MODE);
 
@@ -2101,25 +2065,6 @@ public class GridCacheUtils {
         return pageSize
             - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
             - encSpi.blockSize(); /* For CRC and encryption key ID. */
-    }
-
-    /**
-     * @param sctx Shared context.
-     * @param cacheIds Cache ids.
-     * @return First partitioned cache or {@code null} in case no partitioned cache ids are in list.
-     */
-    public static GridCacheContext<?, ?> firstPartitioned(GridCacheSharedContext<?, ?> sctx, int[] cacheIds) {
-        for (int i = 0; i < cacheIds.length; i++) {
-            GridCacheContext<?, ?> cctx = sctx.cacheContext(cacheIds[i]);
-
-            if (cctx == null)
-                throw new CacheException("Failed to find cache.");
-
-            if (!cctx.isReplicated())
-                return cctx;
-        }
-
-        return null;
     }
 
     /**

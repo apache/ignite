@@ -33,6 +33,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
+import java.util.zip.ZipInputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -47,10 +48,10 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -62,6 +63,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
+import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.readCacheData;
@@ -76,7 +78,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.reader
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 
 /**
- * This class provides ability to work with saved cache dump.
+ * This class provides the ability to work with saved cache dump.
  */
 public class Dump implements AutoCloseable {
     /** Snapshot meta. */
@@ -198,7 +200,7 @@ public class Dump implements AutoCloseable {
 
     /** @return List of snapshot metadata saved in {@link #dumpDir}. */
     public List<SnapshotMetadata> metadata() throws IOException, IgniteCheckedException {
-        return metadata;
+        return Collections.unmodifiableList(metadata);
     }
 
     /** @return List of snapshot metadata saved in {@link #dumpDir}. */
@@ -226,13 +228,13 @@ public class Dump implements AutoCloseable {
 
     /**
      * @param node Node directory name.
-     * @param group Group id.
+     * @param grp Group id.
      * @return List of cache configs saved in dump for group.
      */
-    public List<StoredCacheData> configs(String node, int group) {
+    public List<StoredCacheData> configs(String node, int grp) {
         JdkMarshaller marsh = MarshallerUtils.jdkMarshaller(cctx.igniteInstanceName());
 
-        return Arrays.stream(FilePageStoreManager.cacheDataFiles(dumpGroupDirectory(node, group))).map(f -> {
+        return Arrays.stream(FilePageStoreManager.cacheDataFiles(dumpGroupDirectory(node, grp))).map(f -> {
             try {
                 return readCacheData(f, marsh, cctx.config());
             }
@@ -244,13 +246,13 @@ public class Dump implements AutoCloseable {
 
     /**
      * @param node Node directory name.
-     * @param group Group id.
+     * @param grp Group id.
      * @return Dump iterator.
      */
-    public List<Integer> partitions(String node, int group) {
+    public List<Integer> partitions(String node, int grp) {
         String suffix = comprParts ? DUMP_FILE_EXT + ZIP_SUFFIX : DUMP_FILE_EXT;
 
-        File[] parts = dumpGroupDirectory(node, group)
+        File[] parts = dumpGroupDirectory(node, grp)
             .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(suffix));
 
         if (parts == null)
@@ -263,16 +265,18 @@ public class Dump implements AutoCloseable {
 
     /**
      * @param node Node directory name.
-     * @param group Group id.
+     * @param grp Group id.
      * @return Dump iterator.
      */
-    public DumpedPartitionIterator iterator(String node, int group, int part) {
-        FileIOFactory ioFactory = comprParts ? new UnzipFileIOFactory() : new RandomAccessFileIOFactory();
+    public DumpedPartitionIterator iterator(String node, int grp, int part) {
+        FileIOFactory ioFactory = comprParts
+            ? (file, modes) -> new ReadOnlyUnzipFileIO(file)
+            : (file, modes) -> new ReadOnlyBufferedFileIO(file);
 
         FileIO dumpFile;
 
         try {
-            dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, group), dumpPartFileName(part, comprParts)));
+            dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, grp), dumpPartFileName(part, comprParts)));
         }
         catch (IOException e) {
             throw new RuntimeException(e);
@@ -283,7 +287,7 @@ public class Dump implements AutoCloseable {
         boolean encrypted = meta.encryptionKey() != null;
 
         if (encrypted && !Arrays.equals(meta.masterKeyDigest(), encSpi.masterKeyDigest())) {
-            throw new IllegalArgumentException("Dump '" +
+            throw new IllegalStateException("Dump '" +
                 meta.snapshotName() + "' has different master key digest. To restore this " +
                 "dump, provide the same master key.");
         }
@@ -329,7 +333,7 @@ public class Dump implements AutoCloseable {
                     return;
 
                 try {
-                    next = serializer.read(dumpFile, group, part);
+                    next = serializer.read(dumpFile, grp, part);
                 }
                 catch (IOException | IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -358,7 +362,7 @@ public class Dump implements AutoCloseable {
     }
 
     /** */
-    private File dumpGroupDirectory(String node, int groupId) {
+    private File dumpGroupDirectory(String node, int grpId) {
         File nodeDir = Paths.get(dumpDir.getAbsolutePath(), DFLT_STORE_DIR, node).toFile();
 
         assert nodeDir.exists() && nodeDir.isDirectory();
@@ -373,7 +377,7 @@ public class Dump implements AutoCloseable {
                 ? f.getName().replaceFirst(CACHE_DIR_PREFIX, "")
                 : f.getName().replaceFirst(CACHE_GRP_DIR_PREFIX, "");
 
-            return groupId == CU.cacheId(grpName);
+            return grpId == CU.cacheId(grpName);
         });
 
         if (grpDirs.length != 1)
@@ -395,5 +399,113 @@ public class Dump implements AutoCloseable {
      */
     public interface DumpedPartitionIterator extends Iterator<DumpEntry>, AutoCloseable {
         // No-op.
+    }
+
+    /** */
+    private static class ReadOnlyBufferedFileIO extends FileIODecorator {
+        /** */
+        private static final int DEFAULT_BLOCK_SIZE = 4096;
+
+        /** */
+        private final ByteBuffer buf;
+
+        /** */
+        private long pos;
+
+        /** */
+        ReadOnlyBufferedFileIO(File file) throws IOException {
+            super(new RandomAccessFileIO(file, READ));
+
+            int blockSize = getFileSystemBlockSize();
+
+            if (blockSize <= 0)
+                blockSize = DEFAULT_BLOCK_SIZE;
+
+            buf = ByteBuffer.allocateDirect(blockSize);
+
+            buf.position(buf.limit());
+        }
+
+        /** {@inheritDoc} */
+        @Override public int readFully(ByteBuffer dst) throws IOException {
+            int totalRead = 0;
+
+            while (dst.hasRemaining()) {
+                if (!buf.hasRemaining()) {
+                    // Buf limit will be at its capacity unless partial fill has happened at the end of file.
+                    if (buf.limit() < buf.capacity())
+                        break;
+
+                    buf.clear();
+
+                    pos += delegate.readFully(buf, pos);
+
+                    buf.flip();
+                }
+
+                int len = Math.min(buf.remaining(), dst.remaining());
+
+                int limit = buf.limit();
+
+                buf.limit(buf.position() + len);
+
+                dst.put(buf);
+
+                buf.limit(limit);
+
+                totalRead += len;
+            }
+
+            return totalRead;
+        }
+
+    }
+
+    /** */
+    private static class ReadOnlyUnzipFileIO extends ReadOnlyBufferedFileIO {
+        /** */
+        private final ZipInputStream zis;
+
+        /** */
+        ReadOnlyUnzipFileIO(File file) throws IOException {
+            super(file);
+
+            zis = new ZipInputStream(new InputStream() {
+                /** {@inheritDoc} */
+                @Override public int read(byte[] arr, int off, int len) throws IOException {
+                    return ReadOnlyUnzipFileIO.super.readFully(ByteBuffer.wrap(arr, off, len));
+                }
+
+                /** {@inheritDoc} */
+                @Override public int read() throws IOException {
+                    throw new IOException();
+                }
+            });
+
+            zis.getNextEntry();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int readFully(ByteBuffer dst) throws IOException {
+            int totalRead = 0;
+
+            while (dst.hasRemaining()) {
+                int bytesRead = zis.read(dst.array(), dst.arrayOffset() + dst.position(), dst.remaining());
+
+                if (bytesRead == -1)
+                    break;
+
+                dst.position(dst.position() + bytesRead);
+
+                totalRead += bytesRead;
+            }
+
+            return totalRead;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IOException {
+            zis.close();
+        }
     }
 }

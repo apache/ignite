@@ -171,16 +171,15 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 ", meta=" + meta + ']');
         }
 
-        // This will throw if compression disabled. Calculation before other checks.
-        boolean punchHoleEnabled = isPunchHoleEnabled(opCtx, grpDirs.keySet());
-
         if (!opCtx.check()) {
             log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
 
             return Collections.emptyMap();
         }
 
-        return meta.dump() ? checkDumpFiles(opCtx, partFiles) : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles, punchHoleEnabled);
+        return meta.dump()
+            ? checkDumpFiles(opCtx, partFiles)
+            : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles, isPunchHoleEnabled(opCtx, grpDirs.keySet()));
     }
 
     /** */
@@ -221,7 +220,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     ) {
                         pageStore.init();
 
-                        if (punchHoleEnabled && meta.isGroupWithCompresion(grpId) && type() == SnapshotHandlerType.CREATE) {
+                        if (punchHoleEnabled && meta.isGroupWithCompression(grpId) && type() == SnapshotHandlerType.CREATE) {
                             byte pageType = partId == INDEX_PARTITION ? FLAG_IDX : FLAG_DATA;
 
                             checkPartitionsPageCrcSum(() -> pageStore, partId, pageType, (id, buffer) -> {
@@ -476,17 +475,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         SnapshotMetadata meta = opCtx.metadata();
         Path snapshotDir = opCtx.snapshotDirectory().toPath();
 
-        if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompresion)) {
-            try {
-                cctx.kernalContext().compress().checkPageCompressionSupported();
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Snapshot contains compressed cache groups " +
-                    "[grps=[" + grpIds.stream().filter(meta::isGroupWithCompresion).collect(Collectors.toList()) +
-                    "], snpName=" + meta.snapshotName() + "], but compression module is not enabled. " +
-                    "Make sure that ignite-compress module is in classpath.");
-            }
-
+        if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompression)) {
             try {
                 cctx.kernalContext().compress().checkPageCompressionSupported(snapshotDir, meta.pageSize());
 

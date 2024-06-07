@@ -25,7 +25,6 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -68,9 +67,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     private GridCacheVersion writeVer;
 
     /** */
-    private MvccSnapshot mvccSnapshot;
-
-    /** */
     @GridDirectCollection(PartitionUpdateCountersMessage.class)
     private Collection<PartitionUpdateCountersMessage> updCntrs;
 
@@ -105,8 +101,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param addDepInfo Deployment info flag.
      * @param retVal Need return value
      * @param waitRemoteTxs Wait remote transactions flag
-     * @param mvccSnapshot Mvcc snapshot.
-     * @param updCntrs Update counters for mvcc Tx.
+     * @param updCntrs Update counters for Tx.
      */
     public GridDhtTxFinishRequest(
         UUID nearNodeId,
@@ -132,7 +127,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         boolean addDepInfo,
         boolean retVal,
         boolean waitRemoteTxs,
-        MvccSnapshot mvccSnapshot,
         Collection<PartitionUpdateCountersMessage> updCntrs
     ) {
         super(
@@ -161,7 +155,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         this.nearNodeId = nearNodeId;
         this.isolation = isolation;
         this.miniId = miniId;
-        this.mvccSnapshot = mvccSnapshot;
         this.updCntrs = updCntrs;
 
         needReturnValue(retVal);
@@ -194,8 +187,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param addDepInfo Deployment info flag.
      * @param retVal Need return value
      * @param waitRemoteTxs Wait remote transactions flag
-     * @param mvccSnapshot Mvcc snapshot.
-     * @param updCntrs Update counters for mvcc Tx.
+     * @param updCntrs Update counters for Tx.
      */
     public GridDhtTxFinishRequest(
         UUID nearNodeId,
@@ -222,7 +214,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         Collection<Long> updateIdxs,
         boolean retVal,
         boolean waitRemoteTxs,
-        MvccSnapshot mvccSnapshot,
         Collection<PartitionUpdateCountersMessage> updCntrs
     ) {
         this(nearNodeId,
@@ -248,15 +239,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             addDepInfo,
             retVal,
             waitRemoteTxs,
-            mvccSnapshot,
             updCntrs);
-    }
-
-    /**
-     * @return Counter.
-     */
-    public MvccSnapshot mvccSnapshot() {
-        return mvccSnapshot;
     }
 
     /**
@@ -392,36 +375,30 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
-                    return false;
-
-                writer.incrementState();
-
-            case 24:
                 if (!writer.writeUuid("nearNodeId", nearNodeId))
                     return false;
 
                 writer.incrementState();
 
-            case 25:
+            case 24:
                 if (!writer.writeMessage("partUpdateCnt", partUpdateCnt))
                     return false;
 
                 writer.incrementState();
 
-            case 26:
+            case 25:
                 if (!writer.writeCollection("pendingVers", pendingVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 27:
+            case 26:
                 if (!writer.writeCollection("updCntrs", updCntrs, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 28:
+            case 27:
                 if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
@@ -464,14 +441,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 23:
-                mvccSnapshot = reader.readMessage("mvccSnapshot");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 24:
                 nearNodeId = reader.readUuid("nearNodeId");
 
                 if (!reader.isLastRead())
@@ -479,7 +448,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 reader.incrementState();
 
-            case 25:
+            case 24:
                 partUpdateCnt = reader.readMessage("partUpdateCnt");
 
                 if (!reader.isLastRead())
@@ -487,7 +456,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 reader.incrementState();
 
-            case 26:
+            case 25:
                 pendingVers = reader.readCollection("pendingVers", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -495,7 +464,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 reader.incrementState();
 
-            case 27:
+            case 26:
                 updCntrs = reader.readCollection("updCntrs", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -503,7 +472,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 reader.incrementState();
 
-            case 28:
+            case 27:
                 writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())
@@ -523,7 +492,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 29;
+        return 28;
     }
 
     /** {@inheritDoc} */

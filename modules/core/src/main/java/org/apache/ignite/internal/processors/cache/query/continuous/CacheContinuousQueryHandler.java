@@ -465,9 +465,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 if (cctx == null)
                     return;
 
-                if (!needNotify(false, cctx, -1, -1, evt))
-                    return;
-
                 // skipPrimaryCheck is set only when listen locally for replicated cache events.
                 assert !skipPrimaryCheck || (cctx.isReplicated() && ctx.localNodeId().equals(nodeId));
 
@@ -577,9 +574,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 if (skipCtx == null)
                     skipCtx = new CounterSkipContext(part, cntr, topVer);
 
-                if (!needNotify(true, cctx, part, cntr, null))
-                    return skipCtx;
-
                 if (loc) {
                     assert !locOnly;
 
@@ -665,27 +659,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
             @Override public boolean isPrimaryOnly() {
                 return locOnly && !skipPrimaryCheck;
-            }
-
-            /**
-             * Checks whether it is need to notify listeners.
-             *
-             * @param skipEvt {@code True} if this is a skip counter event.
-             * @param cctx Cache context.
-             * @param part Partition id.
-             * @param cntr Update counter.
-             * @param evt CQ event.
-             * @return {@code True} if notification should happen immediately, or {@code false} if it should be delayed.
-             */
-            private boolean needNotify(boolean skipEvt,
-                GridCacheContext cctx,
-                int part,
-                long cntr,
-                CacheContinuousQueryEvent evt) {
-                assert !skipEvt || evt == null;
-                assert skipEvt || part == -1 && cntr == -1; // part == -1 && cntr == -1 means skip counter.
-
-                return true;
             }
         };
 
@@ -1212,10 +1185,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             else if (initUpdCntrs != null)
                 partCntrs = initUpdCntrs.get(partId);
 
-            rec = new CacheContinuousQueryPartitionRecovery(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY), topVer,
-                partCntrs != null ? partCntrs.get2() : null);
-
-            CacheContinuousQueryPartitionRecovery oldRec = rcvs.putIfAbsent(partId, rec);
+            T2<Long, Long> partCntrs0 = partCntrs;
+            CacheContinuousQueryPartitionRecovery oldRec = rcvs.computeIfAbsent(partId, k ->
+                    new CacheContinuousQueryPartitionRecovery(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY), topVer,
+                            partCntrs0 != null ? partCntrs0.get2() : null));
 
             if (oldRec != null)
                 rec = oldRec;
@@ -1616,23 +1589,23 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         EventType type = evt.entry().eventType();
 
-        CacheObject oldValue;
-        CacheObject newValue;
+        CacheObject oldVal;
+        CacheObject newVal;
 
         if (type == EXPIRED || type == REMOVED) {
-            newValue = null;
-            oldValue = cacheObj;
+            newVal = null;
+            oldVal = cacheObj;
         }
         else {
-            newValue = cacheObj;
-            oldValue = null;
+            newVal = cacheObj;
+            oldVal = null;
         }
 
         return new CacheContinuousQueryEntry(evt.entry().cacheId(),
             evt.entry().eventType(),
             null,
-            newValue,
-            oldValue,
+            newVal,
+            oldVal,
             evt.entry().isKeepBinary(),
             evt.entry().partition(),
             evt.entry().updateCounter(),

@@ -44,6 +44,8 @@ public abstract class AbstractFileIO implements FileIO {
      * @param operation IO operation.
      *
      * @param num Number of bytes to operate.
+     *
+     * @return Number of bytes operated.
      */
     private int fully(IOOperation operation, long position, int num, boolean write) throws IOException {
         if (num > 0) {
@@ -62,9 +64,19 @@ public abstract class AbstractFileIO implements FileIO {
 
                     if (time == 0)
                         time = System.nanoTime();
-                    else if ((System.nanoTime() - time) >= U.millisToNanos(MAX_IO_TIMEOUT_MS))
-                        throw new IOException(write && (position + i) == size() ? "Failed to extend file." :
-                            "Probably disk is too busy, please check your device.");
+                    else if ((System.nanoTime() - time) >= U.millisToNanos(MAX_IO_TIMEOUT_MS)) {
+                        String errMsg = " operation unsuccessful, timeout exceeds the maximum IO timeout ("
+                            + U.millisToNanos(MAX_IO_TIMEOUT_MS) + " ms). ";
+
+                        if (write && (position + i) == size())
+                            errMsg = "Write" + errMsg + "Failed to extend file.";
+                        else {
+                            errMsg = (write ? "Write" : "Read") + errMsg +
+                                "Probably disk is too busy, please check your device.";
+                        }
+
+                        throw new IOException(errMsg);
+                    }
                 }
                 else
                     return -1;

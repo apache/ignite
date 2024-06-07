@@ -67,8 +67,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -1078,7 +1076,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         assert req != null;
         try (MTC.TraceSurroundings ignored =
                  MTC.supportContinual(span = cctx.kernalContext().tracing().create(TX_DHT_PREPARE, MTC.span()))) {
-            if (tx.empty() && !req.queryUpdate()) {
+            if (tx.empty()) {
                 tx.setRollbackOnly();
 
                 onDone((GridNearTxPrepareResponse)null);
@@ -1328,7 +1326,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                     assert entry != null && entry.cached() != null : entry;
 
-                    // Counter shouldn't be reserved for mvcc, local cache entries, NOOP operations and NOOP transforms.
+                    // Counter shouldn't be reserved for local cache entries, NOOP operations and NOOP transforms.
                     if (!entry.cached().isLocal() && entry.op() != NOOP &&
                         !(entry.op() == TRANSFORM &&
                             (entry.entryProcessorCalculatedValue() == null || // Possible for txs over cachestore
@@ -1394,15 +1392,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         final long timeout = timeoutObj != null ? timeoutObj.timeout : 0;
 
-        // Do not need process active transactions on backups.
-        MvccSnapshot mvccSnapshot = tx.mvccSnapshot();
-
-        if (mvccSnapshot != null)
-            mvccSnapshot = mvccSnapshot.withoutActiveTransactions();
-
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : tx.dhtMap().values()) {
-            assert !dhtMapping.empty() || dhtMapping.queryUpdate();
+            assert !dhtMapping.empty();
 
             ClusterNode n = dhtMapping.primary();
 
@@ -1414,7 +1406,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             Collection<IgniteTxEntry> dhtWrites = dhtMapping.writes();
 
-            if (!dhtMapping.queryUpdate() && F.isEmpty(dhtWrites) && F.isEmpty(nearWrites))
+            if (F.isEmpty(dhtWrites) && F.isEmpty(nearWrites))
                 continue;
 
             MiniFuture fut = new MiniFuture(n.id(), ++miniId, dhtMapping, nearMapping);
@@ -1439,10 +1431,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 tx.activeCachesDeploymentEnabled(),
                 tx.storeWriteThrough(),
                 retVal,
-                mvccSnapshot,
                 cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
-
-            req.queryUpdate(dhtMapping.queryUpdate());
 
             int idx = 0;
 
@@ -1553,7 +1542,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     tx.activeCachesDeploymentEnabled(),
                     tx.storeWriteThrough(),
                     retVal,
-                    mvccSnapshot,
                     null);
 
                 for (IgniteTxEntry entry : nearMapping.entries()) {
@@ -1950,7 +1938,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         }
                     }
 
-                    if (!dhtMapping.queryUpdate() && dhtMapping.empty()) {
+                    if (dhtMapping.empty()) {
                         dhtMap.remove(nodeId);
 
                         if (log.isDebugEnabled())
@@ -1981,10 +1969,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         try {
                             if (entry.initialValue(info.value(),
                                 info.version(),
-                                null,
-                                null,
-                                TxState.NA,
-                                TxState.NA,
                                 info.ttl(),
                                 info.expireTime(),
                                 true,

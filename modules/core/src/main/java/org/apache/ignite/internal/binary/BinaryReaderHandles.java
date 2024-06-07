@@ -103,4 +103,9 @@ public class BinaryReaderHandles {
                 data0.put(pos, obj);
         }
     }
+
+    /** */
+    public boolean isEmpty() {
+        return mode == MODE_EMPTY;
+    }
 }

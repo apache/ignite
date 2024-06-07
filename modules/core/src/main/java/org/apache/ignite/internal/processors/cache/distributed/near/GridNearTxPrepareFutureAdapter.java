@@ -262,7 +262,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
                 txEntry.ttl(CU.toTtl(expiry.getExpiryForAccess()));
         }
 
-        if (m.queryUpdate() || !m.empty()) {
+        if (!m.empty()) {
             // This step is very important as near and DHT versions grow separately.
             cctx.versions().onReceived(nodeId, res.dhtVersion());
 

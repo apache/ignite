@@ -30,14 +30,11 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.ExecutionNodeMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.IoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTracker;
-import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
-import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpRowTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.RowTracker;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
@@ -197,13 +194,6 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     }
 
     /**
-     * @return MVCC snapshot.
-     */
-    public MvccSnapshot mvccSnapshot() {
-        return null; // TODO
-    }
-
-    /**
      * @return Handler to access row fields.
      */
     public RowHandler<Row> rowHandler() {
@@ -352,10 +342,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
     /** */
     public <R> RowTracker<R> createNodeMemoryTracker(long rowOverhead) {
-        if (qryMemoryTracker == NoOpMemoryTracker.INSTANCE)
-            return NoOpRowTracker.instance();
-        else
-            return new ExecutionNodeMemoryTracker<R>(qryMemoryTracker, rowOverhead);
+        return ExecutionNodeMemoryTracker.create(qryMemoryTracker, rowOverhead);
     }
 
     /** */

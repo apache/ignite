@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.IndexQueryCriterion;
+import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IndexQueryDesc;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -51,6 +53,9 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 
 /**
  * Processor of {@link IndexQuery}.
@@ -74,7 +79,8 @@ public class IndexQueryProcessor {
         IndexQueryDesc idxQryDesc,
         @Nullable IgniteBiPredicate<K, V> filter,
         IndexingQueryFilter cacheFilter,
-        boolean keepBinary
+        boolean keepBinary,
+        int taskHash
     ) throws IgniteCheckedException {
         InlineIndexImpl idx = (InlineIndexImpl)findSortedIndex(cctx, idxQryDesc);
 
@@ -85,6 +91,8 @@ public class IndexQueryProcessor {
         SortedIndexDefinition def = (SortedIndexDefinition)idxProc.indexDefinition(idx.id());
 
         IndexQueryResultMeta meta = new IndexQueryResultMeta(def, qry.critSize());
+
+        boolean isRecordable = cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
         // Map IndexRow to Cache Key-Value pair.
         return new IndexQueryResult<>(meta, new GridCloseableIteratorAdapter<IgniteBiTuple<K, V>>() {
@@ -109,6 +117,26 @@ public class IndexQueryProcessor {
 
                         if (!filter.apply(k0, v0))
                             continue;
+                    }
+
+                    if (isRecordable) {
+                        cctx.gridEvents().record(new CacheQueryReadEvent<>(
+                            cctx.localNode(),
+                            "Index query entry read.",
+                            EVT_CACHE_QUERY_OBJECT_READ,
+                            CacheQueryType.INDEX.name(),
+                            cctx.name(),
+                            idxQryDesc.valType(),
+                            null,
+                            filter,
+                            null,
+                            null,
+                            securitySubjectId(cctx),
+                            cctx.kernalContext().task().resolveTaskName(taskHash),
+                            k,
+                            v,
+                            null,
+                            null));
                     }
 
                     currVal = new IgniteBiTuple<>(k, v);

@@ -370,10 +370,13 @@ public class GridDhtPartitionSupplier {
                 if (!remainingParts.contains(part))
                     continue;
 
-                GridCacheEntryInfo info = extractEntryInfo(row);
+                GridCacheEntryInfo info = new GridCacheEntryInfo();
 
-                if (info == null)
-                    continue;
+                info.key(row.key());
+                info.cacheId(row.cacheId());
+                info.value(row.value());
+                info.version(row.version());
+                info.expireTime(row.expireTime());
 
                 supplyMsg.addEntry0(part, iter.historical(part), info, grp.shared(), grp.cacheObjectContext());
 
@@ -517,24 +520,6 @@ public class GridDhtPartitionSupplier {
                 ));
             }
         }
-    }
-
-    /**
-     * Extracts entry info from row.
-     *
-     * @param row Cache data row.
-     * @return Entry info.
-     */
-    private GridCacheEntryInfo extractEntryInfo(CacheDataRow row) {
-        GridCacheEntryInfo info = new GridCacheEntryInfo();
-
-        info.key(row.key());
-        info.cacheId(row.cacheId());
-        info.value(row.value());
-        info.version(row.version());
-        info.expireTime(row.expireTime());
-
-        return info;
     }
 
     /**

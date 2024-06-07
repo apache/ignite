@@ -87,7 +87,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -660,11 +659,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         for (String idxFullname : local.keySet()) {
             if (remote.containsKey(idxFullname)) {
-                int localInlineSize = local.get(idxFullname);
+                int locInlineSize = local.get(idxFullname);
                 int remoteInlineSize = remote.get(idxFullname);
 
-                if (localInlineSize != remoteInlineSize)
-                    sb.a(idxFullname).a("(").a(localInlineSize).a(",").a(remoteInlineSize).a(")").a(",");
+                if (locInlineSize != remoteInlineSize)
+                    sb.a(idxFullname).a("(").a(locInlineSize).a(",").a(remoteInlineSize).a(")").a(",");
             }
         }
 
@@ -2906,56 +2905,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Execute update on DHT node (i.e. when it is possible to execute and update on all nodes independently).
-     *
-     * @param cctx Cache context.
-     * @param cacheIds Involved cache ids.
-     * @param parts Partitions.
-     * @param schema Schema name.
-     * @param qry Query string.
-     * @param params Query parameters.
-     * @param flags Flags.
-     * @param pageSize Fetch page size.
-     * @param timeout Timeout.
-     * @param topVer Topology version.
-     * @param mvccSnapshot MVCC snapshot.
-     * @param cancel Query cancel object.
-     * @return Cursor over entries which are going to be changed.
-     * @throws IgniteCheckedException If failed.
-     */
-    public UpdateSourceIterator<?> executeUpdateOnDataNodeTransactional(
-        GridCacheContext<?, ?> cctx,
-        int[] cacheIds,
-        int[] parts,
-        String schema,
-        String qry,
-        Object[] params,
-        int flags,
-        int pageSize,
-        int timeout,
-        AffinityTopologyVersion topVer,
-        MvccSnapshot mvccSnapshot,
-        GridQueryCancel cancel
-    ) throws IgniteCheckedException {
-        checkxIndexingEnabled();
-
-        return idx.executeUpdateOnDataNodeTransactional(
-            cctx,
-            cacheIds,
-            parts,
-            schema,
-            qry,
-            params,
-            flags,
-            pageSize,
-            timeout,
-            topVer,
-            mvccSnapshot,
-            cancel
-        );
-    }
-
-    /**
      * Query SQL fields.
      *
      * @param qry Query.
@@ -3708,6 +3657,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param entryFilter Optional user defined cache entries filter.
      * @param cacheFilter Ignite specific cache entries filters.
      * @param keepBinary Keep binary flag.
+     * @param taskHash Hashcode of the task.
      * @return Key/value rows.
      * @throws IgniteCheckedException If failed.
      */
@@ -3717,7 +3667,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         final IndexQueryDesc idxQryDesc,
         @Nullable IgniteBiPredicate<K, V> entryFilter,
         final IndexingQueryFilter cacheFilter,
-        boolean keepBinary
+        boolean keepBinary,
+        int taskHash
     ) throws IgniteCheckedException {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
@@ -3729,7 +3680,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 new IgniteOutClosureX<IndexQueryResult<K, V>>() {
                     @Override public IndexQueryResult<K, V> applyx() throws IgniteCheckedException {
                         try {
-                            return idxQryPrc.queryLocal(cctx, idxQryDesc, entryFilter, cacheFilter, keepBinary);
+                            return idxQryPrc.queryLocal(cctx, idxQryDesc, entryFilter, cacheFilter, keepBinary, taskHash);
                         }
                         catch (IgniteCheckedException e) {
                             String msg = "Failed to execute IndexQuery: " + e.getMessage() + ". Query desc: " + idxQryDesc;

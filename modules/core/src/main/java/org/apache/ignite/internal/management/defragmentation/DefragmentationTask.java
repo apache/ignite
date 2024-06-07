@@ -26,7 +26,6 @@ import org.apache.ignite.internal.management.defragmentation.DefragmentationComm
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationStatusCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -34,7 +33,6 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 @GridInternal
-@GridVisorManagementTask
 public class DefragmentationTask extends VisorMultiNodeTask
     <DefragmentationStatusCommandArg, DefragmentationTaskResult, DefragmentationTaskResult> {
     /** Serial version uid. */

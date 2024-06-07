@@ -19,6 +19,7 @@ package org.apache.ignite.client;
 
 import org.apache.ignite.internal.client.thin.AffinityMetricsTest;
 import org.apache.ignite.internal.client.thin.AtomicLongTest;
+import org.apache.ignite.internal.client.thin.BlockingTxOpsTest;
 import org.apache.ignite.internal.client.thin.CacheAsyncTest;
 import org.apache.ignite.internal.client.thin.CacheEntryListenersTest;
 import org.apache.ignite.internal.client.thin.ClusterApiTest;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.client.thin.DataReplicationOperationsTest;
 import org.apache.ignite.internal.client.thin.FunctionalTest;
 import org.apache.ignite.internal.client.thin.IgniteSetTest;
 import org.apache.ignite.internal.client.thin.InactiveClusterCacheRequestTest;
+import org.apache.ignite.internal.client.thin.InvokeTest;
 import org.apache.ignite.internal.client.thin.MetadataRegistrationTest;
 import org.apache.ignite.internal.client.thin.OptimizedMarshallerClassesCachedTest;
 import org.apache.ignite.internal.client.thin.ReliableChannelTest;
@@ -91,7 +93,9 @@ import org.junit.runners.Suite;
     ThinClientEnpointsDiscoveryTest.class,
     InactiveClusterCacheRequestTest.class,
     AffinityMetricsTest.class,
-    ClusterGroupClusterRestartTest.class
+    ClusterGroupClusterRestartTest.class,
+    BlockingTxOpsTest.class,
+    InvokeTest.class,
 })
 public class ClientTestSuite {
     // No-op.

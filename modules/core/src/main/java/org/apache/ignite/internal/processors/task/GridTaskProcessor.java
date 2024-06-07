@@ -59,6 +59,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
+import org.apache.ignite.internal.events.ManagementTaskEvent;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -68,7 +69,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.job.ComputeJobStatusEnum;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.task.monitor.ComputeGridMonitor;
 import org.apache.ignite.internal.processors.task.monitor.ComputeTaskStatus;
@@ -178,7 +179,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         discoLsnr = new TaskDiscoveryListener();
 
-        MetricRegistry sysreg = ctx.metric().registry(SYS_METRICS);
+        MetricRegistryImpl sysreg = ctx.metric().registry(SYS_METRICS);
 
         execTasks = sysreg.longAdderMetric(TOTAL_EXEC_TASKS, "Total executed tasks.");
 
@@ -716,16 +717,17 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                 if (ctx.event().isRecordable(EVT_MANAGEMENT_TASK_STARTED) && dep.visorManagementTask(task, taskCls)) {
                     VisorTaskArgument visorTaskArg = (VisorTaskArgument)arg;
 
-                    Event evt = new TaskEvent(
+                    Event evt = new ManagementTaskEvent(
                         ctx.discovery().localNode(),
                         visorTaskArg != null && visorTaskArg.getArgument() != null
                             ? visorTaskArg.getArgument().toString() : "[]",
                         EVT_MANAGEMENT_TASK_STARTED,
                         ses.getId(),
-                        taskCls == null ? null : taskCls.getSimpleName(),
-                        "VisorManagementTask",
+                        taskName,
+                        taskCls == null ? null : taskCls.getName(),
                         false,
-                        securitySubjectId(ctx)
+                        securitySubjectId(ctx),
+                        visorTaskArg
                     );
 
                     ctx.event().record(evt);

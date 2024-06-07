@@ -114,7 +114,7 @@ import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvid
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -130,6 +130,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -903,7 +904,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertContains(log, testOut.toString(), "Cluster is inactive");
+        assertClusterState(INACTIVE, testOut.toString());
 
         String out = testOut.toString();
 
@@ -919,7 +920,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertContains(log, testOut.toString(), "Cluster is active");
+        assertClusterState(ACTIVE, testOut.toString());
 
         ignite.cluster().state(ACTIVE_READ_ONLY);
 
@@ -929,7 +930,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertContains(log, testOut.toString(), "Cluster is active (read-only)");
+        assertClusterState(ACTIVE_READ_ONLY, testOut.toString());
 
         boolean tagUpdated = GridTestUtils.waitForCondition(() -> {
             try {
@@ -3312,8 +3313,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         createCacheAndPreload(ig, 1000);
 
-        snp(ig).createSnapshot(snpName)
-            .get();
+        snp(ig).createSnapshot(snpName).get();
 
         TestCommandHandler h = newCommandHandler();
 
@@ -3434,7 +3434,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
 
-        MetricRegistry metrics = ig.context().metric().registry(SNAPSHOT_RESTORE_METRICS);
+        MetricRegistryImpl metrics = ig.context().metric().registry(SNAPSHOT_RESTORE_METRICS);
         Metric operIdMetric = metrics.findMetric("requestId");
         assertNotNull(operIdMetric);
 
@@ -3581,7 +3581,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             assertContains(log, testOut.toString(), "--increment argument specified twice");
 
             // Non existent increment.
-            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--snapshot", "restore", snpName, "--increment", "2", "--sync"));
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "restore", snpName, "--increment", "2", "--sync"));
+            assertContains(log, testOut.toString(), "No incremental snapshot found [snpName=" + snpName);
         }
         finally {
             autoConfirmation = autoConfirmation0;
@@ -3646,8 +3647,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 execute("--snapshot", "restore", snpName, "--src", "A", "--src", "B"));
             assertContains(log, testOut.toString(), "--src argument specified twice");
 
-            // The check command simply prints the results of the check, it always ends with a zero exit code.
-            assertEquals(EXIT_CODE_OK, execute("--snapshot", "check", snpName));
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "check", snpName));
             assertContains(log, testOut.toString(), "Snapshot does not exists [snapshot=" + snpName);
 
             assertEquals(EXIT_CODE_OK, execute("--snapshot", "check", snpName, "--src", snpDir.getAbsolutePath()));
@@ -3973,6 +3973,25 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /**
+     * Test to make sure that the '--baseline' command shows correct cluster state
+     *
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testClusterStateInBaselineCommand() throws Exception {
+        Ignite ignite = startGrids(1);
+
+        injectTestSystemOut();
+
+        for (ClusterState state : ClusterState.values()) {
+            ignite.cluster().state(state);
+            assertEquals(EXIT_CODE_OK, execute("--baseline"));
+            assertEquals(state, ignite.cluster().state());
+            assertClusterState(state, testOut.toString());
+        }
+    }
+
+    /**
      * @param ignite Ignite to execute task on.
      * @param delFoundGarbage If clearing mode should be used.
      * @return Result of task run.
@@ -4059,5 +4078,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    /**
+     * @param state Current state of the cluster.
+     * @param logOutput Logger output where current cluster state is supposed to be specified.
+     */
+    public static void assertClusterState(ClusterState state, String logOutput) {
+        assertTrue(Pattern.compile("Cluster state: " + state + "\\s+").matcher(logOutput).find());
     }
 }

@@ -137,6 +137,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** System view manager. */
     private final GridSystemViewManager sysViewMgr;
 
+    /** Timeout processor. */
+    private final GridTimeoutProcessor timeoutProc;
+
     /** */
     @GridToStringExclude
     private CacheObjectTransformerProcessor transProc;
@@ -201,6 +204,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         rsrcProc = new GridResourceProcessor(this);
         metricMgr = new GridMetricManager(this);
         sysViewMgr = new GridSystemViewManager(this);
+        timeoutProc = new GridTimeoutProcessor(this);
         transProc = createComponent(CacheObjectTransformerProcessor.class);
 
         // Fake folder provided to perform processor startup on empty folder.
@@ -212,6 +216,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         comps.add(rsrcProc);
         comps.add(cacheObjProcessor);
         comps.add(metricMgr);
+        comps.add(timeoutProc);
 
         if (marshallerMappingFileStoreDir != null) {
             marshallerCtx.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
@@ -306,7 +311,20 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public IgniteEx grid() {
-        final IgniteEx kernal = new IgniteKernal();
+        final IgniteEx kernal = new IgniteKernal() {
+            /**
+             * Override to return the non-null context instance to make metric SPIs happy.<br>
+             *
+             * Say the SqlViewMetricExporterSpi one which may be automatically added by
+             * the {@link GridMetricManager} if indexing or query engine are found in classpath
+             * (which is the default behaviour).
+             *
+             * @return Kernal context.
+             */
+            @Override public GridKernalContext context() {
+                return StandaloneGridKernalContext.this;
+            }
+        };
         try {
             setField(kernal, "cfg", cfg);
             setField(kernal, "igniteInstanceName", cfg.getIgniteInstanceName());
@@ -319,7 +337,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** */
     private void setField(IgniteEx kernal, String name, Object val) throws NoSuchFieldException, IllegalAccessException {
-        Field field = kernal.getClass().getDeclaredField(name);
+        Field field = kernal.getClass().getSuperclass().getDeclaredField(name);
         field.setAccessible(true);
         field.set(kernal, val);
     }
@@ -346,7 +364,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridTimeoutProcessor timeout() {
-        return null;
+        return timeoutProc;
     }
 
     /** {@inheritDoc} */

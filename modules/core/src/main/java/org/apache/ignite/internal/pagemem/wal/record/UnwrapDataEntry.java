@@ -29,12 +29,12 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 /**
  * Data Entry for automatic unwrapping key and value from Data Entry
  */
-public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
+public class UnwrapDataEntry extends DataEntry {
     /** Cache object value context. Context is used for unwrapping objects. */
     private final CacheObjectValueContext cacheObjValCtx;
 
-    /** Keep binary. This flag disables converting of non primitive types (BinaryObjects). */
-    private boolean keepBinary;
+    /** Keep binary. This flag disables converting of non-primitive types (BinaryObjects). */
+    private final boolean keepBinary;
 
     /**
      * @param cacheId Cache ID.
@@ -68,8 +68,13 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
         this.keepBinary = keepBinary;
     }
 
-    /** {@inheritDoc} */
-    @Override public Object unwrappedKey() {
+    /**
+     * Unwraps key from cache key object into primitive boxed type or source class. If client classes were used in
+     * key, call of this method requires classes to be available in classpath.
+     *
+     * @return Key which was placed into cache. Or null if failed to convert.
+     */
+    public Object unwrappedKey() {
         try {
             return unwrapKey(key, keepBinary, cacheObjValCtx);
         }
@@ -81,8 +86,13 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public Object unwrappedValue() {
+    /**
+     * Unwraps value from cache value object into primitive boxed type or source class. If client classes were
+     * used in key, call of this method requires classes to be available in classpath.
+     *
+     * @return Value which was placed into cache. Or null for delete operation or for failure.
+     */
+    public Object unwrappedValue() {
         try {
             return unwrapValue(val, keepBinary, cacheObjValCtx);
         }
@@ -103,6 +113,7 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
         if (unwrapped instanceof BinaryObject) {
             if (keepBinary)
                 return unwrapped;
+
             unwrapped = ((BinaryObject)unwrapped).deserialize();
         }
 

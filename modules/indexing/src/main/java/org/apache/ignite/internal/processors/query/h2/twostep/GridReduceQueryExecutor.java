@@ -54,7 +54,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImp
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
@@ -334,7 +333,6 @@ public class GridReduceQueryExecutor {
      * @param params Query parameters.
      * @param parts Partitions.
      * @param lazy Lazy execution flag.
-     * @param mvccTracker Query tracker.
      * @param dataPageScanEnabled If data page scan is enabled.
      * @param pageSize Page size.
      * @return Rows iterator.
@@ -351,7 +349,6 @@ public class GridReduceQueryExecutor {
         Object[] params,
         int[] parts,
         boolean lazy,
-        MvccQueryTracker mvccTracker,
         Boolean dataPageScanEnabled,
         int pageSize
     ) {
@@ -440,9 +437,6 @@ public class GridReduceQueryExecutor {
                         .explicitTimeout(true)
                         .schemaName(schemaName);
 
-                    if (mvccTracker != null)
-                        req.mvccSnapshot(mvccTracker.snapshot());
-
                     final C2<ClusterNode, Message, Message> spec =
                         parts == null ? null : new ReducePartitionsSpecializer(mapping.queryPartitionsMap());
 
@@ -488,7 +482,6 @@ public class GridReduceQueryExecutor {
                             r,
                             qryReqId,
                             qry.distributedJoins(),
-                            mvccTracker,
                             ctx.tracing());
 
                         release = false;
@@ -500,7 +493,6 @@ public class GridReduceQueryExecutor {
 
                         QueryContext qctx = new QueryContext(
                             0,
-                            null,
                             null,
                             null,
                             null,
@@ -541,7 +533,6 @@ public class GridReduceQueryExecutor {
 
                         resIter = new H2FieldsIterator(
                             res,
-                            mvccTracker,
                             conn,
                             r.pageSize(),
                             log,
@@ -551,8 +542,6 @@ public class GridReduceQueryExecutor {
                         );
 
                         conn = null;
-
-                        mvccTracker = null; // To prevent callback inside finally block;
                     }
 
                     return new GridQueryCacheObjectsIterator(resIter, h2.objectContext(), keepBinary);
@@ -582,7 +571,7 @@ public class GridReduceQueryExecutor {
                 }
                 finally {
                     if (release) {
-                        releaseRemoteResources(nodes, r, qryReqId, qry.distributedJoins(), mvccTracker);
+                        releaseRemoteResources(nodes, r, qryReqId, qry.distributedJoins());
 
                         if (!skipMergeTbl) {
                             for (int i = 0, mapQrys = mapQueries.size(); i < mapQrys; i++)
@@ -1026,10 +1015,9 @@ public class GridReduceQueryExecutor {
      * @param r Query run.
      * @param qryReqId Query id.
      * @param distributedJoins Distributed join flag.
-     * @param mvccTracker MVCC tracker.
      */
     void releaseRemoteResources(Collection<ClusterNode> nodes, ReduceQueryRun r, long qryReqId,
-        boolean distributedJoins, MvccQueryTracker mvccTracker) {
+        boolean distributedJoins) {
         try {
             if (distributedJoins)
                 send(nodes, new GridQueryCancelRequest(qryReqId), null, true);
@@ -1049,8 +1037,6 @@ public class GridReduceQueryExecutor {
         finally {
             if (!runs.remove(qryReqId, r))
                 U.warn(log, "Query run was already removed: " + qryReqId);
-            else if (mvccTracker != null)
-                mvccTracker.onDone();
         }
     }
 

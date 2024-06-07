@@ -63,7 +63,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
@@ -98,6 +97,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -199,13 +199,12 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertTrue(smfs[0].toString(), smfs[0].exists());
         assertTrue(U.delete(smfs[0]));
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
-
-        StringBuilder b = new StringBuilder();
-        res.print(b::append, true);
-
-        assertFalse(F.isEmpty(res.exceptions()));
-        assertContains(log, b.toString(), "Some metadata is missing from the snapshot");
+        assertThrowsAnyCause(
+            log,
+            () -> snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult(),
+            IgniteException.class,
+            "No snapshot metadatas found for the baseline nodes with consistent ids: "
+        );
     }
 
     /** @throws Exception If fails. */
@@ -436,10 +435,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                         new GridCacheVersion(row0.version().topologyVersion(),
                             row0.version().nodeOrder(),
                             row0.version().order() + 1),
-                        null,
-                        null,
-                        TxState.NA,
-                        TxState.NA,
                         TTL_ETERNAL,
                         row0.expireTime(),
                         true,

@@ -19,17 +19,12 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
 import javax.cache.Cache;
-import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -38,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEnt
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -82,14 +76,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /** {@inheritDoc} */
     @Override public boolean initialValue(CacheObject val, GridCacheVersion ver, long ttl, long expireTime,
         boolean preload, AffinityTopologyVersion topVer, GridDrType drType, boolean fromStore, boolean primary) {
-        assert false;
-
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean mvccPreloadEntry(
-        List<GridCacheMvccEntryInfo> entries) {
         assert false;
 
         return false;
@@ -479,35 +465,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheUpdateTxResult mvccSet(@Nullable IgniteInternalTx tx, UUID affNodeId, CacheObject val,
-        EntryProcessor entryProc, Object[] invokeArgs, long ttl0, AffinityTopologyVersion topVer, MvccSnapshot mvccVer,
-        GridCacheOperation op, boolean needHistory,
-        boolean noCreate, boolean needOldVal, CacheEntryPredicate filter, boolean retVal, boolean keepBinary)
-        throws IgniteCheckedException, GridCacheEntryRemovedException {
-        rawPut(val, ttl);
-
-        return new GridCacheUpdateTxResult(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheUpdateTxResult mvccRemove(@Nullable IgniteInternalTx tx, UUID affNodeId,
-        AffinityTopologyVersion topVer, MvccSnapshot mvccVer, boolean needHistory, boolean needOldVal,
-        CacheEntryPredicate filter, boolean retVal)
-        throws IgniteCheckedException, GridCacheEntryRemovedException {
-        obsoleteVer = ver;
-
-        val = null;
-
-        return new GridCacheUpdateTxResult(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheUpdateTxResult mvccLock(GridDhtTxLocalAdapter tx,
-        MvccSnapshot mvccVer) throws GridCacheEntryRemovedException, IgniteCheckedException {
-        return new GridCacheUpdateTxResult(true);
-    }
-
-    /** {@inheritDoc} */
     @Override public GridCacheUpdateAtomicResult innerUpdate(
         GridCacheVersion ver,
         UUID evtNodeId,
@@ -658,10 +615,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     @Override public boolean initialValue(
         CacheObject val,
         GridCacheVersion ver,
-        MvccVersion mvccVer,
-        MvccVersion newMvccVer,
-        byte mvccTxState,
-        byte newMvccTxState,
         long ttl,
         long expireTime,
         boolean preload,
@@ -886,11 +839,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject mvccPeek(boolean onheapOnly) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public CacheObject peek(boolean heap,
         boolean offheap,
         AffinityTopologyVersion topVer,
@@ -927,18 +875,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /** {@inheritDoc} */
     @Override public boolean lockedByCurrentThread() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheUpdateTxResult mvccUpdateRowsWithPreloadInfo(IgniteInternalTx tx,
-        UUID affNodeId,
-        AffinityTopologyVersion topVer,
-        List<GridCacheEntryInfo> entries,
-        GridCacheOperation op,
-        MvccSnapshot mvccVer,
-        IgniteUuid futId,
-        int batchNum) throws IgniteCheckedException, GridCacheEntryRemovedException {
-        return null;
     }
 
     /** {@inheritDoc} */

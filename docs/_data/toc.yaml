@@ -440,6 +440,8 @@
           url: monitoring-metrics/configuring-metrics
         - title: Metrics
           url: monitoring-metrics/new-metrics
+        - title: Custom Metrics
+          url: monitoring-metrics/custom-metrics
     - title: System Views
       url: monitoring-metrics/system-views
     - title: Performance Statistics
@@ -470,7 +472,9 @@
       url: tools/index-reader
 - title: Security
   url: security
-  items: 
+  items:
+    - title: Security Model
+      url: security/security-model
     - title: Authentication
       url: security/authentication
     - title: SSL/TLS 
