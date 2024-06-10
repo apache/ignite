@@ -3880,9 +3880,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     SnapshotFilesFailureMessage respMsg0 = (SnapshotFilesFailureMessage)msg;
 
                     synchronized (this) {
-                        RemoteSnapshotFilesRecevier task = active;
-
-                        if (task == null || !task.reqId.equals(respMsg0.id())) {
+                        if (active == null || !active.reqId.equals(respMsg0.id())) {
                             if (log.isInfoEnabled()) {
                                 log.info("A stale snapshot response message has been received. Will be ignored " +
                                     "[fromNodeId=" + nodeId + ", response=" + respMsg0 + ']');

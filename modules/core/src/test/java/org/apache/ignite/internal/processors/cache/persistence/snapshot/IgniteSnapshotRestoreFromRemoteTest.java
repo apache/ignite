@@ -342,7 +342,8 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
 
         awaitPartitionMapExchange();
 
-        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch restoreStarted = new CountDownLatch(1);
+        CountDownLatch nodeStopped = new CountDownLatch(1);
 
         IgniteSnapshotManager mgr = snp(coord);
 
@@ -352,7 +353,14 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
                     @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                         delegate.sendPart0(part, cacheDirName, pair, length);
 
-                        latch.countDown();
+                        restoreStarted.countDown();
+
+                        try {
+                            nodeStopped.await(TIMEOUT, TimeUnit.MILLISECONDS);
+                        }
+                        catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
                     }
                 };
             }
@@ -361,9 +369,11 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
         // Restore all cache groups.
         IgniteFuture<Void> fut = emptyNode.snapshot().restoreSnapshot(SNAPSHOT_NAME, null);
 
-        latch.await(TIMEOUT, TimeUnit.MILLISECONDS);
+        restoreStarted.await(TIMEOUT, TimeUnit.MILLISECONDS);
 
         coord.close();
+
+        nodeStopped.countDown();
 
         assertThrowsWithCause(() -> fut.get(TIMEOUT), IgniteException.class);
     }
