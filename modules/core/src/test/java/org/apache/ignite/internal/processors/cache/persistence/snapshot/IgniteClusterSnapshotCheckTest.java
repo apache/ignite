@@ -321,8 +321,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     }
 
     /**
-     * Simultaneously runs two snapshot checks of the same snapshot. Ensures that the check metrics and the check futures
-     * appear once.
+     * Simultaneously runs two snapshot checks of the same snapshot from the same node. Ensures that the check metrics
+     * and the check futures appear once.
      */
     @Test
     public void testSimultaneousChecksValidationMetrics() throws Exception {
@@ -333,8 +333,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     }
 
     /**
-     * Simultaneously runs a snapshot check and restoration of the same snapshot. Ensures that the check metrics and
-     * the check futures appear once.
+     * Simultaneously runs a snapshot check and restoration of the same snapshot from the same node. Ensures that the
+     * check metrics and the check futures appear once.
      */
     @Test
     public void testSimultaneousCheckAndRestoreValidationMetrics() throws Exception {
@@ -345,8 +345,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     }
 
     /**
-     * Simultaneously runs a snapshot restoration and a check of the same snapshot. Ensures that the check metrics
-     * and the check futures appear once.
+     * Simultaneously runs a snapshot restoration and a check of the same snapshot from the same node. Ensures that the
+     * check metrics and the check futures appear once.
      */
     @Test
     public void testSimultaneousRestoreAndCheckValidationMetrics() throws Exception {
@@ -357,8 +357,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     }
 
     /**
-     * Simultaneously runs and pauses two snapshot operations. Ensures that the check metrics and the check futures
-     * appear once.
+     * Simultaneously runs and pauses two snapshot operations. Ensures that the check metrics and the check futures appear once.
      */
     private void doTestTwoSimultaneousSnapshotValidations(
         Supplier<IgniteFuture<?>> snpOp1,
