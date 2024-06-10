@@ -339,11 +339,13 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
         emptyNode.cluster().state(ClusterState.ACTIVE);
 
         emptyNode.cache(DEFAULT_CACHE_NAME).destroy();
+
         awaitPartitionMapExchange();
 
         CountDownLatch latch = new CountDownLatch(1);
 
         IgniteSnapshotManager mgr = snp(coord);
+
         mgr.remoteSnapshotSenderFactory(new BiFunction<String, UUID, SnapshotSender>() {
             @Override public SnapshotSender apply(String s, UUID uuid) {
                 return new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.remoteSnapshotSenderFactory(s, uuid)) {
