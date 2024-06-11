@@ -385,6 +385,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Take snapshot operation procedure. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> startSnpProc;
 
+    /** */
+    private final CheckSnapshotDistributedProcess checkSnpProcesses;
+
     /** Check previously performed snapshot operation and delete uncompleted files if we need. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> endSnpProc;
 
@@ -490,6 +493,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
 
         restoreCacheGrpProc = new SnapshotRestoreProcess(ctx, locBuff);
+
+        checkSnpProcesses = new CheckSnapshotDistributedProcess(ctx);
 
         // Manage remote snapshots.
         snpRmtMgr = new SequentialRemoteSnapshotManager();
@@ -3189,6 +3194,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** @return Current incremental snapshot ID. */
     public @Nullable UUID incrementalSnapshotId() {
         return incSnpId;
+    }
+
+    /** */
+    public IgniteInternalFuture<IdleVerifyResultV2> checkSnapshotFully(String snpName) {
+        assert !F.isEmpty(snpName);
+
+        return checkSnpProcesses.start(snpName, null, null, 0, false);
     }
 
     /** Snapshot operation handlers. */

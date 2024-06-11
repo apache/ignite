@@ -45,6 +45,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -312,6 +313,20 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             fut::get,
             IgniteException.class,
             err_msg);
+    }
+
+    /** */
+    @Test
+    public void testCheckSnapshotProcess() throws Exception {
+        IgniteEx ig = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        ig.cluster().state(ClusterState.ACTIVE);
+
+        snp(ig).createSnapshot(SNAPSHOT_NAME).get();
+
+        IdleVerifyResultV2 res = snp(grid(1)).checkSnapshotFully(SNAPSHOT_NAME).get();
+
+        log.error("TEST | " + res);
     }
 
     /** @throws Exception If fails. */

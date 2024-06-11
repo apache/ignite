@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
@@ -31,10 +32,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -63,6 +66,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import static java.util.Collections.emptyMap;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
@@ -88,6 +92,10 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
     @LoggerResource
     private IgniteLogger log;
 
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private transient IgniteEx ignite;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -106,7 +114,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
 
     /** {@inheritDoc} */
     @Nullable @Override public IdleVerifyResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
-        return reduce0(results);
+        return reduce(results, ignite.cluster());
     }
 
     /** {@inheritDoc} */
@@ -134,34 +142,63 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
         }
     }
 
-    /**
-     * @param results Received results of broadcast remote requests.
-     * @return Idle verify job result constructed from results of remote executions.
-     */
-    public static IdleVerifyResultV2 reduce0(List<ComputeJobResult> results) {
+    /** */
+    public static IdleVerifyResultV2 reduce(List<ComputeJobResult> jobResults, ClusterGroup cluster) throws IgniteException {
+        Map<UUID, Map<PartitionKeyV2, PartitionHashRecordV2>> results = new HashMap<>();
+        Map<UUID, Throwable> errors = new HashMap<>();
+
+        jobResults.forEach(jr -> {
+            if (jr.getData() != null)
+                results.put(jr.getNode().id(), jr.getData());
+
+            if (jr.getException() != null)
+                errors.put(jr.getNode().id(), jr.getException());
+        });
+
+        return reduce(results, errors, cluster);
+    }
+
+    /** */
+    public static IdleVerifyResultV2 reduce(
+        Map<UUID, ? extends Map<PartitionKeyV2, PartitionHashRecordV2>> results,
+        Map<UUID, Throwable> errors,
+        ClusterGroup cluster
+    ) {
+        Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = results.entrySet().stream()
+            .collect(Collectors.toMap(e -> cluster.node(e.getKey()), Map.Entry::getValue));
+
+        Map<ClusterNode, Exception> errors0 = errors.entrySet().stream()
+            .collect(Collectors.toMap(e -> cluster.node(e.getKey()), e -> asException(e.getValue())));
+
+        return reduce(results0, errors0);
+    }
+
+    /** */
+    public static IdleVerifyResultV2 reduce(
+        Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results,
+        Map<ClusterNode, Exception> errors
+    ) {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
-        Map<ClusterNode, Exception> ex = new HashMap<>();
 
-        for (ComputeJobResult res : results) {
-            if (res.getException() != null) {
-                ex.put(res.getNode(), res.getException());
-
-                continue;
-            }
-
-            Map<PartitionKeyV2, PartitionHashRecordV2> nodeHashes = res.getData();
+        results.forEach((node, nodeHashes) -> {
+            assert errors.get(node) == null;
 
             for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> e : nodeHashes.entrySet()) {
                 List<PartitionHashRecordV2> records = clusterHashes.computeIfAbsent(e.getKey(), k -> new ArrayList<>());
 
                 records.add(e.getValue());
             }
-        }
+        });
 
-        if (results.size() != ex.size())
-            return new IdleVerifyResultV2(clusterHashes, ex);
+        if (results.size() != errors.size())
+            return new IdleVerifyResultV2(clusterHashes, errors);
         else
-            return new IdleVerifyResultV2(ex);
+            return new IdleVerifyResultV2(errors);
+    }
+
+    /** */
+    public static Exception asException(Throwable th) {
+        return th instanceof Exception ? (Exception)th : new IgniteException(th);
     }
 
     /**
