@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.concurrent.Callable;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -193,8 +194,30 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
      * Checks whether it's impossible to insert single duplicate key.
      */
     @Test
-    public void testDuplicateKey() throws InterruptedException, SQLException {
-        stmt.execute(SQL);
+    public void testDuplicatesSingleKey() throws InterruptedException {
+        doTestDuplicateKeys(
+                () -> stmt.execute(SQL),
+                "insert into Person(_key, id, firstName, lastName, age) values " +
+                        "('p2', 2, 'Joe', 'Black', 35)"
+        );
+    }
+
+    /**
+     * Checks whether it's impossible to insert multiple duplicate keys.
+     */
+    @Test
+    public void testDuplicatesMultipleKeys() throws InterruptedException {
+        doTestDuplicateKeys(
+                () -> jcache(0).put("p2", new Person(2, "Joe", "Black", 35)),
+                SQL
+        );
+    }
+
+    /**
+     *
+     */
+    private void doTestDuplicateKeys(RunnableX initClosure, String sql) throws InterruptedException {
+        initClosure.run();
 
         LogListener lsnr = LogListener
                 .matches("Failed to execute SQL query")
@@ -202,34 +225,10 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
 
         srvLog.registerListener(lsnr);
 
-        GridTestUtils.assertThrowsAnyCause(log,
-                () -> stmt.execute("insert into Person(_key, id, firstName, lastName, age) values " +
-                        "('p2', 2, 'Joe', 'Black', 35)"),
-                SQLException.class,
-                "Failed to INSERT some keys because they are already in cache [keys=[p2]]");
-
-        assertFalse(lsnr.check(1000L));
-
-        assertEquals(3, jcache(0).withKeepBinary().getAll(new HashSet<>(Arrays.asList("p1", "p2", "p3"))).size());
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testDuplicateKeys() throws InterruptedException {
-        jcache(0).put("p2", new Person(2, "Joe", "Black", 35));
-
-        LogListener lsnr = LogListener
-            .matches("Failed to execute SQL query")
-            .build();
-
-        srvLog.registerListener(lsnr);
-
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
                 /** {@inheritDoc} */
                 @Override public Object call() throws Exception {
-                    return stmt.execute(SQL);
+                    return stmt.execute(sql);
                 }
             }, SQLException.class,
             "Failed to INSERT some keys because they are already in cache [keys=[p2]]");
