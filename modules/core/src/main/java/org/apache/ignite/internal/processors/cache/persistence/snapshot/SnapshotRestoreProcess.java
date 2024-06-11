@@ -1200,6 +1200,7 @@ public class SnapshotRestoreProcess {
         }
         catch (Exception ex) {
             opCtx0.errHnd.accept(ex);
+
             retFut.onDone(ex);
         }
 
