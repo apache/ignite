@@ -108,6 +108,7 @@
         <spring.version>5.2.25.RELEASE</spring.version>
         <surefire.version>3.1.2</surefire.version>
         <tomcat.version>9.0.63</tomcat.version>
+        <xstream.version>1.4.20</xstream.version>
         <yardstick.version>0.8.3</yardstick.version>
         <zookeeper.version>3.8.3</zookeeper.version>
         <zstd.version>1.5.5-5</zstd.version>
