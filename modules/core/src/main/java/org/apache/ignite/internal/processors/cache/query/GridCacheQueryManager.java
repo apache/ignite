@@ -1521,17 +1521,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final Integer part = qry.partition();
 
+            int[] parts = null;
+
             if (part != null) {
-                final GridDhtCacheAdapter dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
-
-                final AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
-
-                final GridDhtLocalPartition locPart = dht.topology().localPartition(part, topVer, false);
+                final GridDhtLocalPartition locPart = cctx.dht().topology().localPartition(part);
 
                 if (locPart == null || locPart.state() != OWNING) {
                     throw new CacheInvalidStateException("Failed to execute index query because required partition " +
                         "has not been found on local node [cacheName="  + cctx.name()  + ", part=" + part + "]");
                 }
+
+                parts = new int[] {part};
             }
 
             if (log.isDebugEnabled())
@@ -1552,11 +1552,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     securitySubjectId(cctx),
                     cctx.kernalContext().task().resolveTaskName(qry.taskHash())));
             }
-
-            int[] parts = null;
-
-            if (part != null)
-                parts = new int[] {part};
 
             IndexQueryResult<K, V> idxQryRes = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(),
                 qry.scanFilter(), filter(qry, parts, parts != null), qry.keepBinary(), qry.taskHash());
