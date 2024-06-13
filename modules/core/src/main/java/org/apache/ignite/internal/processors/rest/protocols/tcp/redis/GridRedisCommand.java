@@ -32,17 +32,15 @@ public enum GridRedisCommand {
     /** Echo. */
     ECHO("ECHO"),
     /** Select **/
-    SELECT("SELECT"),
+    SELECT("SELECT"),    
+    /** always return ok */
+    AUTH("AUTH"),
 
     // String commands.
     /** GET. */
     GET("GET"),
     /** MGET. */
-    MGET("MGET"),
-    
-    /** KEYS. */
-    KEYS("KEYS"),
-    
+    MGET("MGET"),    
     /** SET. */
     SET("SET"),
     /** MSET. */
@@ -67,6 +65,8 @@ public enum GridRedisCommand {
     GETRANGE("GETRANGE"),
 
     // Key commands.
+    /** KEYS. */
+    KEYS("KEYS"),
     /** DEL. */
     DEL("DEL"),
     /** EXISTS. */
@@ -74,8 +74,12 @@ public enum GridRedisCommand {
     /** EXPIRE. */
     EXPIRE("EXPIRE"),
     /** PEXPIRE. */
-    PEXPIRE("PEXPIRE"),    
+    PEXPIRE("PEXPIRE"),
+    
     // add@byron
+    
+    SCAN,HSCAN,SSCAN,ZSCAN,
+    
     /** SET and EXPIRE. */ 
     SETEX("SETEX"),
     
@@ -142,23 +146,34 @@ public enum GridRedisCommand {
     BRPOP, // 是 RPOP 的阻塞版本
     LPOS,
     LRANGE, // 指定区间内的元素，区间以偏移量 START 和 END 指定
+    LINDEX,
+    LLEN,
+    
     
     // Set commands 
     SADD,
     SREM,
     SPOP,	// 移除并返回集合中的一个随机元素
+    SCARD,
     SISMEMBER,	// 判断 member 元素是否是集合 key 的成员
     SMEMBERS,	// 返回集合中的所有成员
+    SDIFF,
+    SINTER,
     
     // OrderedSet commands 
     ZADD,
     ZREM,
     ZPOPMAX,
     ZPOPMIN, // 删除并返回最多count个有序集合key中最低得分的成员。
+    ZCARD, // 计算集合中元素的数量。
+    ZRANK,
+    ZREVRANK,
     ZRANGE,
+    ZREVRANGE,
+    ZRANGEBYSCORE, // 返回有序集 key 中， score 值介于max和min之间的所有的成员。有序集成员按 score 值递增的次序排列。
+    ZREVRANGEBYSCORE, // 返回有序集 key 中， score 值介于max和min之间的所有的成员。有序集成员按 score 值递减(从大到小)的次序排列。
     
-    /** support use */
-    AUTH("AUTH"),
+   
     
     // 发布订阅命令
  	PSUBSCRIBE,	// 订阅一个或多个符合给定模式的频道。
@@ -170,10 +185,18 @@ public enum GridRedisCommand {
  	
     //end@
     
-    // Server commands.
+    // 事务 commands.
+ 	MULTI,
+ 	EXEC,
+ 	DISCARD,
+ 	
+ 	// Server commands.
  	CLIENT,
     /** DBSIZE. */
     DBSIZE("DBSIZE"),
+    
+    SAVE, // 所有数据的快照以 RDB 文件的形式保存到磁盘上。
+    BGSAVE, // 异步保存
     /** FLUSHDB. */
     FLUSHDB("FLUSHDB 删除当前数据库的所有 key"),
     /** FLUSHALL. 删除所有数据库的所有key */

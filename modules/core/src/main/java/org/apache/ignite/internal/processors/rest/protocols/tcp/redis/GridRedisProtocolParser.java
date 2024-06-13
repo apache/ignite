@@ -50,7 +50,7 @@ public class GridRedisProtocolParser {
     private static final byte LF = 10;
 
     /** CRLF. */
-    private static final byte[] CRLF = new byte[] {13, 10};
+    static final byte[] CRLF = new byte[] {13, 10};
 
     /** Generic error prefix. */
     private static final byte[] ERR_GENERIC = "ERR ".getBytes();
@@ -426,9 +426,21 @@ public class GridRedisProtocolParser {
         ArrayList<ByteBuffer> res = new ArrayList<>();
         for (Object val : vals) {
             if (val != null) {
-                ByteBuffer b = toBulkString(val);
-                res.add(b);
-                capacity += b.limit();
+            	if(val instanceof Collection) {
+            		ByteBuffer b = toArray((Collection)val);
+	                res.add(b);
+	                capacity += b.limit();
+            	}
+            	else if(val instanceof ByteBuffer) {
+            		ByteBuffer b = (ByteBuffer)val;
+	                res.add(b);
+	                capacity += b.limit();
+            	}
+            	else {
+	                ByteBuffer b = toBulkString(val);
+	                res.add(b);
+	                capacity += b.limit();
+            	}
             }
         }
         

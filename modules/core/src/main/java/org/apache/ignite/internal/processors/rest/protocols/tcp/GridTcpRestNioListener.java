@@ -116,10 +116,10 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         new EnumMap<>(GridClientCacheRequest.GridCacheOperation.class);
 
     /** User attributes key. */
-    private static final int USER_ATTR_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    public static final int USER_ATTR_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Credentials key. */
-    private static final int CREDS_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    public static final int CREDS_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Supported protocol versions. */
     private static final Collection<Short> SUPP_VERS = new HashSet<>();

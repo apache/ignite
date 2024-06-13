@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.rest.handlers.redis;
 
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -26,6 +27,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientAuthenticationRequest;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.GridTcpRestNioListener;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisNioListener;
@@ -35,6 +38,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.security.SecurityCredentials;
 
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.ECHO;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.PING;
@@ -81,7 +85,6 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<GridRedisMessage> handleAsync(GridNioSession ses, GridRedisMessage msg) {
         assert msg != null;
-
         switch (msg.command()) {
             case PING:
                 msg.setResponse(GridRedisProtocolParser.toSimpleString(PONG));
@@ -90,7 +93,7 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
 
             case QUIT:
                 msg.setResponse(GridRedisProtocolParser.oKString());
-
+                
                 return new GridFinishedFuture<>(msg);
 
             case ECHO:
@@ -121,18 +124,31 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
                 
             case AUTH:
 			    // add@byron
-            	
-            	String password = msg.aux(1);
+            	// format auth user password
+            	List<String> password = msg.auxMKeys();
             	IgniteSecurity security = ctx.security();
-				try {					
-					security.authenticatedSubject(msg.clientId());
+            	GridClientAuthenticationRequest authMsg = new GridClientAuthenticationRequest();
+				
+            	try {
+					if(password.size()>1) {
+						authMsg.credentials(new SecurityCredentials(password.get(0),password.get(1)));
+					}
+					else {
+						authMsg.credentials(new SecurityCredentials(ctx.igniteInstanceName(),password.get(0)));
+					}					
+					authMsg.clientId(msg.clientId());
+					
+					ses.addMeta(GridTcpRestNioListener.CREDS_KEY, authMsg.credentials());
+					ses.addMeta(GridTcpRestNioListener.USER_ATTR_KEY, authMsg.userAttributes());					
+					
 				} 
-				catch (IgniteCheckedException e) {
-					// TODO Auto-generated catch block
+				catch (Exception e) {
+					
+					ctx.log(getClass()).warning("auth default user name is igniteInstanceName");
 					e.printStackTrace();
 				}
-            	msg.setResponse(GridRedisProtocolParser.oKString());
-            	
+				
+            	msg.setResponse(GridRedisProtocolParser.oKString());            	
                 return new GridFinishedFuture<>(msg);
                 
             case CLIENT:

@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
@@ -37,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_KEYS;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_SIZE;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.*;
 
 /**
@@ -45,7 +47,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 public class GridRedisKeysCommandHandler extends GridRedisRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-    	KEYS,HKEYS
+    	KEYS,HKEYS,SCAN,HSCAN
     );
 
     /**
@@ -69,21 +71,55 @@ public class GridRedisKeysCommandHandler extends GridRedisRestCommandHandler {
         assert msg != null;
 
         GridRestCacheRequest restReq = new GridRestCacheRequest();
-
+        GridRedisCommand cmd = msg.command();
+        
         restReq.clientId(msg.clientId());
-        restReq.key(msg.key());
+       
         restReq.command(CACHE_GET_KEYS);
         restReq.cacheName(msg.cacheName());
-
-        List<String> keys = msg.auxMKeys();
-        restReq.value(keys);
+        
+        if(cmd==SCAN || cmd==HSCAN ) {      	
+        	 // cmd, key, curser, MATCH pattem, COUNT 1000
+        	String matchP = stringValue("MATCH",msg.auxMKeys());
+        	if(matchP!=null) {
+        		restReq.key(matchP);
+        	}
+        }
+        else {
+        	restReq.key(msg.key());
+        }
 
         return restReq;
     }
 
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
-    	return (restRes.getResponse() == null ? GridRedisProtocolParser.nil()
-         : GridRedisProtocolParser.toArray((Collection)restRes.getResponse()));
+    	if(restRes.getResponse() == null)
+    		return GridRedisProtocolParser.nil();
+    	
+    	List<String> list = (List)restRes.getResponse();
+    	if(params.size()>1) { 
+	    	int offset = Integer.valueOf(params.get(1)); // cmd, key, curser, MATCH pattem, COUNT 1000
+	    	int count = 10;
+	    	try {
+				Long countP = longValue("COUNT",params);
+				if(countP!=null) {
+					count = countP.intValue();
+				}
+			} catch (GridRedisGenericException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+	    	if(list.size()>offset+count) {
+	    		list = list.subList(offset, offset+count);
+	    	}
+	    	else if(offset>0){
+	    		list = list.subList(offset, list.size());
+	    	}
+    	}
+    	
+        return  GridRedisProtocolParser.toArray(list);
     }
+    
+    
 }

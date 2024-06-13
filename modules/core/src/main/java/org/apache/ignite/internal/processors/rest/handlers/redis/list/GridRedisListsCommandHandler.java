@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.redis.list;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSet;
@@ -32,6 +35,9 @@ import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisP
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+
+
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.*;
 
 /**
@@ -39,12 +45,12 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
  * <p>
  * No key expiration is currently supported.
  */
-public class GridRedisListRemCommandHandler implements GridRedisCommandHandler {
+public class GridRedisListsCommandHandler implements GridRedisCommandHandler {
     
 
 	/** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-    		LSET,LREM,SREM,ZREM
+    		LPOS,LRANGE,LINDEX,LLEN
     );
 
 
@@ -61,7 +67,7 @@ public class GridRedisListRemCommandHandler implements GridRedisCommandHandler {
      * @param hnd Rest handler.
      * @param ctx Kernal context.
      */
-    public GridRedisListRemCommandHandler(IgniteLogger log, GridKernalContext ctx) {
+    public GridRedisListsCommandHandler(IgniteLogger log, GridKernalContext ctx) {
         this.log = log;
         this.ctx = ctx;
     }
@@ -69,7 +75,9 @@ public class GridRedisListRemCommandHandler implements GridRedisCommandHandler {
     /** {@inheritDoc} */
     @Override public Collection<GridRedisCommand> supportedCommands() {
         return SUPPORTED_COMMANDS;
-    }   
+    }
+
+   
 
 	@Override
 	public IgniteInternalFuture<GridRedisMessage> handleAsync(GridNioSession ses, GridRedisMessage msg) {
@@ -84,74 +92,68 @@ public class GridRedisListRemCommandHandler implements GridRedisCommandHandler {
         GridRedisCommand cmd = msg.command();
             
         String queueName = msg.cacheName()+"-"+msg.key();        
-        
-        if(cmd == LSET) { 
-        	int pos = Integer.parseInt(msg.aux(2));
-        	String value = msg.aux(3);
-        	IgniteQueue<String> list = ctx.grid().queue(queueName,0,null);
-        	if(pos<0) {
-        		pos = list.size() + pos;
-        	}    	
+        IgniteQueue<String> list = ctx.grid().queue(queueName,0,null);
+        if(cmd == LPOS) {         	
+        	String value = msg.aux(2);
+        	  	
         	Iterator<String> it = list.iterator();
         	int n = 0;
         	while(it.hasNext()) {
         		String key = it.next(); 
-        		if(n==pos) {
-        			throw new UnsupportedOperationException("LSET not supported for ignite queue!");         			
+        		if(key.equals(value)) {
+        			break;      			
         		}
         		n++;
         	}        	
         	msg.setResponse(GridRedisProtocolParser.toInteger(n));
         	
-        }
-        
-        else if(cmd == LREM) { 
-        	int count = Integer.parseInt(msg.aux(2));
-        	String value = msg.aux(3);
-        	IgniteQueue<String> list = ctx.grid().queue(queueName,0,null);
-        	Iterator<String> it = list.iterator();
-        	int n = 0;
-        	while(it.hasNext()) {
-        		String key = it.next();        		
-        		if(key.equals(value)) {
-        			it.remove();
-        			n++;
-        			if(count>0 && n>=count) break;
-        		}
-        	}
-        	msg.setResponse(GridRedisProtocolParser.toInteger(n));
+        }        
+        else if(cmd == LRANGE) {        	
         	
-        }        
-        else if(cmd == SREM) {
-        	List<String> keys = msg.aux();
-        	IgniteSet<String> list = ctx.grid().set(queueName, null);
         	Iterator<String> it = list.iterator();
+        	int start = Integer.parseInt(msg.aux(2));
+        	int end = Integer.parseInt(msg.aux(3));
+        	if(start<0) start = list.size()+start;
+        	if(end<0) end = list.size()+end;
         	int n = 0;
+        	Collection<String> result = new ArrayList<>();
         	while(it.hasNext()) {
-        		String key = it.next();        		
-        		if(keys.contains(key)) {
-        			it.remove();
-        			n++;
+        		if(n>=end) {
+        			break;
         		}
+        		if(n>=start) {
+        			String key = it.next();
+        			result.add(key);
+        		}        		
+        		n++;
         	}
-        	msg.setResponse(GridRedisProtocolParser.toInteger(n));
+        	msg.setResponse(GridRedisProtocolParser.toArray(result));
+        	
         }
-        else if(cmd == ZREM) {
-        	List<String> keys = msg.aux();
-        	IgniteSet<ScoredItem<String>> list = ctx.grid().set(queueName,null);        	
-        	Iterator<ScoredItem<String>> it = list.iterator();
+        else if(cmd == LINDEX) {        	
+        	
+        	Iterator<String> it = list.iterator();
+        	int start = Integer.parseInt(msg.aux(2));        	
+        	if(start<0) start = list.size()+start;
+        	
         	int n = 0;
-        	while(it.hasNext()) {
-        		ScoredItem<String> item = it.next();
-        		String key = item.getValue();
-        		if(keys.contains(key)) {
-        			it.remove();
-        			n++;
-        		}
+        	String result = null;
+        	while(it.hasNext()) {        		
+        		if(n>=start) {
+        			result = it.next();
+        			break;
+        		}        		
+        		n++;
         	}
-        	msg.setResponse(GridRedisProtocolParser.toInteger(n));
-        }        
-        
+        	if(result==null)
+        		msg.setResponse(GridRedisProtocolParser.nil());
+        	else
+        		msg.setResponse(GridRedisProtocolParser.toSimpleString(result));
+        	
+        }
+        else if(cmd == LLEN) {
+        	msg.setResponse(GridRedisProtocolParser.toInteger(list.size()));
+        }
         return new GridFinishedFuture<>(msg);
-	}
+	}	
 }

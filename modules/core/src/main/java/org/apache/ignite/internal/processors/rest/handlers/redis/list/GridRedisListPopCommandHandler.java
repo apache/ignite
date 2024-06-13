@@ -17,39 +17,22 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.redis.list;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.PriorityQueue;
-
-import org.apache.ignite.IgniteAtomicLong;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSet;
-import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.query.ScoredCacheEntry;
-import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
-import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisCommandHandler;
-import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisRestCommandHandler;
-import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
+
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
-import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
-import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
+
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.internal.FutureTask;
+
 
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.*;
 
@@ -109,23 +92,8 @@ public class GridRedisListPopCommandHandler implements GridRedisCommandHandler {
         if(cmd == LPOP || cmd == BLPOP) {        	
         	IgniteQueue<String> list = ctx.grid().queue(queueName,0,null);
         	value = list.poll();
-        	if(value ==null && cmd == BLPOP) {
-        		FutureTask<GridRedisMessage> fut = new FutureTask<GridRedisMessage>(){
-
-					@Override
-					protected GridRedisMessage body() {
-						String value = list.take();						
-						if(value==null) {
-				    		msg.setResponse(GridRedisProtocolParser.nil());
-				    	}
-				    	else {
-				    		msg.setResponse(GridRedisProtocolParser.toSimpleString(value));
-				    	}
-						return msg;
-					}
-        			
-        		};
-        		return fut;
+        	if(value==null && cmd == BLPOP) {
+        		value = list.take();
         	}
         	
         }
@@ -139,28 +107,30 @@ public class GridRedisListPopCommandHandler implements GridRedisCommandHandler {
         	}      	
         }
         else if(cmd == ZPOPMAX) {
-        	IgniteSet<ScoredCacheEntry<String,String>> list = ctx.grid().set(queueName,null);
+        	IgniteSet<ScoredItem<String>> list = ctx.grid().set(queueName,null);
         	
         	double max = Double.MIN_VALUE;        	
-        	for(ScoredCacheEntry<String,String> item: list) {
-        		double score = item.score();
+        	for(ScoredItem<String> item: list) {
+        		double score = item.getScore();
         		if(score>max) {
         			max = score;
-        			value = item.getKey();
+        			value = item.getValue();
         		}
-        	}            
+        	}
+        	list.remove(new ScoredItem<String>(value,max));
         }
         else if(cmd == ZPOPMIN) {
-        	IgniteSet<ScoredCacheEntry<String,String>> list = ctx.grid().set(queueName,null);
+        	IgniteSet<ScoredItem<String>> list = ctx.grid().set(queueName,null);
         	
         	double min = Double.MAX_VALUE;        	
-        	for(ScoredCacheEntry<String,String> item: list) {
-        		double score = item.score();
+        	for(ScoredItem<String> item: list) {
+        		double score = item.getScore();
         		if(score<min) {
         			min = score;
-        			value = item.getKey();
+        			value = item.getValue();
         		}
-        	}            
+        	} 
+        	list.remove(new ScoredItem<String>(value,min));
         }
        
         if(value==null) {

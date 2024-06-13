@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.rest.handlers.cache;
 
 import java.io.Serializable;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -1212,21 +1215,19 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
-        	List<Object> keys = new ArrayList<>();
-        	if(key!=null && key instanceof List && ((List)key).size()>0) {
-            	String tableName = c.name();
-            	SqlFieldsQuery qry = new SqlFieldsQuery("SELECT _key FROM "+tableName + " WHERE _key LIKE '"+((List)key).get(0)+"%'");
-            	FieldsQueryCursor cursor = ctx.query().querySqlFields(qry, true);
-            	
-            	List<List<?>> rows = cursor.getAll();            	
-            	for(List<?> row: rows) {
-            		keys.add(row.get(0));
-            	}
-            	return new GridFinishedFuture<>(keys);
-            }
-            
-            keys.addAll(c.keySet());
-            keys.add("*");
+        	List<Object> keys = new ArrayList<>();        	
+        	
+        	if(key!=null && key instanceof String && !key.toString().isEmpty() && !key.equals("*")) {
+        		PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("glob:"+key);
+        		for(Object iKey: c.keySet()) {
+        			if(iKey instanceof String && pathMatcher.matches(Path.of(iKey.toString()))){
+        				keys.add(iKey);
+    				}
+                }
+        	}
+        	else {
+        		keys.addAll(c.keySet());
+        	}
         	return new GridFinishedFuture<>(keys);
         }
     }

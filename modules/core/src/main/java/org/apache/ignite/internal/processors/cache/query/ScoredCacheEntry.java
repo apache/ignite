@@ -20,31 +20,31 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Comparator;
+
 
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /** Represents cache key-value pair and score to compare cache entry by custom rule. */
-public class ScoredCacheEntry<K, V> extends IgniteBiTuple<K, V> implements Comparator<ScoredCacheEntry<K, V>> {
+public class ScoredCacheEntry<K, V> extends IgniteBiTuple<K, V> implements java.lang.Comparable<ScoredCacheEntry<K, V>> {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 4L;
 
     /** */
-    private double score;
+    private float score;
 
     /** */
     public ScoredCacheEntry() {}
 
     /** */
-    public ScoredCacheEntry(K key, V val, double score) {
+    public ScoredCacheEntry(K key, V val, float score) {
         super(key, val);
 
         this.score = score;
     }
 
     /** */
-    public double score() {
+    public float score() {
         return score;
     }
 
@@ -52,14 +52,14 @@ public class ScoredCacheEntry<K, V> extends IgniteBiTuple<K, V> implements Compa
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        out.writeObject(score);
+        out.writeFloat(score);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        score = (float)in.readObject();
+        score = in.readFloat();
     }
 
     /** {@inheritDoc} */
@@ -67,9 +67,10 @@ public class ScoredCacheEntry<K, V> extends IgniteBiTuple<K, V> implements Compa
         return S.toString(ScoredCacheEntry.class, this);
     }
 
+	
 	@Override
-	public int compare(ScoredCacheEntry<K, V> o1, ScoredCacheEntry<K, V> o2) {		
-		return Double.compare(o1.score,o2.score);
+	public int compareTo(ScoredCacheEntry<K, V> o2) {		
+		return Double.compare(this.score,o2.score);
 	}
 }
 

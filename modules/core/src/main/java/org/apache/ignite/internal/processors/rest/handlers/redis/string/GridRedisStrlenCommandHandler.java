@@ -72,11 +72,13 @@ public class GridRedisStrlenCommandHandler extends GridRedisRestCommandHandler {
         restReq.key(msg.key());
         if(msg.command()==HLEN) {        	
         	restReq.command(CACHE_SIZE);
-        }
+        	restReq.cacheName(msg.cacheName());
+        }        
         else {
         	restReq.command(CACHE_GET);
+        	restReq.cacheName(msg.cacheName());
         }
-        restReq.cacheName(msg.cacheName());
+        
 
         return restReq;
     }

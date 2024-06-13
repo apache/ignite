@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
+
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.ignite.IgniteCache;
@@ -34,12 +36,15 @@ import org.apache.ignite.internal.processors.rest.handlers.redis.key.GridRedisEx
 import org.apache.ignite.internal.processors.rest.handlers.redis.key.GridRedisExpireCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.key.GridRedisKeysCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.list.GridRedisListAddCommandHandler;
-import org.apache.ignite.internal.processors.rest.handlers.redis.list.GridRedisListFindCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.list.GridRedisSetsCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.list.GridRedisListPopCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.list.GridRedisListRemCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.list.GridRedisListsCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.list.GridRedisSortedSetsCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.pubsub.GridRedisSubscribeCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.server.GridRedisDbSizeCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.server.GridRedisFlushCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.server.GridRedisTransactionCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedisAppendCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedisGetCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedisGetRangeCommandHandler;
@@ -50,12 +55,14 @@ import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedi
 import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedisSetCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedisSetRangeCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedisStrlenCommandHandler;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -75,6 +82,8 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
     /** Connection-related metadata key. Used for cache name only. */
     public static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
     public static final int CONN_NAME_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    public static final int SESS_TX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    public static final int SESS_TX_QUEUED_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /**
      * @param log Logger.
@@ -110,12 +119,16 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
         // server commands.
         addCommandHandler(new GridRedisDbSizeCommandHandler(log, hnd, ctx));
         addCommandHandler(new GridRedisFlushCommandHandler(log, hnd, ctx));
+        addCommandHandler(new GridRedisTransactionCommandHandler(log, ctx, handlers));
+        
         
         // list commands
         addCommandHandler(new GridRedisListAddCommandHandler(log,ctx));
         addCommandHandler(new GridRedisListPopCommandHandler(log,ctx));
         addCommandHandler(new GridRedisListRemCommandHandler(log,ctx));
-        addCommandHandler(new GridRedisListFindCommandHandler(log,ctx));
+        addCommandHandler(new GridRedisListsCommandHandler(log,ctx));
+        addCommandHandler(new GridRedisSetsCommandHandler(log,ctx));
+        addCommandHandler(new GridRedisSortedSetsCommandHandler(log,ctx));        
         
         // pubsub commands
         addCommandHandler(subscribeHandler);
@@ -157,7 +170,7 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
     @Override public void onMessage(final GridNioSession ses, final GridRedisMessage msg) {
         if (handlers.get(msg.command()) == null) {
             U.warn(log, "Cannot find the corresponding command (session will be closed) [ses=" + ses +
-                ", command=" + msg.command().name() + ']');
+                ", command=" + msg.aux(0) + ']');
 
             ses.close();
 
@@ -184,16 +197,26 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
             	}                
             }
             //end@
+            
+            // 开始事务，事务往往和pipeline同时开启
+            List<GridRedisMessage> queued = ses.meta(SESS_TX_QUEUED_META_KEY);
+        	if(queued!=null && !cmd.equals("MULTI") && !cmd.equals("EXEC") && !cmd.equals("DISCARD")) {
+        		queued.add(msg);
+        		msg.setResponse(GridRedisProtocolParser.toSimpleString("QUEUED"));
+        		sendResponse(ses, msg);
+        	}
+        	else {
 
-            IgniteInternalFuture<GridRedisMessage> f = handlers.get(msg.command()).handleAsync(ses, msg);
-
-            f.listen(new CIX1<IgniteInternalFuture<GridRedisMessage>>() {
-                @Override public void applyx(IgniteInternalFuture<GridRedisMessage> f) throws IgniteCheckedException {
-                    GridRedisMessage res = f.get();
-
-                    sendResponse(ses, res);
-                }
-            });
+	            IgniteInternalFuture<GridRedisMessage> f = handlers.get(msg.command()).handleAsync(ses, msg);
+	            
+	            f.listen(new CIX1<IgniteInternalFuture<GridRedisMessage>>() {
+	                @Override public void applyx(IgniteInternalFuture<GridRedisMessage> f) throws IgniteCheckedException {
+	                    GridRedisMessage res = f.get();
+	
+	                    sendResponse(ses, res);
+	                }
+	            });
+        	}
         }
     }
 

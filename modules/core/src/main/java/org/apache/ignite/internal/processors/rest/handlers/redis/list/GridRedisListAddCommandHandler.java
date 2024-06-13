@@ -24,17 +24,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
 
-import org.apache.ignite.IgniteAtomicLong;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
+
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.query.ScoredCacheEntry;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
@@ -42,6 +38,7 @@ import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisP
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
 
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.*;
 
@@ -116,13 +113,13 @@ public class GridRedisListAddCommandHandler implements GridRedisCommandHandler {
             return new GridFinishedFuture<>(msg);
         }
         else if(cmd == ZADD) {
-        	IgniteSet<ScoredCacheEntry<String,String>> list = ctx.grid().set(queueName, cfg);
+        	IgniteSet<ScoredItem<String>> list = ctx.grid().set(queueName,cfg);
         	
         	List<String> params = msg.aux();        	
         	for(int i=0;i<params.size();i+=2) {
         		double score = Double.parseDouble(params.get(i));
         		String value = params.get(i+1);
-        		ScoredCacheEntry<String,String> entry = new ScoredCacheEntry<>(value,null,score);
+        		ScoredItem<String> entry = new ScoredItem<>(value,score);
         		list.add(entry);
         	}  
             msg.setResponse(GridRedisProtocolParser.toInteger(list.size()));
