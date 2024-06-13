@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -182,9 +181,9 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
         p.clear();
 
         doTestDuplicateKeys(
-                () -> p.query(new SqlFieldsQuery("insert into Integer(_key, _val) values (1, ?), " +
-                        "(?, 5), (5, 6)").setArgs(2, 3)),
-                new SqlFieldsQuery("insert into Integer(_key, _val) values (?, ?)").setArgs(3, 5)
+            () -> p.query(new SqlFieldsQuery("insert into Integer(_key, _val) values (1, ?), " +
+                "(?, 5), (5, 6)").setArgs(2, 3)),
+            new SqlFieldsQuery("insert into Integer(_key, _val) values (?, ?)").setArgs(3, 5)
         );
     }
 
@@ -198,9 +197,9 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
         p.clear();
 
         doTestDuplicateKeys(
-                () -> p.put(3, 5),
-                new SqlFieldsQuery("insert into Integer(_key, _val) values (1, ?), " +
-                        "(?, 4), (5, 6)").setArgs(2, 3)
+            () -> p.put(3, 5),
+            new SqlFieldsQuery("insert into Integer(_key, _val) values (1, ?), " +
+                "(?, 4), (5, 6)").setArgs(2, 3)
         );
     }
 
@@ -212,14 +211,8 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
 
         initClosure.run();
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            /** {@inheritDoc} */
-            @Override public Void call() throws Exception {
-                p.query(sql);
-
-                return null;
-            }
-        }, CacheException.class, "Failed to INSERT some keys because they are already in cache [keys=[3]]");
+        GridTestUtils.assertThrows(log, () -> p.query(sql), CacheException.class,
+            "Failed to INSERT some keys because they are already in cache [keys=[3]]");
 
         assertEquals(2, (int)p.get(1));
         assertEquals(5, (int)p.get(3));

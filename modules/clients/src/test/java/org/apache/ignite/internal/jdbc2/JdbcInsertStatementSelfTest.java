@@ -160,9 +160,9 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
     @Test
     public void testDuplicatesSingleKey() {
         doTestDuplicateKeys(
-                () -> stmt.execute(SQL),
-                "insert into Person(_key, id, firstName, lastName, age, data) values " +
-                        "('p2', 2, 'Joe', 'Black', 35, RAWTOHEX('Black'))"
+            () -> stmt.execute(SQL),
+            "insert into Person(_key, id, firstName, lastName, age, data) values " +
+                "('p2', 2, 'Joe', 'Black', 35, RAWTOHEX('Black'))"
         );
     }
 
@@ -172,8 +172,8 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
     @Test
     public void testDuplicatesMultipleKeys() {
         doTestDuplicateKeys(
-                () -> jcache(0).put("p2", new Person(2, "Joe", "Black", 35)),
-                SQL
+            () -> jcache(0).put("p2", new Person(2, "Joe", "Black", 35)),
+            SQL
         );
     }
 
@@ -183,11 +183,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
     private void doTestDuplicateKeys(RunnableX initClosure, String sql) {
         initClosure.run();
 
-        Throwable reason = GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return stmt.execute(sql);
-            }
-        }, SQLException.class, null);
+        Throwable reason = GridTestUtils.assertThrows(log, () -> stmt.execute(sql), SQLException.class, null);
 
         reason = reason.getCause();
 

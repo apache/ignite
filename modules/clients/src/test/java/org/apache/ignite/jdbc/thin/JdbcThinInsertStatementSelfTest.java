@@ -23,7 +23,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.concurrent.Callable;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -196,9 +195,9 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
     @Test
     public void testDuplicatesSingleKey() throws InterruptedException {
         doTestDuplicateKeys(
-                () -> stmt.execute(SQL),
-                "insert into Person(_key, id, firstName, lastName, age) values " +
-                        "('p2', 2, 'Joe', 'Black', 35)"
+            () -> stmt.execute(SQL),
+            "insert into Person(_key, id, firstName, lastName, age) values " +
+                    "('p2', 2, 'Joe', 'Black', 35)"
         );
     }
 
@@ -208,8 +207,8 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
     @Test
     public void testDuplicatesMultipleKeys() throws InterruptedException {
         doTestDuplicateKeys(
-                () -> jcache(0).put("p2", new Person(2, "Joe", "Black", 35)),
-                SQL
+            () -> jcache(0).put("p2", new Person(2, "Joe", "Black", 35)),
+            SQL
         );
     }
 
@@ -220,17 +219,12 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
         initClosure.run();
 
         LogListener lsnr = LogListener
-                .matches("Failed to execute SQL query")
-                .build();
+            .matches("Failed to execute SQL query")
+            .build();
 
         srvLog.registerListener(lsnr);
 
-        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
-                /** {@inheritDoc} */
-                @Override public Object call() throws Exception {
-                    return stmt.execute(sql);
-                }
-            }, SQLException.class,
+        GridTestUtils.assertThrowsAnyCause(log, () -> stmt.execute(sql), SQLException.class,
             "Failed to INSERT some keys because they are already in cache [keys=[p2]]");
 
         assertFalse(lsnr.check(1000L));

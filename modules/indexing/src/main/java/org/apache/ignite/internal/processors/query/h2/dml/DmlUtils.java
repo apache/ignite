@@ -194,6 +194,7 @@ public class DmlUtils {
     @SuppressWarnings({"unchecked"})
     private static long dmlDoInsert(UpdatePlan plan, Iterable<List<?>> cursor, int pageSize) throws IgniteCheckedException {
         GridCacheContext cctx = plan.cacheContext();
+
         final String errMsg = "Failed to INSERT some keys because they are already in cache [keys=";
 
         // If we have just one item to put, just do so
