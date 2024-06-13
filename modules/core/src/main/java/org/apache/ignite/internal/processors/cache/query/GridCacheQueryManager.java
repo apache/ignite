@@ -1556,7 +1556,19 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             IndexQueryResult<K, V> idxQryRes = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(),
                 qry.scanFilter(), filter(qry, parts, parts != null), qry.keepBinary(), qry.taskHash());
 
-            return new IndexQueryIterator(idxQryRes.iter());
+            GridCloseableIterator<IgniteBiTuple<K, V>> iter  = idxQryRes.iter();
+
+            return new GridCloseableIteratorAdapter() {
+                @Override protected Object onNext() throws IgniteCheckedException {
+                    IgniteBiTuple<K, V> entry = iter.nextX();
+
+                    return new CacheEntryImpl<>(entry.getKey(), entry.getValue());
+                }
+
+                @Override protected boolean onHasNext() throws IgniteCheckedException {
+                    return iter.hasNextX();
+                }
+            };
         }
         finally {
             leaveBusy();
@@ -3489,58 +3501,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          */
         IgniteBiPredicate<K, V> scanFilter() {
             return scanFilter;
-        }
-    }
-
-    /** */
-    private static final class IndexQueryIterator<K, V> extends GridCloseableIteratorAdapter<Object> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final GridCloseableIterator<IgniteBiTuple<K, V>> iter;
-
-        /** */
-        private Cache.Entry<K, V> currVal;
-
-        /**
-         * @param iter Iterator.
-         */
-        IndexQueryIterator(GridCloseableIterator<IgniteBiTuple<K, V>> iter) {
-            this.iter = iter;
-        }
-
-        /** */
-        @Override protected Cache.Entry<K, V> onNext() throws IgniteCheckedException {
-            if (currVal == null) {
-                if (!onHasNext())
-                    throw new NoSuchElementException();
-            }
-
-            Cache.Entry<K, V> entry = currVal;
-
-            currVal = null;
-
-            return entry;
-        }
-
-        /** */
-        @Override protected boolean onHasNext() throws IgniteCheckedException {
-            if (currVal != null)
-                return true;
-
-            while (currVal == null && iter.hasNext()) {
-                IgniteBiTuple<K, V> entry = iter.next();
-
-                currVal = new CacheEntryImpl<>(entry.getKey(), entry.getValue());
-            }
-
-            return currVal != null;
-        }
-
-        /** */
-        @Override protected void onClose() throws IgniteCheckedException {
-            iter.close();
         }
     }
 }
