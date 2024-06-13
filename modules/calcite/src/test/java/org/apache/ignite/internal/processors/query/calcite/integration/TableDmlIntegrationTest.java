@@ -571,6 +571,20 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
         checkWrongDefault("UUID", "FALSE");
     }
 
+    /**
+     * Test checks the impossibility of inserting duplicate keys.
+     */
+    @Test
+    public void testInsertDuplicateKey() {
+        executeSql("CREATE TABLE test (a int primary key, b int)");
+
+        executeSql("INSERT INTO test VALUES (0, 0)");
+        executeSql("INSERT INTO test VALUES (1, 1)");
+
+        assertThrows("INSERT INTO test VALUES (1, 2)", IgniteSQLException.class,
+                "Failed to INSERT some keys because they are already in cache");
+    }
+
     /** */
     private void checkDefaultValue(String sqlType, String sqlVal, Object expectedVal) {
         try {
