@@ -21,9 +21,11 @@ import java.util.Objects;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -109,7 +111,23 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
             .setCriteria(lt("id", CNT / 2));
 
-        assert cache.query(qry.setLocal(true)).getAll().isEmpty();
+        GridTestUtils.assertThrows(null, () -> cache.query(qry.setLocal(true)).getAll(),
+            IgniteException.class,
+            "Failed to execute local index query on a client node.");
+    }
+
+    /** Should fail as the local node is a client node and the value type specified for query doesn't exist. */
+    @Test
+    public void testClientNodeNoValueType() throws Exception {
+        Ignite cln  = startClientGrid(6);
+
+        IndexQuery qry = new IndexQuery("ValType");
+
+        IgniteCache cache = cln.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        GridTestUtils.assertThrows(null, () -> cache.query(qry.setLocal(true)).getAll(),
+            IgniteException.class,
+            "Failed to execute local index query on a client node.");
     }
 
     /** */

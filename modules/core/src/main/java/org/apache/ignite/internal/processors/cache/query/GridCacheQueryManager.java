@@ -1517,7 +1517,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
             if (cctx.localNode().isClient())
-                return new GridEmptyCloseableIterator();
+                throw new IgniteException("Failed to execute local index query on a client node.");
 
             final Integer part = qry.partition();
 

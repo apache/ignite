@@ -172,15 +172,14 @@ public class IndexQueryPartitionTest extends GridCommonAbstractTest {
 
             qry.setLocal(true);
 
-            boolean fail = cacheMode == CacheMode.PARTITIONED &&
-                !grid().affinity("CACHE").mapPartitionToNode(part).equals(grid().localNode());
+            boolean fail = client || (cacheMode == CacheMode.PARTITIONED &&
+                !grid().affinity("CACHE").mapPartitionToNode(part).equals(grid().localNode()));
 
-            if (client)
-                assertTrue(grid().cache("CACHE").query(qry).getAll().isEmpty());
-            else if (fail) {
+            if (fail) {
                 GridTestUtils.assertThrows(null, () -> grid().cache("CACHE").query(qry).getAll(),
-                    CacheInvalidStateException.class,
-                    "Failed to execute index query because required partition has not been found on local node");
+                    client ? IgniteException.class : CacheInvalidStateException.class,
+                    client ? "Failed to execute local index query on a client node." :
+                        "Failed to execute index query because required partition has not been found on local node");
             }
             else
                 assertTrue(!grid().cache("CACHE").query(qry).getAll().isEmpty());
