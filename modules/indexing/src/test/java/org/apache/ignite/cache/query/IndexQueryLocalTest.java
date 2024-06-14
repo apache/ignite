@@ -118,7 +118,7 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
     /** Should fail as the local node is a client node and the value type specified for query doesn't exist. */
     @Test
     public void testClientNodeNoValueType() throws Exception {
-        Ignite cln  = startClientGrid(6);
+        Ignite cln = startClientGrid(6);
 
         IndexQuery qry = new IndexQuery("ValType");
 
