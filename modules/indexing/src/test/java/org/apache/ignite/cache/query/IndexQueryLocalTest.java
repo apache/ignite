@@ -112,8 +112,7 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
             .setCriteria(lt("id", CNT / 2));
 
         GridTestUtils.assertThrows(null, () -> cache.query(qry.setLocal(true)).getAll(),
-            IgniteException.class,
-            "Failed to execute local index query on a client node.");
+            IgniteException.class, "Failed to execute local index query on a client node.");
     }
 
     /** Should fail as the local node is a client node and the value type specified for query doesn't exist. */
@@ -126,8 +125,7 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
         IgniteCache cache = cln.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         GridTestUtils.assertThrows(null, () -> cache.query(qry.setLocal(true)).getAll(),
-            IgniteException.class,
-            "Failed to execute local index query on a client node.");
+            IgniteException.class, "Failed to execute local index query on a client node.");
     }
 
     /** */
