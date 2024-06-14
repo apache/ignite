@@ -173,9 +173,9 @@ public class IndexQueryPartitionTest extends GridCommonAbstractTest {
             qry.setLocal(true);
 
             boolean fail = client || (
-                cacheMode == CacheMode.PARTITIONED
+                    cacheMode == CacheMode.PARTITIONED
                     && !grid().affinity("CACHE").mapPartitionToNode(part).equals(grid().localNode())
-            );
+                );
 
             if (fail) {
                 GridTestUtils.assertThrows(null, () -> grid().cache("CACHE").query(qry).getAll(),
