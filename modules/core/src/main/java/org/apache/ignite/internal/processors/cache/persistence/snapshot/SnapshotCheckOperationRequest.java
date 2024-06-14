@@ -18,9 +18,12 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -35,7 +38,12 @@ public class SnapshotCheckOperationRequest extends AbstractSnapshotOperationRequ
     final boolean includeCustomHandlers;
 
     /** */
-    transient volatile GridFutureAdapter<IdleVerifyResultV2> clusterInitiatorFut;
+    @GridToStringExclude
+    transient volatile GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterInitiatorFut;
+
+    /** */
+    @GridToStringExclude
+    transient volatile Map<ClusterNode, List<SnapshotMetadata>> metas;
 
     /**
      * @param reqId    Request ID.

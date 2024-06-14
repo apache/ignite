@@ -39,6 +39,9 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
     @GridToStringInclude
     protected final Set<UUID> nodes;
 
+    /** Exception occurred during snapshot operation processing. */
+    private volatile Throwable err;
+
     /**
      * Snapshot operation warnings. Warnings do not interrupt snapshot process but raise exception at the end to make
      * the operation status 'not OK' if no other error occurred.
@@ -53,6 +56,9 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
 
     /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
     private transient volatile boolean startStageEnded;
+
+    /** If {@code true} then incremental snapshot requested. */
+    private final boolean incremental;
 
     /** If {@code true} snapshot only primary copies of partitions. */
     private final boolean onlyPrimary;
@@ -96,15 +102,26 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
     ) {
         super(reqId, opNodeId, snpName, snpPath, grps, incIdx);
 
-        assert incremental && incIdx > 0 || incIdx < 1;
-
         this.nodes = nodes;
+        this.incremental = incremental;
         this.onlyPrimary = onlyPrimary;
         this.dump = dump;
         this.compress = compress;
         this.encrypt = encrypt;
 
         init();
+    }
+
+    /**
+     * @return Baseline node IDs that must be alive to complete the operation.
+     */
+    public Set<UUID> nodes() {
+        return nodes;
+    }
+
+    /** @return {@code True} if incremental snapshot requested. */
+    public boolean incremental() {
+        return incremental;
     }
 
     /** @return If {@code true} snapshot only primary copies of partitions. */
@@ -125,13 +142,6 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
     /** @return If {@code true} then content of dump encrypted. */
     public boolean encrypt() {
         return encrypt;
-    }
-
-    /**
-     * @return Baseline node IDs that must be alive to complete the operation.
-     */
-    public Set<UUID> nodes() {
-        return nodes;
     }
 
     /**
@@ -158,7 +168,7 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
     /**
      * @param warnings Warnings of snapshot operation.
      */
-    public synchronized void warnings(List<String> warnings) {
+    public void warnings(List<String> warnings) {
         assert this.warnings == null;
 
         this.warnings = warnings;

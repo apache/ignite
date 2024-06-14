@@ -1896,12 +1896,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.ensure(grps == null || grps.stream().filter(Objects::isNull).collect(Collectors.toSet()).isEmpty(),
             "Collection of cache groups names cannot contain null elements.");
 
-        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
-
         if (log.isInfoEnabled()) {
             log.info("The check snapshot procedure started [snpName=" + name + ", snpPath=" + snpPath +
-                ", incIdx=" + incIdx + ", grps=" + grps + ']');
+                ", incIdx=" + incIdx + ", grps=" + grps + ", validateParts=" + check + ']');
         }
+
+        if (check && incIdx < 1)
+            return checkSnapshotByDistributedProcess(name, snpPath, grps, includeCustomHandlers);
+
+        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
 
         GridKernalContext kctx0 = cctx.kernalContext();
 
@@ -3197,10 +3200,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** */
-    public IgniteInternalFuture<IdleVerifyResultV2> checkSnapshotFully(String snpName) {
+    IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshotByDistributedProcess(
+        String snpName,
+        @Nullable String snpPath,
+        @Nullable Collection<String> grps,
+        boolean includeCustomHandlers
+    ) {
         assert !F.isEmpty(snpName);
 
-        return checkSnpProcesses.start(snpName, null, null, 0, false);
+        return checkSnpProcesses.start(snpName, snpPath, grps, includeCustomHandlers);
     }
 
     /** Snapshot operation handlers. */

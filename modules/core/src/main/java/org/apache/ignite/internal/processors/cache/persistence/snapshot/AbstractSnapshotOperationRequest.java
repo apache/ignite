@@ -162,11 +162,6 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
         return opNodeId;
     }
 
-    /** @return {@code True} if incremental snapshot requested. */
-    public boolean incremental() {
-        return incIdx > 0;
-    }
-
     /** @return Incremental index. */
     public int incrementIndex() {
         return incIdx;
