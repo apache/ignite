@@ -1528,7 +1528,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 if (locPart == null || locPart.state() != OWNING) {
                     throw new CacheInvalidStateException("Failed to execute index query because required partition " +
-                        "has not been found on local node [cacheName="  + cctx.name()  + ", part=" + part + "]");
+                        "has not been found on local node [cacheName=" + cctx.name() + ", part=" + part + "]");
                 }
 
                 parts = new int[] {part};
@@ -1556,7 +1556,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             IndexQueryResult<K, V> idxQryRes = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(),
                 qry.scanFilter(), filter(qry, parts, parts != null), qry.keepBinary(), qry.taskHash());
 
-            GridCloseableIterator<IgniteBiTuple<K, V>> iter  = idxQryRes.iter();
+            GridCloseableIterator<IgniteBiTuple<K, V>> iter = idxQryRes.iter();
 
             return new GridCloseableIteratorAdapter() {
                 @Override protected Object onNext() throws IgniteCheckedException {
