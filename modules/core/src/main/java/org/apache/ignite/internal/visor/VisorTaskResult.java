@@ -52,7 +52,7 @@ public class VisorTaskResult<R> extends IgniteDataTransferObject {
 
     /**
      * @return Task result.
-     * @throws Exception if the job was completed with an error.
+     * @throws Exception if the task was completed with an error.
      */
     public @Nullable R result() throws Exception {
         if (err != null)
