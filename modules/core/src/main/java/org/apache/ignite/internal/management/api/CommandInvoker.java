@@ -70,9 +70,9 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
      * @param printer Result printer.
      * @param verbose Use verbose mode or not
      * @return Result of operation (mostly usable for tests).
-     * @throws GridClientException In failed.
+     * @throws Exception In failed.
      */
-    public <R> R invoke(Consumer<String> printer, boolean verbose) throws GridClientException {
+    public <R> R invoke(Consumer<String> printer, boolean verbose) throws Exception {
         R res;
 
         if (cmd instanceof LocalCommand)
