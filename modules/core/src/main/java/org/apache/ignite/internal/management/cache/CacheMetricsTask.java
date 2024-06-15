@@ -35,7 +35,7 @@ import static org.apache.ignite.internal.management.cache.CacheMetricsOperation.
  * Task for a cache metrics command.
  */
 @GridInternal
-public class CacheMetricsTask extends VisorOneNodeTask<CacheMetricsCommandArg, CacheMetricsTaskResult> {
+public class CacheMetricsTask extends VisorOneNodeTask<CacheMetricsCommandArg, Map<String, Boolean>> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -47,9 +47,8 @@ public class CacheMetricsTask extends VisorOneNodeTask<CacheMetricsCommandArg, C
     /**
      * Job returns {@link Map} with names of processed caches paired with corresponding metrics collection statuses or
      * exception, caught during execution of job.
-     * Results are passed into instance of wrapper class {@link CacheMetricsTaskResult}.
      */
-    private static class CacheMetricsJob extends VisorJob<CacheMetricsCommandArg, CacheMetricsTaskResult> {
+    private static class CacheMetricsJob extends VisorJob<CacheMetricsCommandArg, Map<String, Boolean>> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -64,32 +63,25 @@ public class CacheMetricsTask extends VisorOneNodeTask<CacheMetricsCommandArg, C
         }
 
         /** {@inheritDoc} */
-        @Override protected CacheMetricsTaskResult run(@Nullable CacheMetricsCommandArg arg)
-            throws IgniteException {
-            if (arg != null) {
-                Collection<String> cacheNames = F.isEmpty(arg.caches()) ? ignite.cacheNames() : Arrays.asList(arg.caches());
+        @Override protected Map<String, Boolean> run(@Nullable CacheMetricsCommandArg arg) throws IgniteException {
+            if (arg == null)
+                return null;
 
-                try {
-                    switch (arg.operation()) {
-                        case ENABLE:
-                        case DISABLE:
-                            ignite.cluster().enableStatistics(cacheNames, ENABLE == arg.operation());
+            Collection<String> cacheNames = F.isEmpty(arg.caches()) ? ignite.cacheNames() : Arrays.asList(arg.caches());
 
-                            return new CacheMetricsTaskResult(cacheMetricsStatus(cacheNames));
+            switch (arg.operation()) {
+                case ENABLE:
+                case DISABLE:
+                    ignite.cluster().enableStatistics(cacheNames, ENABLE == arg.operation());
 
-                        case STATUS:
-                            return new CacheMetricsTaskResult(cacheMetricsStatus(cacheNames));
+                    return cacheMetricsStatus(cacheNames);
 
-                        default:
-                            throw new IllegalStateException("Unexpected value: " + arg.operation());
-                    }
-                }
-                catch (Exception e) {
-                    return new CacheMetricsTaskResult(e);
-                }
+                case STATUS:
+                    return cacheMetricsStatus(cacheNames);
+
+                default:
+                    throw new IllegalStateException("Unexpected value: " + arg.operation());
             }
-
-            return null;
         }
 
         /**
