@@ -335,11 +335,9 @@ public class SnapshotMetadataVerificationTask
             assert !results.isEmpty();
 
             for (ClusterNode node : nodes) {
-                Exception e = new IllegalArgumentException("Snapshot does not exists [snapshot=" + snpName
+                throw new IllegalArgumentException("Snapshot does not exists [snapshot=" + snpName
                     + (snpPath != null ? ", baseDir=" + snpPath : "") + ", consistentId="
                     + node.consistentId() + ']');
-
-                exs.put(node, e);
             }
         }
 

@@ -117,6 +117,8 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
 
     /** */
     void error(Throwable err) {
+        assert err != null;
+
         this.err = err;
     }
 

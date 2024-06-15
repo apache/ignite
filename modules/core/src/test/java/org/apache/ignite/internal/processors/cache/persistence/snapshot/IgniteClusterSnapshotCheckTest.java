@@ -235,7 +235,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         Assume.assumeFalse("One copy of partiton created in only primary mode", onlyPrimary);
 
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg.
-            setAffinity(new RendezvousAffinityFunction(false, 1)),
+                setAffinity(new RendezvousAffinityFunction(false, 1)),
             CACHE_KEYS_RANGE);
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
@@ -351,7 +351,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         // GridJobExecuteRequest is not send to the local node.
         assertTrue("Number of jobs must be equal to the cluster size (except local node): " + assigns + ", count: "
-                + assigns.size(), waitForCondition(() -> assigns.size() == 2, 5_000L));
+            + assigns.size(), waitForCondition(() -> assigns.size() == 2, 5_000L));
 
         assertTrue(F.isEmpty(res.exceptions()));
         assertPartitionsSame(res);
@@ -362,7 +362,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     @Test
     public void testClusterSnapshotCheckCRCFail() throws Exception {
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg.
-                setAffinity(new RendezvousAffinityFunction(false, 1)), CACHE_KEYS_RANGE);
+            setAffinity(new RendezvousAffinityFunction(false, 1)), CACHE_KEYS_RANGE);
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
@@ -510,10 +510,10 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             new SnapshotPartitionsVerifyTaskArg(
                 new HashSet<>(),
                 Collections.singletonMap(ignite.cluster().localNode(),
-                Collections.singletonList(snp(ignite).readSnapshotMetadata(
-                    snp(ignite).snapshotLocalDir(SNAPSHOT_NAME),
-                    (String)ignite.configuration().getConsistentId()
-                ))),
+                    Collections.singletonList(snp(ignite).readSnapshotMetadata(
+                        snp(ignite).snapshotLocalDir(SNAPSHOT_NAME),
+                        (String)ignite.configuration().getConsistentId()
+                    ))),
                 null,
                 0,
                 true
@@ -597,6 +597,16 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         int createdThreads = Thread.activeCount() - activeThreadsCntBefore;
 
         assertTrue("Threads created: " + createdThreads, createdThreads < iterations);
+    }
+
+    /** */
+    @Test
+    public void testCheckSnpFromSecondNOde() throws Exception {
+        IgniteEx ignite = startGrids(3);
+
+        ignite.cluster().state(ACTIVE);
+
+        
     }
 
     /** */

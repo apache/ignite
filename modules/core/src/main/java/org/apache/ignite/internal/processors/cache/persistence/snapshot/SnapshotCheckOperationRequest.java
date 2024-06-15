@@ -45,6 +45,9 @@ public class SnapshotCheckOperationRequest extends AbstractSnapshotOperationRequ
     @GridToStringExclude
     transient volatile Map<ClusterNode, List<SnapshotMetadata>> metas;
 
+    /** Curent working future */
+    transient volatile GridFutureAdapter<?> fut;
+
     /**
      * @param reqId    Request ID.
      * @param opNodeId Operational node ID.
@@ -67,6 +70,14 @@ public class SnapshotCheckOperationRequest extends AbstractSnapshotOperationRequ
         super(reqId, opNodeId, snpName, snpPath, grps, incIdx);
 
         this.includeCustomHandlers = includeCustomHandlers;
+    }
+
+    /** {@inheritDoc} */
+    @Override synchronized void error(Throwable err) {
+        assert err != null;
+
+        if (error() == null)
+            super.error(err);
     }
 
     /** {@inheritDoc} */
