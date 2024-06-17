@@ -501,7 +501,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         parserMetrics.countCacheMiss();
 
-        QueryProperties qryProps = qryCtx.unwrap(QueryProperties.class);
+        QueryProperties qryProps = qryCtx != null ? qryCtx.unwrap(QueryProperties.class) : null;
 
         SqlNodeList qryList = Commons.parse(sql, FRAMEWORK_CONFIG.getParserConfig());
 
