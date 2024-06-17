@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -178,8 +179,9 @@ public class IndexQueryPartitionTest extends GridCommonAbstractTest {
 
             if (fail) {
                 GridTestUtils.assertThrows(null, () -> grid().cache("CACHE").query(qry).getAll(),
-                    IgniteException.class,
-                    "Cluster group is empty.");
+                    client ? IgniteException.class : CacheInvalidStateException.class,
+                    client ? "Failed to execute local index query on a client node." :
+                        "Failed to execute index query because required partition has not been found on local node");
             }
             else
                 assertTrue(!grid().cache("CACHE").query(qry).getAll().isEmpty());
