@@ -155,11 +155,11 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
     }
 
     /**
-     * Checks whether it's impossible to insert single duplicate key.
+     * Checks whether it's impossible to insert duplicate in single key statement.
      */
     @Test
-    public void testDuplicatesSingleKey() {
-        doTestDuplicateKeys(
+    public void testDuplicateSingleKey() {
+        doTestDuplicate(
             () -> stmt.execute(SQL),
             "insert into Person(_key, id, firstName, lastName, age, data) values " +
                 "('p2', 2, 'Joe', 'Black', 35, RAWTOHEX('Black'))"
@@ -167,11 +167,11 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
     }
 
     /**
-     * Checks whether it's impossible to insert multiple duplicate keys.
+     * Checks whether it's impossible to insert duplicate in multiple keys statement.
      */
     @Test
-    public void testDuplicatesMultipleKeys() {
-        doTestDuplicateKeys(
+    public void testDuplicateMultipleKeys() {
+        doTestDuplicate(
             () -> jcache(0).put("p2", new Person(2, "Joe", "Black", 35)),
             SQL
         );
@@ -180,7 +180,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
     /**
      *
      */
-    private void doTestDuplicateKeys(RunnableX initClosure, String sql) {
+    private void doTestDuplicate(RunnableX initClosure, String sql) {
         initClosure.run();
 
         Throwable reason = GridTestUtils.assertThrows(log, () -> stmt.execute(sql), SQLException.class, null);
@@ -189,7 +189,8 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
 
         assertNotNull(reason);
 
-        assertTrue(reason.getMessage().contains("Failed to INSERT some keys because they are already in cache [keys=[p2]]"));
+        assertTrue(reason.getMessage().contains(
+                "Failed to INSERT some keys because they are already in cache [keys=[p2]]"));
 
         assertEquals(3, jcache(0).withKeepBinary().getAll(new HashSet<>(Arrays.asList("p1", "p2", "p3"))).size());
     }
