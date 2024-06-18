@@ -17,9 +17,6 @@
 package org.apache.ignite.internal.processors.query.calcite.thin;
 
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -29,6 +26,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,28 +55,25 @@ public class MultiLineQueryTest extends GridCommonAbstractTest {
     /** */
     @Parameterized.Parameters(name = "engine={0}")
     public static List<Object> parameters() {
-        return Stream.of(H2_ENGINE, CALCITE_ENGINE).collect(Collectors.toList());
+        return F.asList(H2_ENGINE, CALCITE_ENGINE);
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName).setSqlConfiguration(
-                new SqlConfiguration().setQueryEnginesConfiguration(
-                        new IndexingQueryEngineConfiguration(),
-                        new CalciteQueryEngineConfiguration()
-                )
+            new SqlConfiguration().setQueryEnginesConfiguration(
+                new IndexingQueryEngineConfiguration(),
+                new CalciteQueryEngineConfiguration()
+            )
         );
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
         startGrids(1);
-    }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
         cli = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1"));
 
         execute("create table if not exists test(id int primary key, val varchar)");
@@ -86,28 +81,15 @@ public class MultiLineQueryTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        try {
-            Ignite ig = grid(0);
+        if (cli != null) {
+            cli.close();
 
-            ig.destroyCaches(ig.cacheNames());
-
-            if (cli != null)
-                cli.close();
-        }
-        finally {
             cli = null;
         }
-        super.afterTest();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        if (cli != null)
-            cli.close();
 
         stopAllGrids();
 
-        super.afterTestsStopped();
+        super.afterTest();
     }
 
     /** */

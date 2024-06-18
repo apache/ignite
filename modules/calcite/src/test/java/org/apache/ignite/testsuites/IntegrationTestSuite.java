@@ -136,7 +136,7 @@ import org.junit.runners.Suite;
     IndexWithSameNameCalciteTest.class,
     AuthorizationIntegrationTest.class,
     DdlTransactionCalciteSelfTest.class,
-    MultiLineQueryTest.class
+    MultiLineQueryTest.class,
 })
 public class IntegrationTestSuite {
 }

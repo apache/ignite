@@ -507,7 +507,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         if (qryList.size() > 1 && qryProps != null && qryProps.isFailOnMultipleStmts()) {
             throw new IgniteSQLException("Multiple statements queries are not supported.",
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
         List<T> res = new ArrayList<>(qryList.size());
