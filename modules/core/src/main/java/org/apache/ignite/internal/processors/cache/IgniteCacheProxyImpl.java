@@ -81,6 +81,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryAdapter;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -556,6 +557,17 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
             if (q.getLimit() > 0)
                 qry.limit(q.getLimit());
+
+            if (query.isLocal()) {
+                final GridCloseableIterator iter = ctx.kernalContext().query().executeQuery(GridCacheQueryType.INDEX,
+                    cacheName, ctx, new IgniteOutClosureX<GridCloseableIterator>() {
+                        @Override public GridCloseableIterator applyx() throws IgniteCheckedException {
+                            return ctx.queries().indexQueryLocal((GridCacheQueryAdapter)qry);
+                        }
+                    }, true);
+
+                return new QueryCursorImpl(iter);
+            }
 
             fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.INDEX, q.getValueType(), ctx,
                 new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {

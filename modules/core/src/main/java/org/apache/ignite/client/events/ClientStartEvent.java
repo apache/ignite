@@ -15,42 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.client.events;
 
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 
 /**
- * Additional properties to execute the query (Stored in {@link QueryContext}).
+ * Event, triggered when Ignite client is started.
  */
-public final class QueryProperties {
+public class ClientStartEvent implements ClientLifecycleEvent {
     /** */
-    @Nullable String cacheName;
+    private final IgniteClient client;
 
     /** */
-    private final boolean keepBinary;
+    private final ClientConfiguration cfg;
 
-    /** */
-    private final boolean failOnMultipleStmts;
-
-    /** */
-    public QueryProperties(@Nullable String cacheName, boolean keepBinary, boolean failOnMultipleStmts) {
-        this.cacheName = cacheName;
-        this.keepBinary = keepBinary;
-        this.failOnMultipleStmts = failOnMultipleStmts;
+    /**
+     * @param client Ignite client instance.
+     * @param cfg Client configuration.
+     */
+    public ClientStartEvent(IgniteClient client, ClientConfiguration cfg) {
+        this.client = client;
+        this.cfg = cfg;
     }
 
-    /** */
-    public boolean keepBinary() {
-        return keepBinary;
+    /**
+     * @return Client configuration.
+     */
+    public ClientConfiguration configuration() {
+        return cfg;
     }
 
-    /** */
-    public boolean isFailOnMultipleStmts() {
-        return failOnMultipleStmts;
-    }
-
-    /** */
-    public @Nullable String cacheName() {
-        return cacheName;
+    /**
+     * @return Ignite client instance.
+     */
+    public IgniteClient client() {
+        return client;
     }
 }
