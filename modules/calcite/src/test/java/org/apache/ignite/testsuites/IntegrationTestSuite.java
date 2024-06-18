@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.JoinCommuteRulesTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.ProjectScanMergeRuleTest;
+import org.apache.ignite.internal.processors.query.calcite.thin.MultiLineQueryTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -135,6 +136,7 @@ import org.junit.runners.Suite;
     IndexWithSameNameCalciteTest.class,
     AuthorizationIntegrationTest.class,
     DdlTransactionCalciteSelfTest.class,
+    MultiLineQueryTest.class,
 })
 public class IntegrationTestSuite {
 }
