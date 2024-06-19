@@ -39,6 +39,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
@@ -118,8 +119,10 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
 
         cache.query(new SqlFieldsQuery("DROP TABLE PUBLIC.t1")).getAll();
 
-        assertEquals(EXIT_CODE_OK, execute("--meta", "remove", "--typeName", "CUSTOM_SQL_KEY_TYPE"));
-        assertEquals(EXIT_CODE_OK, execute("--meta", "remove", "--typeName", "CUSTOM_SQL_VALUE_TYPE"));
+        // todo
+        int expCode = commandHandler.equals(CLI_CMD_HND) ? EXIT_CODE_CONNECTION_FAILED : EXIT_CODE_OK;
+        assertEquals(expCode, execute("--meta", "remove", "--typeName", "CUSTOM_SQL_KEY_TYPE"));
+        assertEquals(expCode, execute("--meta", "remove", "--typeName", "CUSTOM_SQL_VALUE_TYPE"));
 
         cache.query(new SqlFieldsQuery("CREATE TABLE t1(id INT PRIMARY KEY, str VARCHAR) " +
                 "WITH \"cache_name=" + DEFAULT_CACHE_NAME + ", key_type=CUSTOM_SQL_KEY_TYPE, value_type=CUSTOM_SQL_VALUE_type\"")

@@ -188,7 +188,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
         assertEquals(EXIT_CODE_OK, execute(
             cmd,
             "--port",
-            grid(0).localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString(),
+            connectorPort(grid(0)),
             "--defragmentation",
             "cancel"
         ));

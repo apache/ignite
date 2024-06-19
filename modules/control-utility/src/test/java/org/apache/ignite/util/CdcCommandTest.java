@@ -208,7 +208,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         String out = executeCommand(EXIT_CODE_UNEXPECTED_ERROR,
             CDC, DELETE_LOST_SEGMENT_LINKS, NODE_ID, srv0.localNode().id().toString());
 
-        if (commandHandler.equals(CLI_CMD_HND))
+        if (cliCommandHandler())
             assertContains(log, out, "Failed to delete lost segment CDC links. Unable to acquire lock to lock CDC folder.");
 
         assertFalse(fut.isDone());
@@ -330,7 +330,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         String out = executeCommand(EXIT_CODE_UNEXPECTED_ERROR, CDC, RESEND, CACHES, "unknown_cache");
 
-        if (commandHandler.equals(CLI_CMD_HND))
+        if (cliCommandHandler())
             assertContains(log, out, "Cache does not exist");
 
         String cdcDisabledCacheName = "cdcDisabledCache";
@@ -341,7 +341,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         out = executeCommand(EXIT_CODE_UNEXPECTED_ERROR, CDC, RESEND, CACHES, cdcDisabledCacheName);
 
-        if (commandHandler.equals(CLI_CMD_HND))
+        if (cliCommandHandler())
             assertContains(log, out, "CDC is not enabled for given cache");
     }
 
@@ -372,7 +372,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
     /** */
     @Test
     public void testResendCancelOnRebalanceInProgress() throws Exception {
-        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
+        Assume.assumeTrue(cliCommandHandler());
 
         injectTestSystemOut();
 
@@ -426,7 +426,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
             String out = executeCommand(EXIT_CODE_UNEXPECTED_ERROR,
                 CDC, RESEND, CACHES, DEFAULT_CACHE_NAME);
 
-            if (commandHandler.equals(CLI_CMD_HND))
+            if (cliCommandHandler())
                 assertContains(log, out, "CDC cache data resend cancelled. Topology changed");
         });
 
@@ -466,7 +466,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
             String out = executeCommand(EXIT_CODE_UNEXPECTED_ERROR,
                 CDC, RESEND, CACHES, DEFAULT_CACHE_NAME);
 
-            if (commandHandler.equals(CLI_CMD_HND))
+            if (cliCommandHandler())
                 assertContains(log, out, "CDC cache data resend cancelled. Topology changed");
         });
 

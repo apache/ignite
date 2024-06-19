@@ -41,6 +41,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientCacheMode;
@@ -550,13 +551,18 @@ public class CommandUtils {
      * @param ignite Ignite node.
      * @return Collection of cluster nodes.
      */
-    public static Collection<GridClientNode> nodes(@Nullable GridClient cli, @Nullable Ignite ignite) throws GridClientException {
+    public static Collection<GridClientNode> nodes(
+        @Nullable GridClient cli,
+        @Nullable IgniteClient client,
+        @Nullable Ignite ignite
+    ) throws GridClientException {
         if (cli != null)
             return cli.compute().nodes();
 
-        return ignite.cluster().nodes().stream()
-            .map(CommandUtils::clusterToClientNode)
-            .collect(Collectors.toList());
+        if (client != null)
+            return F.viewReadOnly(client.cluster().nodes(), CommandUtils::clusterToClientNode);
+
+        return F.viewReadOnly(ignite.cluster().nodes(), CommandUtils::clusterToClientNode);
     }
 
     /**
@@ -764,6 +770,7 @@ public class CommandUtils {
     /** */
     public static <A, R> R execute(
         @Nullable GridClient cli,
+        @Nullable IgniteClient client,
         @Nullable Ignite ignite,
         Class<? extends VisorMultiNodeTask<A, R, ?>> taskCls,
         A arg,
@@ -788,6 +795,19 @@ public class CommandUtils {
                 taskCls.getName(),
                 new VisorTaskArgument<>(nodesIds, arg, false)
             )).result();
+        }
+
+        if (client != null) {
+            try {
+                return client.compute(client.cluster().forNodes(client.cluster().nodes()))
+                    .<VisorTaskArgument<A>, VisorTaskResult<R>>execute(
+                        taskCls.getName(),
+                        new VisorTaskArgument<>(nodesIds, arg, false)
+                    ).result();
+            }
+            catch (InterruptedException e) {
+                throw new IgniteException(e);
+            }
         }
 
         return ignite

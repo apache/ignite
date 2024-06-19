@@ -1282,7 +1282,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      * @return System view values.
      */
     private Map<UUID, List<List<String>>> parseSystemViewCommandOutput(String out) {
-        if (commandHandler.equals(CLI_CMD_HND)) {
+        if (cliCommandHandler()) {
             String outStart = "--------------------------------------------------------------------------------";
 
             String outEnd = "Command [SYSTEM-VIEW] finished with code: " + EXIT_CODE_OK;
