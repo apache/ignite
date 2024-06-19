@@ -828,7 +828,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
     }
 
     /** */
-    private void checkData(Map<?, ?> expData, String cacheName) {
+    private void checkData(Map<?, ?> expData, String cacheName) throws Exception {
         List<Cache.Entry<Object, Object>> actData = grid(0).cache(cacheName).withKeepBinary().query(new ScanQuery<>()).getAll();
 
         assertEquals(actData.size(), expData.size());
@@ -862,7 +862,9 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
             new VisorTaskArgument<>(
                 G.allGrids().stream().map(ign -> ign.cluster().localNode().id()).collect(Collectors.toList()),
                 arg,
-                false));
+                false
+            )
+        ).result();
 
         assertFalse(res.message(), res.cancelled());
         assertFalse(res.message(), res.failed());

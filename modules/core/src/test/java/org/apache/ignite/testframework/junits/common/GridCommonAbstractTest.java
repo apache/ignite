@@ -130,6 +130,7 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.VisorTaskResult;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -2223,7 +2224,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Conflicts result.
      * @throws IgniteException If none caches or node found.
      */
-    protected IdleVerifyResultV2 idleVerify(Ignite ig, @Nullable String... caches) {
+    protected IdleVerifyResultV2 idleVerify(Ignite ig, @Nullable String... caches) throws Exception {
         log.info("Starting idleVerify ...");
 
         IgniteEx ig0 = (IgniteEx)ig;
@@ -2247,10 +2248,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         taskArg.caches(cacheNames.toArray(U.EMPTY_STRS));
 
-        return ig.compute().execute(
+        return ((VisorTaskResult<IdleVerifyResultV2>)ig.compute().execute(
             IdleVerifyTaskV2.class.getName(),
             new VisorTaskArgument<>(node.id(), taskArg, false)
-        );
+        )).result();
     }
 
     /**

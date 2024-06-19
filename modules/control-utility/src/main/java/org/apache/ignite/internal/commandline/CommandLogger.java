@@ -17,28 +17,26 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.stream.Collectors;
+import org.apache.ignite.compute.ComputeUserUndeclaredException;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Utility class for creating {@code CommangHandler} log messages.
  */
 public class CommandLogger {
     /**
-     * Generates readable error message from exception
-     * @param e Exctption
-     * @return error message
+     * Generates readable error message from exception.
+     * @param ex Exception.
+     * @return Error message.
      */
-    public static String errorMessage(Throwable e) {
-        String msg = e.getMessage();
-
-        if (F.isEmpty(msg))
-            msg = e.getClass().getName();
-        else if (msg.startsWith("Failed to handle request")) {
-            int p = msg.indexOf("err=");
-
-            msg = msg.substring(p + 4, msg.length() - 1);
-        }
-
-        return msg;
+    public static String errorMessage(Throwable ex) {
+        return X.getThrowableList(ex).stream()
+            .filter(e -> !(e instanceof ComputeUserUndeclaredException))
+            .map(e -> F.isEmpty(e.getMessage()) ? e.getClass().getName() : e.getMessage())
+            .distinct()
+            .collect(Collectors.joining(U.nl()));
     }
 }

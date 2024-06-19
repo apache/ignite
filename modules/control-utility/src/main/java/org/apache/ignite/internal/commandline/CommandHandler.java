@@ -288,20 +288,10 @@ public class CommandHandler {
 
                     if (args.command() instanceof HelpCommand)
                         printUsage(logger, args.cmdPath().peekLast());
-                    else {
-                        try {
-                            if (args.command() instanceof BeforeNodeStartCommand)
-                                lastOperationRes = invoker.invokeBeforeNodeStart(logger::info);
-                            else
-                                lastOperationRes = invoker.invoke(logger::info, args.verbose());
-                        }
-                        catch (Throwable e) {
-                            logger.error("Failed to perform operation.");
-                            logger.error(CommandLogger.errorMessage(e));
-
-                            throw e;
-                        }
-                    }
+                    else if (args.command() instanceof BeforeNodeStartCommand)
+                        lastOperationRes = invoker.invokeBeforeNodeStart(logger::info);
+                    else
+                        lastOperationRes = invoker.invoke(logger::info, args.verbose());
 
                     break;
                 }
@@ -335,16 +325,9 @@ public class CommandHandler {
 
             return EXIT_CODE_OK;
         }
-        catch (IllegalArgumentException e) {
-            logger.error("Check arguments. " + errorMessage(e));
-            logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
-
-            if (verbose)
-                err = e;
-
-            return EXIT_CODE_INVALID_ARGUMENTS;
-        }
         catch (Throwable e) {
+            logger.error("Failed to perform operation.");
+
             if (isAuthError(e)) {
                 logger.error("Authentication error. " + errorMessage(e));
                 logger.info("Command [" + cmdName + "] finished with code: " + ERR_AUTHENTICATION_FAILED);

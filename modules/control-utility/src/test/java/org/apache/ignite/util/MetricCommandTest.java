@@ -108,7 +108,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
 
         assertContains(log,
             executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, "--node-id", incorrectNodeId, IGNITE_METRICS),
-            "Failed to perform operation.\nNode with id=" + incorrectNodeId + " not found");
+            "Check arguments. Node with id=" + incorrectNodeId + " not found");
     }
 
     /** Tests command output in case nonexistent metric name is specified. */
