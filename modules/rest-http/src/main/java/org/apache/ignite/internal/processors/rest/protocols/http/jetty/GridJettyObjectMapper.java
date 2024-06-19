@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.jackson;
+package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
 import java.io.IOException;
 import java.sql.Date;
@@ -59,18 +59,18 @@ import org.apache.ignite.lang.IgniteUuid;
 /**
  * Custom object mapper for HTTP REST API.
  */
-public class IgniteObjectMapper extends ObjectMapper {
+public class GridJettyObjectMapper extends ObjectMapper {
     /**
      * Default constructor.
      */
-    public IgniteObjectMapper() {
+    public GridJettyObjectMapper() {
         this(null);
     }
 
     /**
      * @param ctx Defines a kernal context to enable deserialization into the Ignite binary object.
      */
-    public IgniteObjectMapper(GridKernalContext ctx) {
+    GridJettyObjectMapper(GridKernalContext ctx) {
         super(null, new CustomSerializerProvider(), null);
 
         setDateFormat(DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, Locale.US));

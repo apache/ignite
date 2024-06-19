@@ -42,8 +42,8 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.jackson.IgniteObjectMapper;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
+import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
@@ -64,7 +64,7 @@ public abstract class AbstractEventSecurityContextTest extends AbstractSecurityT
     protected static final Map<ClusterNode, Collection<Event>> LISTENED_EVTS = new ConcurrentHashMap<>();
 
     /** Custom object mapper for HTTP REST API.  */
-    private static final ObjectMapper OBJECT_MAPPER = new IgniteObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = new GridJettyObjectMapper();
 
     /** Port for REST client connection. */
     private static final String DFLT_REST_PORT = "11080";
