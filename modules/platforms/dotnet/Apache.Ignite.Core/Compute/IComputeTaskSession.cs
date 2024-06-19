@@ -29,23 +29,11 @@ namespace Apache.Ignite.Core.Compute
         /// <summary>
         /// Gets the value of the given key or <c>null</c> if the key does not exist.
         /// </summary>
-        TV GetAttribute<TV>(object key);
+        TV GetAttribute<TK, TV>(TK key);
 
         /// <summary>
         /// Stores the collection of attributes.
         /// </summary>
-        void SetAttributes<TK, TV>(IEnumerable<KeyValuePair<TK, TV>> attrs);
-    }
-
-    /// <summary>
-    /// Extends <see cref="IComputeTaskSession"/>.
-    /// </summary>
-    public static class ComputeTaskSessionExtensions
-    {
-        /// <summary>
-        /// Stores one attribute with the given key and value.
-        /// </summary>
-        public static void SetAttribute<TK, TV>(this IComputeTaskSession target, TK key, TV value) =>
-            target?.SetAttributes(new[] {new KeyValuePair<TK, TV>(key, value)});
+        void SetAttributes<TK, TV>(params KeyValuePair<TK, TV>[] attrs);
     }
 }

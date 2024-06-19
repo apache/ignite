@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <inheritdoc />
             protected override ICollection<IComputeJob<int>> Split(int gridSize, int attrValue)
             {
-                _taskSession.SetAttribute(_attrName, attrValue);
+                _taskSession.SetAttributes(KeyValuePair.Create(_attrName, attrValue));
                 return new List<IComputeJob<int>> {new SessionAttributeGetterJob(_attrName)};
             }
         }
@@ -121,7 +121,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
 
             /// <inheritdoc />
-            public override int Execute() => _taskSession.GetAttribute<int>(_attrName);
+            public override int Execute() => _taskSession.GetAttribute<string, int>(_attrName);
         }
     }
 }

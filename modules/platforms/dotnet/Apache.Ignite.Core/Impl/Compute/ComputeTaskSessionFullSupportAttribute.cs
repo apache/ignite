@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Compute
     /// <see cref="IComputeTask{TArg,TJobRes,TRes}"/> implementations must be annotated with the
     /// <see cref="ComputeTaskSessionFullSupportAttribute"/> to enable the features depending on the
     /// <see cref="IComputeTaskSession"/> attributes.
+    /// By default attributes and checkpoints are disabled for performance reasons.
     /// </summary>
     [AttributeUsage(Class | Struct)]
     public sealed class ComputeTaskSessionFullSupportAttribute : Attribute

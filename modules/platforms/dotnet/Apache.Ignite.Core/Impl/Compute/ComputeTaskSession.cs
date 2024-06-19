@@ -43,11 +43,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /// <inheritdoc />
-        public TV GetAttribute<TV>(object key) =>
+        public TV GetAttribute<TK, TV>(TK key) =>
             DoOutInOp<TV>((int) Op.GetAttribute, w => w.Write(key));
 
         /// <inheritdoc />
-        public void SetAttributes<TK, TV>(IEnumerable<KeyValuePair<TK, TV>> attrs) =>
+        public void SetAttributes<TK, TV>(params KeyValuePair<TK, TV>[] attrs) =>
             DoOutOp((int) Op.SetAttributes, writer => writer.WriteDictionary(attrs));
     }
 }
