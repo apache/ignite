@@ -190,7 +190,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
         assertNotNull(reason);
 
         assertTrue(reason.getMessage().contains(
-                "Failed to INSERT some keys because they are already in cache [keys=[p2]]"));
+            "Failed to INSERT some keys because they are already in cache [keys=[p2]]"));
 
         assertEquals(3, jcache(0).withKeepBinary().getAll(new HashSet<>(Arrays.asList("p1", "p2", "p3"))).size());
     }

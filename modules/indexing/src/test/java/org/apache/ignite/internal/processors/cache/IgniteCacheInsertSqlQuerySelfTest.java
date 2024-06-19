@@ -198,12 +198,12 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      *
      */
-    private void doTestDuplicate(Consumer<IgniteCache<Integer, Integer>> cacheAction, SqlFieldsQuery sql) {
+    private void doTestDuplicate(Consumer<IgniteCache<Integer, Integer>> initAction, SqlFieldsQuery sql) {
         final IgniteCache<Integer, Integer> p = ignite(0).cache("I2I");
 
         p.clear();
 
-        cacheAction.accept(p);
+        initAction.accept(p);
 
         GridTestUtils.assertThrows(log, () -> p.query(sql), CacheException.class,
             "Failed to INSERT some keys because they are already in cache [keys=[3]]");
