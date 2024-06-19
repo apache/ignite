@@ -23,12 +23,13 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSn
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /**
  * @see IgniteSnapshot#createSnapshot(String)
  */
 @GridInternal
-public class SnapshotCreateTask extends SnapshotOneNodeTask<SnapshotCreateCommandArg, String> {
+public class SnapshotCreateTask extends VisorOneNodeTask<SnapshotCreateCommandArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 

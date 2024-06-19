@@ -42,7 +42,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.ComputeTaskInternalFuture;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandArg;
 import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
@@ -223,12 +222,10 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
         arg.checkCrc(true);
         arg.checkSizes(true);
 
-        VisorTaskArgument<CacheValidateIndexesCommandArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
-
-        ComputeTaskInternalFuture<ValidateIndexesTaskResult> exec = grid1.context().task().
-            execute(new ValidateIndexesTask(), visorTaskArg);
-
-        ValidateIndexesTaskResult res = exec.get();
+        ValidateIndexesTaskResult res = grid1.context().task().execute(
+            new ValidateIndexesTask(),
+            new VisorTaskArgument<>(nodes, arg, true)
+        ).get().result();
 
         Map<?, ValidateIndexesJobResult> results = res.results();
 
@@ -322,12 +319,10 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
         arg.checkCrc(true);
         arg.checkSizes(true);
 
-        VisorTaskArgument<CacheValidateIndexesCommandArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
-
-        ComputeTaskInternalFuture<ValidateIndexesTaskResult> exec = grid1.context().task().
-            execute(new ValidateIndexesTask(), visorTaskArg);
-
-        ValidateIndexesTaskResult res = exec.get();
+        ValidateIndexesTaskResult res = grid1.context().task().execute(
+            new ValidateIndexesTask(),
+            new VisorTaskArgument<>(nodes, arg, true)
+        ).get().result();
 
         Map<?, ValidateIndexesJobResult> results = res.results();
 
