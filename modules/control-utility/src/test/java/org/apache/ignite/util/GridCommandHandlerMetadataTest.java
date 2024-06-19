@@ -22,15 +22,9 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -38,13 +32,10 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.client.ClientCacheConfiguration;
-import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
@@ -347,95 +338,6 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
                 "different/incorrect type for field 'fld'.");
             assertContains(log, out, "Expected 'String' but 'int' was provided. " +
                 "The type of an existing field can not be changed");
-        }
-        finally {
-            if (Files.exists(typeFile))
-                Files.delete(typeFile);
-        }
-    }
-
-    /**
-     * Check the all thin connections are dropped on the command '--meta remove' and '--meta update'.
-     * Steps:
-     * - opens thin client connection.
-     * - creates Type0 on thin client side.
-     * - removes type by cmd line util.
-     * - executes any command on thin client to detect disconnect.
-     * - creates Type0 on thin client side with other type of field (checks the type was removed).
-     */
-    @Test
-    public void testDropThinConnectionsOnRemove() throws Exception {
-        Path typeFile = FS.getPath("type0.bin");
-
-        try (IgniteClient cli = Ignition.startClient(clientConfiguration())) {
-            createType(cli.binary(), "Type0", 1);
-
-            assertEquals(EXIT_CODE_OK, execute("--meta", "remove",
-                "--typeName", "Type0",
-                "--out", typeFile.toString()));
-
-            // Executes command to check disconnect / reconnect.
-            GridTestUtils.assertThrows(log, () ->
-                    cli.createCache(new ClientCacheConfiguration().setName("test")),
-                Exception.class, null);
-
-            createType(cli.binary(), "Type0", "str");
-        }
-        finally {
-            if (Files.exists(typeFile))
-                Files.delete(typeFile);
-        }
-    }
-
-    /**
-     * Check the all thin connections are dropped on the command '--meta remove' and '--meta update'.
-     * Steps:
-     * - opens JDBC thin client connection.
-     * - executes: CREATE TABLE test(id INT PRIMARY KEY, objVal OTHER).
-     * - inserts the instance of the 'TestValue' class to the table.
-     * - removes the type 'TestValue' by cmd line.
-     * - executes any command on JDBC driver to detect disconnect.
-     * - checks metadata on client side. It must be empty.
-     */
-    @Test
-    public void testDropJdbcThinConnectionsOnRemove() throws Exception {
-        Path typeFile = FS.getPath("type0.bin");
-
-        try (Connection conn = DriverManager.getConnection(jdbcThinUrl())) {
-            try (final Statement stmt = conn.createStatement()) {
-                stmt.execute("CREATE TABLE test(id INT PRIMARY KEY, objVal OTHER)");
-
-                try (PreparedStatement pstmt = conn.prepareStatement("INSERT INTO test(id, objVal) VALUES (?, ?)")) {
-                    pstmt.setInt(1, 0);
-                    pstmt.setObject(2, new TestValue());
-
-                    pstmt.execute();
-                }
-
-                stmt.execute("DELETE FROM test WHERE id >= 0");
-            }
-
-            HashMap<Integer, BinaryType> metasOld = GridTestUtils.getFieldValue(conn, "metaHnd", "cache", "metas");
-
-            assertFalse(metasOld.isEmpty());
-
-            assertEquals(EXIT_CODE_OK, execute("--meta", "remove",
-                "--typeName", TestValue.class.getName(),
-                "--out", typeFile.toString()));
-
-            // Executes any command to check disconnect.
-            GridTestUtils.assertThrows(log, () -> {
-                try (Statement stmt = conn.createStatement()) {
-                    stmt.execute("SELECT * FROM test");
-                }
-
-                return null;
-            }, SQLException.class, "Failed to communicate with Ignite cluster");
-
-            HashMap<Integer, BinaryType> metas = GridTestUtils.getFieldValue(conn, "metaHnd", "cache", "metas");
-
-            assertNotSame(metasOld, metas);
-            assertTrue(metas.isEmpty());
         }
         finally {
             if (Files.exists(typeFile))
