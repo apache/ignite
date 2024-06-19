@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -121,6 +122,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** Client connector configuration. */
     private ClientConnectorConfiguration cliConnCfg;
 
+    /** */
+    private final CountDownLatch startLatch = new CountDownLatch(1);
+
     /**
      * @param ctx Kernal context.
      */
@@ -182,7 +186,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                         srv = GridNioServer.<ClientMessage>builder()
                             .address(hostAddr)
                             .port(port)
-                            .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg, metrics))
+                            .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg, metrics, startLatch))
                             .logger(log)
                             .selectorCount(selectorCnt)
                             .igniteInstanceName(ctx.igniteInstanceName())
@@ -239,11 +243,18 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 );
 
                 distrThinCfg = new DistributedThinClientConfiguration(ctx);
+
+                srv.start();
             }
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to start client connector processor.", e);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        startLatch.countDown();
     }
 
     /** */
@@ -302,14 +313,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 "Number of active sessions for the " + cliTypeName + " client."
             );
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        super.onKernalStart(active);
-
-        if (srv != null)
-            srv.start();
     }
 
     /**

@@ -15,55 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client.cluster;
+package org.apache.ignite.internal.processors.platform.client.beforestart;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
-import static org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature.FORCE_DEACTIVATION_FLAG;
-
-/**
- * Cluster status request.
- */
-public class ClientClusterChangeStateRequest extends ClientRequest {
-    /** Next state. */
-    private final ClusterState state;
-
-    /** If {@code true}, cluster deactivation will be forced. */
-    private final boolean forceDeactivation;
-
-    /**
-     * Constructor.
-     *
-     * @param reader Reader.
-     */
-    public ClientClusterChangeStateRequest(BinaryRawReader reader, ClientProtocolContext protocolCtx) {
+/** Stop warmup request. */
+public class ClientCacheStopWarmupRequest extends ClientRequest {
+    /** */
+    public ClientCacheStopWarmupRequest(BinaryRawReader reader) {
         super(reader);
-
-        state = ClusterState.fromOrdinal(reader.readByte());
-        forceDeactivation = !protocolCtx.isFeatureSupported(FORCE_DEACTIVATION_FLAG) || reader.readBoolean();
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         try {
-            ctx.kernalContext().state().changeGlobalState(
-                state,
-                forceDeactivation,
-                ctx.kernalContext().cluster().get().forServers().nodes(),
-                false
-            ).get();
-
-            return new ClientResponse(requestId());
+            ctx.kernalContext().cache().stopWarmUp();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+
+        return super.process(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean beforeStartupRequest() {
+        return true;
     }
 }

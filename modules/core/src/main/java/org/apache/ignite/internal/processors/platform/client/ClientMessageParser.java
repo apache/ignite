@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientMessage;
+import org.apache.ignite.internal.processors.platform.client.beforestart.ClientCacheStopWarmupRequest;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryConfigurationGetRequest;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeGetRequest;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeNameGetRequest;
@@ -405,6 +406,10 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** Get service topology. */
     private static final short OP_SERVICE_GET_TOPOLOGY = 7003;
 
+    /** Operations that are performed before a node is joined to the topology. */
+    /** Stop warmup. */
+    private static final short OP_STOP_WARMUP = 10000;
+
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 
@@ -615,7 +620,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientClusterGetStateRequest(reader);
 
             case OP_CLUSTER_CHANGE_STATE:
-                return new ClientClusterChangeStateRequest(reader);
+                return new ClientClusterChangeStateRequest(reader, protocolCtx);
 
             case OP_CLUSTER_CHANGE_WAL_STATE:
                 return new ClientClusterWalChangeStateRequest(reader);
@@ -718,6 +723,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_SERVICE_GET_TOPOLOGY:
                 return new ClientServiceTopologyRequest(reader);
+
+            case OP_STOP_WARMUP:
+                return new ClientCacheStopWarmupRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,

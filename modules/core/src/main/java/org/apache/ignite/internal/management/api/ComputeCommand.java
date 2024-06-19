@@ -49,4 +49,12 @@ public interface ComputeCommand<A extends IgniteDataTransferObject, R> extends C
     public default @Nullable Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, A arg) {
         return null;
     }
+
+    /**
+     * @param e Task execution exception to handle.
+     * @return Result if the exception is suppressed.
+     */
+    default R handleException(Exception e) throws Exception {
+        throw e;
+    }
 }
