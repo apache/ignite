@@ -932,10 +932,10 @@ public class ZookeeperClient implements Watcher {
             code == KeeperException.Code.OPERATIONTIMEOUT.intValue();
 
         if (retryByErrorCode) {
-            int maxRetryCount = IgniteSystemProperties.getInteger(IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT,
+            int maxRetryCnt = IgniteSystemProperties.getInteger(IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT,
                 DFLT_MAX_RETRY_COUNT);
 
-            if (maxRetryCount <= 0 || retryCount.incrementAndGet() < maxRetryCount)
+            if (maxRetryCnt <= 0 || retryCount.incrementAndGet() < maxRetryCnt)
                 return true;
             else
                 return false;

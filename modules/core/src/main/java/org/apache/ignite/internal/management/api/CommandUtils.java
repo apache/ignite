@@ -19,6 +19,8 @@ package org.apache.ignite.internal.management.api;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,19 +29,33 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientCacheMode;
+import org.apache.ignite.internal.client.GridClientCompute;
+import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.client.GridClientNodeMetrics;
+import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.VisorTaskResult;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -73,6 +89,33 @@ public class CommandUtils {
      */
     public static String cmdText(Command<?, ?> cmd) {
         return NAME_PREFIX + toFormattedCommandName(cmd.getClass(), CMD_WORDS_DELIM);
+    }
+
+    /**
+     * @param cmdCls Command class.
+     * @param parent Parent registry.
+     * @return Command key without parent prefix.
+     */
+    public static String cmdKey(Class<?> cmdCls, Class<? extends CommandsRegistry<?, ?>> parent) {
+        String name = cmdCls.getSimpleName();
+
+        if (parent != null) {
+            String parentName = parent.getSimpleName();
+
+            parentName = parentName.substring(0, parentName.length() - CMD_NAME_POSTFIX.length());
+
+            if (!name.startsWith(parentName)) {
+                throw new IllegalArgumentException(
+                    "Command class name must starts with parent name [parent=" + parentName + ']');
+            }
+
+            name = name.substring(parentName.length());
+        }
+
+        if (!name.endsWith(CMD_NAME_POSTFIX))
+            throw new IllegalArgumentException("Command class name must ends with 'Command'");
+
+        return name.substring(0, name.length() - CMD_NAME_POSTFIX.length());
     }
 
     /**
@@ -327,21 +370,27 @@ public class CommandUtils {
         List<Field> positionalParams = new ArrayList<>();
         List<Field> namedParams = new ArrayList<>();
 
-        ArgumentGroup argGrp = argCls.getAnnotation(ArgumentGroup.class);
+        List<ArgumentGroup> argGprs = argumentGroups(argCls);
 
-        Set<String> grpNames = argGrp != null
-            ? new HashSet<>(Arrays.asList(argGrp.value()))
-            : Collections.emptySet();
+        List<Set<String>> grpNames = argumentGroupsValues(argGprs);
 
-        List<Field> grpFlds = new ArrayList<>();
+        List<List<Field>> grpFlds = grpNames.isEmpty() ? Collections.emptyList() : new ArrayList<>(grpNames.size());
+
+        grpNames.forEach(gf -> grpFlds.add(grpFlds.size(), null));
 
         // Iterates classes from the roots.
         for (int i = classes.size() - 1; i >= 0; i--) {
             Field[] flds = classes.get(i).getDeclaredFields();
 
             for (Field fld : flds) {
-                if (grpNames.contains(fld.getName()))
-                    grpFlds.add(fld);
+                int argGrpIdx = argumentGroupIdx(grpNames, fld.getName());
+
+                if (argGrpIdx >= 0) {
+                    if (grpFlds.get(argGrpIdx) == null)
+                        grpFlds.set(argGrpIdx, new ArrayList<>());
+
+                    grpFlds.get(argGrpIdx).add(fld);
+                }
                 else if (fld.isAnnotationPresent(Positional.class))
                     positionalParams.add(fld);
                 else if (fld.isAnnotationPresent(Argument.class))
@@ -353,8 +402,61 @@ public class CommandUtils {
 
         namedParams.forEach(namedParamVisitor);
 
-        if (argGrp != null)
-            argumentGroupVisitor.accept(argGrp, grpFlds);
+        for (int i = 0; i < grpFlds.size(); ++i)
+            argumentGroupVisitor.accept(argGprs.get(i), grpFlds.get(i));
+    }
+
+    /**
+     * @return List of declared {@link ArgumentGroup} at {@code cls}. Singleton list if only one argument group is
+     * declared. Empty list if no argument group is declared.
+     */
+    private static List<ArgumentGroup> argumentGroups(Class<?> cls) {
+        ArgumentGroup singleGrp = cls.getAnnotation(ArgumentGroup.class);
+
+        if (singleGrp != null) {
+            assert cls.getAnnotation(ArgumentGroupsHolder.class) == null;
+
+            return Collections.singletonList(singleGrp);
+        }
+
+        ArgumentGroupsHolder grps = cls.getAnnotation(ArgumentGroupsHolder.class);
+
+        return grps == null ? Collections.emptyList() : Arrays.asList(grps.value());
+    }
+
+    /**
+     * @return Sets list of {@link ArgumentGroup#value()} declared at {@code cls}.
+     */
+    public static List<Set<String>> argumentGroupsValues(Class<?> cls) {
+        return argumentGroupsValues(argumentGroups(cls));
+    }
+
+    /**
+     * @return Sets list of {@link ArgumentGroup#value()} holding in {@code argGrps}.
+     * @see #argumentGroupsValues(Class)
+     */
+    public static List<Set<String>> argumentGroupsValues(List<ArgumentGroup> argGrps) {
+        List<Set<String>> res = argGrps.stream().map(grp -> new HashSet<>(Arrays.asList(grp.value())))
+            .collect(Collectors.toList());
+
+        // Checks that argument groups only unique values.
+        assert F.flatCollections(res).stream().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+            .entrySet().stream().noneMatch(e -> e.getValue() > 1) : "Argument groups " + argGrps + " have not unique arguments";
+
+        return res;
+    }
+
+    /**
+     * @return Index of first value set in {@code argGrpValues} containing {@code name}. -1 if not found.
+     * @see #argumentGroupsValues(Class)
+     */
+    public static int argumentGroupIdx(List<Set<String>> argGrpValues, String name) {
+        for (int i = 0; i < argGrpValues.size(); ++i) {
+            if (argGrpValues.get(i).contains(name))
+                return i;
+        }
+
+        return -1;
     }
 
     /**
@@ -366,48 +468,94 @@ public class CommandUtils {
 
         visitCommandParams(
             cmd.argClass(),
-            fld -> res.compareAndSet(false,
-                !fld.getAnnotation(Argument.class).description().isEmpty() ||
-                    fld.isAnnotationPresent(EnumDescription.class)
-            ),
-            fld -> res.compareAndSet(false,
-                !fld.getAnnotation(Argument.class).description().isEmpty() ||
-                    fld.isAnnotationPresent(EnumDescription.class)
-            ),
-            (argGrp, flds) -> flds.forEach(fld -> res.compareAndSet(false,
-                !fld.getAnnotation(Argument.class).description().isEmpty() ||
-                    fld.isAnnotationPresent(EnumDescription.class)
-            ))
+            fld -> res.compareAndSet(false, hasDescription(fld)),
+            fld -> res.compareAndSet(false, hasDescription(fld)),
+            (argGrp, flds) -> flds.forEach(fld -> res.compareAndSet(false, hasDescription(fld)))
         );
 
         return res.get();
+    }
+
+    /** @return {@code True} if argument has description. */
+    public static boolean hasDescription(Field fld) {
+        return !fld.getAnnotation(Argument.class).description().isEmpty() ||
+            fld.isAnnotationPresent(EnumDescription.class);
     }
 
     /**
      * @param nodes Nodes.
      * @return Coordinator ID or null is {@code nodes} are empty.
      */
-    public static @Nullable Collection<UUID> coordinatorOrNull(Map<UUID, GridClientNode> nodes) {
-        return nodes.entrySet().stream()
-            .filter(e -> !e.getValue().isClient())
-            .min(Comparator.comparingLong(e -> e.getValue().order()))
-            .map(e -> Collections.singleton(e.getKey()))
+    public static @Nullable Collection<GridClientNode> coordinatorOrNull(Collection<GridClientNode> nodes) {
+        return nodes.stream()
+            .filter(n -> !n.isClient())
+            .min(Comparator.comparingLong(GridClientNode::order))
+            .map(Collections::singleton)
             .orElse(null);
     }
 
     /** */
-    public static Collection<UUID> nodeOrNull(@Nullable UUID nodeId) {
-        return nodeId == null ? null : Collections.singleton(nodeId);
+    public static @Nullable Collection<GridClientNode> nodeOrNull(@Nullable UUID nodeId, Collection<GridClientNode> nodes) {
+        return nodeId == null ? null : node(nodeId, nodes);
+    }
+
+    /** */
+    public static Collection<GridClientNode> nodeOrAll(@Nullable UUID nodeId, Collection<GridClientNode> nodes) {
+        return nodeId == null ? nodes : node(nodeId, nodes);
+    }
+
+    /** */
+    public static Collection<GridClientNode> nodes(UUID[] nodeIds, Collection<GridClientNode> nodes) {
+        List<GridClientNode> res = new ArrayList<>();
+
+        for (UUID nodeId : nodeIds)
+            res.addAll(node(nodeId, nodes));
+
+        return res;
+    }
+
+    /** */
+    public static List<GridClientNode> node(UUID nodeId, Collection<GridClientNode> nodes) {
+        for (GridClientNode node : nodes) {
+            if (node.nodeId().equals(nodeId))
+                return Collections.singletonList(node);
+        }
+
+        throw new IllegalArgumentException("Node with id=" + nodeId + " not found.");
     }
 
     /**
      * @param nodes Nodes.
      * @return Server nodes.
      */
-    public static Collection<UUID> servers(Map<UUID, GridClientNode> nodes) {
-        return nodes.entrySet().stream()
-            .filter(e -> !e.getValue().isClient())
-            .map(Map.Entry::getKey)
+    public static Collection<GridClientNode> servers(Collection<GridClientNode> nodes) {
+        return nodes.stream()
+            .filter(e -> !e.isClient())
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * @param cmd Command.
+     * @return {@code True} if command can be executed, {@code false} otherwise.
+     */
+    public static boolean executable(Command<?, ?> cmd) {
+        return cmd instanceof LocalCommand
+            || cmd instanceof ComputeCommand
+            || cmd instanceof HelpCommand
+            || cmd instanceof BeforeNodeStartCommand;
+    }
+
+    /**
+     * @param cli Grid client.
+     * @param ignite Ignite node.
+     * @return Collection of cluster nodes.
+     */
+    public static Collection<GridClientNode> nodes(@Nullable GridClient cli, @Nullable Ignite ignite) throws GridClientException {
+        if (cli != null)
+            return cli.compute().nodes();
+
+        return ignite.cluster().nodes().stream()
+            .map(CommandUtils::clusterToClientNode)
             .collect(Collectors.toList());
     }
 
@@ -458,15 +606,29 @@ public class CommandUtils {
 
         printer.accept(infoMsg);
 
-        for (Map.Entry<UUID, Exception> e : exceptions.entrySet()) {
-            printer.accept(INDENT + "Node ID: " + e.getKey());
-
-            printer.accept(INDENT + "Exception message:");
-            printer.accept(DOUBLE_INDENT + e.getValue().getMessage());
-            printer.accept("");
-        }
+        exceptions.forEach((nodeId, err) -> printNodeError(printer, nodeId, null, err));
 
         return true;
+    }
+
+    /**
+     * Prints single node exception message to the log.
+     *
+     * @param printer Printer to use.
+     * @param nodeId Node id.
+     * @param consistentId Node consistent id.
+     * @param err Exception.
+     */
+    public static void printNodeError(
+        Consumer<String> printer,
+        UUID nodeId,
+        @Nullable Object consistentId,
+        Exception err
+    ) {
+        printer.accept(INDENT + "Node ID: " + nodeId + (consistentId == null ? "" : " [consistentId='" + consistentId + "']"));
+        printer.accept(INDENT + "Exception message:");
+        printer.accept(DOUBLE_INDENT + err.getMessage());
+        printer.accept("");
     }
 
     /** */
@@ -484,7 +646,7 @@ public class CommandUtils {
      */
     private static <T> T parseSingleVal(String val, Class<T> type) {
         if (isBoolean(type))
-            return (T)Boolean.TRUE;
+            return (T)(Boolean)Boolean.parseBoolean(val);
         if (type == String.class)
             return (T)val;
         else if (type == Integer.class || type == int.class) {
@@ -554,5 +716,247 @@ public class CommandUtils {
         catch (NumberFormatException e) {
             throw new NumberFormatException("Can't parse number '" + val + "', expected type: " + expectedType.getName());
         }
+    }
+
+    /**
+     * Fill and vaildate command argument.
+     *
+     * @param argCls Argument class.
+     * @param positionalParamProvider Provider of positional parameters.
+     * @param paramProvider Provider of named parameters.
+     * @return Argument filled with parameters.
+     * @param <A> Argument type.
+     */
+    public static <A extends IgniteDataTransferObject> A argument(
+        Class<A> argCls,
+        BiFunction<Field, Integer, Object> positionalParamProvider,
+        Function<Field, Object> paramProvider
+    ) {
+        try {
+            ArgumentState<A> arg = new ArgumentState<>(argCls);
+
+            visitCommandParams(
+                argCls,
+                fld -> arg.accept(fld, positionalParamProvider.apply(fld, arg.nextIdx())),
+                fld -> arg.accept(fld, paramProvider.apply(fld)),
+                (argGrp, flds) -> flds.forEach(fld -> {
+                    if (fld.isAnnotationPresent(Positional.class))
+                        arg.accept(fld, positionalParamProvider.apply(fld, arg.nextIdx()));
+                    else
+                        arg.accept(fld, paramProvider.apply(fld));
+                })
+            );
+
+            for (int grpIdx = 0; grpIdx < arg.argGrps.size(); ++grpIdx) {
+                if (!arg.argGrps.get(grpIdx).optional() && !arg.grpFldExists[grpIdx]) {
+                    throw new IllegalArgumentException("One of " + toFormattedNames(argCls, arg.grpdFlds.get(grpIdx))
+                        + " required");
+                }
+            }
+
+            return arg.res;
+        }
+        catch (InstantiationException | IllegalAccessException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** */
+    public static <A, R> R execute(
+        @Nullable GridClient cli,
+        @Nullable Ignite ignite,
+        Class<? extends VisorMultiNodeTask<A, R, ?>> taskCls,
+        A arg,
+        Collection<GridClientNode> nodes
+    ) throws Exception {
+        Collection<UUID> nodesIds = nodes.stream()
+            .map(GridClientNode::nodeId)
+            .collect(Collectors.toList());
+
+        if (cli != null) {
+            GridClientCompute compute = cli.compute();
+
+            Collection<GridClientNode> connectable = compute.nodes().stream()
+                .filter(nodes::contains)
+                .filter(GridClientNode::connectable)
+                .collect(Collectors.toList());
+
+            if (!connectable.isEmpty())
+                compute = compute.projection(connectable);
+
+            return ((VisorTaskResult<R>)compute.execute(
+                taskCls.getName(),
+                new VisorTaskArgument<>(nodesIds, arg, false)
+            )).result();
+        }
+
+        return ignite
+            .compute(ignite.cluster())
+            .execute(taskCls, new VisorTaskArgument<>(nodesIds, arg, false))
+            .result();
+    }
+
+    /** */
+    private static class ArgumentState<A extends IgniteDataTransferObject> implements BiConsumer<Field, Object> {
+        /** */
+        private final A res;
+
+        /** */
+        private final List<ArgumentGroup> argGrps;
+
+        /** */
+        private final @Nullable boolean[] grpFldExists;
+
+        /** */
+        private int idx;
+
+        /** */
+        private final List<Set<String>> grpdFlds;
+
+        /** */
+        public ArgumentState(Class<A> argCls) throws InstantiationException, IllegalAccessException {
+            res = argCls.newInstance();
+
+            argGrps = argumentGroups(argCls);
+
+            grpdFlds = argumentGroupsValues(argGrps);
+
+            grpFldExists = argGrps.isEmpty() ? null : new boolean[argGrps.size()];
+        }
+
+        /** */
+        private int nextIdx() {
+            int idx0 = idx;
+
+            idx++;
+
+            return idx0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void accept(Field fld, Object val) {
+            int argGrpIdx = argumentGroupIdx(grpdFlds, fld.getName());
+
+            assert argGrpIdx < argGrps.size();
+
+            ArgumentGroup argGrp = argGrpIdx < 0 ? null : argGrps.get(argGrpIdx);
+
+            if (val == null) {
+                if (argGrp != null || fld.getAnnotation(Argument.class).optional())
+                    return;
+
+                String name = fld.isAnnotationPresent(Positional.class)
+                    ? parameterExample(fld, false)
+                    : toFormattedFieldName(fld);
+
+                throw new IllegalArgumentException("Argument " + name + " required.");
+            }
+
+            if (Objects.equals(val, get(fld)))
+                return;
+
+            if (argGrp != null) {
+                assert grpFldExists != null;
+
+                if (grpFldExists[argGrpIdx] && argGrp.onlyOneOf()) {
+                    throw new IllegalArgumentException(
+                        "Only one of " + toFormattedNames(res.getClass(), grpdFlds.get(argGrpIdx)) + " allowed"
+                    );
+                }
+
+                grpFldExists[argGrpIdx] = true;
+            }
+
+            set(fld, val);
+        }
+
+        /** */
+        private Object get(Field fld) {
+            try {
+                return res.getClass().getMethod(fld.getName()).invoke(res);
+            }
+            catch (NoSuchMethodException | IllegalAccessException e) {
+                throw new IgniteException(e);
+            }
+            catch (InvocationTargetException e) {
+                if (e.getTargetException() != null && e.getTargetException() instanceof RuntimeException)
+                    throw (RuntimeException)e.getTargetException();
+
+                throw new IgniteException(e);
+            }
+        }
+
+        /** */
+        private void set(Field fld, Object val) {
+            try {
+                res.getClass().getMethod(fld.getName(), fld.getType()).invoke(res, val);
+            }
+            catch (NoSuchMethodException | IllegalAccessException e) {
+                throw new IgniteException(e);
+            }
+            catch (InvocationTargetException e) {
+                if (e.getTargetException() != null && e.getTargetException() instanceof RuntimeException)
+                    throw (RuntimeException)e.getTargetException();
+
+                throw new IgniteException(e);
+            }
+        }
+    }
+
+    /** */
+    public static GridClientNode clusterToClientNode(ClusterNode n) {
+        return new GridClientNode() {
+            @Override public UUID nodeId() {
+                return n.id();
+            }
+
+            @Override public Object consistentId() {
+                return n.consistentId();
+            }
+
+            @Override public boolean connectable() {
+                return true;
+            }
+
+            @Override public long order() {
+                return n.order();
+            }
+
+            @Override public boolean isClient() {
+                return n.isClient();
+            }
+
+            @Override public List<String> tcpAddresses() {
+                return U.arrayList(n.addresses());
+            }
+
+            @Override public List<String> tcpHostNames() {
+                return U.arrayList(n.hostNames());
+            }
+
+            @Override public int tcpPort() {
+                return -1;
+            }
+
+            @Override public Map<String, Object> attributes() {
+                return n.attributes();
+            }
+
+            @Override public <T> @Nullable T attribute(String name) {
+                return n.attribute(name);
+            }
+
+            @Override public GridClientNodeMetrics metrics() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override public Map<String, GridClientCacheMode> caches() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override public Collection<InetSocketAddress> availableAddresses(GridClientProtocol proto, boolean filterResolved) {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 }

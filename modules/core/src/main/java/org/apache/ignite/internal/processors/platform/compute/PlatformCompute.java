@@ -44,6 +44,8 @@ import org.apache.ignite.internal.processors.task.TaskExecutionOptions;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils.getResult;
@@ -191,9 +193,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
                 PlatformCallable callable = new PlatformCallable(func, ptr, funcName);
 
-                IgniteInternalFuture future = compute.affinityCallAsync(cacheNames, part, callable);
+                IgniteInternalFuture fut = compute.affinityCallAsync(cacheNames, part, callable);
 
-                return wrapListenable(readAndListenFuture(reader, future));
+                return wrapListenable(readAndListenFuture(reader, fut));
             }
 
             case OP_AFFINITY_CALL: {
@@ -205,9 +207,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
                 PlatformCallable callable = new PlatformCallable(func, ptr, callableName);
 
-                IgniteInternalFuture future = compute.affinityCallAsync(Collections.singletonList(cacheName), key, callable);
+                IgniteInternalFuture fut = compute.affinityCallAsync(Collections.singletonList(cacheName), key, callable);
 
-                return wrapListenable(readAndListenFuture(reader, future));
+                return wrapListenable(readAndListenFuture(reader, fut));
             }
 
             case OP_AFFINITY_RUN_PARTITION: {
@@ -219,9 +221,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
                 PlatformRunnable runnable = new PlatformRunnable(func, ptr, runnableName);
 
-                IgniteInternalFuture future = compute.affinityRunAsync(cacheNames, part, runnable);
+                IgniteInternalFuture fut = compute.affinityRunAsync(cacheNames, part, runnable);
 
-                return wrapListenable(readAndListenFuture(reader, future));
+                return wrapListenable(readAndListenFuture(reader, fut));
             }
 
             case OP_AFFINITY_RUN: {
@@ -233,9 +235,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
                 PlatformRunnable runnable = new PlatformRunnable(func, ptr, runnableName);
 
-                IgniteInternalFuture future = compute.affinityRunAsync(Collections.singleton(cacheName), key, runnable);
+                IgniteInternalFuture fut = compute.affinityRunAsync(Collections.singleton(cacheName), key, runnable);
 
-                return wrapListenable(readAndListenFuture(reader, future));
+                return wrapListenable(readAndListenFuture(reader, fut));
             }
 
             default:
@@ -488,12 +490,27 @@ public class PlatformCompute extends PlatformAbstractTarget {
         }
 
         /** {@inheritDoc} */
+        @Override public void listen(final IgniteRunnable lsnr) {
+            listen(ignored -> lsnr.run());
+        }
+
+        /** {@inheritDoc} */
         @Override public IgniteInternalFuture chain(IgniteClosure doneCb) {
             throw new UnsupportedOperationException("Chain operation is not supported.");
         }
 
         /** {@inheritDoc} */
+        @Override public IgniteInternalFuture chain(IgniteOutClosure doneCb) {
+            throw new UnsupportedOperationException("Chain operation is not supported.");
+        }
+
+        /** {@inheritDoc} */
         @Override public IgniteInternalFuture chain(IgniteClosure doneCb, Executor exec) {
+            throw new UnsupportedOperationException("Chain operation is not supported.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture chain(IgniteOutClosure doneCb, Executor exec) {
             throw new UnsupportedOperationException("Chain operation is not supported.");
         }
 

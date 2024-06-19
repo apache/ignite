@@ -18,34 +18,30 @@
 package org.apache.ignite.internal.management.tracing;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationCommandArg;
-import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTask;
-import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTaskResult;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.coordinatorOrNull;
 
 /** */
 public abstract class AbstractTracingConfigurationCommand implements
-    ComputeCommand<TracingConfigurationCommandArg, VisorTracingConfigurationTaskResult> {
+    ComputeCommand<TracingConfigurationCommandArg, TracingConfigurationTaskResult> {
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, TracingConfigurationCommandArg arg) {
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, TracingConfigurationCommandArg arg) {
         return coordinatorOrNull(nodes);
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorTracingConfigurationTask> taskClass() {
-        return VisorTracingConfigurationTask.class;
+    @Override public Class<TracingConfigurationTask> taskClass() {
+        return TracingConfigurationTask.class;
     }
 
     /** {@inheritDoc} */
     @Override public void printResult(
         TracingConfigurationCommandArg arg,
-        VisorTracingConfigurationTaskResult res,
+        TracingConfigurationTaskResult res,
         Consumer<String> printer
     ) {
         res.print(printer);

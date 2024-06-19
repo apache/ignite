@@ -19,8 +19,6 @@ package org.apache.ignite.internal.management.meta;
 
 import java.util.function.Consumer;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.commandline.meta.tasks.MetadataMarshalled;
-import org.apache.ignite.internal.commandline.meta.tasks.MetadataUpdateTask;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.lang.IgniteExperimental;
 

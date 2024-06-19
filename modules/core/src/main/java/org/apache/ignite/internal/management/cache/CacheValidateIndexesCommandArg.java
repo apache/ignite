@@ -159,6 +159,9 @@ public class CacheValidateIndexesCommandArg extends IgniteDataTransferObject {
 
     /** */
     public void checkFirst(int checkFirst) {
+        if (this.checkFirst == checkFirst)
+            return;
+
         ensurePositive(checkFirst, "--check-first");
 
         this.checkFirst = checkFirst;
@@ -171,6 +174,9 @@ public class CacheValidateIndexesCommandArg extends IgniteDataTransferObject {
 
     /** */
     public void checkThrough(int checkThrough) {
+        if (this.checkThrough == checkThrough)
+            return;
+
         ensurePositive(checkThrough, "--check-through");
 
         this.checkThrough = checkThrough;

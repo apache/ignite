@@ -23,8 +23,6 @@ import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.persistence.PersistenceCommand.PersistenceCleanAllTaskArg;
 import org.apache.ignite.internal.management.persistence.PersistenceCommand.PersistenceCleanCorruptedTaskArg;
 import org.apache.ignite.internal.management.persistence.PersistenceCommand.PersistenceTaskArg;
-import org.apache.ignite.internal.visor.persistence.PersistenceTask;
-import org.apache.ignite.internal.visor.persistence.PersistenceTaskResult;
 import org.apache.ignite.lang.IgniteBiTuple;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 

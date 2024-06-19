@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.management.encryption;
 
 import java.util.function.Consumer;
-import org.apache.ignite.internal.visor.encryption.VisorReencryptionStatusTask;
+
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 
 /** */
@@ -34,8 +34,8 @@ public class EncryptionReencryptionStatusCommand extends CacheGroupEncryptionCom
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorReencryptionStatusTask> taskClass() {
-        return VisorReencryptionStatusTask.class;
+    @Override public Class<ReencryptionStatusTask> taskClass() {
+        return ReencryptionStatusTask.class;
     }
 
     /** {@inheritDoc} */

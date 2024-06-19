@@ -57,6 +57,7 @@ import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlIntervalLiteral;
 import org.apache.calcite.sql.SqlLiteral;
+import org.apache.calcite.sql.SqlUnknownLiteral;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.util.DateString;
@@ -179,14 +180,22 @@ public class TypeUtils {
     }
 
     /** */
-    public static RelDataType sqlType(IgniteTypeFactory typeFactory, Class<?> cls, int precision, int scale) {
+    public static RelDataType sqlType(
+        IgniteTypeFactory typeFactory,
+        Class<?> cls,
+        int precision,
+        int scale,
+        boolean nullability
+    ) {
         RelDataType javaType = typeFactory.createJavaType(cls);
 
         if (javaType.getSqlTypeName().allowsPrecScale(true, true) &&
-            (precision != RelDataType.PRECISION_NOT_SPECIFIED || scale != RelDataType.SCALE_NOT_SPECIFIED))
-            return typeFactory.createSqlType(javaType.getSqlTypeName(), precision, scale);
+            (precision != RelDataType.PRECISION_NOT_SPECIFIED || scale != RelDataType.SCALE_NOT_SPECIFIED)) {
+            return typeFactory.createTypeWithNullability(
+                typeFactory.createSqlType(javaType.getSqlTypeName(), precision, scale), nullability);
+        }
 
-        return sqlType(typeFactory, javaType);
+        return typeFactory.createTypeWithNullability(sqlType(typeFactory, javaType), nullability);
     }
 
     /** */
@@ -251,16 +260,16 @@ public class TypeUtils {
         assert resultType.isStruct();
 
         if (hasConvertableFields(resultType)) {
-            RowHandler<Row> handler = ectx.rowHandler();
+            RowHandler<Row> hnd = ectx.rowHandler();
             List<RelDataType> types = RelOptUtil.getFieldTypeList(resultType);
-            RowHandler.RowFactory<Row> factory = handler.factory(ectx.getTypeFactory(), types);
+            RowHandler.RowFactory<Row> factory = hnd.factory(ectx.getTypeFactory(), types);
             List<Function<Object, Object>> converters = transform(types, t -> fieldConverter(ectx, t));
             return r -> {
                 Row newRow = factory.create();
-                assert handler.columnCount(newRow) == converters.size();
-                assert handler.columnCount(r) == converters.size();
+                assert hnd.columnCount(newRow) == converters.size();
+                assert hnd.columnCount(r) == converters.size();
                 for (int i = 0; i < converters.size(); i++)
-                    handler.set(i, newRow, converters.get(i).apply(handler.get(i, r)));
+                    hnd.set(i, newRow, converters.get(i).apply(hnd.get(i, r)));
                 return newRow;
             };
         }
@@ -371,15 +380,22 @@ public class TypeUtils {
      */
     private static long toLong(DataContext ctx, Object val) {
         if (val instanceof LocalDateTime)
-            return SqlFunctions.toLong(DateValueUtils.convertToTimestamp((LocalDateTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
+            return toLong(DateValueUtils.convertToTimestamp((LocalDateTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
 
         if (val instanceof LocalDate)
-            return SqlFunctions.toLong(DateValueUtils.convertToSqlDate((LocalDate)val), DataContext.Variable.TIME_ZONE.get(ctx));
+            return toLong(DateValueUtils.convertToSqlDate((LocalDate)val), DataContext.Variable.TIME_ZONE.get(ctx));
 
         if (val instanceof LocalTime)
-            return SqlFunctions.toLong(DateValueUtils.convertToSqlTime((LocalTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
+            return toLong(DateValueUtils.convertToSqlTime((LocalTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
 
-        return SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx));
+        return toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx));
+    }
+
+    /** */
+    private static long toLong(java.util.Date val, TimeZone tz) {
+        long time = val.getTime();
+
+        return time + tz.getOffset(time);
     }
 
     /** */
@@ -419,12 +435,21 @@ public class TypeUtils {
         try {
             storageType = Primitive.box(storageType); // getValueAs() implemented only for boxed classes.
 
-            if (Date.class.equals(storageType))
-                internalVal = literal.getValueAs(DateString.class).getDaysSinceEpoch();
-            else if (Time.class.equals(storageType))
-                internalVal = literal.getValueAs(TimeString.class).getMillisOfDay();
-            else if (Timestamp.class.equals(storageType))
-                internalVal = literal.getValueAs(TimestampString.class).getMillisSinceEpoch();
+            if (Date.class.equals(storageType)) {
+                SqlLiteral literal0 = ((SqlUnknownLiteral)literal).resolve(SqlTypeName.DATE);
+
+                internalVal = literal0.getValueAs(DateString.class).getDaysSinceEpoch();
+            }
+            else if (Time.class.equals(storageType)) {
+                SqlLiteral literal0 = ((SqlUnknownLiteral)literal).resolve(SqlTypeName.TIME);
+
+                internalVal = literal0.getValueAs(TimeString.class).getMillisOfDay();
+            }
+            else if (Timestamp.class.equals(storageType)) {
+                SqlLiteral literal0 = ((SqlUnknownLiteral)literal).resolve(SqlTypeName.TIMESTAMP);
+
+                internalVal = literal0.getValueAs(TimestampString.class).getMillisSinceEpoch();
+            }
             else if (Duration.class.equals(storageType)) {
                 if (literal instanceof SqlIntervalLiteral &&
                     !literal.getValueAs(SqlIntervalLiteral.IntervalValue.class).getIntervalQualifier().isYearMonth())

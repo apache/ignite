@@ -144,12 +144,12 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        IgniteAtomicSequence sequence = ignite.atomicSequence("testSequence", 0, true);
+        IgniteAtomicSequence seq = ignite.atomicSequence("testSequence", 0, true);
 
         int i = 0;
 
         while (i < 1000) {
-            sequence.incrementAndGet();
+            seq.incrementAndGet();
 
             i++;
         }
@@ -160,9 +160,9 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        sequence = ignite.atomicSequence("testSequence", 0, false);
+        seq = ignite.atomicSequence("testSequence", 0, false);
 
-        assertTrue(sequence.incrementAndGet() > i);
+        assertTrue(seq.incrementAndGet() > i);
     }
 
     /**

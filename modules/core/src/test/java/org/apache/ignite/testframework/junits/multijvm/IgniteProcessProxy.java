@@ -56,7 +56,6 @@ import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteSnapshot;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.MemoryMetrics;
@@ -76,6 +75,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.GridJavaProcess;
@@ -91,6 +91,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -220,12 +221,12 @@ public class IgniteProcessProxy implements IgniteEx {
      * @throws InterruptedException If we get interrupted.
      */
     private static void validateRemoteJre(@Nullable String javaHome) throws IOException, InterruptedException {
-        int remoteMajorVersion = new JavaVersionCommand().majorVersion(javaHome);
-        int localMajorVersion = U.majorJavaVersion(System.getProperty("java.version"));
+        int remoteMajorVer = new JavaVersionCommand().majorVersion(javaHome);
+        int locMajorVer = U.majorJavaVersion(System.getProperty("java.version"));
 
-        if (localMajorVersion != remoteMajorVersion) {
-            fail("Version of remote java with home at '" + javaHome + "' (" + remoteMajorVersion +
-                ") is different from local java version (" + localMajorVersion + "). " +
+        if (locMajorVer != remoteMajorVer) {
+            fail("Version of remote java with home at '" + javaHome + "' (" + remoteMajorVer +
+                ") is different from local java version (" + locMajorVer + "). " +
                 "Make sure test.multijvm.java.home property specifies a path to a correct Java installation");
         }
     }
@@ -288,8 +289,7 @@ public class IgniteProcessProxy implements IgniteEx {
                 (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)) ||
                 arg.startsWith("--add-opens") || arg.startsWith("--add-exports") || arg.startsWith("--add-modules") ||
                 arg.startsWith("--patch-module") || arg.startsWith("--add-reads") ||
-                arg.startsWith("-XX:+IgnoreUnrecognizedVMOptions") ||
-                arg.startsWith(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS))
+                arg.startsWith("-XX:+IgnoreUnrecognizedVMOptions"))
                 filteredJvmArgs.add(arg);
         }
 
@@ -556,7 +556,17 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteCommandRegistry commandsRegistry() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteCompute compute() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteMetrics metrics() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
@@ -906,17 +916,17 @@ public class IgniteProcessProxy implements IgniteEx {
      * @return {@link IgniteCompute} instance to communicate with remote node.
      */
     public IgniteCompute remoteCompute() {
-        Ignite localJvmGrid = localJvmGrid();
+        Ignite locJvmGrid = localJvmGrid();
 
-        if (localJvmGrid == null)
+        if (locJvmGrid == null)
             return null;
 
-        ClusterGroup grp = localJvmGrid.cluster().forNodeId(id);
+        ClusterGroup grp = locJvmGrid.cluster().forNodeId(id);
 
         if (grp.nodes().isEmpty())
             throw new IllegalStateException("Could not found node with id=" + id + ".");
 
-        return localJvmGrid.compute(grp);
+        return locJvmGrid.compute(grp);
     }
 
     /**

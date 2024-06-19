@@ -25,14 +25,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -142,9 +141,10 @@ public class TestTable implements IgniteCacheTable {
         RelOptTable relOptTbl,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
-        @Nullable ImmutableBitSet requiredColumns
+        @Nullable ImmutableBitSet requiredColumns,
+        @Nullable List<RelHint> hints
     ) {
-        return IgniteLogicalTableScan.create(cluster, cluster.traitSet(), relOptTbl, proj, cond, requiredColumns);
+        return IgniteLogicalTableScan.create(cluster, cluster.traitSet(), relOptTbl, hints, proj, cond, requiredColumns);
     }
 
     /** {@inheritDoc} */
@@ -169,8 +169,7 @@ public class TestTable implements IgniteCacheTable {
     /** {@inheritDoc} */
     @Override public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
-        ColocationGroup grp, Predicate<Row> filter,
-        Function<Row, Row> transformer,
+        ColocationGroup grp,
         ImmutableBitSet bitSet
     ) {
         throw new AssertionError();
@@ -295,7 +294,12 @@ public class TestTable implements IgniteCacheTable {
     }
 
     /** */
-    public String name() {
+    @Override public String name() {
         return name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void authorize(Operation op) {
+        // No-op.
     }
 }

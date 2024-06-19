@@ -20,6 +20,7 @@ package org.apache.ignite.util;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.mxbean.ComputeMXBean;
@@ -85,6 +87,10 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
 
     /** Snapshot control JMX bean. */
     private static SnapshotMXBean snpMxBean;
+
+    /** */
+    private Consumer<T3<UUID, String, Long>> killScan = args ->
+        qryMBean.cancelScan(args.get1().toString(), args.get2(), args.get3());
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -150,8 +156,7 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testCancelScanQuery() throws Exception {
-        doTestScanQueryCancel(startCli, srvs, args ->
-            qryMBean.cancelScan(args.get1().toString(), args.get2(), args.get3()));
+        doTestScanQueryCancel(startCli, srvs, killScan);
     }
 
     /** @throws Exception If failed. */
@@ -182,7 +187,7 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     @Test
     public void testCancelContinuousQuery() throws Exception {
         doTestCancelContinuousQuery(startCli, srvs,
-            (nodeId, routineId) -> qryMBean.cancelContinuous(nodeId.toString(), routineId.toString()));
+            (nodeId, routineId) -> qryMBean.cancelContinuous(nodeId.toString(), routineId.toString()), killScan);
     }
 
     /** */

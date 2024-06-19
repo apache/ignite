@@ -96,16 +96,16 @@ public class BigEndianAscendingWordDeserializer implements IWordDeserializer {
             throw new ArrayIndexOutOfBoundsException(position);
 
         // First bit of the word
-        final long firstBitIndex = (position * wordLength);
-        final int firstByteIndex = (bytePadding + (int)(firstBitIndex / BITS_PER_BYTE));
-        final int firstByteSkipBits = (int)(firstBitIndex % BITS_PER_BYTE);
+        final long firstBitIdx = (position * wordLength);
+        final int firstByteIdx = (bytePadding + (int)(firstBitIdx / BITS_PER_BYTE));
+        final int firstByteSkipBits = (int)(firstBitIdx % BITS_PER_BYTE);
 
         // Last bit of the word
-        final long lastBitIndex = (firstBitIndex + wordLength - 1);
-        final int lastByteIndex = (bytePadding + (int)(lastBitIndex / BITS_PER_BYTE));
+        final long lastBitIdx = (firstBitIdx + wordLength - 1);
+        final int lastByteIdx = (bytePadding + (int)(lastBitIdx / BITS_PER_BYTE));
         final int lastByteBitsToConsume;
 
-        final int bitsAfterByteBoundary = (int)((lastBitIndex + 1) % BITS_PER_BYTE);
+        final int bitsAfterByteBoundary = (int)((lastBitIdx + 1) % BITS_PER_BYTE);
         // If the word terminates at the end of the last byte, consume the whole
         // last byte.
         if (bitsAfterByteBoundary == 0)
@@ -114,17 +114,17 @@ public class BigEndianAscendingWordDeserializer implements IWordDeserializer {
             // Otherwise, only consume what is necessary.
             lastByteBitsToConsume = bitsAfterByteBoundary;
 
-        if (lastByteIndex >= bytes.length)
+        if (lastByteIdx >= bytes.length)
             throw new ArrayIndexOutOfBoundsException("Word out of bounds of backing array.");
 
         // Accumulator
-        long value = 0;
+        long val = 0;
 
         // --------------------------------------------------------------------
         // First byte
         final int bitsRemainingInFirstByte = (BITS_PER_BYTE - firstByteSkipBits);
         final int bitsToConsumeInFirstByte = Math.min(bitsRemainingInFirstByte, wordLength);
-        long firstByte = (long)bytes[firstByteIndex];
+        long firstByte = (long)bytes[firstByteIdx];
 
         // Mask off the bits to skip in the first byte.
         final long firstByteMask = ((1L << bitsRemainingInFirstByte) - 1L);
@@ -132,31 +132,31 @@ public class BigEndianAscendingWordDeserializer implements IWordDeserializer {
         // Right-align relevant bits of first byte.
         firstByte >>>= (bitsRemainingInFirstByte - bitsToConsumeInFirstByte);
 
-        value |= firstByte;
+        val |= firstByte;
 
         // If the first byte contains the whole word, short-circuit.
-        if (firstByteIndex == lastByteIndex)
-            return value;
+        if (firstByteIdx == lastByteIdx)
+            return val;
 
         // --------------------------------------------------------------------
         // Middle bytes
-        final int middleByteCount = (lastByteIndex - firstByteIndex - 1);
+        final int middleByteCnt = (lastByteIdx - firstByteIdx - 1);
 
-        for (int i = 0; i < middleByteCount; i++) {
-            final long middleByte = (bytes[firstByteIndex + i + 1] & BYTE_MASK);
+        for (int i = 0; i < middleByteCnt; i++) {
+            final long middleByte = (bytes[firstByteIdx + i + 1] & BYTE_MASK);
             // Push middle byte onto accumulator.
-            value <<= BITS_PER_BYTE;
-            value |= middleByte;
+            val <<= BITS_PER_BYTE;
+            val |= middleByte;
         }
 
         // --------------------------------------------------------------------
         // Last byte
-        long lastByte = (bytes[lastByteIndex] & BYTE_MASK);
+        long lastByte = (bytes[lastByteIdx] & BYTE_MASK);
         lastByte >>= (BITS_PER_BYTE - lastByteBitsToConsume);
-        value <<= lastByteBitsToConsume;
-        value |= lastByte;
+        val <<= lastByteBitsToConsume;
+        val |= lastByte;
 
-        return value;
+        return val;
     }
 
     /* (non-Javadoc)

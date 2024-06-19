@@ -61,14 +61,14 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         Mockito.when(topologyMock.groupId()).thenReturn(0);
         Mockito.when(topologyMock.partitions()).thenReturn(3);
 
-        List<GridDhtLocalPartition> localPartitions = Lists.newArrayList(
+        List<GridDhtLocalPartition> locPartitions = Lists.newArrayList(
             partitionMock(0, 1, 1),
             partitionMock(1, 2, 2),
             partitionMock(2, 3, 3)
         );
 
-        Mockito.when(topologyMock.localPartitions()).thenReturn(localPartitions);
-        Mockito.when(topologyMock.currentLocalPartitions()).thenReturn(localPartitions);
+        Mockito.when(topologyMock.localPartitions()).thenReturn(locPartitions);
+        Mockito.when(topologyMock.currentLocalPartitions()).thenReturn(locPartitions);
     }
 
     /**
@@ -121,15 +121,15 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         cacheSizesMap.put(2, 2L);
 
         // Form single messages map.
-        Map<UUID, GridDhtPartitionsSingleMessage> messages = new HashMap<>();
-        messages.put(remoteNode, from(updateCountersMap, cacheSizesMap));
-        messages.put(ignoreNode, from(updateCountersMap, cacheSizesMap));
+        Map<UUID, GridDhtPartitionsSingleMessage> msgs = new HashMap<>();
+        msgs.put(remoteNode, from(updateCountersMap, cacheSizesMap));
+        msgs.put(ignoreNode, from(updateCountersMap, cacheSizesMap));
 
         GridDhtPartitionsStateValidator validator = new GridDhtPartitionsStateValidator(cctxMock);
 
         // (partId, (nodeId, updateCounter))
         Map<Integer, Map<UUID, Long>> result =
-            validator.validatePartitionsUpdateCounters(topologyMock, messages, Sets.newHashSet(ignoreNode));
+            validator.validatePartitionsUpdateCounters(topologyMock, msgs, Sets.newHashSet(ignoreNode));
 
         // Check that validation result contains all necessary information.
         Assert.assertEquals(2, result.size());
@@ -162,14 +162,14 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         cacheSizesMap.put(2, 2L);
 
         // Form single messages map.
-        Map<UUID, GridDhtPartitionsSingleMessage> messages = new HashMap<>();
-        messages.put(remoteNode, from(updateCountersMap, cacheSizesMap));
-        messages.put(ignoreNode, from(updateCountersMap, cacheSizesMap));
+        Map<UUID, GridDhtPartitionsSingleMessage> msgs = new HashMap<>();
+        msgs.put(remoteNode, from(updateCountersMap, cacheSizesMap));
+        msgs.put(ignoreNode, from(updateCountersMap, cacheSizesMap));
 
         GridDhtPartitionsStateValidator validator = new GridDhtPartitionsStateValidator(cctxMock);
 
         // (partId, (nodeId, cacheSize))
-        Map<Integer, Map<UUID, Long>> result = validator.validatePartitionsSizes(topologyMock, messages, Sets.newHashSet(ignoreNode));
+        Map<Integer, Map<UUID, Long>> result = validator.validatePartitionsSizes(topologyMock, msgs, Sets.newHashSet(ignoreNode));
 
         // Check that validation result contains all necessary information.
         Assert.assertEquals(2, result.size());

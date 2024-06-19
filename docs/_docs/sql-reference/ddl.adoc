@@ -52,7 +52,7 @@ Parameters:
 
 ** `TEMPLATE=<cache's template name>` - case-sensitive​ name of a link:configuring-caches/configuration-overview#cache-templates[cache template]. A template is an instance of the `CacheConfiguration` class registered by calling `Ignite.addCacheConfiguration()`. Use predefined `TEMPLATE=PARTITIONED` or `TEMPLATE=REPLICATED` templates to create the cache with the corresponding replication mode. The rest of the parameters will be those that are defined in the `CacheConfiguration` object. By default, `TEMPLATE=PARTITIONED` is used if the template is not specified explicitly.
 ** `BACKUPS=<number of backups>` - sets the number of link:configuring-caches/configuring-backups[partition backups]. If neither this nor the `TEMPLATE` parameter is set, then the cache is created with `0` backup copies.
-** `ATOMICITY=<ATOMIC | TRANSACTIONAL | TRANSACTIONAL_SNAPSHOT>` - sets link:key-value-api/transactions[atomicity mode] for the underlying cache. If neither this nor the `TEMPLATE` parameter is set, then the cache is created with the `ATOMIC` mode enabled. If `TRANSACTIONAL_SNAPSHOT` is specified, the table will link:transactions/mvcc[support transactions].
+** `ATOMICITY=<ATOMIC | TRANSACTIONAL>` - sets link:key-value-api/transactions[atomicity mode] for the underlying cache. If neither this nor the `TEMPLATE` parameter is set, then the cache is created with the `ATOMIC` mode enabled.
 ** `WRITE_SYNCHRONIZATION_MODE=<PRIMARY_SYNC | FULL_SYNC | FULL_ASYNC>` -
 sets the write synchronization mode for the underlying cache. If neither this nor the `TEMPLATE` parameter is set, then the cache is created with `FULL_SYNC` mode enabled.
 ** `CACHE_GROUP=<group name>` - specifies the link:configuring-caches/cache-groups[group name] the underlying cache belongs to.
@@ -343,11 +343,11 @@ index_option := {INLINE_SIZE size | PARALLEL parallelism_level}
 
 Parameters:
 
-* `indexName` - the name of the index to be created.
+* `indexName` - the name of the index to be created. The index name must be unique per schema.
 * `ASC` - specifies ascending sort order (default).
 * `DESC` - specifies descending sort order.
 * `SPATIAL` - create the spatial index. Presently, only geometry types are supported.
-* `IF NOT EXISTS` - do not throw an error if an index with the same name already exists. The database checks indexes' names only, and does not consider columns types or count.
+* `IF NOT EXISTS` - do not throw an error if an index with the same name already exists. The database checks indexes' names only, and does not consider columns types or count. The index creation will be skipped if an index with the same name exist in the schema.
 * `index_option` - additional options for index creation:
 ** `INLINE_SIZE` - specifies index inline size in bytes. Depending on the size, Ignite will place the whole indexed value or a part of it directly into index pages, thus omitting extra calls to data pages and increasing queries' performance. Index inlining is enabled by default and the size is pre-calculated automatically based on the table structure. To disable inlining, set the size to 0 (not recommended). Refer to the link:SQL/sql-tuning#increasing-index-inline-size[Increasing Index Inline Size] section for more details.
 ** `PARALLEL` - specifies the number of threads to be used in parallel for index creation. The greater number is set, the faster the index is created and built. If the value exceeds the number of CPUs, then it will be decreased to the number of cores. If the parameter is not specified, then the number of threads is calculated as 25% of the CPU cores available.

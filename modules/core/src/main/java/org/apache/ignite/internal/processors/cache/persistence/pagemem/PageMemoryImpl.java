@@ -40,8 +40,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.PageReplacementMode;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.PageReplacementStartedEvent;
 import org.apache.ignite.failure.FailureContext;
@@ -84,7 +82,6 @@ import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.future.CountDownFuture;
-import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -235,11 +232,8 @@ public class PageMemoryImpl implements PageMemoryEx {
      */
     @Nullable private final DelayedPageReplacementTracker delayedPageReplacementTracker;
 
-    /**
-     * Callback invoked to track changes in pages.
-     * {@code Null} if page tracking functionality is disabled
-     * */
-    @Nullable private final GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker;
+    /** Obsolete feature. Flag keeped for compatibility with existing PDS. */
+    private final boolean trackable;
 
     /** Pages write throttle. */
     private PagesWriteThrottlePolicy writeThrottle;
@@ -262,6 +256,9 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** Memory metrics to track dirty pages count and page replace rate. */
     private final DataRegionMetricsImpl dataRegionMetrics;
+    
+    /** Data region configuration. */
+    private final DataRegionConfiguration dataRegionCfg;
 
     /**
      * {@code False} if memory was not started or already stopped and is not supposed for any usage.
@@ -275,9 +272,10 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param pmPageMgr Page store manager.
      * @param pageSize Page size.
      * @param flushDirtyPage write callback invoked when a dirty page is removed for replacement.
-     * @param changeTracker Callback invoked to track changes in pages.
+     * @param trackable Obsolete flag. Keeped for compatibility with existing PDS.
      * @param stateChecker Checkpoint lock state provider. Used to ensure lock is held by thread, which modify pages.
      * @param dataRegionMetrics Memory metrics to track dirty pages count and page replace rate.
+     * @param dataRegionCfg Data region configuration.
      * @param throttlingPlc Write throttle enabled and its type. Null equal to none.
      * @param cpProgressProvider checkpoint progress, base for throttling. Null disables throttling.
      */
@@ -288,9 +286,10 @@ public class PageMemoryImpl implements PageMemoryEx {
         PageReadWriteManager pmPageMgr,
         int pageSize,
         PageStoreWriter flushDirtyPage,
-        @Nullable GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker,
+        boolean trackable,
         CheckpointLockStateChecker stateChecker,
         DataRegionMetricsImpl dataRegionMetrics,
+        DataRegionConfiguration dataRegionCfg,
         @Nullable ThrottlingPolicy throttlingPlc,
         IgniteOutClosure<CheckpointProgress> cpProgressProvider
     ) {
@@ -308,7 +307,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             getBoolean(IGNITE_DELAYED_REPLACED_PAGE_WRITE, DFLT_DELAYED_REPLACED_PAGE_WRITE)
                 ? new DelayedPageReplacementTracker(pageSize, flushDirtyPage, log, sizes.length - 1) :
                 null;
-        this.changeTracker = changeTracker;
+        this.trackable = trackable;
         this.stateChecker = stateChecker;
         this.throttlingPlc = throttlingPlc != null ? throttlingPlc : ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY;
         this.cpProgressProvider = cpProgressProvider;
@@ -329,6 +328,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         rwLock = new OffheapReadWriteLock(128);
 
         this.dataRegionMetrics = dataRegionMetrics;
+        
+        this.dataRegionCfg = dataRegionCfg;
 
         asyncRunner = new ThreadPoolExecutor(
             0,
@@ -337,13 +338,8 @@ public class PageMemoryImpl implements PageMemoryEx {
             TimeUnit.SECONDS,
             new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors()),
             new IgniteThreadFactory(ctx.igniteInstanceName(), "page-mem-op"));
-
-        DataRegionConfiguration memCfg = getDataRegionConfiguration();
-
-        PageReplacementMode pageReplacementMode = memCfg == null ? DataRegionConfiguration.DFLT_PAGE_REPLACEMENT_MODE :
-                memCfg.getPageReplacementMode();
-
-        switch (pageReplacementMode) {
+        
+        switch (dataRegionCfg.getPageReplacementMode()) {
             case RANDOM_LRU:
                 pageReplacementPolicyFactory = new RandomLruPageReplacementPolicyFactory();
 
@@ -357,7 +353,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 break;
             default:
-                throw new IgniteException("Unexpected page replacement mode: " + pageReplacementMode);
+                throw new IgniteException("Unexpected page replacement mode: " + dataRegionCfg.getPageReplacementMode());
         }
     }
 
@@ -557,7 +553,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         seg.writeLock().lock();
 
-        boolean isTrackingPage = changeTracker != null &&
+        boolean isTrackingPage = trackable &&
             PageIdUtils.pageIndex(trackingIO.trackingPageFor(pageId, realPageSize(grpId))) == PageIdUtils.pageIndex(pageId);
 
         if (isTrackingPage && PageIdUtils.flag(pageId) == PageIdAllocator.FLAG_AUX)
@@ -644,8 +640,6 @@ public class PageMemoryImpl implements PageMemoryEx {
             seg.loadedPages.put(grpId, PageIdUtils.effectivePageId(pageId), relPtr, seg.partGeneration(grpId, partId));
         }
         catch (IgniteOutOfMemoryException oom) {
-            DataRegionConfiguration dataRegionCfg = getDataRegionConfiguration();
-
             IgniteOutOfMemoryException e = new IgniteOutOfMemoryException("Out of memory in data region [" +
                 "name=" + dataRegionCfg.getName() +
                 ", initSize=" + U.readableSize(dataRegionCfg.getInitialSize(), false) +
@@ -671,31 +665,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         //we have allocated 'tracking' page, we need to allocate regular one
         return isTrackingPage ? allocatePage(grpId, partId, flags) : pageId;
-    }
-
-    /**
-     * @return Data region configuration.
-     */
-    private DataRegionConfiguration getDataRegionConfiguration() {
-        DataStorageConfiguration memCfg = ctx.kernalContext().config().getDataStorageConfiguration();
-
-        assert memCfg != null;
-
-        String dataRegionName = dataRegionMetrics.getName();
-
-        if (memCfg.getDefaultDataRegionConfiguration().getName().equals(dataRegionName))
-            return memCfg.getDefaultDataRegionConfiguration();
-
-        DataRegionConfiguration[] dataRegions = memCfg.getDataRegionConfigurations();
-
-        if (dataRegions != null) {
-            for (DataRegionConfiguration reg : dataRegions) {
-                if (reg != null && reg.getName().equals(dataRegionName))
-                    return reg;
-            }
-        }
-
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -1719,10 +1688,6 @@ public class PageMemoryImpl implements PageMemoryEx {
         boolean wasDirty = isDirty(page);
 
         try {
-            //if page is for restore, we shouldn't mark it as changed
-            if (!restore && markDirty && !wasDirty && changeTracker != null)
-                changeTracker.apply(page, fullId, this);
-
             boolean pageWalRec = markDirty && walPlc != FALSE && (walPlc == TRUE || !wasDirty);
 
             assert PageIO.getCrc(page + PAGE_OVERHEAD) == 0; //TODO GG-11480
@@ -2362,8 +2327,6 @@ public class PageMemoryImpl implements PageMemoryEx {
          * @param reason Reason.
          */
         public IgniteOutOfMemoryException oomException(String reason) {
-            DataRegionConfiguration dataRegionCfg = getDataRegionConfiguration();
-
             return new IgniteOutOfMemoryException("Failed to find a page for eviction (" + reason + ") [" +
                 "segmentCapacity=" + loadedPages.capacity() +
                 ", loaded=" + loadedPages.size() +

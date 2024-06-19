@@ -447,19 +447,19 @@ public class ConverterUtils {
      * Integer directly).
      *
      * @param targetTypes Formal operand types declared for the function arguments
-     * @param arguments Input expressions to the function
+     * @param args Input expressions to the function
      * @return Input expressions with probable type conversion
      */
     static List<Expression> convertAssignableTypes(Class<?>[] targetTypes,
-        List<Expression> arguments) {
+        List<Expression> args) {
         final List<Expression> list = new ArrayList<>();
-        if (targetTypes.length == arguments.size()) {
-            for (int i = 0; i < arguments.size(); i++)
-                list.add(convertAssignableType(arguments.get(i), targetTypes[i]));
+        if (targetTypes.length == args.size()) {
+            for (int i = 0; i < args.size(); i++)
+                list.add(convertAssignableType(args.get(i), targetTypes[i]));
         }
         else {
             int j = 0;
-            for (Expression argument: arguments) {
+            for (Expression arg: args) {
                 Class<?> type;
                 if (!targetTypes[j].isArray()) {
                     type = targetTypes[j];
@@ -468,7 +468,7 @@ public class ConverterUtils {
                 else
                     type = targetTypes[j].getComponentType();
 
-                list.add(convertAssignableType(argument, type));
+                list.add(convertAssignableType(arg, type));
             }
         }
         return list;

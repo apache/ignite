@@ -496,9 +496,9 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
                     repairable = !(sorted.length > 1 && sorted[1] == max);
 
                     if (repairable)
-                        for (Map.Entry<T2<Object, GridCacheVersion>, Integer> count : counts.entrySet())
-                            if (count.getValue().equals(max)) {
-                                repaired = count.getKey().getKey();
+                        for (Map.Entry<T2<Object, GridCacheVersion>, Integer> cnt : counts.entrySet())
+                            if (cnt.getValue().equals(max)) {
+                                repaired = cnt.getKey().getKey();
 
                                 break;
                             }

@@ -678,7 +678,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 expPartCopiesInSnp = 1;
             else {
                 int backups = -1;
-                int affinityNodes = 0;
+                int affNodes = 0;
 
                 for (Ignite node: G.allGrids()) {
                     if (!filter.test(node))
@@ -690,17 +690,17 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                         backups = grpCtx.config().getBackups();
                         parts = grpCtx.affinity().partitions();
 
-                        affinityNodes++;
+                        affNodes++;
                     }
                 }
 
                 assertTrue(backups != -1);
                 assertTrue(parts != -1);
-                assertTrue(affinityNodes > 0);
+                assertTrue(affNodes > 0);
 
                 expPartCopiesInSnp = backups == Integer.MAX_VALUE
-                    ? affinityNodes
-                    : Math.min(backups + 1, affinityNodes);
+                    ? affNodes
+                    : Math.min(backups + 1, affNodes);
             }
 
             Map<Integer, Integer> cacheParts = entry.getValue();
@@ -784,6 +784,23 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         IgniteCache<?, ?> cache,
         Consumer<String> snpCanceller
     ) {
+        doSnapshotCancellationTest(false, startCli, srvs, cache, snpCanceller);
+    }
+
+    /**
+     * @param dump Dump flag.
+     * @param startCli Client node to start snapshot.
+     * @param srvs Server nodes.
+     * @param cache Persisted cache.
+     * @param snpCanceller Snapshot cancel closure.
+     */
+    public static void doSnapshotCancellationTest(
+        boolean dump,
+        IgniteEx startCli,
+        List<IgniteEx> srvs,
+        IgniteCache<?, ?> cache,
+        Consumer<String> snpCanceller
+    ) {
         IgniteEx srv = srvs.get(0);
 
         CacheConfiguration<?, ?> ccfg = cache.getConfiguration(CacheConfiguration.class);
@@ -795,7 +812,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         List<BlockingExecutor> execs = setBlockingSnapshotExecutor(srvs);
 
-        IgniteFuture<Void> fut = startCli.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut = snp(startCli).createSnapshot(SNAPSHOT_NAME, null, null, false,
+            false, dump, false, false);
 
         for (BlockingExecutor exec : execs)
             exec.waitForBlocked(30_000L);
@@ -823,8 +841,17 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         boolean withMetaStorage,
         SnapshotSender snpSndr
     ) throws IgniteCheckedException {
-        AbstractSnapshotFutureTask<?> task = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), null,
-            parts, withMetaStorage, snpSndr);
+        AbstractSnapshotFutureTask<?> task = cctx.snapshotMgr().registerSnapshotTask(snpName,
+            null,
+            cctx.localNodeId(),
+            null,
+            parts,
+            withMetaStorage,
+            false,
+            false,
+            false,
+            snpSndr
+        );
 
         if (!(task instanceof SnapshotFutureTask))
             throw new IgniteCheckedException("Snapshot task hasn't been registered: " + task);

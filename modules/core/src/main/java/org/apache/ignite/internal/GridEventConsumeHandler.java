@@ -275,8 +275,8 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         if (F.isEmpty(types))
             types = EVTS_ALL;
 
-        p2pUnmarshalFut.listen((fut) -> {
-            if (fut.error() == null) {
+        p2pUnmarshalFut.listen(() -> {
+            if (p2pUnmarshalFut.error() == null) {
                 try {
                     initFilter(filter, ctx);
                 }

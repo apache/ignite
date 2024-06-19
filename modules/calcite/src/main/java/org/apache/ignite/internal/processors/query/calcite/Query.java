@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTracker;
-import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.QueryMemoryTracker;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -118,10 +117,18 @@ public class Query<RowT> {
     }
 
     /** */
+    public void onError(Throwable failure) {
+        tryClose(failure);
+    }
+
+    /** */
     protected void tryClose(@Nullable Throwable failure) {
         List<RunningFragment<RowT>> fragments = new ArrayList<>(this.fragments);
 
         AtomicInteger cntDown = new AtomicInteger(fragments.size());
+
+        if (cntDown.get() == 0)
+            unregister.accept(this, failure);
 
         for (RunningFragment<RowT> frag : fragments) {
             frag.context().execute(() -> {
@@ -147,8 +154,6 @@ public class Query<RowT> {
 
             if (state == QueryState.INITED) {
                 state = QueryState.CLOSING;
-
-                assert memoryTracker == null;
 
                 try {
                     exch.closeQuery(initNodeId, id);
@@ -255,10 +260,8 @@ public class Query<RowT> {
         synchronized (mux) {
             // Query can have multiple fragments, each fragment requests memory tracker, but there should be only
             // one memory tracker per query on each node, store it inside Query instance.
-            if (memoryTracker == null) {
-                memoryTracker = quota > 0 || globalMemoryTracker != NoOpMemoryTracker.INSTANCE ?
-                    new QueryMemoryTracker(globalMemoryTracker, quota) : NoOpMemoryTracker.INSTANCE;
-            }
+            if (memoryTracker == null)
+                memoryTracker = QueryMemoryTracker.create(globalMemoryTracker, quota);
 
             return memoryTracker;
         }

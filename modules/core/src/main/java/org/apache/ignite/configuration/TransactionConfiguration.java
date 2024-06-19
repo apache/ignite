@@ -20,10 +20,8 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import java.util.ArrayList;
 import javax.cache.configuration.Factory;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.util.TransientSerializable;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -58,9 +56,6 @@ public class TransactionConfiguration implements Serializable {
     /** Transaction timeout on partition map synchronization. */
     public static final long TX_TIMEOUT_ON_PARTITION_MAP_EXCHANGE = 0;
 
-    /** Default timeout before starting deadlock detection. */
-    public static final long DFLT_DEADLOCK_TIMEOUT = 10_000;
-
     /** 
       * Default size of pessimistic transactions log.
       * @deprecated Pessimistic tx log linger property has no effect.
@@ -84,9 +79,6 @@ public class TransactionConfiguration implements Serializable {
      * Volatile in order to be changed dynamically.
      */
     private volatile long txTimeoutOnPartitionMapExchange = TX_TIMEOUT_ON_PARTITION_MAP_EXCHANGE;
-
-    /** Timeout before starting deadlock detection. */
-    private long deadlockTimeout = DFLT_DEADLOCK_TIMEOUT;
 
     /** Pessimistic tx log size. */
     @Deprecated
@@ -123,7 +115,6 @@ public class TransactionConfiguration implements Serializable {
         dfltIsolation = cfg.getDefaultTxIsolation();
         dfltTxTimeout = cfg.getDefaultTxTimeout();
         txTimeoutOnPartitionMapExchange = cfg.getTxTimeoutOnPartitionMapExchange();
-        deadlockTimeout = cfg.getDeadlockTimeout();
         pessimisticTxLogLinger = cfg.getPessimisticTxLogLinger();
         pessimisticTxLogSize = cfg.getPessimisticTxLogSize();
         txSerEnabled = cfg.isTxSerializableEnabled();
@@ -256,44 +247,6 @@ public class TransactionConfiguration implements Serializable {
      */
     public TransactionConfiguration setTxTimeoutOnPartitionMapExchange(long txTimeoutOnPartitionMapExchange) {
         this.txTimeoutOnPartitionMapExchange = txTimeoutOnPartitionMapExchange;
-
-        return this;
-    }
-
-    /**
-     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
-     * <p>
-     * Transaction deadlocks occurred for caches configured with {@link CacheAtomicityMode#TRANSACTIONAL_SNAPSHOT}
-     * can be resolved automatically.
-     * <p>
-     * Deadlock detection starts when one transaction is waiting for an entry lock more than a timeout specified by
-     * this property.
-     * <p>
-     * Timeout is specified in milliseconds and {@code 0} means that automatic deadlock detection is disabled. Default
-     * value is defined by {@link #DFLT_DEADLOCK_TIMEOUT}.
-     *
-     * @return Timeout before starting deadlock detection.
-     */
-    @IgniteExperimental
-    public long getDeadlockTimeout() {
-        return deadlockTimeout;
-    }
-
-    /**
-     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
-     * <p>
-     * Sets a timeout before starting deadlock detection for caches configured with
-     * {@link CacheAtomicityMode#TRANSACTIONAL_SNAPSHOT}.
-     * <p>
-     * Timeout is specified in milliseconds and {@code 0} means that automatic deadlock detection is disabled. Default
-     * value is defined by {@link #DFLT_DEADLOCK_TIMEOUT}.
-     *
-     * @param deadlockTimeout Timeout value in milliseconds.
-     * @return {@code this} for chaining.
-     */
-    @IgniteExperimental
-    public TransactionConfiguration setDeadlockTimeout(long deadlockTimeout) {
-        this.deadlockTimeout = deadlockTimeout;
 
         return this;
     }

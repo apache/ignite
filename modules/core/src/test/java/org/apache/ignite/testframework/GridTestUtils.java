@@ -104,6 +104,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -348,13 +349,13 @@ public final class GridTestUtils {
         for (Map.Entry<IgnitePair<UUID>, IgnitePair<Queue<Message>>> entry : msgMap.entrySet()) {
             U.debug("\n" + entry.getKey().get1() + " [sent to] " + entry.getKey().get2());
 
-            for (Message message : entry.getValue().get1())
-                U.debug("\t" + message);
+            for (Message msg : entry.getValue().get1())
+                U.debug("\t" + msg);
 
             U.debug(entry.getKey().get2() + " [received from] " + entry.getKey().get1());
 
-            for (Message message : entry.getValue().get2())
-                U.debug("\t" + message);
+            for (Message msg : entry.getValue().get2())
+                U.debug("\t" + msg);
         }
     }
 
@@ -458,8 +459,7 @@ public final class GridTestUtils {
      * @param log Logger (optional).
      * @param run Runnable.
      * @param cls Exception class.
-     * @param msg Exception message (optional). If provided exception message
-     *      and this message should be equal.
+     * @param msg Exception message (optional). Check that raised exception message contains this substring.
      * @return Thrown throwable.
      */
     public static Throwable assertThrows(
@@ -1053,9 +1053,9 @@ public final class GridTestUtils {
             }
         };
 
-        runFut.listen(fut -> {
+        runFut.listen(() -> {
             try {
-                resFut.onDone(fut.get());
+                resFut.onDone(runFut.get());
             }
             catch (IgniteFutureCancelledCheckedException e) {
                 resFut.onCancelled();
@@ -1799,6 +1799,14 @@ public final class GridTestUtils {
              */
             if (isFinal && isStatic)
                 throw new IgniteException("Modification of static final field through reflection.");
+
+            if (isFinal && U.majorJavaVersion(U.jdkVersion()) >= 12) {
+                long fieldOffset = GridUnsafe.objectFieldOffset(field);
+
+                GridUnsafe.putObjectField(obj, fieldOffset, val);
+
+                return;
+            }
 
             if (isFinal) {
                 Field modifiersField = Field.class.getDeclaredField("modifiers");

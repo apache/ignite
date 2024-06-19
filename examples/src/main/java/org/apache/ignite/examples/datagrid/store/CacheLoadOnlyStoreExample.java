@@ -63,13 +63,13 @@ public class CacheLoadOnlyStoreExample {
             System.out.println();
             System.out.println(">>> CacheLoadOnlyStoreExample started.");
 
-            ProductLoader productLoader = new ProductLoader("examples/src/main/resources/person.csv");
+            ProductLoader productLdr = new ProductLoader("examples/src/main/resources/person.csv");
 
-            productLoader.setThreadsCount(2);
-            productLoader.setBatchSize(10);
-            productLoader.setBatchQueueSize(1);
+            productLdr.setThreadsCount(2);
+            productLdr.setBatchSize(10);
+            productLdr.setBatchQueueSize(1);
 
-            try (IgniteCache<Long, Person> cache = ignite.getOrCreateCache(cacheConfiguration(productLoader))) {
+            try (IgniteCache<Long, Person> cache = ignite.getOrCreateCache(cacheConfiguration(productLdr))) {
                 // load data.
                 cache.loadCache(null);
 

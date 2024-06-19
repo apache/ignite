@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -79,13 +78,13 @@ public class TcpCommunicationHandshakeTimeoutTest extends GridCommonAbstractTest
         IgniteEx g1 = startGrid(1);
 
         //and: One more node which communication connection can be delayed by demand.
-        AtomicBoolean delayHandshakeUntilSocketClosed = new AtomicBoolean();
+        AtomicBoolean delayHandshakeUntilSockClosed = new AtomicBoolean();
         IgniteEx g2 = startGrid(2, new DependencyResolver() {
             @Override public <T> T resolve(T instance) {
                 if (instance instanceof TcpHandshakeExecutor) {
                     TcpHandshakeExecutor gridNioServer = (TcpHandshakeExecutor)instance;
 
-                    return (T)new DelaydTcpHandshakeExecutor(gridNioServer, delayHandshakeUntilSocketClosed);
+                    return (T)new DelaydTcpHandshakeExecutor(gridNioServer, delayHandshakeUntilSockClosed);
                 }
 
                 return instance;
@@ -103,7 +102,7 @@ public class TcpCommunicationHandshakeTimeoutTest extends GridCommonAbstractTest
         g2.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(0) {
 
             @Override public void onTimeout() {
-                delayHandshakeUntilSocketClosed.set(true);
+                delayHandshakeUntilSockClosed.set(true);
 
                 g2.compute(g2.cluster().forNodes(Arrays.asList(g1.localNode()))).withNoFailover().call(() -> true);
 
@@ -137,7 +136,7 @@ public class TcpCommunicationHandshakeTimeoutTest extends GridCommonAbstractTest
 
         /** {@inheritDoc} */
         @Override public long tcpHandshake(SocketChannel ch, UUID rmtNodeId, GridSslMeta sslMeta,
-            HandshakeMessage msg) throws IgniteCheckedException, IOException {
+            HandshakeMessage msg) throws IgniteCheckedException {
             if (needToDelayd.get()) {
                 needToDelayd.set(false);
 

@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.management.api;
 
 import java.util.function.Consumer;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public interface PreparableCommand<A extends IgniteDataTransferObject, R> extends Command<A, R> {
@@ -31,7 +33,6 @@ public interface PreparableCommand<A extends IgniteDataTransferObject, R> extend
      * @param arg Command argument.
      * @param printer Implementation specific printer.
      * @return {@code True} if command must be executed, {@code false} otherwise.
-     * @throws GridClientException If failed.
      */
-    public boolean prepare(GridClient cli, A arg, Consumer<String> printer) throws GridClientException;
+    public boolean prepare(@Nullable GridClient cli, @Nullable Ignite ignite, A arg, Consumer<String> printer) throws GridClientException;
 }

@@ -39,8 +39,16 @@ public class ExecutionNodeMemoryTracker<Row> implements RowTracker<Row> {
     /** */
     private final long rowOverhead;
 
+    /** Factory method. */
+    public static <T> RowTracker<T> create(MemoryTracker qryMemoryTracker, long rowOverhead) {
+        if (qryMemoryTracker == NoOpMemoryTracker.INSTANCE)
+            return NoOpRowTracker.instance();
+        else
+            return new ExecutionNodeMemoryTracker<>(qryMemoryTracker, rowOverhead);
+    }
+
     /** */
-    public ExecutionNodeMemoryTracker(MemoryTracker qryMemoryTracker, long rowOverhead) {
+    ExecutionNodeMemoryTracker(MemoryTracker qryMemoryTracker, long rowOverhead) {
         this.qryMemoryTracker = qryMemoryTracker;
         this.rowOverhead = rowOverhead;
     }

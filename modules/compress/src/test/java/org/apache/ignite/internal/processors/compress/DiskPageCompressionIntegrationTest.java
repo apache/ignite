@@ -42,8 +42,8 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecora
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -141,9 +141,9 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
         GridCacheContext<?, ?> cctx = ignite.cachex(cacheName).context();
 
         int cacheId = cctx.cacheId();
-        int groupId = cctx.groupId();
+        int grpId = cctx.groupId();
 
-        assertEquals(cacheId, groupId);
+        assertEquals(cacheId, grpId);
 
         MetricRegistry mreg = ignite.context().metric().registry(
             metricName(CACHE_GROUP_METRICS_PREFIX, cctx.group().cacheOrGroupName()));

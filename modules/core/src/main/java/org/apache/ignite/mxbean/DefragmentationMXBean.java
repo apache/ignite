@@ -19,7 +19,11 @@ package org.apache.ignite.mxbean;
 
 /**
  * JMX bean for defragmentation manager.
+ *
+ * @see org.apache.ignite.internal.management.api.CommandMBean
+ * @deprecated Use managements API beans, instead.
  */
+@Deprecated
 @MXBeanDescription("MBean that provides access for defragmentation features.")
 public interface DefragmentationMXBean {
     /**

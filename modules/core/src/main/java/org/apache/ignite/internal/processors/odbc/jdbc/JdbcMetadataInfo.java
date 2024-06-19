@@ -239,12 +239,12 @@ public class JdbcMetadataInfo {
 
         TreeSet<JdbcIndexMeta> meta = new TreeSet<>(metaComparator);
 
-        for (IndexDescriptor indexDescriptor : ctx.query().schemaManager().allIndexes()) {
-            GridQueryTypeDescriptor typeDescriptor = indexDescriptor.table().type();
+        for (IndexDescriptor idxDescriptor : ctx.query().schemaManager().allIndexes()) {
+            GridQueryTypeDescriptor typeDescriptor = idxDescriptor.table().type();
 
             if (matches(typeDescriptor.schemaName(), schemaNamePtrn) &&
                 matches(typeDescriptor.tableName(), tblNamePtrn))
-                meta.add(new JdbcIndexMeta(indexDescriptor));
+                meta.add(new JdbcIndexMeta(idxDescriptor));
         }
 
         return meta;

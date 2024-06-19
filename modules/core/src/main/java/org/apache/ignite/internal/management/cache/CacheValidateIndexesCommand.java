@@ -17,23 +17,13 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
-import org.apache.ignite.internal.visor.verify.IndexIntegrityCheckIssue;
-import org.apache.ignite.internal.visor.verify.IndexValidationIssue;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesCheckSizeIssue;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesCheckSizeResult;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesPartitionResult;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
@@ -41,7 +31,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.join;
 
 /** Validates indexes attempting to read each indexed entry. */
 public class CacheValidateIndexesCommand
-    implements ComputeCommand<CacheValidateIndexesCommandArg, VisorValidateIndexesTaskResult> {
+    implements ComputeCommand<CacheValidateIndexesCommandArg, ValidateIndexesTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Validates indexes for the specified caches/cache groups on an idle cluster " +
@@ -55,32 +45,42 @@ public class CacheValidateIndexesCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorValidateIndexesTask> taskClass() {
-        return VisorValidateIndexesTask.class;
+    @Override public Class<ValidateIndexesTask> taskClass() {
+        return ValidateIndexesTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, CacheValidateIndexesCommandArg arg) {
-        return arg.nodeIds() != null ? Arrays.asList(arg.nodeIds()) : null;
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, CacheValidateIndexesCommandArg arg) {
+        if (F.isEmpty(arg.nodeIds()))
+            return null;
+
+        return CommandUtils.nodes(arg.nodeIds(), nodes);
     }
 
     /** {@inheritDoc} */
     @Override public void printResult(
         CacheValidateIndexesCommandArg arg,
-        VisorValidateIndexesTaskResult res0,
+        ValidateIndexesTaskResult res0,
         Consumer<String> printer
     ) {
-        boolean errors = CommandUtils.printErrors(res0.exceptions(), "Index validation failed on nodes:", printer);
+        boolean errors = !F.isEmpty(res0.exceptions());
 
-        for (Map.Entry<UUID, VisorValidateIndexesJobResult> nodeEntry : res0.results().entrySet()) {
-            VisorValidateIndexesJobResult jobRes = nodeEntry.getValue();
+        if (errors) {
+            printer.accept("Index validation failed on nodes:");
+
+            res0.exceptions().forEach((node, err) -> CommandUtils.printNodeError(printer, node.id(), node.consistentId(), err));
+        }
+
+        for (Map.Entry<ValidateIndexesTaskResult.NodeInfo, ValidateIndexesJobResult> nodeEntry : res0.results().entrySet()) {
+            ValidateIndexesJobResult jobRes = nodeEntry.getValue();
 
             if (!jobRes.hasIssues())
                 continue;
 
             errors = true;
 
-            printer.accept("Index issues found on node " + nodeEntry.getKey() + ":");
+            printer.accept("Index issues found on node " + nodeEntry.getKey().id() + " [consistentId='"
+                + nodeEntry.getKey().consistentId() + "']:");
 
             for (IndexIntegrityCheckIssue is : jobRes.integrityCheckFailures())
                 printer.accept(INDENT + is);

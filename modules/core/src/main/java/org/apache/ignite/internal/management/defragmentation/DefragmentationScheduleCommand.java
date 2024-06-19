@@ -20,22 +20,18 @@ package org.apache.ignite.internal.management.defragmentation;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationStatusCommandArg;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTask;
-import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTaskResult;
 
 /** */
 public class DefragmentationScheduleCommand
-    implements ComputeCommand<DefragmentationStatusCommandArg, VisorDefragmentationTaskResult> {
+    implements ComputeCommand<DefragmentationStatusCommandArg, DefragmentationTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Schedule PDS defragmentation";
@@ -47,21 +43,21 @@ public class DefragmentationScheduleCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorDefragmentationTask> taskClass() {
-        return VisorDefragmentationTask.class;
+    @Override public Class<DefragmentationTask> taskClass() {
+        return DefragmentationTask.class;
     }
 
     /** {@inheritDoc} */
     @Override public void printResult(
         DefragmentationStatusCommandArg arg,
-        VisorDefragmentationTaskResult res,
+        DefragmentationTaskResult res,
         Consumer<String> printer
     ) {
         printer.accept(res.getMessage());
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, DefragmentationStatusCommandArg arg0) {
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, DefragmentationStatusCommandArg arg0) {
         DefragmentationScheduleCommandArg arg = (DefragmentationScheduleCommandArg)arg0;
 
         if (F.isEmpty(arg.nodes()))
@@ -69,9 +65,8 @@ public class DefragmentationScheduleCommand
 
         Set<String> nodesArg = new HashSet<>(Arrays.asList(arg.nodes()));
 
-        return nodes.entrySet().stream()
-            .filter(e -> nodesArg.contains(Objects.toString(e.getValue().consistentId())))
-            .map(Map.Entry::getKey)
+        return nodes.stream()
+            .filter(n -> nodesArg.contains(Objects.toString(n.consistentId())))
             .collect(Collectors.toList());
     }
 }

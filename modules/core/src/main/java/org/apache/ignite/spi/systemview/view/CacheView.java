@@ -17,6 +17,11 @@
 
 package org.apache.ignite.spi.systemview.view;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.configuration.Factory;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.ExpiryPolicy;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -29,11 +34,13 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 
@@ -331,7 +338,78 @@ public class CacheView {
 
     /** @see CacheConfiguration#getExpiryPolicyFactory() */
     public String expiryPolicyFactory() {
-        return toStringSafe(cache.cacheConfiguration().getExpiryPolicyFactory());
+        if (cache.cacheConfiguration().getExpiryPolicyFactory() == null)
+            return null;
+
+        ExpiryPolicy expiryPlc = (ExpiryPolicy)cache.cacheConfiguration().getExpiryPolicyFactory().create();
+
+        AtomicBoolean first = new AtomicBoolean(true);
+
+        StringBuilder expiryPlcStrBld = new StringBuilder(expiryPlc.getClass().getSimpleName());
+
+        appendField(expiryPlcStrBld, "create", expiryPlc.getExpiryForCreation(), first);
+        appendField(expiryPlcStrBld, "update", expiryPlc.getExpiryForUpdate(), first);
+        appendField(expiryPlcStrBld, "access", expiryPlc.getExpiryForAccess(), first);
+
+        if (!first.get())
+            expiryPlcStrBld.append(']');
+
+        return S.toString((Class<Factory<?>>)cache.cacheConfiguration().getExpiryPolicyFactory().getClass(),
+            cache.cacheConfiguration().getExpiryPolicyFactory(), "expiryPlc", expiryPlcStrBld);
+    }
+
+    /**
+     * @param out {@link StringBuilder} to append to.
+     * @param fieldName create/update/access expiry policy field name.
+     * @param duration {@link Duration} for specified expiry policy field name.
+     * @param first {@link AtomicBoolean} flag indicating whether the field is the first in sequence.
+     */
+    private static void appendField(
+        StringBuilder out,
+        String fieldName,
+        Duration duration,
+        AtomicBoolean first
+    ) {
+        if (duration != null) {
+            if (!first.get())
+                out.append(", ");
+            else {
+                out.append(" [");
+                first.compareAndSet(true, false);
+            }
+
+            out.append(fieldName).append('=');
+            appendDuration(out, duration);
+        }
+    }
+
+    /**
+     * Duration representation for specified StringBuilder instance.
+     * @param out {@link StringBuilder} to append to.
+     * @param duration {@link Duration}.
+     */
+    private static void appendDuration(StringBuilder out, Duration duration) {
+        if (duration.isEternal())
+            out.append("ETERNAL");
+        else if (duration.isZero())
+            out.append("ZERO");
+        else
+            out.append(duration.getDurationAmount()).append(' ').append(duration.getTimeUnit());
+    }
+
+    /** @return {@code Yes} if cache has expired entries, {@code No} otherwise. If {@code eagerTtl = true} returns 'Unknown'. */
+    public String hasExpiringEntries() {
+        CacheGroupContext grpCtx = ctx.cache().cacheGroup(cache.groupId());
+
+        if (!cache.cacheConfiguration().isEagerTtl() || grpCtx == null)
+            return "Unknown";
+
+        try {
+            return grpCtx.offheap().hasEntriesPendingExpire(cache.cacheId()) ? "Yes" : "No";
+        }
+        catch (IgniteCheckedException e) {
+            return e.getMessage();
+        }
     }
 
     /** @see CacheConfiguration#isSqlEscapeAll() */

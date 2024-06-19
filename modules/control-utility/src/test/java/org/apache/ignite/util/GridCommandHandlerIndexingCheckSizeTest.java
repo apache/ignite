@@ -37,14 +37,15 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommand;
+import org.apache.ignite.internal.management.cache.ValidateIndexesCheckSizeIssue;
+import org.apache.ignite.internal.management.cache.ValidateIndexesCheckSizeResult;
+import org.apache.ignite.internal.management.cache.ValidateIndexesTaskResult;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesCheckSizeIssue;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesCheckSizeResult;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
 import org.apache.ignite.util.GridCommandHandlerIndexingUtils.Organization;
 import org.apache.ignite.util.GridCommandHandlerIndexingUtils.Person;
 import org.junit.Test;
+
 import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
@@ -435,7 +436,12 @@ public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerC
         );
 
         String out = testOut.toString();
+
         assertContains(log, out, "issues found (listed above)");
+
+        assertContains(log, out, String.format("Index issues found on node %s [consistentId='%s']:",
+            crd.localNode().id().toString(), crd.localNode().consistentId()));
+
         assertNotContains(log, out, "Size check");
     }
 
@@ -470,8 +476,7 @@ public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerC
         assertContains(log, out, "Size check");
 
         Map<String, ValidateIndexesCheckSizeResult> valIdxCheckSizeResults =
-            ((VisorValidateIndexesTaskResult)lastOperationResult).results().get(node.localNode().id())
-                .checkSizeResult();
+            ((ValidateIndexesTaskResult)lastOperationResult).jobResult(node.localNode()).checkSizeResult();
 
         assertEquals(rmvByTbl.size(), valIdxCheckSizeResults.size());
 

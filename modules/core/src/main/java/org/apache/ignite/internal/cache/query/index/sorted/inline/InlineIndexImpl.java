@@ -44,7 +44,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition
 import org.apache.ignite.internal.cache.query.index.sorted.ThreadLocalRowHandlerHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -54,11 +53,15 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Sorted index implementation.
  */
 public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
+    /** */
+    public static final String INDEX_METRIC_PREFIX = "index";
+
     /** Unique ID. */
     private final UUID id = UUID.randomUUID();
 
@@ -222,7 +225,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
     /** */
     private boolean isSingleRowLookup(IndexRow lower, IndexRow upper) throws IgniteCheckedException {
-        return !cctx.mvccEnabled() && def.primary() && lower != null && isFullSchemaSearch(lower) && checkRowsTheSame(lower, upper);
+        return def.primary() && lower != null && isFullSchemaSearch(lower) && checkRowsTheSame(lower, upper);
     }
 
     /**
@@ -473,15 +476,10 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         IndexingQueryCacheFilter cacheFilter = qryCtx.cacheFilter() == null ? null
             : qryCtx.cacheFilter().forCache(cctx.cache().name());
 
-        MvccSnapshot v = qryCtx.mvccSnapshot();
-
-        assert !cctx.mvccEnabled() || v != null;
-
-        if (cacheFilter == null && v == null && qryCtx.rowFilter() == null)
+        if (cacheFilter == null && qryCtx.rowFilter() == null)
             return null;
 
-        return new InlineTreeFilterClosure(
-            cacheFilter, qryCtx.rowFilter(), v, cctx, cctx.kernalContext().config().getGridLogger());
+        return new InlineTreeFilterClosure(cacheFilter, qryCtx.rowFilter());
     }
 
     /** {@inheritDoc} */
@@ -555,6 +553,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                 }
 
                 cctx.kernalContext().metric().remove(stats.metricRegistryName());
+                cctx.kernalContext().metric().remove(metricName(INDEX_METRIC_PREFIX, def.idxName().fullName()));
 
                 if (cctx.group().persistenceEnabled() ||
                     cctx.shared().kernalContext().state().clusterState().state() != INACTIVE) {

@@ -170,23 +170,23 @@ public class IgnitePdsDiscoDataHandlingInNewClusterTest extends GridCommonAbstra
         assertTrue(caches.keySet().contains(STATIC_CACHE_NAME_0));
         assertTrue(caches.keySet().contains(DYNAMIC_CACHE_NAME_0));
 
-        Map<Integer, CacheGroupDescriptor> groups = ig.context().cache().cacheGroupDescriptors();
+        Map<Integer, CacheGroupDescriptor> grps = ig.context().cache().cacheGroupDescriptors();
 
-        assertEquals(2, groups.size());
+        assertEquals(2, grps.size());
 
-        boolean defaultGroupFound = false;
-        boolean mixedCachesGroupFound = false;
+        boolean dfltGrpFound = false;
+        boolean mixedCachesGrpFound = false;
 
-        for (CacheGroupDescriptor grpDesc : groups.values()) {
+        for (CacheGroupDescriptor grpDesc : grps.values()) {
             if (grpDesc.cacheOrGroupName().equals(GridCacheUtils.UTILITY_CACHE_NAME))
-                defaultGroupFound = true;
+                dfltGrpFound = true;
             else if (grpDesc.cacheOrGroupName().equals(MIXED_CACHES_GROUP_NAME_0))
-                mixedCachesGroupFound = true;
+                mixedCachesGrpFound = true;
         }
 
         assertTrue(String.format("Default group found: %b, mixed group found: %b",
-            defaultGroupFound,
-            mixedCachesGroupFound),
-            defaultGroupFound && mixedCachesGroupFound);
+            dfltGrpFound,
+            mixedCachesGrpFound),
+            dfltGrpFound && mixedCachesGrpFound);
     }
 }

@@ -33,7 +33,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -54,9 +53,6 @@ public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
     /** */
     private static final String TX_CACHE = "txCache";
 
-    /** */
-    private static final String MVCC_CACHE = "mvccCache";
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -73,13 +69,7 @@ public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
             .setBackups(2)
             .setWriteSynchronizationMode(PRIMARY_SYNC);
 
-        CacheConfiguration<Object, Object> ccfg3 = new CacheConfiguration<>(MVCC_CACHE)
-            .setReadFromBackup(false)
-            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
-            .setBackups(2)
-            .setWriteSynchronizationMode(PRIMARY_SYNC);
-
-        cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
+        cfg.setCacheConfiguration(ccfg1, ccfg2);
 
         return cfg;
     }
@@ -106,15 +96,11 @@ public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
 
         checkPutGet(ignite.cache(TX_CACHE), null, null, null);
 
-        checkPutGet(ignite.cache(MVCC_CACHE), null, null, null);
-
         checkPutGet(ignite.cache(TX_CACHE), ignite.transactions(), OPTIMISTIC, REPEATABLE_READ);
 
         checkPutGet(ignite.cache(TX_CACHE), ignite.transactions(), OPTIMISTIC, SERIALIZABLE);
 
         checkPutGet(ignite.cache(TX_CACHE), ignite.transactions(), PESSIMISTIC, READ_COMMITTED);
-
-        checkPutGet(ignite.cache(MVCC_CACHE), ignite.transactions(), PESSIMISTIC, REPEATABLE_READ);
     }
 
     /**

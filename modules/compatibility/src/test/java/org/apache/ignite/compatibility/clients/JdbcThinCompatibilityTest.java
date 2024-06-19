@@ -24,7 +24,9 @@ import java.sql.Statement;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.junit.Assume;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -45,6 +47,18 @@ public class JdbcThinCompatibilityTest extends AbstractClientCompatibilityTest {
     /** Execute sql. */
     private static void executeSql(IgniteEx igniteEx, String sql) {
         igniteEx.context().query().querySqlFields(new SqlFieldsQuery(sql), false).getAll();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
+
+        if (majorJavaVer > 11) {
+            Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
+                VER_2_12_0.compareTo(IgniteProductVersion.fromString(verFormatted)) < 0);
+        }
     }
 
     /** {@inheritDoc} */

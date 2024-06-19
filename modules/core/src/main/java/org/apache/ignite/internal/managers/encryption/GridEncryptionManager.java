@@ -697,7 +697,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 "Unable to get the master key digest.", e));
         }
 
-        MasterKeyChangeRequest request = new MasterKeyChangeRequest(UUID.randomUUID(), encryptKeyName(masterKeyName),
+        MasterKeyChangeRequest req = new MasterKeyChangeRequest(UUID.randomUUID(), encryptKeyName(masterKeyName),
             digest);
 
         synchronized (opsMux) {
@@ -717,9 +717,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                     "The previous change was not completed."));
             }
 
-            masterKeyChangeFut = new KeyChangeFuture(request.requestId());
+            masterKeyChangeFut = new KeyChangeFuture(req.requestId());
 
-            prepareMKChangeProc.start(request.requestId(), request);
+            prepareMKChangeProc.start(req.requestId(), req);
 
             return new IgniteFutureImpl<>(masterKeyChangeFut);
         }
@@ -1252,10 +1252,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         for (int grpId : grpIds) {
             IgniteInternalFuture<?> fut = pageScanner.schedule(grpId);
 
-            fut.listen(f -> {
-                if (f.isCancelled() || f.error() != null) {
+            fut.listen(() -> {
+                if (fut.isCancelled() || fut.error() != null) {
                     log.warning("Reencryption " +
-                        (f.isCancelled() ? "cancelled" : "failed") + " [grp=" + grpId + "]", f.error());
+                        (fut.isCancelled() ? "cancelled" : "failed") + " [grp=" + grpId + "]", fut.error());
 
                     return;
                 }

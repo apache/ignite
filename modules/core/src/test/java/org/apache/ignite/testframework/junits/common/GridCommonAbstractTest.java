@@ -81,6 +81,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommandArg;
+import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyTaskV2;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
@@ -115,7 +117,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
@@ -129,7 +130,7 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2;
+import org.apache.ignite.internal.visor.VisorTaskResult;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -147,6 +148,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -190,7 +192,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache(int idx) {
-        return grid(idx).cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        return grid(idx).cache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -321,7 +323,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache() {
-        return grid().cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        return grid().cache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -1976,10 +1978,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * @param name Instance name.
+     * @param consistentId Node consistentId.
      */
-    protected void cleanPersistenceDir(String name) throws Exception {
-        String dn2DirName = name.replace(".", "_");
+    protected void cleanPersistenceDir(String consistentId) throws Exception {
+        String dn2DirName = consistentId.replace(".", "_");
 
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/" + dn2DirName, true));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/wal/" + dn2DirName, true));
@@ -2222,7 +2224,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Conflicts result.
      * @throws IgniteException If none caches or node found.
      */
-    protected IdleVerifyResultV2 idleVerify(Ignite ig, @Nullable String... caches) {
+    protected IdleVerifyResultV2 idleVerify(Ignite ig, @Nullable String... caches) throws Exception {
         log.info("Starting idleVerify ...");
 
         IgniteEx ig0 = (IgniteEx)ig;
@@ -2246,10 +2248,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         taskArg.caches(cacheNames.toArray(U.EMPTY_STRS));
 
-        return ig.compute().execute(
-            VisorIdleVerifyTaskV2.class.getName(),
+        return ((VisorTaskResult<IdleVerifyResultV2>)ig.compute().execute(
+            IdleVerifyTaskV2.class.getName(),
             new VisorTaskArgument<>(node.id(), taskArg, false)
-        );
+        )).result();
     }
 
     /**
@@ -2553,7 +2555,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return {@code Set} of metrics methods that have forbidden return types.
      * @throws Exception If failed to obtain metrics.
      */
-    protected Set<String> getInvalidMbeansMethods(Ignite ignite) throws Exception {
+    protected Set<String> getInvalidMbeansMethods(Ignite ignite) {
         Set<String> sysMetricsPackages = new HashSet<>();
         sysMetricsPackages.add("sun.management");
         sysMetricsPackages.add("javax.management");
@@ -2570,7 +2572,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             if (sysMetricsPackages.stream().anyMatch(clsName::startsWith))
                 continue;
 
-            Class c;
+            Class<?> c;
 
             try {
                 c = Class.forName(clsName);
@@ -2581,7 +2583,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 continue;
             }
 
-            for (Class interf : c.getInterfaces()) {
+            for (Class<?> interf : c.getInterfaces()) {
                 for (Method m : interf.getMethods()) {
                     if (!m.isAnnotationPresent(MXBeanDescription.class))
                         continue;
@@ -2814,11 +2816,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Distributed property: {@code GridJobProcessor#computeJobWorkerInterruptTimeout}.
      */
     protected DistributedChangeableProperty<Serializable> computeJobWorkerInterruptTimeout(Ignite n) {
-        DistributedChangeableProperty<Serializable> timeoutProperty = ((IgniteEx)n).context().distributedConfiguration()
+        DistributedChangeableProperty<Serializable> timeoutProp = ((IgniteEx)n).context().distributedConfiguration()
             .property(GridJobProcessor.COMPUTE_JOB_WORKER_INTERRUPT_TIMEOUT);
 
-        assertThat(timeoutProperty, notNullValue());
+        assertThat(timeoutProp, notNullValue());
 
-        return timeoutProperty;
+        return timeoutProp;
     }
 }

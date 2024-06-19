@@ -107,6 +107,22 @@ public class ImmutableIntSet implements IntSet {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        return delegate.equals(((ImmutableIntSet)o).delegate);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return delegate.hashCode();
+    }
+
+    /** {@inheritDoc} */
     @NotNull @Override public Iterator<Integer> iterator() {
         return new Iterator<Integer>() {
             /** */

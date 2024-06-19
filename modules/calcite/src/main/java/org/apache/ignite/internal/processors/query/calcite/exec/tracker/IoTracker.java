@@ -17,13 +17,32 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.tracker;
 
+import java.util.concurrent.atomic.AtomicLong;
+import org.jetbrains.annotations.Nullable;
+
 /**
  * I/O operations tracker interface.
  */
 public interface IoTracker {
-    /** Start tracking of I/O operations performed by current thread. */
-    public void startTracking();
+    /**
+     * Start tracking of I/O operations performed by current thread.
+     *
+     * @return {@code True} if tracking is started and wasn't started before.
+     */
+    public boolean startTracking();
 
     /** Stop tracking and save result. */
     public void stopTracking();
+
+    /**
+     * Register counter for processed rows.
+     *
+     * @param action Action with rows.
+     */
+    @Nullable public AtomicLong processedRowsCounter(String action);
+
+    /**
+     * Flush tracked data.
+     */
+    public void flush();
 }

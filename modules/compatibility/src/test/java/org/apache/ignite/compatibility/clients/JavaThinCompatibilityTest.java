@@ -104,6 +104,18 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
+
+        if (majorJavaVer > 11) {
+            Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
+                    VER_2_12_0.compareTo(IgniteProductVersion.fromString(verFormatted)) < 0);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override protected void initNode(Ignite ignite) {
         ignite.services().deployNodeSingleton("test_service", new EchoService());
 

@@ -55,7 +55,7 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
@@ -170,7 +170,7 @@ public class GridNioServer<T> {
     public static final String SESSIONS_CNT_METRIC_NAME = "ActiveSessionsCount";
 
     /** Defines how many times selector should do {@code selectNow()} before doing {@code select(long)}. */
-    private long selectorSpins;
+    private final long selectorSpins;
 
     /** Accept worker. */
     @GridToStringExclude
@@ -240,7 +240,7 @@ public class GridNioServer<T> {
     private final boolean directMode;
 
     /** */
-    @Nullable private final MetricRegistry mreg;
+    @Nullable private final MetricRegistryImpl mreg;
 
     /** Received bytes count metric. */
     @Nullable private final LongAdderMetric rcvdBytesCntMetric;
@@ -336,7 +336,7 @@ public class GridNioServer<T> {
         IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr,
         boolean readWriteSelectorsAssign,
         @Nullable GridWorkerListener workerLsnr,
-        @Nullable MetricRegistry mreg,
+        @Nullable MetricRegistryImpl mreg,
         Tracing tracing,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
@@ -1425,7 +1425,8 @@ public class GridNioServer<T> {
             try {
                 boolean writeFinished = writeSslSystem(ses, sockCh);
 
-                if (!handshakeFinished) {
+                // If post-handshake message is not written fully (possible on JDK 17), we should retry.
+                if (!handshakeFinished || !writeFinished) {
                     if (writeFinished)
                         stopPollingForWrite(key, ses);
 
@@ -1477,7 +1478,6 @@ public class GridNioServer<T> {
                         }
                     }
 
-                    Message msg;
                     boolean finished = false;
 
                     List<SessionWriteRequest> pendingRequests = new ArrayList<>(2);
@@ -1814,10 +1814,10 @@ public class GridNioServer<T> {
      * @param requests SessionWriteRequests.
      */
     private void onRequestsWritten(GridSelectorNioSessionImpl ses, List<SessionWriteRequest> requests) {
-        for (SessionWriteRequest request : requests) {
-            request.onMessageWritten();
+        for (SessionWriteRequest req : requests) {
+            req.onMessageWritten();
 
-            onMessageWritten(ses, (Message)request.message());
+            onMessageWritten(ses, (Message)req.message());
         }
     }
 
@@ -3859,7 +3859,7 @@ public class GridNioServer<T> {
         private GridWorkerListener workerLsnr;
 
         /** Metrics registry. */
-        private MetricRegistry mreg;
+        private MetricRegistryImpl mreg;
 
         /** Tracing processor */
         private Tracing tracing;
@@ -4164,7 +4164,7 @@ public class GridNioServer<T> {
          * @param mreg Metrics registry.
          * @return This for chaining.
          */
-        public Builder<T> metricRegistry(MetricRegistry mreg) {
+        public Builder<T> metricRegistry(MetricRegistryImpl mreg) {
             this.mreg = mreg;
 
             return this;

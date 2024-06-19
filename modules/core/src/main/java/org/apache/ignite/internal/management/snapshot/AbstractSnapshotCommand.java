@@ -18,21 +18,13 @@
 package org.apache.ignite.internal.management.snapshot;
 
 import java.util.function.Consumer;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
 
 /** */
-public abstract class AbstractSnapshotCommand<A extends IgniteDataTransferObject>
-    implements ComputeCommand<A, VisorSnapshotTaskResult> {
+public abstract class AbstractSnapshotCommand<A extends IgniteDataTransferObject, R> implements ComputeCommand<A, R> {
     /** {@inheritDoc} */
-    @Override public void printResult(A arg, VisorSnapshotTaskResult res, Consumer<String> printer) {
-        try {
-            printer.accept(String.valueOf(res.result()));
-        }
-        catch (Exception e) {
-            throw new IgniteException(e);
-        }
+    @Override public void printResult(A arg, R res, Consumer<String> printer) {
+        printer.accept(String.valueOf(res));
     }
 }

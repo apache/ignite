@@ -52,8 +52,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -65,7 +63,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.Compactab
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.processors.cache.tree.AbstractDataLeafIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -75,8 +72,6 @@ import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.mockito.Mockito;
 
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_CACHE_ID_DATA_REF_MVCC_LEAF;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA_REF_MVCC_LEAF;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -542,9 +537,6 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         long totalAllocated = pageStoreMgr.pagesAllocated(MetaStorage.METASTORAGE_CACHE_ID);
 
-        if (MvccUtils.mvccEnabled(gridCtx))
-            totalAllocated += pageStoreMgr.pagesAllocated(TxLog.TX_LOG_CACHE_ID);
-
         for (CacheGroupContext ctx : gridCtx.cache().cacheGroups())
             totalAllocated += pageStoreMgr.pagesAllocated(ctx.groupId());
 
@@ -567,7 +559,7 @@ public class PageMemoryTracker implements IgnitePlugin {
      * @param checkAll Check all tracked pages, otherwise check until first error.
      * @param checkPageCnt Check tracked and allocated pages count. This check can be done only if there is no
      * concurrent modification of pages in the system (for example when checkpointWriteLock is held). Some threads
-     * (for example MVCC vacuum cleaner) can modify pages even if there is no activity from a users point of view.
+     * can modify pages even if there is no activity from a users point of view.
      * @return {@code true} if content of all tracked pages equals to content of these pages in the ignite instance.
      */
     private boolean checkPages(boolean checkAll, boolean checkPageCnt) throws IgniteCheckedException {
@@ -598,7 +590,7 @@ public class PageMemoryTracker implements IgnitePlugin {
             }
         }
 
-        Set<Integer> groupsWarned = new HashSet<>();
+        Set<Integer> grpsWarned = new HashSet<>();
 
         for (DirectMemoryPage page : pages.values()) {
             FullPageId fullPageId = page.fullPageId();
@@ -607,18 +599,16 @@ public class PageMemoryTracker implements IgnitePlugin {
 
             if (fullPageId.groupId() == MetaStorage.METASTORAGE_CACHE_ID)
                 pageMem = cacheProc.context().database().metaStorage().pageMemory();
-            else if (fullPageId.groupId() == TxLog.TX_LOG_CACHE_ID)
-                pageMem = cacheProc.context().database().dataRegion(TxLog.TX_LOG_CACHE_NAME).pageMemory();
             else {
                 CacheGroupContext ctx = cacheProc.cacheGroup(fullPageId.groupId());
 
                 if (ctx != null)
                     pageMem = ctx.dataRegion().pageMemory();
                 else {
-                    if (!groupsWarned.contains(fullPageId.groupId())) {
+                    if (!grpsWarned.contains(fullPageId.groupId())) {
                         log.warning("Cache group " + fullPageId.groupId() + " not found.");
 
-                        groupsWarned.add(fullPageId.groupId());
+                        grpsWarned.add(fullPageId.groupId());
                     }
 
                     continue;
@@ -684,20 +674,6 @@ public class PageMemoryTracker implements IgnitePlugin {
         ByteBuffer rmtBuf = GridUnsafe.wrapPointer(actualPageAddr, pageSize);
 
         PageIO pageIo = PageIO.getPageIO(actualPageAddr);
-
-        if (pageIo.getType() == T_DATA_REF_MVCC_LEAF || pageIo.getType() == T_CACHE_ID_DATA_REF_MVCC_LEAF) {
-            assert cacheProc.cacheGroup(fullPageId.groupId()).mvccEnabled();
-
-            AbstractDataLeafIO io = (AbstractDataLeafIO)pageIo;
-
-            int cnt = io.getMaxCount(actualPageAddr, pageSize);
-
-            // Reset lock info as there is no sense to log it into WAL.
-            for (int i = 0; i < cnt; i++) {
-                io.setMvccLockCoordinatorVersion(expPageAddr, i, io.getMvccLockCoordinatorVersion(actualPageAddr, i));
-                io.setMvccLockCounter(expPageAddr, i, io.getMvccLockCounter(actualPageAddr, i));
-            }
-        }
 
         // Compare only meaningful data.
         if (pageIo instanceof CompactablePageIO) {
@@ -786,18 +762,18 @@ public class PageMemoryTracker implements IgnitePlugin {
      * Dump diff between allocated and tracked page counts.
      */
     private void dumpPagesCountDiff() throws IgniteCheckedException {
-        Map<Integer, Long> pagesByGroups = pages.keySet().stream().collect(
+        Map<Integer, Long> pagesByGrps = pages.keySet().stream().collect(
             Collectors.groupingBy(FullPageId::groupId, Collectors.counting()));
 
         IgnitePageStoreManager pageStoreMgr = gridCtx.cache().context().pageStore();
 
-        for (Map.Entry<Integer, Long> groupPages : pagesByGroups.entrySet()) {
-            int grpId = groupPages.getKey();
+        for (Map.Entry<Integer, Long> grpPages : pagesByGrps.entrySet()) {
+            int grpId = grpPages.getKey();
             long grpPagesAllocated = pageStoreMgr.pagesAllocated(grpId);
 
-            if (grpPagesAllocated != groupPages.getValue()) {
+            if (grpPagesAllocated != grpPages.getValue()) {
                 log.error(">>> Page count for groupId " + grpId + ": allocated=" + grpPagesAllocated +
-                    ", tracked=" + groupPages.getValue());
+                    ", tracked=" + grpPages.getValue());
 
                 Map<Integer, Long> pagesByParts = pages.keySet().stream().filter(id -> id.groupId() == grpId)
                     .collect(Collectors.groupingBy(id -> PageIdUtils.partId(id.pageId()), Collectors.counting()));

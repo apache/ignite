@@ -438,7 +438,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 11;
     }
 
     /** {@inheritDoc} */

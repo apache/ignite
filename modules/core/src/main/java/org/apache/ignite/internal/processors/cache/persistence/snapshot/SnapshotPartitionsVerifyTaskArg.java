@@ -36,13 +36,13 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache group names to be verified. */
-    private Collection<String> grpNames;
+    @Nullable private Collection<String> grpNames;
 
     /** The map of distribution of snapshot metadata pieces across the cluster. */
     private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
 
     /** Snapshot directory path. */
-    private String snpPath;
+    @Nullable private String snpPath;
 
     /** If {@code true} check snapshot integrity. */
     private boolean check;
@@ -63,7 +63,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
      * @param check If {@code true} check snapshot integrity.
      */
     public SnapshotPartitionsVerifyTaskArg(
-        Collection<String> grpNames,
+        @Nullable Collection<String> grpNames,
         Map<ClusterNode, List<SnapshotMetadata>> clusterMetas,
         @Nullable String snpPath,
         int incIdx,
@@ -79,7 +79,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     /**
      * @return Cache group names to be verified.
      */
-    public Collection<String> cacheGroupNames() {
+    @Nullable public Collection<String> cacheGroupNames() {
         return grpNames;
     }
 
@@ -93,7 +93,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     /**
      * @return Snapshot directory path.
      */
-    public String snapshotPath() {
+    @Nullable public String snapshotPath() {
         return snpPath;
     }
 

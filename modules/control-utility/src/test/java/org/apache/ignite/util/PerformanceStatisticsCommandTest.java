@@ -20,14 +20,15 @@ package org.apache.ignite.util;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
+
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsTask.STATUS_DISABLED;
+import static org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsTask.STATUS_ENABLED;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.TIMEOUT;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.cleanPerformanceStatisticsDir;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.statisticsFiles;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.waitForStatisticsEnabled;
-import static org.apache.ignite.internal.visor.performancestatistics.VisorPerformanceStatisticsTask.STATUS_DISABLED;
-import static org.apache.ignite.internal.visor.performancestatistics.VisorPerformanceStatisticsTask.STATUS_ENABLED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Tests {@link PerformanceStatisticsCommand} command. */

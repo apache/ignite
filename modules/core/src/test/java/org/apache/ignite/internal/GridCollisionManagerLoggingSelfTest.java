@@ -54,9 +54,9 @@ public class GridCollisionManagerLoggingSelfTest {
      */
     @Test
     public void collisionResolutionDisabledMessageShouldBeLoggedAtInfoLevel() throws Exception {
-        GridCollisionManager manager = new GridCollisionManager(collisionResolutionDisabledContext());
+        GridCollisionManager mgr = new GridCollisionManager(collisionResolutionDisabledContext());
 
-        manager.start();
+        mgr.start();
 
         verify(logger).info("Collision resolution is disabled (all jobs will be activated upon arrival).");
     }
@@ -67,8 +67,8 @@ public class GridCollisionManagerLoggingSelfTest {
      * @return context without collision resolution
      */
     private GridTestKernalContext collisionResolutionDisabledContext() {
-        GridTestKernalContext context = new GridTestKernalContext(logger);
-        context.config().setCollisionSpi(new NoopCollisionSpi());
-        return context;
+        GridTestKernalContext ctx = new GridTestKernalContext(logger);
+        ctx.config().setCollisionSpi(new NoopCollisionSpi());
+        return ctx;
     }
 }

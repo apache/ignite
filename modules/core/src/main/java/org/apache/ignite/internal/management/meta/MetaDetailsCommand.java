@@ -24,8 +24,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.commandline.meta.tasks.MetadataInfoTask;
-import org.apache.ignite.internal.commandline.meta.tasks.MetadataListResult;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.F;

@@ -20,12 +20,11 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexNode;
@@ -94,20 +93,19 @@ public class SystemViewTableImpl extends AbstractTable implements IgniteTable {
         RelOptTable relOptTbl,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
-        @Nullable ImmutableBitSet requiredColumns
+        @Nullable ImmutableBitSet requiredColumns,
+        @Nullable List<RelHint> hints
     ) {
-        return IgniteLogicalTableScan.create(cluster, cluster.traitSet(), relOptTbl, proj, cond, requiredColumns);
+        return IgniteLogicalTableScan.create(cluster, cluster.traitSet(), relOptTbl, hints, proj, cond, requiredColumns);
     }
 
     /** {@inheritDoc} */
     @Override public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
         ColocationGroup grp,
-        Predicate<Row> filter,
-        Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet usedColumns
     ) {
-        return new SystemViewScan<>(execCtx, desc, null, filter, rowTransformer, usedColumns);
+        return new SystemViewScan<>(execCtx, desc, null, usedColumns);
     }
 
     /** {@inheritDoc} */
@@ -161,6 +159,16 @@ public class SystemViewTableImpl extends AbstractTable implements IgniteTable {
     /** {@inheritDoc} */
     @Override public boolean isIndexRebuildInProgress() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return desc.name();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void authorize(Operation op) {
+        // No-op.
     }
 
     /** */

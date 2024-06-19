@@ -179,9 +179,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param req Query request.
      */
     @Override public void processQueryRequest(UUID sndId, GridCacheQueryRequest req) {
-        assert req.mvccSnapshot() != null || !cctx.mvccEnabled() || req.cancel() ||
-            (req.type() == null && !req.fields()) : req; // Last assertion means next page request.
-
         if (req.cancel()) {
             cancelIds.add(new CancelMessageId(req.id(), sndId));
 
@@ -266,7 +263,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 req.includeMetaData(),
                 req.keepBinary(),
                 req.taskHash(),
-                req.mvccSnapshot(),
                 req.isDataPageScanEnabled()
             );
 
@@ -548,7 +544,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     @Override public GridCloseableIterator scanQueryDistributed(final GridCacheQueryAdapter qry,
         Collection<ClusterNode> nodes) throws IgniteCheckedException {
         assert qry.type() == GridCacheQueryType.SCAN : qry;
-        assert qry.mvccSnapshot() != null || !cctx.mvccEnabled();
 
         boolean performanceStatsEnabled = cctx.kernalContext().performanceStatistics().enabled();
 

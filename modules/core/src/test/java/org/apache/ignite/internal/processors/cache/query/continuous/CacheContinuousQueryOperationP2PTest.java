@@ -45,7 +45,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -189,58 +188,6 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
             TRANSACTIONAL
-        );
-
-        testContinuousQuery(ccfg, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTx() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL_SNAPSHOT
-        );
-
-        testContinuousQuery(ccfg, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxClient() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL_SNAPSHOT
-        );
-
-        testContinuousQuery(ccfg, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxReplicated() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
-            0,
-            TRANSACTIONAL_SNAPSHOT
-        );
-
-        testContinuousQuery(ccfg, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxReplicatedClient() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
-            0,
-            TRANSACTIONAL_SNAPSHOT
         );
 
         testContinuousQuery(ccfg, true);

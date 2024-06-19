@@ -74,7 +74,6 @@ import static java.sql.Statement.NO_GENERATED_KEYS;
 import static java.sql.Statement.RETURN_GENERATED_KEYS;
 import static org.apache.ignite.cache.query.SqlFieldsQuery.DFLT_LAZY;
 import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
-import static org.apache.ignite.internal.processors.odbc.SqlStateCode.TRANSACTION_STATE_EXCEPTION;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -1291,50 +1290,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testBeginFailsWhenMvccIsDisabled() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            conn.createStatement().execute("BEGIN");
-
-            fail("Exception is expected");
-        }
-        catch (SQLException e) {
-            assertEquals(TRANSACTION_STATE_EXCEPTION, e.getSQLState());
-        }
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testCommitIgnoredWhenMvccIsDisabled() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            conn.setAutoCommit(false);
-            conn.createStatement().execute("COMMIT");
-
-            conn.commit();
-        }
-        // assert no exception
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testRollbackIgnoredWhenMvccIsDisabled() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            conn.setAutoCommit(false);
-
-            conn.createStatement().execute("ROLLBACK");
-
-            conn.rollback();
-        }
-        // assert no exception
-    }
-
-    /**
      * @throws Exception If failed.
      */
     @Test
@@ -2266,14 +2221,14 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             f.get();
 
-            boolean exceptionFound = false;
+            boolean exFound = false;
 
             for (SQLException e : exs) {
                 if (e != null && e.getMessage().contains("Concurrent access to JDBC connection is not allowed"))
-                    exceptionFound = true;
+                    exFound = true;
             }
 
-            assertTrue("Concurrent access to JDBC connection is not allowed", exceptionFound);
+            assertTrue("Concurrent access to JDBC connection is not allowed", exFound);
         }
     }
 

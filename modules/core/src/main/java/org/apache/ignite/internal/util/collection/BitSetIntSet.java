@@ -20,6 +20,7 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import org.apache.ignite.internal.util.GridSerializableCollection;
 import org.jetbrains.annotations.NotNull;
 
@@ -222,5 +223,23 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
         bitSet.clear();
 
         size = 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hashCode(bitSet);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        BitSetIntSet o0 = (BitSetIntSet)o;
+
+        return size == o0.size && bitSet.equals(o0.bitSet);
     }
 }

@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.security.client.ThinClientSecurityC
 import org.apache.ignite.internal.processors.security.client.ThinClientSslPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cluster.ClusterNodeOperationPermissionTest;
 import org.apache.ignite.internal.processors.security.cluster.ClusterStatePermissionTest;
+import org.apache.ignite.internal.processors.security.cluster.NodeJoinPermissionsTest;
 import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskCancelRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskRemoteSecurityContextCheckTest;
@@ -53,6 +54,7 @@ import org.apache.ignite.internal.processors.security.maintenance.MaintenanceMod
 import org.apache.ignite.internal.processors.security.messaging.MessagingRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.sandbox.AccessToClassesInsideInternalPackageTest;
 import org.apache.ignite.internal.processors.security.sandbox.CacheSandboxTest;
+import org.apache.ignite.internal.processors.security.sandbox.CacheStoreFactorySandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.ComputeSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.ContinuousQuerySandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.ContinuousQueryWithTransformerSandboxTest;
@@ -129,6 +131,7 @@ import org.junit.runners.Suite;
     EventsSandboxTest.class,
     PrivilegedProxyTest.class,
     SchedulerSandboxTest.class,
+    CacheStoreFactorySandboxTest.class,
 
     IgniteSecurityProcessorTest.class,
     MultipleSSLContextsTest.class,
@@ -136,7 +139,8 @@ import org.junit.runners.Suite;
     ServiceAuthorizationTest.class,
     ServiceStaticConfigTest.class,
     ClusterNodeOperationPermissionTest.class,
-    NodeSecurityContextPropagationTest.class
+    NodeSecurityContextPropagationTest.class,
+    NodeJoinPermissionsTest.class
 })
 public class SecurityTestSuite {
     /** */

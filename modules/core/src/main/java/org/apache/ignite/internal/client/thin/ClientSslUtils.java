@@ -170,6 +170,9 @@ public class ClientSslUtils {
             case TLSv1_2:
                 return "TLSv1.2";
 
+            case TLSv1_3:
+                return "TLSv1.3";
+
             default:
                 return proto.toString();
         }

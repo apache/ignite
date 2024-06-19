@@ -19,7 +19,6 @@ package org.apache.ignite.internal.management.encryption;
 
 import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.encryption.VisorChangeMasterKeyTask;
 
 /** */
 public class EncryptionChangeMasterKeyCommand implements ComputeCommand<EncryptionChangeMasterKeyCommandArg, String> {
@@ -34,8 +33,8 @@ public class EncryptionChangeMasterKeyCommand implements ComputeCommand<Encrypti
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorChangeMasterKeyTask> taskClass() {
-        return VisorChangeMasterKeyTask.class;
+    @Override public Class<ChangeMasterKeyTask> taskClass() {
+        return ChangeMasterKeyTask.class;
     }
 
     /** {@inheritDoc} */

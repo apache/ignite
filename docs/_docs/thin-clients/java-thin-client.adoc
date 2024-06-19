@@ -12,7 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-= Java Thin Client
+= Java Thin Client [[java_thin_client]]
 
 :sourceCodeFile: {javaCodeDir}/JavaThinClient.java
 == Overview
@@ -75,7 +75,7 @@ include::{sourceCodeFile}[tag=connect-to-many-nodes,indent=0]
 
 Note that the code above provides a failover mechanism in case of server node failures. Refer to the <<Handling Node Failures>> section for more information.
 
-== Partition Awareness
+== Partition Awareness [partition_awareness]
 
 include::includes/partition-awareness.adoc[]
 
@@ -116,6 +116,11 @@ The code snippet shows how an example implementation might look like if you want
 
 Also, you can check a link:https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/client/ClientKubernetesPutGetExample.java#L50[real example] of the interface implementation. `ThinClientKubernetesAddressFinder` is created to handle scalable Kubernetes environment.
 
+[NOTE]
+====
+Partition Awareness also enables link:../services/services.adoc#service_awareness[Service Awareness]
+====
+
 == Using Key-Value API
 
 The Java thin client supports most of the key-value operations available in the thick client.
@@ -144,6 +149,26 @@ The following code snippet demonstrates how to execute basic cache operations fr
 -------------------------------------------------------------------------------
 include::{sourceCodeFile}[tag=key-value-operations,indent=0]
 -------------------------------------------------------------------------------
+
+=== Entry Processor
+
+An entry processor is used to process cache entries on the nodes where they are stored. An entry processor does not require the entry to be transferred to the client in order to perform an operation on it. The operation is performed remotely, and only the results are transmitted to the client.
+
+Define an entry processor as follows:
+
+[source, java]
+----
+include::{sourceCodeFile}[tags=entry-processor-class,indent=0]
+----
+
+NOTE: The classes of the entry processors must be available on the server nodes of the cluster.
+
+Then invoke the entry processor:
+
+[source, java]
+----
+include::{sourceCodeFile}[tags=entry-processor,indent=0]
+----
 
 === Executing Scan Queries
 Use the `ScanQuery<K, V>` class to get a set of entries that satisfy a given condition. The thin client sends the query to the cluster node where it is executed as a regular link:key-value-api/using-cache-queries[scan query].

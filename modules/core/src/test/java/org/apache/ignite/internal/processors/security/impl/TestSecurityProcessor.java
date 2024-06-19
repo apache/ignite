@@ -40,6 +40,7 @@ import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
@@ -53,7 +54,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     public static final Map<Object, TestSecurityData> USERS = new ConcurrentHashMap<>();
 
     /** */
-    private static final Map<UUID, SecurityContext> SECURITY_CONTEXTS = new ConcurrentHashMap<>();
+    protected static final Map<UUID, SecurityContext> SECURITY_CONTEXTS = new ConcurrentHashMap<>();
 
     /** */
     private static final Collection<Class<?>> EXT_SYS_CLASSES = ConcurrentHashMap.newKeySet();
@@ -95,7 +96,6 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
                 .setId(node.id())
                 .setAddr(new InetSocketAddress(F.first(node.addresses()), 0))
                 .setLogin(cred.getLogin())
-                .setPerms(data.permissions())
                 .sandboxPermissions(data.sandboxPermissions())
         );
 
@@ -127,7 +127,6 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
                 .setId(ctx.subjectId())
                 .setAddr(ctx.address())
                 .setLogin(ctx.credentials().getLogin())
-                .setPerms(data.permissions())
                 .setCerts(ctx.certificates())
                 .sandboxPermissions(data.sandboxPermissions())
         );
@@ -153,12 +152,18 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     }
 
     /** {@inheritDoc} */
-    @Override public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx)
-        throws SecurityException {
-        if (!((TestSecurityContext)securityCtx).operationAllowed(name, perm))
+    @Override public void authorize(
+        String name,
+        SecurityPermission perm,
+        SecurityContext securityCtx
+    ) throws SecurityException {
+        TestSecurityData userData = USERS.get(securityCtx.subject().login());
+
+        if (userData == null || !contains(userData.permissions(), name, perm)) {
             throw new SecurityException("Authorization failed [perm=" + perm +
                 ", name=" + name +
                 ", subject=" + securityCtx.subject() + ']');
+        }
     }
 
     /** {@inheritDoc} */
@@ -218,5 +223,62 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     /** */
     public static void registerExternalSystemTypes(Class<?>... cls) {
         EXT_SYS_CLASSES.addAll(Arrays.asList(cls));
+    }
+
+    /** */
+    public static boolean contains(SecurityPermissionSet userPerms, String name, SecurityPermission perm) {
+        boolean dfltAllowAll = userPerms.defaultAllowAll();
+
+        switch (perm) {
+            case CACHE_PUT:
+            case CACHE_READ:
+            case CACHE_REMOVE:
+                return contains(userPerms.cachePermissions(), dfltAllowAll, name, perm);
+
+            case CACHE_CREATE:
+            case CACHE_DESTROY:
+                return (name != null && contains(userPerms.cachePermissions(), dfltAllowAll, name, perm))
+                    || containsSystemPermission(userPerms, perm);
+
+            case TASK_CANCEL:
+            case TASK_EXECUTE:
+                return contains(userPerms.taskPermissions(), dfltAllowAll, name, perm);
+
+            case SERVICE_DEPLOY:
+            case SERVICE_INVOKE:
+            case SERVICE_CANCEL:
+                return contains(userPerms.servicePermissions(), dfltAllowAll, name, perm);
+
+            default:
+                return containsSystemPermission(userPerms, perm);
+        }
+    }
+
+    /** */
+    private static boolean contains(
+        Map<String, Collection<SecurityPermission>> userPerms,
+        boolean dfltAllowAll,
+        String name,
+        SecurityPermission perm
+    ) {
+        Collection<SecurityPermission> perms = userPerms.get(name);
+
+        if (perms == null)
+            return dfltAllowAll;
+
+        return perms.stream().anyMatch(perm::equals);
+    }
+
+    /** */
+    private static boolean containsSystemPermission(
+        SecurityPermissionSet userPerms,
+        SecurityPermission perm
+    ) {
+        Collection<SecurityPermission> sysPerms = userPerms.systemPermissions();
+
+        if (F.isEmpty(sysPerms))
+            return userPerms.defaultAllowAll();
+
+        return sysPerms.stream().anyMatch(perm::equals);
     }
 }

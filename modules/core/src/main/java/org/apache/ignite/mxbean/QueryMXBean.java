@@ -23,7 +23,11 @@ import org.apache.ignite.spi.systemview.view.SqlQueryView;
 
 /**
  * Query MXBean interface.
+ *
+ * @see org.apache.ignite.internal.management.api.CommandMBean
+ * @deprecated Use managements API beans, instead.
  */
+@Deprecated
 public interface QueryMXBean {
     /**
      * Kills continuous query by the identifier.

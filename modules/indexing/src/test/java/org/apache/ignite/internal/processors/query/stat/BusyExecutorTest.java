@@ -125,7 +125,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
         be.activate();
 
         be.execute(taskExec);
-        CompletableFuture<Boolean> submitFuture = be.submit(taskSubmit);
+        CompletableFuture<Boolean> submitFut = be.submit(taskSubmit);
         be.execute(cancellableTask);
 
         Thread.sleep(TIME_TO_START_THREAD);

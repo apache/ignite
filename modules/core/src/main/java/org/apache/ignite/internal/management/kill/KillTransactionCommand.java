@@ -19,16 +19,14 @@ package org.apache.ignite.internal.management.kill;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.tx.KillTransactionTask;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
+import org.apache.ignite.internal.management.tx.TxTaskResult;
 
 /** */
 public class KillTransactionCommand
-    implements ComputeCommand<KillTransactionCommandArg, Map<ClusterNode, VisorTxTaskResult>> {
+    implements ComputeCommand<KillTransactionCommandArg, Map<ClusterNode, TxTaskResult>> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill transaction by xid";
@@ -45,7 +43,7 @@ public class KillTransactionCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, KillTransactionCommandArg arg) {
-        return nodes.keySet();
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, KillTransactionCommandArg arg) {
+        return nodes;
     }
 }

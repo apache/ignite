@@ -234,6 +234,22 @@ tab:C++[]
 //== Accessing Services from Compute Tasks
 // TODO the @ServiceResource annotation
 
+== Service Awareness [[service_awareness]]
+For link:../thin-clients/java-thin-client.adoc#java_thin_client[Java Thin Client] you can activate Service Awareness.
+To do that, enable link:../thin-clients/java-thin-client.adoc#partition_awareness[Partition Awareness].
+
+Without Service Awareness, the invocation requests are sent to a random node. If it has no service
+instance deployed, the request is redirected to a different node. This additional network hop adds overhead.
+
+With Service Awareness, the thin client knows where service instances are deployed and sends the request to the correct node.
+
+[NOTE]
+====
+The service topology is updated asynchronously starting with the first service invocation.
+Thus, some invocation redirects are still possible.
+====
+
+
 == Un-deploying Services
 
 To undeploy a service, use the `IgniteServices.cancel(serviceName)` or `IgniteServices.cancelAll()` methods.

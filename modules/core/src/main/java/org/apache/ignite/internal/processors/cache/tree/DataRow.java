@@ -51,8 +51,7 @@ public class DataRow extends CacheDataRowAdapter {
 
         try {
             // We can not init data row lazily outside of entry lock because underlying buffer can be concurrently cleared.
-            if (rowData != RowData.LINK_ONLY)
-                initFromLink(grp, rowData, skipVer);
+            initFromLink(grp, rowData, skipVer);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -82,13 +81,6 @@ public class DataRow extends CacheDataRowAdapter {
         this.cacheId = cacheId;
 
         verReady = true;
-    }
-
-    /**
-     * @param link Link.
-     */
-    protected DataRow(long link) {
-        super(link);
     }
 
     /**

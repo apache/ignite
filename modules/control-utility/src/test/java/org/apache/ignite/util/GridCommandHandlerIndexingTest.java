@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
@@ -98,6 +99,39 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
         String out = testOut.toString();
 
         assertContains(log, out, GRID_NOT_IDLE_MSG + "[\"" + GROUP_NAME + "\"]");
+    }
+
+    /** Check that metadata remove command also removes class mapping. */
+    @Test
+    public void testRemoveMetadataAndRecreateWithDifferentCase() throws Exception {
+        IgniteEx ig = startGrids(2);
+
+        ig.cluster().active(true);
+
+        IgniteCache<?, ?> cache = grid(0).getOrCreateCache(CACHE_NAME);
+
+        cache.query(new SqlFieldsQuery("CREATE TABLE t1(id INT PRIMARY KEY, str VARCHAR) " +
+                "WITH \"cache_name=" + DEFAULT_CACHE_NAME + ", key_type=CUSTOM_SQL_KEY_TYPE, value_type=CUSTOM_SQL_VALUE_TYPE\"")
+                .setSchema("PUBLIC")).getAll();
+
+        cache.query(new SqlFieldsQuery("INSERT INTO PUBLIC.t1 VALUES(1, '1')")).getAll();
+
+        cache.query(new SqlFieldsQuery("DROP TABLE PUBLIC.t1")).getAll();
+
+        assertEquals(EXIT_CODE_OK, execute("--meta", "remove", "--typeName", "CUSTOM_SQL_KEY_TYPE"));
+        assertEquals(EXIT_CODE_OK, execute("--meta", "remove", "--typeName", "CUSTOM_SQL_VALUE_TYPE"));
+
+        cache.query(new SqlFieldsQuery("CREATE TABLE t1(id INT PRIMARY KEY, str VARCHAR) " +
+                "WITH \"cache_name=" + DEFAULT_CACHE_NAME + ", key_type=CUSTOM_SQL_KEY_TYPE, value_type=CUSTOM_SQL_VALUE_type\"")
+                .setSchema("PUBLIC")).getAll();
+
+        for (int i = 0; i < 10; ++i) {
+            cache.query(new SqlFieldsQuery("INSERT INTO PUBLIC.t1 VALUES(" + i + ", '1')")).getAll();
+        }
+
+        List<List<?>> res = cache.query(new SqlFieldsQuery("SELECT * FROM PUBLIC.t1")).getAll();
+
+        assertEquals(10, res.size());
     }
 
 
@@ -311,9 +345,9 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
     private File indexPartition(Ignite ig, String groupName) {
         IgniteEx ig0 = (IgniteEx)ig;
 
-        FilePageStoreManager pageStoreManager = ((FilePageStoreManager)ig0.context().cache().context().pageStore());
+        FilePageStoreManager pageStoreMgr = ((FilePageStoreManager)ig0.context().cache().context().pageStore());
 
-        return new File(pageStoreManager.cacheWorkDir(true, groupName), INDEX_FILE_NAME);
+        return new File(pageStoreMgr.cacheWorkDir(true, groupName), INDEX_FILE_NAME);
     }
 
     /**

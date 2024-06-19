@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
 
 /**
@@ -64,5 +66,11 @@ public class ClientCacheKeysRequest extends ClientCacheDataRequest implements Cl
             keys.add(reader.readObjectDetached());
 
         return keys;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isAsync(ClientConnectionContext ctx) {
+        // Every cache data request on the transactional cache can lock the thread, even with implicit transaction.
+        return cacheDescriptor(ctx).cacheConfiguration().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL;
     }
 }

@@ -30,7 +30,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -115,7 +114,7 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
                         }
                         catch (Exception e) {
                             if (!X.hasCause(e, ClusterTopologyCheckedException.class))
-                                MvccFeatureChecker.assertMvccWriteConflict(e);
+                                throw e;
                         }
                     }
 

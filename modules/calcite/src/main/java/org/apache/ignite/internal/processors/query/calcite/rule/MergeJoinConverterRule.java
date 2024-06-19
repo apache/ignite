@@ -28,6 +28,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.util.typedef.F;
@@ -35,7 +36,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Ignite Join converter.
  */
-public class MergeJoinConverterRule extends AbstractIgniteConverterRule<LogicalJoin> {
+public class MergeJoinConverterRule extends AbstractIgniteJoinConverterRule {
     /** */
     public static final RelOptRule INSTANCE = new MergeJoinConverterRule();
 
@@ -43,11 +44,11 @@ public class MergeJoinConverterRule extends AbstractIgniteConverterRule<LogicalJ
      * Creates a converter.
      */
     public MergeJoinConverterRule() {
-        super(LogicalJoin.class, "MergeJoinConverter");
+        super("MergeJoinConverter", HintDefinition.MERGE_JOIN);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean matches(RelOptRuleCall call) {
+    @Override public boolean matchesJoin(RelOptRuleCall call) {
         LogicalJoin logicalJoin = call.rel(0);
 
         return !F.isEmpty(logicalJoin.analyzeCondition().pairs()) && logicalJoin.analyzeCondition().isEqui();

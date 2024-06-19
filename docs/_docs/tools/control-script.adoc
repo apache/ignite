@@ -1071,12 +1071,12 @@ To trigger the rebuild process of all indexes for the specified caches or the ca
 tab:Unix[]
 [source,shell]
 ----
-control.sh --cache indexes_force_rebuild --node-id nodeId --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
+control.sh --cache indexes_force_rebuild --node-ids nodeId1,...nodeIdN|--all-nodes --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
 ----
 tab:Window[]
 [source,shell]
 ----
-control.bat --cache indexes_force_rebuild --node-id nodeId --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
+control.bat --cache indexes_force_rebuild --node-ids nodeId1,...nodeIdN|--all-nodes --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
 ----
 --
 
@@ -1278,7 +1278,7 @@ The `schedule_indexes_rebuild` commands Apache Ignite to rebuild indexes for spe
 
 [source, shell]
 ----
- control.sh|bat --cache schedule_indexes_rebuild --node-id nodeId --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1] --group-names groupName1,groupName2,...groupNameN
+ control.sh|bat --cache schedule_indexes_rebuild --node-ids nodeId1,...nodeIdN|--all-nodes --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1] --group-names groupName1,groupName2,...groupNameN
 ----
 
 Parameters:

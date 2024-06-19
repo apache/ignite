@@ -71,18 +71,18 @@ public class LogExporterSpiTest extends AbstractExporterSpiTest {
     public void testLogSpi() throws Exception {
         cleanPersistenceDir();
 
-        Set<String> expectedAttributes = new GridConcurrentHashSet<>(EXPECTED_ATTRIBUTES);
+        Set<String> expectedAttrs = new GridConcurrentHashSet<>(EXPECTED_ATTRIBUTES);
 
         log.registerListener(s -> {
-            for (String attr : expectedAttributes) {
+            for (String attr : expectedAttrs) {
                 if (s.contains(attr))
-                    expectedAttributes.remove(attr);
+                    expectedAttrs.remove(attr);
             }
         });
 
         ignite = startGrid(0);
 
-        boolean res = waitForCondition(expectedAttributes::isEmpty, EXPORT_TIMEOUT * 10);
+        boolean res = waitForCondition(expectedAttrs::isEmpty, EXPORT_TIMEOUT * 10);
 
         assertTrue(res);
 

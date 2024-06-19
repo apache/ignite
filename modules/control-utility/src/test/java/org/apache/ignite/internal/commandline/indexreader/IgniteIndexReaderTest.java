@@ -67,6 +67,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.util.GridCommandHandlerAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import org.junit.runners.Parameterized;
 
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
@@ -150,6 +151,12 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
 
     /** Work directory, containing cache group directories. */
     private static File workDir;
+
+    /** */
+    @Parameterized.Parameters(name = "cmdHnd={0}")
+    public static List<String> commandHandlers() {
+        return Collections.singletonList(CLI_CMD_HND);
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -736,7 +743,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
     ) throws IgniteCheckedException {
         testOut.reset();
 
-        IgniteLogger logger = createTestLogger();
+        IgniteLogger log = createTestLogger();
 
         IgniteIndexReader reader0 = new IgniteIndexReader(
             PAGE_SIZE,
@@ -745,7 +752,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             new File(workDir, dataDir(cacheGrp)),
             isNull(idxs) ? null : idx -> Arrays.stream(idxs).anyMatch(idx::endsWith),
             checkParts,
-            logger
+            log
         ) {
             /** {@inheritDoc} */
             @Override ProgressPrinter createProgressPrinter(String caption, long total) {
@@ -756,8 +763,8 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             reader.readIndex();
         }
 
-        if (logger instanceof IgniteLoggerEx)
-            ((IgniteLoggerEx)logger).flush();
+        if (log instanceof IgniteLoggerEx)
+            ((IgniteLoggerEx)log).flush();
 
         return testOut.toString();
     }

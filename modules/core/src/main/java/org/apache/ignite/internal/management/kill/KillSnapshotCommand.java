@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.management.kill;
 
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask.CancelSnapshotArg;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
+import org.apache.ignite.internal.management.kill.SnapshotCancelTask.CancelSnapshotArg;
 
 /** */
-public class KillSnapshotCommand implements ComputeCommand<CancelSnapshotArg, VisorSnapshotTaskResult> {
+public class KillSnapshotCommand implements ComputeCommand<CancelSnapshotArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill running snapshot by snapshot name";
@@ -35,7 +33,7 @@ public class KillSnapshotCommand implements ComputeCommand<CancelSnapshotArg, Vi
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorSnapshotCancelTask> taskClass() {
-        return VisorSnapshotCancelTask.class;
+    @Override public Class<SnapshotCancelTask> taskClass() {
+        return SnapshotCancelTask.class;
     }
 }

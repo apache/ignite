@@ -18,12 +18,9 @@
 package org.apache.ignite.internal.management.kill;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.client.VisorClientConnectionDropTask;
 
 /** */
 public class KillClientCommand implements ComputeCommand<KillClientCommandArg, Void> {
@@ -38,15 +35,12 @@ public class KillClientCommand implements ComputeCommand<KillClientCommandArg, V
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorClientConnectionDropTask> taskClass() {
-        return VisorClientConnectionDropTask.class;
+    @Override public Class<ClientConnectionDropTask> taskClass() {
+        return ClientConnectionDropTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, KillClientCommandArg arg) {
-        if (arg.nodeId() == null)
-            return nodes.keySet();
-
-        return Collections.singleton(arg.nodeId());
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, KillClientCommandArg arg) {
+        return CommandUtils.nodeOrAll(arg.nodeId(), nodes);
     }
 }

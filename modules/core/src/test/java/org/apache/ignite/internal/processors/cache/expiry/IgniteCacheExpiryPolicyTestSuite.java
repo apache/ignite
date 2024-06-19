@@ -57,7 +57,8 @@ import org.junit.runners.Suite;
 
     IgniteCacheExpireWhileRebalanceTest.class,
 
-    ExpiryPolicyInfoLoggingTest.class
+    ExpiryPolicyInfoLoggingTest.class,
+    PendingTreeCleaningTest.class,
 })
 public class IgniteCacheExpiryPolicyTestSuite {
 }

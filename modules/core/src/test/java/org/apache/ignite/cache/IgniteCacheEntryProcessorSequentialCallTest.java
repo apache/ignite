@@ -40,9 +40,6 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
     private static final String CACHE = "cache";
 
     /** */
-    private static final String MVCC_CACHE = "mvccCache";
-
-    /** */
     private String cacheName;
 
     /** {@inheritDoc} */
@@ -68,10 +65,7 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
 
         CacheConfiguration ccfg = cacheConfiguration(CACHE);
 
-        CacheConfiguration mvccCfg = cacheConfiguration(MVCC_CACHE)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
-
-        cfg.setCacheConfiguration(ccfg, mvccCfg);
+        cfg.setCacheConfiguration(ccfg);
 
         return cfg;
     }
@@ -154,18 +148,6 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
     }
 
     /**
-     *
-     */
-    @Test
-    public void testMvccTxInvokeSequentialCall() throws Exception {
-        cacheName = MVCC_CACHE;
-
-        transactionInvokeSequentialCallOnPrimaryNode(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
-
-        transactionInvokeSequentialCallOnNearNode(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
-    }
-
-    /**
      * Test for sequential entry processor invoking not null value on primary cache.
      * In this test entry processor gets value from local node.
      *
@@ -189,13 +171,13 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
 
         cache.put(key, val);
 
-        NotNullCacheEntryProcessor cacheEntryProcessor = new NotNullCacheEntryProcessor();
+        NotNullCacheEntryProcessor cacheEntryProc = new NotNullCacheEntryProcessor();
 
         try (Transaction transaction = primaryIgnite.transactions().txStart(transactionConcurrency,
             transactionIsolation)) {
 
-            cache.invoke(key, cacheEntryProcessor);
-            cache.invoke(key, cacheEntryProcessor);
+            cache.invoke(key, cacheEntryProc);
+            cache.invoke(key, cacheEntryProc);
 
             transaction.commit();
         }
@@ -234,13 +216,13 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
 
         IgniteCache<TestKey, TestValue> nearCache = nearIgnite.cache(cacheName);
 
-        NotNullCacheEntryProcessor cacheEntryProcessor = new NotNullCacheEntryProcessor();
+        NotNullCacheEntryProcessor cacheEntryProc = new NotNullCacheEntryProcessor();
 
         try (Transaction transaction = nearIgnite.transactions().txStart(transactionConcurrency,
             transactionIsolation)) {
 
-            nearCache.invoke(key, cacheEntryProcessor);
-            nearCache.invoke(key, cacheEntryProcessor);
+            nearCache.invoke(key, cacheEntryProc);
+            nearCache.invoke(key, cacheEntryProc);
 
             transaction.commit();
         }

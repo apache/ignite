@@ -39,13 +39,14 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.tools.RelBuilder;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 
 /** */
-public class CorrelatedNestedLoopJoinRule extends AbstractIgniteConverterRule<LogicalJoin> {
+public class CorrelatedNestedLoopJoinRule extends AbstractIgniteJoinConverterRule {
     /** */
     public static final RelOptRule INSTANCE = new CorrelatedNestedLoopJoinRule(1);
 
@@ -57,14 +58,14 @@ public class CorrelatedNestedLoopJoinRule extends AbstractIgniteConverterRule<Lo
 
     /** */
     public CorrelatedNestedLoopJoinRule(int batchSize) {
-        super(LogicalJoin.class, "CorrelatedNestedLoopJoin");
+        super("CorrelatedNestedLoopJoin", HintDefinition.CNL_JOIN);
 
         this.batchSize = batchSize;
     }
 
     /** {@inheritDoc} */
     @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalJoin rel) {
-        final int leftFieldCount = rel.getLeft().getRowType().getFieldCount();
+        final int leftFieldCnt = rel.getLeft().getRowType().getFieldCount();
         final RelOptCluster cluster = rel.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         final RelBuilder relBuilder = relBuilderFactory.create(rel.getCluster(), null);
@@ -84,8 +85,8 @@ public class CorrelatedNestedLoopJoinRule extends AbstractIgniteConverterRule<Lo
         final RexNode condition = rel.getCondition().accept(new RexShuttle() {
             @Override public RexNode visitInputRef(RexInputRef input) {
                 int field = input.getIndex();
-                if (field >= leftFieldCount)
-                    return rexBuilder.makeInputRef(input.getType(), input.getIndex() - leftFieldCount);
+                if (field >= leftFieldCnt)
+                    return rexBuilder.makeInputRef(input.getType(), input.getIndex() - leftFieldCnt);
 
                 return rexBuilder.makeFieldAccess(corrVar.get(0), field);
             }
@@ -96,10 +97,10 @@ public class CorrelatedNestedLoopJoinRule extends AbstractIgniteConverterRule<Lo
 
         // Add batchSize-1 other conditions
         for (int i = 1; i < batchSize; i++) {
-            final int corrIndex = i;
+            final int corrIdx = i;
             final RexNode condition2 = condition.accept(new RexShuttle() {
                 @Override public RexNode visitCorrelVariable(RexCorrelVariable variable) {
-                    return corrVar.get(corrIndex);
+                    return corrVar.get(corrIdx);
                 }
             });
             conditionList.add(condition2);
@@ -141,9 +142,14 @@ public class CorrelatedNestedLoopJoinRule extends AbstractIgniteConverterRule<Lo
     }
 
     /** {@inheritDoc} */
-    @Override public boolean matches(RelOptRuleCall call) {
+    @Override public boolean matchesJoin(RelOptRuleCall call) {
         LogicalJoin join = call.rel(0);
 
-        return join.getJoinType() == JoinRelType.INNER || join.getJoinType() == JoinRelType.LEFT;
+        return supportedJoinType(join.getJoinType());
+    }
+
+    /** */
+    private static boolean supportedJoinType(JoinRelType type) {
+        return type == JoinRelType.INNER || type == JoinRelType.LEFT;
     }
 }

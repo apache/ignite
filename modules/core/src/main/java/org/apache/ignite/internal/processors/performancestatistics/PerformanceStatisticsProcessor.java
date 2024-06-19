@@ -186,6 +186,28 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param type Cache query type.
+     * @param qryNodeId Originating node id.
+     * @param id Query id.
+     * @param action Action with rows.
+     * @param rows Number of rows processed.
+     */
+    public void queryRowsProcessed(GridCacheQueryType type, UUID qryNodeId, long id, String action, long rows) {
+        write(writer -> writer.queryRows(type, qryNodeId, id, action, rows));
+    }
+
+    /**
+     * @param type Cache query type.
+     * @param qryNodeId Originating node id.
+     * @param id Query id.
+     * @param name Query property name.
+     * @param val Query property value.
+     */
+    public void queryProperty(GridCacheQueryType type, UUID qryNodeId, long id, String name, String val) {
+        write(writer -> writer.queryProperty(type, qryNodeId, id, name, val));
+    }
+
+    /**
      * @param sesId Session id.
      * @param taskName Task name.
      * @param startTime Start time in milliseconds.

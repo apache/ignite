@@ -23,6 +23,8 @@ import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 
+import static org.apache.ignite.internal.management.api.CommandUtils.cmdKey;
+
 /**
  * All commands class names stored in registry must ends with {@link Command#CMD_NAME_POSTFIX}.
  *
@@ -47,33 +49,15 @@ public abstract class CommandRegistryImpl<A extends IgniteDataTransferObject, R>
         boolean hasParent = CommandsRegistry.class.isAssignableFrom(getClass())
             && getClass() != IgniteCommandRegistry.class;
 
-        Class<? extends CommandsRegistry<?, ?>> parent = hasParent ?
-            (Class<? extends CommandsRegistry<?, ?>>)getClass()
-            : null;
+        String key = cmdKey(
+            cmd.getClass(),
+            hasParent ? (Class<? extends CommandsRegistry<?, ?>>)getClass() : null
+        );
 
-        String name = cmd.getClass().getSimpleName();
-
-        if (parent != null) {
-            String parentName = parent.getSimpleName();
-            parentName = parentName.substring(0, parentName.length() - CMD_NAME_POSTFIX.length());
-
-            if (!name.startsWith(parentName)) {
-                throw new IllegalArgumentException(
-                    "Command class name must starts with parent name [parent=" + parentName + ']');
-            }
-
-            name = name.substring(parentName.length());
-        }
-
-        if (!name.endsWith(CMD_NAME_POSTFIX))
-            throw new IllegalArgumentException("Command class name must ends with 'Command'");
-
-        name = name.substring(0, name.length() - CMD_NAME_POSTFIX.length());
-
-        if (commands.containsKey(name))
+        if (commands.containsKey(key))
             throw new IllegalArgumentException("Command already registered");
 
-        commands.put(name, cmd);
+        commands.put(key, cmd);
     }
 
     /** {@inheritDoc} */

@@ -32,7 +32,7 @@ tab:pom.xml[]
 ----
 <dependency>
     <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite-spring-data-2.2-ext</artifactId>
+    <artifactId>ignite-spring-data-ext</artifactId>
     <version>${ignite-spring-data-ext.version}</version>
 </dependency>
 
@@ -73,6 +73,7 @@ Apache Ignite each one is compatible with.
 |===
 |Apache Ignite Spring Data extension version | Compatible Apache Ignite versions
 | 1.0.0 | All versions since 2.8.0
+| 2.0.0 | All versions since 2.8.0
 |===
 
 [NOTE]

@@ -56,7 +56,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
     private static final int GRID_COUNT = 3;
 
     /** Events. */
-    private static final ConcurrentLinkedQueue<CacheEntryEvent<?, ?>> events = new ConcurrentLinkedQueue<>();
+    private static final ConcurrentLinkedQueue<CacheEntryEvent<?, ?>> evts = new ConcurrentLinkedQueue<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -85,7 +85,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
 
         stopAllGrids();
 
-        events.clear();
+        evts.clear();
     }
 
     /**
@@ -119,12 +119,12 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
             }
         }
 
-        assertTrue("There are not filtered events", !events.isEmpty());
+        assertTrue("There are not filtered events", !evts.isEmpty());
 
-        for (CacheEntryEvent<?, ?> event : events) {
-            assertNotNull("Key is null", event.getKey());
-            assertNotNull("Value is null", event.getValue());
-            assertNotNull("Old value is null", event.getOldValue());
+        for (CacheEntryEvent<?, ?> evt : evts) {
+            assertNotNull("Key is null", evt.getKey());
+            assertNotNull("Value is null", evt.getValue());
+            assertNotNull("Old value is null", evt.getOldValue());
         }
     }
 
@@ -172,8 +172,8 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
         assertNotNull(e0.key());
         assertNull(e1.oldValue());
         assertNotNull(e0.oldValue());
-        assertNull(e1.value());
-        assertNotNull(e0.value());
+        assertNull(e1.newValue());
+        assertNotNull(e0.newValue());
     }
 
     /**
@@ -192,7 +192,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
     private static class CacheEventFilter implements CacheEntryEventFilter<Object, Object>, Serializable {
         /** {@inheritDoc} */
         @Override public boolean evaluate(CacheEntryEvent<?, ?> evt) {
-            events.add(evt);
+            evts.add(evt);
 
             return false;
         }

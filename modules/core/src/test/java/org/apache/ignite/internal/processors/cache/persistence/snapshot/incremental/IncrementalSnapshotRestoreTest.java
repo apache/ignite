@@ -54,6 +54,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.management.consistency.ConsistencyRepairCommandArg;
+import org.apache.ignite.internal.management.consistency.ConsistencyRepairTask;
+import org.apache.ignite.internal.management.consistency.ConsistencyTaskResult;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -74,8 +76,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask;
-import org.apache.ignite.internal.visor.consistency.VisorConsistencyTaskResult;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
@@ -85,6 +85,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
@@ -351,10 +352,12 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence();
 
-        GridTestUtils.assertThrowsAnyCause(log, () ->
-            grid(0).snapshot().restoreSnapshot(SNP, null, 2).get(getTestTimeout()),
-            IgniteSnapshotVerifyException.class,
-            "No incremental snapshot found");
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> grid(0).snapshot().restoreSnapshot(SNP, null, 2).get(getTestTimeout()),
+            IllegalArgumentException.class,
+            "No incremental snapshot found"
+        );
     }
 
     /** */
@@ -430,13 +433,11 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         // Corrupted WAL segment leads to different errors.
         if (ex instanceof IgniteException) {
             if (ex.getMessage().contains("Failed to read WAL record at position")
-                || ex.getMessage().contains("WAL tail reached not in the last available segment")) {
+                || ex.getMessage().contains("WAL tail reached not in the last available segment"))
                 expExc = true;
-            }
         }
-        else if (ex instanceof AssertionError) {
+        else if (ex instanceof AssertionError)
             expExc = true;
-        }
 
         assertTrue(ex.getMessage(), expExc);
 
@@ -827,7 +828,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
     }
 
     /** */
-    private void checkData(Map<?, ?> expData, String cacheName) {
+    private void checkData(Map<?, ?> expData, String cacheName) throws Exception {
         List<Cache.Entry<Object, Object>> actData = grid(0).cache(cacheName).withKeepBinary().query(new ScanQuery<>()).getAll();
 
         assertEquals(actData.size(), expData.size());
@@ -856,12 +857,14 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         arg.partitions(IntStream.range(0, PARTS).toArray());
         arg.strategy(ReadRepairStrategy.CHECK_ONLY);
 
-        VisorConsistencyTaskResult res = grid(0).compute().execute(
-            VisorConsistencyRepairTask.class,
+        ConsistencyTaskResult res = grid(0).compute().execute(
+            ConsistencyRepairTask.class,
             new VisorTaskArgument<>(
                 G.allGrids().stream().map(ign -> ign.cluster().localNode().id()).collect(Collectors.toList()),
                 arg,
-                false));
+                false
+            )
+        ).result();
 
         assertFalse(res.message(), res.cancelled());
         assertFalse(res.message(), res.failed());

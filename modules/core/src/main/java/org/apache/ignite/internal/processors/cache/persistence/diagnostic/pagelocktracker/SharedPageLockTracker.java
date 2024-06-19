@@ -276,10 +276,10 @@ public class SharedPageLockTracker {
     private synchronized Set<PageLockThreadState> hangThreads() {
         Set<PageLockThreadState> hangsThreads = new HashSet<>();
 
-        Map<Long, PageLockThreadState> currentThreadsOperationState = getThreadOperationState();
+        Map<Long, PageLockThreadState> curThreadsOperationState = getThreadOperationState();
 
         prevThreadsState.forEach((threadId, prevState) -> {
-            PageLockThreadState state = currentThreadsOperationState.get(threadId);
+            PageLockThreadState state = curThreadsOperationState.get(threadId);
 
             if (state == null)
                 return;
@@ -291,7 +291,7 @@ public class SharedPageLockTracker {
                 hangsThreads.add(state);
         });
 
-        prevThreadsState = currentThreadsOperationState;
+        prevThreadsState = curThreadsOperationState;
 
         return hangsThreads;
     }

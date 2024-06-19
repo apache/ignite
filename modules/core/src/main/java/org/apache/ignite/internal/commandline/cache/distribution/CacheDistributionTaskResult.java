@@ -106,11 +106,11 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
         List<Row> rows = new ArrayList<>();
 
         for (CacheDistributionNode node : nodeResList) {
-            for (CacheDistributionGroup group : node.getGroups()) {
-                for (CacheDistributionPartition partition : group.getPartitions()) {
+            for (CacheDistributionGroup grp : node.getGroups()) {
+                for (CacheDistributionPartition partition : grp.getPartitions()) {
                     final Row row = new Row();
-                    row.setGroupId(group.getGroupId());
-                    row.setGroupName(group.getGroupName());
+                    row.setGroupId(grp.getGroupId());
+                    row.setGroupName(grp.getGroupName());
                     row.setPartition(partition.getPartition());
                     row.setNodeId(node.getNodeId());
                     row.setPrimary(partition.isPrimary());
@@ -129,11 +129,11 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
 
         StringBuilder userAttrsName = new StringBuilder();
         if (!rows.isEmpty() && rows.get(0).userAttrs != null) {
-            for (String userAttribute : rows.get(0).userAttrs.keySet()) {
+            for (String userAttr : rows.get(0).userAttrs.keySet()) {
                 userAttrsName.append(',');
 
-                if (userAttribute != null)
-                    userAttrsName.append(userAttribute);
+                if (userAttr != null)
+                    userAttrsName.append(userAttr);
             }
         }
         printer.accept("[groupId,partition,nodeId,primary,state,updateCounter,partitionSize,nodeAddresses" + userAttrsName + "]");
@@ -333,10 +333,10 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
             out.a(addrs);
 
             if (userAttrs != null) {
-                for (String userAttribute : userAttrs.values()) {
+                for (String userAttr : userAttrs.values()) {
                     out.a(',');
-                    if (userAttribute != null)
-                        out.a(userAttribute);
+                    if (userAttr != null)
+                        out.a(userAttr);
                 }
             }
 

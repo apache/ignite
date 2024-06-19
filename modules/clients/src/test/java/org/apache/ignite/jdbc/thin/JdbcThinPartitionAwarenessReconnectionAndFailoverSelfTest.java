@@ -35,7 +35,6 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -425,12 +424,12 @@ public class JdbcThinPartitionAwarenessReconnectionAndFailoverSelfTest extends J
             stmt.execute(sql);
             stmt.execute(sql);
 
-            AffinityCache affinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
+            AffinityCache affCache = GridTestUtils.getFieldValue(conn, "affinityCache");
 
-            Integer part = ((PartitionSingleNode)affinityCache.partitionResult(
+            Integer part = ((PartitionSingleNode)affCache.partitionResult(
                 new QualifiedSQLQuery("PUBLIC", sql)).partitionResult().tree()).value();
 
-            UUID nodeId = affinityCache.cacheDistribution(GridCacheUtils.cacheId(cacheName))[part];
+            UUID nodeId = affCache.cacheDistribution(GridCacheUtils.cacheId(cacheName))[part];
 
             int gridIdx = new Integer(Ignition.ignite(nodeId).name().substring(getTestIgniteInstanceName().length()));
             stopGrid(gridIdx);
@@ -550,60 +549,6 @@ public class JdbcThinPartitionAwarenessReconnectionAndFailoverSelfTest extends J
         }
 
         startGridsMultiThreaded(INITIAL_NODES_CNT);
-    }
-
-    /**
-     * Check that there are no retries in case of transactional query.
-     *
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
-    @Test
-    public void testTransactionalQueryFailover() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL_WITH_ONE_PORT)) {
-            final String cacheName = UUID.randomUUID().toString().substring(0, 6);
-
-            final String sql = "select 1 from \"" + cacheName + "\".Person";
-
-            CacheConfiguration<Object, Object> cache = defaultCacheConfiguration().setName(cacheName).
-                setNearConfiguration(null).setIndexedTypes(Integer.class, Person.class).
-                setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
-
-            ignite(0).createCache(cache);
-
-            Statement stmt = conn.createStatement();
-
-            stmt.execute("BEGIN");
-
-            stmt.execute(sql);
-
-            stopGrid(0);
-
-            logHnd.records.clear();
-
-            GridTestUtils.assertThrows(null,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        stmt.execute(sql);
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "Failed to communicate with Ignite cluster."
-            );
-        }
-
-        assertEquals("Unexpected log records count.", 1, logHnd.records.size());
-
-        LogRecord record = logHnd.records.get(0);
-
-        assertEquals("Unexpected log record text.", "Exception during sending an sql request.",
-            record.getMessage());
-
-        assertEquals("Unexpected log level", Level.FINE, record.getLevel());
-
-        startGrid(0);
     }
 
     /**

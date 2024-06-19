@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
@@ -49,9 +48,6 @@ import org.jsr166.ConcurrentLinkedHashMap;
 public class CheckpointPagesWriterFactory {
     /** Logger. */
     private final IgniteLogger log;
-
-    /** Snapshot manager. */
-    private final IgniteCacheSnapshotManager snapshotMgr;
 
     /** Data storage metrics. */
     private final DataStorageMetricsImpl persStoreMetrics;
@@ -70,7 +66,6 @@ public class CheckpointPagesWriterFactory {
 
     /**
      * @param logger Logger.
-     * @param snapshotMgr Snapshot manager.
      * @param checkpointPageWriter Checkpoint page writer.
      * @param persStoreMetrics Persistence metrics.
      * @param throttlingPolicy Throttling policy.
@@ -79,14 +74,12 @@ public class CheckpointPagesWriterFactory {
      */
     CheckpointPagesWriterFactory(
         Function<Class<?>, IgniteLogger> logger,
-        IgniteCacheSnapshotManager snapshotMgr,
         CheckpointPagesWriter.CheckpointPageWriter checkpointPageWriter,
         DataStorageMetricsImpl persStoreMetrics,
         PageMemoryImpl.ThrottlingPolicy throttlingPolicy,
         ThreadLocal<ByteBuffer> threadBuf,
         IgniteThrowableFunction<Integer, PageMemoryEx> pageMemoryGroupResolver
     ) {
-        this.snapshotMgr = snapshotMgr;
         this.log = logger.apply(getClass());
         this.persStoreMetrics = persStoreMetrics;
         this.threadBuf = threadBuf;
@@ -120,7 +113,6 @@ public class CheckpointPagesWriterFactory {
             updStores,
             doneWriteFut,
             beforePageWrite,
-            snapshotMgr,
             log,
             persStoreMetrics,
             threadBuf,

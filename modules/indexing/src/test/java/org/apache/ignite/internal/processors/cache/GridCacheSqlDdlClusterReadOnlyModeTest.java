@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -88,10 +87,10 @@ public class GridCacheSqlDdlClusterReadOnlyModeTest extends CacheCreateDestroyCl
 
         for (String cacheName : cacheNames()) {
             for (Ignite node : G.allGrids()) {
-                String indexName = "age_idx_" + tableName(cacheName);
-                assertNotNull(execute(node, "create index " + indexName + " on " + tableName(cacheName) + " (age)"));
+                String idxName = "age_idx_" + tableName(cacheName);
+                assertNotNull(execute(node, "create index " + idxName + " on " + tableName(cacheName) + " (age)"));
 
-                assertNotNull(execute(node, "drop index " + indexName));
+                assertNotNull(execute(node, "drop index " + idxName));
             }
         }
     }
@@ -105,11 +104,6 @@ public class GridCacheSqlDdlClusterReadOnlyModeTest extends CacheCreateDestroyCl
 
         for (CacheConfiguration cfg : cacheConfigurations()) {
             String cacheName = cfg.getName();
-
-            if (cfg.getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT) {
-                // Drop column doesn't support in MVCC mode.
-                continue;
-            }
 
             for (Ignite node : G.allGrids()) {
                 String selectSql = "select city from " + tableName(cacheName);

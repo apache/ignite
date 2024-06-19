@@ -24,9 +24,9 @@ import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.management.cache.CacheMetricsCommand;
+import org.apache.ignite.internal.management.cache.CacheMetricsOperation;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.visor.cache.metrics.CacheMetricsOperation;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 

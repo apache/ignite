@@ -102,12 +102,6 @@ See the link:security/authentication[Authentication] and link:sql-reference/ddl#
    on each node participating in the query.
 |`false`
 
-|`replicatedOnly`
-
-|Whether the query contains only replicated tables. This is a hint for potentially more effective execution.
-
-|`false`
-
 |`autoCloseServerCursor`
 |Whether to close server-side cursors automatically when the last piece of a result set is retrieved. When this property is enabled, calling `ResultSet.close()` does not require a network call, which could improve performance. However, if the server-side cursor is already closed, you may get an exception when trying to call `ResultSet.getMetadata()`. This is why it defaults to `false`.
 |`false`
@@ -143,6 +137,14 @@ This approach might impact performance and it can saturate the network if a DML 
 Use this flag to tell Ignite to perform all intermediate row analysis and updates "in-place" on corresponding remote data nodes.
 Defaults to `false`, meaning that the intermediate results are fetched to the query initiator first.
 |`false`
+
+|`queryTimeout`
+|Sets the number of seconds the driver will wait for a Statement object to execute. Zero means there is no limits.
+|`0`
+
+|`connectionTimeout`
+|Sets the number of milliseconds JDBC client will waits for server to response. Zero means there is no limits.
+|'0'
 
 
 |=======================================================================
@@ -616,7 +618,7 @@ The table below lists all the link:https://en.wikipedia.org/wiki/SQLSTATE[ANSI S
 
 |0A000|Requested operation is not supported.
 
-|40001|Concurrent update conflict. See link:transactions/mvcc#concurrent-updates[Concurrent Updates].
+|40001|Concurrent update conflict.
 
 |42000|Query parsing exception.
 

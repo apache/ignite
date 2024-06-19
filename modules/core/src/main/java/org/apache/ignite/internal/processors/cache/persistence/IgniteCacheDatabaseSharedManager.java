@@ -104,7 +104,6 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_RATE
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_SUB_INTERVALS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.HALF_MAX_WAL_ARCHIVE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
-import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.VOLATILE_DATA_REGION_NAME;
 
@@ -118,7 +117,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** DataRegionConfiguration names reserved for various internal needs. */
     public static Set<String> INTERNAL_DATA_REGION_NAMES = Collections.unmodifiableSet(
-        new HashSet<>(Arrays.asList(SYSTEM_DATA_REGION_NAME, TX_LOG_CACHE_NAME, METASTORE_DATA_REGION_NAME)));
+        new HashSet<>(Arrays.asList(SYSTEM_DATA_REGION_NAME, METASTORE_DATA_REGION_NAME)));
 
     /** System view name for page lists. */
     public static final String DATA_REGION_PAGE_LIST_VIEW = "dataRegionPageLists";
@@ -673,8 +672,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param memCfg Memory config.
      */
     protected void checkPageSize(DataStorageConfiguration memCfg) {
-        if (memCfg.getPageSize() == 0)
+        if (memCfg.getPageSize() == 0) {
             memCfg.setPageSize(DFLT_PAGE_SIZE);
+            log.info("The DataStorageConfiguration.pageSize property has been set to: " + memCfg.getPageSize() + " bytes");
+        }
     }
 
     /**
@@ -1069,6 +1070,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             cctx.wal(true).startAutoReleaseSegments();
             cctx.wal(true).resumeLogging(ptr);
+
+            // This callback is required for CdcManager initialization.
+            if (cctx.cdc() != null && cctx.cdc().enabled())
+                cctx.cdc().afterBinaryMemoryRestore(this, null);
         }
     }
 
@@ -1364,32 +1369,32 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * Creates PageMemory with given size and memory provider.
      *
-     * @param memProvider Memory provider.
-     * @param memCfg Memory configuartion.
-     * @param memPlcCfg data region configuration.
-     * @param memMetrics DataRegionMetrics to collect memory usage metrics.
-     * @param pmPageMgr Page manager.
+     * @param memProvider Direct memory provider.
+     * @param dsCfg Data storage configuration.
+     * @param regCfg Data region configuration.
+     * @param regMetrics Data region metrics to collect memory usage metrics.
+     * @param pageMgr Page read/write manager.
      * @return PageMemory instance.
      */
     protected PageMemory createPageMemory(
         DirectMemoryProvider memProvider,
-        DataStorageConfiguration memCfg,
-        DataRegionConfiguration memPlcCfg,
-        DataRegionMetricsImpl memMetrics,
+        DataStorageConfiguration dsCfg,
+        DataRegionConfiguration regCfg,
+        DataRegionMetricsImpl regMetrics,
         boolean trackable,
-        PageReadWriteManager pmPageMgr
+        PageReadWriteManager pageMgr
     ) {
-        memMetrics.persistenceEnabled(false);
+        regMetrics.persistenceEnabled(false);
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(
             cctx,
-            wrapMetricsMemoryProvider(memProvider, memMetrics),
-            memCfg.getPageSize(),
-            memPlcCfg,
-            memMetrics
+            wrapMetricsMemoryProvider(memProvider, regMetrics),
+            dsCfg.getPageSize(),
+            regCfg,
+            regMetrics
         );
 
-        memMetrics.pageMemory(pageMem);
+        regMetrics.pageMemory(pageMem);
 
         return pageMem;
     }

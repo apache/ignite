@@ -18,18 +18,17 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsTask;
-import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsTaskResult;
+
 import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.management.SystemViewCommand.printTable;
-import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
+import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.STRING;
 
 /** Enable / disable cache metrics collection or show metrics collection status. */
-public class CacheMetricsCommand implements ComputeCommand<CacheMetricsCommandArg, VisorCacheMetricsTaskResult> {
+public class CacheMetricsCommand implements ComputeCommand<CacheMetricsCommandArg, Map<String, Boolean>> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Manages user cache metrics collection: enables, disables it or shows status";
@@ -41,22 +40,17 @@ public class CacheMetricsCommand implements ComputeCommand<CacheMetricsCommandAr
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorCacheMetricsTask> taskClass() {
-        return VisorCacheMetricsTask.class;
+    @Override public Class<CacheMetricsTask> taskClass() {
+        return CacheMetricsTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(CacheMetricsCommandArg arg, VisorCacheMetricsTaskResult res, Consumer<String> printer) {
-        try {
-            List<List<?>> values = res.result().entrySet()
-                .stream()
-                .map(e -> asList(e.getKey(), e.getValue() ? "enabled" : "disabled"))
-                .collect(Collectors.toList());
+    @Override public void printResult(CacheMetricsCommandArg arg, Map<String, Boolean> res, Consumer<String> printer) {
+        List<List<?>> values = res.entrySet()
+            .stream()
+            .map(e -> asList(e.getKey(), e.getValue() ? "enabled" : "disabled"))
+            .collect(Collectors.toList());
 
-            printTable(asList("Cache Name", "Metrics Status"), asList(STRING, STRING), values, printer);
-        }
-        catch (Exception e) {
-            throw new IgniteException(e);
-        }
+        printTable(asList("Cache Name", "Metrics Status"), asList(STRING, STRING), values, printer);
     }
 }

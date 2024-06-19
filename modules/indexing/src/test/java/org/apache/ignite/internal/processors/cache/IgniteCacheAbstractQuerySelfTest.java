@@ -55,6 +55,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -80,6 +81,7 @@ import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -101,10 +103,13 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
 import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.FULL_TEXT;
+import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.SCAN;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.junit.Assert.assertArrayEquals;
@@ -727,17 +732,17 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         cache.put(40, new Type2(2, "Type2 record #2"));
         cache.put(50, new Type2(3, "Type2 record #3"));
 
-        QueryCursor<List<?>> query = cache.query(
+        QueryCursor<List<?>> qry = cache.query(
             new SqlFieldsQuery("SELECT t2.name, t1.name FROM Type2 as t2 LEFT JOIN Type1 as t1 ON t1.id = t2.id")
                 .setDistributedJoins(cacheMode() == PARTITIONED));
 
-        assertEquals(2, query.getAll().size());
+        assertEquals(2, qry.getAll().size());
 
-        query = cache.query(
+        qry = cache.query(
             new SqlFieldsQuery("SELECT t2.name, t1.name FROM Type2 as t2 RIGHT JOIN Type1 as t1 ON t1.id = t2.id")
                 .setDistributedJoins(cacheMode() == PARTITIONED));
 
-        assertEquals(3, query.getAll().size());
+        assertEquals(3, qry.getAll().size());
     }
 
     /**
@@ -956,11 +961,11 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     @Test
     public void testObjectQueryWithSwap() {
-        CacheConfiguration<Integer, ObjectValue> config = new CacheConfiguration<Integer, ObjectValue>(cacheConfiguration());
+        CacheConfiguration<Integer, ObjectValue> cfg = new CacheConfiguration<Integer, ObjectValue>(cacheConfiguration());
 
-        config.setOnheapCacheEnabled(true);
+        cfg.setOnheapCacheEnabled(true);
 
-        IgniteCache<Integer, ObjectValue> cache = jcache(ignite(), config, Integer.class, ObjectValue.class);
+        IgniteCache<Integer, ObjectValue> cache = jcache(ignite(), cfg, Integer.class, ObjectValue.class);
 
         boolean partitioned = cache.getConfiguration(CacheConfiguration.class).getCacheMode() == PARTITIONED;
 
@@ -1880,6 +1885,116 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         finally {
             for (int i = 0; i < gridCount(); i++)
                 grid(i).events().stopLocalListen(qryExecLsnrs[i]);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testIndexQueryEvents() throws Exception {
+        final Map<Integer, BinaryObject> qryResults = new ConcurrentHashMap<>();
+        final IgniteCache<Integer, Type2> cache = jcache(Integer.class, Type2.class);
+        final boolean evtsDisabled = cache.getConfiguration(CacheConfiguration.class).isEventsDisabled();
+
+        final CountDownLatch readLatch = new CountDownLatch(evtsDisabled ? 0 : 2);
+        final CountDownLatch execLatch = new CountDownLatch(evtsDisabled ? 0 :
+            cacheMode() == REPLICATED ? 1 : gridCount());
+
+        IgnitePredicate[] objReadLsnrs = new IgnitePredicate[gridCount()];
+        IgnitePredicate[] qryExecLsnrs = new IgnitePredicate[gridCount()];
+
+        for (int i = 0; i < gridCount(); i++) {
+            IgnitePredicate<Event> objReadPred = new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assert evt instanceof CacheQueryReadEvent;
+
+                    if (evtsDisabled)
+                        fail("Cache events are disabled");
+
+                    CacheQueryReadEvent<Integer, Type2> qe = (CacheQueryReadEvent<Integer, Type2>)evt;
+
+                    assertEquals(INDEX.name(), qe.queryType());
+                    assertEquals(cache.getName(), qe.cacheName());
+                    assertEquals("Type2", QueryUtils.typeName(qe.className()));
+                    assertNotNull(qe.scanQueryFilter());
+                    assertNull(qe.clause());
+                    assertNull(qe.continuousQueryFilter());
+                    assertNull(qe.arguments());
+
+                    qryResults.put(qe.key(), (BinaryObject)qe.value());
+
+                    readLatch.countDown();
+
+                    return true;
+                }
+            };
+
+            grid(i).events().localListen(objReadPred, EVT_CACHE_QUERY_OBJECT_READ);
+            objReadLsnrs[i] = objReadPred;
+
+            IgnitePredicate<Event> qryExecPred = new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assert evt instanceof CacheQueryExecutedEvent;
+
+                    if (evtsDisabled)
+                        fail("Cache events are disabled");
+
+                    CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
+
+                    assertEquals(INDEX.name(), qe.queryType());
+                    assertEquals(cache.getName(), qe.cacheName());
+                    assertEquals("Type2", QueryUtils.typeName(qe.className()));
+                    assertNotNull(qe.scanQueryFilter());
+                    assertNull(qe.clause());
+                    assertNull(qe.continuousQueryFilter());
+                    assertNull(qe.arguments());
+
+                    execLatch.countDown();
+
+                    return true;
+                }
+            };
+
+            grid(i).events().localListen(qryExecPred, EVT_CACHE_QUERY_EXECUTED);
+            qryExecLsnrs[i] = qryExecPred;
+        }
+
+        try {
+            cache.put(1, new Type2(1, "John"));
+            cache.put(2, new Type2(2, "Bill"));
+            cache.put(3, new Type2(3, "Sam"));
+            cache.put(4, new Type2(4, "Bill"));
+            cache.put(5, new Type2(5, "Bob"));
+
+            IndexQuery<Integer, Type2> qry = new IndexQuery<Integer, Type2>(Type2.class)
+                .setCriteria(gt("id", 1), lt("id", 5))
+                .setFilter((k, v) -> v.name().contains("Bill"));
+
+            if (cacheMode() == REPLICATED)
+                qry.setLocal(true);
+
+            QueryCursor<Cache.Entry<Integer, Type2>> cursor = cache.query(qry);
+
+            cursor.getAll();
+
+            assert readLatch.await(1000, MILLISECONDS);
+            assert execLatch.await(1000, MILLISECONDS);
+
+            if (!evtsDisabled) {
+                assertEquals(2, qryResults.size());
+
+                assertEquals("Bill", ((Type2)qryResults.get(2).deserialize()).name());
+                assertEquals("Bill", ((Type2)qryResults.get(4).deserialize()).name());
+            }
+            else
+                assert qryResults.isEmpty();
+        }
+        finally {
+            for (int i = 0; i < gridCount(); i++) {
+                grid(i).events().stopLocalListen(objReadLsnrs[i]);
+                grid(i).events().stopLocalListen(qryExecLsnrs[i]);
+            }
         }
     }
 

@@ -75,11 +75,11 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -118,15 +118,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             cacheCfg.setRebalanceMode(ASYNC);
             cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
             cacheCfg.setNearConfiguration(nearConfiguration());
-
-            if (atomicityMode() != TRANSACTIONAL_SNAPSHOT) {
-                cacheCfg.setCacheStoreFactory(new StoreFactory()); // TODO IGNITE-8582 enable for tx snapshot.
-                cacheCfg.setReadThrough(true); // TODO IGNITE-8582 enable for tx snapshot.
-                cacheCfg.setWriteThrough(true); // TODO IGNITE-8582 enable for tx snapshot.
-            }
-            else
-                cacheCfg.setIndexedTypes(Integer.class, Integer.class);
-
+            cacheCfg.setCacheStoreFactory(new StoreFactory());
+            cacheCfg.setReadThrough(true);
+            cacheCfg.setWriteThrough(true);
             cfg.setCacheConfiguration(cacheCfg);
         }
 

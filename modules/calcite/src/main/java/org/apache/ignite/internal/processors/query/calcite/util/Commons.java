@@ -33,7 +33,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
 import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.Context;
@@ -444,6 +443,16 @@ public final class Commons {
 
     /** */
     public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer) {
-        return new MappingQueryContext(locNodeId, topVer);
+        return mapContext(locNodeId, topVer, null, null);
+    }
+
+    /** */
+    public static MappingQueryContext mapContext(
+            UUID locNodeId,
+            AffinityTopologyVersion topVer,
+            BaseQueryContext ctx,
+            Map<String, Object> qryParams
+    ) {
+        return new MappingQueryContext(ctx, locNodeId, topVer, qryParams);
     }
 }
