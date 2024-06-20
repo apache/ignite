@@ -81,6 +81,7 @@ import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.management.cache.CacheDestroyCommand;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
 import org.apache.ignite.internal.management.cache.scan.DefaultCacheScanTaskFormat;
+import org.apache.ignite.internal.management.cache.scan.JsonCacheScanTaskFormat;
 import org.apache.ignite.internal.management.cache.scan.TableCacheScanTaskFormat;
 import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -190,6 +191,15 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
     /** */
     public static final String SCAN = "scan";
+
+    /** */
+    public static final String JOHN = "John Connor";
+
+    /** */
+    public static final String SARAH = "Sarah Connor";
+
+    /** */
+    public static final String KYLE = "Kyle Reese";
 
     /**
      * Very basic tests for running the command in different environment which other command are running in.
@@ -1661,47 +1671,68 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
+    private void dataForScanTest() {
+        IgniteCache<Key, Employee> c1 = crd.createCache(new CacheConfiguration<>("cache1"));
+
+        c1.put(new Key(1), new Employee(JOHN, 2));
+        c1.put(new Key(2), new Employee(SARAH, 3));
+        c1.put(new Key(3), new Employee(KYLE, 4));
+
+        IgniteCache<Integer, String> c2 = crd.createCache(new CacheConfiguration<>("cache2"));
+
+        c2.put(1, JOHN);
+        c2.put(2, SARAH);
+        c2.put(3, KYLE);
+    }
+
+    /** */
     @Test
     public void testCacheScanTableFormat() {
         injectTestSystemOut();
 
         autoConfirmation = false;
 
-        String cache1 = "cache1";
-        String john = "John Connor";
-        String sarah = "Sarah Connor";
-        String kyle = "Kyle Reese";
+        dataForScanTest();
 
-        IgniteCache<Key, Employee> c1 = crd.createCache(new CacheConfiguration<>(cache1));
-
-        c1.put(new Key(1), new Employee(john, 2));
-        c1.put(new Key(2), new Employee(sarah, 3));
-        c1.put(new Key(3), new Employee(kyle, 4));
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", TableCacheScanTaskFormat.NAME, cache1));
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", TableCacheScanTaskFormat.NAME, "cache1"));
 
         assertContains(log, testOut.toString(), Pattern.compile("id *fio *salary *\n"));
-        assertContains(log, testOut.toString(), Pattern.compile("1 *" + john + " *2 *\n"));
-        assertContains(log, testOut.toString(), Pattern.compile("2 *" + sarah + " *3 *\n"));
-        assertContains(log, testOut.toString(), Pattern.compile("3 *" + kyle + " *4 *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("1 *" + JOHN + " *2 *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("2 *" + SARAH + " *3 *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("3 *" + KYLE + " *4 *\n"));
 
-        String cache2 = "cache2";
-        IgniteCache<Integer, String> c2 = crd.createCache(new CacheConfiguration<>(cache2));
-
-        c2.put(1, john);
-        c2.put(2, sarah);
-        c2.put(3, kyle);
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", TableCacheScanTaskFormat.NAME, cache2));
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", TableCacheScanTaskFormat.NAME, "cache2"));
 
         assertContains(
             log,
             testOut.toString(),
             Pattern.compile(DefaultCacheScanTaskFormat.KEY + " *" + DefaultCacheScanTaskFormat.VALUE + " *\n")
         );
-        assertContains(log, testOut.toString(), Pattern.compile("1 *" + john + " *\n"));
-        assertContains(log, testOut.toString(), Pattern.compile("2 *" + sarah + " *\n"));
-        assertContains(log, testOut.toString(), Pattern.compile("3 *" + kyle + " *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("1 *" + JOHN + " *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("2 *" + SARAH + " *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("3 *" + KYLE + " *\n"));
+    }
+
+    /** */
+    @Test
+    public void testCacheScanJsonFormat() {
+        injectTestSystemOut();
+
+        autoConfirmation = false;
+
+        dataForScanTest();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", JsonCacheScanTaskFormat.NAME, "cache1"));
+
+        assertContains(log, testOut.toString(), "{\"key\":{\"id\":1},\"value\":{\"fio\":\"" + JOHN + "\",\"salary\":2}}");
+        assertContains(log, testOut.toString(), "{\"key\":{\"id\":2},\"value\":{\"fio\":\"" + SARAH + "\",\"salary\":3}}");
+        assertContains(log, testOut.toString(), "{\"key\":{\"id\":3},\"value\":{\"fio\":\"" + KYLE + "\",\"salary\":4}}");
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", JsonCacheScanTaskFormat.NAME, "cache2"));
+
+        assertContains(log, testOut.toString(), "{\"key\":1,\"value\":\"" + JOHN + "\"} ");
+        assertContains(log, testOut.toString(), "{\"key\":2,\"value\":\"" + SARAH + "\"}");
+        assertContains(log, testOut.toString(), "{\"key\":3,\"value\":\"" + KYLE + "\"}");
     }
 
     /** */
