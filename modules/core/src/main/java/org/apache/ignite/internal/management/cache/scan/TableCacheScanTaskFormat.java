@@ -71,7 +71,11 @@ public class TableCacheScanTaskFormat implements CacheScanTaskFormat {
         if (o instanceof BinaryObject) {
             BinaryObject b = (BinaryObject)o;
 
-            return new ArrayList<>(b.type().fieldNames());
+            List<String> flds = new ArrayList<>(b.type().fieldNames());
+
+            Collections.sort(flds);
+
+            return flds;
         }
 
         return Collections.singletonList(dflt);
