@@ -1697,7 +1697,8 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             Collections.singletonMap("some_key", "some_value"),
             new String[] {"s1", "s2", "s3"},
             DATE,
-            Arrays.asList(1, 2, 3), AccessLevel.USER
+            Arrays.asList(1, 2, 3),
+            AccessLevel.USER
         ));
 
         c3.put(2, new TestClass2(
