@@ -466,4 +466,107 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
             .returns((byte)7, (short)7, 7, 7L, BigDecimal.valueOf(7), 7f, 7d)
             .check();
     }
+
+    /** */
+    @Test
+    public void testArithmeticOverflow() {
+        // BIGINT
+        assertThrows("select CAST(9223372036854775807.5 + 1 AS BIGINT)", IgniteSQLException.class, "BIGINT overflow");
+        assertThrows("select 9223372036854775807 + 1", IgniteSQLException.class, "BIGINT overflow");
+        assertThrows("select 9223372036854775807 * 2", IgniteSQLException.class, "BIGINT overflow");
+        assertThrows("select -9223372036854775808 - 1", IgniteSQLException.class, "BIGINT overflow");
+        assertThrows("select -(-9223372036854775807 - 1)", IgniteSQLException.class, "BIGINT overflow");
+        assertThrows("select -CAST(-9223372036854775808 AS BIGINT)", IgniteSQLException.class, "BIGINT overflow");
+        assertThrows("select -(?)", IgniteSQLException.class, "BIGINT overflow", -9223372036854775808L);
+        assertThrows("select -9223372036854775808/-1", IgniteSQLException.class, "BIGINT overflow");
+
+        // INTEGER
+        assertThrows("select CAST(CAST(3000000000.0 + 1 AS DOUBLE) AS INTEGER)",
+            IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("select CAST(9223372036854775807.5 + 9223372036854775807.5 AS INTEGER)",
+            IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("select CAST(2147483647.5 + 1 AS INTEGER)", IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("select 2147483647 + 1", IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("select 2147483647 * 2", IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("select -2147483648 - 1", IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("select -(-2147483647 - 1)", IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("select -CAST(-2147483648 AS INTEGER)", IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("select -(?)", IgniteSQLException.class, "INTEGER overflow", -2147483648);
+        assertThrows("select -2147483648/-1", IgniteSQLException.class, "INTEGER overflow");
+
+        // SMALLINT
+        assertThrows("select CAST(CAST(90000.0 + 1 AS FLOAT) AS SMALLINT)",
+            IgniteSQLException.class, "SMALLINT overflow");
+        assertThrows("select CAST(9223372036854775807.5 + 9223372036854775807.5 AS SMALLINT)",
+            IgniteSQLException.class, "SMALLINT overflow");
+        assertThrows("select 32000::smallint + 1000::smallint", IgniteSQLException.class, "SMALLINT overflow");
+        assertThrows("select 17000::smallint * 2::smallint", IgniteSQLException.class, "SMALLINT overflow");
+        assertThrows("select -32000::smallint - 1000::smallint", IgniteSQLException.class, "SMALLINT overflow");
+        assertThrows("select -(-32767::smallint - 1::smallint)", IgniteSQLException.class, "SMALLINT overflow");
+        assertThrows("select -CAST(-32768 AS smallint)", IgniteSQLException.class, "SMALLINT overflow");
+        assertThrows("select -CAST(? AS smallint)", IgniteSQLException.class, "SMALLINT overflow", -32768);
+        assertThrows("select -32768::smallint/-1::smallint", IgniteSQLException.class, "SMALLINT overflow");
+
+        // TINYINT
+        assertThrows("select CAST(CAST(200.0 + 1 AS FLOAT) AS TINYINT)",
+            IgniteSQLException.class, "TINYINT overflow");
+        assertThrows("select CAST(9223372036854775807.5 + 9223372036854775807.5 AS TINYINT)",
+            IgniteSQLException.class, "TINYINT overflow");
+        assertThrows("select 2::tinyint + 127::tinyint", IgniteSQLException.class, "TINYINT overflow");
+        assertThrows("select 2::tinyint * 127::tinyint", IgniteSQLException.class, "TINYINT overflow");
+        assertThrows("select -2::tinyint - 127::tinyint", IgniteSQLException.class, "TINYINT overflow");
+        assertThrows("select -(-127::tinyint - 1::tinyint)", IgniteSQLException.class, "TINYINT overflow");
+        assertThrows("select -CAST(-128 AS tinyint)", IgniteSQLException.class, "TINYINT overflow");
+        assertThrows("select -CAST(? AS tinyint)", IgniteSQLException.class, "TINYINT overflow", -128);
+        assertThrows("select -128::tinyint/-1::tinyint", IgniteSQLException.class, "TINYINT overflow");
+    }
+
+    /** */
+    @Test
+    public void testCastDecimalOverflows() {
+        // BIGINT
+        assertQuery("SELECT CAST(9223372036854775807.1 AS BIGINT)").returns(9223372036854775807L).check();
+        assertQuery("SELECT CAST(9223372036854775807.9 AS BIGINT)").returns(9223372036854775807L).check();
+        assertQuery("SELECT CAST(9223372036854775808.9 - 1 AS BIGINT)").returns(9223372036854775807L).check();
+        assertThrows("SELECT CAST(9223372036854775808 AS BIGINT)", IgniteSQLException.class, "BIGINT overflow");
+        assertThrows("SELECT CAST(9223372036854775808.1 AS BIGINT)", IgniteSQLException.class, "BIGINT overflow");
+        assertThrows("SELECT CAST(-9223372036854775809 AS BIGINT)", IgniteSQLException.class, "BIGINT overflow");
+        assertThrows("SELECT CAST(-9223372036854775809.1 AS BIGINT)", IgniteSQLException.class, "BIGINT overflow");
+        assertQuery("SELECT CAST(-9223372036854775808.1 AS BIGINT)").returns(-9223372036854775808L).check();
+        assertQuery("SELECT CAST(-9223372036854775808.9 AS BIGINT)").returns(-9223372036854775808L).check();
+        assertQuery("SELECT CAST(-9223372036854775809.9 + 1 AS BIGINT)").returns(-9223372036854775808L).check();
+
+        // INTEGER
+        assertQuery("SELECT CAST(2147483647.1 AS INTEGER)").returns(2147483647).check();
+        assertQuery("SELECT CAST(2147483647.9 AS INTEGER)").returns(2147483647).check();
+        assertQuery("SELECT CAST(2147483648.9 - 1 AS INTEGER)").returns(2147483647).check();
+        assertThrows("SELECT CAST(2147483648 AS INTEGER)", IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("SELECT CAST(2147483648.1 AS INTEGER)", IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("SELECT CAST(-2147483649 AS INTEGER)", IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("SELECT CAST(-2147483649.1 AS INTEGER)", IgniteSQLException.class, "INTEGER overflow");
+        assertQuery("SELECT CAST(-2147483648.1 AS INTEGER)").returns(-2147483648).check();
+        assertQuery("SELECT CAST(-2147483648.9 AS INTEGER)").returns(-2147483648).check();
+
+        // SMALLINT
+        assertQuery("SELECT CAST(32767.1 AS SMALLINT)").returns((short)32767).check();
+        assertQuery("SELECT CAST(32767.9 AS SMALLINT)").returns((short)32767).check();
+        assertQuery("SELECT CAST(32768.9 - 1 AS SMALLINT)").returns((short)32767).check();
+        assertThrows("SELECT CAST(32768 AS SMALLINT)", IgniteSQLException.class, "SMALLINT overflow");
+        assertThrows("SELECT CAST(32768.1 AS SMALLINT)", IgniteSQLException.class, "SMALLINT overflow");
+        assertThrows("SELECT CAST(-32769 AS SMALLINT)", IgniteSQLException.class, "SMALLINT overflow");
+        assertThrows("SELECT CAST(-32769.1 AS SMALLINT)", IgniteSQLException.class, "SMALLINT overflow");
+        assertQuery("SELECT CAST(-32768.1 AS SMALLINT)").returns((short)-32768).check();
+        assertQuery("SELECT CAST(-32768.9 AS SMALLINT)").returns((short)-32768).check();
+
+        // TINYINT
+        assertQuery("SELECT CAST(127.1 AS TINYINT)").returns((byte)127).check();
+        assertQuery("SELECT CAST(127.9 AS TINYINT)").returns((byte)127).check();
+        assertQuery("SELECT CAST(128.9 - 1 AS TINYINT)").returns((byte)127).check();
+        assertThrows("SELECT CAST(128 AS TINYINT)", IgniteSQLException.class, "TINYINT overflow");
+        assertThrows("SELECT CAST(128.1 AS TINYINT)", IgniteSQLException.class, "TINYINT overflow");
+        assertThrows("SELECT CAST(-129 AS TINYINT)", IgniteSQLException.class, "TINYINT overflow");
+        assertThrows("SELECT CAST(-129.1 AS TINYINT)", IgniteSQLException.class, "TINYINT overflow");
+        assertQuery("SELECT CAST(-128.1 AS TINYINT)").returns((byte)-128).check();
+        assertQuery("SELECT CAST(-128.9 AS TINYINT)").returns((byte)-128).check();
+    }
 }

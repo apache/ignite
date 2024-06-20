@@ -1771,10 +1771,10 @@ public class RexImpTable {
                                 case INTERVAL_MINUTE:
                                 case INTERVAL_MINUTE_SECOND:
                                 case INTERVAL_SECOND:
-                                    trop1 = Expressions.convert_(
+                                    trop1 = IgniteExpressions.convertChecked(
                                         Expressions.divide(trop1,
                                             Expressions.constant(DateTimeUtils.MILLIS_PER_DAY)),
-                                        int.class);
+                                        Primitive.of(long.class), Primitive.of(int.class));
                             }
                     }
                     break;

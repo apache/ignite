@@ -221,7 +221,7 @@ public class ConverterUtils {
         final Primitive fromBox = Primitive.ofBox(fromType);
         final Primitive fromPrimitive = Primitive.of(fromType);
         final boolean fromNumber = fromType instanceof Class
-            && Number.class.isAssignableFrom((Class)fromType);
+            && Number.class.isAssignableFrom((Class<?>)fromType);
         if (fromType == String.class) {
             if (toPrimitive != null) {
                 switch (toPrimitive) {
@@ -277,23 +277,11 @@ public class ConverterUtils {
 
             if (fromPrimitive != null) {
                 // E.g. from "float" to "double"
-                // check overflow for 'integer' subtypes
-                if (fromPrimitive == Primitive.LONG && toPrimitive == Primitive.INT)
-                    return IgniteExpressions.convertToIntExact(operand);
-
-                if ((fromPrimitive == Primitive.LONG || fromPrimitive == Primitive.INT) && toPrimitive == Primitive.SHORT)
-                    return IgniteExpressions.convertToShortExact(operand);
-
-                if ((fromPrimitive == Primitive.LONG || fromPrimitive == Primitive.INT || fromPrimitive == Primitive.SHORT)
-                    && toPrimitive == Primitive.BYTE)
-                    return IgniteExpressions.convertToByteExact(operand);
-
-                return Expressions.convert_(
-                    operand, toPrimitive.primitiveClass);
+                return IgniteExpressions.convertChecked(operand, fromPrimitive, toPrimitive);
             }
-            if (fromNumber || fromBox == Primitive.CHAR) {
+            if (fromNumber) {
                 // Generate "x.shortValue()".
-                return Expressions.unbox(operand, toPrimitive);
+                return IgniteExpressions.unboxChecked(operand, fromBox, toPrimitive);
             }
             else {
                 // E.g. from "Object" to "short".
@@ -311,7 +299,7 @@ public class ConverterUtils {
                 Expressions.equal(operand, RexImpTable.NULL_EXPR),
                 RexImpTable.NULL_EXPR,
                 Expressions.box(
-                    Expressions.unbox(operand, toBox),
+                    IgniteExpressions.unboxChecked(operand, fromBox, toBox),
                     toBox));
         }
         else if (fromPrimitive != null && toBox != null) {
@@ -333,7 +321,7 @@ public class ConverterUtils {
             // Convert it first and generate "Byte.valueOf((byte)x)"
             // Because there is no method "Byte.valueOf(int)" in Byte
             return Expressions.box(
-                Expressions.convert_(operand, toBox.primitiveClass),
+                IgniteExpressions.convertChecked(operand, fromPrimitive, toBox),
                 toBox);
         }
         // Convert datetime types to internal storage type:

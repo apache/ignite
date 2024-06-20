@@ -21,7 +21,10 @@ import java.lang.reflect.Type;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.ExpressionType;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.Primitive;
+import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
+import org.jetbrains.annotations.Nullable;
 
 /** Calcite liq4j expressions customized for Ignite. */
 public class IgniteExpressions {
@@ -41,7 +44,7 @@ public class IgniteExpressions {
         }
     }
 
-    /** */
+    /** Make unary expression with arithmetic operations override. */
     public static Expression makeUnary(ExpressionType unaryType, Expression operand) {
         switch (unaryType) {
             case Negate:
@@ -54,9 +57,7 @@ public class IgniteExpressions {
 
     /** Generate expression for method IgniteMath.addExact() for integer subtypes. */
     public static Expression addExact(Expression left, Expression right) {
-        Type largerType = larger(left.getType(), right.getType());
-
-        if (largerType == Integer.TYPE || largerType == Long.TYPE || largerType == Short.TYPE || largerType == Byte.TYPE)
+        if (larger(left.getType(), right.getType()).isFixedNumeric())
             return Expressions.call(IgniteMath.class, "addExact", left, right);
 
         return Expressions.makeBinary(ExpressionType.Add, left, right);
@@ -64,9 +65,7 @@ public class IgniteExpressions {
 
     /** Generate expression for method IgniteMath.subtractExact() for integer subtypes. */
     public static Expression subtractExact(Expression left, Expression right) {
-        Type largerType = larger(left.getType(), right.getType());
-
-        if (largerType == Integer.TYPE || largerType == Long.TYPE || largerType == Short.TYPE || largerType == Byte.TYPE)
+        if (larger(left.getType(), right.getType()).isFixedNumeric())
             return Expressions.call(IgniteMath.class, "subtractExact", left, right);
 
         return Expressions.makeBinary(ExpressionType.Subtract, left, right);
@@ -74,9 +73,7 @@ public class IgniteExpressions {
 
     /** Generate expression for method IgniteMath.multiplyExact() for integer subtypes. */
     public static Expression multiplyExact(Expression left, Expression right) {
-        Type largerType = larger(left.getType(), right.getType());
-
-        if (largerType == Integer.TYPE || largerType == Long.TYPE || largerType == Short.TYPE || largerType == Byte.TYPE)
+        if (larger(left.getType(), right.getType()).isFixedNumeric())
             return Expressions.call(IgniteMath.class, "multiplyExact", left, right);
 
         return Expressions.makeBinary(ExpressionType.Multiply, left, right);
@@ -84,43 +81,10 @@ public class IgniteExpressions {
 
     /** Generate expression for method IgniteMath.divideExact() for integer subtypes. */
     public static Expression divideExact(Expression left, Expression right) {
-        Type largerType = larger(left.getType(), right.getType());
-
-        if (largerType == Integer.TYPE || largerType == Long.TYPE || largerType == Short.TYPE || largerType == Byte.TYPE)
+        if (larger(left.getType(), right.getType()).isFixedNumeric())
             return Expressions.call(IgniteMath.class, "divideExact", left, right);
 
         return Expressions.makeBinary(ExpressionType.Divide, left, right);
-    }
-
-    /** Generate expression for method IgniteMath.convertToIntExact(). */
-    public static Expression convertToIntExact(Expression exp) {
-        Type type = exp.getType();
-
-        if (type == Long.TYPE || type == Long.class)
-            return Expressions.call(IgniteMath.class, "convertToIntExact", exp);
-
-        return exp;
-    }
-
-    /** Generate expression for method IgniteMath.convertToShortExact(). */
-    public static Expression convertToShortExact(Expression exp) {
-        Type type = exp.getType();
-
-        if (type == Long.TYPE || type == Long.class || type == Integer.TYPE || type == Integer.class)
-            return Expressions.call(IgniteMath.class, "convertToShortExact", exp);
-
-        return exp;
-    }
-
-    /** Generate expression for method IgniteMath.convertToByteExact(). */
-    public static Expression convertToByteExact(Expression exp) {
-        Type type = exp.getType();
-
-        if (type == Long.TYPE || type == Long.class || type == Integer.TYPE || type == Integer.class
-            || type == Short.TYPE || type == Short.class)
-            return Expressions.call(IgniteMath.class, "convertToByteExact", exp);
-
-        return exp;
     }
 
     /** Generate expression for method IgniteMath.negateExact() for integer subtypes. */
@@ -135,21 +99,29 @@ public class IgniteExpressions {
         return Expressions.makeUnary(unaryType, operand);
     }
 
+    /** Generate expression for conversion from numeric primitive to numeric primitive with bounds check. */
+    public static Expression convertChecked(Expression exp, Primitive fromPrimitive, Primitive toPrimitive) {
+        if (fromPrimitive.ordinal() <= toPrimitive.ordinal() || !toPrimitive.isFixedNumeric())
+            return Expressions.convert_(exp, toPrimitive.primitiveClass);
+
+        return Expressions.call(IgniteMath.class, "convertTo" +
+            SqlFunctions.initcap(toPrimitive.primitiveName) + "Exact", exp);
+    }
+
+    /** Generate expression for conversion from Number to numeric primitive with bounds check. */
+    public static Expression unboxChecked(Expression exp, @Nullable Primitive fromBox, Primitive toPrimitive) {
+        if ((fromBox != null && fromBox.ordinal() <= toPrimitive.ordinal()) || !toPrimitive.isFixedNumeric())
+            return Expressions.unbox(exp, toPrimitive);
+
+        return Expressions.call(IgniteMath.class, "convertTo" +
+            SqlFunctions.initcap(toPrimitive.primitiveName) + "Exact", exp);
+    }
+
     /** Find larger in type hierarchy. */
-    private static Type larger(Type type0, Type type1) {
-        if (type0 != Double.TYPE && type0 != Double.class && type1 != Double.TYPE && type1 != Double.class)
-            if (type0 != Float.TYPE && type0 != Float.class && type1 != Float.TYPE && type1 != Float.class)
-                if (type0 != Long.TYPE && type0 != Long.class && type1 != Long.TYPE && type1 != Long.class)
-                    if (type0 != Integer.TYPE && type0 != Integer.class && type1 != Integer.TYPE && type1 != Integer.class)
-                        return type0 != Short.TYPE && type0 != Short.class && type1 != Short.TYPE && type1 != Short.class
-                            ? Byte.TYPE : Short.TYPE;
-                    else
-                        return Integer.TYPE;
-                else
-                    return Long.TYPE;
-            else
-                return Float.TYPE;
-        else
-            return Double.TYPE;
+    private static Primitive larger(Type type0, Type type1) {
+        Primitive primitive0 = Primitive.ofBoxOr(type0);
+        Primitive primitive1 = Primitive.ofBoxOr(type1);
+
+        return primitive0.ordinal() > primitive1.ordinal() ? primitive0 : primitive1;
     }
 }
