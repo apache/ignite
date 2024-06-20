@@ -119,7 +119,6 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
 
         cache.query(new SqlFieldsQuery("DROP TABLE PUBLIC.t1")).getAll();
 
-        // todo
         int expCode = commandHandler.equals(CLI_CMD_HND) ? EXIT_CODE_CONNECTION_FAILED : EXIT_CODE_OK;
         assertEquals(expCode, execute("--meta", "remove", "--typeName", "CUSTOM_SQL_KEY_TYPE"));
         assertEquals(expCode, execute("--meta", "remove", "--typeName", "CUSTOM_SQL_VALUE_TYPE"));
