@@ -24,7 +24,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -99,6 +101,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.platform.model.AccessLevel;
 import org.apache.ignite.platform.model.Employee;
 import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
@@ -1683,6 +1686,39 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         c2.put(1, JOHN);
         c2.put(2, SARAH);
         c2.put(3, KYLE);
+
+        IgniteCache<Integer, TestClass2> c3 = crd.createCache(new CacheConfiguration<>("cache3"));
+
+        Date date = new Date(2004, Calendar.JULY, 25);
+
+        c3.put(1, new TestClass2(
+            1,
+            new int[]{2, 3},
+            Collections.singletonMap("some_key", "some_value"),
+            new String[] {"s1", "s2", "s3"},
+            date,
+            Arrays.asList(1, 2, 3), AccessLevel.USER
+        ));
+
+        c3.put(2, new TestClass2(
+            2,
+            new int[]{3, 4},
+            Collections.singletonMap("1", "2"),
+            new String[] {"s4", "s5", "s6"},
+            date,
+            Arrays.asList(1, 2, 3),
+            AccessLevel.USER
+        ));
+
+        c3.put(3, new TestClass2(
+            3,
+            new int[]{4, 5},
+            Collections.singletonMap("xxx", "yyy"),
+            new String[] {"s7", "s8", "s9"},
+            date,
+            Arrays.asList(1, 2, 3),
+            AccessLevel.SUPER
+        ));
     }
 
     /** */
@@ -1711,6 +1747,10 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertContains(log, testOut.toString(), Pattern.compile("1 *" + JOHN + " *\n"));
         assertContains(log, testOut.toString(), Pattern.compile("2 *" + SARAH + " *\n"));
         assertContains(log, testOut.toString(), Pattern.compile("3 *" + KYLE + " *\n"));
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", TableCacheScanTaskFormat.NAME, "cache3"));
+
+        assertContains(log, testOut.toString(), "unknown");
     }
 
     /** */
@@ -1733,6 +1773,10 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertContains(log, testOut.toString(), "{\"key\":1,\"value\":\"" + JOHN + "\"} ");
         assertContains(log, testOut.toString(), "{\"key\":2,\"value\":\"" + SARAH + "\"}");
         assertContains(log, testOut.toString(), "{\"key\":3,\"value\":\"" + KYLE + "\"}");
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", JsonCacheScanTaskFormat.NAME, "cache3"));
+
+        assertContains(log, testOut.toString(), "unknown");
     }
 
     /** */
@@ -2349,6 +2393,41 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         public TestClass(int i, String s) {
             this.i = i;
             this.s = s;
+        }
+    }
+
+    /** */
+    private static class TestClass2 {
+        /** */
+        private final int i;
+
+        /** */
+        private final int[] ints;
+
+        /** */
+        private final Map<?, ?> map;
+
+        /** */
+        private final String[] strArr;
+
+        /** */
+        private final Date date;
+
+        /** */
+        private final List<?> list;
+
+        /** */
+        private final AccessLevel enm;
+
+        /** */
+        public TestClass2(int i, int[] ints, Map<?, ?> map, String[] strArr, Date date, List<?> list, AccessLevel enm) {
+            this.i = i;
+            this.ints = ints;
+            this.map = map;
+            this.strArr = strArr;
+            this.date = date;
+            this.list = list;
+            this.enm = enm;
         }
     }
 }
