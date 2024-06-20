@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import javax.cache.Cache;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.jackson.IgniteObjectMapper;
 
@@ -32,7 +33,7 @@ public class JsonCacheScanTaskFormat implements CacheScanTaskFormat {
     public static final String NAME = "json";
 
     /** */
-    private final IgniteObjectMapper mapper = new IgniteObjectMapper();
+    private final ObjectMapper mapper = new IgniteObjectMapper();
 
     /** {@inheritDoc} */
     @Override public String name() {

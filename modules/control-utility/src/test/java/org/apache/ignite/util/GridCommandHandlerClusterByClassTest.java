@@ -1694,7 +1694,13 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         c3.put(1, new TestClass2(
             1,
+            new boolean[]{true, false},
+            new char[] {'t', 'e', 's', 't'},
+            new short[] {1, 2, 3},
             new int[]{2, 3},
+            new long[] {4, 5},
+            new float[]{},
+            new double[]{42.0},
             Collections.singletonMap("some_key", "some_value"),
             new String[] {"s1", "s2", "s3"},
             DATE,
@@ -1704,7 +1710,13 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         c3.put(2, new TestClass2(
             2,
-            new int[]{3, 4},
+            new boolean[]{true, false},
+            new char[] {'t', 'e', 's', 't'},
+            new short[] {1, 2, 3},
+            new int[]{2, 3},
+            new long[] {4, 5},
+            new float[]{123.0f},
+            new double[] {0},
             Collections.singletonMap("1", "2"),
             new String[] {"s4", "s5", "s6"},
             DATE,
@@ -1714,7 +1726,13 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         c3.put(3, new TestClass2(
             3,
-            new int[]{4, 5},
+            new boolean[]{true, false},
+            new char[] {'t', 'e', 's', 't'},
+            new short[] {1, 2, 3},
+            new int[]{2, 3},
+            new long[] {4, 5},
+            new float[]{123.0f},
+            new double[] {1},
             Collections.singletonMap("xxx", "yyy"),
             new String[] {"s7", "s8", "s9"},
             DATE,
@@ -1754,6 +1772,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertContains(log, testOut.toString(), "some_key=some_value");
         assertContains(log, testOut.toString(), "xxx=yyy");
+        assertContains(log, testOut.toString(), "[s1, s2, s3]");
         assertContains(log, testOut.toString(), DATE.toString());
     }
 
@@ -1780,7 +1799,18 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", JsonCacheScanTaskFormat.NAME, "cache3"));
 
-        assertContains(log, testOut.toString(), "unknown");
+        assertContains(log, testOut.toString(), "{\"key\":1,\"value\":{\"i\":1,\"booleans\":[true,false]," +
+            "\"chars\":\"test\",\"shorts\":[1,2,3],\"ints\":[2,3],\"longs\":[4,5],\"floats\":[],\"doubles\":[42.0]," +
+            "\"map\":{\"some_key\":\"some_value\"},\"strArr\":[\"s1\",\"s2\",\"s3\"],\"date\":\"Jul 25, 2004, 12:00:00 AM\"," +
+            "\"list\":[1,2,3],\"enm\":\"USER\"}}\n");
+        assertContains(log, testOut.toString(), "{\"key\":2,\"value\":{\"i\":2,\"booleans\":[true,false]," +
+            "\"chars\":\"test\",\"shorts\":[1,2,3],\"ints\":[2,3],\"longs\":[4,5],\"floats\":[123.0],\"doubles\":[0.0]," +
+            "\"map\":{\"1\":\"2\"},\"strArr\":[\"s4\",\"s5\",\"s6\"],\"date\":\"Jul 25, 2004, 12:00:00 AM\"," +
+            "\"list\":[1,2,3],\"enm\":\"USER\"}}");
+        assertContains(log, testOut.toString(), "{\"key\":3,\"value\":{\"i\":3,\"booleans\":[true,false]," +
+            "\"chars\":\"test\",\"shorts\":[1,2,3],\"ints\":[2,3],\"longs\":[4,5],\"floats\":[123.0],\"doubles\":[1.0]," +
+            "\"map\":{\"xxx\":\"yyy\"},\"strArr\":[\"s7\",\"s8\",\"s9\"],\"date\":\"Jul 25, 2004, 12:00:00 AM\"," +
+            "\"list\":[1,2,3],\"enm\":\"SUPER\"}}");
     }
 
     /** */
@@ -2406,7 +2436,25 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         private final int i;
 
         /** */
+        private final boolean[] booleans;
+
+        /** */
+        private final char[] chars;
+
+        /** */
+        private final short[] shorts;
+
+        /** */
         private final int[] ints;
+
+        /** */
+        private final long[] longs;
+
+        /** */
+        private final float[] floats;
+
+        /** */
+        private final double[] doubles;
 
         /** */
         private final Map<?, ?> map;
@@ -2424,9 +2472,29 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         private final AccessLevel enm;
 
         /** */
-        public TestClass2(int i, int[] ints, Map<?, ?> map, String[] strArr, Date date, List<?> list, AccessLevel enm) {
+        public TestClass2(
+            int i,
+            boolean[] booleans,
+            char[] chars,
+            short[] shorts,
+            int[] ints,
+            long[] longs,
+            float[] floats,
+            double[] doubles,
+            Map<?, ?> map,
+            String[] strArr,
+            Date date,
+            List<?> list,
+            AccessLevel enm
+        ) {
             this.i = i;
+            this.booleans = booleans;
+            this.chars = chars;
+            this.shorts = shorts;
             this.ints = ints;
+            this.longs = longs;
+            this.floats = floats;
+            this.doubles = doubles;
             this.map = map;
             this.strArr = strArr;
             this.date = date;
