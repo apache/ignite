@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * This format prints cache objects fields in table format.
@@ -46,8 +45,8 @@ public class TableCacheScanTaskFormat implements CacheScanTaskFormat {
 
     /** {@inheritDoc} */
     @Override public List<String> titles(Cache.Entry<Object, Object> first) {
-        keyTitles = titiles(first.getKey(), DefaultCacheScanTaskFormat.KEY);
-        valTitles = titiles(first.getValue(), DefaultCacheScanTaskFormat.VALUE);
+        keyTitles = titles(first.getKey(), DefaultCacheScanTaskFormat.KEY);
+        valTitles = titles(first.getValue(), DefaultCacheScanTaskFormat.VALUE);
 
         List<String> res = new ArrayList<>(keyTitles.size() + valTitles.size());
 
@@ -68,7 +67,7 @@ public class TableCacheScanTaskFormat implements CacheScanTaskFormat {
     }
 
     /** */
-    private List<String> titiles(Object o, String dflt) {
+    private List<String> titles(Object o, String dflt) {
         if (o instanceof BinaryObject) {
             BinaryObject b = (BinaryObject)o;
 
@@ -90,7 +89,7 @@ public class TableCacheScanTaskFormat implements CacheScanTaskFormat {
 
             for (int i = 0; i < titles.size(); i++) {
                 if (b.hasField(titles.get(i)))
-                    res[i] = U.toStringSafe(b.field(titles.get(i)));
+                    res[i] = DefaultCacheScanTaskFormat.valueOf(b.field(titles.get(i)));
             }
         }
 

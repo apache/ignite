@@ -31,7 +31,7 @@ public interface CacheScanTaskFormat {
     String name();
 
     /**
-     * Calculates and returns titles based on first cachen entry.
+     * Calculates and returns titles based on first cache entry.
      * @return Column titles.
      */
     List<String> titles(Cache.Entry<Object, Object> first);

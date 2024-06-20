@@ -24,7 +24,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -98,6 +100,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.platform.model.AccessLevel;
 import org.apache.ignite.platform.model.Employee;
 import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
@@ -190,6 +193,18 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
     /** */
     public static final String SCAN = "scan";
+
+    /** */
+    public static final String JOHN = "John Connor";
+
+    /** */
+    public static final String SARAH = "Sarah Connor";
+
+    /** */
+    public static final String KYLE = "Kyle Reese";
+
+    /** */
+    public static final Date DATE = new Date(104, Calendar.JULY, 25);
 
     /**
      * Very basic tests for running the command in different environment which other command are running in.
@@ -1661,47 +1676,83 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
+    private void dataForScanTest() {
+        IgniteCache<Key, Employee> c1 = crd.createCache(new CacheConfiguration<>("cache1"));
+
+        c1.put(new Key(1), new Employee(JOHN, 2));
+        c1.put(new Key(2), new Employee(SARAH, 3));
+        c1.put(new Key(3), new Employee(KYLE, 4));
+
+        IgniteCache<Integer, String> c2 = crd.createCache(new CacheConfiguration<>("cache2"));
+
+        c2.put(1, JOHN);
+        c2.put(2, SARAH);
+        c2.put(3, KYLE);
+
+        IgniteCache<Integer, TestClass2> c3 = crd.createCache(new CacheConfiguration<>("cache3"));
+
+        c3.put(1, new TestClass2(
+            1,
+            new int[]{2, 3},
+            Collections.singletonMap("some_key", "some_value"),
+            new String[] {"s1", "s2", "s3"},
+            DATE,
+            Arrays.asList(1, 2, 3), AccessLevel.USER
+        ));
+
+        c3.put(2, new TestClass2(
+            2,
+            new int[]{3, 4},
+            Collections.singletonMap("1", "2"),
+            new String[] {"s4", "s5", "s6"},
+            DATE,
+            Arrays.asList(1, 2, 3),
+            AccessLevel.USER
+        ));
+
+        c3.put(3, new TestClass2(
+            3,
+            new int[]{4, 5},
+            Collections.singletonMap("xxx", "yyy"),
+            new String[] {"s7", "s8", "s9"},
+            DATE,
+            Arrays.asList(1, 2, 3),
+            AccessLevel.SUPER
+        ));
+    }
+
+    /** */
     @Test
     public void testCacheScanTableFormat() {
         injectTestSystemOut();
 
         autoConfirmation = false;
 
-        String cache1 = "cache1";
-        String john = "John Connor";
-        String sarah = "Sarah Connor";
-        String kyle = "Kyle Reese";
+        dataForScanTest();
 
-        IgniteCache<Key, Employee> c1 = crd.createCache(new CacheConfiguration<>(cache1));
-
-        c1.put(new Key(1), new Employee(john, 2));
-        c1.put(new Key(2), new Employee(sarah, 3));
-        c1.put(new Key(3), new Employee(kyle, 4));
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", TableCacheScanTaskFormat.NAME, cache1));
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", TableCacheScanTaskFormat.NAME, "cache1"));
 
         assertContains(log, testOut.toString(), Pattern.compile("id *fio *salary *\n"));
-        assertContains(log, testOut.toString(), Pattern.compile("1 *" + john + " *2 *\n"));
-        assertContains(log, testOut.toString(), Pattern.compile("2 *" + sarah + " *3 *\n"));
-        assertContains(log, testOut.toString(), Pattern.compile("3 *" + kyle + " *4 *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("1 *" + JOHN + " *2 *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("2 *" + SARAH + " *3 *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("3 *" + KYLE + " *4 *\n"));
 
-        String cache2 = "cache2";
-        IgniteCache<Integer, String> c2 = crd.createCache(new CacheConfiguration<>(cache2));
-
-        c2.put(1, john);
-        c2.put(2, sarah);
-        c2.put(3, kyle);
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", TableCacheScanTaskFormat.NAME, cache2));
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", TableCacheScanTaskFormat.NAME, "cache2"));
 
         assertContains(
             log,
             testOut.toString(),
             Pattern.compile(DefaultCacheScanTaskFormat.KEY + " *" + DefaultCacheScanTaskFormat.VALUE + " *\n")
         );
-        assertContains(log, testOut.toString(), Pattern.compile("1 *" + john + " *\n"));
-        assertContains(log, testOut.toString(), Pattern.compile("2 *" + sarah + " *\n"));
-        assertContains(log, testOut.toString(), Pattern.compile("3 *" + kyle + " *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("1 *" + JOHN + " *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("2 *" + SARAH + " *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("3 *" + KYLE + " *\n"));
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", TableCacheScanTaskFormat.NAME, "cache3"));
+
+        assertContains(log, testOut.toString(), "some_key=some_value");
+        assertContains(log, testOut.toString(), "xxx=yyy");
+        assertContains(log, testOut.toString(), DATE.toString());
     }
 
     /** */
@@ -2318,6 +2369,41 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         public TestClass(int i, String s) {
             this.i = i;
             this.s = s;
+        }
+    }
+
+    /** */
+    private static class TestClass2 {
+        /** */
+        private final int i;
+
+        /** */
+        private final int[] ints;
+
+        /** */
+        private final Map<?, ?> map;
+
+        /** */
+        private final String[] strArr;
+
+        /** */
+        private final Date date;
+
+        /** */
+        private final List<?> list;
+
+        /** */
+        private final AccessLevel enm;
+
+        /** */
+        public TestClass2(int i, int[] ints, Map<?, ?> map, String[] strArr, Date date, List<?> list, AccessLevel enm) {
+            this.i = i;
+            this.ints = ints;
+            this.map = map;
+            this.strArr = strArr;
+            this.date = date;
+            this.list = list;
+            this.enm = enm;
         }
     }
 }
