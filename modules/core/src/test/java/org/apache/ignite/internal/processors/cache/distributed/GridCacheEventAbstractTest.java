@@ -180,7 +180,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      *
      * @param run {@link TestCacheRunnable} instance.
      * @param evtCnts Expected event counts for each iteration.
-     * @throws Exception In failed.
+     * @throws Exception If failed.
      */
     @SuppressWarnings({"CaughtExceptionImmediatelyRethrown"})
     private void runTest(TestCacheRunnable run, IgniteBiTuple<Integer, Integer>... evtCnts) throws Exception {
