@@ -733,11 +733,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testIdleVerifyOnInactiveClusterWithPersistence() throws Exception {
-        dataRegionConfiguration = new DataRegionConfiguration()
-                .setName("persistent-dataRegion")
-                .setPersistenceEnabled(true);
+        IgniteEx srv = startGrids(2);
 
-        startGrids(2);
+        assertTrue(CU.isPersistenceEnabled(getConfiguration()));
+        assertFalse(srv.cluster().state().active());
 
         injectTestSystemOut();
 
@@ -746,8 +745,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, testOut.toString(), VerifyBackupPartitionsTaskV2.IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE);
         assertContains(log, testOut.toString(), "Failed to perform operation");
 
-        grid(0).cluster().state(ACTIVE);
-        grid(0).createCache(DEFAULT_CACHE_NAME);
+        srv.cluster().state(ACTIVE);
+        srv.createCache(DEFAULT_CACHE_NAME);
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
         assertContains(log, testOut.toString(), "The check procedure has finished, no conflicts have been found.");
