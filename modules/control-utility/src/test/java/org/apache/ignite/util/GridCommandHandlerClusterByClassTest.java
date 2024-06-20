@@ -204,6 +204,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /** */
     public static final String KYLE = "Kyle Reese";
 
+    /** */
+    public static final Date DATE = new Date(104, Calendar.JULY, 25);
+
     /**
      * Very basic tests for running the command in different environment which other command are running in.
      */
@@ -1689,15 +1692,14 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         IgniteCache<Integer, TestClass2> c3 = crd.createCache(new CacheConfiguration<>("cache3"));
 
-        Date date = new Date(2004, Calendar.JULY, 25);
-
         c3.put(1, new TestClass2(
             1,
             new int[]{2, 3},
             Collections.singletonMap("some_key", "some_value"),
             new String[] {"s1", "s2", "s3"},
-            date,
-            Arrays.asList(1, 2, 3), AccessLevel.USER
+            DATE,
+            Arrays.asList(1, 2, 3),
+            AccessLevel.USER
         ));
 
         c3.put(2, new TestClass2(
@@ -1705,7 +1707,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             new int[]{3, 4},
             Collections.singletonMap("1", "2"),
             new String[] {"s4", "s5", "s6"},
-            date,
+            DATE,
             Arrays.asList(1, 2, 3),
             AccessLevel.USER
         ));
@@ -1715,7 +1717,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             new int[]{4, 5},
             Collections.singletonMap("xxx", "yyy"),
             new String[] {"s7", "s8", "s9"},
-            date,
+            DATE,
             Arrays.asList(1, 2, 3),
             AccessLevel.SUPER
         ));
@@ -1750,7 +1752,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", TableCacheScanTaskFormat.NAME, "cache3"));
 
-        assertContains(log, testOut.toString(), "unknown");
+        assertContains(log, testOut.toString(), "some_key=some_value");
+        assertContains(log, testOut.toString(), "xxx=yyy");
+        assertContains(log, testOut.toString(), DATE.toString());
     }
 
     /** */
