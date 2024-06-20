@@ -32,9 +32,20 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
  * Default cache scan task format.
  */
 public class DefaultCacheScanTaskFormat implements CacheScanTaskFormat {
+    /** Key title. */
+    public static final String KEY = "Key";
+
+    /** Value title. */
+    public static final String VALUE = "Value";
+
     /** {@inheritDoc} */
-    @Override public List<String> titles() {
-        return Arrays.asList("Key Class", "Key", "Value Class", "Value");
+    @Override public String name() {
+        return "default";
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<String> titles(Cache.Entry<Object, Object> first) {
+        return Arrays.asList("Key Class", KEY, "Value Class", VALUE);
     }
 
     /** {@inheritDoc} */
@@ -64,7 +75,7 @@ public class DefaultCacheScanTaskFormat implements CacheScanTaskFormat {
      * @param o Object.
      * @return String representation of value.
      */
-    private static String valueOf(Object o) {
+    static String valueOf(Object o) {
         if (o == null)
             return "null";
 

@@ -80,6 +80,8 @@ import org.apache.ignite.internal.management.cache.CacheClearCommand;
 import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.management.cache.CacheDestroyCommand;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
+import org.apache.ignite.internal.management.cache.scan.DefaultCacheScanTaskFormat;
+import org.apache.ignite.internal.management.cache.scan.TableCacheScanTaskFormat;
 import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
@@ -96,6 +98,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.platform.model.Employee;
+import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
@@ -1654,6 +1658,50 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "testCache", "--limit", "10"));
 
         assertNotContains(log, testOut.toString(), "Result limited");
+    }
+
+    /** */
+    @Test
+    public void testCacheScanTableFormat() {
+        injectTestSystemOut();
+
+        autoConfirmation = false;
+
+        String cache1 = "cache1";
+        String john = "John Connor";
+        String sarah = "Sarah Connor";
+        String kyle = "Kyle Reese";
+
+        IgniteCache<Key, Employee> c1 = crd.createCache(new CacheConfiguration<>(cache1));
+
+        c1.put(new Key(1), new Employee(john, 2));
+        c1.put(new Key(2), new Employee(sarah, 3));
+        c1.put(new Key(3), new Employee(kyle, 4));
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", TableCacheScanTaskFormat.NAME, cache1));
+
+        assertContains(log, testOut.toString(), Pattern.compile("id *fio *salary *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("1 *" + john + " *2 *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("2 *" + sarah + " *3 *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("3 *" + kyle + " *4 *\n"));
+
+        String cache2 = "cache2";
+        IgniteCache<Integer, String> c2 = crd.createCache(new CacheConfiguration<>(cache2));
+
+        c2.put(1, john);
+        c2.put(2, sarah);
+        c2.put(3, kyle);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", TableCacheScanTaskFormat.NAME, cache2));
+
+        assertContains(
+            log,
+            testOut.toString(),
+            Pattern.compile(DefaultCacheScanTaskFormat.KEY + " *" + DefaultCacheScanTaskFormat.VALUE + " *\n")
+        );
+        assertContains(log, testOut.toString(), Pattern.compile("1 *" + john + " *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("2 *" + sarah + " *\n"));
+        assertContains(log, testOut.toString(), Pattern.compile("3 *" + kyle + " *\n"));
     }
 
     /** */

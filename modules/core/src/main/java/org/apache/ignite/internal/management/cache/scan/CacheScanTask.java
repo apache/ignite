@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.cache.scan;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import javax.cache.Cache;
@@ -27,6 +28,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
@@ -75,22 +77,32 @@ public class CacheScanTask extends VisorOneNodeTask<CacheScanCommandArg, CacheSc
 
             IgniteCache<Object, Object> cache = ignite.cache(arg.cacheName()).withKeepBinary();
 
-            CacheScanTaskFormat format = new DefaultCacheScanTaskFormat();
-
             int cnt = 0;
             List<List<?>> entries = new ArrayList<>();
+
+            CacheScanTaskFormat format = format(arg.outputFormat());
+
+            List<String> titles = Collections.emptyList();
 
             ScanQuery<Object, Object> scanQry = new ScanQuery<>().setPageSize(min(arg.limit(), DFLT_PAGE_SIZE));
 
             try (QueryCursor<Cache.Entry<Object, Object>> qry = cache.query(scanQry)) {
                 Iterator<Cache.Entry<Object, Object>> iter = qry.iterator();
 
+                if (cnt++ < arg.limit() && iter.hasNext()) {
+                    Cache.Entry<Object, Object> first = iter.next();
+
+                    titles = format.titles(first);
+
+                    entries.add(format.row(first));
+                }
+
                 while (cnt++ < arg.limit() && iter.hasNext()) {
                     entries.add(format.row(iter.next()));
                 }
             }
 
-            return new CacheScanTaskResult(format.titles(), entries);
+            return new CacheScanTaskResult(titles, entries);
         }
 
         /** {@inheritDoc} */
@@ -104,5 +116,20 @@ public class CacheScanTask extends VisorOneNodeTask<CacheScanCommandArg, CacheSc
         @Override public String toString() {
             return S.toString(CacheScanJob.class, this);
         }
+    }
+
+    /** */
+    private static CacheScanTaskFormat format(String format) {
+        if (format == null)
+            return new DefaultCacheScanTaskFormat();
+
+        Iterable<CacheScanTaskFormat> formats = U.loadService(CacheScanTaskFormat.class);
+
+        for (CacheScanTaskFormat f : formats) {
+            if (f.name().equals(format))
+                return f;
+        }
+
+        throw new IllegalStateException("Unknown format: " + format);
     }
 }

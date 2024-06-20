@@ -39,19 +39,35 @@ public class CacheScanCommandArg extends IgniteDataTransferObject {
     private String cacheName;
 
     /** */
+    @Argument(description = "Pluggable output format. 'default', 'table' exists by default", example = "table", optional = true)
+    private String outputFormat;
+
+    /** */
     @Argument(description = "limit count of entries to scan (" + DFLT_LIMIT + " by default)", example = "N", optional = true)
     private int limit = DFLT_LIMIT;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, cacheName);
+        U.writeString(out, outputFormat);
         out.writeInt(limit);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         cacheName = U.readString(in);
+        outputFormat = U.readString(in);
         limit = in.readInt();
+    }
+
+    /** */
+    public String outputFormat() {
+        return outputFormat;
+    }
+
+    /** */
+    public void outputFormat(String format) {
+        this.outputFormat = format;
     }
 
     /** */
