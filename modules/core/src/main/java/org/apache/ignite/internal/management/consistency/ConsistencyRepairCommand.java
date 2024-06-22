@@ -24,7 +24,6 @@ import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.LocalCommand;
@@ -53,7 +52,7 @@ public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairC
         @Nullable Ignite ignite,
         ConsistencyRepairCommandArg arg,
         Consumer<String> printer
-    ) throws GridClientException, IgniteException {
+    ) throws Exception {
         StringBuilder sb = new StringBuilder();
         boolean failed = false;
 
@@ -89,7 +88,7 @@ public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairC
         ConsistencyRepairCommandArg arg,
         Collection<GridClientNode> nodes,
         StringBuilder sb
-    ) throws GridClientException {
+    ) throws Exception {
         boolean failed = false;
 
         ConsistencyTaskResult res = CommandUtils.execute(

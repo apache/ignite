@@ -141,9 +141,10 @@ Arguments: --cache help --yes
       --group-names groupName1,groupName2,...groupNameN                        - Comma-separated list of cache group names for which indexes should be scheduled for the rebuild. Can be used simultaneously with cache names.
 
   Show cache content:
-    control.(sh|bat) --cache scan cacheName [--limit N]
+    control.(sh|bat) --cache scan cacheName [--output-format table] [--limit N]
 
     Parameters:
+      --output-format table  - Pluggable output format. 'default', 'table' exists by default.
       --limit N  - limit count of entries to scan (1000 by default).
 
 Command [CACHE] finished with code: 0

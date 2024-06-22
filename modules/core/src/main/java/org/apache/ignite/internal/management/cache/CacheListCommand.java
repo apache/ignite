@@ -28,7 +28,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.LocalCommand;
@@ -64,7 +63,7 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewC
         @Nullable Ignite ignite,
         CacheListCommandArg arg,
         Consumer<String> printer
-    ) throws GridClientException {
+    ) throws Exception {
         ViewCacheCmd cmd = arg.groups()
             ? GROUPS
             : (arg.seq() ? SEQ : CACHES);
@@ -98,7 +97,7 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewC
         CacheListCommandArg arg,
         ViewCacheTaskResult viewRes,
         Consumer<String> printer
-    ) throws GridClientException {
+    ) throws Exception {
         Collection<GridClientNode> nodes = nodes(cli, ignite)
             .stream()
             .filter(FILTER.apply(arg))

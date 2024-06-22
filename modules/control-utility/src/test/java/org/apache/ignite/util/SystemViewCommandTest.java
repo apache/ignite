@@ -243,7 +243,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
 
         assertContains(log,
             executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW, NODE_ID, incorrectNodeId, CACHES_VIEW),
-            "Failed to perform operation.\nNode with id=" + incorrectNodeId + " not found");
+            "Check arguments. Node with id=" + incorrectNodeId + " not found");
     }
 
     /** Tests command output in case nonexistent system view names is specified. */

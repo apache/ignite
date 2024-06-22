@@ -3042,7 +3042,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         QueryEngine qryEngine = engineForQuery(cliCtx, qry);
 
                         if (qryEngine != null) {
-                            QueryProperties qryProps = new QueryProperties(cctx == null ? null : cctx.name(), keepBinary);
+                            QueryProperties qryProps = new QueryProperties(
+                                cctx == null ? null : cctx.name(),
+                                keepBinary,
+                                failOnMultipleStmts
+                            );
 
                             if (qry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)qry).isBatched()) {
                                 res = qryEngine.queryBatched(

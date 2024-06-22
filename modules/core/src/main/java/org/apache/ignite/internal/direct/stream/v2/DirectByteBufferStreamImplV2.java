@@ -215,13 +215,13 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
 
     /** */
     @GridToStringExclude
-    private ByteBuffer buf;
+    protected ByteBuffer buf;
 
     /** */
-    private byte[] heapArr;
+    protected byte[] heapArr;
 
     /** */
-    private long baseOff;
+    protected long baseOff;
 
     /** */
     private int arrOff = -1;
@@ -287,16 +287,16 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     private int primShift;
 
     /** */
-    private int uuidState;
+    protected int uuidState;
 
     /** */
-    private long uuidMost;
+    protected long uuidMost;
 
     /** */
-    private long uuidLeast;
+    protected long uuidLeast;
 
     /** */
-    private long uuidLocId;
+    protected long uuidLocId;
 
     /** */
     protected boolean lastFinished;
