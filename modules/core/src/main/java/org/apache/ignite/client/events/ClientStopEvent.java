@@ -15,24 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.snapshot;
+package org.apache.ignite.client.events;
 
-import java.util.List;
-import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.VisorMultiNodeTask;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.client.IgniteClient;
 
 /**
- * Base class for single node visor snapshot task.
+ * Event, triggered when Ignite client is stopped.
  */
-public abstract class SnapshotOneNodeTask<A, R> extends VisorMultiNodeTask<A, SnapshotTaskResult, R> {
-    /** {@inheritDoc} */
-    @Nullable @Override protected SnapshotTaskResult reduce0(List<ComputeJobResult> results) {
-        assert results.size() == 1 : results.size();
+public class ClientStopEvent implements ClientLifecycleEvent {
+    /** */
+    private final IgniteClient client;
 
-        ComputeJobResult res = F.first(results);
+    /**
+     * @param client Ignite client instance.
+     */
+    public ClientStopEvent(IgniteClient client) {
+        this.client = client;
+    }
 
-        return new SnapshotTaskResult(res.getData(), res.getException());
+    /**
+     * @return Ignite client instance.
+     */
+    public IgniteClient client() {
+        return client;
     }
 }

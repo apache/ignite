@@ -55,6 +55,7 @@ import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SelectScope;
+import org.apache.calcite.sql.validate.SqlQualified;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorNamespace;
@@ -368,10 +369,31 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** {@inheritDoc} */
-    @Override protected void addToSelectList(List<SqlNode> list, Set<String> aliases,
-        List<Map.Entry<String, RelDataType>> fieldList, SqlNode exp, SelectScope scope, boolean includeSystemVars) {
-        if (includeSystemVars || exp.getKind() != SqlKind.IDENTIFIER || !isSystemFieldName(deriveAlias(exp, 0)))
-            super.addToSelectList(list, aliases, fieldList, exp, scope, includeSystemVars);
+    @Override protected void addToSelectList(
+        List<SqlNode> list,
+        Set<String> aliases,
+        List<Map.Entry<String, RelDataType>> fieldList,
+        SqlNode exp,
+        SelectScope scope,
+        boolean includeSysVars
+    ) {
+        if (!includeSysVars && exp.getKind() == SqlKind.IDENTIFIER && isSystemFieldName(deriveAlias(exp, 0))) {
+            SqlQualified qualified = scope.fullyQualify((SqlIdentifier)exp);
+
+            if (qualified.namespace == null)
+                return;
+
+            if (qualified.namespace.getTable() != null) {
+                // If child is table and has only system fields, expand star to these fields.
+                // Otherwise, expand star to non-system fields only.
+                for (RelDataTypeField fld : qualified.namespace.getRowType().getFieldList()) {
+                    if (!isSystemField(fld))
+                        return;
+                }
+            }
+        }
+
+        super.addToSelectList(list, aliases, fieldList, exp, scope, includeSysVars);
     }
 
     /** {@inheritDoc} */

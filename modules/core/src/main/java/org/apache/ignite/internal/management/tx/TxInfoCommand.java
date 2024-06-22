@@ -27,7 +27,6 @@ import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.LocalCommand;
@@ -58,7 +57,7 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
         @Nullable Ignite ignite,
         AbstractTxCommandArg arg0,
         Consumer<String> printer
-    ) throws GridClientException {
+    ) throws Exception {
         TxInfoCommandArg arg = (TxInfoCommandArg)arg0;
 
         Optional<GridClientNode> node = CommandUtils.nodes(cli, ignite).stream()

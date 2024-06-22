@@ -1174,6 +1174,22 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         return pendingEntries != null ? pendingEntries.size() : 0;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean hasEntriesPendingExpire(int cacheId) throws IgniteCheckedException {
+        if (pendingEntries == null)
+            return false;
+
+        if (grp.sharedGroup()) {
+            PendingRow row = new PendingRow(cacheId);
+
+            GridCursor<PendingRow> cursor = pendingEntries.find(row, row, PendingEntriesTree.WITHOUT_KEY);
+
+            return cursor.next();
+        }
+        else
+            return !pendingEntries.isEmpty();
+    }
+
     /**
      *
      */

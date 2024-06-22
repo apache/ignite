@@ -989,7 +989,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         arg.kill(true);
 
         Map<ClusterNode, TxTaskResult> res = client.compute(client.cluster().forPredicate(F.alwaysTrue())).
-            execute(new TxTask(), new VisorTaskArgument<>(client.cluster().localNode().id(), arg, false));
+            execute(new TxTask(), new VisorTaskArgument<>(client.cluster().localNode().id(), arg, false)).result();
 
         int expCnt = 0;
 
