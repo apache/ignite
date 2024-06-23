@@ -15,43 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform.model;
+package org.apache.ignite.internal.management.cache.scan;
 
-/** Test value object. */
-public class Employee {
-    /** */
-    private String fio;
+import java.util.List;
+import javax.cache.Cache;
 
-    /** */
-    private long salary;
+/**
+ * This is pluggable interface to customize string representation of cache data.
+ */
+public interface CacheScanTaskFormat {
+    /**
+     * @return name of the format.
+     * @see CacheScanCommandArg
+     */
+    String name();
 
-    /** */
-    public Employee() {
-    }
+    /**
+     * Calculates and returns titles based on first cache entry.
+     * @return Column titles.
+     */
+    List<String> titles(Cache.Entry<Object, Object> first);
 
-    /** */
-    public Employee(String fio, long salary) {
-        this.fio = fio;
-        this.salary = salary;
-    }
-
-    /** */
-    public String getFio() {
-        return fio;
-    }
-
-    /** */
-    public void setFio(String fio) {
-        this.fio = fio;
-    }
-
-    /** */
-    public long getSalary() {
-        return salary;
-    }
-
-    /** */
-    public void setSalary(long salary) {
-        this.salary = salary;
-    }
+    /** Row for single cache entry. */
+    List<?> row(Cache.Entry<Object, Object> e);
 }

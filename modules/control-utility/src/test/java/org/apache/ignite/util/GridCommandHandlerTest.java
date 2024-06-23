@@ -84,6 +84,7 @@ import org.apache.ignite.internal.client.impl.GridClientImpl;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
+import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.management.tx.TxInfo;
 import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -723,6 +724,32 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         boolean tagUpdated = GridTestUtils.waitForCondition(() -> newTag.equals(cl.cluster().tag()), 10_000);
         assertTrue("Tag has not been updated in 10 seconds", tagUpdated);
+    }
+
+    /**
+     * Tests idle_verify working on an inactive cluster with persistence. Works via control.sh.
+     *
+     * @throws IgniteException if succeeded.
+     */
+    @Test
+    public void testIdleVerifyOnInactiveClusterWithPersistence() throws Exception {
+        IgniteEx srv = startGrids(2);
+
+        assertTrue(CU.isPersistenceEnabled(getConfiguration()));
+        assertFalse(srv.cluster().state().active());
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--cache", "idle_verify"));
+
+        assertContains(log, testOut.toString(), VerifyBackupPartitionsTaskV2.IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE);
+        assertContains(log, testOut.toString(), "Failed to perform operation");
+
+        srv.cluster().state(ACTIVE);
+        srv.createCache(DEFAULT_CACHE_NAME);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+        assertContains(log, testOut.toString(), "The check procedure has finished, no conflicts have been found.");
     }
 
     /**
