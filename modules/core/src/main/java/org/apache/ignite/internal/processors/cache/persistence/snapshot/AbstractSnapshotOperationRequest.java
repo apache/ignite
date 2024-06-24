@@ -60,7 +60,7 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
 
     /** Start time. */
     @GridToStringInclude
-    private transient volatile long startTime;
+    private final long startTime;
 
     /** Exception occurred during snapshot operation processing. */
     @GridToStringInclude
@@ -92,13 +92,7 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
         this.grps = grps;
         this.snpPath = snpPath;
         this.incIdx = incIdx;
-    }
-
-    /** */
-    synchronized void init() {
-        assert startTime == 0;
-
-        startTime = System.currentTimeMillis();
+        this.startTime = System.currentTimeMillis();
     }
 
     /**

@@ -110,7 +110,7 @@ public class CheckSnapshotDistributedProcess {
         Map<UUID, HashMap<PartitionKeyV2, PartitionHashRecordV2>> results,
         Map<UUID, Throwable> errors
     ) {
-        SnapshotCheckOperationRequest locReq = skipAndClean(procId, null, errors);
+        SnapshotCheckOperationRequest locReq = proceedOrClean(procId, null, errors);
 
         if (locReq == null)
             return FINISHED_FUT;
@@ -155,9 +155,9 @@ public class CheckSnapshotDistributedProcess {
 
     /** Phase 2 beginning. Discovery-synchronized. */
     private IgniteInternalFuture<HashMap<PartitionKeyV2, PartitionHashRecordV2>> validateParts(SnapshotCheckOperationRequest incReq) {
-        SnapshotCheckOperationRequest locReq = skipAndClean(incReq.snapshotName(), incReq.error(), null);
+        SnapshotCheckOperationRequest locReq = proceedOrClean(incReq.snapshotName(), incReq.error(), null);
 
-        if (locReq == null)
+        if (locReq == null || skip())
             return FINISHED_FUT;
 
         assert locReq.equals(incReq);
@@ -209,14 +209,13 @@ public class CheckSnapshotDistributedProcess {
 
     /** Phase 1 beginning. Discovery-synchronized. */
     private IgniteInternalFuture<ArrayList<SnapshotMetadata>> prepareAndCheckMetas(SnapshotCheckOperationRequest extReq) {
-        if (skip())
-            return FINISHED_FUT;
-
         SnapshotCheckOperationRequest locReq = locRequests.computeIfAbsent(extReq.snapshotName(), nmae -> extReq);
 
-        assert extReq == locReq;
         assert locReq.fut == null;
-        assert locReq.clusterInitiatorFut == null || kctx.localNodeId().equals(locReq.operationalNodeId());
+        assert locReq.clusterInitiatorFut == null || kctx.localNodeId().equals(locReq.operationalNodeId()) && locReq.startTime() != 0;
+
+        if (skip())
+            return FINISHED_FUT;
 
         GridFutureAdapter<ArrayList<SnapshotMetadata>> locMetasChkFut = new GridFutureAdapter<>();
 
@@ -253,7 +252,7 @@ public class CheckSnapshotDistributedProcess {
         Map<UUID, ? extends List<SnapshotMetadata>> results,
         Map<UUID, Throwable> errors
     ) {
-        SnapshotCheckOperationRequest locReq = skipAndClean(procId, results, errors);
+        SnapshotCheckOperationRequest locReq = proceedOrClean(procId, results, errors);
 
         if (locReq == null || locReq.clusterInitiatorFut == null)
             return;
@@ -358,15 +357,16 @@ public class CheckSnapshotDistributedProcess {
             if (log.isInfoEnabled())
                 log.info("Starting distributed snapshot check process, snpOpReq: " + req + '.');
 
-            phase1CheckMetas.start(procId, req);
-
             return req;
         });
 
-        if (rq.requestId().equals(procId) && rq.operationalNodeId().equals(kctx.localNodeId()))
-            return rq.clusterInitiatorFut;
+        if (rq.requestId().equals(procId) && rq.operationalNodeId().equals(kctx.localNodeId())) {
+            phase1CheckMetas.start(procId, rq);
 
-        throw new IllegalStateException("Snapshot validation started of snapshot '" + snpName + "' is already, request: " + rq + '.');
+            return rq.clusterInitiatorFut;
+        }
+
+        throw new IllegalStateException("Validation of snapshot '" + snpName + "' has already started. Request: " + rq + '.');
     }
 
     /** */
@@ -394,33 +394,33 @@ public class CheckSnapshotDistributedProcess {
      * @return {@code Null} if current node must not check snapshot or if the process locally stopped and cleaned due
      * to the errors. Current check operation request otherwise.
      */
-    private @Nullable SnapshotCheckOperationRequest skipAndClean(
+    private @Nullable SnapshotCheckOperationRequest proceedOrClean(
         UUID procId,
         @Nullable Map<UUID, ? extends List<SnapshotMetadata>> metasResults,
         @Nullable Map<UUID, Throwable> errors
     ) {
-        SnapshotCheckOperationRequest req = skip() ? null : curRequest(procId, metasResults);
+        SnapshotCheckOperationRequest req = curRequest(procId, metasResults);
 
-        return req == null ? null : skipAndClean(req.snapshotName(), req.error(), errors);
+        return req == null ? null : proceedOrClean(req, req.error(), errors);
     }
 
     /**
      * @return {@code Null} if current node must not check snapshot or if the process locally stopped and cleaned due
      * to the errors. Current check operation request otherwise.
      */
-    private @Nullable SnapshotCheckOperationRequest skipAndClean(
+    private @Nullable SnapshotCheckOperationRequest proceedOrClean(
         String snapshotName,
         @Nullable Throwable propagatedError,
         @Nullable Map<UUID, Throwable> nodeErrors
     ) {
-        return skipAndClean(locRequests.get(snapshotName), propagatedError, nodeErrors);
+        return proceedOrClean(locRequests.get(snapshotName), propagatedError, nodeErrors);
     }
 
     /**
      * @return {@code Null} if current node must not check snapshot or if the process locally stopped and cleaned due
      * to the errors. Current check operation request otherwise.
      */
-    private @Nullable SnapshotCheckOperationRequest skipAndClean(
+    private @Nullable SnapshotCheckOperationRequest proceedOrClean(
         SnapshotCheckOperationRequest locReq,
         @Nullable Throwable propagatedError,
         @Nullable Map<UUID, Throwable> nodeErrors
@@ -437,7 +437,7 @@ public class CheckSnapshotDistributedProcess {
             return null;
         }
 
-        return locReq;
+        return skip() ? null : locReq;
     }
 
     /** @return {@code True} if current node must not check a snapshot. */
