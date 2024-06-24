@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.client;
 
 import java.util.UUID;
-
 import org.apache.ignite.cluster.ClusterState;
 
 /**
@@ -36,14 +35,14 @@ public interface GridClientClusterState {
      *
      * @return ID of the cluster.
      */
-    public UUID id() throws GridClientException;
+    public UUID id() throws Exception;
 
     /**
      * User-defined tag of cluster STATE command was sent to.
      *
      * @return Tag of the cluster.
      */
-    public String tag() throws GridClientException;
+    public String tag() throws Exception;
 
     /**
      * Changes cluster state to {@code newState}.

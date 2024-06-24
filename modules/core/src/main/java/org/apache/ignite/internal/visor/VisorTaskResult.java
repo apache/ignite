@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.snapshot;
+package org.apache.ignite.internal.visor;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -24,20 +24,20 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Snapshot task result wrapper.
+ * Management task result.
  */
-public class SnapshotTaskResult extends IgniteDataTransferObject {
+public class VisorTaskResult<R> extends IgniteDataTransferObject {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
     /** Task result. */
-    private @Nullable Object res;
+    private @Nullable R res;
 
     /** Error. */
     private @Nullable Exception err;
 
-    /** Default constructor. */
-    public SnapshotTaskResult() {
+    /** */
+    public VisorTaskResult() {
         // No-op.
     }
 
@@ -45,16 +45,16 @@ public class SnapshotTaskResult extends IgniteDataTransferObject {
      * @param res Task result.
      * @param err Error.
      */
-    public SnapshotTaskResult(@Nullable Object res, @Nullable Exception err) {
-        this.err = err;
+    public VisorTaskResult(@Nullable R res, @Nullable Exception err) {
         this.res = res;
+        this.err = err;
     }
 
     /**
      * @return Task result.
-     * @throws Exception if the job was completed with an error.
+     * @throws Exception if the task was completed with an error.
      */
-    public @Nullable Object result() throws Exception {
+    public @Nullable R result() throws Exception {
         if (err != null)
             throw err;
 
@@ -69,7 +69,7 @@ public class SnapshotTaskResult extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte ver, ObjectInput in) throws IOException, ClassNotFoundException {
-        res = in.readObject();
+        res = (R)in.readObject();
         err = (Exception)in.readObject();
     }
 }

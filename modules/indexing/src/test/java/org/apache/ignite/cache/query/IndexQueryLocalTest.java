@@ -112,7 +112,20 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
             .setCriteria(lt("id", CNT / 2));
 
         GridTestUtils.assertThrows(null, () -> cache.query(qry.setLocal(true)).getAll(),
-            IgniteException.class, "Cluster group is empty");
+            IgniteException.class, "Failed to execute local index query on a client node.");
+    }
+
+    /** Should fail as the local node is a client node and the value type specified for query doesn't exist. */
+    @Test
+    public void testClientNodeNoValueType() throws Exception {
+        Ignite cln = startClientGrid(6);
+
+        IndexQuery qry = new IndexQuery("ValType");
+
+        IgniteCache cache = cln.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        GridTestUtils.assertThrows(null, () -> cache.query(qry.setLocal(true)).getAll(),
+            IgniteException.class, "Failed to execute local index query on a client node.");
     }
 
     /** */

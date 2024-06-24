@@ -30,14 +30,23 @@ public final class QueryProperties {
     private final boolean keepBinary;
 
     /** */
-    public QueryProperties(@Nullable String cacheName, boolean keepBinary) {
+    private final boolean failOnMultipleStmts;
+
+    /** */
+    public QueryProperties(@Nullable String cacheName, boolean keepBinary, boolean failOnMultipleStmts) {
         this.cacheName = cacheName;
         this.keepBinary = keepBinary;
+        this.failOnMultipleStmts = failOnMultipleStmts;
     }
 
     /** */
     public boolean keepBinary() {
         return keepBinary;
+    }
+
+    /** */
+    public boolean isFailOnMultipleStmts() {
+        return failOnMultipleStmts;
     }
 
     /** */
