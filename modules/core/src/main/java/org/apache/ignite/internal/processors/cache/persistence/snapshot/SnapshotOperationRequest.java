@@ -39,9 +39,6 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
     @GridToStringInclude
     protected final Set<UUID> nodes;
 
-    /** Exception occurred during snapshot operation processing. */
-    private volatile Throwable err;
-
     /**
      * Snapshot operation warnings. Warnings do not interrupt snapshot process but raise exception at the end to make
      * the operation status 'not OK' if no other error occurred.
@@ -108,8 +105,6 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
         this.dump = dump;
         this.compress = compress;
         this.encrypt = encrypt;
-
-        init();
     }
 
     /**

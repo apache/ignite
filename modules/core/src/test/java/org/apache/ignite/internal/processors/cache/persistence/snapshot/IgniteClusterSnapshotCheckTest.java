@@ -36,6 +36,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.expiry.CreatedExpiryPolicy;
@@ -46,9 +47,11 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.management.cache.CacheFilterEnum;
@@ -75,8 +78,11 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.distributed.FullMessage;
+import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -87,6 +93,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
+import static org.apache.ignite.internal.GridTopic.TOPIC_DISTRIBUTED_PROCESS;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
@@ -95,6 +102,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.partstate.
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.SNAPSHOT_CHECK_METAS;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.SNAPSHOT_VALIDATE_PARTS;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -599,14 +608,148 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertTrue("Threads created: " + createdThreads, createdThreads < iterations);
     }
 
-    /** */
+    /** Tests simulatous snapshot checks with server nodes and a coordinator. */
     @Test
-    public void testCheckSnpFromSecondNOde() throws Exception {
-        IgniteEx ignite = startGrids(3);
+    public void testSimulatousSnpChecksWithServersAndCoord() throws Exception {
+        // Coordinator and another node.
+        doTestSimulatousSnpChecks(3, 0, 0, 1);
 
-        ignite.cluster().state(ACTIVE);
+//        // Another node and coordinator.
+//        doTestSimulatousSnpChecks(3, 0, 1, 0);
+//
+//        // Only coordinator
+//        doTestSimulatousSnpChecks(3, 0, 0, 0);
+    }
 
-        
+    /** Tests simulatous snapshot checks with server nodes not involving a coordinator. */
+    @Test
+    public void testSimulatousSnpChecksWithServersAndNotCoord() throws Exception {
+        // Different not coordinators.
+        doTestSimulatousSnpChecks(3, 0, 1, 2);
+
+        // The same not coordinator.
+        doTestSimulatousSnpChecks(3, 0, 2, 2);
+    }
+
+
+    /** Tests simulatous snapshot checks with client and server nodes not involving a coordinator. */
+    @Test
+    public void testSimulatousSnpChecksWithClientsAndNotCoord() throws Exception {
+        // Server and client.
+        doTestSimulatousSnpChecks(3, 2, 2, 3);
+
+        // Client and server.
+//        doTestSimulatousSnpChecks(3, 2, 3, 2);
+//
+//        // Same client.
+//        doTestSimulatousSnpChecks(3, 2, 3, 3);
+//
+//        // Different clients.
+//        doTestSimulatousSnpChecks(3, 2, 3, 4);
+    }
+
+    /** Tests simulatous snapshot checks. Stops all grids after the test. */
+
+    private void doTestSimulatousSnpChecks(int servers, int clients, int originatorNodeIdx, int trierNodeIdx) throws Exception {
+        try {
+            IgniteEx ignite = null;
+
+            for (int i = 0; i < servers + clients; ++i) {
+                IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(i));
+
+                cfg.setDiscoverySpi(new BlockingCustomMessageDiscoverySpi());
+
+                if (i >= servers)
+                    cfg.setClientMode(true);
+
+                ignite = startGrid(cfg);
+            }
+
+            ignite.cluster().state(ACTIVE);
+
+            ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+            CountDownLatch firstPhaseRes = new CountDownLatch(servers-1);
+            CountDownLatch proceedFirstPhase = new CountDownLatch(1);
+            CountDownLatch secondPhaseRes = new CountDownLatch(servers-1);
+            CountDownLatch proceedSecondPhase = new CountDownLatch(1);
+
+            grid(0).context().io().addMessageListener(TOPIC_DISTRIBUTED_PROCESS, new GridMessageListener() {
+                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+                    if (msg instanceof SingleNodeMessage && ((SingleNodeMessage<?>)msg).type() == SNAPSHOT_CHECK_METAS.ordinal()) {
+                        try {
+                            log.error("TEST | firstPhaseRes.countDown()");
+
+                            firstPhaseRes.countDown();
+
+                            assertTrue(proceedFirstPhase.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+
+                            log.error("TEST | waited for proceedFirstPhase");
+                        }
+                        catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+
+                    if (msg instanceof SingleNodeMessage && ((SingleNodeMessage<?>)msg).type() == SNAPSHOT_VALIDATE_PARTS.ordinal()) {
+                        try {
+                            log.error("TEST | secondPhaseRes.countDown()");
+
+                            secondPhaseRes.countDown();
+
+                            assertTrue(proceedSecondPhase.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+
+                            log.error("TEST | waited for proceedSecondPhase");
+                        }
+                        catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            });
+
+            discoSpi(grid(0)).block(msg -> msg instanceof FullMessage && ((FullMessage<?>)msg).type() == SNAPSHOT_CHECK_METAS.ordinal());
+
+            IgniteInternalFuture<?> fut = snp(grid(originatorNodeIdx)).checkSnapshot(SNAPSHOT_NAME, null);
+
+            firstPhaseRes.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+
+            assertThrowsAnyCause(
+                log,
+                () -> snp(grid(trierNodeIdx)).checkSnapshot(SNAPSHOT_NAME, null).get(),
+                IllegalStateException.class,
+                "Validation of snapshot '" + SNAPSHOT_NAME + "' has already started"
+            );
+
+//            proceedFirstPhase.countDown();
+
+            discoSpi(grid(0)).waitBlocked(getTestTimeout());
+
+            assertThrowsAnyCause(
+                log,
+                () -> snp(grid(trierNodeIdx)).checkSnapshot(SNAPSHOT_NAME, null).get(),
+                IllegalStateException.class,
+                "Validation of snapshot '" + SNAPSHOT_NAME + "' has already started"
+            );
+
+            discoSpi(grid(0)).unblock();
+
+            secondPhaseRes.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+
+            assertThrowsAnyCause(
+                log,
+                () -> snp(grid(trierNodeIdx)).checkSnapshot(SNAPSHOT_NAME, null).get(),
+                IllegalStateException.class,
+                "Validation of snapshot '" + SNAPSHOT_NAME + "' has already started"
+            );
+
+            fut.get(getTestTimeout());
+        }
+        finally {
+            G.stopAll(false);
+
+            cleanPersistenceDir();
+        }
     }
 
     /** */
