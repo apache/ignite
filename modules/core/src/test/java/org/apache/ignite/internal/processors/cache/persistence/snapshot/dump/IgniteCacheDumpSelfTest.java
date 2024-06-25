@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -624,7 +625,19 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
         latchAndFut.get1().countDown();
 
-        assertThrows(null, () -> latchAndFut.get2().get(10 * 1000), IgniteCheckedException.class, "Val to fail found");
+        try {
+            latchAndFut.get2().get(10 * 1000);
+        }
+        catch (IgniteCheckedException e) {
+            String msg = "Val to fail found";
+
+            Throwable err = e;
+
+            while (!err.getMessage().contains(msg) && err.getCause() != null)
+                err = err.getCause();
+
+            assertTrue(err.getMessage().contains(msg));
+        }
 
         assertTrue(keyToFailFound.get());
 
@@ -707,14 +720,19 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void checkDefaultCacheEntry(DumpEntry e) {
-        super.checkDefaultCacheEntry(e);
+    @Override protected TestDumpConsumer dumpConsumer(Set<String> expectedFoundCaches, int expectedDfltDumpSz, int expectedGrpDumpSz, int expectedCnt) {
+        return new TestDumpConsumerImpl(expectedFoundCaches, expectedDfltDumpSz, expectedGrpDumpSz, expectedCnt) {
+            /** {@inheritDoc} */
+            @Override protected void checkDefaultCacheEntry(DumpEntry e) {
+                super.checkDefaultCacheEntry(e);
 
-        if (explicitTtl != null) {
-            assertTrue("Expire time must be set", e.expireTime() != 0);
-            assertTrue("Expire time must be in past", System.currentTimeMillis() >= e.expireTime());
-            assertTrue("Expire time must be set during test run", System.currentTimeMillis() - getTestTimeout() < e.expireTime());
-        }
+                if (explicitTtl != null) {
+                    assertTrue("Expire time must be set", e.expireTime() != 0);
+                    assertTrue("Expire time must be in past", System.currentTimeMillis() >= e.expireTime());
+                    assertTrue("Expire time must be set during test run", System.currentTimeMillis() - getTestTimeout() < e.expireTime());
+                }
+            }
+        };
     }
 
     /** */

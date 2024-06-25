@@ -20,6 +20,9 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 import org.apache.ignite.dump.DumpConsumer;
 import org.apache.ignite.internal.GridKernalContext;
 
+/**
+ * Dump consumer that needs to use {@link GridKernalContext} must implement this interface.
+ */
 public interface DumpConsumerKernalContextAware extends DumpConsumer {
     /**
      * Starts the consumer with the kernal context provided.
