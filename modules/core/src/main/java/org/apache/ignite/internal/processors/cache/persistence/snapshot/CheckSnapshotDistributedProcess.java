@@ -110,6 +110,8 @@ public class CheckSnapshotDistributedProcess {
         Map<UUID, HashMap<PartitionKeyV2, PartitionHashRecordV2>> results,
         Map<UUID, Throwable> errors
     ) {
+        log.error("TEST | reduceValidatePartsAndFinishProc() 1 on " + kctx.cluster().get().localNode().order());
+
         SnapshotCheckOperationRequest locReq = proceedOrClean(procId, null, errors);
 
         if (locReq == null)
@@ -120,6 +122,8 @@ public class CheckSnapshotDistributedProcess {
 
             return FINISHED_FUT;
         }
+
+        log.error("TEST | reduceValidatePartsAndFinishProc() 2 on " + kctx.cluster().get().localNode().order());
 
         cleanLocalRequestAndClusterFut(locReq, results, errors);
 
@@ -155,10 +159,14 @@ public class CheckSnapshotDistributedProcess {
 
     /** Phase 2 beginning. Discovery-synchronized. */
     private IgniteInternalFuture<HashMap<PartitionKeyV2, PartitionHashRecordV2>> validateParts(SnapshotCheckOperationRequest incReq) {
+        log.error("TEST | validateParts() 1 on " + kctx.cluster().get().localNode().order());
+
         SnapshotCheckOperationRequest locReq = proceedOrClean(incReq.snapshotName(), incReq.error(), null);
 
         if (locReq == null || skip())
             return FINISHED_FUT;
+
+        log.error("TEST | validateParts() 2 on " + kctx.cluster().get().localNode().order());
 
         assert locReq.equals(incReq);
 
@@ -209,6 +217,8 @@ public class CheckSnapshotDistributedProcess {
 
     /** Phase 1 beginning. Discovery-synchronized. */
     private IgniteInternalFuture<ArrayList<SnapshotMetadata>> prepareAndCheckMetas(SnapshotCheckOperationRequest extReq) {
+        log.error("TEST | prepareAndCheckMetas() 1 on " + kctx.cluster().get().localNode().order());
+
         SnapshotCheckOperationRequest locReq = locRequests.computeIfAbsent(extReq.snapshotName(), nmae -> extReq);
 
         assert locReq.fut == null;
@@ -216,6 +226,8 @@ public class CheckSnapshotDistributedProcess {
 
         if (skip())
             return FINISHED_FUT;
+
+        log.error("TEST | prepareAndCheckMetas() 2 on " + kctx.cluster().get().localNode().order());
 
         GridFutureAdapter<ArrayList<SnapshotMetadata>> locMetasChkFut = new GridFutureAdapter<>();
 
@@ -254,8 +266,13 @@ public class CheckSnapshotDistributedProcess {
     ) {
         SnapshotCheckOperationRequest locReq = proceedOrClean(procId, results, errors);
 
-        if (locReq == null || locReq.clusterInitiatorFut == null)
+        if (locReq == null || locReq.clusterInitiatorFut == null) {
+            log.error("TEST | reducePreparationAndMetasCheck() SKIP on " + kctx.cluster().get().localNode().order());
+
             return;
+        }
+
+        log.error("TEST | reducePreparationAndMetasCheck() 2 on " + kctx.cluster().get().localNode().order());
 
         Throwable stopClusterProcErr = null;
 
@@ -437,7 +454,7 @@ public class CheckSnapshotDistributedProcess {
             return null;
         }
 
-        return skip() ? null : locReq;
+        return locReq;
     }
 
     /** @return {@code True} if current node must not check a snapshot. */

@@ -335,7 +335,8 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 if (p.remaining.remove(nodeId))
                     p.singleMsgs.put(nodeId, msg);
 
-                log.error("TEST | onSingleNodeMessageReceived. pid=" + p.id + ", remaining: " + p.remaining.size());
+                if (msg.type() == 14 || msg.type() == 15)
+                    log.error("TEST | onSingleNodeMessageReceived. pid=" + p.id + ", remaining: " + p.remaining.size() + ", type=" + msg.type());
 
                 isEmpty = p.remaining.isEmpty();
             }
@@ -364,7 +365,8 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
         FullMessage<R> msg = new FullMessage<>(p.id, type, res, err);
 
-        log.error("TEST | finishProcess, FullMessage: " + msg);
+        if (msg.type() == 14 || msg.type() == 15)
+            log.error("TEST | finishProcess, FullMessage: " + msg);
 
         try {
             ctx.discovery().sendCustomEvent(msg);
