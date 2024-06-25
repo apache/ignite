@@ -344,7 +344,28 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
         assertEquals(nodes, nodesDirs.size());
 
-        TestDumpConsumer cnsmr = new TestDumpConsumer() {
+        TestDumpConsumer cnsmr = dumpConsumer(expectedFoundCaches, expectedDfltDumpSz, expectedGrpDumpSz, expectedCnt);
+
+        new DumpReader(
+            new DumpReaderConfiguration(
+                dumpDirectory(ign, name),
+                cnsmr,
+                DFLT_THREAD_CNT, DFLT_TIMEOUT,
+                true,
+                false,
+                false,
+                cacheGrpNames,
+                skipCopies,
+                null
+            ),
+            log
+        ).run();
+
+        cnsmr.check();
+    }
+
+    protected TestDumpConsumer dumpConsumer(Set<String> expectedFoundCaches, int expectedDfltDumpSz, int expectedGrpDumpSz, int expectedCnt) {
+        return new TestDumpConsumer() {
             final Set<Integer> keys = new HashSet<>();
 
             final Set<Long> grpParts = new HashSet<>();
@@ -420,23 +441,6 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 IntStream.range(0, expectedCnt).forEach(key -> assertTrue(keys.contains(key)));
             }
         };
-
-        new DumpReader(
-            new DumpReaderConfiguration(
-                dumpDirectory(ign, name),
-                cnsmr,
-                DFLT_THREAD_CNT, DFLT_TIMEOUT,
-                true,
-                false,
-                false,
-                cacheGrpNames,
-                skipCopies,
-                null
-            ),
-            log
-        ).run();
-
-        cnsmr.check();
     }
 
     /** */

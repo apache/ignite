@@ -98,7 +98,8 @@ public class IgniteObjectMapper extends ObjectMapper {
 
             IgnitePredicate<String> clsFilter = ctx.marshallerContext().classNameFilter();
 
-            setDefaultTyping(new RestrictedTypeResolverBuilder(clsFilter).init(JsonTypeInfo.Id.CLASS, null));
+            if (clsFilter != null)
+                setDefaultTyping(new RestrictedTypeResolverBuilder(clsFilter).init(JsonTypeInfo.Id.CLASS, null));
         }
 
         configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
