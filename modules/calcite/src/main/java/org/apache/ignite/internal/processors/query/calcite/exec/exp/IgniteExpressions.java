@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.ExpressionType;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -106,6 +107,12 @@ public class IgniteExpressions {
 
         return Expressions.call(IgniteMath.class, "convertTo" +
             SqlFunctions.initcap(toPrimitive.primitiveName) + "Exact", exp);
+    }
+
+    /** Generate expression for conversion from string to numeric primitive with bounds check. */
+    public static Expression parseStringChecked(Expression exp, Primitive toPrimitive) {
+        return Expressions.call(IgniteMath.class, "convertTo" +
+            SqlFunctions.initcap(toPrimitive.primitiveName) + "Exact", Expressions.new_(BigDecimal.class, exp));
     }
 
     /** Generate expression for conversion from Number to numeric primitive with bounds check. */

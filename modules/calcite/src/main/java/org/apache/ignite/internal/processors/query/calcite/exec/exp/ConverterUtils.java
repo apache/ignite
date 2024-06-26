@@ -21,7 +21,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
 import org.apache.calcite.adapter.enumerable.RexImpTable;
 import org.apache.calcite.linq4j.tree.ConstantExpression;
 import org.apache.calcite.linq4j.tree.ConstantUntypedNull;
@@ -224,11 +223,11 @@ public class ConverterUtils {
             && Number.class.isAssignableFrom((Class<?>)fromType);
         if (fromType == String.class) {
             if (toPrimitive != null) {
+                if (toPrimitive.isFixedNumeric())
+                    return IgniteExpressions.parseStringChecked(operand, toPrimitive);
+
                 switch (toPrimitive) {
                     case CHAR:
-                    case SHORT:
-                    case INT:
-                    case LONG:
                     case FLOAT:
                     case DOUBLE:
                         // Generate "SqlFunctions.toShort(x)".
@@ -245,6 +244,9 @@ public class ConverterUtils {
                 }
             }
             if (toBox != null) {
+                if (toBox.isFixedNumeric())
+                    operand = IgniteExpressions.parseStringChecked(operand, toBox);
+
                 switch (toBox) {
                     case CHAR:
                         // Generate "SqlFunctions.toCharBoxed(x)".
