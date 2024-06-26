@@ -17,6 +17,13 @@
 
 package org.apache.ignite.dump;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Scanner;
+import java.util.Set;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,21 +41,19 @@ import org.apache.ignite.platform.model.User;
 import org.apache.ignite.platform.model.Value;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.Set;
-
 /** */
 public class JsonDumpConsumerTest extends IgniteCacheDumpSelfTest {
     /** {@inheritDoc} */
-    @Override protected TestDumpConsumer dumpConsumer(Set<String> expectedFoundCaches, int expectedDfltDumpSz, int expectedGrpDumpSz, int expectedCnt) {
+    @Override protected TestDumpConsumer dumpConsumer(
+        Set<String> expectedFoundCaches,
+        int expectedDfltDumpSz,
+        int expectedGrpDumpSz,
+        int expectedCnt
+    ) {
         return new TestJsonDumpConsumer(expectedFoundCaches, expectedDfltDumpSz, expectedGrpDumpSz, expectedCnt);
     }
 
+    /** */
     public class TestJsonDumpConsumer extends TestDumpConsumerImpl implements DumpConsumerKernalContextAware {
         /** */
         private final JsonDumpConsumer jsonDumpConsumer = new JsonDumpConsumer();
@@ -66,7 +71,7 @@ public class JsonDumpConsumerTest extends IgniteCacheDumpSelfTest {
 
         /** {@inheritDoc} */
         @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
-            ByteArrayOutputStream testOut = new ByteArrayOutputStream((int) (16 * U.MB));
+            ByteArrayOutputStream testOut = new ByteArrayOutputStream((int)(16 * U.MB));
 
             PrintStream out = System.out;
 
@@ -98,7 +103,7 @@ public class JsonDumpConsumerTest extends IgniteCacheDumpSelfTest {
 
                 @Override public DumpEntry next() {
                     try {
-                        Map<String,Object> entryFromJson = mapper.readValue(sc.nextLine(), typeRef);
+                        Map<String, Object> entryFromJson = mapper.readValue(sc.nextLine(), typeRef);
 
                         return new DumpEntry() {
                             @Override public int cacheId() {
@@ -110,29 +115,27 @@ public class JsonDumpConsumerTest extends IgniteCacheDumpSelfTest {
                             }
 
                             @Override public CacheEntryVersion version() {
-                                return JsonDumpConsumerTest.version((Map<String, Object>) entryFromJson.get("version"));
+                                return JsonDumpConsumerTest.version((Map<String, Object>)entryFromJson.get("version"));
                             }
 
-                            @Override
-                            public Object key() {
+                            @Override public Object key() {
                                 if (cacheId() == CU.cacheId(DEFAULT_CACHE_NAME) || cacheId() == CU.cacheId(CACHE_0))
                                     return Integer.parseInt(entryFromJson.get("key").toString());
 
-                                Map<String, Object> key = (Map<String, Object>) entryFromJson.get("key");
+                                Map<String, Object> key = (Map<String, Object>)entryFromJson.get("key");
 
                                 return new Key(Long.parseLong(key.get("id").toString()));
                             }
 
-                            @Override
-                            public Object value() {
+                            @Override public Object value() {
                                 if (cacheId() == CU.cacheId(DEFAULT_CACHE_NAME))
                                     return Integer.valueOf(entryFromJson.get("value").toString());
                                 else if (cacheId() == CU.cacheId(CACHE_0)) {
-                                    Map<String, Object> val = (Map<String, Object>) entryFromJson.get("value");
-                                    Map<String, Object> role = (Map<String, Object>) val.get("role");
+                                    Map<String, Object> val = (Map<String, Object>)entryFromJson.get("value");
+                                    Map<String, Object> role = (Map<String, Object>)val.get("role");
 
                                     return new User(
-                                        (Integer) val.get("id"),
+                                        (Integer)val.get("id"),
                                         ACL.valueOf(val.get("acl").toString()),
                                         new Role(
                                             role.get("name").toString(),
@@ -141,7 +144,7 @@ public class JsonDumpConsumerTest extends IgniteCacheDumpSelfTest {
                                     );
                                 }
                                 else if (cacheId() == CU.cacheId(CACHE_1)) {
-                                    Map<String, Object> val = (Map<String, Object>) entryFromJson.get("value");
+                                    Map<String, Object> val = (Map<String, Object>)entryFromJson.get("value");
 
                                     return new Value(val.get("val").toString());
                                 }
@@ -158,6 +161,7 @@ public class JsonDumpConsumerTest extends IgniteCacheDumpSelfTest {
         }
     }
 
+    /** */
     private static CacheEntryVersion version(Map<String, Object> version) {
         return new CacheEntryVersion() {
             @Override public long order() {
@@ -178,7 +182,7 @@ public class JsonDumpConsumerTest extends IgniteCacheDumpSelfTest {
 
             @Override public CacheEntryVersion otherClusterVersion() {
                 return version.containsKey("otherClusterVersion")
-                        ? version((Map<String, Object>) version.get("otherClusterVersion"))
+                        ? version((Map<String, Object>)version.get("otherClusterVersion"))
                         : null;
             }
 

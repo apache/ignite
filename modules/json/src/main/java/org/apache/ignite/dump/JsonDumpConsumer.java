@@ -17,6 +17,8 @@
 
 package org.apache.ignite.dump;
 
+import java.io.IOException;
+import java.util.Iterator;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheEntryVersion;
@@ -26,15 +28,15 @@ import org.apache.ignite.internal.jackson.IgniteObjectMapper;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpConsumerKernalContextAware;
 
-import java.io.IOException;
-import java.util.Iterator;
-
+/**
+ * Dump consumer that outputs entries in json format.
+ */
 public class JsonDumpConsumer implements DumpConsumerKernalContextAware {
     /** Ignite specific object mapper. */
     private IgniteObjectMapper mapper;
 
-    @Override
-    public void start(GridKernalContext ctx) {
+    /** {@inheritDoc} */
+    @Override public void start(GridKernalContext ctx) {
         mapper = new IgniteObjectMapper(ctx);
     }
 
@@ -67,7 +69,7 @@ public class JsonDumpConsumer implements DumpConsumerKernalContextAware {
 
     /** {@inheritDoc} */
     @Override public void stop() {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -76,7 +78,7 @@ public class JsonDumpConsumer implements DumpConsumerKernalContextAware {
     }
 
     /** */
-    public static class PrintableDumpEntry {
+    private static class PrintableDumpEntry {
         /** */
         private final DumpEntry e;
 
@@ -112,7 +114,7 @@ public class JsonDumpConsumer implements DumpConsumerKernalContextAware {
     }
 
     /** */
-    public static class PrintableCacheEntryVersion {
+    private static class PrintableCacheEntryVersion {
         /** */
         private final CacheEntryVersion v;
 

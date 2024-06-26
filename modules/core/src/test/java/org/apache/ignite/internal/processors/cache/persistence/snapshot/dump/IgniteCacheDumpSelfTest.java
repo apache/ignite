@@ -619,25 +619,13 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             }
         });
 
-        T2<CountDownLatch, IgniteInternalFuture<?>> latchAndFut = runDumpAsyncAndStopBeforeStart();
+        T2<CountDownLatch, IgniteInternalFuture<?>> latchAndFut = runDumpAsyncAndStopBeforeStart(ign);
 
         cache.put(keyToFail, "test string");
 
         latchAndFut.get1().countDown();
 
-        try {
-            latchAndFut.get2().get(10 * 1000);
-        }
-        catch (IgniteCheckedException e) {
-            String msg = "Val to fail found";
-
-            Throwable err = e;
-
-            while (!err.getMessage().contains(msg) && err.getCause() != null)
-                err = err.getCause();
-
-            assertTrue(err.getMessage().contains(msg));
-        }
+        assertThrows(null, () -> latchAndFut.get2().get(10 * 1000), IgniteCheckedException.class, "Val to fail found");
 
         assertTrue(keyToFailFound.get());
 
@@ -660,7 +648,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     private void doTestDumpWithExpiry() throws Exception {
         IgniteEx ign = startGridAndFillCaches();
 
-        T2<CountDownLatch, IgniteInternalFuture<?>> latchAndFut = runDumpAsyncAndStopBeforeStart();
+        T2<CountDownLatch, IgniteInternalFuture<?>> latchAndFut = runDumpAsyncAndStopBeforeStart(ign);
 
         Thread.sleep(TTL);
 
@@ -690,7 +678,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     private void doTestConcurrentOperations(Consumer<IgniteEx> op) throws Exception {
         IgniteEx ign = startGridAndFillCaches();
 
-        T2<CountDownLatch, IgniteInternalFuture<?>> latchAndFut = runDumpAsyncAndStopBeforeStart();
+        T2<CountDownLatch, IgniteInternalFuture<?>> latchAndFut = runDumpAsyncAndStopBeforeStart(ign);
 
         // This operations will be catched by change listeners. Old value must be stored in dump.
         op.accept(ign);
@@ -720,7 +708,12 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected TestDumpConsumer dumpConsumer(Set<String> expectedFoundCaches, int expectedDfltDumpSz, int expectedGrpDumpSz, int expectedCnt) {
+    @Override protected TestDumpConsumer dumpConsumer(
+        Set<String> expectedFoundCaches,
+        int expectedDfltDumpSz,
+        int expectedGrpDumpSz,
+        int expectedCnt
+    ) {
         return new TestDumpConsumerImpl(expectedFoundCaches, expectedDfltDumpSz, expectedGrpDumpSz, expectedCnt) {
             /** {@inheritDoc} */
             @Override protected void checkDefaultCacheEntry(DumpEntry e) {
