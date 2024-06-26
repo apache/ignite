@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.cache;
+package org.apache.ignite.internal.management.cache.scan;
 
 import java.util.List;
 import java.util.function.Consumer;

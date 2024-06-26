@@ -1,0 +1,2 @@
+org.apache.ignite.internal.management.cache.scan.DefaultCacheScanTaskFormat
+org.apache.ignite.internal.management.cache.scan.TableCacheScanTaskFormat

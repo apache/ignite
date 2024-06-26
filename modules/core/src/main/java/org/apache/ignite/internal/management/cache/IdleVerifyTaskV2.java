@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.cache;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -31,6 +32,9 @@ public class IdleVerifyTaskV2 extends VisorOneNodeTask<CacheIdleVerifyCommandArg
 
     /** {@inheritDoc} */
     @Override protected VisorJob<CacheIdleVerifyCommandArg, IdleVerifyResultV2> job(CacheIdleVerifyCommandArg arg) {
+        if (!ignite.context().state().publicApiActiveState(true))
+            throw new IgniteException(VerifyBackupPartitionsTaskV2.IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE);
+
         return new IdleVerifyJob<>(arg, debug, VerifyBackupPartitionsTaskV2.class);
     }
 }
