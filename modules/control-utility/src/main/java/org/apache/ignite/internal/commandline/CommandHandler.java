@@ -252,6 +252,12 @@ public class CommandHandler {
 
             ConnectionAndSslParameters<A> args = new ArgumentParser(logger, registry).parseAndValidate(rawArgs);
 
+            if (args.command() instanceof HelpCommand) {
+                printUsage(logger, args.cmdPath().peekLast());
+
+                return EXIT_CODE_OK;
+            }
+
             cmdName = toFormattedCommandName(args.cmdPath().peekLast().getClass()).toUpperCase();
 
             int tryConnectMaxCnt = 3;
@@ -285,9 +291,7 @@ public class CommandHandler {
                     if (deprecationMsg != null)
                         logger.warning(deprecationMsg);
 
-                    if (args.command() instanceof HelpCommand)
-                        printUsage(logger, args.cmdPath().peekLast());
-                    else if (args.command() instanceof BeforeNodeStartCommand)
+                    if (args.command() instanceof BeforeNodeStartCommand)
                         lastOperationRes = invoker.invokeBeforeNodeStart(logger::info);
                     else
                         lastOperationRes = invoker.invoke(logger::info, args.verbose());

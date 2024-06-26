@@ -63,6 +63,7 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.client.SslMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -791,6 +792,11 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             .setAddresses("127.0.0.1:10800")
             .setAutoBinaryConfigurationEnabled(false)
             .setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
+
+        if (sslEnabled()) {
+            cliCfg.setSslMode(SslMode.REQUIRED);
+            cliCfg.setSslContextFactory(sslFactory());
+        }
 
         try (IgniteClient cli = TcpIgniteClient.start(cliCfg)) {
             for (int i = keysCnt; i < keysCnt * 3; i++)
