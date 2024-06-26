@@ -493,11 +493,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: COMPUTE
 
-        private long ComputeTaskMap(long memPtr)
+        private long ComputeTaskMap(long memPtr, long ignored, long ignored2, void* sesPtr)
         {
             using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                Task(stream.ReadLong()).Map(stream);
+                var ses = TaskSession(sesPtr);
+                Task(stream.ReadLong()).Map(stream, ses);
 
                 return 0;
             }
@@ -562,15 +563,18 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
-        private long ComputeJobExecuteLocal(long jobPtr, long cancel, long unused, void* arg)
+        private long ComputeJobExecuteLocal(long jobPtr, long cancel, long unused, void* sesPtr)
         {
-            Job(jobPtr).ExecuteLocal(cancel == 1);
+            var ses = TaskSession(sesPtr);
+
+            Job(jobPtr).ExecuteLocal(cancel == 1, ses);
 
             return 0;
         }
 
-        private long ComputeJobExecute(long memPtr)
+        private long ComputeJobExecute(long memPtr, long ignored, long ignored2, void* sesPtr)
         {
+            var ses = TaskSession(sesPtr);
             using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
                 var job = Job(stream.ReadLong());
@@ -579,7 +583,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 stream.Reset();
 
-                job.ExecuteRemote(stream, cancel);
+                job.ExecuteRemote(stream, cancel, ses);
             }
 
             return 0;
@@ -615,6 +619,18 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return _handleRegistry.Get<IComputeTaskHolder>(taskPtr);
         }
 
+        private IComputeTaskSession TaskSession(void* sesPtr)
+        {
+            if (sesPtr == null)
+            {
+                return null;
+            }
+            
+            var sesRef = _jvm.AttachCurrentThread().NewGlobalRef((IntPtr) sesPtr);
+            var sesTarget = new PlatformJniTarget(sesRef, _ignite.Marshaller);
+            return new ComputeTaskSession(sesTarget);
+        }
+
         /// <summary>
         /// Get compute job using it's GC handle pointer.
         /// </summary>
@@ -640,7 +656,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 stream.Reset();
 
                 var invoker = DelegateTypeDescriptor.GetComputeOutFunc(func.GetType());
-                ComputeRunner.ExecuteJobAndWriteResults(_ignite, stream, func, invoker);
+                ComputeRunner.ExecuteJobAndWriteResults(_ignite, null, stream, func, invoker);
             }
 
             return 0;
@@ -660,7 +676,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 stream.Reset();
 
-                ComputeRunner.ExecuteJobAndWriteResults(_ignite, stream, action, act =>
+                ComputeRunner.ExecuteJobAndWriteResults(_ignite, null, stream, action, act =>
                 {
                     act.Invoke();
                     return null;

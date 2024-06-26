@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+using Apache.Ignite.Core.Compute;
+
 namespace Apache.Ignite.Core.Impl.Compute
 {
     using System;
@@ -71,11 +73,12 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Executes local job.
         /// </summary>
         /// <param name="cancel">Cancel flag.</param>
+        /// <param name="taskSes">Compute task session</param>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
             Justification = "User code can throw any exception type.")]
-        public void ExecuteLocal(bool cancel)
+        public void ExecuteLocal(bool cancel, IComputeTaskSession taskSes)
         {
-            ComputeRunner.InjectResources(_ignite, _job);
+            ComputeRunner.InjectResources(_ignite, taskSes, _job);
 
             var nodeId = _ignite.GetIgnite().GetCluster().GetLocalNode().Id;
 
@@ -99,9 +102,10 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         /// <param name="cancel">Whether the job must be cancelled.</param>
         /// <param name="stream">Stream.</param>
-        public void ExecuteRemote(PlatformMemoryStream stream, bool cancel)
+        /// <param name="taskSes">Compute task session</param>
+        public void ExecuteRemote(PlatformMemoryStream stream, bool cancel, IComputeTaskSession taskSes)
         {
-            ComputeRunner.ExecuteJobAndWriteResults(_ignite, stream, _job, _ => Execute0(cancel));
+            ComputeRunner.ExecuteJobAndWriteResults(_ignite, taskSes, stream, _job, _ => Execute0(cancel));
         }
 
         /// <summary>
