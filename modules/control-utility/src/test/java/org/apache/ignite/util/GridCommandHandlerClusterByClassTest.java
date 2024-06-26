@@ -1801,15 +1801,15 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertContains(log, testOut.toString(), "{\"key\":1,\"value\":{\"i\":1,\"booleans\":[true,false]," +
             "\"chars\":\"test\",\"shorts\":[1,2,3],\"ints\":[2,3],\"longs\":[4,5],\"floats\":[],\"doubles\":[42.0]," +
-            "\"map\":{\"some_key\":\"some_value\"},\"strArr\":[\"s1\",\"s2\",\"s3\"],\"date\":\"Jul 25, 2004, 12:00:00 AM\"," +
+            "\"map\":{\"some_key\":\"some_value\"},\"strArr\":[\"s1\",\"s2\",\"s3\"],\"date\":\"Jul 25, 2004 12:00:00 AM\"," +
             "\"list\":[1,2,3],\"enm\":\"USER\"}}\n");
         assertContains(log, testOut.toString(), "{\"key\":2,\"value\":{\"i\":2,\"booleans\":[true,false]," +
             "\"chars\":\"test\",\"shorts\":[1,2,3],\"ints\":[2,3],\"longs\":[4,5],\"floats\":[123.0],\"doubles\":[0.0]," +
-            "\"map\":{\"1\":\"2\"},\"strArr\":[\"s4\",\"s5\",\"s6\"],\"date\":\"Jul 25, 2004, 12:00:00 AM\"," +
+            "\"map\":{\"1\":\"2\"},\"strArr\":[\"s4\",\"s5\",\"s6\"],\"date\":\"Jul 25, 2004 12:00:00 AM\"," +
             "\"list\":[1,2,3],\"enm\":\"USER\"}}");
         assertContains(log, testOut.toString(), "{\"key\":3,\"value\":{\"i\":3,\"booleans\":[true,false]," +
             "\"chars\":\"test\",\"shorts\":[1,2,3],\"ints\":[2,3],\"longs\":[4,5],\"floats\":[123.0],\"doubles\":[1.0]," +
-            "\"map\":{\"xxx\":\"yyy\"},\"strArr\":[\"s7\",\"s8\",\"s9\"],\"date\":\"Jul 25, 2004, 12:00:00 AM\"," +
+            "\"map\":{\"xxx\":\"yyy\"},\"strArr\":[\"s7\",\"s8\",\"s9\"],\"date\":\"Jul 25, 2004 12:00:00 AM\"," +
             "\"list\":[1,2,3],\"enm\":\"SUPER\"}}");
     }
 
