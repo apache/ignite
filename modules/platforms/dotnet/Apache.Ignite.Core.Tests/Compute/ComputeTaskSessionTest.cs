@@ -101,8 +101,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             protected override ICollection<IComputeJob<int>> Split(int gridSize, int attrValue)
             {
                 _taskSession.SetAttributes(new KeyValuePair<string, int>(_attrName, attrValue));
-
-                return new List<IComputeJob<int>> { new SessionAttributeGetterJob(_attrName) };
+                return new List<IComputeJob<int>> {new SessionAttributeGetterJob(_attrName)};
             }
         }
 
