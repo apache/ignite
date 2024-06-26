@@ -172,6 +172,21 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         Node<Row> input = visit(rel.getInput());
 
+        if (distribution.function().affinity()) { // Affinity key can't be null, so filter out null values.
+            assert distribution.getKeys().size() == 1 : distribution.getKeys().size();
+
+            int affKey = distribution.getKeys().get(0);
+
+            if (rel.getRowType().getFieldList().get(affKey).getType().isNullable()) {
+                FilterNode<Row> filter = new FilterNode<>(ctx, rel.getRowType(),
+                    r -> ctx.rowHandler().get(affKey, r) != null);
+
+                filter.register(input);
+
+                input = filter;
+            }
+        }
+
         outbox.register(input);
 
         mailboxRegistry.register(outbox);
