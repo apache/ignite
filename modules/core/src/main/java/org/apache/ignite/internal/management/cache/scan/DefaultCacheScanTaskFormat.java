@@ -79,21 +79,53 @@ public class DefaultCacheScanTaskFormat implements CacheScanTaskFormat {
         if (o == null)
             return "null";
 
-        if (o instanceof byte[])
+        if (o instanceof byte[]) {
             return "size=" + ((byte[])o).length;
-
-        if (o instanceof Byte[])
+        }
+        else if (o instanceof Byte[]) {
             return "size=" + ((Byte[])o).length;
-
-        if (o instanceof Object[]) {
-            return "size=" + ((Object[])o).length +
-                ", values=[" + S.joinToString(Arrays.asList((Object[])o), ", ", "...", 120, 0) + "]";
+        }
+        else if (o instanceof boolean[]) {
+            boolean[] arr = (boolean[])o;
+            return arrayValue(arr.length, Arrays.toString(arr));
+        }
+        else if (o instanceof char[]) {
+            char[] arr = (char[])o;
+            return arrayValue(arr.length, Arrays.toString(arr));
+        }
+        else if (o instanceof short[]) {
+            short[] arr = (short[])o;
+            return arrayValue(arr.length, Arrays.toString(arr));
+        }
+        else if (o instanceof int[]) {
+            int[] arr = (int[])o;
+            return arrayValue(arr.length, Arrays.toString(arr));
+        }
+        else if (o instanceof long[]) {
+            long[] arr = (long[])o;
+            return arrayValue(arr.length, Arrays.toString(arr));
+        }
+        else if (o instanceof float[]) {
+            float[] arr = (float[])o;
+            return arrayValue(arr.length, Arrays.toString(arr));
+        }
+        else if (o instanceof double[]) {
+            double[] arr = (double[])o;
+            return arrayValue(arr.length, Arrays.toString(arr));
+        }
+        else if (o instanceof Object[]) {
+            return arrayValue(((Object[])o).length, "[" + S.joinToString(Arrays.asList((Object[])o), ", ", "...", 120, 0)) + "]";
         }
 
         if (o instanceof BinaryObject)
             return binaryToString((BinaryObject)o);
 
         return o.toString();
+    }
+
+    /** */
+    static String arrayValue(int length, String values) {
+        return "size=" + length + ", values=" + values;
     }
 
     /**
