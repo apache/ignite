@@ -60,6 +60,9 @@ import org.apache.ignite.lang.IgniteUuid;
  * Custom object mapper for HTTP REST API.
  */
 public class IgniteObjectMapper extends ObjectMapper {
+    /** Date format. */
+    public static final DateFormat DATE_FORMAT = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, Locale.US);
+
     /**
      * Default constructor.
      */
@@ -73,7 +76,7 @@ public class IgniteObjectMapper extends ObjectMapper {
     public IgniteObjectMapper(GridKernalContext ctx) {
         super(null, new CustomSerializerProvider(), null);
 
-        setDateFormat(DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, Locale.US));
+        setDateFormat(DATE_FORMAT);
 
         SimpleModule module = new SimpleModule();
 

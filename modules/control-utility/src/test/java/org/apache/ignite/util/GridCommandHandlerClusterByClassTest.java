@@ -32,6 +32,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -51,6 +53,8 @@ import java.util.logging.StreamHandler;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.difflib.text.DiffRow;
 import com.github.difflib.text.DiffRowGenerator;
 import org.apache.ignite.Ignite;
@@ -75,6 +79,7 @@ import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.commandline.ArgumentParser;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.jackson.IgniteObjectMapper;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.HelpCommand;
 import org.apache.ignite.internal.management.api.Positional;
@@ -1778,7 +1783,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
     /** */
     @Test
-    public void testCacheScanJsonFormat() {
+    public void testCacheScanJsonFormat() throws Exception {
         injectTestSystemOut();
 
         autoConfirmation = false;
@@ -1787,30 +1792,123 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", JsonCacheScanTaskFormat.NAME, "cache1"));
 
-        assertContains(log, testOut.toString(), "{\"key\":{\"id\":1},\"value\":{\"fio\":\"" + JOHN + "\",\"salary\":2}}");
-        assertContains(log, testOut.toString(), "{\"key\":{\"id\":2},\"value\":{\"fio\":\"" + SARAH + "\",\"salary\":3}}");
-        assertContains(log, testOut.toString(), "{\"key\":{\"id\":3},\"value\":{\"fio\":\"" + KYLE + "\",\"salary\":4}}");
+        Scanner sc = new Scanner(testOut.toString());
+
+        while (sc.hasNextLine() && !Objects.equals(sc.nextLine().trim(), "data")) ;
+
+        TypeReference<HashMap<String, Object>> typeRef = new TypeReference<HashMap<String, Object>>() {
+            // No-op.
+        };
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        Set<Integer> keys = new HashSet<>();
+
+        for (int i = 0; i < 3; i++) {
+            assertTrue(sc.hasNextLine());
+
+            Map<String, Object> entryFromJson = mapper.readValue(sc.nextLine(), typeRef);
+
+            int key = (int)((Map<String, Object>)entryFromJson.get("key")).get("id");
+
+            keys.add(key);
+
+            Map<String, Object> val = (Map<String, Object>)entryFromJson.get("value");
+
+            if (key == 1)
+                assertEquals(JOHN, val.get("fio"));
+            else if (key == 2)
+                assertEquals(SARAH, val.get("fio"));
+            else
+                assertEquals(KYLE, val.get("fio"));
+
+            assertEquals(key + 1, val.get("salary"));
+        }
+
+        assertTrue(keys.containsAll(Arrays.asList(1, 2, 3)));
+
+        keys.clear();
 
         assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", JsonCacheScanTaskFormat.NAME, "cache2"));
 
-        assertContains(log, testOut.toString(), "{\"key\":1,\"value\":\"" + JOHN + "\"} ");
-        assertContains(log, testOut.toString(), "{\"key\":2,\"value\":\"" + SARAH + "\"}");
-        assertContains(log, testOut.toString(), "{\"key\":3,\"value\":\"" + KYLE + "\"}");
+        sc = new Scanner(testOut.toString());
+
+        while (sc.hasNextLine() && !Objects.equals(sc.nextLine().trim(), "data")) ;
+
+        for (int i = 0; i < 3; i++) {
+            assertTrue(sc.hasNextLine());
+
+            Map<String, Object> entryFromJson = mapper.readValue(sc.nextLine(), typeRef);
+
+            int key = (int)entryFromJson.get("key");
+
+            keys.add(key);
+
+            String val = (String)entryFromJson.get("value");
+
+            if (key == 1)
+                assertEquals(JOHN, val);
+            else if (key == 2)
+                assertEquals(SARAH, val);
+            else
+                assertEquals(KYLE, val);
+        }
+
+        assertTrue(keys.containsAll(Arrays.asList(1, 2, 3)));
+
+        keys.clear();
 
         assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", JsonCacheScanTaskFormat.NAME, "cache3"));
 
-        assertContains(log, testOut.toString(), "{\"key\":1,\"value\":{\"i\":1,\"booleans\":[true,false]," +
-            "\"chars\":\"test\",\"shorts\":[1,2,3],\"ints\":[2,3],\"longs\":[4,5],\"floats\":[],\"doubles\":[42.0]," +
-            "\"map\":{\"some_key\":\"some_value\"},\"strArr\":[\"s1\",\"s2\",\"s3\"],\"date\":\"Jul 25, 2004 12:00:00 AM\"," +
-            "\"list\":[1,2,3],\"enm\":\"USER\"}}\n");
-        assertContains(log, testOut.toString(), "{\"key\":2,\"value\":{\"i\":2,\"booleans\":[true,false]," +
-            "\"chars\":\"test\",\"shorts\":[1,2,3],\"ints\":[2,3],\"longs\":[4,5],\"floats\":[123.0],\"doubles\":[0.0]," +
-            "\"map\":{\"1\":\"2\"},\"strArr\":[\"s4\",\"s5\",\"s6\"],\"date\":\"Jul 25, 2004 12:00:00 AM\"," +
-            "\"list\":[1,2,3],\"enm\":\"USER\"}}");
-        assertContains(log, testOut.toString(), "{\"key\":3,\"value\":{\"i\":3,\"booleans\":[true,false]," +
-            "\"chars\":\"test\",\"shorts\":[1,2,3],\"ints\":[2,3],\"longs\":[4,5],\"floats\":[123.0],\"doubles\":[1.0]," +
-            "\"map\":{\"xxx\":\"yyy\"},\"strArr\":[\"s7\",\"s8\",\"s9\"],\"date\":\"Jul 25, 2004 12:00:00 AM\"," +
-            "\"list\":[1,2,3],\"enm\":\"SUPER\"}}");
+        sc = new Scanner(testOut.toString());
+
+        while (sc.hasNextLine() && !Objects.equals(sc.nextLine().trim(), "data")) ;
+
+        for (int i = 0; i < 3; i++) {
+            assertTrue(sc.hasNextLine());
+
+            Map<String, Object> entryFromJson = mapper.readValue(sc.nextLine(), typeRef);
+
+            int key = (int)entryFromJson.get("key");
+
+            keys.add(key);
+
+            Map<String, Object> val = (Map<String, Object>)entryFromJson.get("value");
+
+            assertEquals(key, val.get("i"));
+            assertEquals(Arrays.asList(true, false), val.get("booleans"));
+            assertEquals("test", val.get("chars"));
+            assertEquals(Arrays.asList(1, 2, 3), val.get("shorts"));
+            assertEquals(Arrays.asList(2, 3), val.get("ints"));
+            assertEquals(Arrays.asList(4, 5), val.get("longs"));
+            assertEquals(Arrays.asList(1, 2, 3), val.get("list"));
+            assertEquals(IgniteObjectMapper.DATE_FORMAT.format(DATE), val.get("date"));
+
+            int firstIdx = i * 3 + 1;
+
+            assertEquals(Arrays.asList("s" + firstIdx, "s" + (firstIdx + 1), "s" + (firstIdx + 2)), val.get("strArr"));
+
+            if (key == 1) {
+                assertTrue(((List<?>)val.get("floats")).isEmpty());
+                assertEquals(Arrays.asList(42.0d), val.get("doubles"));
+                assertEquals(Collections.singletonMap("some_key", "some_value"), val.get("map"));
+                assertEquals(AccessLevel.USER.toString(), val.get("enm"));
+            }
+            else if (key == 2) {
+                assertEquals(Arrays.asList(123d), val.get("floats"));
+                assertEquals(Arrays.asList(0d), val.get("doubles"));
+                assertEquals(Collections.singletonMap("1", "2"), val.get("map"));
+                assertEquals(AccessLevel.USER.toString(), val.get("enm"));
+            }
+            else {
+                assertEquals(Arrays.asList(123d), val.get("floats"));
+                assertEquals(Arrays.asList(1d), val.get("doubles"));
+                assertEquals(Collections.singletonMap("xxx", "yyy"), val.get("map"));
+                assertEquals(AccessLevel.SUPER.toString(), val.get("enm"));
+            }
+        }
+
+        assertTrue(keys.containsAll(Arrays.asList(1, 2, 3)));
     }
 
     /** */
