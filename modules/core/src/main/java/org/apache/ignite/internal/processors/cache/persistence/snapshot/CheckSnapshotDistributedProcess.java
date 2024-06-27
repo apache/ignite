@@ -383,7 +383,7 @@ public class CheckSnapshotDistributedProcess {
             return rq.clusterInitiatorFut;
         }
 
-        throw new IllegalStateException("Validation of snapshot '" + snpName + "' has already started. Request: " + rq + '.');
+        return new GridFinishedFuture<>(new IllegalStateException("Validation of snapshot '" + snpName + "' has already started. Request: " + rq + '.'));
     }
 
     /** */
