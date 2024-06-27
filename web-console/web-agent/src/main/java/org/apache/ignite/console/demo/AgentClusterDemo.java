@@ -84,7 +84,7 @@ public class AgentClusterDemo {
     private static final String CLN_NODE_NAME = "demo-client-";
 
     /** Node count 2 means 3 node*/
-    private static final int NODE_CNT = 1;
+    private static final int NODE_CNT = 2;
 
     /** */
     private static final int WAL_SEGMENTS = 5;

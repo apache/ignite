@@ -23,8 +23,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.console.dto.DataObject;
-import org.apache.ignite.console.json.JsonArray;
-import org.apache.ignite.console.json.JsonObject;
+
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -38,6 +37,9 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestWrapper;
 import org.springframework.util.StopWatch;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;

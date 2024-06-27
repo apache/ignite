@@ -31,11 +31,14 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.console.dto.AbstractDto;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Table for data objects.
@@ -43,15 +46,21 @@ import static java.util.stream.Collectors.toSet;
  * @param <T> Type of DTO.
  */
 public class Table<T extends AbstractDto> extends CacheHolder<UUID, T> {
+	
+	public static final String INDEX_DB_PREFIX = "INDEXES.";
+	
     /** Unique indexes. */
     private final List<UniqueIndex<T>> uniqueIndexes = new ArrayList<>();
+    
+    /** */
+    private IgniteCache<Object, UUID> invertedCache;
 
     /**
      * @param ignite Ignite.
      * @param cacheName Cache name.
      */
     public Table(Ignite ignite, String cacheName) {
-        super(ignite, cacheName);
+    	 this(ignite, cacheName, -1);
     }
 
     /**
@@ -61,6 +70,13 @@ public class Table<T extends AbstractDto> extends CacheHolder<UUID, T> {
      */
     public Table(Ignite ignite, String cacheName, long expirationTimeout) {
         super(ignite, cacheName, expirationTimeout);
+        
+        String idxCacheName = getIndexCacheName(cacheName,"inverted");
+        CacheConfiguration<Object, UUID> idxcfg = new CacheConfiguration<Object, UUID>(idxCacheName)
+                .setAtomicityMode(TRANSACTIONAL)
+                .setCacheMode(REPLICATED);
+
+        invertedCache = ignite.getOrCreateCache(idxcfg);
     }
 
     /**
@@ -78,28 +94,29 @@ public class Table<T extends AbstractDto> extends CacheHolder<UUID, T> {
      * @return DTO.
      */
     @Nullable public T getByIndex(Object key) {
-        IgniteCache cache = cache();
+        IgniteCache<Object, UUID> cache = invertedCache();
 
-        Object id = cache.get(key);
+        UUID id = cache.get(key);
 
         if (id == null)
             return null;
 
-        return (T)cache.get(id);
+        return (T)get(id);
     }
 
     /**
      * @return Collection of DTOs.
      */
     public List<T> loadAll() {
-        try(QueryCursor<Cache.Entry<String, Object>> cursor = cache().query(new ScanQuery())) {
+        try(QueryCursor<Cache.Entry<?, Object>> cursor = cache().query(new ScanQuery())) {
             ArrayList<T> res = new ArrayList<>();
 
             cursor.forEach(item -> {
                 Object v = item.getValue();
 
-                if (v instanceof AbstractDto)
+                if (v instanceof AbstractDto) {
                     res.add((T)v);
+                }
             });
 
             return res;
@@ -111,20 +128,21 @@ public class Table<T extends AbstractDto> extends CacheHolder<UUID, T> {
      * @return Collection of DTOs.
      */
     public Collection<T> loadAllByIndex(Set<?> keys) {
-        Map ids = ((IgniteCache)cache()).getAll(keys);
+    	IgniteCache<Object, UUID> cache = invertedCache();
+        Map<Object,UUID> ids = cache.getAll(keys);
 
         if (ids.isEmpty())
             return Collections.emptyList();
 
-        return loadAll(new HashSet<T>(ids.values()));
+        return loadAll(new HashSet<>(ids.values()));
     }
 
     /**
      * @param ids IDs.
      * @return Collection of DTOs.
      */
-    public Collection<T> loadAll(Set<?> ids) {
-        Map<?, T> res = ((IgniteCache)cache()).getAll(ids);
+    public Collection<T> loadAll(Set<UUID> ids) {
+        Map<?, T> res = cache().getAll(ids);
 
         return F.isEmpty(res) ? Collections.emptyList() : res.values();
     }
@@ -135,12 +153,12 @@ public class Table<T extends AbstractDto> extends CacheHolder<UUID, T> {
      * @param oldVal Old value.
      */
     public void saveUniqueIndexValue(UniqueIndex<T> idx, T newVal, T oldVal) {
-        IgniteCache cache = cache();
+    	IgniteCache<Object, UUID> cache = invertedCache();
 
         Object newIdxKey = idx.key(newVal);
         UUID newId = newVal.getId();
 
-        Object oldId = cache.getAndPutIfAbsent(newIdxKey, newId);
+        UUID oldId = cache.getAndPutIfAbsent(newIdxKey, newId);
 
         if (oldId != null && !newId.equals(oldId))
             throw new IgniteException(idx.message(newVal));
@@ -183,22 +201,39 @@ public class Table<T extends AbstractDto> extends CacheHolder<UUID, T> {
     @Nullable public T delete(UUID id) {
         T val = cache().getAndRemove(id);
 
-        if (val != null)
-            ((IgniteCache)cache()).removeAll(uniqueIndexes.stream().map(idx -> idx.key(val)).collect(toSet()));
-
+        if (val != null && !F.isEmpty(uniqueIndexes)) {
+        	IgniteCache<Object, UUID> invCache = invertedCache();
+        	invCache.removeAll(uniqueIndexes.stream().map(idx -> idx.key(val)).collect(toSet()));
+        }
         return val;
     }
 
     /**
      * @param ids IDs.
      */
-    public void deleteAll(Set<UUID> ids) {
+    public void deleteAll(Set<UUID> ids) {    	
         Set<Object> idxIds = ids.stream()
-            .map(cache()::getAndRemove)
+            .map(this::getAndRemove)
             .flatMap((payload) -> uniqueIndexes.stream().map(idx -> idx.key(payload)))
             .collect(toSet());
-
-        ((IgniteCache)cache()).removeAll(idxIds);
+        
+        if(idxIds.size()>0) {
+        	IgniteCache<Object, UUID> invCache = invertedCache();
+        	invCache.removeAll(idxIds);
+        }
+    }
+    
+    
+    
+    /**
+     * @return Underlying invertedCache
+     */
+    public IgniteCache<Object,UUID> invertedCache() {
+        return expiryPlc  == null ? invertedCache : invertedCache.withExpiryPolicy(expiryPlc);
+    }
+    
+    public static String getIndexCacheName(String collectionName,String indexName) {
+    	return INDEX_DB_PREFIX  + collectionName + "_" + indexName;
     }
     
 }

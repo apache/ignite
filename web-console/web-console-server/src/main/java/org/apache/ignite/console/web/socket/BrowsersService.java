@@ -33,8 +33,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.dto.Announcement;
-import org.apache.ignite.console.json.JsonArray;
-import org.apache.ignite.console.json.JsonObject;
+
 import org.apache.ignite.console.web.AbstractSocketHandler;
 import org.apache.ignite.console.web.model.VisorTaskDescriptor;
 import org.apache.ignite.console.websocket.WebSocketEvent;
@@ -48,6 +47,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.WebSocketSession;
+
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.console.utils.Utils.fromJson;
@@ -353,14 +355,14 @@ public class BrowsersService extends AbstractSocketHandler {
         if(!desc.getTaskClass().startsWith(VISOR_IGNITE)) {
         	
         	JsonObject exeParams =  new JsonObject();
-        	exeParams.add("cmd", desc.getTaskClass());            
+        	exeParams.put("cmd", desc.getTaskClass());            
 
             JsonObject args = params.getJsonObject("args");
 
             if (!F.isEmpty(args))
-                args.entrySet().forEach(arg -> exeParams.put(arg.getKey(),arg.getValue()));
+                args.getMap().entrySet().forEach(arg -> exeParams.put(arg.getKey(),arg.getValue()));
 
-            Stream.of("user", "password", "sessionToken").forEach(p -> exeParams.add(p, params.get(p)));
+            Stream.of("user", "password", "sessionToken").forEach(p -> exeParams.put(p, params.getString(p)));
 
             payload.put("params", exeParams);
 
@@ -369,10 +371,10 @@ public class BrowsersService extends AbstractSocketHandler {
         }
         else {
         	JsonObject exeParams =  new JsonObject()
-                    .add("cmd", "exe")
-                    .add("name", "org.apache.ignite.internal.visor.compute.VisorGatewayTask")
-                    .add("p1", nids)
-                    .add("p2", desc.getTaskClass());
+                    .put("cmd", "exe")
+                    .put("name", "org.apache.ignite.internal.visor.compute.VisorGatewayTask")
+                    .put("p1", nids)
+                    .put("p2", desc.getTaskClass());
 
             AtomicInteger idx = new AtomicInteger(3);
 
@@ -383,7 +385,7 @@ public class BrowsersService extends AbstractSocketHandler {
             if (!F.isEmpty(args))
                 args.forEach(arg -> exeParams.put("p" + idx.getAndIncrement(), arg));
 
-            Stream.of("user", "password", "sessionToken").forEach(p -> exeParams.add(p, params.get(p)));
+            Stream.of("user", "password", "sessionToken").forEach(p -> exeParams.put(p, params.getString(p)));
 
             payload.put("params", exeParams);
 

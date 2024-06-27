@@ -17,9 +17,10 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskContinuousMapper;
 import org.apache.ignite.compute.ComputeTaskNoResultCache;
-import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.jetbrains.annotations.NotNull;
+
+import io.vertx.core.json.JsonObject;
 
 /**
  * This task demonstrates how continuous mapper is used. The passed in phrase
@@ -49,7 +50,7 @@ public class ContinuousMapperTask extends ComputeTaskAdapter<JsonObject, JsonObj
             throw new IgniteException("Phrase is empty.");
 
         // Populate word queue.
-        Collections.addAll(words, phrase.values().toArray(new String[] {}));
+        Collections.addAll(words, phrase.getMap().values().toArray(new String[] {}));
 
         // Sends first word.
         sendWord();

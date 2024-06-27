@@ -45,10 +45,10 @@ public class AgentLauncher implements IgniteSshHelper {
 
     static {
         // Optionally remove existing handlers attached to j.u.l root logger.
-        SLF4JBridgeHandler.removeHandlersForRootLogger();
+        // -SLF4JBridgeHandler.removeHandlersForRootLogger();
 
         // Add SLF4JBridgeHandler to j.u.l's root logger.
-        SLF4JBridgeHandler.install();
+        // -SLF4JBridgeHandler.install();
     }
 
     /**
@@ -204,15 +204,20 @@ public class AgentLauncher implements IgniteSshHelper {
         if (cfg == null)
             return;
 
-        try (WebSocketRouter websocket = new WebSocketRouter(cfg)) {
-        	
-            websocket.start();
-
-            websocket.awaitClose();
-        }
-        catch (Throwable ignored) {
-            // No-op.
-        	ignored.printStackTrace();
+        while(true) {
+	        try (WebSocketRouter websocket = new WebSocketRouter(cfg)) {
+	        	
+	            websocket.start();
+	
+	            websocket.awaitClose();
+	            
+	            Thread.sleep(1000);
+	        }
+	        catch (Throwable ignored) {
+	            // No-op.
+	        	ignored.printStackTrace();
+	        	break;
+	        }
         }
 
         // Force exit because of known issue with Jetty: HTTP client does not shutdown its threads.

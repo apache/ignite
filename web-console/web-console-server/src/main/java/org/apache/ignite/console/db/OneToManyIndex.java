@@ -62,7 +62,7 @@ public class OneToManyIndex<K, V> extends CacheHolder<K, Set<V>> {
         String cacheName,
         long expirationTimeout
     ) {
-        super(ignite, cacheName, expirationTimeout);
+        super(ignite, Table.INDEX_DB_PREFIX + cacheName, expirationTimeout);
 
         this.msgGenerator = (key) -> messages.getMessage("err.data-access-violation");
     }

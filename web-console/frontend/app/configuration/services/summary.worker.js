@@ -130,3 +130,4 @@ onmessage = function(e) {
         mimeType: 'application/octet-stream'
     }).then((blob) => postMessage(blob));
 };
+

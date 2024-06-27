@@ -17,10 +17,14 @@
 package org.apache.ignite.console.web.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.vertx.core.json.JsonArray;
+
+import java.util.UUID;
+
 import javax.validation.Valid;
 import org.apache.ignite.console.common.Test;
 import org.apache.ignite.console.dto.Account;
-import org.apache.ignite.console.json.JsonArray;
+
 import org.apache.ignite.console.services.AccountsService;
 import org.apache.ignite.console.services.AdminService;
 import org.apache.ignite.console.utils.Utils;
@@ -80,7 +84,7 @@ public class TestController {
         accounts.stream()
             .map(Utils::asJson)
             .filter(acc -> acc.getString("email").contains(email))
-            .map(acc -> acc.getUuid("id"))
+            .map(acc -> (UUID)acc.getMap().get("id"))
             .forEach(adminSrv::delete);
 
         return ResponseEntity.ok().build();

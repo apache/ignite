@@ -117,6 +117,17 @@
             <artifactId>log4j-web</artifactId>
         </dependency>
 
+        <!-- Third-party dependencies -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -153,38 +164,18 @@
             <artifactId>ignite-zookeeper</artifactId>
             <version>${web-console.ignite.version}</version>
         </dependency>
-        
-         <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-indexing</artifactId>
-            <version>${web-console.ignite.version}</version>
-        </dependency>
-        
-        <dependency>
-        	<groupId>com.h2database</groupId>
-		    <artifactId>h2</artifactId>
-		    <version>1.4.197</version>
-        </dependency>
-        
+       
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j2</artifactId>
             <version>${web-console.ignite.version}</version>
-        </dependency>
-        
+        </dependency>        
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-web-console-common</artifactId>
             <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-web-console-mail</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        
+        </dependency>        
         
         <!-- https://mvnrepository.com/artifact/jakarta.validation/jakarta.validation-api -->
 		<dependency>

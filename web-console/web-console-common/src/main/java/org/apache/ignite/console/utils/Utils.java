@@ -25,7 +25,13 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.ignite.console.json.JsonObject;
+
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.json.jackson.DatabindCodec;
+
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -33,7 +39,7 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class Utils {
     /** */
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = DatabindCodec.mapper();
     
     private static final Pattern escapeFileNamePattern = Pattern.compile("[\\\\\\/*\"\\[\\],\\.:;|=<>?]", Pattern.CASE_INSENSITIVE);
 
@@ -57,29 +63,46 @@ public class Utils {
      */
     public static String toJson(Object v) {
         try {
+        	if (v instanceof JsonObject) {
+                return v.toString();
+        	}
+        	if (v instanceof JsonArray) {
+                return v.toString();
+        	}
             return MAPPER.writeValueAsString(v);
         }
         catch (Throwable e) {
             throw new IllegalStateException("Failed to serialize as JSON: " + v, e);
         }
     }
-
+    
     /**
-     * Cast object to JSON.
-     *
-     * @param v Object.
-     * @return JSON object.
+     * @param json JSON.
+     * @return Map with parameters.
+     * @throws IllegalStateException If deserialization failed.
      */
-    @SuppressWarnings("unchecked")
-    public static JsonObject asJson(Object v) {
-        if (v instanceof  JsonObject)
-            return (JsonObject)v;
+    public static JsonObject asJson(Object json) {
+        try {
+        	if(json instanceof String) {
+        		return new JsonObject(json.toString());
+        	}
+        	if(json instanceof byte[]) {
+        		return fromJson((byte[])json);
+        	}
+        	if(json instanceof Map) {
+        		return new JsonObject((Map)json);
+        	}
+        	if (json instanceof JsonObject) {
+                return (JsonObject)json;
+        	}
 
-        if (v instanceof Map)
-            return new JsonObject((Map)v);
-
-        throw new ClassCastException("Not a JSON");
+        	return new JsonObject(MAPPER.convertValue(json, Map.class));
+        }
+        catch (Throwable e) {
+            throw new IllegalStateException("Failed to deserialize object from JSON: " + json, e);
+        }
     }
+    
 
     /**
      * @param json JSON.
@@ -138,7 +161,7 @@ public class Utils {
      */
     public static JsonObject fromJson(String json) {
         try {
-            return MAPPER.readValue(json, JsonObject.class);
+        	return new JsonObject(json);            
         }
         catch (Throwable e) {
             throw new IllegalStateException("Failed to deserialize object from JSON: " + json, e);
@@ -152,7 +175,7 @@ public class Utils {
      */
     public static JsonObject fromJson(byte[] json) {
         try {
-            return MAPPER.readValue(json, JsonObject.class);
+        	return new JsonObject(Buffer.buffer(json)); 
         }
         catch (Throwable e) {
             throw new IllegalStateException("Failed to deserialize object from JSON", e);

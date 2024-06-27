@@ -701,7 +701,7 @@ button.form-control {
     margin: 0;
 }
 
-.theme-line table.links {
+.theme-line table.links,table.links-edit,table.links-edit-details {
     table-layout: fixed;
     border-collapse: collapse;
 
@@ -746,8 +746,8 @@ button.form-control {
     }
 }
 
-.theme-line table.links-edit {
-    @extend table.links;
+.theme-line table.links-edit, table.links-edit-sub {
+    /** @extend table.links;*/
 
     margin-top: 0;
     margin-bottom: 5px;
@@ -761,15 +761,14 @@ button.form-control {
     }
 }
 
-.theme-line table.links-edit-sub {
-    @extend table.links-edit;
-
+.theme-line table.links-edit-sub {    
+    /** @extend table.links-edit;*/
     margin-top: 0;
     margin-bottom: 0;
 }
 
 .theme-line table.links-edit-details {
-    @extend table.links;
+    /** @extend table.links;*/
 
     margin-bottom: 10px;
 
@@ -1072,7 +1071,7 @@ button.form-control {
     border: 1px solid $btn-default-border;
 }
 
-.theme-line .popover.settings {
+.theme-line .popover.settings,.popover.cache-metadata {
     .close {
         position: absolute;
         top: 5px;
@@ -1080,8 +1079,7 @@ button.form-control {
     }
 }
 
-.theme-line .popover.cache-metadata {
-    @extend .popover.settings;
+.theme-line .popover.cache-metadata {    
 
     position: absolute;
     z-index: 1030;

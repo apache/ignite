@@ -17,7 +17,9 @@
 package org.apache.ignite.console.dto;
 
 import java.util.UUID;
-import org.apache.ignite.console.json.JsonObject;
+
+import io.vertx.core.json.JsonObject;
+
 
 /**
  * Abstract data object.

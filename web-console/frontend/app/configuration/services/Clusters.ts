@@ -21,6 +21,7 @@ export default class Clusters {
         {value: 'Vm', label: 'Static IPs'},
         {value: 'Multicast', label: 'Multicast'},
         {value: 'ZooKeeper', label: 'Apache ZooKeeper'},
+        {value: 'ZooKeeperIpFinder', label: 'ZooKeeper IpFinder'},
         {value: 'Kubernetes', label: 'Kubernetes'}
     ];
 
@@ -142,6 +143,7 @@ export default class Clusters {
             discovery: {
                 kind: 'Multicast',
                 Vm: {addresses: ['127.0.0.1:47500..47510']},
+                ZooKeeper: {zkConectionString: '127.0.0.1:2181'},
                 Multicast: {addresses: ['127.0.0.1:47500..47510']}                
             },
             binaryConfiguration: {typeConfigurations: [], compactFooter: true},

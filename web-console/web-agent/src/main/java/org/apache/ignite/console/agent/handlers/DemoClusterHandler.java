@@ -18,6 +18,7 @@ package org.apache.ignite.console.agent.handlers;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
@@ -25,7 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.console.demo.AgentClusterDemo;
-import org.apache.ignite.console.json.JsonObject;
+
 import org.apache.ignite.console.websocket.TopologySnapshot;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
@@ -34,6 +35,8 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeB
 import org.apache.ignite.internal.processors.rest.handlers.top.GridTopologyCommandHandler;
 import org.apache.ignite.internal.processors.rest.request.GridRestTopologyRequest;
 import org.apache.ignite.internal.util.typedef.F;
+
+import io.vertx.core.json.JsonObject;
 
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.TOPOLOGY;
@@ -74,7 +77,7 @@ public class DemoClusterHandler extends AbstractClusterHandler{
     /**
      * @return Topology snapshot for demo cluster.
      */
-    TopologySnapshot topologySnapshot() {
+    public List<TopologySnapshot> topologySnapshot() {
         if (cfg.disableDemo())
             return null;
 
@@ -99,7 +102,7 @@ public class DemoClusterHandler extends AbstractClusterHandler{
         top.setName(DEMO_CLUSTER_NAME);
         top.setDemo(true);        
 
-        return top;
+        return List.of(top);
     }
 
     /**

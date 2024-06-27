@@ -62,7 +62,7 @@ public class IgniteBackend extends AbstractMongoBackend {
         }
         Ignite mvStore = Ignition.start(fileName);
         return mvStore;
-    }
+    }    
 
     @Override
     protected MongoDatabase openOrCreateDatabase(String databaseName) {
@@ -102,7 +102,7 @@ public class IgniteBackend extends AbstractMongoBackend {
     		}
     	}
     	Document response = super.getServerDescription();
-    	ObjectId processId = new ObjectId(admin.cluster().id().toString().replaceAll("-", "").substring(0,24));
+    	//ObjectId processId = new ObjectId(admin.cluster().id().toString().replaceAll("-", "").substring(0,24));
     	//response.append("topologyVersion", processId);
     	//response.append("hosts", hostSet);
     	//response.put("primary",primary);

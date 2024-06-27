@@ -7,13 +7,13 @@ import java.util.Map;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.console.json.JsonArray;
-import org.apache.ignite.console.json.JsonObject;
+
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 
 import io.swagger.annotations.ApiOperation;
+import io.vertx.core.json.JsonObject;
 
 @ApiOperation("load dbstore data to cache")
 public class CacheLoadDataService implements CacheAgentService {

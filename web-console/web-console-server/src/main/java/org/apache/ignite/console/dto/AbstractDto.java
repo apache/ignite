@@ -18,6 +18,8 @@ package org.apache.ignite.console.dto;
 
 import java.util.UUID;
 
+import io.vertx.core.json.JsonObject;
+
 /**
  * Base class for DTO objects.
  */
@@ -63,5 +65,13 @@ public abstract class AbstractDto implements java.io.Serializable{
      */
     public void setId(UUID id) {
         this.id = id;
+    }
+    
+    public static UUID getUUID(JsonObject json,String field) {
+    	Object guid = json.getMap().get(field);
+    	if(guid instanceof UUID) {
+    		return (UUID)guid;
+    	}
+    	return UUID.fromString(guid.toString());
     }
 }

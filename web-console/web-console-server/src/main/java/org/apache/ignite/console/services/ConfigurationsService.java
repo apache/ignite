@@ -20,11 +20,13 @@ import java.util.Collection;
 import java.util.TreeSet;
 import java.util.UUID;
 import org.apache.ignite.console.dto.DataObject;
-import org.apache.ignite.console.json.JsonArray;
-import org.apache.ignite.console.json.JsonObject;
+
 import org.apache.ignite.console.repositories.ConfigurationsRepository;
 import org.apache.ignite.console.web.model.ConfigurationKey;
 import org.springframework.stereotype.Service;
+
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 /**
  * Service to handle configurations.

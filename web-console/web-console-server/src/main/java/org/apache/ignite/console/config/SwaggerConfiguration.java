@@ -35,6 +35,7 @@ import io.swagger.v3.oas.models.info.License;
  */
 @Configuration
 public class SwaggerConfiguration {
+	
 	@Bean
   public OpenAPI springShopOpenAPI() {
 	return new OpenAPI()

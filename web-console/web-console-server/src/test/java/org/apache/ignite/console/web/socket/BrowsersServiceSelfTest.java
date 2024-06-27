@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.console.json.JsonObject;
+
 import org.apache.ignite.console.websocket.WebSocketRequest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,6 +30,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import io.vertx.core.json.JsonObject;
 
 import static org.apache.ignite.console.utils.Utils.entriesToMap;
 import static org.apache.ignite.console.utils.Utils.entry;

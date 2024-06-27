@@ -22,8 +22,7 @@ import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.dto.Announcement;
 import org.apache.ignite.console.event.Event;
 import org.apache.ignite.console.event.EventPublisher;
-import org.apache.ignite.console.json.JsonArray;
-import org.apache.ignite.console.json.JsonObject;
+
 import org.apache.ignite.console.repositories.AnnouncementRepository;
 import org.apache.ignite.console.tx.TransactionManager;
 import org.apache.ignite.console.web.model.SignUpRequest;
@@ -32,6 +31,9 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 import static org.apache.ignite.console.event.AccountEventType.ACCOUNT_CREATE_BY_ADMIN;
 import static org.apache.ignite.console.event.AccountEventType.ACCOUNT_DELETE;
@@ -107,21 +109,21 @@ public class AdminService {
 
         accounts.forEach(account ->
             res.add(new JsonObject()
-                .add("id", account.getId())
-                .add("firstName", account.getFirstName())
-                .add("lastName", account.getLastName())
-                .add("admin", account.isAdmin())
-                .add("email", account.getUsername())
-                .add("company", account.getCompany())
-                .add("country", account.getCountry())
-                .add("lastLogin", account.lastLogin())
-                .add("lastActivity", account.lastActivity())
-                .add("activated", account.isEnabled())
-                .add("counters", new JsonObject()
-                    .add("clusters", 0)
-                    .add("caches", 0)
-                    .add("models", 0))
-                .add("activitiesDetail", activitiesSrv.activitiesForPeriod(account.getId(), startDate, endDate))
+                .put("id", account.getId())
+                .put("firstName", account.getFirstName())
+                .put("lastName", account.getLastName())
+                .put("admin", account.isAdmin())
+                .put("email", account.getUsername())
+                .put("company", account.getCompany())
+                .put("country", account.getCountry())
+                .put("lastLogin", account.lastLogin())
+                .put("lastActivity", account.lastActivity())
+                .put("activated", account.isEnabled())
+                .put("counters", new JsonObject()
+                    .put("clusters", 0)
+                    .put("caches", 0)
+                    .put("models", 0))
+                .put("activitiesDetail", activitiesSrv.activitiesForPeriod(account.getId(), startDate, endDate))
             )
         );
 

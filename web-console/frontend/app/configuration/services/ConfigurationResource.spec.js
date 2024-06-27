@@ -1,5 +1,5 @@
 
-
+import _ from 'lodash';
 import configurationResource from './ConfigurationResource';
 
 import { suite, test } from 'mocha';
@@ -35,7 +35,7 @@ const CHECKED_CONFIGURATION = {
 
 suite('ConfigurationResourceTestsSuite', () => {
     test('ConfigurationResourceService correctly populate data', async() => {
-        const service = configurationResource(null);
+        const service = configurationResource();
         const converted = _.cloneDeep(CHECKED_CONFIGURATION);
         const res = await service.populate(converted);
 

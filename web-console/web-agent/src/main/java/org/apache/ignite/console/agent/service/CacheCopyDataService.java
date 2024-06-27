@@ -16,8 +16,7 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.console.json.JsonArray;
-import org.apache.ignite.console.json.JsonObject;
+
 import org.apache.ignite.console.utils.Utils;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -26,6 +25,7 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.stream.StreamVisitor;
 
 import io.swagger.annotations.ApiOperation;
+import io.vertx.core.json.JsonObject;
 
 /**
  * Cache和Cache之间进行数据传输，在目标端的cluste执行

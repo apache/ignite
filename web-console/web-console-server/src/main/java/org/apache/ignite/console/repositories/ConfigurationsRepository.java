@@ -28,14 +28,16 @@ import org.apache.ignite.console.dto.Cache;
 import org.apache.ignite.console.dto.Cluster;
 import org.apache.ignite.console.dto.DataObject;
 import org.apache.ignite.console.dto.Model;
-import org.apache.ignite.console.json.JsonArray;
-import org.apache.ignite.console.json.JsonObject;
+
 import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.apache.ignite.console.messages.WebConsoleMessageSourceAccessor;
 import org.apache.ignite.console.tx.TransactionManager;
 import org.apache.ignite.console.web.model.ConfigurationKey;
 import org.apache.ignite.internal.util.typedef.F;
 import org.springframework.stereotype.Repository;
+
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.console.common.Utils.diff;
@@ -113,10 +115,10 @@ public class ConfigurationsRepository {
             Collection<Cache> caches = cachesTbl.loadAll(cachesIdx.get(clusterId));
             Collection<Model> models = modelsTbl.loadAll(modelsIdx.get(clusterId));
 
-            return new JsonObject().add("demo", key.isDemo())
-                .add("cluster", fromJson(cluster.json()))
-                .add("caches", toJsonArray(caches))
-                .add("models", toJsonArray(models));
+            return new JsonObject().put("demo", key.isDemo())
+                .put("cluster", fromJson(cluster.json()))
+                .put("caches", toJsonArray(caches))
+                .put("models", toJsonArray(models));
         });
     }
 
@@ -131,11 +133,11 @@ public class ConfigurationsRepository {
         int modelsCnt = modelsIdx.get(clusterId).size();
 
         return new JsonObject()
-            .add("id", cluster.getId())
-            .add("name", cluster.name())
-            .add("discovery", cluster.discovery())
-            .add("cachesCount", cachesCnt)
-            .add("modelsCount", modelsCnt);
+            .put("id", cluster.getId())
+            .put("name", cluster.name())
+            .put("discovery", cluster.discovery())
+            .put("cachesCount", cachesCnt)
+            .put("modelsCount", modelsCnt);
     }
 
     /**

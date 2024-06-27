@@ -14,8 +14,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.console.json.JsonArray;
-import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -24,6 +22,7 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.stream.StreamVisitor;
 
 import io.swagger.annotations.ApiOperation;
+import io.vertx.core.json.JsonObject;
 
 
 @ApiOperation(value="Backup cluster data to snapshot",notes="这个操作是异步的")
@@ -41,7 +40,7 @@ public class ClusterSnapshotDataService implements ClusterAgentService {
 		
 		String destClusterName = args.getString("dest");
 		
-		IgniteFuture future = ignite.snapshot().createSnapshot(destClusterName);
+		IgniteFuture<Void> future = ignite.snapshot().createSnapshot(destClusterName);
 		
 		result.put("result", "created");
 		return result;

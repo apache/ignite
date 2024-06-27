@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -31,6 +32,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
@@ -48,7 +50,9 @@ import com.fasterxml.jackson.databind.util.LRUMap;
 import de.bwaldvogel.mongo.backend.Missing;
 import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.bson.BinData;
+import de.bwaldvogel.mongo.bson.Bson;
 import de.bwaldvogel.mongo.bson.Document;
+import de.bwaldvogel.mongo.json.JsonConverter;
 import de.bwaldvogel.mongo.wire.BsonConstants;
 import de.bwaldvogel.mongo.wire.bson.BsonEncoder;
 
@@ -184,7 +188,7 @@ public class DocumentUtil {
 				if(item instanceof Number || item instanceof CharSequence) {
 					
 				}
-				else if(false) {
+				else if(item instanceof Document) {
 					List<Object> list = new ArrayList<>($arr.size());
 					for(int i=0;i<$arr.size();i++) {
 						item = $arr.get(i);
@@ -284,6 +288,82 @@ public class DocumentUtil {
 		}
 	    return key;
 	}
+	
+	/**
+	 * Binary decoder value only support bson type
+	 * @param key
+	 * @param idField
+	 * @return
+	 */
+	public static Object toBsonValue(Object $value) {		
+		if($value!=null) {			
+			if($value instanceof CharSequence || $value instanceof Number || $value instanceof UUID || $value instanceof Bson){
+				return $value;
+			}
+			else if($value.getClass().isArray()) {
+				if($value instanceof Object[]) {
+					Object [] arr = (Object[])$value;
+					if(arr.length>0) {
+						if(arr[0] instanceof BinaryObject) {
+							List<Object> $arr2 = new ArrayList<>(arr.length);
+							for(int i=0;i< arr.length;i++) {							
+								$arr2.add(toBsonValue(arr[i]));
+							}
+							$value = $arr2;
+						}
+					}
+				}
+				return $value;
+			}
+			else if($value.getClass().isEnum()) {
+				return ((Enum)$value).name();
+			}
+			else if($value instanceof List){
+				List $arr = (List)$value;
+				List<Object> $arr2 = new ArrayList<>($arr.size());
+				for(int i=0;i<$arr.size();i++) {
+					Object $valueSlice = $arr.get(i);
+					
+					$arr2.add(toBsonValue($valueSlice));
+				}
+				$value = $arr2;
+			}
+			else if($value instanceof Set){
+				Set $arr = (Set)$value;
+				Set<Object> $arr2 = new HashSet<>($arr.size());
+				Iterator<Object> it = $arr.iterator();
+				while(it.hasNext()) {
+					Object $valueSlice = it.next();
+					$arr2.add(toBsonValue($valueSlice));
+				}
+				$value = ($arr2);
+			}
+			else if($value instanceof Map){
+				Map<Object, Object> $arr = (Map)$value;
+				final Document docItem = new Document();
+				for(Map.Entry<Object, Object> ent: $arr.entrySet()) {
+					Object v = ent.getValue();
+					docItem.put(ent.getKey().toString(), toBsonValue(v));
+				}					
+				$value = docItem;					
+			}			
+			else if($value instanceof BinaryObject){
+				BinaryObject $arrSlice = (BinaryObject)$value;					
+				$value = binaryObjectToDocument($arrSlice);
+			}			
+			else {				
+				try {
+					byte t2 = BsonEncoder.determineType($value);					
+				}
+				catch(Exception e) {
+					Document json = toKeyValuePairs($value);
+          		  	json.append("_class", $value.getClass().getName());
+          		    $value = json;
+				}
+			}			
+    	}
+	    return $value;
+	}
 
     public static Object binaryObjectToDocument(BinaryObject bobj){
     	Collection<String> fields = null;
@@ -291,7 +371,7 @@ public class DocumentUtil {
     		if(bobj instanceof BinaryObjectImpl) {
 	    		BinaryObjectImpl bin = (BinaryObjectImpl)bobj;
 	    		if(!bin.hasSchema()) {
-	    			return bin.deserialize();
+	    			return toBsonValue(bin.deserialize());
 	    		}
     		}
     		else if(bobj instanceof BinaryArray) {
@@ -301,6 +381,11 @@ public class DocumentUtil {
 	    		}
 	    		return bin.deserialize();
     		}
+    		else if(bobj instanceof BinaryEnumObjectImpl) {
+    			BinaryEnumObjectImpl bin = (BinaryEnumObjectImpl)bobj;	    		
+	    		return ((Enum)bin.deserialize()).name();
+    		}
+    		
     		String typeName = bobj.type().typeName();
     		if(typeName.equals("Document") || typeName.equals("SerializationProxy")) {
     			return bobj.deserialize();
@@ -308,10 +393,14 @@ public class DocumentUtil {
     		
     		fields = bobj.type().fieldNames();
     		if(fields==null || fields.size()<=1) {
-    			return bobj.deserialize();
+    			return toBsonValue(bobj.deserialize());
     		}    		
     	}
     	catch(BinaryObjectException e) {
+    		if(bobj instanceof BinaryEnumObjectImpl) {
+    			BinaryEnumObjectImpl bin = (BinaryEnumObjectImpl)bobj;	    		
+	    		return bin.enumName();
+    		}
     		fields = bobj.type().fieldNames();	
     	}
     	
@@ -319,74 +408,12 @@ public class DocumentUtil {
 	    for(String field: fields){	    	
 	    	String $key =  field;
 	    	Object $value = bobj.field(field);
-			try {
-			
-				if($value instanceof List){
-					List $arr = (List)$value;
-					List<Object> $arr2 = new ArrayList<>($arr.size());
-					for(int i=0;i<$arr.size();i++) {
-						Object $valueSlice = $arr.get(i);
-						if($valueSlice instanceof BinaryObject){
-							BinaryObject $arrSlice = (BinaryObject)$valueSlice;					
-							$valueSlice = binaryObjectToDocument($arrSlice);
-						}
-						else if($valueSlice instanceof Map && $valueSlice.getClass()!=Document.class){
-							Map $map = (Map)$valueSlice;
-							$valueSlice = new Document($map);
-						}
-						$arr2.add($valueSlice);
-					}
-					$value = ($arr2);
-				}
-				else if($value instanceof Set){
-					Set $arr = (Set)$value;
-					Set $arr2 = new HashSet<>($arr.size());
-					Iterator it = $arr.iterator();
-					while(it.hasNext()) {
-						Object $valueSlice = it.next();
-						if($valueSlice instanceof BinaryObject){
-							BinaryObject $arrSlice = (BinaryObject)$valueSlice;					
-							$valueSlice = binaryObjectToDocument($arrSlice);
-						}	
-						$arr2.add($valueSlice);
-					}
-					$value = ($arr2);
-				}
-				else if($value instanceof Map){
-					Map<String, Object> $arr = (Map)$value;
-					final Document docItem = new Document($arr);
-					for(Map.Entry<String, Object> ent: $arr.entrySet()) {
-						Object v = ent.getValue();
-						if(v instanceof BinaryObject) {
-							BinaryObject $arrSlice = (BinaryObject)v;					
-							v = binaryObjectToDocument($arrSlice);
-							ent.setValue(v);
-						}	
-						else if(v instanceof Map && v.getClass()!=Document.class){
-							Map $map = (Map)v;
-							v = new Document($map);
-							ent.setValue(v);
-						}
-					}
-					$value = docItem;
-					
-				}
-				else if($value instanceof BinaryObject){
-					BinaryObject $arr = (BinaryObject)$value;					
-					$value = binaryObjectToDocument($arr);
+			try {				
+				if($value!=null) {					
+					doc.append($key, toBsonValue($value));
 				}
 				
-				if($value instanceof Duration){
-					Duration $arr = (Duration)$value;					
-					$value = $arr.toString();
-				}
-				
-				if($value!=null) {
-					doc.append($key, $value);
-				}
-				
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
+			} catch (Exception e) {				
 				e.printStackTrace();
 			}	    	
 	    }

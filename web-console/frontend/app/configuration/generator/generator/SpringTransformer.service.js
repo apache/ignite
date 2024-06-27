@@ -263,10 +263,10 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
      *
      * @param {Bean} cfg Ignite configuration.
      * @param {Object} targetVer Version of Ignite for generated project.
-     * @param {Boolean} clientNearCaches
+     * @param {Array<Object>} clientNearCaches
      * @returns {StringBuilder}
      */
-    static igniteConfiguration(cfg, targetVer, clientNearCaches) {
+    static igniteConfiguration(cfg, targetVer, clientNearCaches=[]) {
         const available = versionService.since.bind(versionService, targetVer.ignite);
 
         const sb = new StringBuilder();

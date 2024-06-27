@@ -40,6 +40,9 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.console.agent.db.DbColumn;
 import org.apache.ignite.console.agent.db.DbMetadataReader;
@@ -49,7 +52,7 @@ import org.apache.ignite.console.agent.handlers.DatabaseListener;
 import org.apache.ignite.console.db.DBInfo;
 import org.apache.ignite.console.db.VisorQueryIndex;
 import org.apache.ignite.console.db.VisorQueryIndexField;
-import org.apache.ignite.console.json.JsonObject;
+
 import org.apache.ignite.console.utils.Utils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -59,8 +62,7 @@ import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.eclipse.jetty.util.StringUtil;
 import org.h2.message.DbException;
 import org.h2.value.DataType;
-import org.json.JSONArray;
-import org.json.JSONObject;
+
 import org.slf4j.LoggerFactory;
 
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
@@ -125,8 +127,8 @@ public class JdbcExecutor implements AutoCloseable {
     	}
     	
     	String nodeUrl = dbInfo.jdbcUrl;
-    	String cmd = (String)params.get("cmd");
-    	String p2 = (String)params.get("p2");
+    	String cmd = params.getString("cmd");
+    	String p2 = params.getString("p2");
     	
     	boolean importSamples = args.getBoolean("importSamples", false);
         	
@@ -141,15 +143,15 @@ public class JdbcExecutor implements AutoCloseable {
             		conn = metadataReader.connect(dbInfo.driverJar, dbInfo);
             	}
             	
-            	JSONObject res = new JSONObject();
+            	JsonObject res = new JsonObject();
             	res.put("error",(String)null);
             	
             	if("org.apache.ignite.internal.visor.cache.VisorCacheNamesCollectorTask".equals(p2)) {
             		
             		Collection<String> schemas = metadataReader.schemas(conn,importSamples);
             		
-                    JSONObject result = new JSONObject();
-                    JSONObject caches = new JSONObject();
+            		JsonObject result = new JsonObject();
+            		JsonObject caches = new JsonObject();
             		
                     for (String schema: schemas) {                    
                     	caches.put(schema,schema);
@@ -162,14 +164,14 @@ public class JdbcExecutor implements AutoCloseable {
             	}
             	else if("org.apache.ignite.internal.visor.cache.VisorCacheNodesTask".equals(p2)) {
             		
-                    JSONArray result = new JSONArray();
-                    result.put(clusterId);
+                    JsonArray result = new JsonArray();
+                    result.add(clusterId);
                     res.put("result", result);
             	}
             	else if("top".equals(cmd)) {
             		
-            		JSONArray result = new JSONArray();
-            		JSONObject node = new JSONObject();
+            		JsonArray result = new JsonArray();
+            		JsonObject node = new JsonObject();
             		node.put("nodeId", dbInfo.top.getId());
             		node.put("tcpAddresses", dbInfo.jdbcUrl);
             		node.put("consistentId", dbInfo.getJndiName());
@@ -177,17 +179,17 @@ public class JdbcExecutor implements AutoCloseable {
             		node.put("replicaCount", dbInfo.top.getNodes().size());
             		node.put("attributes", dbInfo.getJdbcProp());
             		node.put("isActive", dbInfo.top.isActive());
-            		node.getJSONObject("attributes").put("database.version", dbInfo.driverCls);
-            		node.getJSONObject("attributes").put("os.name", "Linux");
+            		node.getJsonObject("attributes").put("database.version", dbInfo.driverCls);
+            		node.getJsonObject("attributes").put("os.name", "Linux");
             		
-                    result.put(node);
+                    result.add(node);
                     res.put("result", result);
                     
             	}
             	else if("metadata".equals(cmd)) {
             		
             		List<String> schemas = new ArrayList<>(2);
-            		String schema = (String)params.get("cacheName");
+            		String schema = params.getString("cacheName");
             		if(!StringUtil.isEmpty(schema)) {
             			schemas.add(schema);
             		}
@@ -247,17 +249,17 @@ public class JdbcExecutor implements AutoCloseable {
                     	
                     }
                     
-                    return RestResult.success(arr.toString(), (String)args.get("token"));
+                    return RestResult.success(arr.toString(), args.getString("token"));
             	}
             	else if("qryfldexe".equals(cmd)){
             		
-            		String schema = (String)params.get("cacheName");
+            		String schema = params.getString("cacheName");
             		if(!StringUtil.isEmpty(schema)) {
             			conn.setSchema(schema);
             		}
-            		JdbcQueryExecutor exec = new JdbcQueryExecutor(conn.createStatement(),(String)params.get("qry"));
+            		JdbcQueryExecutor exec = new JdbcQueryExecutor(conn.createStatement(),params.getString("qry"));
             	
-            		JSONObject result = exec.executeSqlVisor(0, clusterId);
+            		JsonObject result = exec.executeSqlVisor(0, clusterId);
             		res.put("result", result);
             		
             	}
@@ -274,7 +276,7 @@ public class JdbcExecutor implements AutoCloseable {
 
                 LT.info(log, "Connected to cluster [url=" + nodeUrl + "]");                
                
-                return RestResult.success(res.toString(), (String)args.get("sessionToken"));
+                return RestResult.success(res.toString(), args.getString("sessionToken"));
            
             } catch (SQLException e) {			
             	

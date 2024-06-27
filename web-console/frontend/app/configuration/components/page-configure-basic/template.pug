@@ -58,6 +58,7 @@ form(novalidate name=form)
             +discovery-vm(model)(class='pcb-form-grid-row' ng-if=`${modelDiscoveryKind} === 'Vm'`)
             +discovery-multicast(model)(class='pcb-form-grid-row' ng-if=`${modelDiscoveryKind} === 'Multicast'`)            
             +discovery-zookeeper(model)(class='pcb-form-grid-row' ng-if=`${modelDiscoveryKind} === 'ZooKeeper'`)
+            +discovery-zookeeper(model)(class='pcb-form-grid-row' ng-if=`${modelDiscoveryKind} === 'ZooKeeperIpFinder'`)
             +discovery-kubernetes(model)(class='pcb-form-grid-row' ng-if=`${modelDiscoveryKind} === 'Kubernetes'`)
 
     h2.pcb-section-header.pcb-inner-padding(style='margin-top:30px') Step 2. Caches Configuration

@@ -18,21 +18,15 @@ package org.apache.ignite.console.agent.service;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskCancelledException;
-import org.apache.ignite.console.demo.AgentDemoUtils;
-import org.apache.ignite.console.demo.task.DemoCancellableTask;
-import org.apache.ignite.console.demo.task.DemoComputeTask;
-import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.scheduler.SchedulerFuture;
-import org.apache.ignite.services.Service;
-import org.apache.ignite.services.ServiceContext;
 
 import io.swagger.annotations.ApiOperation;
+import io.vertx.core.json.JsonObject;
 
 /**
  * Demo service. Run tasks on nodes. Run demo load on caches.
@@ -60,22 +54,20 @@ public class ComputeTaskLoadService implements ClusterAgentService {
 		try {
 			final Class<? extends ComputeTask<JsonObject, JsonObject>> taskClass = (Class)Class.forName(task);
 			
-			
-			
 			Runnable job = new Runnable(){
 	           
 				@Override
 				public void run() {
-					 try {
-			                ignite.compute().withNoFailover()
-			                    .execute(taskClass, args);
-			            }
-			            catch (ComputeTaskCancelledException ignore) {
-			                // No-op.
-			            }
-			            catch (Throwable e) {
-			                ignite.log().error("DemoCancellableTask execution error", e);
-			            }
+					try {
+		                ignite.compute().withNoFailover()
+		                    .execute(taskClass, args);
+		            }
+		            catch (ComputeTaskCancelledException ignore) {
+		                // No-op.
+		            }
+		            catch (Throwable e) {
+		                ignite.log().error("DemoCancellableTask execution error", e);
+		            }
 					
 				}
 	        };
@@ -86,8 +78,7 @@ public class ComputeTaskLoadService implements ClusterAgentService {
 			
 			e1.printStackTrace();			
 			result.put("errors", e1.getMessage());
-		}
-		
+		}		
 		
 		return result;
 	}

@@ -4,7 +4,7 @@
         "target": "ES2017",
         "moduleResolution": "Node",
         "module": "esNext",
-        "lib": "es6,dom",
+        "lib": ["ES2017", "dom"],
         "noEmit": true,
         "allowJs": true,
         "checkJs": true,

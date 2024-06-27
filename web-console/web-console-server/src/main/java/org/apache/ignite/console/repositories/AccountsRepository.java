@@ -23,6 +23,7 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.console.db.Table;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.messages.WebConsoleMessageSource;
@@ -39,8 +40,6 @@ import static org.apache.ignite.console.errors.Errors.checkDatabaseNotAvailable;
  */
 @Repository
 public class AccountsRepository {
-    /** Special key to check that first user should be granted admin rights. */
-    private static final UUID FIRST_USER_MARKER_KEY = UUID.fromString("039d28e2-133d-4eae-ae2b-29d6db6d4974");
 
     /** */
     private final TransactionManager txMgr;
@@ -123,8 +122,8 @@ public class AccountsRepository {
     /**
      * @return {@code true} If at least one user was already registered.
      */
-    public boolean hasUsers() {
-        return accountsTbl.containsKey(FIRST_USER_MARKER_KEY);
+    public int hasUsers() {
+        return accountsTbl.cache().size(CachePeekMode.PRIMARY);
     }
 
     /**
@@ -137,16 +136,14 @@ public class AccountsRepository {
     @SuppressWarnings("unchecked")
     public Account create(Account acc) throws AuthenticationServiceException {
         return txMgr.doInTransaction(() -> {
-            boolean firstUser = !hasUsers();
+            int numUsers = hasUsers();
 
-            acc.setAdmin(firstUser);
-
-            if (firstUser) {
-                IgniteCache cache = accountsTbl.cache();
-
-                cache.put(FIRST_USER_MARKER_KEY, FIRST_USER_MARKER_KEY);
+            if (numUsers==0) {
+            	acc.setAdmin(true);
             }
-
+            
+            acc.setUid(numUsers+1);
+            
             save(acc);
 
             return acc;

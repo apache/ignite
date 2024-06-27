@@ -17,17 +17,25 @@
 package org.apache.ignite.console.config;
 
 import java.util.Collections;
+import java.util.List;
+
+import org.apache.ignite.console.common.VertxJsonHttpMessageConverter;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
+import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+
 import org.springframework.web.servlet.handler.SimpleUrlHandlerMapping;
 import org.springframework.web.servlet.resource.ResourceHttpRequestHandler;
+
+import io.vertx.core.json.Json;
+import io.vertx.core.json.jackson.DatabindCodec;
+
 
 /**
  * Static server configuration.
@@ -35,7 +43,8 @@ import org.springframework.web.servlet.resource.ResourceHttpRequestHandler;
 @Configuration
 public class StaticResourceConfiguration implements WebMvcConfigurer {
     /** Application context. */
-    private final ApplicationContext applicationCtx;
+    private final ApplicationContext applicationCtx;    
+    
 
     /**
      * @param applicationCtx Application context.
@@ -110,5 +119,14 @@ public class StaticResourceConfiguration implements WebMvcConfigurer {
         reqHnd.setLocations(Collections.singletonList(applicationCtx.getResource("file:frontend/favicon.ico")));
 
         return reqHnd;
+    }
+    
+    @Override
+    public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+
+    	//1.需要定义一个convert转换消息的对象;
+    	VertxJsonHttpMessageConverter jsonHttpMessageConverter = new VertxJsonHttpMessageConverter();
+    	jsonHttpMessageConverter.setObjectMapper(DatabindCodec.mapper());
+        converters.add(0,jsonHttpMessageConverter);
     }
 }

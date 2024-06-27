@@ -16,6 +16,8 @@
 
 package org.apache.ignite.console.config;
 
+import java.util.Collections;
+
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;

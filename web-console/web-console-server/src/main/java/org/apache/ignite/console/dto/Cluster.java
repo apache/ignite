@@ -17,10 +17,12 @@
 package org.apache.ignite.console.dto;
 
 import java.util.UUID;
-import org.apache.ignite.console.json.JsonObject;
+
 import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.apache.ignite.internal.util.typedef.F;
 import org.springframework.context.support.MessageSourceAccessor;
+
+import io.vertx.core.json.JsonObject;
 
 import static org.apache.ignite.console.utils.Utils.toJson;
 
@@ -39,7 +41,7 @@ public class Cluster extends DataObject {
      * @return New instance of cluster DTO.
      */
     public static Cluster fromJson(JsonObject json) {
-        UUID id = json.getUuid("id");
+        UUID id = getUUID(json,"id");
         MessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
 
         if (id == null)
@@ -100,8 +102,8 @@ public class Cluster extends DataObject {
     /** {@inheritDoc} */
     @Override public JsonObject shortView() {
         return new JsonObject()
-            .add("id", getId())
-            .add("name", name)
-            .add("discovery", discovery);
+            .put("id", getId())
+            .put("name", name)
+            .put("discovery", discovery);
     }
 }

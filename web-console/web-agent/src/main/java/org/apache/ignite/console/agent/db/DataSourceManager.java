@@ -7,8 +7,7 @@ import java.sql.SQLException;
 import javax.sql.DataSource;
 
 import org.apache.ignite.console.db.DBInfo;
-import org.apache.ignite.console.json.JsonArray;
-import org.apache.ignite.console.json.JsonObject;
+
 import org.apache.ignite.console.utils.Utils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -40,10 +39,12 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
+import io.vertx.core.json.JsonObject;
+
 public class DataSourceManager {
 	
 	private static Map<String,Object> POOL = new ConcurrentHashMap<>();
-	private static InitialContext initialContext;
+	private static InitialContext initialContext = null;
 	private static HttpClient serverClient;
 	private static String datasourceGetUrl = "";
 	private static String datasourceCreateUrl = "";
@@ -61,7 +62,9 @@ public class DataSourceManager {
 		}
 		datasourceGetUrl = serverUri+"/api/v1/datasource";
 		datasourceCreateUrl = serverUri+"/api/v1/datasource";
-		
+		if(initialContext!=null) {
+			return;
+		}
 		try {
 			initialContext = new InitialContext() {		    
 

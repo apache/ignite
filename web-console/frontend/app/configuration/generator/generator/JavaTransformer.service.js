@@ -846,10 +846,10 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
      * @param {Object} targetVer Version of Ignite for generated project.
      * @param pkg Package name.
      * @param {String} clsName Class name for generate factory class otherwise generate code snippet.
-     * @param {Array.<Object>} clientNearCaches Is client node.
+     * @param {Array<Object>} clientNearCaches Is client node.
      * @returns {StringBuilder}
      */
-    static igniteConfiguration(cfg, targetVer, pkg, clsName, clientNearCaches) {
+    static igniteConfiguration(cfg, targetVer, pkg, clsName, clientNearCaches=[]) {
         const available = versionService.since.bind(versionService, targetVer.ignite);
 
         const sb = new StringBuilder();

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Properties;
 import com.beust.jcommander.Parameter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.plugin.PluginConfiguration;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.console.agent.AgentUtils.secured;
@@ -36,9 +37,9 @@ import static org.apache.ignite.console.agent.AgentUtils.trim;
 /**
  * Agent configuration.
  */
-public class AgentConfiguration {
+public class AgentConfiguration implements PluginConfiguration {
     /** Default path to properties file. */
-    public static final String DFLT_CFG_PATH = "default.properties";
+    public static final String DFLT_CFG_PATH = "config/default-agent.properties";
 
     /** Default server URI. */
     private static final String DFLT_SERVER_URI = "http://localhost:3000";
@@ -46,7 +47,7 @@ public class AgentConfiguration {
     /** Default Ignite node HTTP URI. */
     private static final String DFLT_NODE_URI = "http://localhost:8080";
     
-    public static String DFLT_ZOOKEEPER_URI = "127.0.0.1:2181";
+    private static final String DFLT_ZOOKEEPER_URI = "127.0.0.1:2181";
 
     /** */
     @Parameter(names = {"-t", "--tokens"},
@@ -101,6 +102,10 @@ public class AgentConfiguration {
     /** */
     @Parameter(names = {"-dd", "--disable-demo"}, description = "Disable demo mode on this agent")
     private boolean disableDemo;
+    
+    /** */
+    @Parameter(names = {"-dv", "--disable-vertx"}, description = "Disable vertx on this agent")
+    private boolean disableVertx;
 
     /** */
     @Parameter(names = {"-nks", "--node-key-store"},
@@ -293,6 +298,13 @@ public class AgentConfiguration {
     public boolean disableDemo() {
         return disableDemo;
     }
+    
+    /**
+     * @return Disable vertx mode.
+     */
+    public boolean disableVertx() {
+        return disableVertx;
+    }
 
     /**
      * @param disableDemo Disable demo mode.
@@ -300,6 +312,16 @@ public class AgentConfiguration {
      */
     public AgentConfiguration disableDemo(boolean disableDemo) {
         this.disableDemo = disableDemo;
+
+        return this;
+    }
+    
+    /**
+     * @param disableVertx Disable vertx mode.
+     * @return {@code this} for chaining.
+     */
+    public AgentConfiguration disableVertx(boolean disableVertx) {
+        this.disableVertx = disableVertx;
 
         return this;
     }
@@ -487,9 +509,7 @@ public class AgentConfiguration {
 
 	public void zookeeper(String zookeeper) {
 		this.zookeeper = zookeeper;
-		DFLT_ZOOKEEPER_URI = zookeeper;
 	}
-
 	
     /**
      * @param cipherSuites SSL cipher suites.
@@ -633,6 +653,8 @@ public class AgentConfiguration {
             driversFolder(cfg.driversFolder());
 
         disableDemo(disableDemo || cfg.disableDemo());
+        
+        disableVertx(disableVertx || cfg.disableVertx());
 
         if (nodeKeyStore == null)
             nodeKeyStore(cfg.nodeKeyStore());

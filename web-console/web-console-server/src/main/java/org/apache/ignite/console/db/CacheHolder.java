@@ -36,6 +36,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * @param <V>
  */
 public class CacheHolder<K, V> {
+	
     /** */
     protected final Ignite ignite;
 
@@ -72,7 +73,8 @@ public class CacheHolder<K, V> {
             .setAtomicityMode(TRANSACTIONAL)
             .setCacheMode(REPLICATED);
 
-        cache = ignite.getOrCreateCache(ccfg);
+        cache = ignite.getOrCreateCache(ccfg);        
+        
     }
 
     /**
@@ -107,6 +109,10 @@ public class CacheHolder<K, V> {
     public V getAndPut(K key, V val) throws TransactionException {
         return cache().getAndPut(key, val);
     }
+    
+    public V getAndRemove(K key) throws TransactionException {
+        return cache().getAndRemove(key);
+    }
 
     /**
      * @return Underlying cache
@@ -114,4 +120,5 @@ public class CacheHolder<K, V> {
     public IgniteCache<K, V> cache() {
         return expiryPlc  == null ? cache : cache.withExpiryPolicy(expiryPlc);
     }
+ 
 }

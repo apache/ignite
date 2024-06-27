@@ -17,10 +17,12 @@
 package org.apache.ignite.console.dto;
 
 import java.util.UUID;
-import org.apache.ignite.console.json.JsonObject;
+
 import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.apache.ignite.internal.util.typedef.F;
 import org.springframework.context.support.MessageSourceAccessor;
+
+import io.vertx.core.json.JsonObject;
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.ignite.console.utils.Utils.toJson;
@@ -43,7 +45,7 @@ public class Model extends DataObject {
      * @return New instance of model DTO.
      */
     public static Model fromJson(JsonObject json) {
-        UUID id = json.getUuid("id");
+    	UUID id = getUUID(json,"id");
         MessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
 
         if (id == null)
@@ -105,9 +107,9 @@ public class Model extends DataObject {
     /** {@inheritDoc} */
     @Override public JsonObject shortView() {
         return new JsonObject()
-            .add("id", getId())
-            .add("hasIndex", hasIdx)
-            .add("keyType", keyType)
-            .add("valueType", valType);
+            .put("id", getId())
+            .put("hasIndex", hasIdx)
+            .put("keyType", keyType)
+            .put("valueType", valType);
     }
 }

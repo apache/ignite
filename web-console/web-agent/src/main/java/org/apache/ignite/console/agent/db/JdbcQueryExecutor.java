@@ -6,17 +6,16 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 /**
  * Created by author on 14-08-2015.
  *
  * @author Rajasekhar
  */
-public class JdbcQueryExecutor implements Callable<JSONObject> {
+public class JdbcQueryExecutor implements Callable<JsonObject> {
 
     private final Statement statement;
     
@@ -29,15 +28,15 @@ public class JdbcQueryExecutor implements Callable<JSONObject> {
     }
 
     @Override
-    public JSONObject call() throws SQLException {
+    public JsonObject call() throws SQLException {
         return executeSqlList();
     }    
     
 
-    public JSONObject executeSqlVisor(int queryId,String nodeId) throws SQLException {
+    public JsonObject executeSqlVisor(int queryId,String nodeId) throws SQLException {
         ResultSet resultSet = null;
         long start = System.currentTimeMillis();        
-        JSONObject queryResult = new JSONObject();
+        JsonObject queryResult = new JsonObject();
         String err = null;
         try {
             resultSet = this.statement.executeQuery(this.sql);
@@ -49,23 +48,23 @@ public class JdbcQueryExecutor implements Callable<JSONObject> {
             queryResult.put("responseNodeId", nodeId);
             
 
-            JSONArray metaDataArray = new JSONArray();
+            JsonArray metaDataArray = new JsonArray();
             int columnCount = resultSetMetaData.getColumnCount();
 
             //Adding metadata of the result. This is a fix for SQLite. Earlier the method was
             // called late.
             addFieldsMetadata(resultSetMetaData, metaDataArray, columnCount);
 
-            JSONArray dataArray = new JSONArray();
+            JsonArray dataArray = new JsonArray();
             while (resultSet.next()) {
-            	JSONArray row = new JSONArray();
+            	JsonArray row = new JsonArray();
                 ++rowCount;
                 for (int index = 1; index <= columnCount; index++) {
                     //int columnType = resultSetMetaData.getColumnType(index);
                     Object object = resultSet.getObject(index);
-                    row.put(object);
+                    row.add(object);
                 }
-                dataArray.put(row);
+                dataArray.add(row);
             }
             queryResult.put("rows", dataArray); 
             queryResult.put("columns", metaDataArray);
@@ -81,9 +80,7 @@ public class JdbcQueryExecutor implements Callable<JSONObject> {
             
         } catch (SQLException ex) {
         	err = ex.getMessage();
-        	queryResult.put("error",err);
-        } catch (JSONException ex) {			
-        	throw new SQLException("Couldn't build the database json", ex);
+        	queryResult.put("error",err);        
 		} finally {
             if(null!=resultSet) resultSet.close();
         }        
@@ -92,106 +89,102 @@ public class JdbcQueryExecutor implements Callable<JSONObject> {
     }
 
     
-    public JSONObject executeSqlList() throws SQLException {
+    public JsonObject executeSqlList() throws SQLException {
         ResultSet resultSet = null;
         try {
             resultSet = this.statement.executeQuery(this.sql);
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             int rowCount = 0; //To count the number of rows
 
-            JSONObject queryResult = new JSONObject();
+            JsonObject queryResult = new JsonObject();
             queryResult.put("last", false);
             queryResult.put("queryId", 0);
 
-            JSONArray metaDataArray = new JSONArray();
+            JsonArray metaDataArray = new JsonArray();
             int columnCount = resultSetMetaData.getColumnCount();
 
             //Adding metadata of the result. This is a fix for SQLite. Earlier the method was
             // called late.
             addFieldsMetadata(resultSetMetaData, metaDataArray, columnCount);
 
-            JSONArray dataArray = new JSONArray();
+            JsonArray dataArray = new JsonArray();
             while (resultSet.next()) {
-            	JSONArray row = new JSONArray();
+            	JsonArray row = new JsonArray();
                 ++rowCount;
                 for (int index = 1; index <= columnCount; index++) {
                     //int columnType = resultSetMetaData.getColumnType(index);
                     Object object = resultSet.getObject(index);
-                    row.put(object);
+                    row.add(object);
                 }
-                dataArray.put(row);
+                dataArray.add(row);
             }
             queryResult.put("items", dataArray); 
             queryResult.put("fieldsMetadata", metaDataArray);
             return queryResult;
         } catch (SQLException ex) {
-            throw new SQLException("Couldn't query the database", ex);
-        } catch (JSONException ex) {			
-        	throw new SQLException("Couldn't build the database json", ex);
+            throw new SQLException("Couldn't query the database", ex);        
 		} finally {
             if(null!=resultSet) resultSet.close();
         }
     }
 
-    public JSONObject executeSqlObject() throws SQLException {
+    public JsonObject executeSqlObject() throws SQLException {
         ResultSet resultSet = null;
         try {
             resultSet = this.statement.executeQuery(this.sql);
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             int rowCount = 0; //To count the number of rows
 
-            JSONObject queryResult = new JSONObject();
+            JsonObject queryResult = new JsonObject();
 
-            JSONArray metaDataArray = new JSONArray();
+            JsonArray metaDataArray = new JsonArray();
             int columnCount = resultSetMetaData.getColumnCount();
 
             //Adding metadata of the result. This is a fix for SQLite. Earlier the method was
             // called late.
             addMetadata(resultSetMetaData, metaDataArray, columnCount);
 
-            JSONArray dataArray = new JSONArray();
+            JsonArray dataArray = new JsonArray();
             while (resultSet.next()) {
-                JSONObject row = new JSONObject();
+                JsonObject row = new JsonObject();
                 ++rowCount;
                 addARow(resultSet, resultSetMetaData, columnCount, dataArray, row);
             }
             queryResult.put("data", dataArray);
 
-            JSONObject rowsJson = new JSONObject();
+            JsonObject rowsJson = new JsonObject();
             rowsJson.put("rows", rowCount);
-            metaDataArray.put(rowsJson);
+            metaDataArray.add(rowsJson);
 
             queryResult.put("metadata", metaDataArray);
             return queryResult;
         } catch (SQLException ex) {
-            throw new SQLException("Couldn't query the database", ex);
-        } catch (JSONException ex) {			
-        	throw new SQLException("Couldn't build the database json", ex);
+            throw new SQLException("Couldn't query the database", ex);        
 		} finally {
             if(null!=resultSet) resultSet.close();
         }
     }
     
-	private void addFieldsMetadata(ResultSetMetaData resultSetMetaData, JSONArray metaDataArray, int columnCount)
-			throws SQLException, JSONException {
+	private void addFieldsMetadata(ResultSetMetaData resultSetMetaData, JsonArray metaDataArray, int columnCount)
+			throws SQLException {
 		for (int counter = 1; counter <= columnCount; counter++) {
-			JSONObject object = new JSONObject();
+			JsonObject object = new JsonObject();
 			object.put("fieldName", resultSetMetaData.getColumnLabel(counter));
 			object.put("typeName", resultSetMetaData.getTableName(counter));
 			object.put("schemaName", resultSetMetaData.getSchemaName(counter));	
 			final String aClass = resultSetMetaData.getColumnClassName(counter);			
 			object.put("fieldTypeName", aClass);
-			metaDataArray.put(object);
+			metaDataArray.add(object);
 		}		
 	}
 
-    private void addMetadata(ResultSetMetaData resultSetMetaData, JSONArray metaDataArray,
-                             int columnCount) throws SQLException, JSONException {
+    private void addMetadata(ResultSetMetaData resultSetMetaData, JsonArray metaDataArray,
+                             int columnCount) throws SQLException {
         
-        JSONObject columnNameAndType = new JSONObject();
+        JsonObject columnNameAndType = new JsonObject();
 
         for (int counter = 1; counter <= columnCount; counter++) {
-            JSONObject object = new JSONObject();
+            JsonObject object = new JsonObject();
             object.put("name", resultSetMetaData.getColumnLabel(counter));
 
             int columnType = resultSetMetaData.getColumnType(counter);
@@ -201,11 +194,11 @@ public class JdbcQueryExecutor implements Callable<JSONObject> {
 
             columnNameAndType.put(Integer.toString(counter), object);
         }
-        metaDataArray.put(columnNameAndType);
+        metaDataArray.add(columnNameAndType);
     }
 
     private void addARow(ResultSet resultSet, ResultSetMetaData resultSetMetaData, int columnCount,
-                         JSONArray dataArray, JSONObject row) throws SQLException, JSONException {
+                         JsonArray dataArray, JsonObject row) throws SQLException {
         String nullValue = null;
         for (int index = 1; index <= columnCount; index++) {
             int columnType = resultSetMetaData.getColumnType(index);
@@ -230,6 +223,6 @@ public class JdbcQueryExecutor implements Callable<JSONObject> {
                 }
             }
         }
-        dataArray.put(row);
+        dataArray.add(row);
     }
 }

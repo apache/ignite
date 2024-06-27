@@ -10,7 +10,7 @@
         <relativePath>../../parent-internal/pom.xml</relativePath>
     </parent>
 
-	<groupId>io.stuart</groupId>
+	<groupId>org.apache.ignite</groupId>
 	<artifactId>stuart</artifactId>
 	<version>0.1.0</version>
 	<packaging>jar</packaging>

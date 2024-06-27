@@ -16,18 +16,23 @@
 
 package org.apache.ignite.console.agent;
 
+import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_ADDRS;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_PORT;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URL;
-import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -38,56 +43,44 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.Ignition;
-
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterStartNodeResult;
-
-import org.apache.ignite.internal.cluster.ClusterStartNodeResultImpl;
-import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.LoggerResource;
-
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.cluster.ClusterStartNodeResult;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.console.agent.handlers.ClusterHandler;
-import org.apache.ignite.console.agent.service.CacheLoadDataService;
-import org.apache.ignite.console.agent.service.ComputeTaskLoadService;
-import org.apache.ignite.console.agent.service.CacheCopyDataService;
-import org.apache.ignite.console.agent.service.ClusterAgentServiceList;
+import org.apache.ignite.console.agent.handlers.RestClusterHandler;
+import org.apache.ignite.console.agent.handlers.StringStreamHandler;
 import org.apache.ignite.console.agent.service.CacheClearDataService;
-
-import org.apache.ignite.console.json.JsonObject;
+import org.apache.ignite.console.agent.service.CacheCopyDataService;
+import org.apache.ignite.console.agent.service.CacheLoadDataService;
+import org.apache.ignite.console.agent.service.ClusterAgentServiceList;
+import org.apache.ignite.console.agent.service.ComputeTaskLoadService;
+import org.apache.ignite.console.json.JsonBinarySerializer;
+import org.apache.ignite.console.utils.BeanMerger;
 import org.apache.ignite.console.utils.Utils;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.cluster.ClusterStartNodeResultImpl;
+import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
+import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.nodestart.IgniteRemoteStartSpecification;
 import org.apache.ignite.internal.util.nodestart.StartNodeCallable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE;
-import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
-
-import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_ADDRS;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_PORT;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 /**
  * Launcher for cluster features like SQL and Monitoring.
@@ -108,14 +101,12 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 
     /** WAL file segment size, 16MBytes. */
     private static final int WAL_SEGMENT_SZ = 16 * 1024 * 1024;
-
-    /** */
-    private static CountDownLatch initLatch = new CountDownLatch(1);
     
     /** Specification. */
     private final IgniteRemoteStartSpecification spec;
+    
     /** Connection timeout. */
-    private final int timeout;
+    private final int timeout;    
     
     
     /**
@@ -140,118 +131,57 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         this.timeout = timeout;
     }
     
-
-    /**
-     * Configure node.
-     *
-     * @param basePort Base port.
-     * @param gridIdx Ignite instance name index.
-     * @param client If {@code true} then start client node.
-     * @return IgniteConfiguration
-     */
-    private static IgniteConfiguration igniteConfiguration(IgniteConfiguration cfg, int basePort, int gridIdx, boolean client)
-        throws IgniteCheckedException {        
-
-        cfg.setGridLogger(new Slf4jLogger());
-        cfg.setLocalHost("127.0.0.1");
-        cfg.setEventStorageSpi(new MemoryEventStorageSpi());
-        
-        if(cfg.getConsistentId()==null) {
-        	cfg.setConsistentId(cfg.getIgniteInstanceName());
-        }
-        
-
-        File workDir = new File(U.workDirectory(null, null), "launcher-work");
-
-        cfg.setWorkDirectory(workDir.getAbsolutePath());
-
-        int[] evts = new int[EVTS_DISCOVERY.length];
-
-        System.arraycopy(EVTS_DISCOVERY, 0, evts, 0, EVTS_DISCOVERY.length);
-        
-
-        cfg.setIncludeEventTypes(evts);
-
-        cfg.getConnectorConfiguration().setPort(basePort);
-
-        System.setProperty(IGNITE_JETTY_PORT, String.valueOf(basePort + 10 + gridIdx));
-
-        
-        // Configure discovery SPI.
-        ZookeeperDiscoverySpi discoSpi = new ZookeeperDiscoverySpi();
-        discoSpi.setZkConnectionString(AgentConfiguration.DFLT_ZOOKEEPER_URI);       
-
-        cfg.setDiscoverySpi(discoSpi);
-        
-
-        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-
-        commSpi.setSharedMemoryPort(-1);
-        commSpi.setMessageQueueLimit(10);
-
-        int commPort = basePort + 30;
-
-        commSpi.setLocalPort(commPort);
-
-        cfg.setCommunicationSpi(commSpi);
-        cfg.setGridLogger(new Slf4jLogger(log));
-        cfg.setMetricsLogFrequency(0);
-
-        DataRegionConfiguration dataRegCfg = new DataRegionConfiguration();
-        dataRegCfg.setName("default");
-        dataRegCfg.setMetricsEnabled(true);
-        dataRegCfg.setMaxSize(DFLT_DATA_REGION_INITIAL_SIZE);
-        dataRegCfg.setPersistenceEnabled(true);
-
-        DataStorageConfiguration dataStorageCfg = new DataStorageConfiguration();
-        dataStorageCfg.setMetricsEnabled(true);
-        
-        dataStorageCfg.setDefaultDataRegionConfiguration(dataRegCfg);
-        dataStorageCfg.setSystemRegionMaxSize(DFLT_DATA_REGION_INITIAL_SIZE);
-
-        dataStorageCfg.setWalMode(LOG_ONLY);
-        dataStorageCfg.setWalSegments(WAL_SEGMENTS);
-        dataStorageCfg.setWalSegmentSize(WAL_SEGMENT_SZ);
-
-        //-cfg.setDataStorageConfiguration(dataStorageCfg);
-
-        cfg.setClientMode(client);
-
+    static public IgniteConfiguration mergeIgniteConfiguration(IgniteConfiguration cfg,IgniteConfiguration from)
+            throws IgniteCheckedException {
+    	if(from!=null && cfg!=from) {
+    		BeanMerger.mergeBeans(from,cfg);
+    	}
         return cfg;
     }
     
-    static public IgniteConfiguration singleIgniteConfiguration(IgniteConfiguration cfg)
-            throws IgniteCheckedException {   
-    	int port = basePort.getAndAdd(50);
+    static public IgniteConfiguration singleIgniteConfiguration(IgniteConfiguration cfg,IgniteConfiguration preCfg)
+            throws IgniteCheckedException {
     	
-
-        cfg.setGridLogger(new Slf4jLogger());
-        cfg.setLocalHost("127.0.0.1");
-        cfg.setEventStorageSpi(new MemoryEventStorageSpi());
+    	cfg = IgniteClusterLauncher.mergeIgniteConfiguration(cfg,preCfg);
         
-
-        File workDir = new File(U.workDirectory(null, null), "launcher-work");
-
-        cfg.setWorkDirectory(workDir.getAbsolutePath());
-
-        int[] evts = new int[EVTS_DISCOVERY.length];
-
-        System.arraycopy(EVTS_DISCOVERY, 0, evts, 0, EVTS_DISCOVERY.length);
+        if(cfg.getLocalHost()==null) {
+        	cfg.setLocalHost("127.0.0.1");
+        }       
         
-
-        cfg.setIncludeEventTypes(evts);
-
-        cfg.getConnectorConfiguration().setPort(port);
-
-        System.setProperty(IGNITE_JETTY_PORT, String.valueOf(port + 10));
-
+        if(cfg.getIncludeEventTypes()==null) {
+        	int[] evts = new int[EVTS_DISCOVERY.length];
+            System.arraycopy(EVTS_DISCOVERY, 0, evts, 0, EVTS_DISCOVERY.length);
+        	cfg.setIncludeEventTypes(evts);
+        	cfg.setEventStorageSpi(new MemoryEventStorageSpi());
+        }
+        
+        if(cfg.getConnectorConfiguration().getPort()==ConnectorConfiguration.DFLT_TCP_PORT) {
+        	int port = basePort.getAndAdd(10);
+        	cfg.getConnectorConfiguration().setPort(port);
+        }
+        
+        if(cfg.getBinaryConfiguration()==null) {
+        	BinaryConfiguration binConf = new BinaryConfiguration();
+        	binConf.setTypeConfigurations(new ArrayList<>());
+        	cfg.setBinaryConfiguration(binConf);
+        }
+        
+        // Custom ClusterSerializable
+        BinaryTypeConfiguration jsonBinCfg = new BinaryTypeConfiguration();
+        jsonBinCfg.setTypeName("io.vertx.*");
+        jsonBinCfg.setSerializer(new JsonBinarySerializer());
+        
+        if(cfg.getBinaryConfiguration().getTypeConfigurations()==null) {
+        	cfg.getBinaryConfiguration().setTypeConfigurations(new ArrayList<>());
+        }
+        cfg.getBinaryConfiguration().getTypeConfigurations().add(jsonBinCfg);
         
         // Configure discovery SPI.
-        IsolatedDiscoverySpi discoSpi = new IsolatedDiscoverySpi(); 
-        cfg.setDiscoverySpi(discoSpi);
-
+        if(cfg.getDiscoverySpi()==null) {
+	        IsolatedDiscoverySpi discoSpi = new IsolatedDiscoverySpi(); 
+	        cfg.setDiscoverySpi(discoSpi);
+        }
         
-        cfg.setGridLogger(new Slf4jLogger(log));
         cfg.setMetricsLogFrequency(0);
         return cfg;
     }
@@ -299,118 +229,60 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 
          String nodeUrl = String.format("http://%s:%d/%s", jettyHost, jettyPort, ignite.configuration().getIgniteInstanceName());
 
-         ClusterHandler.registerNodeUrl(ignite.cluster().localNode().id().toString(),nodeUrl,ignite.name());
+         RestClusterHandler.registerNodeUrl(ignite.cluster().localNode().id().toString(),nodeUrl,ignite.name());
          
          return nodeUrl;
     }
 
-    /**
-     * Start ignite node with cacheEmployee and populate it with data.
-     */
-    public static Ignite tryStart(IgniteConfiguration cfg) {
-    	Ignite ignite = null;
-        if (initGuard.compareAndSet(false, true)) {
-            log.info("Cluster: Starting embedded nodes for data analysis ...");
-
-            System.setProperty(IGNITE_NO_ASCII, "true");
-            System.setProperty(IGNITE_QUIET, "false");
-            System.setProperty(IGNITE_UPDATE_NOTIFIER, "false");
-
-            System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "20");
-            System.setProperty(IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED, "true");
-
-            
-           
-            int idx = 0;
-            int port = basePort.get();
-
-            boolean first = idx == 0;
-
-            try {
-                igniteConfiguration(cfg, port, idx, false);
-                
-
-                ignite = Ignition.start(cfg);
-
-                if (first) {
-                   
-                    initLatch.countDown();
-                    idx++;
-                }
-            }
-            catch (Throwable e) {
-                if (first) {
-                    basePort.getAndAdd(50);
-
-                    log.warn("Cluster: Failed to start embedded node.", e);
-                }
-                else
-                    log.error("Cluster: Failed to start embedded node.", e);
-            }
-            finally {
-                if (idx >0) {
-                    try {
-                        if (ignite != null) {
-                            ignite.cluster().active(true);
-                        }
-
-                        log.info("Cluster: All embedded nodes for demo successfully started");
-                    }
-                    catch (Throwable ignored) {
-                        log.info("Cluster: Failed to launch ignite load");
-                    }
-
-                   
-                }
-            }
-
-            
-        }
-
-        return ignite;
-    }
 
     /** */
-    public static void stop(String clusterName,String nodeId) {  
+    public static void stopIgnite(String clusterName,String nodeId) {  
     	if(nodeId!=null) {
     		try {
 	    		Ignite ignite = Ignition.ignite(UUID.fromString(nodeId));
 	    		String gridName = ignite.configuration().getIgniteInstanceName();
 	    		Ignition.stop(gridName,true);
 	    		clusterName = null;
-	    		ClusterHandler.clusterUrlMap.remove(nodeId);
+	    		RestClusterHandler.clusterUrlMap.remove(nodeId);
+	    		RestClusterHandler.clusterNameMap.remove(nodeId);
     		}
-	    	catch(IgniteIllegalStateException e) {
-	    		
+	    	catch(IgniteIllegalStateException | IllegalArgumentException  e) {
+	    		//-log.error("Failed to stop cluster node: "+nodeId,e);
 	    	}
     	}
     	
     	if(clusterName!=null) {
     		Ignition.stop(clusterName,true);
     	}
-
-        initLatch = new CountDownLatch(1);
-
-        initGuard.compareAndSet(true, false);
     }
     
     /**
      * Start ignite node with cacheEmployee and populate it with data.
      * @throws IgniteCheckedException 
      */
-    public static Ignite trySingleStart(JsonObject json) throws IgniteCheckedException {
-    	Ignite ignite = null;
-    	String clusterId = json.getString("id");
-    	String clusterName = Utils.escapeFileName(json.getString("name"));
+    public static Ignite trySingleStart(String clusterId,String clusterName,String cfgFile) throws IgniteCheckedException {
+    	
+        return trySingleStart(clusterId,clusterName,cfgFile,null);
+    }
+    
+    /**
+     * Start ignite node with cacheEmployee and populate it with data.
+     * @throws IgniteCheckedException 
+     */
+    public static Ignite trySingleStart(String clusterId,String clusterName,String cfgFile,String preCfgFile) throws IgniteCheckedException {
+    	Ignite ignite = null;    	
+    	
     	// 单个节点： clusterID和nodeID相同
-    	UUID nodeID = UUID.fromString(clusterId);
+    	UUID nodeID = null;
     	try {
+    		nodeID = UUID.fromString(clusterId);
     		ignite = Ignition.ignite(UUID.fromString(clusterId));
     		return ignite;
     	}
-    	catch(IgniteIllegalStateException e) {
+    	catch(IgniteIllegalStateException | IllegalArgumentException  e) {
     		
     	}
+    	
     	// 基于Instance Name 查找ignite
     	try {
     		ignite = Ignition.ignite(clusterName);
@@ -420,27 +292,62 @@ public class IgniteClusterLauncher implements StartNodeCallable{
     		
     	}
     	
-        if (ignite==null) {        	
+    	// 基于配置文件 启动 实例
+    	IgniteConfiguration preCfg = null;
+    	IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap=null;
+    	if(ignite==null && preCfgFile!=null) {
+			URL springPreCfgUrl = U.resolveSpringUrl(preCfgFile);			
+			cfgMap = IgnitionEx.loadConfigurations(springPreCfgUrl);
+			
+			Collection<IgniteConfiguration> cfgList = cfgMap.get1();
+			for(IgniteConfiguration cfg: cfgList) {
+				if(clusterName.equals(cfg.getIgniteInstanceName())){
+					preCfg = cfg;
+				}				
+			}
+		}
+		
+        if(ignite==null && cfgFile!=null) {
         	
-        	String work = U.workDirectory(null, null)+ "/config/";			
-        	String cfgFile = String.format("%s%s/src/main/resources/META-INF/%s-server.xml", work, clusterName,clusterName);
 			URL springCfgUrl = U.resolveSpringUrl(cfgFile);
 			
-			IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap;
+			IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgWorkMap;
 
-			cfgMap = IgnitionEx.loadConfigurations(springCfgUrl);
-			
+			cfgWorkMap = IgnitionEx.loadConfigurations(springCfgUrl);			
 			//only on node per jvm.					
-			IgniteConfiguration cfg = cfgMap.get1().iterator().next();
+			IgniteConfiguration cfg = cfgWorkMap.get1().iterator().next();			
+
 			cfg.setNodeId(nodeID);
-			cfg.setConsistentId(clusterId);
-			cfg.setIgniteInstanceName(clusterName);
+			if(cfg.getConsistentId()==null)
+				cfg.setConsistentId(clusterId);
+			if(cfg.getIgniteInstanceName()==null)
+				cfg.setIgniteInstanceName(clusterName);
 			
-			IgniteClusterLauncher.singleIgniteConfiguration(cfg);
+			IgniteClusterLauncher.singleIgniteConfiguration(cfg,preCfg);
 			
-			ignite = IgnitionEx.start(cfg,cfgMap.get2());
+			ignite = IgnitionEx.start(cfg,cfgWorkMap.get2());
 			
         }
+        
+        if(cfgMap!=null) {	
+			// other ignite instance
+			Collection<IgniteConfiguration> cfgList = cfgMap.get1();
+			for(IgniteConfiguration cfg: cfgList) {
+				if(clusterName.equals(cfg.getIgniteInstanceName())){
+					if(ignite==null) {
+						ignite = IgnitionEx.start(cfg,cfgMap.get2());
+					}
+				}
+				else {
+					try {
+						IgnitionEx.start(cfg,cfgMap.get2());
+					}
+					catch(IgniteIllegalStateException | IllegalArgumentException  e) {
+			    		
+			    	}
+				}							
+			}
+		}
         return ignite;
     }
     
@@ -449,13 +356,13 @@ public class IgniteClusterLauncher implements StartNodeCallable{
      * Start ignite node with cacheEmployee and populate it with data.
      * @throws IgniteCheckedException 
      */
-    public static void saveBlobToFile(JsonObject json) throws IgniteCheckedException {    	
-    	String clusterId = json.getString("id");    	
+    public static String saveBlobToFile(JsonObject json) throws IgniteCheckedException {    	
+    	String clusterName = json.getString("name");    	
     	String base64 = json.getString("blob");    	 
         String prefix = "data:application/octet-stream;base64,";
         if (base64!=null && base64.startsWith(prefix)) {        	
         	
-        	String fileName = Utils.escapeFileName(json.getString("name"));
+        	String fileName = Utils.escapeFileName(clusterName);
         	
         	String work = U.workDirectory(null, null)+ "/config/";
 			U.mkdirs(new File(work));
@@ -471,14 +378,173 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 				
 				AgentUtils.unZip(zipFile, descDir);
 				
+				return descDir;
+				
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}        	
+				log.error("Failed to save zip blob data!",e);
+			}
+        }
+        return null;
+        
+    } 
+    
+    /**
+     * Start ignite node with cacheEmployee and populate it with data.
+     * @throws IgniteCheckedException 
+     */
+    public static File saveDataToFile(String fileName,String json) throws IgniteCheckedException {    	
+    	
+    	String work = U.workDirectory(null, null)+ "/config/";
+		U.mkdirs(new File(work));
+		
+		File outFile = new File(work, fileName);			
+		
+		try {
+			FileOutputStream writer = new FileOutputStream(outFile);
+			writer.write(json.getBytes());
+			writer.close();				
 			
+		} catch (IOException e) {
+			log.error("Failed to save ini data!",e);
+			throw new IgniteCheckedException(e);
+		}
+		return outFile;	
+        
+    }
+    
+    /**
+     * @param tok Token to revoke.
+     */
+    public static JsonObject callClusterCommand(String cmdName,JsonObject json) {
+        log.info("Cluster cmd is invoking: " + cmdName);
+                
+        String nodeId = json.getString("id");
+        
+        String clusterName = json.getString("name");                
+        if(clusterName!=null) {
+        	clusterName = Utils.escapeFileName(clusterName);
+    	}
+        
+        JsonArray args = json.getJsonArray("args");
+        
+        JsonObject stat = new JsonObject();
+        stat.put("status", "stoped");
+        
+        Ignite ignite = null;
+        
+        if(nodeId!=null) {        	
+        	try {
+        		ignite = Ignition.ignite(UUID.fromString(nodeId));	    		
+	    		stat.put("status", "started");
+	    		clusterName = null;
+    		}
+	    	catch(IgniteIllegalStateException | IllegalArgumentException e) {	
+	    		stat.put("message", e.getMessage());
+	    		stat.put("status", "stoped");	    		
+	    	}
         }
         
-    }  
+        if(clusterName!=null) {
+        	try {
+        		ignite = Ignition.ignite(clusterName);	    		
+	    		stat.put("status", "started");
+    		}
+	    	catch(IgniteIllegalStateException e) {	
+	    		stat.put("message", e.getMessage());
+	    		stat.put("status", "stoped");
+	    		return stat;
+	    	}
+    	}
+        
+       
+        
+        List<String> argsList = new ArrayList<>();
+        if(ignite!=null) {
+	        
+        	ClusterNode node = ignite.cluster().localNode();
+	        Collection<String> jettyAddrs = node.attribute(ATTR_REST_JETTY_ADDRS);
+	        String host = jettyAddrs.iterator().next();
+	        if(host!=null && !host.isBlank()) {
+		        argsList.add("--host");
+		        argsList.add(host);
+	        }
+	        argsList.add("--port");
+	        argsList.add(""+ignite.configuration().getConnectorConfiguration().getPort());
+        }
+        
+        if(args!=null) {
+        	args.forEach(e-> argsList.addAll(Arrays.asList(e.toString().split("\\s"))));
+        }
+        else {
+        	argsList.add(cmdName);
+        }
+        
+        StringStreamHandler outHandder = new StringStreamHandler();        
+        java.util.logging.Logger logger = java.util.logging.Logger.getLogger(CommandHandler.class.getName() + "Log");
+        logger.addHandler(outHandder);
+        JavaLogger javaLogger = new JavaLogger(logger);
+        CommandHandler hnd = new CommandHandler(javaLogger);
+        hnd.console = null;
+        boolean experimentalEnabled = true;
+        if(cmdName.equals("commandList")) {
+        	IgniteCommandRegistry cmdReg = null;
+        	if(ignite==null) {        		
+				try {
+					Field registry = hnd.getClass().getField("registry");
+					registry.setAccessible(true);
+	            	cmdReg = (IgniteCommandRegistry)registry.get(hnd);
+	            	
+				} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+					
+				}
+            	
+        	}
+        	else {
+        		cmdReg = ((IgniteEx)ignite).commandsRegistry();
+        	}
+        	
+        	
+        	List<JsonObject> results = new ArrayList<>(10);
+        	Iterator<Entry<String, Command<?, ?>>> it = cmdReg.commands();
+        	while (it.hasNext()) {                    
+        		Entry<String, Command<?, ?>> pair = it.next();
+        		Command<?, ?> c = pair.getValue();
+        		try{
+	        		hnd.printUsage(javaLogger,c);
+	        		javaLogger.flush();
+	        		String usage = outHandder.getOutput();
+	        		String desc = c.description();
+	        		int pos = 0;
+	        		if((pos=usage.indexOf("<br/>"))>0) {
+	        			usage = usage.substring(pos+5).strip();
+	        		}
+	            	JsonObject cmd = new JsonObject();
+	            	cmd.put("name", pair.getKey());
+	            	cmd.put("text", desc);
+	            	cmd.put("usage", usage);
+	            	cmd.put("experimental", c.argClass().getSimpleName());
+	            	results.add(cmd);
+        		}
+        		catch(Exception e) {
+        			
+        		}
+            }           
+        	
+        	stat.put("result", results);
+        	return stat;
+        }
+        int code = hnd.execute(argsList);
+        stat.put("code",code);
+        javaLogger.flush();
+        if(code==CommandHandler.EXIT_CODE_OK) {
+        	stat.put("result", hnd.getLastOperationResult());
+        	stat.put("message", outHandder.getOutput());
+        }
+        else {
+        	stat.put("message", outHandder.getOutput());
+        }
+        return stat;
+    }
    
     @Override
 	public ClusterStartNodeResult call() throws Exception {

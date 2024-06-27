@@ -24,7 +24,7 @@ import java.net.URLEncoder;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.console.json.JsonObject;
+
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
@@ -33,7 +33,10 @@ import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.slf4j.LoggerFactory;
+
+import io.vertx.core.json.JsonObject;
 
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -48,7 +51,12 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
 public class RestExecutor implements AutoCloseable {
     /** */
     private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(RestExecutor.class));
-
+    /** */
+    public static QueuedThreadPool executor = new QueuedThreadPool(32);
+    static {
+    	executor.setName("Agent http client");    	
+    }
+    
     /** */
     private final HttpClient httpClient;
 
@@ -57,6 +65,7 @@ public class RestExecutor implements AutoCloseable {
      */
     public RestExecutor(SslContextFactory sslCtxFactory) {
         httpClient = new HttpClient(sslCtxFactory);
+        httpClient.setExecutor(executor);
     }
 
     /** {@inheritDoc} */
@@ -106,7 +115,7 @@ public class RestExecutor implements AutoCloseable {
 
         Fields fields = new Fields();
 
-        params.forEach((k, v) ->{ if(v!=null) fields.add(k, String.valueOf(v)); });
+        params.getMap().forEach((k, v) ->{ if(v!=null) fields.add(k, String.valueOf(v)); });
 
         InputStreamResponseListener lsnr = new InputStreamResponseListener();
         

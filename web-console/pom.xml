@@ -43,14 +43,13 @@
         <web-console.ignite.version>2.16.999-SNAPSHOT</web-console.ignite.version>
         <commons.lang3.version>3.1</commons.lang3.version>        
         <commons.compress.version>1.20</commons.compress.version>        
-        <java7.hikaricp.version>2.4.7</java7.hikaricp.version> 
+        <java7.hikaricp.version>2.4.7</java7.hikaricp.version>
+        <vertx.version>4.4.5</vertx.version>
     </properties>
 
     <modules>
-        
         <module>web-console-common</module>
-        <module>web-console-server</module>
-        <module>web-console-mail</module>
+        <module>web-console-server</module>        
         <module>web-agent</module>
     </modules>
 

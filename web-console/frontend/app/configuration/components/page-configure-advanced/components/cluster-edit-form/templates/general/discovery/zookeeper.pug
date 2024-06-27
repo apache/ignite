@@ -9,17 +9,7 @@ mixin discovery-zookeeper(modelAt = '$ctrl.clonedCluster')
     -var model = `${modelAt}.discovery.ZooKeeper`
     -var modelRetryPolicyKind = `${model}.retryPolicy.kind`
 
-    .pc-form-grid-row&attributes(attributes=attributes)
-        .pc-form-grid-col-60
-            +form-field__java-class({
-                label: 'Curator:',
-                model: `${model}.curator`,
-                name: '"curator"',
-                tip: 'The Curator framework in use<br/>\
-                     By default generates curator of org.apache.curator. framework.imps.CuratorFrameworkImpl\
-                     class with configured connect string, retry policy, and default session and connection timeouts',
-                validationActive: required
-            })
+    .pc-form-grid-row&attributes(attributes=attributes)        
         .pc-form-grid-col-60
             +form-field__text({
                 label: 'Connect string:',

@@ -180,7 +180,7 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
     
     @Override
     protected Iterable<String> listCollectionNamespaces() {    	
-    	return mvStore.cacheNames().stream().filter(c-> !c.startsWith(INDEX_DB_PREFIX))
+    	return mvStore.cacheNames().stream().filter(c-> !c.startsWith(INDEX_DB_PREFIX) && !c.startsWith("igfs-internal-"))
     		.map(n->databaseName+'.'+n)
     		.collect(Collectors.toList());
     }

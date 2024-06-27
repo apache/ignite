@@ -18,10 +18,12 @@ package org.apache.ignite.console.web.controller;
 
 import java.util.UUID;
 import io.swagger.v3.oas.annotations.Operation;
+import io.vertx.core.json.JsonArray;
+
 import javax.validation.Valid;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.dto.Announcement;
-import org.apache.ignite.console.json.JsonArray;
+
 import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.apache.ignite.console.services.AdminService;
 import org.apache.ignite.console.web.model.PeriodFilterRequest;

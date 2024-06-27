@@ -64,7 +64,7 @@ panel-collapsible(opened=`::true` ng-form=form)
             .pc-form-group               
                 +discovery-multicast()(ng-if=`${modelDiscoveryKind} === 'Multicast'`)                
                 +discovery-vm()(ng-if=`${modelDiscoveryKind} === 'Vm'`)
-                +discovery-zookeeper()(ng-if=`${modelDiscoveryKind} === 'ZooKeeper'`)
+                +discovery-zookeeper()(ng-if=`${modelDiscoveryKind} === 'ZooKeeper' || ${modelDiscoveryKind} === 'ZooKeeperIpFinder'`)
                 +discovery-kubernetes()(ng-if=`${modelDiscoveryKind} === 'Kubernetes'`)
 
         .pca-form-column-6

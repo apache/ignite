@@ -19,9 +19,11 @@ package org.apache.ignite.console.dto;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.console.json.JsonObject;
+
 import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.springframework.context.support.MessageSourceAccessor;
+
+import io.vertx.core.json.JsonObject;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -48,7 +50,7 @@ public class Cache extends DataObject {
      * @return New instance of cache DTO.
      */
     public static Cache fromJson(JsonObject json) {
-        UUID id = json.getUuid("id");
+    	UUID id = getUUID(json,"id");
         MessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
 
         if (id == null)
@@ -118,10 +120,10 @@ public class Cache extends DataObject {
     /** {@inheritDoc} */
     @Override public JsonObject shortView() {
         return new JsonObject()
-            .add("id", getId())
-            .add("name", name)
-            .add("cacheMode", cacheMode)
-            .add("atomicityMode", atomicityMode)
-            .add("backups", backups);
+            .put("id", getId())
+            .put("name", name)
+            .put("cacheMode", cacheMode)
+            .put("atomicityMode", atomicityMode)
+            .put("backups", backups);
     }
 }

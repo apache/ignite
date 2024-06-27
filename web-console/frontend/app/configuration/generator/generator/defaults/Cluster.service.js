@@ -39,8 +39,9 @@ const DFLT_CLUSTER = {
             path: 'disco/tcp'
         },
         ZooKeeper: {
-            basePath: '/services',
+            basePath: '/apacheIgnite',
             serviceName: 'ignite',
+            zkConnectionString: '',
             allowDuplicateRegistrations: false,
             ExponentialBackoff: {
                 baseSleepTimeMs: 1000,
@@ -416,6 +417,7 @@ const DFLT_CLUSTER = {
 };
 
 export default class IgniteClusterDefaults {
+    discovery;
     constructor() {
         Object.assign(this, DFLT_CLUSTER);
     }

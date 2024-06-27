@@ -6,8 +6,8 @@ $btn-content-padding: 10px 12px;
 $btn-content-padding-with-border: 9px 11px;
 
 @mixin active-focus-shadows(
-    $focus: (0 0 5px #095d9a, 0 0 5px #095d9a),
-    $active: (inset 0 1px 3px 0 rgba(0, 0, 0, 0.5))
+    $focus: 0 0 5px #095d9a ,
+    $active: 0 1px 3px 0 rgba(0, 0, 0, 0.5) inset
 ) {
     &.focus, &:focus {
         box-shadow: $focus;
@@ -220,7 +220,7 @@ $btn-content-padding-with-border: 9px 11px;
         }
     }
 
-    @include active-focus-shadows($active: ());
+    @include active-focus-shadows();
 }
 
 .btn-ignite--link-dashed-success {

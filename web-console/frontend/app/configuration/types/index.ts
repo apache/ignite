@@ -96,6 +96,7 @@ export type DiscoveryKinds = 'Vm'
     | 'Jdbc'
     | 'SharedFs'
     | 'ZooKeeper'
+    | 'ZooKeeperIpFinder'
     | 'Kubernetes';
 
 export type LoadBalancingKinds = 'RoundRobin'

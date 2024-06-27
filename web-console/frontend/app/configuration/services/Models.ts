@@ -55,10 +55,12 @@ export default class Models {
             const inlineSizeType = this.inlineSizeType._val(queryIndex);
             switch (inlineSizeType) {
                 case 1:
-                    return queryIndex.inlineSize = queryIndex.inlineSize > 0 ? queryIndex.inlineSize : null;
+                    queryIndex.inlineSize = queryIndex.inlineSize > 0 ? queryIndex.inlineSize : null;
+                    break;
                 case 0:
                 case -1:
-                    return queryIndex.inlineSize = queryIndex.inlineSizeType;
+                    queryIndex.inlineSize = queryIndex.inlineSizeType;
+                    break;
                 default: break;
             }
         },
@@ -76,7 +78,7 @@ export default class Models {
 
             return `${entity.name || ''} ${entity.className || ''}${precision && entity.precision ? ' (' + entity.precision : ''}\
 ${scale && entity.precision && entity.scale ? ',' + entity.scale : ''}${precision && entity.precision ? ')' : ''}\
-${available('2.3.0') && entity.notNull ? ' Not NULL' : ''}${available('2.4.0') && entity.defaultValue ? ' DEFAULT ' + entity.defaultValue : ''}`;
+ ${entity.notNull ? ' Not NULL' : ''} ${entity.defaultValue ? ' DEFAULT ' + entity.defaultValue : ''}`;
         },
         precisionAvailable: (entity) => entity && this.fieldProperties.typesWithPrecision.includes(entity.className),
         scaleAvailable: (entity) => entity && entity.className === 'BigDecimal'

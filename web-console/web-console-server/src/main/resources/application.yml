@@ -13,6 +13,14 @@ server:
 #    key-store-type: JKS
 #    key-store: certificates/server.jks
 #    key-store-password: change_me
+
+####Jetty properties########
+  jetty:
+    acceptors: 1 # acceptor线程数
+    selectors: 2 # selector线程数
+    max-http-post-size: 1073741824 # put或post方法最大字节数    
+    max-threads: 8
+
 spring:
   mvc:
     pathmatch:

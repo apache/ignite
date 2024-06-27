@@ -55,7 +55,7 @@ import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.ignite.console.demo.AgentMetadataDemo;
 import org.apache.ignite.console.db.DBInfo;
-import org.apache.ignite.console.json.JsonObject;
+
 import org.apache.ignite.console.websocket.TopologySnapshot;
 import org.apache.ignite.console.websocket.WebSocketRequest;
 import org.apache.ignite.internal.IgniteEx;
@@ -68,6 +68,8 @@ import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.slf4j.LoggerFactory;
 
+import io.vertx.core.json.JsonObject;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.console.agent.AgentUtils.resolvePath;
 import static org.apache.ignite.console.utils.Utils.fromJson;
@@ -76,7 +78,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 /**
  * Handler extract database metadata for "Metadata import" dialog on Web Console.
  */
-public class DatabaseHandler{
+public class DatabaseHandler  implements ClusterHandler {
     /** */
     private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(DatabaseHandler.class));
 
@@ -235,7 +237,7 @@ public class DatabaseHandler{
         if (!args.containsKey("schemas"))
             throw new IllegalArgumentException("Missing schemas in arguments: " + args);
 
-        List<String> schemas = (List)args.get("schemas");
+        List<String> schemas = args.getJsonArray("schemas").getList();
 
         if (schemas.size()==0)
             throw new IllegalArgumentException("Missing select schemas in arguments: " + args);
@@ -262,13 +264,13 @@ public class DatabaseHandler{
         if (AgentMetadataDemo.isTestDriveUrl(jdbcUrl)) {
         	Connection demoConn = AgentMetadataDemo.testDrive();
         	if(demoConn!=null) {
-        		this.databaseListener.addDB(args,demoConn);
+        		this.databaseListener.addDB(args.getMap(),demoConn);
         	}
             return demoConn;
         }
         
         DBInfo dbInfo = new DBInfo();
-		dbInfo.buildWith(args);
+		dbInfo.buildWith(args.getMap());
         
         if (AgentMetadataDemo.isTestDriveUrl(jdbcUrl)) {
         	String jndiName="dsH2";     		
@@ -284,7 +286,7 @@ public class DatabaseHandler{
 
         Connection conn = dbMetaReader.connect(jdbcDriverJarPath, dbInfo);
         
-        this.databaseListener.addDB(args,conn);
+        this.databaseListener.addDB(args.getMap(),conn);
         
         return conn;
     }
@@ -332,7 +334,7 @@ public class DatabaseHandler{
     /**
      * @return Topology snapshot for demo cluster.
      */
-    List<TopologySnapshot> topologySnapshot() {        
+    public List<TopologySnapshot> topologySnapshot() {        
         List<TopologySnapshot> tops = new LinkedList<>();        
        
         for (Entry<String, DBInfo> ent: databaseListener.clusters.entrySet()) {

@@ -47,6 +47,10 @@ export default class IgniteConfigurationGenerator {
         return new Bean('org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi', 'discovery', discovery, clusterDflts.discovery);
     }
 
+    static discoveryZKConfigurationBean(discovery) {
+        return new Bean('org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi', 'discovery', discovery, clusterDflts.discovery.ZooKeeper);
+    }
+
     /**
      * Function to generate ignite configuration.
      *
@@ -205,6 +209,8 @@ export default class IgniteConfigurationGenerator {
 
         let ipFinder = null;
 
+        let zkDiscovery = null;
+
         switch (discovery.valueOf('kind')) {
             case 'Isolated':
                 discovery = new Bean('org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi', 'discovery', discovery, clusterDflts.discovery);
@@ -228,9 +234,17 @@ export default class IgniteConfigurationGenerator {
                     .stringProperty('localAddress')
                     .collectionProperty('addrs', 'addresses', cluster.discovery.Multicast.addresses);
 
-                break;             
-          
+                break;
+
             case 'ZooKeeper':
+                
+                zkDiscovery = IgniteConfigurationGenerator.discoveryZKConfigurationBean(cluster.discovery.ZooKeeper);
+                zkDiscovery.stringProperty('zkConnectionString');
+                zkDiscovery.pathProperty('basePath','zkRootPath');
+                
+                break;
+
+            case 'ZooKeeperIpFinder':
                 const src = cluster.discovery.ZooKeeper;
                 const dflt = clusterDflts.discovery.ZooKeeper;
 
@@ -325,6 +339,11 @@ export default class IgniteConfigurationGenerator {
 
             default:
                 // No-op.
+        }
+
+        if (zkDiscovery){
+            this.clusterDiscovery(cluster.discovery, available, cfg, zkDiscovery);
+            return cfg;
         }
 
         if (ipFinder)

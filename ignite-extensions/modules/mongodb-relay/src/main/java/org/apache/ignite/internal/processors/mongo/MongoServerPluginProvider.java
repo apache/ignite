@@ -20,14 +20,17 @@ package org.apache.ignite.internal.processors.mongo;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.BindException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -41,6 +44,7 @@ import org.jetbrains.annotations.Nullable;
 import de.bwaldvogel.mongo.MongoServer;
 import de.bwaldvogel.mongo.backend.ignite.IgniteBackend;
 
+
 /**
  * Security processor provider for tests.
  */
@@ -48,6 +52,8 @@ public class MongoServerPluginProvider implements PluginProvider<MongoPluginConf
 	// Singerton
     public static MongoServer mongoServer;
     public static IgniteBackend backend;
+    
+    private static int counter = 0;
     
 	private String databaseName;
 	 
@@ -58,8 +64,6 @@ public class MongoServerPluginProvider implements PluginProvider<MongoPluginConf
     private MongoPluginConfiguration cfg;
     
     private MongoPlugin mongoPlugin = new MongoPlugin();
-    
-    private int counter = 0;
 
 	
     /** {@inheritDoc} */
@@ -148,14 +152,21 @@ public class MongoServerPluginProvider implements PluginProvider<MongoPluginConf
     /** {@inheritDoc} */
     @Override public void onIgniteStart() {
     	
-    	 // start mongodb singerton when admin grid start
+    	// start mongodb singerton when admin grid start
     	if(cfg!=null && mongoServer==null) {    		      
  	       try {
  	    	   synchronized(MongoServerPluginProvider.class) {
  	    		  if(mongoServer==null) {
-			    	   mongoServer = new MongoServer(backend);
-			    	   mongoServer.bind(cfg.getHost(),cfg.getPort());
-			    	   log.info("mongoServer","listern on "+cfg.getHost()+":"+cfg.getPort());
+			    	   	mongoServer = new MongoServer(backend);
+			    	   	IgniteEx ignite = (IgniteEx) Ignition.ignite(databaseName);
+			    	   	ExecutorService workerPool = ignite.context().pools().getRestExecutorService();
+						if (workerPool == null) {
+							workerPool = ignite.context().pools().getServiceExecutorService();
+						}
+						InetSocketAddress addr = new InetSocketAddress(cfg.getHost(), cfg.getPort());
+						mongoServer.bind(addr,1, 0, workerPool);
+						
+						log.info("mongoServer","listern on "+cfg.getHost()+":"+cfg.getPort());
  	    		  }
  	    	   }
  	    	   

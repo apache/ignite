@@ -70,6 +70,9 @@ public class Account extends AbstractDto implements UserDetails, CredentialsCont
 
     /** Last activity. */
     private String lastActivity;
+    
+    /** User create index */
+    private int uid; 
 
     /** Administration. */
     private boolean admin;
@@ -343,9 +346,18 @@ public class Account extends AbstractDto implements UserDetails, CredentialsCont
     /** {@inheritDoc} */
     @Override public void eraseCredentials() {
         hashedPwd = null;
-    }
+    }   
+    
 
-    /**
+    public int getUid() {
+		return uid;
+	}
+
+	public void setUid(int uid) {
+		this.uid = uid;
+	}
+
+	/**
      * Update account fields.
      * @param changes Changes.
      */

@@ -5,13 +5,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.console.json.JsonObject;
+
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDescriptor;
 
 import io.swagger.annotations.ApiOperation;
+import io.vertx.core.json.JsonObject;
 
 @ApiOperation("get list of servcie of cluster")
 public class ClusterAgentServiceList implements ClusterAgentService {
@@ -29,35 +30,35 @@ public class ClusterAgentServiceList implements ClusterAgentService {
 		
 		for(ServiceDescriptor ctx: descs) {
 			JsonObject info = new JsonObject();
-			info.add("name", ctx.name());			
+			info.put("name", ctx.name());			
 			
-			info.add("cacheName", ctx.cacheName());
-			info.add("affinityKey", ctx.affinityKey());
-			info.add("totalCount", ctx.totalCount());
-			info.add("maxPerNodeCount", ctx.maxPerNodeCount());
+			info.put("cacheName", ctx.cacheName());
+			info.put("affinityKey", ctx.affinityKey());
+			info.put("totalCount", ctx.totalCount());
+			info.put("maxPerNodeCount", ctx.maxPerNodeCount());
 			ApiOperation api = ctx.serviceClass().getAnnotation(ApiOperation.class);
 			if(api!=null) {
-				info.add("description", api.value());
-				info.add("notes", api.notes());				
+				info.put("description", api.value());
+				info.put("notes", api.notes());				
 			}			
 			else {
-				info.add("description", ctx.serviceClass().getSimpleName());
-				info.add("notes","");
+				info.put("description", ctx.serviceClass().getSimpleName());
+				info.put("notes","");
 			}
 			
 			if(ClusterAgentService.class.isAssignableFrom(ctx.serviceClass())){
-				info.add("type","ClusterAgentService");
+				info.put("type","ClusterAgentService");
 				// KeyaffinitySingleton,Multiple,NodeSingleton,ClusterSingleton
-				info.add("mode", "ClusterSingleton"); 
+				info.put("mode", "ClusterSingleton"); 
 			}
 			else if(CacheAgentService.class.isAssignableFrom(ctx.serviceClass())){
-				info.add("type","CacheAgentService");
+				info.put("type","CacheAgentService");
 				// KeyaffinitySingleton,Multiple,NodeSingleton,ClusterSingleton
-				info.add("mode", "NodeSingleton"); 
+				info.put("mode", "NodeSingleton"); 
 			}
 			else {
-				info.add("mode", "ClusterSingleton"); 
-				info.add("type","Unknown");
+				info.put("mode", "ClusterSingleton"); 
+				info.put("type","Unknown");
 			}
 			if(type!=null && !info.getString("type").equals(type)) {
 				continue;

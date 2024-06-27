@@ -66,7 +66,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
         if(collectionName.startsWith("igfs-internal-")) { // igfs
         	this.readOnly = true;
         }
-        if(collectionName.startsWith("wc_")) { // web-console
+        if(collectionName.startsWith("readonly_")) { // web-console
         	this.readOnly = true;
         }
     }

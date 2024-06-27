@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.apache.ignite.console.json.JsonObject;
+import io.vertx.core.json.JsonObject;
 import org.apache.ignite.console.repositories.ConfigurationsRepository;
 import org.apache.ignite.console.web.model.ConfigurationKey;
 import org.apache.ignite.internal.util.typedef.F;
@@ -74,7 +74,7 @@ public class DemoService {
 
         json.put(prop, items);
 
-        return items.stream().map(i -> i.get("id")).collect(toList());
+        return items.stream().map(i -> i.getValue("id")).collect(toList());
     }
 
     /**

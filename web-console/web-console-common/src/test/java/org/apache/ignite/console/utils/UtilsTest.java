@@ -16,7 +16,11 @@
 
 package org.apache.ignite.console.utils;
 
+import java.util.List;
+import java.util.Map;
+
 import org.junit.Test;
+
 
 /**
  * Test for Web Console utils.

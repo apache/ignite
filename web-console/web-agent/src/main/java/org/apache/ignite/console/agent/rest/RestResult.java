@@ -36,8 +36,29 @@ public class RestResult {
     private String data;
 
     /** Session token string representation. */
-    private String sesTok;
+    private String sessionToken;
+    
+    
+    private String securitySubjectId = null;
 
+    /**
+     * @param status REST http code.
+     * @param error The field contains description of error if server could not handle the request.
+     * @param sesTok The field contains session token.
+     * @param data The field contains result of command.
+     */    
+    private RestResult(
+        @JsonProperty("successStatus") int status,
+        @JsonProperty("error") String error,
+        @JsonProperty("sessionToken") String sesTok,
+        @JsonProperty("response") @JsonDeserialize(using = RawContentDeserializer.class) String data
+    ) {
+        this.status = status;
+        this.error = error;
+        this.data = data;
+        this.sessionToken = sesTok;
+    }
+    
     /**
      * @param status REST http code.
      * @param error The field contains description of error if server could not handle the request.
@@ -49,12 +70,14 @@ public class RestResult {
         @JsonProperty("successStatus") int status,
         @JsonProperty("error") String error,
         @JsonProperty("sessionToken") String sesTok,
+        @JsonProperty("securitySubjectId") String securitySubjectId,
         @JsonProperty("response") @JsonDeserialize(using = RawContentDeserializer.class) String data
     ) {
         this.status = status;
         this.error = error;
         this.data = data;
-        this.sesTok = sesTok;
+        this.sessionToken = sesTok;
+        this.securitySubjectId = securitySubjectId;
     }
 
     /**
@@ -101,6 +124,10 @@ public class RestResult {
      * @return String representation of session token.
      */
     public String getSessionToken() {
-        return sesTok;
+        return sessionToken;
     }
+
+	public String getSecuritySubjectId() {
+		return securitySubjectId;
+	}    
 }

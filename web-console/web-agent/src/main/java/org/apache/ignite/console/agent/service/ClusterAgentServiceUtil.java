@@ -7,8 +7,10 @@ import java.util.Map;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.console.json.JsonArray;
-import org.apache.ignite.console.json.JsonObject;
+
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+
 
 
 
@@ -21,7 +23,7 @@ public class ClusterAgentServiceUtil  {
 		String cacheName = null;
 			
 		JsonArray selectCaches = args.getJsonArray("caches");
-		if(args.get("cache")!=null) {
+		if(args.containsKey("cache")) {
 			cacheName = args.getJsonObject("cache").getString("name");
 		}		
 		List<String> list = new ArrayList<>();

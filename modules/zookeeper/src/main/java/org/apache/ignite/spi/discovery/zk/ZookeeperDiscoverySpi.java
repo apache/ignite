@@ -285,7 +285,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
                             TcpCommunicationSpi.class.getSimpleName() + "." + TcpCommunicationSpi.ATTR_PORT);
                     }
                     else {
-                        CommunicationSpi commSpi = ignite.configuration().getCommunicationSpi();
+                        CommunicationSpi<?> commSpi = ignite.configuration().getCommunicationSpi();
 
                         if (commSpi instanceof TcpCommunicationSpi) {
                             commPort = ((TcpCommunicationSpi)commSpi).boundPort();

@@ -28,18 +28,22 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
+
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.dto.Activity;
 import org.apache.ignite.console.dto.ActivityKey;
 import org.apache.ignite.console.dto.Notebook;
-import org.apache.ignite.console.json.JsonArray;
-import org.apache.ignite.console.json.JsonObject;
+
 import org.apache.ignite.console.repositories.AccountsRepository;
 import org.apache.ignite.console.repositories.ActivitiesRepository;
 import org.apache.ignite.console.repositories.ConfigurationsRepository;
 import org.apache.ignite.console.repositories.NotebooksRepository;
 import org.apache.ignite.console.tx.TransactionManager;
+import org.apache.ignite.console.utils.Utils;
 import org.apache.ignite.console.web.model.ConfigurationKey;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -124,7 +128,7 @@ public class MigrationFromMongo {
             return;
         }
 
-        if (txMgr.doInTransaction(accRepo::hasUsers)) {
+        if (txMgr.doInTransaction(accRepo::hasUsers)>0) {
             log.warn("Database was already migrated. Consider to disable migration in application settings.");
 
             return;
@@ -373,7 +377,7 @@ public class MigrationFromMongo {
         clusterMongo.put("models", asStrings(mdlIds.values()));
 
         JsonObject cfg = new JsonObject()
-            .add("cluster", fromJson(mongoToJson(clusterMongo)));
+            .put("cluster", Utils.asJson(clusterMongo));
 
         migrateCaches(cfg, cacheIds, mdlIds);
 
@@ -419,7 +423,7 @@ public class MigrationFromMongo {
             }
         });
 
-        cfg.add("caches", caches);
+        cfg.put("caches", caches);
     }
 
     /**
@@ -460,7 +464,7 @@ public class MigrationFromMongo {
             }
         });
 
-        cfg.add("models", models);
+        cfg.put("models", models);
     }
 
     /**
