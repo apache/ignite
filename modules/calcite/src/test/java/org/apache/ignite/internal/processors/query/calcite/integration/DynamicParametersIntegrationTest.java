@@ -52,7 +52,7 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
         );
 
         List<String> types = F.asList("VARCHAR", "DECIMAL(32767, 0)", "INTEGER", "BIGINT", "REAL", "DOUBLE",
-            "UUID", "INTERVAL DAY TO SECOND", "DATE", "TIMESTAMP(0)", "TIME(0)", "INTERVAL YEAR TO MONTH");
+            "UUID", "INTERVAL DAY TO SECOND", "DATE", "TIMESTAMP(3)", "TIME(0)", "INTERVAL YEAR TO MONTH");
 
         for (int i = 0; i < values.size(); i++) {
             assertQuery("SELECT typeof(?)").withParams(values.get(i)).returns(types.get(i)).check();
