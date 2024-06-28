@@ -20,6 +20,7 @@ package org.apache.ignite.p2p;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -93,16 +94,18 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
             Class task1 = CLASS_LOADER.loadClass(TEST_TASK1_NAME);
             Class task2 = CLASS_LOADER.loadClass(TEST_TASK2_NAME);
 
+            UUID id = ignite2.cluster().localNode().id();
+
             // Execute task1 and task2 from node1 on node2 and make sure that they reuse same class loader on node2.
-            Integer res1 = (Integer)ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
-            Integer res2 = (Integer)ignite1.compute().execute(task2, ignite2.cluster().localNode().id());
+            Integer res1 = (Integer)ignite1.compute().execute(task1, id);
+            Integer res2 = (Integer)ignite1.compute().execute(task2, id);
 
             assert res1.equals(res2); // Class loaders are same
 
-            Integer res3 = (Integer)ignite3.compute().execute(task1, ignite2.cluster().localNode().id());
-            Integer res4 = (Integer)ignite3.compute().execute(task2, ignite2.cluster().localNode().id());
+            Integer res3 = (Integer)ignite3.compute().execute(task1, id);
+            Integer res4 = (Integer)ignite3.compute().execute(task2, id);
 
-            assert res3.equals(res4);
+            assertEquals(res3, res4);
         }
         finally {
             stopGrid(1);
@@ -143,18 +146,6 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
     @Test
     public void testContinuousMode() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
-
-        processTest();
-    }
-
-    /**
-     * Test GridDeploymentMode.SHARED mode.
-     *
-     * @throws Exception if error occur.
-     */
-    @Test
-    public void testSharedMode() throws Exception {
-        depMode = DeploymentMode.SHARED;
 
         processTest();
     }

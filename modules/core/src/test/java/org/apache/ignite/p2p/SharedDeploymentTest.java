@@ -130,7 +130,7 @@ public class SharedDeploymentTest extends GridCommonAbstractTest {
                 new URL(GridTestProperties.getProperty("p2p.uri.cls.second"))}), ignite3, 10_000);
 
             for (Object o: res)
-                assertEquals(o, 43);
+                assertEquals(43, o);
         }
         finally {
             stopAllGrids();
