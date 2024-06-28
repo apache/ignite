@@ -1457,13 +1457,16 @@ class ServerImpl extends TcpDiscoveryImpl {
             joinReqSent = false;
 
             boolean openSock = false;
+            boolean writeSock = false;
 
             Socket sock = null;
 
             try {
                 long tsNanos = System.nanoTime();
 
-                sock = spi.openSocket(addr, timeoutHelper);
+                sock = spi.createSocket();
+
+                spi.openSocket(sock, addr, timeoutHelper);
 
                 openSock = true;
 
@@ -1471,6 +1474,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 // Handshake.
                 spi.writeToSocket(sock, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+
+                writeSock = true;
 
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, timeoutHelper.nextTimeoutChunk(
                     ackTimeout0));
@@ -1577,6 +1582,23 @@ class ServerImpl extends TcpDiscoveryImpl {
                         log.debug("Connect failed with StreamCorruptedException, skip address: " + addr);
 
                     break;
+                }
+
+                // Connection might fail on writing open header or a message to the socket.
+                // It usually happens due to a recipient closes the connection on SSL handshake.
+                // Check it by reading an error from the socket input stream.
+                if (spi.sslEnable && !writeSock && X.hasCause(e, SocketException.class)) {
+                    try {
+                        spi.readReceipt(sock, ackTimeout0);
+                    }
+                    catch (SSLException sslEx) {
+                        throw new IgniteException("Unable to establish secure connection. " +
+                            "SSL handshake failed [rmtAddr=" + addr + ", errMsg=\"" + sslEx.getMessage() + "\"]", sslEx);
+                    }
+                    catch (Exception other) {
+                        if (log.isDebugEnabled())
+                            log.error("Failed check SSL handshake error", other);
+                    }
                 }
 
                 if (spi.failureDetectionTimeoutEnabled() && timeoutHelper.checkFailureTimeoutReached(e))
