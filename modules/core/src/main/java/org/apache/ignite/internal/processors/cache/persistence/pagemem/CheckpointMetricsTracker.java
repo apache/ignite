@@ -54,13 +54,16 @@ public class CheckpointMetricsTracker {
     private volatile int cowPages;
 
     /** */
-    private long cpStart = System.currentTimeMillis();
+    private final long cpStart = System.currentTimeMillis();
 
     /** */
     private long cpLockWaitStart;
 
     /** */
     private long cpMarkStart;
+
+    /** */
+    private long cpMarkEnd;
 
     /** */
     private long cpLockRelease;
@@ -81,10 +84,16 @@ public class CheckpointMetricsTracker {
     private long walCpRecordFsyncEnd;
 
     /** */
-    private long splitAndSortCpPagesStart;
+    private long cpMarkerStoreEnd;
 
     /** */
     private long splitAndSortCpPagesEnd;
+
+    /** */
+    private long cpRecoveryDataWriteEnd;
+
+    /** */
+    private long cpRecoveryDataSize;
 
     /** */
     private long listenersExecEnd;
@@ -126,6 +135,11 @@ public class CheckpointMetricsTracker {
     }
 
     /** */
+    public void onMarkEnd() {
+        cpMarkEnd = System.currentTimeMillis();
+    }
+
+    /** */
     public void onLockRelease() {
         cpLockRelease = System.currentTimeMillis();
     }
@@ -156,8 +170,8 @@ public class CheckpointMetricsTracker {
     }
 
     /** */
-    public void onSplitAndSortCpPagesStart() {
-        splitAndSortCpPagesStart = System.currentTimeMillis();
+    public void onCpMarkerStoreEnd() {
+        cpMarkerStoreEnd = System.currentTimeMillis();
     }
 
     /** */
@@ -168,6 +182,12 @@ public class CheckpointMetricsTracker {
     /** */
     public void onWalCpRecordFsyncEnd() {
         walCpRecordFsyncEnd = System.currentTimeMillis();
+    }
+
+    /** */
+    public void onWriteRecoveryDataEnd(long recoveryDataSize) {
+        cpRecoveryDataSize = recoveryDataSize;
+        cpRecoveryDataWriteEnd = System.currentTimeMillis();
     }
 
     /**
@@ -202,7 +222,7 @@ public class CheckpointMetricsTracker {
      * @return Checkpoint mark duration.
      */
     public long markDuration() {
-        return cpPagesWriteStart - cpMarkStart;
+        return cpMarkEnd - cpMarkStart;
     }
 
     /**
@@ -234,19 +254,33 @@ public class CheckpointMetricsTracker {
     }
 
     /**
+     * @return Duration of splitting and sorting checkpoint pages.
+     */
+    public long splitAndSortCpPagesDuration() {
+        return splitAndSortCpPagesEnd - walCpRecordFsyncEnd;
+    }
+
+    /**
+     * @return Duration of writing recovery data.
+     */
+    public long recoveryDataWriteDuration() {
+        return cpRecoveryDataWriteEnd - cpMarkEnd;
+    }
+
+    /**
+     * @return Size of writing recovery data.
+     */
+    public long recoveryDataSize() {
+        return cpRecoveryDataSize;
+    }
+
+    /**
      * @return Duration of checkpoint entry buffer writing to file.
      *
      * @see CheckpointMarkersStorage#writeCheckpointEntry(long, UUID, WALPointer, CheckpointRecord, CheckpointEntryType, boolean)
      */
     public long writeCheckpointEntryDuration() {
-        return splitAndSortCpPagesStart - walCpRecordFsyncEnd;
-    }
-
-    /**
-     * @return Duration of splitting and sorting checkpoint pages.
-     */
-    public long splitAndSortCpPagesDuration() {
-        return splitAndSortCpPagesEnd - splitAndSortCpPagesStart;
+        return cpMarkerStoreEnd - cpRecoveryDataWriteEnd;
     }
 
     /**
