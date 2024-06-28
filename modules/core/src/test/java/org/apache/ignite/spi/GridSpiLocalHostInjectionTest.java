@@ -158,7 +158,7 @@ public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
 
         GridResourceProcessor proc = new GridResourceProcessor(ctx);
 
-        proc.setSpringContext(null);
+        proc.setInjectionContext(null);
 
         return proc;
     }
