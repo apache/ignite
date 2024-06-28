@@ -46,6 +46,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.SqlQueryExecutionEvent;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -691,6 +693,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // Throw special exception.
             if (e.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
                 throw new QueryCancelledException();
+
+            if (e.getErrorCode() == ErrorCode.OUT_OF_MEMORY) {
+                ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+            }
 
             if (e.getCause() instanceof IgniteSQLException)
                 throw (IgniteSQLException)e.getCause();
