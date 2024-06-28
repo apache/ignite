@@ -117,6 +117,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
+import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -772,30 +773,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Boolean dataPageScanEnabled,
         final H2QueryInfo qryInfo
     ) throws IgniteCheckedException {
-        if (qryInfo != null)
-            heavyQryTracker.startTracking(qryInfo);
-
-        enableDataPageScan(dataPageScanEnabled);
-
-        Throwable err = null;
-        try (
-            TraceSurroundings ignored = MTC.support(ctx.tracing()
-                .create(SQL_QRY_EXECUTE, MTC.span())
-                .addTag(SQL_QRY_TEXT, () -> sql))
-        ) {
-            return executeSqlQuery(conn, stmt, timeoutMillis, cancel);
-        }
-        catch (Throwable e) {
-            err = e;
-
-            throw e;
-        }
-        finally {
-            CacheDataTree.setDataPageScanEnabled(false);
-
-            if (qryInfo != null)
-                heavyQryTracker.stopTracking(qryInfo, err);
-        }
+            return executeWithTimer(
+                () -> {
+                    try (
+                        TraceSurroundings ignored = MTC.support(ctx.tracing()
+                            .create(SQL_QRY_EXECUTE, MTC.span())
+                            .addTag(SQL_QRY_TEXT, () -> sql))
+                    ) {
+                        return executeSqlQuery(conn, stmt, timeoutMillis, cancel);
+                    }},
+                qryInfo,
+                dataPageScanEnabled);
     }
 
     /** {@inheritDoc} */
@@ -2252,5 +2240,40 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public DistributedIndexingConfiguration distributedConfiguration() {
         return distrCfg;
+    }
+
+    /**
+     * Executes a query/fetch and prints a warning if it took too long to finish the task.
+     *
+     * @param task Query/fetch to execute.
+     * @param qryInfo Query info.
+     * @param dataPageScanEnabled Page scan enabled flag.
+     * @throws IgniteCheckedException If failed.
+     */
+    public <T> T executeWithTimer(
+        IgniteThrowableSupplier<T> task,
+        final H2QueryInfo qryInfo,
+        Boolean dataPageScanEnabled
+    ) throws IgniteCheckedException {
+        if (qryInfo != null)
+            heavyQryTracker.startTracking(qryInfo);
+
+        enableDataPageScan(dataPageScanEnabled);
+
+        Throwable err = null;
+        try {
+            return task.get();
+        }
+        catch (Throwable e) {
+            err = e;
+
+            throw e;
+        }
+        finally {
+            CacheDataTree.setDataPageScanEnabled(false);
+
+            if (qryInfo != null)
+                heavyQryTracker.stopTracking(qryInfo, err);
+        }
     }
 }
