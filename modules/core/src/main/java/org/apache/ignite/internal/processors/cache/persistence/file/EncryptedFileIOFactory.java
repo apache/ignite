@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 
 /**
@@ -90,5 +91,10 @@ public class EncryptedFileIOFactory implements FileIOFactory {
      */
     void headerSize(int headerSize) {
         this.headerSize = headerSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(EncryptedFileIOFactory.class, this);
     }
 }

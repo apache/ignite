@@ -20,6 +20,7 @@ package org.apache.ignite.spi.encryption.noop;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiNoop;
@@ -123,5 +124,10 @@ public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(NoopEncryptionSpi.class, this);
     }
 }

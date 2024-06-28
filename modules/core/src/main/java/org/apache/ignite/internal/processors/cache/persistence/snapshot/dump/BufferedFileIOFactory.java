@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * File I/O factory which provides {@link BufferedFileIO} implementation of FileIO.
@@ -40,5 +41,10 @@ public class BufferedFileIOFactory implements FileIOFactory {
     /** {@inheritDoc} */
     @Override public BufferedFileIO create(File file, OpenOption... modes) throws IOException {
         return new BufferedFileIO(factory.create(file, modes));
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(BufferedFileIOFactory.class, this);
     }
 }
