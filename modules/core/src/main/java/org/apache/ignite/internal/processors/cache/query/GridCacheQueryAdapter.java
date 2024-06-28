@@ -68,7 +68,6 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SET;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SPI;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 
 /**
  * Query adapter.
@@ -557,7 +556,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 
-        if (type == SQL_FIELDS || type == SPI)
+        if (type == SPI)
             return (CacheQueryFuture<R>)(loc ? qryMgr.queryFieldsLocal(bean) :
                 qryMgr.queryFieldsDistributed(bean, nodes));
         else
