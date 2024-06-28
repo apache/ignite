@@ -1201,7 +1201,7 @@ public class SnapshotRestoreProcess {
         catch (Exception ex) {
             opCtx0.errHnd.accept(ex);
 
-            return new GridFinishedFuture<>(ex);
+            retFut.onDone(ex);
         }
 
         return retFut;
@@ -1887,7 +1887,7 @@ public class SnapshotRestoreProcess {
         private volatile Map<Integer, StoredCacheData> cfgs = Collections.emptyMap();
 
         /** Graceful shutdown future. */
-        private volatile IgniteFuture<?> stopFut;
+        private volatile IgniteFuture<Void> stopFut;
 
         /** Operation start time. */
         private final long startTime;
