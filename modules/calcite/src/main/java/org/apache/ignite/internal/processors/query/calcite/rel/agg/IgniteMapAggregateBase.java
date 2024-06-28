@@ -63,14 +63,6 @@ public abstract class IgniteMapAggregateBase extends IgniteAggregate implements 
     }
 
     /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
-        RelTraitSet nodeTraits,
-        List<RelTraitSet> inputTraits
-    ) {
-        return ImmutableList.of(Pair.of(nodeTraits, ImmutableList.of(inputTraits.get(0))));
-    }
-
-    /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(
         RelTraitSet nodeTraits,
         List<RelTraitSet> inputTraits
