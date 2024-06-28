@@ -373,9 +373,9 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestMessagingJavaService()
         {
             // Deploy Java service.
-            var javaSvcName = TestUtils.DeployJavaService(_grid1);
+            TestUtils.DeployJavaService(_grid1);
 
-            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(javaSvcName, true);
+            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(TestUtils.JavaServiceName, true);
 
             var msgng = _grid1.GetMessaging();
 
