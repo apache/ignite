@@ -22,7 +22,7 @@ Ignite tries to support IPv4 and IPv6 but this can sometimes lead to issues wher
 
 
 == Discovery
-This section describes the network parameters of the default discovery mechanism, which uses the TCP/IP protocol to exahcange discovery messages and is implemented in the `TcpDiscoverySpi` class.
+This section describes the network parameters of the default discovery mechanism, which uses the TCP/IP protocol to exchange discovery messages and is implemented in the `TcpDiscoverySpi` class.
 
 You can change the properties of the discovery mechanism as follows:
 
