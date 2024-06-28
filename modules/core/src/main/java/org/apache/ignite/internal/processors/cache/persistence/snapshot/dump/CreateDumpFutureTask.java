@@ -191,7 +191,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     }
 
     /** {@inheritDoc} */
-    @Override public boolean start() {
+    @Override protected boolean doStart() {
         try {
             if (log.isInfoEnabled())
                 log.info("Start cache dump [name=" + snpName + ", grps=" + parts.keySet() + ']');

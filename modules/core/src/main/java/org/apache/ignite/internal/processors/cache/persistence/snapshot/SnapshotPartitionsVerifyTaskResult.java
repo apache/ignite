@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
@@ -124,5 +125,18 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         metas = U.readMap(in);
         idleRes = (IdleVerifyResultV2)in.readObject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        SnapshotPartitionsVerifyTaskResult result = (SnapshotPartitionsVerifyTaskResult)o;
+
+        return metas.equals(result.metas) && Objects.equals(idleRes, result.idleRes);
     }
 }

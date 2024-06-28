@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
@@ -45,7 +45,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
 /** */
-public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotFutureTask<SnapshotFutureTaskResult> {
+public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotPartsSenderFuture<SnapshotFutureTaskResult> {
     /**
      * Cache group and corresponding partitions collected under the PME lock.
      * For full snapshot additional checkpoint write lock required.
@@ -55,6 +55,9 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
 
     /** Future which will be completed when task requested to be closed. Will be executed on system pool. */
     protected volatile CompletableFuture<Void> closeFut;
+
+    /** */
+    protected final AtomicReference<Throwable> err = new AtomicReference<>();
 
     /**
      * @param cctx Shared context.
@@ -88,7 +91,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
         try {
             closeAsync().get();
         }
-        catch (InterruptedException | ExecutionException e) {
+        catch (Throwable e) {
             U.error(log, "SnapshotFutureTask cancellation failed", e);
 
             return false;
@@ -210,8 +213,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
 
     /** {@inheritDoc} */
     @Override public void acceptException(Throwable th) {
-        if (th == null)
-            return;
+        assert th != null;
 
         if (!(th instanceof IgniteFutureCancelledCheckedException))
             U.error(log, "Snapshot task has accepted exception to stop", th);

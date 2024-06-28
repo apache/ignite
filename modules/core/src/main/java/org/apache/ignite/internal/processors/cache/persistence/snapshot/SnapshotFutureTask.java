@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -136,9 +135,6 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     /** Pointer to {@link ClusterSnapshotRecord}. */
     private volatile @Nullable WALPointer snpPtr;
 
-    /** Flag indicates that task already scheduled on checkpoint. */
-    private final AtomicBoolean started = new AtomicBoolean();
-
     /** Estimated snapshot size in bytes. The value may grow during snapshot creation. */
     private final AtomicLong totalSize = new AtomicLong();
 
@@ -191,16 +187,13 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
      * @param th An exception which occurred during snapshot processing.
      */
     @Override public void acceptException(Throwable th) {
-        if (th == null)
-            return;
-
         super.acceptException(th);
 
         startedFut.onDone(th);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable SnapshotFutureTaskResult res, @Nullable Throwable err) {
+    @Override public boolean onDone(@Nullable SnapshotFutureTaskResult res, @Nullable Throwable err, boolean cancel) {
         for (PageStoreSerialWriter writer : partDeltaWriters.values())
             U.closeQuiet(writer);
 
@@ -224,7 +217,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         if (err != null)
             startedFut.onDone(err);
 
-        return super.onDone(res, err);
+        return super.onDone(res, err, cancel);
     }
 
     /**
@@ -239,14 +232,11 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
      *
      * @return {@code true} if task started by this call.
      */
-    @Override public boolean start() {
+    @Override protected boolean doStart() {
         if (stopping())
             return false;
 
         try {
-            if (!started.compareAndSet(false, true))
-                return false;
-
             tmpConsIdDir = U.resolveWorkDirectory(tmpSnpWorkDir.getAbsolutePath(),
                 databaseRelativePath(cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName()),
                 false);
