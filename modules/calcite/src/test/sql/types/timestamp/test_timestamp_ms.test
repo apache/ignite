@@ -1,12 +1,11 @@
 # name: test/sql/types/timestamp/test_timestamp_ms.test
 # description: Test milliseconds with timestamp
 # group: [timestamp]
-# Ignore https://issues.apache.org/jira/browse/IGNITE-15623
 
 query TT
-SELECT CAST('2001-04-20 14:42:11.123' AS TIMESTAMP) a, CAST('2001-04-20 14:42:11.0' AS TIMESTAMP) b;
+SELECT CAST('2001-04-20 14:42:11.123' AS TIMESTAMP) a, CAST('2001-04-20 14:42:11.00' AS TIMESTAMP) b;
 ----
-2001-04-20 14:42:11.123	2001-04-20 14:42:11
+2001-04-20 14:42:11.123	2001-04-20 14:42:11.0
 
 #  many ms
 query I
