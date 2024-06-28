@@ -51,7 +51,7 @@ class JdkMarshallerObjectInputStream extends ObjectInputStream {
     }
 
     /** {@inheritDoc} */
-    @Override protected Class<?> resolveClass(ObjectStreamClass desc) throws IOException, ClassNotFoundException {
+    @Override protected Class<?> resolveClass(ObjectStreamClass desc) throws ClassNotFoundException {
         // NOTE: DO NOT CHANGE TO 'clsLoader.loadClass()'
         // Must have 'Class.forName()' instead of clsLoader.loadClass()
         // due to weird ClassNotFoundExceptions for arrays of classes
