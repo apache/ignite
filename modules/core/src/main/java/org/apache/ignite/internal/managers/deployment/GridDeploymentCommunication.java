@@ -29,13 +29,14 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridByteArrayList;
-import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -364,14 +365,13 @@ class GridDeploymentCommunication {
      * @param rsrcName Resource name.
      * @param clsLdrId Class loader ID.
      * @param dstNode Remote node request should be sent to.
-     * @param threshold Time in milliseconds when request is decided to
-     *      be obsolete.
+     * @param timeout Request timeout.
      * @return Response value.
      * @throws IgniteCheckedException Thrown if there is no connection with remote node.
      * @throws TimeoutException If request timed out.
      */
     GridDeploymentResponse sendResourceRequest(final String rsrcName, IgniteUuid clsLdrId,
-        final ClusterNode dstNode, long threshold) throws IgniteCheckedException, TimeoutException {
+        final ClusterNode dstNode, long timeout) throws IgniteCheckedException, TimeoutException {
         assert rsrcName != null;
         assert dstNode != null;
         assert clsLdrId != null;
@@ -391,13 +391,11 @@ class GridDeploymentCommunication {
         // Send node IDs chain with request.
         req.nodeIds(nodeIds);
 
-        final Object qryMux = new Object();
+        final GridFutureAdapter<GridDeploymentResponse> future = new GridFutureAdapter<>();
 
-        final GridTuple<GridDeploymentResponse> res = new GridTuple<>();
+        GridLocalEventListener discoLsnr = resourceDiscoListener(dstNode, rsrcName, future);
 
-        GridLocalEventListener discoLsnr = resourceDiscoListener(res, dstNode, rsrcName, qryMux);
-
-        GridMessageListener resLsnr = resourceMessageListener(res, qryMux);
+        GridMessageListener resLsnr = resourceMessageListener(future);
 
         try {
             ctx.io().addMessageListener(resTopic, resLsnr);
@@ -405,8 +403,6 @@ class GridDeploymentCommunication {
             // The destination node has potentially left grid here but in this case
             // Communication manager will throw the exception while sending message.
             ctx.event().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
-
-            long start = U.currentTimeMillis();
 
             if (req.responseTopic() != null && !ctx.localNodeId().equals(dstNode.id()))
                 req.responseTopicBytes(U.marshal(marsh, req.responseTopic()));
@@ -416,41 +412,37 @@ class GridDeploymentCommunication {
             if (log.isDebugEnabled())
                 log.debug("Sent peer class loading request [node=" + dstNode.id() + ", req=" + req + ']');
 
-            synchronized (qryMux) {
-                try {
-                    long timeout = threshold - start;
-
-                    if (log.isDebugEnabled()) {
-                        log.debug("Waiting for peer response from node [node=" + dstNode.id() +
+            try {
+                if (log.isDebugEnabled()) {
+                    log.debug("Waiting for peer response from node [node=" + dstNode.id() +
                             ", timeout=" + timeout + ']');
-                    }
-
-                    while (res.get() == null && timeout > 0) {
-                        qryMux.wait(timeout);
-
-                        timeout = threshold - U.currentTimeMillis();
-                    }
-
-                    if (timeout <= 0)
-                        throw new TimeoutException();
                 }
-                catch (InterruptedException e) {
-                    // Interrupt again to get it in the users code.
-                    Thread.currentThread().interrupt();
 
-                    TimeoutException te = new TimeoutException(
-                        "Got interrupted while waiting for response from node: " + dstNode.id()
-                    );
+                GridDeploymentResponse res = future.get(timeout);
 
-                    te.initCause(e);
+                assert res != null;
 
-                    throw te;
-                }
+                return res;
             }
+            catch (IgniteInterruptedCheckedException e) {
+                //Interrupt again to get it in the users code.
+                Thread.currentThread().interrupt();
 
-            assert res.get() != null;
+                TimeoutException te = new TimeoutException(
+                    "Got interrupted while waiting for response from node: " + dstNode.id()
+                );
 
-            return res.get();
+                te.initCause(e);
+
+                throw te;
+            }
+            catch (IgniteCheckedException e) {
+                TimeoutException te = new TimeoutException(e.getMessage());
+
+                te.initCause(e);
+
+                throw te;
+            }
         }
         finally {
             ctx.event().removeLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
@@ -460,18 +452,16 @@ class GridDeploymentCommunication {
     }
 
     /**
-     * @param res Result holder.
      * @param dstNode Destination node.
      * @param rsrcName Resource name.
-     * @param qryMux Mutex.
+     * @param fut Future.
      * @return Listener for discovery events {@code EVT_NODE_LEFT} and {@code EVT_NODE_FAILED} for class loading
      * requests.
      */
     public GridLocalEventListener resourceDiscoListener(
-        GridTuple<GridDeploymentResponse> res,
         ClusterNode dstNode,
         String rsrcName,
-        Object qryMux
+        GridFutureAdapter<GridDeploymentResponse> fut
     ) {
         return new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
@@ -497,47 +487,36 @@ class GridDeploymentCommunication {
                 fake.success(false);
                 fake.errorMessage(errMsg);
 
-                // We put fake result here to interrupt waiting peer-to-peer thread
-                // because originating node has left grid.
-                synchronized (qryMux) {
-                    res.set(fake);
-
-                    qryMux.notifyAll();
-                }
+                fut.onDone(fake);
             }
         };
     }
 
     /**
-     * @param res Result holder.
-     * @param qryMux Mutex.
+     * @param fut Result future.
      * @return Listener for response message for class loading requests.
      */
-    public GridMessageListener resourceMessageListener(GridTuple<GridDeploymentResponse> res, Object qryMux) {
+    public GridMessageListener resourceMessageListener(GridFutureAdapter<GridDeploymentResponse> fut) {
         return new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 assert nodeId != null;
                 assert msg != null;
 
-                synchronized (qryMux) {
-                    if (!(msg instanceof GridDeploymentResponse)) {
-                        GridDeploymentResponse fake = new GridDeploymentResponse();
+                if (!(msg instanceof GridDeploymentResponse)) {
+                    GridDeploymentResponse fake = new GridDeploymentResponse();
 
-                        String errMsg = "Received unknown peer class loading response [node=" + nodeId +
-                            ", msg=" + msg + ']';
+                    String errMsg = "Received unknown peer class loading response [node=" + nodeId +
+                        ", msg=" + msg + ']';
 
-                        U.error(log, errMsg);
+                    U.error(log, errMsg);
 
-                        fake.success(false);
-                        fake.errorMessage(errMsg);
+                    fake.success(false);
+                    fake.errorMessage(errMsg);
 
-                        res.set(fake);
-                    }
-                    else
-                        res.set((GridDeploymentResponse)msg);
-
-                    qryMux.notifyAll();
+                    fut.onDone(fake);
                 }
+                else
+                    fut.onDone((GridDeploymentResponse)msg);
             }
         };
     }
