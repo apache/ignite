@@ -413,6 +413,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
                 H2PooledConnection conn = connections().connection(qryDesc.schemaName());
 
+                H2QueryInfo qryInfo = null;
+
                 try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_ITER_OPEN, MTC.span()))) {
                     H2Utils.setupConnection(conn, qctx,
                         qryDesc.distributedJoins(), qryDesc.enforceJoinOrder(), qryParams.lazy());
@@ -435,8 +437,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     H2Utils.bindParameters(stmt, F.asList(params));
 
-                    H2QueryInfo qryInfo = new H2QueryInfo(H2QueryInfo.QueryType.LOCAL, stmt, qry,
+                    qryInfo = new H2QueryInfo(H2QueryInfo.QueryType.LOCAL, stmt, qry,
                         ctx.localNodeId(), qryId);
+
+                    heavyQryTracker.startTracking(qryInfo);
 
                     if (ctx.performanceStatistics().enabled()) {
                         ctx.performanceStatistics().queryProperty(
@@ -448,13 +452,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         );
                     }
 
-                    ResultSet rs = executeSqlQueryWithTimer(
-                        stmt,
-                        conn,
-                        qry,
-                        timeout,
-                        cancel,
-                        qryParams.dataPageScanEnabled(),
+                    ResultSet rs = executeWithResumableTimeTracking(
+                        () -> executeSqlQueryWithTimer(
+                            stmt,
+                            conn,
+                            qry,
+                            timeout,
+                            cancel,
+                            qryParams.dataPageScanEnabled(),
+                            null
+                        ),
                         qryInfo
                     );
 
@@ -470,6 +477,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
                 catch (IgniteCheckedException | RuntimeException | Error e) {
                     conn.close();
+
+                    if (qryInfo != null)
+                        heavyQryTracker.stopTracking(qryInfo, e);
 
                     throw e;
                 }
@@ -773,17 +783,30 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Boolean dataPageScanEnabled,
         final H2QueryInfo qryInfo
     ) throws IgniteCheckedException {
-            return executeWithTimer(
-                () -> {
-                    try (
-                        TraceSurroundings ignored = MTC.support(ctx.tracing()
-                            .create(SQL_QRY_EXECUTE, MTC.span())
-                            .addTag(SQL_QRY_TEXT, () -> sql))
-                    ) {
-                        return executeSqlQuery(conn, stmt, timeoutMillis, cancel);
-                    }},
-                qryInfo,
-                dataPageScanEnabled);
+        if (qryInfo != null)
+            heavyQryTracker.startTracking(qryInfo);
+
+        enableDataPageScan(dataPageScanEnabled);
+
+        Throwable err = null;
+        try (
+            TraceSurroundings ignored = MTC.support(ctx.tracing()
+                .create(SQL_QRY_EXECUTE, MTC.span())
+                .addTag(SQL_QRY_TEXT, () -> sql))
+        ) {
+            return executeSqlQuery(conn, stmt, timeoutMillis, cancel);
+        }
+        catch (Throwable e) {
+            err = e;
+
+            throw e;
+        }
+        finally {
+            CacheDataTree.setDataPageScanEnabled(false);
+
+            if (qryInfo != null)
+                heavyQryTracker.stopTracking(qryInfo, err);
+        }
     }
 
     /** {@inheritDoc} */
@@ -2243,37 +2266,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * Executes a query/fetch and prints a warning if it took too long to finish the task.
+     * Resumes time tracking before the task (if needed) and suspends time tracking after the task is finished.
      *
      * @param task Query/fetch to execute.
      * @param qryInfo Query info.
-     * @param dataPageScanEnabled Page scan enabled flag.
      * @throws IgniteCheckedException If failed.
      */
-    public <T> T executeWithTimer(
+    public <T> T executeWithResumableTimeTracking(
         IgniteThrowableSupplier<T> task,
-        final H2QueryInfo qryInfo,
-        Boolean dataPageScanEnabled
+        final H2QueryInfo qryInfo
     ) throws IgniteCheckedException {
-        if (qryInfo != null)
-            heavyQryTracker.startTracking(qryInfo);
+        if (qryInfo.isSuspended())
+            qryInfo.resumeTracking();
 
-        enableDataPageScan(dataPageScanEnabled);
-
-        Throwable err = null;
         try {
             return task.get();
         }
-        catch (Throwable e) {
-            err = e;
-
-            throw e;
-        }
         finally {
-            CacheDataTree.setDataPageScanEnabled(false);
-
-            if (qryInfo != null)
-                heavyQryTracker.stopTracking(qryInfo, err);
+            qryInfo.suspendTracking();
         }
     }
 }

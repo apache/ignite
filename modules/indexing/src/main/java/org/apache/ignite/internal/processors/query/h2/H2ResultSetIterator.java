@@ -314,14 +314,6 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
             return false;
     }
 
-    /** */
-    private boolean fetchNextWithTimer() throws IgniteCheckedException {
-            return h2.executeWithTimer(
-                () -> fetchNext(),
-                qryInfo,
-                false);
-    }
-
     /**
      * @return Row.
      */
@@ -336,6 +328,9 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
             return;
 
         lockTables();
+
+        if (qryInfo != null)
+            h2.heavyQueriesTracker().stopTracking(qryInfo, null);
 
         try {
             resultSetChecker.checkOnClose();
@@ -403,7 +398,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         if (closed)
             return false;
 
-        return hasRow || (hasRow = fetchNextWithTimer());
+        return hasRow || (hasRow = h2.executeWithResumableTimeTracking(this::fetchNext, qryInfo));
     }
 
     /** {@inheritDoc} */

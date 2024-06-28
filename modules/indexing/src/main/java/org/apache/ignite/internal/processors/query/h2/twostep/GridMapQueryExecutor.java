@@ -446,6 +446,8 @@ public class GridMapQueryExecutor {
 
                 qryResults.addResult(qryIdx, res);
 
+                MapH2QueryInfo qryInfo = null;
+
                 try {
                     res.lock();
 
@@ -460,7 +462,9 @@ public class GridMapQueryExecutor {
 
                         H2Utils.bindParameters(stmt, params0);
 
-                        MapH2QueryInfo qryInfo = new MapH2QueryInfo(stmt, qry.query(), node.id(), qryId, reqId, segmentId);
+                        qryInfo = new MapH2QueryInfo(stmt, qry.query(), node.id(), qryId, reqId, segmentId);
+
+                        h2.heavyQueriesTracker().startTracking(qryInfo);
 
                         if (performanceStatsEnabled) {
                             ctx.performanceStatistics().queryProperty(
@@ -472,14 +476,20 @@ public class GridMapQueryExecutor {
                             );
                         }
 
-                        ResultSet rs = h2.executeSqlQueryWithTimer(
-                            stmt,
-                            conn,
-                            sql,
-                            timeout,
-                            qryResults.queryCancel(qryIdx),
-                            dataPageScanEnabled,
-                            qryInfo);
+                        GridQueryCancel qryCancel = qryResults.queryCancel(qryIdx);
+
+                        ResultSet rs = h2.executeWithResumableTimeTracking(
+                            () -> h2.executeSqlQueryWithTimer(
+                                stmt,
+                                conn,
+                                sql,
+                                timeout,
+                                qryCancel,
+                                dataPageScanEnabled,
+                                null
+                            ),
+                            qryInfo
+                        );
 
                         if (evt) {
                             ctx.event().record(new CacheQueryExecutedEvent<>(
@@ -507,14 +517,21 @@ public class GridMapQueryExecutor {
 
                         res.openResult(rs, qryInfo);
 
-                        final GridQueryNextPageResponse msg = prepareNextPageWithTimer(
-                            nodeRess,
-                            node,
-                            qryResults,
-                            qryIdx,
-                            segmentId,
-                            pageSize,
-                            dataPageScanEnabled
+                        MapQueryResults qryResults0 = qryResults;
+
+                        int qryIdx0 = qryIdx;
+
+                        final GridQueryNextPageResponse msg = h2.executeWithResumableTimeTracking(
+                            () -> prepareNextPage(
+                                nodeRess,
+                                node,
+                                qryResults0,
+                                qryIdx0,
+                                segmentId,
+                                pageSize,
+                                dataPageScanEnabled
+                            ),
+                            qryInfo
                         );
 
                         if (msg != null)
@@ -527,6 +544,12 @@ public class GridMapQueryExecutor {
                     }
 
                     qryIdx++;
+                }
+                catch (Throwable e) {
+                    if (qryInfo != null)
+                        h2.heavyQueriesTracker().stopTracking(qryInfo, e);
+
+                    throw e;
                 }
                 finally {
                     try {
@@ -862,14 +885,18 @@ public class GridMapQueryExecutor {
 
                         Boolean dataPageScanEnabled = isDataPageScanEnabled(req.getFlags());
 
-                        GridQueryNextPageResponse msg = prepareNextPageWithTimer(
-                            nodeRess,
-                            node,
-                            qryResults,
-                            req.query(),
-                            req.segmentId(),
-                            req.pageSize(),
-                            dataPageScanEnabled);
+                        GridQueryNextPageResponse msg = h2.executeWithResumableTimeTracking(
+                            () -> prepareNextPage(
+                                nodeRess,
+                                node,
+                                qryResults,
+                                req.query(),
+                                req.segmentId(),
+                                req.pageSize(),
+                                dataPageScanEnabled
+                            ),
+                            res.qryInfo()
+                        );
 
                         if (msg != null)
                             sendNextPage(node, msg);
@@ -939,6 +966,9 @@ public class GridMapQueryExecutor {
             if (last) {
                 qr.closeResult(qry);
 
+                if (res.qryInfo() != null)
+                    h2.heavyQueriesTracker().stopTracking(res.qryInfo(), null);
+
                 if (qr.isAllClosed()) {
                     nodeRess.remove(qr.queryRequestId(), segmentId, qr);
 
@@ -961,34 +991,6 @@ public class GridMapQueryExecutor {
 
             return msg;
         }
-    }
-
-    /**
-     * Prepares next page for query and prints warning if it took too long.
-     *
-     * @param nodeRess Results.
-     * @param node Node.
-     * @param qr Query results.
-     * @param qry Query.
-     * @param segmentId Index segment ID.
-     * @param pageSize Page size.
-     * @param dataPageScanEnabled If data page scan is enabled.
-     * @return Next page.
-     * @throws IgniteCheckedException If failed.
-     */
-    private GridQueryNextPageResponse prepareNextPageWithTimer(
-        MapNodeResults nodeRess,
-        ClusterNode node,
-        MapQueryResults qr,
-        int qry,
-        int segmentId,
-        int pageSize,
-        Boolean dataPageScanEnabled
-    ) throws IgniteCheckedException {
-        return h2.executeWithTimer(
-            () -> prepareNextPage(nodeRess, node, qr, qry, segmentId, pageSize, dataPageScanEnabled),
-            qr.result(qry).qryInfo(),
-            dataPageScanEnabled);
     }
 
     /**
