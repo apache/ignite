@@ -276,10 +276,10 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
                 "dirty pages during the ongoing checkpoint.");
 
         mreg.longMetric("InitialSize", "Initial memory region size in bytes defined by its data region.")
-            .value(dataRegionCfg.getInitialSize());
+            .set(dataRegionCfg.getInitialSize());
 
         mreg.longMetric("MaxSize", "Maximum memory region size in bytes defined by its data region.")
-            .value(dataRegionCfg.getMaxSize());
+            .set(dataRegionCfg.getMaxSize());
 
         if (persistenceEnabled) {
             // Reserve 1 sec, page ts can be slightly lower than currentTimeMillis, due to applied to ts mask. This
