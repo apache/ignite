@@ -41,6 +41,7 @@ import org.junit.Test;
 
 import static java.lang.Thread.currentThread;
 import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_EXEC_MSG;
+import static org.h2.engine.Constants.DEFAULT_PAGE_SIZE;
 
 /**
  * Tests for log print for long-running query.
@@ -48,6 +49,9 @@ import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTr
 public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int KEY_CNT = 1000;
+
+    /** Page size. */
+    private int pageSize = DEFAULT_PAGE_SIZE;
 
     /** Local query mode. */
     private boolean local;
@@ -254,8 +258,16 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * Execute long-running sql with a check for errors.
      */
     private void sqlCheckLongRunning() {
-        if (lazy)
-            sqlCheckLongRunningLazy("SELECT * FROM test WHERE _key < sleep_func(?)", 2000);
+        if (lazy) {
+            pageSize = 1;
+
+            try {
+                sqlCheckLongRunningLazy("SELECT * FROM test WHERE _key < sleep_func(?)", 2000);
+            }
+            finally {
+                pageSize = DEFAULT_PAGE_SIZE;
+            }
+        }
         else
             sqlCheckLongRunning("SELECT T0.id FROM test AS T0, test AS T1, test AS T2 where T0.id > ?", 0);
     }
@@ -270,8 +282,8 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
             .setTimeout(10, TimeUnit.SECONDS)
             .setLocal(local)
             .setLazy(lazy)
+            .setPageSize(pageSize)
             .setSchema("TEST")
-            .setPageSize(1)
             .setArgs(args), false);
     }
 
