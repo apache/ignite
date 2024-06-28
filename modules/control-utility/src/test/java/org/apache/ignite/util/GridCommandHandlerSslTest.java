@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -55,7 +56,7 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Assume.assumeTrue(commandHandler.equalsIgnoreCase(CLI_CMD_HND));
+        Assume.assumeTrue(cliCommandHandler());
 
         super.beforeTest();
     }
@@ -68,9 +69,17 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
         cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setMaxSize(100 * 1024 * 1024);
         cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
 
-        cfg.setConnectorConfiguration(new ConnectorConfiguration());
-        cfg.getConnectorConfiguration().setSslEnabled(true);
         cfg.setSslContextFactory(createSslFactory());
+
+        if (commandHandler.equals(CLI_GRID_CLIENT_CMD_HND)) {
+            cfg.setConnectorConfiguration(new ConnectorConfiguration()
+                .setSslEnabled(true));
+        }
+
+        if (commandHandler.equals(CLI_CMD_HND)) {
+            cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
+                .setSslEnabled(true));
+        }
 
         return cfg;
     }

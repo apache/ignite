@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.management;
 
 import java.util.function.Consumer;
-import org.apache.ignite.internal.client.GridClientBeforeNodeStart;
+import org.apache.ignite.internal.client.GridClientNodeStateBeforeStart;
 import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 
@@ -40,8 +40,8 @@ public class WarmUpStopCommand implements BeforeNodeStartCommand<NoArg, Boolean>
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean execute(GridClientBeforeNodeStart cli, NoArg arg, Consumer<String> printer) throws Exception {
-        cli.beforeStartState().stopWarmUp();
+    @Override public Boolean execute(GridClientNodeStateBeforeStart beforeStart, NoArg arg, Consumer<String> printer) throws Exception {
+        beforeStart.stopWarmUp();
 
         return true;
     }

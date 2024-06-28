@@ -471,7 +471,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
      * @return Metric values.
      */
     private Map<String, String> parseMetricCommandOutput(String out) {
-        if (commandHandler.equals(CLI_CMD_HND)) {
+        if (cliCommandHandler()) {
             String outStart = "--------------------------------------------------------------------------------";
 
             String outEnd = "Command [METRIC] finished with code: " + EXIT_CODE_OK;
