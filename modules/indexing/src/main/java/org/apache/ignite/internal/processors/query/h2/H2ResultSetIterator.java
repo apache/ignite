@@ -120,6 +120,9 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
     /** */
     private final H2QueryInfo qryInfo;
 
+    /** */
+    final IgniteH2Indexing h2;
+
     /**
      * @param data Data array.
      * @param log Logger.
@@ -141,6 +144,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         this.data = data;
         this.tracing = tracing;
         this.qryInfo = qryInfo;
+        this.h2 = h2;
 
         try {
             res = (ResultInterface)RESULT_FIELD.get(data);
@@ -310,6 +314,14 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
             return false;
     }
 
+    /** */
+    private boolean fetchNextWithTimer() throws IgniteCheckedException {
+            return h2.executeWithTimer(
+                () -> fetchNext(),
+                qryInfo,
+                false);
+    }
+
     /**
      * @return Row.
      */
@@ -391,7 +403,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         if (closed)
             return false;
 
-        return hasRow || (hasRow = fetchNext());
+        return hasRow || (hasRow = fetchNextWithTimer());
     }
 
     /** {@inheritDoc} */

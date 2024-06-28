@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -197,7 +196,7 @@ class MapQueryResult {
 
         try {
             for (int i = 0; i < pageSize; i++) {
-                if (!executeWithTimer(res.res::next))
+                if (!res.res.next())
                     return true;
 
                 Value[] row = res.res.currentRow();
@@ -254,7 +253,7 @@ class MapQueryResult {
                 res.resultSetChecker.checkOnFetchNext();
             }
 
-            return !executeWithTimer(res.res::hasNext);
+            return !res.res.hasNext();
         }
         finally {
             CacheDataTree.setDataPageScanEnabled(false);
@@ -326,28 +325,8 @@ class MapQueryResult {
     }
 
     /** */
-    public boolean executeWithTimer(Supplier<Boolean> supplier) {
-        HeavyQueriesTracker heavyQryTracker = h2.heavyQueriesTracker();
-
-        MapH2QueryInfo qryInfo = res.qryInfo;
-
-        if (qryInfo != null)
-            heavyQryTracker.startTracking(qryInfo);
-
-        Throwable err = null;
-
-        try {
-            return supplier.get();
-        }
-        catch (Throwable e) {
-            err = e;
-
-            throw e;
-        }
-        finally {
-            if (qryInfo != null)
-                heavyQryTracker.stopTracking(qryInfo, err);
-        }
+    public MapH2QueryInfo qryInfo() {
+        return res.qryInfo;
     }
 
     /** */

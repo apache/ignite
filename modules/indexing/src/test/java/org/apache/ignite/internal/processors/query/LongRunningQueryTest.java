@@ -30,6 +30,8 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
@@ -49,11 +51,23 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int KEY_CNT = 1000;
 
+    /** Timeout for long query warnings. */
+    private static final long WARN_TIMEOUT = 1000;
+
+    /** Sleep duration for sql sleep function. */
+    private static final long SLEEP = WARN_TIMEOUT * 2;
+
     /** Local query mode. */
     private boolean local;
 
     /** Lazy query mode. */
     private boolean lazy;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
+        return super.getConfiguration(name)
+            .setSqlConfiguration(new SqlConfiguration().setLongQueryWarningTimeout(WARN_TIMEOUT));
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -104,6 +118,30 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     public void testLongLocal() {
         local = true;
         lazy = false;
+
+        checkLongRunning();
+        checkFastQueries();
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testLongDistributedLazy() {
+        local = false;
+        lazy = true;
+
+        checkLongRunning();
+        checkFastQueries();
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testLongLocalLazy() {
+        local = true;
+        lazy = true;
 
         checkLongRunning();
         checkFastQueries();
@@ -184,7 +222,10 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         testLog.registerListener(lsnr);
 
-        sqlCheckLongRunning();
+        if (lazy)
+            sqlCheckLongRunningLazy();
+        else
+            sqlCheckLongRunning();
 
         assertTrue(lsnr.check());
     }
@@ -237,6 +278,24 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
             .setLazy(lazy)
             .setSchema("TEST")
             .setArgs(args), false);
+    }
+
+    /** */
+    private void sqlCheckLongRunningLazy() {
+        long startTime = System.currentTimeMillis();
+
+        Iterator<List<?>> iter = grid().cache("test").query(
+            new SqlFieldsQuery("SELECT * FROM test WHERE _key < sleep_func(?)")
+                .setLazy(lazy)
+                .setPageSize(1)
+                .setLocal(local)
+                .setArgs(SLEEP)).iterator();
+
+        assertTrue("Iterator with query results must not be empty.", !iter.next().isEmpty());
+
+        long resultSetTime = System.currentTimeMillis() - startTime;
+
+        assertTrue("Expected long query: " + resultSetTime, resultSetTime >= WARN_TIMEOUT);
     }
 
     /**
