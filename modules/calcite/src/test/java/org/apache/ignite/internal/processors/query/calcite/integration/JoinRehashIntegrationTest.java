@@ -32,6 +32,49 @@ public class JoinRehashIntegrationTest extends AbstractBasicIntegrationTest {
     /** Test that resources (in particular inboxes) are cleaned up after executing join with rehashing. */
     @Test
     public void testResourceCleanup() throws Exception {
+        prepareTables();
+
+        String sql = "SELECT sum(i.price * i.amount)" +
+            " FROM order_items i JOIN orders o ON o.id=i.orderId" +
+            " WHERE o.region = ?";
+
+        assertQuery(sql)
+            .withParams("region0")
+            .matches(QueryChecker.containsSubPlan("IgniteMergeJoin"))
+            .matches(QueryChecker.containsSubPlan("IgniteExchange(distribution=[affinity"))
+            .returns(BigDecimal.valueOf(270))
+            .check();
+
+        // Here we only start queries and wait for result, actual resource clean up is checked by
+        // AbstractBasicIntegrationTest.afterTest method.
+        GridTestUtils.runMultiThreaded(() -> {
+            for (int i = 0; i < 100; i++)
+                sql(sql, i % 10);
+        }, 10, "query_starter");
+    }
+
+    /** Tests that null values are filtered out on rehashing. */
+    @Test
+    public void testNullAffinityKeys() throws Exception {
+        prepareTables();
+
+        // Add null values.
+        for (int i = 0; i < 10; i++)
+            sql("INSERT INTO order_items VALUES(?, null, null, null)", "null_key_" + i);
+
+        String sql = "SELECT sum(i.price * i.amount)" +
+            " FROM order_items i JOIN orders o ON o.id=i.orderId" +
+            " WHERE o.region = ?";
+
+        assertQuery(sql)
+            .withParams("region0")
+            .matches(QueryChecker.containsSubPlan("IgniteExchange(distribution=[affinity"))
+            .returns(BigDecimal.valueOf(270))
+            .check();
+    }
+
+    /** Prepare tables orders and order_items with data. */
+    private void prepareTables() {
         sql("CREATE TABLE order_items (\n" +
             "    id varchar,\n" +
             "    orderId int,\n" +
@@ -54,22 +97,5 @@ public class JoinRehashIntegrationTest extends AbstractBasicIntegrationTest {
             for (int j = 0; j < 20; j++)
                 sql("INSERT INTO order_items VALUES(?, ?, ?, ?)", i + "_" + j, i, i / 10.0, j % 10);
         }
-
-        String sql = "SELECT sum(i.price * i.amount)" +
-            " FROM order_items i JOIN orders o ON o.id=i.orderId" +
-            " WHERE o.region = ?";
-
-        assertQuery(sql)
-            .withParams("region0")
-            .matches(QueryChecker.containsSubPlan("IgniteMergeJoin"))
-            .returns(BigDecimal.valueOf(270))
-            .check();
-
-        // Here we only start queries and wait for result, actual resource clean up is checked by
-        // AbstractBasicIntegrationTest.afterTest method.
-        GridTestUtils.runMultiThreaded(() -> {
-            for (int i = 0; i < 100; i++)
-                sql(sql, i % 10);
-        }, 10, "query_starter");
     }
 }
