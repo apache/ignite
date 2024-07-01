@@ -726,8 +726,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     @Override protected void stop0(boolean cancel) {
         busyLock.block();
 
+        IgniteCheckedException stopErr = new NodeStoppingException("Node is stopping.");
+
         try {
-            restoreCacheGrpProc.interrupt(new NodeStoppingException("Node is stopping."));
+            restoreCacheGrpProc.interrupt(stopErr);
+            checkSnpProcesses.interrupt(stopErr);
 
             // Try stop all snapshot processing if not yet.
             for (AbstractSnapshotFutureTask<?> sctx : locSnpTasks.values())

@@ -52,8 +52,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.management.cache.CacheFilterEnum;
 import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommandArg;
 import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
@@ -83,6 +86,7 @@ import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -826,19 +830,66 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         );
     }
 
-//    /** Tests snapshot checking process stops when a node leaves. */
-//    @Test
-//    public void testNodeLeftDuringSnapshotChecking() throws Exception {
-//        prepareGridsAndSnapshot(3, 2, false);
-//
-//        doTestConcurrentSnpCheckOperations(
-//            () -> G.stop(grid(1).name(), false),
-//            () -> new IgniteFutureImpl<>(new GridFinishedFuture<>(null)),
-//            false,
-//            null,
-//            null
-//        );
-//    }
+    /** Tests snapshot checking process stops when a server node leaves. */
+    @Test
+    public void testServerLeftDuringSnapshotChecking() throws Exception {
+        prepareGridsAndSnapshot(5, 1, false);
+
+        Set<Integer> stopped = new HashSet<>();
+
+        // Other server leaves when snapshot started from a server node.
+        doTestNodeStopsDuringSnapshotChecking(1, 4, stopped);
+
+        // Other server leaves when snapshot started from the coordinator.
+        doTestNodeStopsDuringSnapshotChecking(0, 3, stopped);
+
+        // A server leaves when snapshot started from a client.
+        doTestNodeStopsDuringSnapshotChecking(5, 2, stopped);
+
+        // The same server leaves.
+        doTestNodeStopsDuringSnapshotChecking(1, 1, stopped);
+    }
+
+    /** Tests snapshot checking process stops when a server node leaves. */
+    @Test
+    public void testClientLeftDuringSnapshotChecking() throws Exception {
+        prepareGridsAndSnapshot(2, 6, false);
+
+        Set<Integer> stopped = new HashSet<>();
+
+        // Other client leaves when snapshot started from a server node.
+        doTestNodeStopsDuringSnapshotChecking(1, 2, stopped);
+
+        // Other client leaves when snapshot started from the coordinator.
+        doTestNodeStopsDuringSnapshotChecking(0, 3, stopped);
+
+        // Another client leaves when snapshot started from a client.
+        doTestNodeStopsDuringSnapshotChecking(4, 5, stopped);
+
+        // The same client leaves.
+        doTestNodeStopsDuringSnapshotChecking(6, 6, stopped);
+    }
+
+    /** Tests snapshot checking process stops when the coorditator leaves. */
+    @Test
+    public void testCoordinatorLeftDuringSnapshotChecking() throws Exception {
+        prepareGridsAndSnapshot(5, 1, false);
+
+        Set<Integer> stopped = new HashSet<>();
+
+        // Coordinator leaves when snapshot started from a server node.
+        doTestNodeStopsDuringSnapshotChecking(4, 0, stopped);
+
+        // Coordinator leaves when snapshot started from a client node.
+        assertTrue(U.isLocalNodeCoordinator(grid(1).context().discovery()));
+
+        doTestNodeStopsDuringSnapshotChecking(5, 1, stopped);
+
+        // Coordinator leaves when snapshot started from it.
+        assertTrue(U.isLocalNodeCoordinator(grid(2).context().discovery()));
+
+        doTestNodeStopsDuringSnapshotChecking(2, 2, stopped);
+    }
 
     /** */
     private void prepareGridsAndSnapshot(int servers, int clients, boolean removeTheCache) throws Exception {
@@ -975,6 +1026,86 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
             if (cleaner != null)
                 cleaner.run();
+
+            awaitPartitionMapExchange();
+        }
+    }
+
+    /**  */
+    private void doTestNodeStopsDuringSnapshotChecking(int originatorIdx, int nodeToStopIdx, Set<Integer> stopped) throws Exception {
+        int grids = G.allGrids().size();
+
+        boolean clientLeaves = grid(nodeToStopIdx).cluster().localNode().isClient();
+
+        int coordIdx = -1;
+
+        for (int i = 0; i < grids; ++i) {
+            if (stopped.contains(i) || !U.isLocalNodeCoordinator(grid(i).context().discovery()))
+                continue;
+
+            coordIdx = i;
+
+            break;
+        }
+
+        try {
+            discoSpi(grid(coordIdx)).block(msg -> msg instanceof FullMessage && ((FullMessage<?>)msg).type() == SNAPSHOT_CHECK_METAS.ordinal());
+
+            IgniteInternalFuture<?> fut = snp(grid(originatorIdx)).checkSnapshot(SNAPSHOT_NAME, null, null, false, 0, true);
+
+            log.error("TEST | test 1");
+
+            discoSpi(grid(coordIdx)).waitBlocked(getTestTimeout());
+
+            log.error("TEST | test 2");
+
+            stopGrid(nodeToStopIdx);
+
+            stopped.add(nodeToStopIdx);
+
+            waitForCondition(() -> {
+                for (int i = 0; i < G.allGrids().size(); ++i) {
+                    if (!stopped.contains(i) && grid(i).cluster().nodes().size() != grids - 1)
+                        return false;
+                }
+
+                return true;
+            }, getTestTimeout());
+
+            log.error("TEST | test 3");
+
+            if (nodeToStopIdx != coordIdx)
+                discoSpi(grid(coordIdx)).unblock();
+
+            log.error("TEST | test 5");
+
+            if (originatorIdx == nodeToStopIdx) {
+                assertThrowsAnyCause(
+                    null,
+                    () -> fut.get(getTestTimeout()),
+                    NodeStoppingException.class,
+                    "Node is stopping"
+                );
+
+                return;
+            }
+
+            if (clientLeaves)
+                fut.get(getTestTimeout());
+            else {
+                assertThrowsAnyCause(
+                    null,
+                    () -> fut.get(getTestTimeout()),
+                    ClusterTopologyCheckedException.class,
+                    "Snapshot checking stopped. A node left the cluster"
+                );
+            }
+
+            log.error("TEST | test 8");
+        }
+        finally {
+            if (nodeToStopIdx != coordIdx)
+                discoSpi(grid(coordIdx)).unblock();
 
             awaitPartitionMapExchange();
         }

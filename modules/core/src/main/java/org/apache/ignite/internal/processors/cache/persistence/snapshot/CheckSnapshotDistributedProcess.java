@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -83,17 +84,18 @@ public class CheckSnapshotDistributedProcess {
         phase2CalculateParts = new DistributedProcess<>(kctx, SNAPSHOT_VALIDATE_PARTS, this::validateParts,
             this::reduceValidatePartsAndFinishProc);
 
-        kctx.event().addLocalEventListener((evt) -> {
-            if (!CU.baselineNode(evt.node(), kctx.state().clusterState()))
-                return;
-
-            // Discovery-synchronized.
-            cancelAll(new ClusterTopologyCheckedException("A baseline node left the cluster: " + evt.node() + '.'));
-        }, EVT_NODE_FAILED, EVT_NODE_LEFT);
+        kctx.event().addLocalEventListener((evt) -> nodeLeft(((DiscoveryEvent)evt).eventNode()), EVT_NODE_FAILED, EVT_NODE_LEFT);
     }
 
-    /** Must be discovery-synchronized.*/
-    private void cancelAll(@Nullable Throwable th) {
+    /** */
+    public void interrupt(Throwable th){
+        if (locRequests.isEmpty())
+            return;
+
+        //  synchronized (locRequests) {
+//                if (locRequests.isEmpty())
+//                    return;
+
         locRequests.values().forEach(r -> {
             r.error(th);
 
@@ -102,6 +104,18 @@ public class CheckSnapshotDistributedProcess {
             else
                 cleanLocalRequestAndClusterFut(r, Collections.emptyMap(), null);
         });
+
+        //  }
+    }
+
+    /** */
+    private void nodeLeft(ClusterNode node) {
+        if (node.isClient() || locRequests.isEmpty())
+            return;
+
+        log.warning("Stopping all the snapshot checkings - a node left the cluster: " + node.id());
+
+        interrupt(new ClusterTopologyCheckedException("Snapshot checking stopped. A node left the cluster: " + node + '.'));
     }
 
     /** Phase 2 and process finish. */
@@ -163,7 +177,7 @@ public class CheckSnapshotDistributedProcess {
 
         SnapshotCheckOperationRequest locReq = proceedOrClean(incReq.snapshotName(), incReq.error(), null);
 
-        if (locReq == null || skip())
+        if (locReq == null || kctx.clientNode())
             return FINISHED_FUT;
 
         log.error("TEST | validateParts() 2 on " + kctx.cluster().get().localNode().order());
@@ -217,15 +231,18 @@ public class CheckSnapshotDistributedProcess {
 
     /** Phase 1 beginning. Discovery-synchronized. */
     private IgniteInternalFuture<ArrayList<SnapshotMetadata>> prepareAndCheckMetas(SnapshotCheckOperationRequest extReq) {
-        log.error("TEST | prepareAndCheckMetas() 1 on " + kctx.cluster().get().localNode().order());
+        //log.error("TEST | prepareAndCheckMetas() 1 on " + kctx.cluster().get().localNode().order());
 
         SnapshotCheckOperationRequest locReq = locRequests.computeIfAbsent(extReq.snapshotName(), nmae -> extReq);
 
+        if (kctx.clientNode()) {
+            log.error("TEST | prepareAndCheckMetas() skip on " + kctx.cluster().get().localNode().order());
+
+            return FINISHED_FUT;
+        }
+
         assert locReq.fut == null;
         assert locReq.clusterInitiatorFut == null || kctx.localNodeId().equals(locReq.operationalNodeId()) && locReq.startTime() != 0;
-
-        if (skip())
-            return FINISHED_FUT;
 
         log.error("TEST | prepareAndCheckMetas() 2 on " + kctx.cluster().get().localNode().order());
 
@@ -455,10 +472,5 @@ public class CheckSnapshotDistributedProcess {
         }
 
         return locReq;
-    }
-
-    /** @return {@code True} if current node must not check a snapshot. */
-    private boolean skip() {
-        return kctx.clientNode() || !CU.baselineNode(kctx.cluster().get().localNode(), kctx.state().clusterState());
     }
 }
