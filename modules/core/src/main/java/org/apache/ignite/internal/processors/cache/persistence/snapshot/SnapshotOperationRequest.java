@@ -24,7 +24,6 @@ import java.util.UUID;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,10 +33,6 @@ import org.jetbrains.annotations.Nullable;
 public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
-
-    /** Baseline node IDs that must be alive to complete the operation. */
-    @GridToStringInclude
-    protected final Set<UUID> nodes;
 
     /**
      * Snapshot operation warnings. Warnings do not interrupt snapshot process but raise exception at the end to make
@@ -97,21 +92,13 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
         boolean compress,
         boolean encrypt
     ) {
-        super(reqId, opNodeId, snpName, snpPath, grps, incIdx);
+        super(reqId, opNodeId, snpName, snpPath, grps, incIdx, nodes);
 
-        this.nodes = nodes;
         this.incremental = incremental;
         this.onlyPrimary = onlyPrimary;
         this.dump = dump;
         this.compress = compress;
         this.encrypt = encrypt;
-    }
-
-    /**
-     * @return Baseline node IDs that must be alive to complete the operation.
-     */
-    public Set<UUID> nodes() {
-        return nodes;
     }
 
     /** @return {@code True} if incremental snapshot requested. */

@@ -46,6 +46,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -850,7 +851,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         doTestNodeStopsDuringSnapshotChecking(1, 1, stopped);
     }
 
-    /** Tests snapshot checking process stops when a server node leaves. */
+    /** Tests snapshot checking process continues when a client node leaves. */
     @Test
     public void testClientLeftDuringSnapshotChecking() throws Exception {
         prepareGridsAndSnapshot(2, 6, false);
@@ -868,6 +869,26 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         // The same client leaves.
         doTestNodeStopsDuringSnapshotChecking(6, 6, stopped);
+    }
+
+    /** Tests snapshot checking process continues when a non-baseline node leaves. */
+    @Test
+    public void testNonBaselineServerLeftDuringSnapshotChecking() throws Exception {
+        prepareGridsAndSnapshot(6, 2, 1, false);
+
+        Set<Integer> stopped = new HashSet<>();
+
+        // Non-baseline node leaves when snapshot checking started from a sever node.
+        doTestNodeStopsDuringSnapshotChecking(1, 2, stopped);
+
+        // Non-baseline node leaves when snapshot checking started from a client node.
+        doTestNodeStopsDuringSnapshotChecking(4, 3, stopped);
+
+        // Non-baseline node leaves when snapshot checking started from another non-baseline.
+        doTestNodeStopsDuringSnapshotChecking(5, 4, stopped);
+
+        // Non-baseline node leaves when snapshot checking started from coordinator.
+        doTestNodeStopsDuringSnapshotChecking(0, 5, stopped);
     }
 
     /** Tests snapshot checking process stops when the coorditator leaves. */
@@ -893,6 +914,13 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** */
     private void prepareGridsAndSnapshot(int servers, int clients, boolean removeTheCache) throws Exception {
+        prepareGridsAndSnapshot(servers, servers, clients, removeTheCache);
+    }
+
+    /** */
+    private void prepareGridsAndSnapshot(int servers, int baseLineCnt, int clients, boolean removeTheCache) throws Exception {
+        assert baseLineCnt > 0 && baseLineCnt <= servers;
+
         IgniteEx ignite = null;
 
         for (int i = 0; i < servers + clients; ++i) {
@@ -904,9 +932,13 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 cfg.setClientMode(true);
 
             ignite = startGrid(cfg);
-        }
 
-        ignite.cluster().state(ACTIVE);
+            if (i == baseLineCnt - 1) {
+                ignite.cluster().state(ACTIVE);
+
+                ignite.cluster().setBaselineTopology(ignite.cluster().topologyVersion());
+            }
+        }
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
@@ -1035,7 +1067,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     private void doTestNodeStopsDuringSnapshotChecking(int originatorIdx, int nodeToStopIdx, Set<Integer> stopped) throws Exception {
         int grids = G.allGrids().size();
 
-        boolean clientLeaves = grid(nodeToStopIdx).cluster().localNode().isClient();
+        ClusterNode leaving = grid(nodeToStopIdx).cluster().localNode();
+
+        boolean requredLeft = !leaving.isClient() && grid(nodeToStopIdx).cluster().currentBaselineTopology().contains(leaving);
 
         int coordIdx = -1;
 
@@ -1064,7 +1098,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             stopped.add(nodeToStopIdx);
 
             waitForCondition(() -> {
-                for (int i = 0; i < G.allGrids().size(); ++i) {
+                for (int i = 0; i < grids; ++i) {
                     if (!stopped.contains(i) && grid(i).cluster().nodes().size() != grids - 1)
                         return false;
                 }
@@ -1090,9 +1124,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 return;
             }
 
-            if (clientLeaves)
-                fut.get(getTestTimeout());
-            else {
+            if (requredLeft) {
                 assertThrowsAnyCause(
                     null,
                     () -> fut.get(getTestTimeout()),
@@ -1100,6 +1132,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     "Snapshot checking stopped. A node left the cluster"
                 );
             }
+            else
+                fut.get(getTestTimeout());
 
             log.error("TEST | test 8");
         }

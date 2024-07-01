@@ -52,6 +52,7 @@ public class SnapshotCheckOperationRequest extends AbstractSnapshotOperationRequ
      * @param reqId    Request ID.
      * @param opNodeId Operational node ID.
      * @param snpName  Snapshot name.
+     * @param nodes Baseline node IDs that must be alive to complete the operation..
      * @param snpPath  Snapshot directory path.
      * @param grps     List of cache group names.
      * @param incIdx   Incremental snapshot index.
@@ -60,6 +61,7 @@ public class SnapshotCheckOperationRequest extends AbstractSnapshotOperationRequ
     protected SnapshotCheckOperationRequest(
         UUID reqId,
         UUID opNodeId,
+        Collection<UUID> nodes,
         String snpName,
         String snpPath,
         @Nullable Collection<String> grps,
@@ -67,7 +69,7 @@ public class SnapshotCheckOperationRequest extends AbstractSnapshotOperationRequ
         boolean includeCustomHandlers,
         boolean validatePartitions
     ) {
-        super(reqId, opNodeId, snpName, snpPath, grps, incIdx);
+        super(reqId, opNodeId, snpName, snpPath, grps, incIdx, nodes);
 
         this.includeCustomHandlers = includeCustomHandlers;
     }
