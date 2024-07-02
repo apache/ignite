@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -617,46 +618,90 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertTrue("Threads created: " + createdThreads, createdThreads < iterations);
     }
 
-    /** Tests concurrent snapshot checks. */
+    /** Tests concurrent snapshot checks are declined for the same snapshot. */
     @Test
-    public void testConcurrentSnpChecks() throws Exception {
+    public void testDeclinedConcurrentTheSameSnpFullChecks() throws Exception {
         prepareGridsAndSnapshot(3, 2, false);
 
         // Coordinator and another node.
-        doTestConcurrentSnpChecks(0, 1);
+        doTestDeclinedConcurrentSnpChecks(0, 1);
 
         // Another node and coordinator.
-        doTestConcurrentSnpChecks(1, 0);
+        doTestDeclinedConcurrentSnpChecks(1, 0);
 
         // Only coordinator
-        doTestConcurrentSnpChecks(0, 0);
+        doTestDeclinedConcurrentSnpChecks(0, 0);
 
         // Different not-coordinators.
-        doTestConcurrentSnpChecks(1, 2);
+        doTestDeclinedConcurrentSnpChecks(1, 2);
 
         // The same not-coordinator.
-        doTestConcurrentSnpChecks(2, 2);
+        doTestDeclinedConcurrentSnpChecks(2, 2);
 
         //  Server and client.
-        doTestConcurrentSnpChecks(2, 3);
+        doTestDeclinedConcurrentSnpChecks(2, 3);
 
         //  Client and server.
-        doTestConcurrentSnpChecks(3, 2);
+        doTestDeclinedConcurrentSnpChecks(3, 2);
 
         // The same client.
-        doTestConcurrentSnpChecks(3, 3);
+        doTestDeclinedConcurrentSnpChecks(3, 3);
 
         // Different clients.
-        doTestConcurrentSnpChecks(3, 4);
+        doTestDeclinedConcurrentSnpChecks(3, 4);
+    }
+
+    /** Tests concurrent snapshot checks are allowed for different snapshots. */
+    @Test
+    public void testAllowedConcurrentDifferentSnpFullChecks() throws Exception {
+        prepareGridsAndSnapshot(3, 2, 2, false);
+
+        snp(grid(3)).createSnapshot(SNAPSHOT_NAME + '2').get();
+
+        for(Ignite ig0 : G.allGrids()){
+            for(Ignite ig1 : G.allGrids()){
+                doTestConcurrentSnpCheckOperations(
+                    () -> new IgniteFutureImpl<>(snp((IgniteEx)ig0).checkSnapshot(SNAPSHOT_NAME, null, null, false, 0, true)),
+                    () -> new IgniteFutureImpl<>(snp((IgniteEx)ig1).checkSnapshot(SNAPSHOT_NAME + '2', null, null, false, 0, true)),
+                    false,
+                    null,
+                    null
+                );
+            }
+        }
+    }
+
+    /** Tests concurrent snapshot check and restoration are allowed for different snapshots. */
+    @Test
+    public void testConcurrentDifferentSnpFullCheckAndRestoration() throws Exception {
+        prepareGridsAndSnapshot(3, 2, 2, false);
+
+        snp(grid(3)).createSnapshot(SNAPSHOT_NAME + '2').get();
+
+        grid(0).destroyCache(DEFAULT_CACHE_NAME);
+
+        awaitPartitionMapExchange();
+
+        for (Ignite ig0 : G.allGrids()) {
+            for (Ignite ig1 : G.allGrids()) {
+                doTestConcurrentSnpCheckOperations(
+                    () -> new IgniteFutureImpl<>(snp((IgniteEx)ig0).checkSnapshot(SNAPSHOT_NAME, null, null, false, 0, true)),
+                    () -> snp((IgniteEx)ig1).restoreSnapshot(SNAPSHOT_NAME + '2', null),
+                    false,
+                    null,
+                    () -> grid(0).destroyCache(DEFAULT_CACHE_NAME)
+                );
+            }
+        }
     }
 
     /**
-     * Performs test of concurrent snapshot checks.
+     * Performs test of declined concurrent snapshot checks of the same snapshot.
      *
      * @param originatorNodeIdx Originator node idx.
      * @param trierNodeIdx Concurrent trier node idx.
      */
-    private void doTestConcurrentSnpChecks(int originatorNodeIdx, int trierNodeIdx) throws Exception {
+    private void doTestDeclinedConcurrentSnpChecks(int originatorNodeIdx, int trierNodeIdx) throws Exception {
         doTestConcurrentSnpCheckOperations(
             () -> new IgniteFutureImpl<>(snp(grid(originatorNodeIdx)).checkSnapshot(SNAPSHOT_NAME, null)),
             () -> new IgniteFutureImpl<>(snp(grid(trierNodeIdx)).checkSnapshot(SNAPSHOT_NAME, null)).get(),
@@ -705,30 +750,30 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** Tests concurrent snapshot full restoration (with checking) and check. */
     @Test
-    public void testConcurrentSnpFullRestoreAndCheck() throws Exception {
+    public void testConcurrentTheSameSnpFullRestoreAndCheck() throws Exception {
         prepareGridsAndSnapshot(3, 2, true);
 
         // Coordinator and another node.
-        doTestConcurrentSnpFullRestoreAndCheck(0, 1);
+        doTestConcurrentTheSameSnpFullRestoreAndCheck(0, 1);
 
         // Another node and coordinator.
-        doTestConcurrentSnpFullRestoreAndCheck(1, 0);
+        doTestConcurrentTheSameSnpFullRestoreAndCheck(1, 0);
 
         // Only coordinator
-        doTestConcurrentSnpFullRestoreAndCheck(0, 0);
+        doTestConcurrentTheSameSnpFullRestoreAndCheck(0, 0);
 
         // Different not-coordinators.
-        doTestConcurrentSnpFullRestoreAndCheck(1, 2);
+        doTestConcurrentTheSameSnpFullRestoreAndCheck(1, 2);
 
         // The same not-coordinator.
-        doTestConcurrentSnpFullRestoreAndCheck(2, 2);
+        doTestConcurrentTheSameSnpFullRestoreAndCheck(2, 2);
 
         // Server and client.
-        doTestConcurrentSnpFullRestoreAndCheck(2, 3);
+        doTestConcurrentTheSameSnpFullRestoreAndCheck(2, 3);
     }
 
-    /** Perorms test of simulatous snapshot full restoration (with checking) and check. */
-    private void doTestConcurrentSnpFullRestoreAndCheck(int originatorNodeIdx, int trierNodeIdx) throws Exception {
+    /** Perorms test of simulatous the same snapshot full restoration (with checking) and check. */
+    private void doTestConcurrentTheSameSnpFullRestoreAndCheck(int originatorNodeIdx, int trierNodeIdx) throws Exception {
         doTestConcurrentSnpCheckOperations(
             () -> snp(grid(originatorNodeIdx)).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, true),
             () -> snp(grid(trierNodeIdx)).checkSnapshot(SNAPSHOT_NAME, null).get(),
@@ -738,32 +783,32 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         );
     }
 
-    /** Tests concurrent snapshot check and restoration (without checking). */
+    /** Tests concurrent the same snapshot check and restoration (without checking). */
     @Test
-    public void testConcurrentSnpCheckAndRestore() throws Exception {
+    public void testConcurrentTheSameSnpCheckAndRestore() throws Exception {
         prepareGridsAndSnapshot(3, 2, true);
 
         // Coordinator and another node.
-        doTestConcurrentSnpCheckAndRestore(0, 1);
+        doTestConcurrentTheSameSnpCheckAndRestore(0, 1);
 
         // Another node and coordinator.
-        doTestConcurrentSnpCheckAndRestore(1, 0);
+        doTestConcurrentTheSameSnpCheckAndRestore(1, 0);
 
         // Only coordinator
-        doTestConcurrentSnpCheckAndRestore(0, 0);
+        doTestConcurrentTheSameSnpCheckAndRestore(0, 0);
 
         // Different not-coordinators.
-        doTestConcurrentSnpCheckAndRestore(1, 2);
+        doTestConcurrentTheSameSnpCheckAndRestore(1, 2);
 
         // The same not-coordinator.
-        doTestConcurrentSnpCheckAndRestore(2, 2);
+        doTestConcurrentTheSameSnpCheckAndRestore(2, 2);
 
         // Client and server.
-        doTestConcurrentSnpCheckAndRestore(3, 2);
+        doTestConcurrentTheSameSnpCheckAndRestore(3, 2);
     }
 
-    /** Performs test of concurrent snapshot check and restoration (without checking). */
-    private void doTestConcurrentSnpCheckAndRestore(int originatorNodeIdx, int trierNodeIdx) throws Exception {
+    /** Performs test of concurrent the same snapshot check and restoration (without checking). */
+    private void doTestConcurrentTheSameSnpCheckAndRestore(int originatorNodeIdx, int trierNodeIdx) throws Exception {
         doTestConcurrentSnpCheckOperations(
             () -> new IgniteFutureImpl<>(snp(grid(originatorNodeIdx)).checkSnapshot(SNAPSHOT_NAME, null)),
             () -> snp(grid(trierNodeIdx)).restoreSnapshot(SNAPSHOT_NAME, null).get(),
@@ -782,32 +827,32 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         );
     }
 
-    /** Tests concurrent snapshot restoration (without checking) and check. */
+    /** Tests concurrent the same snapshot restoration (without checking) and check. */
     @Test
-    public void testConcurrentSnpRestoreAndCheck() throws Exception {
+    public void testConcurrentTheSameSnpRestoreAndCheck() throws Exception {
         prepareGridsAndSnapshot(3, 2, true);
 
         // Coordinator and another node.
-        doTestConcurrentSnpRestoreAndCheck(0, 1);
+        doTestConcurrentTheSameSnpRestoreAndCheck(0, 1);
 
         // Another node and coordinator.
-        doTestConcurrentSnpRestoreAndCheck(1, 0);
+        doTestConcurrentTheSameSnpRestoreAndCheck(1, 0);
 
         // Only coordinator
-        doTestConcurrentSnpRestoreAndCheck(0, 0);
+        doTestConcurrentTheSameSnpRestoreAndCheck(0, 0);
 
         // Different not-coordinators.
-        doTestConcurrentSnpRestoreAndCheck(1, 2);
+        doTestConcurrentTheSameSnpRestoreAndCheck(1, 2);
 
         // The same not-coordinator.
-        doTestConcurrentSnpRestoreAndCheck(2, 2);
+        doTestConcurrentTheSameSnpRestoreAndCheck(2, 2);
 
         // Server and client.
-        doTestConcurrentSnpRestoreAndCheck(2, 3);
+        doTestConcurrentTheSameSnpRestoreAndCheck(2, 3);
     }
 
-    /** Performs tests of concurrent snapshot restoration (without checking) and check. */
-    private void doTestConcurrentSnpRestoreAndCheck(int originatorNodeIdx, int trierNodeIdx) throws Exception {
+    /** Performs tests of concurrent the same snapshot restoration (without checking) and check. */
+    private void doTestConcurrentTheSameSnpRestoreAndCheck(int originatorNodeIdx, int trierNodeIdx) throws Exception {
         doTestConcurrentSnpCheckOperations(
             () -> snp(grid(originatorNodeIdx)).restoreSnapshot(SNAPSHOT_NAME, null),
             () -> snp(grid(trierNodeIdx)).checkSnapshot(SNAPSHOT_NAME, null).get(),
