@@ -238,7 +238,7 @@
 
                                             <taskdef name="doctask" classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask" />
 
-                                            <doctask css="dotted" dir="target/javadoc/core">
+                                            <doctask dir="target/javadoc/core">
                                                 <include name="**/*.html" />
                                                 <exclude name="overview-frame.html" />
                                                 <exclude name="allclasses-frame.html" />
