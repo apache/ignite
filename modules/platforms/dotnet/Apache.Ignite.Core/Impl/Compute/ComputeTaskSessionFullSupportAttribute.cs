@@ -15,31 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.transactions;
+namespace Apache.Ignite.Core.Compute
+{
+    using System;
+    using static System.AttributeTargets;
 
-/**
- * Exception thrown whenever transaction tries to inserts entry with same mvcc version more than once.
- */
-public class TransactionDuplicateKeyException extends TransactionException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * Creates new duplicate ket exception with given error message.
-     *
-     * @param msg Error message.\
-     * @param cause Optional nested exception (can be {@code null}).
-     */
-    public TransactionDuplicateKeyException(String msg, Exception cause) {
-        super(msg, cause);
-    }
-
-    /**
-     * Creates new duplicate ket exception with given error message.
-     *
-     * @param msg Error message.
-     */
-    public TransactionDuplicateKeyException(String msg) {
-        super(msg);
+    /// <summary>
+    /// Enables distributing <see cref="IComputeTaskSession"/>'s attributes from
+    /// <see cref="IComputeTask{TArg,TJobRes,TRes}"/> to <see cref="IComputeJob{TRes}"/> that the task creates.
+    /// <see cref="IComputeTask{TArg,TJobRes,TRes}"/> implementations must be annotated with the
+    /// <see cref="ComputeTaskSessionFullSupportAttribute"/> to enable the features depending on the
+    /// <see cref="IComputeTaskSession"/> attributes.
+    /// By default attributes and checkpoints are disabled for performance reasons.
+    /// </summary>
+    [AttributeUsage(Class | Struct)]
+    public sealed class ComputeTaskSessionFullSupportAttribute : Attribute
+    {
+        // No-op.
     }
 }

@@ -32,6 +32,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -51,6 +53,8 @@ import java.util.logging.StreamHandler;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.difflib.text.DiffRow;
 import com.github.difflib.text.DiffRowGenerator;
 import org.apache.ignite.Ignite;
@@ -75,6 +79,7 @@ import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.commandline.ArgumentParser;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.jackson.IgniteObjectMapper;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.HelpCommand;
 import org.apache.ignite.internal.management.api.Positional;
@@ -83,6 +88,7 @@ import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.management.cache.CacheDestroyCommand;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
 import org.apache.ignite.internal.management.cache.scan.DefaultCacheScanTaskFormat;
+import org.apache.ignite.internal.management.cache.scan.JsonCacheScanTaskFormat;
 import org.apache.ignite.internal.management.cache.scan.TableCacheScanTaskFormat;
 import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -1693,7 +1699,13 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         c3.put(1, new TestClass2(
             1,
+            new boolean[]{true, false},
+            new char[] {'t', 'e', 's', 't'},
+            new short[] {1, 2, 3},
             new int[]{2, 3},
+            new long[] {4, 5},
+            new float[]{},
+            new double[]{42.0},
             Collections.singletonMap("some_key", "some_value"),
             new String[] {"s1", "s2", "s3"},
             DATE,
@@ -1703,7 +1715,13 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         c3.put(2, new TestClass2(
             2,
-            new int[]{3, 4},
+            new boolean[]{true, false},
+            new char[] {'t', 'e', 's', 't'},
+            new short[] {1, 2, 3},
+            new int[]{2, 3},
+            new long[] {4, 5},
+            new float[]{123.0f},
+            new double[] {0},
             Collections.singletonMap("1", "2"),
             new String[] {"s4", "s5", "s6"},
             DATE,
@@ -1713,7 +1731,13 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         c3.put(3, new TestClass2(
             3,
-            new int[]{4, 5},
+            new boolean[]{true, false},
+            new char[] {'t', 'e', 's', 't'},
+            new short[] {1, 2, 3},
+            new int[]{2, 3},
+            new long[] {4, 5},
+            new float[]{123.0f},
+            new double[] {1},
             Collections.singletonMap("xxx", "yyy"),
             new String[] {"s7", "s8", "s9"},
             DATE,
@@ -1753,7 +1777,138 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertContains(log, testOut.toString(), "some_key=some_value");
         assertContains(log, testOut.toString(), "xxx=yyy");
+        assertContains(log, testOut.toString(), "[s1, s2, s3]");
         assertContains(log, testOut.toString(), DATE.toString());
+    }
+
+    /** */
+    @Test
+    public void testCacheScanJsonFormat() throws Exception {
+        injectTestSystemOut();
+
+        autoConfirmation = false;
+
+        dataForScanTest();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", JsonCacheScanTaskFormat.NAME, "cache1"));
+
+        Scanner sc = new Scanner(testOut.toString());
+
+        while (sc.hasNextLine() && !Objects.equals(sc.nextLine().trim(), "data")) ;
+
+        TypeReference<HashMap<String, Object>> typeRef = new TypeReference<HashMap<String, Object>>() {
+            // No-op.
+        };
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        Set<Integer> keys = new HashSet<>();
+
+        for (int i = 0; i < 3; i++) {
+            assertTrue(sc.hasNextLine());
+
+            Map<String, Object> entryFromJson = mapper.readValue(sc.nextLine(), typeRef);
+
+            int key = (int)((Map<String, Object>)entryFromJson.get("key")).get("id");
+
+            keys.add(key);
+
+            Map<String, Object> val = (Map<String, Object>)entryFromJson.get("value");
+
+            if (key == 1)
+                assertEquals(JOHN, val.get("fio"));
+            else if (key == 2)
+                assertEquals(SARAH, val.get("fio"));
+            else
+                assertEquals(KYLE, val.get("fio"));
+
+            assertEquals(key + 1, val.get("salary"));
+        }
+
+        assertTrue(keys.containsAll(Arrays.asList(1, 2, 3)));
+
+        keys.clear();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", JsonCacheScanTaskFormat.NAME, "cache2"));
+
+        sc = new Scanner(testOut.toString());
+
+        while (sc.hasNextLine() && !Objects.equals(sc.nextLine().trim(), "data")) ;
+
+        for (int i = 0; i < 3; i++) {
+            assertTrue(sc.hasNextLine());
+
+            Map<String, Object> entryFromJson = mapper.readValue(sc.nextLine(), typeRef);
+
+            int key = (int)entryFromJson.get("key");
+
+            keys.add(key);
+
+            String val = (String)entryFromJson.get("value");
+
+            if (key == 1)
+                assertEquals(JOHN, val);
+            else if (key == 2)
+                assertEquals(SARAH, val);
+            else
+                assertEquals(KYLE, val);
+        }
+
+        assertTrue(keys.containsAll(Arrays.asList(1, 2, 3)));
+
+        keys.clear();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "--output-format", JsonCacheScanTaskFormat.NAME, "cache3"));
+
+        sc = new Scanner(testOut.toString());
+
+        while (sc.hasNextLine() && !Objects.equals(sc.nextLine().trim(), "data")) ;
+
+        for (int i = 0; i < 3; i++) {
+            assertTrue(sc.hasNextLine());
+
+            Map<String, Object> entryFromJson = mapper.readValue(sc.nextLine(), typeRef);
+
+            int key = (int)entryFromJson.get("key");
+
+            keys.add(key);
+
+            Map<String, Object> val = (Map<String, Object>)entryFromJson.get("value");
+
+            assertEquals(key, val.get("i"));
+            assertEquals(Arrays.asList(true, false), val.get("booleans"));
+            assertEquals("test", val.get("chars"));
+            assertEquals(Arrays.asList(1, 2, 3), val.get("shorts"));
+            assertEquals(Arrays.asList(2, 3), val.get("ints"));
+            assertEquals(Arrays.asList(4, 5), val.get("longs"));
+            assertEquals(Arrays.asList(1, 2, 3), val.get("list"));
+            assertEquals(IgniteObjectMapper.DATE_FORMAT.format(DATE), val.get("date"));
+
+            int firstIdx = i * 3 + 1;
+
+            assertEquals(Arrays.asList("s" + firstIdx, "s" + (firstIdx + 1), "s" + (firstIdx + 2)), val.get("strArr"));
+
+            if (key == 1) {
+                assertTrue(((List<?>)val.get("floats")).isEmpty());
+                assertEquals(Arrays.asList(42.0d), val.get("doubles"));
+                assertEquals(Collections.singletonMap("some_key", "some_value"), val.get("map"));
+                assertEquals(AccessLevel.USER.toString(), val.get("enm"));
+            }
+            else if (key == 2) {
+                assertEquals(Arrays.asList(123d), val.get("floats"));
+                assertEquals(Arrays.asList(0d), val.get("doubles"));
+                assertEquals(Collections.singletonMap("1", "2"), val.get("map"));
+                assertEquals(AccessLevel.USER.toString(), val.get("enm"));
+            }
+            else {
+                assertEquals(Arrays.asList(123d), val.get("floats"));
+                assertEquals(Arrays.asList(1d), val.get("doubles"));
+                assertEquals(Collections.singletonMap("xxx", "yyy"), val.get("map"));
+                assertEquals(AccessLevel.SUPER.toString(), val.get("enm"));
+            }
+        }
+
+        assertTrue(keys.containsAll(Arrays.asList(1, 2, 3)));
     }
 
     /** */
@@ -2379,7 +2534,25 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         private final int i;
 
         /** */
+        private final boolean[] booleans;
+
+        /** */
+        private final char[] chars;
+
+        /** */
+        private final short[] shorts;
+
+        /** */
         private final int[] ints;
+
+        /** */
+        private final long[] longs;
+
+        /** */
+        private final float[] floats;
+
+        /** */
+        private final double[] doubles;
 
         /** */
         private final Map<?, ?> map;
@@ -2397,9 +2570,29 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         private final AccessLevel enm;
 
         /** */
-        public TestClass2(int i, int[] ints, Map<?, ?> map, String[] strArr, Date date, List<?> list, AccessLevel enm) {
+        public TestClass2(
+            int i,
+            boolean[] booleans,
+            char[] chars,
+            short[] shorts,
+            int[] ints,
+            long[] longs,
+            float[] floats,
+            double[] doubles,
+            Map<?, ?> map,
+            String[] strArr,
+            Date date,
+            List<?> list,
+            AccessLevel enm
+        ) {
             this.i = i;
+            this.booleans = booleans;
+            this.chars = chars;
+            this.shorts = shorts;
             this.ints = ints;
+            this.longs = longs;
+            this.floats = floats;
+            this.doubles = doubles;
             this.map = map;
             this.strArr = strArr;
             this.date = date;
