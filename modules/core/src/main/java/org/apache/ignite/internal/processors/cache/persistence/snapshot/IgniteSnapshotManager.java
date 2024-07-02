@@ -385,6 +385,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Take snapshot operation procedure. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> startSnpProc;
 
+    /** */
+    private final CheckSnapshotDistributedProcess checkSnpProcesses;
+
     /** Check previously performed snapshot operation and delete uncompleted files if we need. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> endSnpProc;
 
@@ -490,6 +493,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
 
         restoreCacheGrpProc = new SnapshotRestoreProcess(ctx, locBuff);
+
+        checkSnpProcesses = new CheckSnapshotDistributedProcess(ctx);
 
         // Manage remote snapshots.
         snpRmtMgr = new SequentialRemoteSnapshotManager();
@@ -721,8 +726,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     @Override protected void stop0(boolean cancel) {
         busyLock.block();
 
+        IgniteCheckedException stopErr = new NodeStoppingException("Node is stopping.");
+
         try {
-            restoreCacheGrpProc.interrupt(new NodeStoppingException("Node is stopping."));
+            restoreCacheGrpProc.interrupt(stopErr);
+            checkSnpProcesses.interrupt(stopErr, null);
 
             // Try stop all snapshot processing if not yet.
             for (AbstractSnapshotFutureTask<?> sctx : locSnpTasks.values())
@@ -1891,12 +1899,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.ensure(grps == null || grps.stream().filter(Objects::isNull).collect(Collectors.toSet()).isEmpty(),
             "Collection of cache groups names cannot contain null elements.");
 
-        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
-
         if (log.isInfoEnabled()) {
             log.info("The check snapshot procedure started [snpName=" + name + ", snpPath=" + snpPath +
-                ", incIdx=" + incIdx + ", grps=" + grps + ']');
+                ", incIdx=" + incIdx + ", grps=" + grps + ", validateParts=" + check + ']');
         }
+
+        if (check && incIdx < 1)
+            return checkSnapshotByDistributedProcess(name, snpPath, grps, includeCustomHandlers);
+
+        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
 
         GridKernalContext kctx0 = cctx.kernalContext();
 
@@ -3189,6 +3200,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** @return Current incremental snapshot ID. */
     public @Nullable UUID incrementalSnapshotId() {
         return incSnpId;
+    }
+
+    /** */
+    IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshotByDistributedProcess(
+        String snpName,
+        @Nullable String snpPath,
+        @Nullable Collection<String> grps,
+        boolean includeCustomHandlers
+    ) {
+        assert !F.isEmpty(snpName);
+
+        return checkSnpProcesses.start(snpName, snpPath, grps, includeCustomHandlers);
     }
 
     /** Snapshot operation handlers. */

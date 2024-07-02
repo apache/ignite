@@ -35,22 +35,32 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.management.cache.CacheFilterEnum;
 import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommandArg;
 import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
@@ -75,11 +85,16 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.distributed.FullMessage;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.Before;
@@ -95,6 +110,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.partstate.
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.SNAPSHOT_CHECK_METAS;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.SNAPSHOT_VALIDATE_PARTS;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -235,7 +254,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         Assume.assumeFalse("One copy of partiton created in only primary mode", onlyPrimary);
 
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg.
-            setAffinity(new RendezvousAffinityFunction(false, 1)),
+                setAffinity(new RendezvousAffinityFunction(false, 1)),
             CACHE_KEYS_RANGE);
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
@@ -351,7 +370,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         // GridJobExecuteRequest is not send to the local node.
         assertTrue("Number of jobs must be equal to the cluster size (except local node): " + assigns + ", count: "
-                + assigns.size(), waitForCondition(() -> assigns.size() == 2, 5_000L));
+            + assigns.size(), waitForCondition(() -> assigns.size() == 2, 5_000L));
 
         assertTrue(F.isEmpty(res.exceptions()));
         assertPartitionsSame(res);
@@ -362,7 +381,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     @Test
     public void testClusterSnapshotCheckCRCFail() throws Exception {
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg.
-                setAffinity(new RendezvousAffinityFunction(false, 1)), CACHE_KEYS_RANGE);
+            setAffinity(new RendezvousAffinityFunction(false, 1)), CACHE_KEYS_RANGE);
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
@@ -510,10 +529,10 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             new SnapshotPartitionsVerifyTaskArg(
                 new HashSet<>(),
                 Collections.singletonMap(ignite.cluster().localNode(),
-                Collections.singletonList(snp(ignite).readSnapshotMetadata(
-                    snp(ignite).snapshotLocalDir(SNAPSHOT_NAME),
-                    (String)ignite.configuration().getConsistentId()
-                ))),
+                    Collections.singletonList(snp(ignite).readSnapshotMetadata(
+                        snp(ignite).snapshotLocalDir(SNAPSHOT_NAME),
+                        (String)ignite.configuration().getConsistentId()
+                    ))),
                 null,
                 0,
                 true
@@ -597,6 +616,622 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         int createdThreads = Thread.activeCount() - activeThreadsCntBefore;
 
         assertTrue("Threads created: " + createdThreads, createdThreads < iterations);
+    }
+
+    /** Tests concurrent snapshot checks are declined for the same snapshot. */
+    @Test
+    public void testDeclinedConcurrentTheSameSnpFullChecks() throws Exception {
+        prepareGridsAndSnapshot(3, 2, false);
+
+        // Coordinator and another node.
+        doTestDeclinedConcurrentSnpChecks(0, 1);
+
+        // Another node and coordinator.
+        doTestDeclinedConcurrentSnpChecks(1, 0);
+
+        // Only coordinator
+        doTestDeclinedConcurrentSnpChecks(0, 0);
+
+        // Different not-coordinators.
+        doTestDeclinedConcurrentSnpChecks(1, 2);
+
+        // The same not-coordinator.
+        doTestDeclinedConcurrentSnpChecks(2, 2);
+
+        //  Server and client.
+        doTestDeclinedConcurrentSnpChecks(2, 3);
+
+        //  Client and server.
+        doTestDeclinedConcurrentSnpChecks(3, 2);
+
+        // The same client.
+        doTestDeclinedConcurrentSnpChecks(3, 3);
+
+        // Different clients.
+        doTestDeclinedConcurrentSnpChecks(3, 4);
+    }
+
+    /** Tests concurrent snapshot checks are allowed for different snapshots. */
+    @Test
+    public void testAllowedConcurrentDifferentSnpFullChecks() throws Exception {
+        prepareGridsAndSnapshot(3, 2, 2, false);
+
+        snp(grid(3)).createSnapshot(SNAPSHOT_NAME + '2').get();
+
+        for(Ignite ig0 : G.allGrids()){
+            for(Ignite ig1 : G.allGrids()){
+                doTestConcurrentSnpCheckOperations(
+                    () -> new IgniteFutureImpl<>(snp((IgniteEx)ig0).checkSnapshot(SNAPSHOT_NAME, null, null, false, 0, true)),
+                    () -> new IgniteFutureImpl<>(snp((IgniteEx)ig1).checkSnapshot(SNAPSHOT_NAME + '2', null, null, false, 0, true)),
+                    false,
+                    null,
+                    null
+                );
+            }
+        }
+    }
+
+    /** Tests concurrent snapshot check and restoration are allowed for different snapshots. */
+    @Test
+    public void testConcurrentDifferentSnpFullCheckAndRestoration() throws Exception {
+        prepareGridsAndSnapshot(3, 2, 2, false);
+
+        snp(grid(3)).createSnapshot(SNAPSHOT_NAME + '2').get();
+
+        grid(0).destroyCache(DEFAULT_CACHE_NAME);
+
+        awaitPartitionMapExchange();
+
+        for (Ignite ig0 : G.allGrids()) {
+            for (Ignite ig1 : G.allGrids()) {
+                doTestConcurrentSnpCheckOperations(
+                    () -> new IgniteFutureImpl<>(snp((IgniteEx)ig0).checkSnapshot(SNAPSHOT_NAME, null, null, false, 0, true)),
+                    () -> snp((IgniteEx)ig1).restoreSnapshot(SNAPSHOT_NAME + '2', null),
+                    false,
+                    null,
+                    () -> grid(0).destroyCache(DEFAULT_CACHE_NAME)
+                );
+            }
+        }
+    }
+
+    /**
+     * Performs test of declined concurrent snapshot checks of the same snapshot.
+     *
+     * @param originatorNodeIdx Originator node idx.
+     * @param trierNodeIdx Concurrent trier node idx.
+     */
+    private void doTestDeclinedConcurrentSnpChecks(int originatorNodeIdx, int trierNodeIdx) throws Exception {
+        doTestConcurrentSnpCheckOperations(
+            () -> new IgniteFutureImpl<>(snp(grid(originatorNodeIdx)).checkSnapshot(SNAPSHOT_NAME, null)),
+            () -> new IgniteFutureImpl<>(snp(grid(trierNodeIdx)).checkSnapshot(SNAPSHOT_NAME, null)).get(),
+            SNAPSHOT_CHECK_METAS,
+            SNAPSHOT_VALIDATE_PARTS,
+            true,
+            null,
+            null
+        );
+    }
+
+    /** Tests concurrent snapshot check and full restoration (with checking). */
+    @Test
+    public void testConcurrentSnpCheckAndFullRestore() throws Exception {
+        prepareGridsAndSnapshot(3, 2, false);
+
+        // Coordinator and another node.
+        doTestConcurrentSnpCheckAndFullRestore(0, 1);
+
+        // Another node and coordinator.
+        doTestConcurrentSnpCheckAndFullRestore(1, 0);
+
+        // Only coordinator
+        doTestConcurrentSnpCheckAndFullRestore(0, 0);
+
+        // Different not-coordinators.
+        doTestConcurrentSnpCheckAndFullRestore(1, 2);
+
+        // The same not-coordinator.
+        doTestConcurrentSnpCheckAndFullRestore(2, 2);
+
+        // Client and server.
+        doTestConcurrentSnpCheckAndFullRestore(3, 2);
+    }
+
+    /** Performs tests of concurrent snapshot check and full restoration (with checking). */
+    private void doTestConcurrentSnpCheckAndFullRestore(int originatorNodeIdx, int trierNodeIdx) throws Exception {
+        doTestConcurrentSnpCheckOperations(
+            () -> new IgniteFutureImpl<>(snp(grid(originatorNodeIdx)).checkSnapshot(SNAPSHOT_NAME, null)),
+            () -> snp(grid(trierNodeIdx)).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, true).get(),
+            true,
+            null,
+            () -> grid(0).destroyCache(DEFAULT_CACHE_NAME)
+        );
+    }
+
+    /** Tests concurrent snapshot full restoration (with checking) and check. */
+    @Test
+    public void testConcurrentTheSameSnpFullRestoreAndCheck() throws Exception {
+        prepareGridsAndSnapshot(3, 2, true);
+
+        // Coordinator and another node.
+        doTestConcurrentTheSameSnpFullRestoreAndCheck(0, 1);
+
+        // Another node and coordinator.
+        doTestConcurrentTheSameSnpFullRestoreAndCheck(1, 0);
+
+        // Only coordinator
+        doTestConcurrentTheSameSnpFullRestoreAndCheck(0, 0);
+
+        // Different not-coordinators.
+        doTestConcurrentTheSameSnpFullRestoreAndCheck(1, 2);
+
+        // The same not-coordinator.
+        doTestConcurrentTheSameSnpFullRestoreAndCheck(2, 2);
+
+        // Server and client.
+        doTestConcurrentTheSameSnpFullRestoreAndCheck(2, 3);
+    }
+
+    /** Perorms test of simulatous the same snapshot full restoration (with checking) and check. */
+    private void doTestConcurrentTheSameSnpFullRestoreAndCheck(int originatorNodeIdx, int trierNodeIdx) throws Exception {
+        doTestConcurrentSnpCheckOperations(
+            () -> snp(grid(originatorNodeIdx)).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, true),
+            () -> snp(grid(trierNodeIdx)).checkSnapshot(SNAPSHOT_NAME, null).get(),
+            true,
+            null,
+            () -> grid(0).destroyCache(DEFAULT_CACHE_NAME)
+        );
+    }
+
+    /** Tests concurrent the same snapshot check and restoration (without checking). */
+    @Test
+    public void testConcurrentTheSameSnpCheckAndRestore() throws Exception {
+        prepareGridsAndSnapshot(3, 2, true);
+
+        // Coordinator and another node.
+        doTestConcurrentTheSameSnpCheckAndRestore(0, 1);
+
+        // Another node and coordinator.
+        doTestConcurrentTheSameSnpCheckAndRestore(1, 0);
+
+        // Only coordinator
+        doTestConcurrentTheSameSnpCheckAndRestore(0, 0);
+
+        // Different not-coordinators.
+        doTestConcurrentTheSameSnpCheckAndRestore(1, 2);
+
+        // The same not-coordinator.
+        doTestConcurrentTheSameSnpCheckAndRestore(2, 2);
+
+        // Client and server.
+        doTestConcurrentTheSameSnpCheckAndRestore(3, 2);
+    }
+
+    /** Performs test of concurrent the same snapshot check and restoration (without checking). */
+    private void doTestConcurrentTheSameSnpCheckAndRestore(int originatorNodeIdx, int trierNodeIdx) throws Exception {
+        doTestConcurrentSnpCheckOperations(
+            () -> new IgniteFutureImpl<>(snp(grid(originatorNodeIdx)).checkSnapshot(SNAPSHOT_NAME, null)),
+            () -> snp(grid(trierNodeIdx)).restoreSnapshot(SNAPSHOT_NAME, null).get(),
+            false,
+            () -> {
+                grid(0).destroyCache(DEFAULT_CACHE_NAME);
+
+                try {
+                    awaitPartitionMapExchange();
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException("Failed to wait for partition map exchange.", e);
+                }
+            },
+            () -> grid(0).destroyCache(DEFAULT_CACHE_NAME)
+        );
+    }
+
+    /** Tests concurrent the same snapshot restoration (without checking) and check. */
+    @Test
+    public void testConcurrentTheSameSnpRestoreAndCheck() throws Exception {
+        prepareGridsAndSnapshot(3, 2, true);
+
+        // Coordinator and another node.
+        doTestConcurrentTheSameSnpRestoreAndCheck(0, 1);
+
+        // Another node and coordinator.
+        doTestConcurrentTheSameSnpRestoreAndCheck(1, 0);
+
+        // Only coordinator
+        doTestConcurrentTheSameSnpRestoreAndCheck(0, 0);
+
+        // Different not-coordinators.
+        doTestConcurrentTheSameSnpRestoreAndCheck(1, 2);
+
+        // The same not-coordinator.
+        doTestConcurrentTheSameSnpRestoreAndCheck(2, 2);
+
+        // Server and client.
+        doTestConcurrentTheSameSnpRestoreAndCheck(2, 3);
+    }
+
+    /** Performs tests of concurrent the same snapshot restoration (without checking) and check. */
+    private void doTestConcurrentTheSameSnpRestoreAndCheck(int originatorNodeIdx, int trierNodeIdx) throws Exception {
+        doTestConcurrentSnpCheckOperations(
+            () -> snp(grid(originatorNodeIdx)).restoreSnapshot(SNAPSHOT_NAME, null),
+            () -> snp(grid(trierNodeIdx)).checkSnapshot(SNAPSHOT_NAME, null).get(),
+            RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD,
+            RESTORE_CACHE_GROUP_SNAPSHOT_START,
+            false,
+            null,
+            () -> grid(0).destroyCache(DEFAULT_CACHE_NAME)
+        );
+    }
+
+    /** Tests that snapshot check doesn't affect a snapshot creation. */
+    @Test
+    public void testConcurrentSnpCheckAndCreate() throws Exception {
+        prepareGridsAndSnapshot(3, 2, false);
+
+        doTestConcurrentSnpCheckOperations(
+            () -> new IgniteFutureImpl<>(snp(grid(3)).checkSnapshot(SNAPSHOT_NAME, null)),
+            () -> snp(grid(4)).createSnapshot(SNAPSHOT_NAME + "_2", null, false, false).get(),
+            false,
+            () -> U.delete(snp(grid(0)).snapshotLocalDir(SNAPSHOT_NAME + "_2")),
+            null
+        );
+    }
+
+    /** Tests snapshot checking process stops when a server node leaves. */
+    @Test
+    public void testServerLeftDuringSnapshotChecking() throws Exception {
+        prepareGridsAndSnapshot(5, 1, false);
+
+        Set<Integer> stopped = new HashSet<>();
+
+        // Other server leaves when snapshot started from a server node.
+        doTestNodeStopsDuringSnapshotChecking(1, 4, stopped);
+
+        // Other server leaves when snapshot started from the coordinator.
+        doTestNodeStopsDuringSnapshotChecking(0, 3, stopped);
+
+        // A server leaves when snapshot started from a client.
+        doTestNodeStopsDuringSnapshotChecking(5, 2, stopped);
+
+        // The same server leaves.
+        doTestNodeStopsDuringSnapshotChecking(1, 1, stopped);
+    }
+
+    /** Tests snapshot checking process continues when a client node leaves. */
+    @Test
+    public void testClientLeftDuringSnapshotChecking() throws Exception {
+        prepareGridsAndSnapshot(2, 6, false);
+
+        Set<Integer> stopped = new HashSet<>();
+
+        // Other client leaves when snapshot started from a server node.
+        doTestNodeStopsDuringSnapshotChecking(1, 2, stopped);
+
+        // Other client leaves when snapshot started from the coordinator.
+        doTestNodeStopsDuringSnapshotChecking(0, 3, stopped);
+
+        // Another client leaves when snapshot started from a client.
+        doTestNodeStopsDuringSnapshotChecking(4, 5, stopped);
+
+        // The same client leaves.
+        doTestNodeStopsDuringSnapshotChecking(6, 6, stopped);
+    }
+
+    /** Tests snapshot checking process continues when a non-baseline node leaves. */
+    @Test
+    public void testNonBaselineServerLeftDuringSnapshotChecking() throws Exception {
+        prepareGridsAndSnapshot(6, 2, 1, false);
+
+        Set<Integer> stopped = new HashSet<>();
+
+        // Non-baseline node leaves when snapshot checking started from a sever node.
+        doTestNodeStopsDuringSnapshotChecking(1, 2, stopped);
+
+        // Non-baseline node leaves when snapshot checking started from a client node.
+        doTestNodeStopsDuringSnapshotChecking(4, 3, stopped);
+
+        // Non-baseline node leaves when snapshot checking started from another non-baseline.
+        doTestNodeStopsDuringSnapshotChecking(5, 4, stopped);
+
+        // Non-baseline node leaves when snapshot checking started from coordinator.
+        doTestNodeStopsDuringSnapshotChecking(0, 5, stopped);
+    }
+
+    /** Tests snapshot checking process continues when a new baseline node leaves. */
+    @Test
+    public void testNewBaselineServerLeftDuringSnapshotChecking() throws Exception {
+        prepareGridsAndSnapshot(3, 2, 1, false);
+
+        int grids = G.allGrids().size();
+
+        discoSpi(grid(0)).block(msg -> msg instanceof FullMessage && ((FullMessage<?>)msg).type() == SNAPSHOT_CHECK_METAS.ordinal());
+
+        IgniteInternalFuture<?> fut = snp(grid(3)).checkSnapshot(SNAPSHOT_NAME, null, null, false, 0, true);
+
+        log.error("TEST | test 1");
+
+        discoSpi(grid(0)).waitBlocked(getTestTimeout());
+
+        grid(0).cluster().setBaselineTopology(Stream.of(grid(0).localNode(), grid(1).localNode(), grid(2).localNode())
+            .collect(Collectors.toList()));
+
+        log.error("TEST | test 2");
+
+        stopGrid(2);
+
+        waitForCondition(() -> {
+            for (int i = 0; i < grids; ++i) {
+                if (i != 2 && grid(i).cluster().nodes().size() != grids - 1)
+                    return false;
+            }
+
+            return true;
+        }, getTestTimeout());
+
+        log.error("TEST | test 3");
+
+        discoSpi(grid(0)).unblock();
+
+        log.error("TEST | test 5");
+
+        fut.get(getTestTimeout());
+
+        log.error("TEST | test 8");
+    }
+
+    /** Tests snapshot checking process stops when the coorditator leaves. */
+    @Test
+    public void testCoordinatorLeftDuringSnapshotChecking() throws Exception {
+        prepareGridsAndSnapshot(5, 1, false);
+
+        Set<Integer> stopped = new HashSet<>();
+
+        // Coordinator leaves when snapshot started from a server node.
+        doTestNodeStopsDuringSnapshotChecking(4, 0, stopped);
+
+        // Coordinator leaves when snapshot started from a client node.
+        assertTrue(U.isLocalNodeCoordinator(grid(1).context().discovery()));
+
+        doTestNodeStopsDuringSnapshotChecking(5, 1, stopped);
+
+        // Coordinator leaves when snapshot started from it.
+        assertTrue(U.isLocalNodeCoordinator(grid(2).context().discovery()));
+
+        doTestNodeStopsDuringSnapshotChecking(2, 2, stopped);
+    }
+
+    /** */
+    private void prepareGridsAndSnapshot(int servers, int clients, boolean removeTheCache) throws Exception {
+        prepareGridsAndSnapshot(servers, servers, clients, removeTheCache);
+    }
+
+    /** */
+    private void prepareGridsAndSnapshot(int servers, int baseLineCnt, int clients, boolean removeTheCache) throws Exception {
+        assert baseLineCnt > 0 && baseLineCnt <= servers;
+
+        IgniteEx ignite = null;
+
+        for (int i = 0; i < servers + clients; ++i) {
+            IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(i));
+
+            cfg.setDiscoverySpi(new BlockingCustomMessageDiscoverySpi());
+
+            if (i >= servers)
+                cfg.setClientMode(true);
+
+            ignite = startGrid(cfg);
+
+            if (i == baseLineCnt - 1) {
+                ignite.cluster().state(ACTIVE);
+
+                ignite.cluster().setBaselineTopology(ignite.cluster().topologyVersion());
+            }
+        }
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        if (removeTheCache)
+            ignite.destroyCache(DEFAULT_CACHE_NAME);
+    }
+
+    /**
+     * Tests concurrent snapshot operations related to the snapshot checking.
+     *
+     * @param originatorOp First snapshot operation on an originator node.
+     * @param trierOp Second concurrent snapshot operation on a trier node.
+     * @param expectFailure If {@code true}, the 'snapshot-check-is-in-progress' error is excepted during excution of {@code trierOp}.
+     *                      Otherwise, {@code trierOp} must successfully finish.
+     * @param step2preparation If not {@code null}, is executed before delaying and waiting for {@code secondFullMsgToDelay}.
+     * @param cleaner If not {@code null}, is executed at the end.
+     */
+    private void doTestConcurrentSnpCheckOperations(
+        Supplier<IgniteFuture<?>> originatorOp,
+        Callable<?> trierOp,
+        boolean expectFailure,
+        @Nullable Runnable step2preparation,
+        @Nullable Runnable cleaner
+    ) throws Exception {
+        doTestConcurrentSnpCheckOperations(
+            originatorOp,
+            trierOp,
+            SNAPSHOT_CHECK_METAS,
+            SNAPSHOT_VALIDATE_PARTS,
+            expectFailure,
+            step2preparation,
+            cleaner
+        );
+    }
+
+    /**
+     * Tests concurrent snapshot operations related to the snapshot checking.
+     *
+     * @param originatorOp First snapshot operation on an originator node.
+     * @param trierOp Second concurrent snapshot operation on a trier node.
+     * @param firstFullMsgToDelay First distributed process full message of {@code originatorOp} to delay on the coordinator
+     *                            to launch {@code trierOp}.
+     * @param secondFullMsgToDelay Second distributed process full message of {@code originatorOp} to delay on the coordinator
+     *                             to launch {@code trierOp} again.
+     * @param expectFailure If {@code true}, the 'snapshot-check-is-in-progress' error is excepted during excution of
+     *                      {@code trierOp}. Otherwise, {@code trierOp} must successfully finish.
+     * @param step2preparation If not {@code null}, is executed before delaying and waiting for {@code secondFullMsgToDelay}.
+     * @param cleaner If not {@code null}, is executed at the end.
+     */
+    private void doTestConcurrentSnpCheckOperations(
+        Supplier<IgniteFuture<?>> originatorOp,
+        Callable<?> trierOp,
+        DistributedProcess.DistributedProcessType firstFullMsgToDelay,
+        DistributedProcess.DistributedProcessType secondFullMsgToDelay,
+        boolean expectFailure,
+        @Nullable Runnable step2preparation,
+        @Nullable Runnable cleaner
+    ) throws Exception {
+        try {
+            discoSpi(grid(0)).block(msg -> msg instanceof FullMessage && ((FullMessage<?>)msg).type() == firstFullMsgToDelay.ordinal());
+
+            IgniteFuture<?> fut = originatorOp.get();
+
+            log.error("TEST | test 1");
+
+            discoSpi(grid(0)).waitBlocked(getTestTimeout());
+
+            log.error("TEST | test 2");
+
+            if (expectFailure) {
+                assertThrowsAnyCause(
+                    log,
+                    trierOp,
+                    IllegalStateException.class,
+                    "Validation of snapshot '" + SNAPSHOT_NAME + "' has already started"
+                );
+            }
+            else
+                trierOp.call();
+
+            log.error("TEST | test 3");
+
+            discoSpi(grid(0)).block(msg -> msg instanceof FullMessage && ((FullMessage<?>)msg).type() == secondFullMsgToDelay.ordinal());
+
+            log.error("TEST | test 4");
+
+            discoSpi(grid(0)).waitBlocked(getTestTimeout());
+
+            if (step2preparation != null)
+                step2preparation.run();
+
+            log.error("TEST | test 5");
+
+            if (expectFailure) {
+                assertThrowsAnyCause(
+                    log,
+                    trierOp,
+                    IllegalStateException.class,
+                    "Validation of snapshot '" + SNAPSHOT_NAME + "' has already started"
+                );
+            }
+            else
+                trierOp.call();
+
+            log.error("TEST | test 6");
+
+            discoSpi(grid(0)).unblock();
+
+            log.error("TEST | test 7");
+
+            fut.get(getTestTimeout());
+
+            log.error("TEST | test 8");
+        }
+        finally {
+            discoSpi(grid(0)).unblock();
+
+            if (cleaner != null)
+                cleaner.run();
+
+            awaitPartitionMapExchange();
+        }
+    }
+
+    /**  */
+    private void doTestNodeStopsDuringSnapshotChecking(int originatorIdx, int nodeToStopIdx, Set<Integer> stopped) throws Exception {
+        int grids = G.allGrids().size();
+
+        ClusterNode leaving = grid(nodeToStopIdx).cluster().localNode();
+
+        boolean requredLeft = !leaving.isClient() && grid(nodeToStopIdx).cluster().currentBaselineTopology().contains(leaving);
+
+        int coordIdx = -1;
+
+        for (int i = 0; i < grids; ++i) {
+            if (stopped.contains(i) || !U.isLocalNodeCoordinator(grid(i).context().discovery()))
+                continue;
+
+            coordIdx = i;
+
+            break;
+        }
+
+        try {
+            discoSpi(grid(coordIdx)).block(msg -> msg instanceof FullMessage && ((FullMessage<?>)msg).type() == SNAPSHOT_CHECK_METAS.ordinal());
+
+            IgniteInternalFuture<?> fut = snp(grid(originatorIdx)).checkSnapshot(SNAPSHOT_NAME, null, null, false, 0, true);
+
+            log.error("TEST | test 1");
+
+            discoSpi(grid(coordIdx)).waitBlocked(getTestTimeout());
+
+            log.error("TEST | test 2");
+
+            stopGrid(nodeToStopIdx);
+
+            stopped.add(nodeToStopIdx);
+
+            waitForCondition(() -> {
+                for (int i = 0; i < grids; ++i) {
+                    if (!stopped.contains(i) && grid(i).cluster().nodes().size() != grids - 1)
+                        return false;
+                }
+
+                return true;
+            }, getTestTimeout());
+
+            log.error("TEST | test 3");
+
+            if (nodeToStopIdx != coordIdx)
+                discoSpi(grid(coordIdx)).unblock();
+
+            log.error("TEST | test 5");
+
+            if (originatorIdx == nodeToStopIdx) {
+                assertThrowsAnyCause(
+                    null,
+                    () -> fut.get(getTestTimeout()),
+                    NodeStoppingException.class,
+                    "Node is stopping"
+                );
+
+                return;
+            }
+
+            if (requredLeft) {
+                assertThrowsAnyCause(
+                    null,
+                    () -> fut.get(getTestTimeout()),
+                    ClusterTopologyCheckedException.class,
+                    "Snapshot checking stopped. A node left the cluster"
+                );
+            }
+            else
+                fut.get(getTestTimeout());
+
+            log.error("TEST | test 8");
+        }
+        finally {
+            if (nodeToStopIdx != coordIdx)
+                discoSpi(grid(coordIdx)).unblock();
+
+            awaitPartitionMapExchange();
+        }
     }
 
     /** */

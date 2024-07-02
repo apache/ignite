@@ -26,14 +26,14 @@ import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2.reduce0;
 
 /**
  * Task for checking snapshot partitions consistency the same way as {@link VerifyBackupPartitionsTaskV2} does.
@@ -45,6 +45,10 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private transient IgniteEx ignite;
+
     /** {@inheritDoc} */
     @Override protected VerifySnapshotPartitionsJob createJob(String name, String consId, SnapshotPartitionsVerifyTaskArg args) {
         return new VerifySnapshotPartitionsJob(name, args.snapshotPath(), consId, args.cacheGroupNames(), args.check());
@@ -52,7 +56,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
 
     /** {@inheritDoc} */
     @Override public @Nullable SnapshotPartitionsVerifyTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {
-        return new SnapshotPartitionsVerifyTaskResult(metas, reduce0(results));
+        return new SnapshotPartitionsVerifyTaskResult(metas, VerifyBackupPartitionsTaskV2.reduce(results, ignite.cluster()));
     }
 
     /** Job that collects update counters of snapshot partitions on the node it executes. */
