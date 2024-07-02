@@ -1093,6 +1093,14 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         public void waitBlocked(long timeout) throws IgniteInterruptedCheckedException {
             GridTestUtils.waitForCondition(() -> !blocked.isEmpty(), timeout);
         }
+
+        /**
+         * @param timeout Timeout to wait blocking messages.
+         * @throws IgniteInterruptedCheckedException If interrupted.
+         */
+        public void waitBlockedSize(int size, long timeout) throws IgniteInterruptedCheckedException {
+            GridTestUtils.waitForCondition(() -> blocked.size() == size, timeout);
+        }
     }
 
     /** */

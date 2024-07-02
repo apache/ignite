@@ -37,13 +37,12 @@ public class SnapshotCheckOperationRequest extends AbstractSnapshotOperationRequ
     @GridToStringInclude
     final boolean includeCustomHandlers;
 
-    /** */
-    @GridToStringExclude
-    transient volatile GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterInitiatorFut;
+    /** Operation coordinator node id. One of {@link AbstractSnapshotOperationRequest#nodes}. */
+    final UUID opCoordId;
 
     /** */
     @GridToStringExclude
-    transient volatile Map<ClusterNode, List<SnapshotMetadata>> metas;
+    volatile Map<ClusterNode, List<SnapshotMetadata>> metas;
 
     /** Curent working future */
     transient volatile GridFutureAdapter<?> fut;
@@ -53,6 +52,7 @@ public class SnapshotCheckOperationRequest extends AbstractSnapshotOperationRequ
      * @param opNodeId Operational node ID.
      * @param snpName  Snapshot name.
      * @param nodes Baseline node IDs that must be alive to complete the operation..
+     * @param opCoordId Operation coordinator node id. One of {@code nodes}.
      * @param snpPath  Snapshot directory path.
      * @param grps     List of cache group names.
      * @param incIdx   Incremental snapshot index.
@@ -62,6 +62,7 @@ public class SnapshotCheckOperationRequest extends AbstractSnapshotOperationRequ
         UUID reqId,
         UUID opNodeId,
         Collection<UUID> nodes,
+        UUID opCoordId,
         String snpName,
         String snpPath,
         @Nullable Collection<String> grps,
@@ -71,6 +72,9 @@ public class SnapshotCheckOperationRequest extends AbstractSnapshotOperationRequ
     ) {
         super(reqId, opNodeId, snpName, snpPath, grps, incIdx, nodes);
 
+        assert nodes.contains(opCoordId);
+
+        this.opCoordId = opCoordId;
         this.includeCustomHandlers = includeCustomHandlers;
     }
 
