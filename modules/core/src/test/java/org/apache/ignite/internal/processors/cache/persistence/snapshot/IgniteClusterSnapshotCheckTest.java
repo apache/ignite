@@ -40,6 +40,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import org.apache.ignite.IgniteCache;
@@ -889,6 +891,48 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         // Non-baseline node leaves when snapshot checking started from coordinator.
         doTestNodeStopsDuringSnapshotChecking(0, 5, stopped);
+    }
+
+    /** Tests snapshot checking process continues when a new baseline node leaves. */
+    @Test
+    public void testNewBaselineServerLeftDuringSnapshotChecking() throws Exception {
+        prepareGridsAndSnapshot(3, 2, 1, false);
+
+        int grids = G.allGrids().size();
+
+        discoSpi(grid(0)).block(msg -> msg instanceof FullMessage && ((FullMessage<?>)msg).type() == SNAPSHOT_CHECK_METAS.ordinal());
+
+        IgniteInternalFuture<?> fut = snp(grid(3)).checkSnapshot(SNAPSHOT_NAME, null, null, false, 0, true);
+
+        log.error("TEST | test 1");
+
+        discoSpi(grid(0)).waitBlocked(getTestTimeout());
+
+        grid(0).cluster().setBaselineTopology(Stream.of(grid(0).localNode(), grid(1).localNode(), grid(2).localNode())
+            .collect(Collectors.toList()));
+
+        log.error("TEST | test 2");
+
+        stopGrid(2);
+
+        waitForCondition(() -> {
+            for (int i = 0; i < grids; ++i) {
+                if (i != 2 && grid(i).cluster().nodes().size() != grids - 1)
+                    return false;
+            }
+
+            return true;
+        }, getTestTimeout());
+
+        log.error("TEST | test 3");
+
+        discoSpi(grid(0)).unblock();
+
+        log.error("TEST | test 5");
+
+        fut.get(getTestTimeout());
+
+        log.error("TEST | test 8");
     }
 
     /** Tests snapshot checking process stops when the coorditator leaves. */
