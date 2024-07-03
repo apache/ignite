@@ -28,6 +28,7 @@ import org.junit.runners.Suite;
     //Query history.
     QueryOOMWithoutQueryParallelismTest.class,
     QueryOOMWithQueryParallelismTest.class,
+    OOMLeadsTest.class,
 })
 public class IgniteQueryOOMTestSuite {
 }
