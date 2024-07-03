@@ -154,9 +154,9 @@ public class GridJavadocAntTask extends MatchingTask {
 
             boolean jdk11 = "11".equals(System.getProperty("java.specification.version"));
 
-            String packagesFile = jdk11 ? "index.html" : "overview-summary.html";
+            String pkgGrpFile = jdk11 ? "index.html" : "overview-summary.html";
 
-            if (file.endsWith(packagesFile)) {
+            if (file.endsWith(pkgGrpFile)) {
                 // Try to find Other Packages section.
                 Jerry otherPackages =
                     doc.find("div.contentContainer table.overviewSummary caption span:contains('Other Packages')");
@@ -170,13 +170,13 @@ public class GridJavadocAntTask extends MatchingTask {
                         "<configuration> / <groups>");
                 }
 
-                Jerry packageGroups = doc.find("div.contentContainer table.overviewSummary caption span.tableTab");
+                Jerry pkgGrps = doc.find("div.contentContainer table.overviewSummary caption span.tableTab");
 
                 // This limit is set for JDK11. Each group is represented as a tab. Tabs are enumerated with a number 2^N
                 // where N is a sequential number for a tab. For 32 tabs (+ the "All Packages" tab) the number is overflowed
                 // and the tabulation becomes broken. See var data in "index.html".
-                if (jdk11 && packageGroups.size() > 30) {
-                    throw new IllegalArgumentException("Too many package groups: " + packageGroups.size() + ". The limit"
+                if (pkgGrps.size() > 30) {
+                    throw new IllegalArgumentException("Too many package groups: " + pkgGrps.size() + ". The limit"
                         + " is 30 due to the javadoc limitations. Please reduce groups in parent/pom.xml"
                         + " inside <plugin>(maven-javadoc-plugin) / <configuration> / <groups>");
                 }
