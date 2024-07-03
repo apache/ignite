@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
@@ -32,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -148,33 +146,18 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
 
     /** */
     public static IdleVerifyResultV2 reduce(List<ComputeJobResult> jobResults, ClusterGroup cluster) throws IgniteException {
-        Map<UUID, Map<PartitionKeyV2, PartitionHashRecordV2>> results = new HashMap<>();
-        Map<UUID, Throwable> errors = new HashMap<>();
+        Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results = new HashMap<>();
+        Map<ClusterNode, Exception> errors = new HashMap<>();
 
         jobResults.forEach(jr -> {
             if (jr.getData() != null)
-                results.put(jr.getNode().id(), jr.getData());
+                results.put(jr.getNode(), jr.getData());
 
             if (jr.getException() != null)
-                errors.put(jr.getNode().id(), jr.getException());
+                errors.put(jr.getNode(), jr.getException());
         });
 
-        return reduce(results, errors, cluster);
-    }
-
-    /** */
-    public static IdleVerifyResultV2 reduce(
-        Map<UUID, ? extends Map<PartitionKeyV2, PartitionHashRecordV2>> results,
-        Map<UUID, Throwable> errors,
-        ClusterGroup cluster
-    ) {
-        Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = results.entrySet().stream()
-            .collect(Collectors.toMap(e -> cluster.node(e.getKey()), Map.Entry::getValue));
-
-        Map<ClusterNode, Exception> errors0 = errors.entrySet().stream()
-            .collect(Collectors.toMap(e -> cluster.node(e.getKey()), e -> asException(e.getValue())));
-
-        return reduce(results0, errors0);
+        return reduce(results, errors);
     }
 
     /** */

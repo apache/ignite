@@ -154,8 +154,6 @@ public class CheckSnapshotDistributedProcess {
         ExecutorService executor = kctx.cache().context().snapshotMgr().snapshotExecutorService();
 
         executor.submit(() -> stopFutureOnAnyFailure(locPartsChkFut, () -> {
-            assert locReq.meta() != null;
-
             File snpDir = kctx.cache().context().snapshotMgr().snapshotLocalDir(locReq.snapshotName(), locReq.snapshotPath());
 
             SnapshotHandlerContext hndCtx = new SnapshotHandlerContext(locReq.meta(), locReq.grps,
@@ -169,7 +167,7 @@ public class CheckSnapshotDistributedProcess {
                     : new HashMap<>(res));
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to calculate snapshot partition hashes, req: " + locReq, e);
+                throw new IgniteException("Failed to calculate snapshot partition hashes, req: " + incReq, e);
             }
         }));
 
@@ -231,15 +229,16 @@ public class CheckSnapshotDistributedProcess {
             else {
                 assert locRq != null;
 
-                Map<UUID, ? extends Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = results.entrySet().stream()
-                    .filter(e -> locRq.nodes.contains(e.getKey())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = results.entrySet().stream()
+                    .filter(e -> locRq.nodes.contains(e.getKey()))
+                    .collect(Collectors.toMap(e -> kctx.cluster().get().node(e.getKey()), Map.Entry::getValue));
 
-                Map<UUID, Throwable> errors0 = errors == null
+                Map<ClusterNode, Exception> errors0 = errors == null
                     ? Collections.emptyMap()
                     : errors.entrySet().stream().filter(e -> locRq.nodes.contains(e.getKey()))
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                    .collect(Collectors.toMap(e -> kctx.cluster().get().node(e.getKey()), e -> asException(e.getValue())));
 
-                IdleVerifyResultV2 chkRes = VerifyBackupPartitionsTaskV2.reduce(results0, errors0, kctx.cluster().get());
+                IdleVerifyResultV2 chkRes = VerifyBackupPartitionsTaskV2.reduce(results0, errors0);
 
                 finished = clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(locRq.metas, chkRes));
             }

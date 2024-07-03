@@ -252,7 +252,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         Assume.assumeFalse("One copy of partiton created in only primary mode", onlyPrimary);
 
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg.
-                setAffinity(new RendezvousAffinityFunction(false, 1)),
+            setAffinity(new RendezvousAffinityFunction(false, 1)),
             CACHE_KEYS_RANGE);
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
@@ -361,14 +361,14 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().state(ACTIVE);
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, null, false, 0, false).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
 
         // GridJobExecuteRequest is not send to the local node.
         assertTrue("Number of jobs must be equal to the cluster size (except local node): " + assigns + ", count: "
-            + assigns.size(), waitForCondition(() -> assigns.size() == 2, 5_000L));
+                + assigns.size(), waitForCondition(() -> assigns.size() == 2, 5_000L));
 
         assertTrue(F.isEmpty(res.exceptions()));
         assertPartitionsSame(res);
@@ -379,7 +379,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     @Test
     public void testClusterSnapshotCheckCRCFail() throws Exception {
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg.
-            setAffinity(new RendezvousAffinityFunction(false, 1)), CACHE_KEYS_RANGE);
+                setAffinity(new RendezvousAffinityFunction(false, 1)), CACHE_KEYS_RANGE);
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
@@ -527,10 +527,10 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             new SnapshotPartitionsVerifyTaskArg(
                 new HashSet<>(),
                 Collections.singletonMap(ignite.cluster().localNode(),
-                    Collections.singletonList(snp(ignite).readSnapshotMetadata(
-                        snp(ignite).snapshotLocalDir(SNAPSHOT_NAME),
-                        (String)ignite.configuration().getConsistentId()
-                    ))),
+                Collections.singletonList(snp(ignite).readSnapshotMetadata(
+                    snp(ignite).snapshotLocalDir(SNAPSHOT_NAME),
+                    (String)ignite.configuration().getConsistentId()
+                ))),
                 null,
                 0,
                 true
@@ -874,7 +874,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** Tests snapshot checking processes a non-baseline node leave. */
     @Test
-    public void testNonBaselineServerLeftDuringSnapshotChecking() throws Exception {
+    public void testNonBaselineServerLeavesDuringSnapshotChecking() throws Exception {
         prepareGridsAndSnapshot(7, 2, 1, false);
 
         Set<Integer> stopped = new HashSet<>();
@@ -897,7 +897,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** Tests snapshot checking process continues when a new baseline node leaves. */
     @Test
-    public void testNewBaselineServerLeftDuringSnapshotChecking() throws Exception {
+    public void testNewBaselineServerLeavesDuringSnapshotChecking() throws Exception {
         prepareGridsAndSnapshot(3, 2, 1, false);
 
         int grids = G.allGrids().size();
@@ -929,7 +929,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** Tests snapshot checking process stops when the coorditator leaves. */
     @Test
-    public void testCoordinatorLeftDuringSnapshotChecking() throws Exception {
+    public void testCoordinatorLeavesDuringSnapshotChecking() throws Exception {
         prepareGridsAndSnapshot(5, 1, false);
 
         Set<Integer> stopped = new HashSet<>();
