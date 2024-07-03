@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.oom;
 
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
@@ -32,6 +30,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** Out of memory handling. */
 public class OOMLeadsTest extends GridCommonAbstractTest {
