@@ -1951,7 +1951,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     });
             }
             else
-                finishClusterFutureWithErr(res, f0.error(), metasRes.exceptions());
+                finishClusterFutureWithErr(res, f0.error(), metasRes == null ? Collections.emptyMap() : metasRes.exceptions());
         });
 
         if (log.isInfoEnabled()) {
