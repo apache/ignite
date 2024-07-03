@@ -27,7 +27,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.StringWriter;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import jodd.jerry.Jerry;
 import jodd.lagarto.dom.LagartoDOMBuilder;
@@ -135,14 +135,16 @@ public class GridJavadocAntTask extends MatchingTask {
     /**
      * Processes file (validating Javadoc's HTML).
      *
-     * @param file File to validate.
+     * @param fileName File to validate.
      * @throws IOException Thrown in case of any I/O error.
      * @throws IllegalArgumentException In JavaDoc HTML validation failed.
      */
-    private void processFile(String file) throws IOException {
-        assert file != null;
+    private void processFile(String fileName) throws IOException {
+        assert fileName != null;
 
-        String fileContent = readFileToString(file, Charset.forName("UTF-8"));
+        File file = new File(fileName);
+
+        String fileContent = readFileToString(file);
 
         if (verify) {
             // Parse HTML.
@@ -152,11 +154,16 @@ public class GridJavadocAntTask extends MatchingTask {
                             .configure(cfg -> cfg.setErrorLogEnabled(false))
             ).parse(fileContent);
 
-            boolean jdk11 = "11".equals(System.getProperty("java.specification.version"));
+            String jdkVer = System.getProperty("java.specification.version");
 
-            String pkgGrpFile = jdk11 ? "index.html" : "overview-summary.html";
+            boolean jdk11 = "11".equals(jdkVer);
 
-            if (file.endsWith(pkgGrpFile)) {
+            if (!jdk11 && !"1.8".equals(jdkVer)) {
+                throw new IllegalArgumentException("GridJavadocAntTask isn't tested for java versions after 11. " +
+                    "Please check html rendering of documentation package groups works correctly and remove this exception then.");
+            }
+
+            if (file.getName().equals(jdk11 ? "index.html" : "overview-summary.html")) {
                 // Try to find Other Packages section.
                 Jerry otherPackages =
                     doc.find("div.contentContainer table.overviewSummary caption span:contains('Other Packages')");
@@ -170,15 +177,23 @@ public class GridJavadocAntTask extends MatchingTask {
                         "<configuration> / <groups>");
                 }
 
-                Jerry pkgGrps = doc.find("div.contentContainer table.overviewSummary caption span.tableTab");
+                if (jdk11) {
+                    int pkgGrps = doc.find("div.contentContainer table.overviewSummary caption span.tableTab").size();
 
-                // This limit is set for JDK11. Each group is represented as a tab. Tabs are enumerated with a number 2^N
-                // where N is a sequential number for a tab. For 32 tabs (+ the "All Packages" tab) the number is overflowed
-                // and the tabulation becomes broken. See var data in "index.html".
-                if (pkgGrps.size() > 30) {
-                    throw new IllegalArgumentException("Too many package groups: " + pkgGrps.size() + ". The limit"
-                        + " is 30 due to the javadoc limitations. Please reduce groups in parent/pom.xml"
-                        + " inside <plugin>(maven-javadoc-plugin) / <configuration> / <groups>");
+                    if (pkgGrps == 0) {
+                        throw new IllegalArgumentException("Documentation package groups missed. Please add packages " +
+                            "description to parent/pom.xml into <plugin>(maven-javadoc-plugin) / " +
+                            "<configuration> / <groups>");
+                    }
+
+                    // This limit is set for JDK11. Each group is represented as a tab. Tabs are enumerated with a number 2^N
+                    // where N is a sequential number for a tab. For 32 tabs (+ the "All Packages" tab) the number is overflowed
+                    // and the tabulation becomes broken. See var data in "index.html".
+                    if (pkgGrps > 30) {
+                        throw new IllegalArgumentException("Too many package groups: " + pkgGrps + ". The limit"
+                            + " is 30 due to the javadoc limitations. Please reduce groups in parent/pom.xml"
+                            + " inside <plugin>(maven-javadoc-plugin) / <configuration> / <groups>");
+                    }
                 }
             }
             else if (!isViewHtml(file)) {
@@ -202,11 +217,11 @@ public class GridJavadocAntTask extends MatchingTask {
      * Checks whether a file is a view-related HTML file rather than a single
      * class documentation.
      *
-     * @param fileName HTML file name.
+     * @param file HTML file.
      * @return {@code True} if it's a view-related HTML.
      */
-    private boolean isViewHtml(String fileName) {
-        String baseName = new File(fileName).getName();
+    private boolean isViewHtml(File file) {
+        String baseName = file.getName();
 
         return "index.html".equals(baseName) || baseName.contains("-") || "allclasses.html".equals(baseName);
     }
@@ -218,7 +233,7 @@ public class GridJavadocAntTask extends MatchingTask {
      * @param body New body for the file.
      * @throws IOException Thrown in case of any errors.
      */
-    private void replaceFile(String file, String body) throws IOException {
+    private void replaceFile(File file, String body) throws IOException {
         try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
             out.write(body.getBytes());
         }
@@ -227,13 +242,12 @@ public class GridJavadocAntTask extends MatchingTask {
     /**
      * Reads file to string using specified charset.
      *
-     * @param fileName File name.
-     * @param charset File charset.
+     * @param file File.
      * @return File content.
      * @throws IOException If error occurred.
      */
-    public static String readFileToString(String fileName, Charset charset) throws IOException {
-        Reader input = new InputStreamReader(new FileInputStream(fileName), charset);
+    public static String readFileToString(File file) throws IOException {
+        Reader input = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
 
         StringWriter output = new StringWriter();
 
