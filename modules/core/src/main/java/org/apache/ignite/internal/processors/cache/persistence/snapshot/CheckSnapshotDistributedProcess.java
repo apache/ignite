@@ -224,16 +224,16 @@ public class CheckSnapshotDistributedProcess {
 
             boolean finished;
 
-            if (err != null)
-                finished = clusterOpFut.onDone(err);
+            if (err != null || !F.isEmpty(errors)) {
+                finished = SnapshotMetadataVerificationTask.finishClusterFutureWithErr(clusterOpFut, err,
+                    collectProperErrors(errors, locRq.nodes));
+            }
             else {
                 assert locRq != null;
 
                 Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = collecProperResults(results, locRq.nodes());
 
-                Map<ClusterNode, Exception> errors0 = collectProperErrors(errors, locRq.nodes);
-
-                IdleVerifyResultV2 chkRes = VerifyBackupPartitionsTaskV2.reduce(results0, errors0);
+                IdleVerifyResultV2 chkRes = VerifyBackupPartitionsTaskV2.reduce(results0, Collections.emptyMap());
 
                 finished = clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(locRq.metas, chkRes));
             }
