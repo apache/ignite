@@ -56,8 +56,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.SNAPSHOT_CHECK_METAS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.SNAPSHOT_VALIDATE_PARTS;
 
-/** */
-public class CheckSnapshotDistributedProcess {
+/** Distributed process of snapshot full checking (with the partition hashes). */
+public class SnapshotFullCheckDistributedProcess {
     /** */
     private static final IgniteInternalFuture FINISHED_FUT = new GridFinishedFuture<>();
 
@@ -68,19 +68,19 @@ public class CheckSnapshotDistributedProcess {
     private final GridKernalContext kctx;
 
     /** Snapshot check requests per snapshot on every node. */
-    private final Map<String, SnapshotCheckOperationRequest> requests = new ConcurrentHashMap<>();
+    private final Map<String, SnapshotFullCheckOperationRequest> requests = new ConcurrentHashMap<>();
 
     /** Cluster-wide operation futures per snapshot called from current node. */
     private final Map<UUID, GridFutureAdapter<SnapshotPartitionsVerifyTaskResult>> clusterOpFuts = new ConcurrentHashMap<>();
 
-    /** */
-    private final DistributedProcess<SnapshotCheckOperationRequest, ArrayList<SnapshotMetadata>> phase1CheckMetas;
+    /** Check metas first phase subprocess. */
+    private final DistributedProcess<SnapshotFullCheckOperationRequest, ArrayList<SnapshotMetadata>> phase1CheckMetas;
+
+    /** Partition hashes second phase subprocess.  */
+    private final DistributedProcess<SnapshotFullCheckOperationRequest, HashMap<PartitionKeyV2, PartitionHashRecordV2>> phase2PartsHashes;
 
     /** */
-    private final DistributedProcess<SnapshotCheckOperationRequest, HashMap<PartitionKeyV2, PartitionHashRecordV2>> phase2CalculateParts;
-
-    /** */
-    public CheckSnapshotDistributedProcess(GridKernalContext kctx) {
+    public SnapshotFullCheckDistributedProcess(GridKernalContext kctx) {
         this.kctx = kctx;
 
         log = kctx.log(getClass());
@@ -88,14 +88,19 @@ public class CheckSnapshotDistributedProcess {
         phase1CheckMetas = new DistributedProcess<>(kctx, SNAPSHOT_CHECK_METAS, this::prepareAndCheckMetas,
             this::reducePreparationAndMetasCheck);
 
-        phase2CalculateParts = new DistributedProcess<>(kctx, SNAPSHOT_VALIDATE_PARTS, this::validateParts,
-            this::reduceValidatePartsAndFinishProc);
+        phase2PartsHashes = new DistributedProcess<>(kctx, SNAPSHOT_VALIDATE_PARTS, this::validateParts,
+            this::reduceValidatePartsAndFinish);
 
         kctx.event().addLocalEventListener((evt) -> nodeLeft(((DiscoveryEvent)evt).eventNode()), EVT_NODE_FAILED, EVT_NODE_LEFT);
     }
 
-    /** */
-    public void interrupt(Throwable th, @Nullable Function<SnapshotCheckOperationRequest, Boolean> rqFilter) {
+    /**
+     * Stops the process with the passes exception.
+     *
+     * @param th The interrupt reason.
+     * @param rqFilter If not {@code null}, used to filter which requests/process to stop. If {@code null}, stops all the validations.
+     */
+    public void interrupt(Throwable th, @Nullable Function<SnapshotFullCheckOperationRequest, Boolean> rqFilter) {
         if (requests.isEmpty())
             return;
 
@@ -108,7 +113,7 @@ public class CheckSnapshotDistributedProcess {
         });
     }
 
-    /** */
+    /** Stops the related validation if the is a mandatory one. */
     private void nodeLeft(ClusterNode node) {
         if (node.isClient() || requests.isEmpty())
             return;
@@ -120,7 +125,7 @@ public class CheckSnapshotDistributedProcess {
     }
 
     /** Phase 2 and process finish. */
-    private IgniteInternalFuture<?> reduceValidatePartsAndFinishProc(
+    private IgniteInternalFuture<?> reduceValidatePartsAndFinish(
         UUID procId,
         Map<UUID, HashMap<PartitionKeyV2, PartitionHashRecordV2>> results,
         Map<UUID, Throwable> errors
@@ -131,8 +136,9 @@ public class CheckSnapshotDistributedProcess {
     }
 
     /** Phase 2 beginning.  */
-    private IgniteInternalFuture<HashMap<PartitionKeyV2, PartitionHashRecordV2>> validateParts(SnapshotCheckOperationRequest incReq) {
-        SnapshotCheckOperationRequest locReq;
+    private IgniteInternalFuture<HashMap<PartitionKeyV2, PartitionHashRecordV2>> validateParts(
+        SnapshotFullCheckOperationRequest incReq) {
+        SnapshotFullCheckOperationRequest locReq;
 
         if (stopAndCleanOnError(incReq, null) || (locReq = requests.get(incReq.snapshotName())) == null)
             return FINISHED_FUT;
@@ -144,6 +150,7 @@ public class CheckSnapshotDistributedProcess {
         if (clusterOpFut != null)
             locReq.metas = incReq.metas;
 
+        // Local meta might be null if current node started after the snapshot creation or placement.
         if (!incReq.nodes.contains(kctx.localNodeId()) || locReq.meta() == null)
             return FINISHED_FUT;
 
@@ -174,13 +181,19 @@ public class CheckSnapshotDistributedProcess {
         return locPartsChkFut;
     }
 
-    /** */
-    private boolean stopAndCleanOnError(SnapshotCheckOperationRequest req, @Nullable Map<UUID, Throwable> occuredErrors) {
+    /**
+     * If required, stops and clean related validation if errors occured
+     *
+     * @return {@code True} if the validation stopped and cleaned. {@code False} otherwise.
+     */
+    private boolean stopAndCleanOnError(SnapshotFullCheckOperationRequest req,
+        @Nullable Map<UUID, Throwable> occuredErrors) {
         assert req != null;
 
-        if (!F.isEmpty(occuredErrors))
+        if (!F.isEmpty(occuredErrors)) {
             occuredErrors = occuredErrors.entrySet().stream()
                 .filter(e -> req.nodes.contains(e.getKey())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        }
 
         if (F.isEmpty(occuredErrors) && req.error() == null)
             return false;
@@ -190,7 +203,7 @@ public class CheckSnapshotDistributedProcess {
         return true;
     }
 
-    /** */
+    /** Cleans certain snapshot validation. */
     private void clean(
         UUID rqId,
         @Nullable Throwable propogatedError,
@@ -200,7 +213,7 @@ public class CheckSnapshotDistributedProcess {
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.get(rqId);
 
         stopFutureOnAnyFailure(clusterOpFut, () -> {
-            SnapshotCheckOperationRequest locRq = curRequest(null, rqId);
+            SnapshotFullCheckOperationRequest locRq = curRequest(null, rqId);
 
             Throwable err = propogatedError;
 
@@ -217,25 +230,25 @@ public class CheckSnapshotDistributedProcess {
                     log.info("Finished snapshot local validation, req: " + locRq + '.');
             }
 
-            assert err != null || results != null || !F.isEmpty(errors);
-
             if (clusterOpFut == null)
                 return;
 
             boolean finished;
 
-            if (err != null || !F.isEmpty(errors)) {
-                finished = SnapshotMetadataVerificationTask.finishClusterFutureWithErr(clusterOpFut, err,
-                    collectProperErrors(errors, locRq.nodes));
-            }
-            else {
+            if (err == null && (!F.isEmpty(results) || !F.isEmpty(errors))) {
                 assert locRq != null;
 
-                Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = collecProperResults(results, locRq.nodes());
+                Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = collecPartsHashes(results, locRq.nodes());
+                Map<ClusterNode, Exception> errors0 = collectErrors(errors, locRq.nodes);
 
-                IdleVerifyResultV2 chkRes = VerifyBackupPartitionsTaskV2.reduce(results0, Collections.emptyMap());
+                IdleVerifyResultV2 chkRes = VerifyBackupPartitionsTaskV2.reduceHashesAndErrors(results0, errors0);
 
                 finished = clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(locRq.metas, chkRes));
+            }
+            else {
+                assert err != null;
+
+                finished = finishClusterFutureWithErr(clusterOpFut, err, Collections.emptyMap());
             }
 
             if (finished && log.isInfoEnabled())
@@ -244,8 +257,8 @@ public class CheckSnapshotDistributedProcess {
     }
 
     /** */
-    private Map<ClusterNode, Exception> collectProperErrors(@Nullable Map<UUID, Throwable> errors, Set<UUID> requiredNodes) {
-        if (errors == null)
+    private Map<ClusterNode, Exception> collectErrors(@Nullable Map<UUID, Throwable> errors, Set<UUID> requiredNodes) {
+        if (F.isEmpty(errors))
             return Collections.emptyMap();
 
         return errors.entrySet().stream().filter(e -> requiredNodes.contains(e.getKey()) && e.getValue() != null)
@@ -253,7 +266,7 @@ public class CheckSnapshotDistributedProcess {
     }
 
     /** */
-    private Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> collecProperResults(
+    private Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> collecPartsHashes(
         @Nullable Map<UUID, ? extends Map<PartitionKeyV2, PartitionHashRecordV2>> results,
         Collection<UUID> requiredNodes
     ) {
@@ -265,16 +278,21 @@ public class CheckSnapshotDistributedProcess {
             .collect(Collectors.toMap(e -> kctx.cluster().get().node(e.getKey()), Map.Entry::getValue));
     }
 
-    /** */
-    private @Nullable SnapshotCheckOperationRequest curRequest(@Nullable String snpName, UUID procId) {
+    /**
+     * @param snpName Snapshot name of the validation process. If {@coe null}, ignored.
+     * @param procId  If {@code snpName} is {@code null}, is used to find the operation request.
+     * @return Current snapshot checking request by {@code snpName} or {@code procId}.
+     */
+    private @Nullable SnapshotFullCheckOperationRequest curRequest(@Nullable String snpName, UUID procId) {
         return snpName == null
             ? requests.values().stream().filter(rq -> rq.requestId().equals(procId)).findFirst().orElse(null)
             : requests.get(snpName);
     }
 
-    /** Phase 1 beginning. */
-    private IgniteInternalFuture<ArrayList<SnapshotMetadata>> prepareAndCheckMetas(SnapshotCheckOperationRequest extReq) {
-        SnapshotCheckOperationRequest locReq = requests.computeIfAbsent(extReq.snapshotName(), nmae -> extReq);
+    /** Phase 1 beginning: prepare, collect and check local metas. */
+    private IgniteInternalFuture<ArrayList<SnapshotMetadata>> prepareAndCheckMetas(
+        SnapshotFullCheckOperationRequest extReq) {
+        SnapshotFullCheckOperationRequest locReq = requests.computeIfAbsent(extReq.snapshotName(), snpName -> extReq);
 
         if (!locReq.equals(extReq)) {
             Throwable err = new IllegalStateException("Validation of snapshot '" + extReq.snapshotName()
@@ -285,8 +303,14 @@ public class CheckSnapshotDistributedProcess {
             return new GridFinishedFuture<>(err);
         }
 
-        if (!extReq.nodes.contains(kctx.localNodeId()))
+        if (!extReq.nodes.contains(kctx.localNodeId())) {
+            if (log.isDebugEnabled()) {
+                log.debug("Skipping snapshot local metadatas collecting for snapshot validation, request=" + extReq
+                    + ". Current node is not required.");
+            }
+
             return FINISHED_FUT;
+        }
 
         assert locReq.fut == null;
 
@@ -296,7 +320,7 @@ public class CheckSnapshotDistributedProcess {
 
         kctx.cache().context().snapshotMgr().snapshotExecutorService().submit(() -> stopFutureOnAnyFailure(locMetasChkFut, () -> {
             if (log.isDebugEnabled())
-                log.debug("Checking local snapshot metadatas, request: " + locReq + '.');
+                log.debug("Checking local snapshot metadatas. Request=" + locReq + '.');
 
             Collection<Integer> grpIds = F.isEmpty(locReq.groups()) ? null : F.viewReadOnly(locReq.groups(), CU::cacheId);
 
@@ -325,7 +349,7 @@ public class CheckSnapshotDistributedProcess {
         Map<UUID, ? extends List<SnapshotMetadata>> results,
         Map<UUID, Throwable> errors
     ) {
-        SnapshotCheckOperationRequest locReq = curRequest(snpName(results), procId);
+        SnapshotFullCheckOperationRequest locReq = curRequest(snpName(results), procId);
 
         assert locReq == null || locReq.opCoordId != null;
 
@@ -335,7 +359,7 @@ public class CheckSnapshotDistributedProcess {
         Throwable stopClusterProcErr = null;
 
         try {
-            assert !F.isEmpty(results) || !F.isEmpty(errors);
+            assert !F.isEmpty(results) || !F.isEmpty(errors) || locReq.error() != null;
 
             if (locReq.error() != null)
                 throw locReq.error();
@@ -345,7 +369,7 @@ public class CheckSnapshotDistributedProcess {
             Map<ClusterNode, Exception> resClusterErrors = new HashMap<>();
 
             results.forEach((nodeId, metas) -> {
-                // A node might be non-baseline.
+                // A node might be non-baseline (not required).
                 if (locReq.nodes.contains(nodeId)) {
                     assert kctx.cluster().get().node(nodeId) != null;
 
@@ -354,7 +378,7 @@ public class CheckSnapshotDistributedProcess {
             });
 
             errors.forEach((nodeId, nodeErr) -> {
-                // A node might be non-baseline.
+                // A node might be non-baseline (not required).
                 if (locReq.nodes.contains(nodeId)) {
                     assert kctx.cluster().get().node(nodeId) != null;
                     assert nodeErr != null;
@@ -381,10 +405,10 @@ public class CheckSnapshotDistributedProcess {
         if (stopClusterProcErr != null)
             locReq.error(stopClusterProcErr);
 
-        phase2CalculateParts.start(procId, locReq);
+        phase2PartsHashes.start(procId, locReq);
 
         if (log.isDebugEnabled())
-            log.debug("Started partitions validation as part of the snapshot validation, req: " + locReq + '.');
+            log.debug("Started partitions validation as part of the snapshot checking. Request=" + locReq + '.');
     }
 
     /** Finds current snapshot name from the metas. */
@@ -392,6 +416,7 @@ public class CheckSnapshotDistributedProcess {
         if (F.isEmpty(metas))
             return null;
 
+        // Ensure the same snapshot name or empty.
         assert F.flatCollections(metas.values().stream().filter(Objects::nonNull).collect(Collectors.toList()))
             .stream().map(SnapshotMetadata::snapshotName).collect(Collectors.toSet()).size() < 2
             : "Empty or not unique snapshot names in the snapshot metadatas.";
@@ -409,7 +434,7 @@ public class CheckSnapshotDistributedProcess {
         return null;
     }
 
-    /** */
+    /** Starts the snapshot full validation. */
     public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> start(
         String snpName,
         @Nullable String snpPath,
@@ -427,7 +452,7 @@ public class CheckSnapshotDistributedProcess {
         stopFutureOnAnyFailure(clusterOpFut, () -> {
             List<UUID> requiredNodes = new ArrayList<>(F.viewReadOnly(kctx.discovery().discoCache().aliveBaselineNodes(), F.node2id()));
 
-            SnapshotCheckOperationRequest req = new SnapshotCheckOperationRequest(
+            SnapshotFullCheckOperationRequest req = new SnapshotFullCheckOperationRequest(
                 rqId,
                 kctx.localNodeId(),
                 requiredNodes,
@@ -448,7 +473,12 @@ public class CheckSnapshotDistributedProcess {
         return clusterOpFut;
     }
 
-    /** */
+    /**
+     * Ensures thta the future is stopped if any failure occures.
+     *
+     * @param fut Future to stop. If {@code null}, ignored.
+     * @param action Related action to launch and watch.
+     */
     private static void stopFutureOnAnyFailure(@Nullable GridFutureAdapter<?> fut, Runnable action) {
         if (fut == null) {
             action.run();
@@ -464,7 +494,24 @@ public class CheckSnapshotDistributedProcess {
         }
     }
 
-    /** */
+    /** Properly sets errror to the cluster operation future. */
+    static boolean finishClusterFutureWithErr(
+        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut,
+        Throwable propogatedError,
+        Map<ClusterNode, Exception> nodeErrors
+    ) {
+        assert propogatedError != null || !F.isEmpty(nodeErrors);
+
+        if (propogatedError == null)
+            return clusterOpFut.onDone(new IgniteSnapshotVerifyException(nodeErrors));
+        else if (propogatedError instanceof IgniteSnapshotVerifyException)
+            return clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(null,
+                new IdleVerifyResultV2(((IgniteSnapshotVerifyException)propogatedError).exceptions())));
+        else
+            return clusterOpFut.onDone(propogatedError);
+    }
+
+    /** Converts failure to an exception if it is not. */
     private static Exception asException(Throwable th) {
         return th instanceof Exception ? (Exception)th : new IgniteException(th);
     }

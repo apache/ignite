@@ -121,7 +121,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<CacheIdle
                 skippedRecords++;
         }
 
-        return writeHashes(partitions, VerifyBackupPartitionsTaskV2.reduce(results, ignite.cluster()), skippedRecords);
+        return writeHashes(partitions, delegate.reduce(results), skippedRecords);
     }
 
     /** {@inheritDoc} */

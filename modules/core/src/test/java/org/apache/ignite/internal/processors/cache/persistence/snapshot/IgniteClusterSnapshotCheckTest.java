@@ -616,9 +616,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertTrue("Threads created: " + createdThreads, createdThreads < iterations);
     }
 
-    /** Tests that concurrent snapshot checks are declined for the same snapshot. */
+    /** Tests that concurrent snapshot full checks are declined for the same snapshot. */
     @Test
-    public void testConcurrentTheSameSnpChecksDeclined() throws Exception {
+    public void testConcurrentTheSameSnpFullChecksDeclined() throws Exception {
         // 0 - coordinator; 0,1,2 - baselines; 3 - non-baseline; 4,5 - clients.
         prepareGridsAndSnapshot(4, 3, 2, false);
 
@@ -641,9 +641,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    /** Tests that concurrent snapshot checks are allowed for different snapshots. */
+    /** Tests that concurrent snapshot full checks are allowed for different snapshots. */
     @Test
-    public void testConcurrentDifferentSnpChecksAllowed() throws Exception {
+    public void testConcurrentDifferentSnpFullChecksAllowed() throws Exception {
         // 0 - coordinator; 0,1 - baselines; 2 - non-baseline; 3,4 - clients.
         prepareGridsAndSnapshot(3, 2, 2, false);
 
@@ -668,9 +668,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    /** Tests that concurrent snapshot check and restoration (without checking) are allowed for different snapshots. */
+    /** Tests that concurrent snapshot full check and restoration (without checking) are allowed for different snapshots. */
     @Test
-    public void testConcurrentDifferentSnpCheckAndRestorationAllowed() throws Exception {
+    public void testConcurrentDifferentSnpFullCheckAndRestorationAllowed() throws Exception {
         prepareGridsAndSnapshot(3, 2, 2, false);
 
         snp(grid(3)).createSnapshot(SNAPSHOT_NAME + '2').get();
@@ -699,7 +699,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    /** Tests concurrent snapshot check and full restoration (with checking) are allowed for different snapshots. */
+    /** Tests concurrent snapshot full check and full restoration (with checking) are allowed for different snapshots. */
     @Test
     public void testConcurrentDifferentSnpCheckAndFullRestorationAllowed() throws Exception {
         prepareGridsAndSnapshot(3, 2, 2, false);
@@ -730,9 +730,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    /** Tests that concurrent snapshot check and full restoration (with checking) are declined for the same snapshot. */
+    /** Tests that concurrent snapshot full restoration (with checking) is declined when the same snapshot is being fully checked. */
     @Test
-    public void testConcurrentTheSameSnpCheckAndFullRestoreDeclined() throws Exception {
+    public void testConcurrentTheSameSnpFullRestorationWhenFullyCheckingDeclined() throws Exception {
         prepareGridsAndSnapshot(3, 2, 2, false);
 
         for (int i = 0; i < G.allGrids().size(); ++i) {
@@ -755,9 +755,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    /** Tests that concurrent snapshot full restoration (with checking) and check are declined for the same snapshot. */
+    /** Tests that concurrent snapshot full check is declined when the same snapshot is being fully restored (checked). */
     @Test
-    public void testConcurrentTheSameSnpFullRestoreAndCheck() throws Exception {
+    public void testConcurrentTheSameSnpFullCheckWhenFullyRestoringDeclined() throws Exception {
         prepareGridsAndSnapshot(3, 2, 2, true);
 
         // Snapshot restoration is disallowed from client nodes.
@@ -780,9 +780,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    /** Tests that concurrent check and restoration (without checking) of the same snapshot are allowed. */
+    /** Tests that concurrent full check and restoration (without checking) of the same snapshot are allowed. */
     @Test
-    public void testConcurrentTheSameCheckAndRestore() throws Exception {
+    public void testConcurrentTheSameSnpFullCheckAndRestoreAllowed() throws Exception {
         prepareGridsAndSnapshot(3, 2, 2, true);
 
         for (int i = 0; i < G.allGrids().size(); ++i) {
@@ -930,7 +930,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** Tests snapshot checking process stops when the coorditator leaves. */
     @Test
     public void testCoordinatorLeavesDuringSnapshotChecking() throws Exception {
-        prepareGridsAndSnapshot(5, 1, false);
+        prepareGridsAndSnapshot(5, 4, 1, false);
 
         Set<Integer> stopped = new HashSet<>();
 
@@ -946,11 +946,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertTrue(U.isLocalNodeCoordinator(grid(2).context().discovery()));
 
         doTestNodeStopsDuringSnapshotChecking(2, 2, stopped);
-    }
-
-    /** */
-    private void prepareGridsAndSnapshot(int servers, int clients, boolean removeTheCache) throws Exception {
-        prepareGridsAndSnapshot(servers, servers, clients, removeTheCache);
     }
 
     /** */

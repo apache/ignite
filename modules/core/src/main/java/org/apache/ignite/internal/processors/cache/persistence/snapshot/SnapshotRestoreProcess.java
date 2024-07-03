@@ -1854,7 +1854,7 @@ public class SnapshotRestoreProcess {
         private final String snpPath;
 
         /** IDs of the required nodes. */
-        private final Collection<UUID> nodes;
+        private final Set<UUID> nodes;
 
         /** Operational node id. */
         private final UUID opNodeId;

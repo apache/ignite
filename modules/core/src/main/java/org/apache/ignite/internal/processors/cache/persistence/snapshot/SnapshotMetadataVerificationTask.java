@@ -40,12 +40,10 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -245,23 +243,6 @@ public class SnapshotMetadataVerificationTask
             throw new IgniteException("Missed WAL segments [misses=" + walSegGaps + ", meta=" + meta + ']');
     }
 
-    /** Properly sets errror to the cluster operation future. */
-    static boolean finishClusterFutureWithErr(
-        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut,
-        Throwable propogatedError,
-        Map<ClusterNode, Exception> nodeErrors
-    ) {
-        assert propogatedError != null || !F.isEmpty(nodeErrors);
-
-        if (propogatedError == null)
-            return clusterOpFut.onDone(new IgniteSnapshotVerifyException(nodeErrors));
-        else if (propogatedError instanceof IgniteSnapshotVerifyException)
-            return clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(null,
-                new IdleVerifyResultV2(((IgniteSnapshotVerifyException)propogatedError).exceptions())));
-        else
-            return clusterOpFut.onDone(propogatedError);
-    }
-
     /** Job that verifies snapshot on an Ignite node. */
     private static class MetadataVerificationJob extends ComputeJobAdapter {
         /** */
@@ -339,8 +320,7 @@ public class SnapshotMetadataVerificationTask
                 baselineMetasLeft.remove(meta.consistentId());
 
                 if (!first.sameSnapshot(meta)) {
-                    exs.put(node,
-                        new IgniteException("An error occurred during comparing snapshot metadata from cluster nodes " +
+                    exs.put(node, new IgniteException("An error occurred during comparing snapshot metadata from cluster nodes " +
                             "[first=" + first + ", meta=" + meta + ", nodeId=" + node.id() + ']'));
 
                     continue;

@@ -35,7 +35,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -94,10 +93,6 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
     @LoggerResource
     private IgniteLogger log;
 
-    /** Ignite instance. */
-    @IgniteInstanceResource
-    private transient IgniteEx ignite;
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -116,7 +111,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
 
     /** {@inheritDoc} */
     @Nullable @Override public IdleVerifyResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
-        return reduce(results, ignite.cluster());
+        return reduceJobResults(results);
     }
 
     /** {@inheritDoc} */
@@ -145,7 +140,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
     }
 
     /** */
-    public static IdleVerifyResultV2 reduce(List<ComputeJobResult> jobResults, ClusterGroup cluster) throws IgniteException {
+    public static IdleVerifyResultV2 reduceJobResults(List<ComputeJobResult> jobResults) throws IgniteException {
         Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results = new HashMap<>();
         Map<ClusterNode, Exception> errors = new HashMap<>();
 
@@ -157,11 +152,11 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                 errors.put(jr.getNode(), jr.getException());
         });
 
-        return reduce(results, errors);
+        return reduceHashesAndErrors(results, errors);
     }
 
     /** */
-    public static IdleVerifyResultV2 reduce(
+    public static IdleVerifyResultV2 reduceHashesAndErrors(
         Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results,
         Map<ClusterNode, Exception> errors
     ) {

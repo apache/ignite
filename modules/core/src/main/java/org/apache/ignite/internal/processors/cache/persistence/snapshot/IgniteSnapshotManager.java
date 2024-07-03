@@ -233,6 +233,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFullCheckDistributedProcess.finishClusterFutureWithErr;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.formatTmpDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageIO;
@@ -385,8 +386,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Take snapshot operation procedure. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> startSnpProc;
 
-    /** */
-    private final CheckSnapshotDistributedProcess checkSnpProcesses;
+    /** Snapshot full validation distributed process. */
+    private final SnapshotFullCheckDistributedProcess checkSnpProc;
 
     /** Check previously performed snapshot operation and delete uncompleted files if we need. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> endSnpProc;
@@ -494,7 +495,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         restoreCacheGrpProc = new SnapshotRestoreProcess(ctx, locBuff);
 
-        checkSnpProcesses = new CheckSnapshotDistributedProcess(ctx);
+        checkSnpProc = new SnapshotFullCheckDistributedProcess(ctx);
 
         // Manage remote snapshots.
         snpRmtMgr = new SequentialRemoteSnapshotManager();
@@ -730,7 +731,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         try {
             restoreCacheGrpProc.interrupt(stopErr);
-            checkSnpProcesses.interrupt(stopErr, null);
+            checkSnpProc.interrupt(stopErr, null);
 
             // Try stop all snapshot processing if not yet.
             for (AbstractSnapshotFutureTask<?> sctx : locSnpTasks.values())
@@ -1950,7 +1951,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     });
             }
             else
-                SnapshotMetadataVerificationTask.finishClusterFutureWithErr(res, f0.error(), metasRes.exceptions());
+                finishClusterFutureWithErr(res, f0.error(), metasRes.exceptions());
         });
 
         if (log.isInfoEnabled()) {
@@ -3196,7 +3197,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** */
-    IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshotByDistributedProcess(
+    private IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshotByDistributedProcess(
         String snpName,
         @Nullable String snpPath,
         @Nullable Collection<String> grps,
@@ -3204,7 +3205,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     ) {
         assert !F.isEmpty(snpName);
 
-        return checkSnpProcesses.start(snpName, snpPath, grps, includeCustomHandlers);
+        return checkSnpProc.start(snpName, snpPath, grps, includeCustomHandlers);
     }
 
     /** Snapshot operation handlers. */

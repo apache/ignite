@@ -28,8 +28,12 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-/** */
-public class SnapshotCheckOperationRequest extends AbstractSnapshotOperationRequest {
+/**
+ * Snapshot full check (validation) distributed process request.
+ *
+ * @see SnapshotFullCheckDistributedProcess
+ */
+public class SnapshotFullCheckOperationRequest extends AbstractSnapshotOperationRequest {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -37,7 +41,8 @@ public class SnapshotCheckOperationRequest extends AbstractSnapshotOperationRequ
     @GridToStringInclude
     final boolean includeCustomHandlers;
 
-    /** Operation coordinator node id. One of {@link AbstractSnapshotOperationRequest#nodes}. */
+    /** If of the operation coordinator node. One of {@link AbstractSnapshotOperationRequest#nodes}. */
+    @GridToStringInclude
     final UUID opCoordId;
 
     /** */
@@ -45,6 +50,7 @@ public class SnapshotCheckOperationRequest extends AbstractSnapshotOperationRequ
     volatile Map<ClusterNode, List<SnapshotMetadata>> metas;
 
     /** Curent working future */
+    @GridToStringExclude
     transient volatile GridFutureAdapter<?> fut;
 
     /**
@@ -58,7 +64,7 @@ public class SnapshotCheckOperationRequest extends AbstractSnapshotOperationRequ
      * @param incIdx   Incremental snapshot index.
      * @param includeCustomHandlers   Incremental snapshot index.
      */
-    protected SnapshotCheckOperationRequest(
+    protected SnapshotFullCheckOperationRequest(
         UUID reqId,
         UUID opNodeId,
         Collection<UUID> nodes,
@@ -79,16 +85,8 @@ public class SnapshotCheckOperationRequest extends AbstractSnapshotOperationRequ
     }
 
     /** {@inheritDoc} */
-    @Override synchronized void error(Throwable err) {
-        assert err != null;
-
-        if (error() == null)
-            super.error(err);
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SnapshotCheckOperationRequest.class, this, super.toString());
+        return S.toString(SnapshotFullCheckOperationRequest.class, this, super.toString());
     }
 
     /** {@inheritDoc} */
@@ -102,7 +100,7 @@ public class SnapshotCheckOperationRequest extends AbstractSnapshotOperationRequ
         if (!super.equals(other))
             return false;
 
-        SnapshotCheckOperationRequest o = (SnapshotCheckOperationRequest)other;
+        SnapshotFullCheckOperationRequest o = (SnapshotFullCheckOperationRequest)other;
 
         return includeCustomHandlers == o.includeCustomHandlers;
     }

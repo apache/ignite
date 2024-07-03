@@ -974,7 +974,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             releaseBlocked();
         }
 
-        /** */
+        /** Releases the blocked messages. */
         private void releaseBlocked() {
             List<DiscoverySpiCustomMessage> blocked = new CopyOnWriteArrayList<>(this.blocked);
 
