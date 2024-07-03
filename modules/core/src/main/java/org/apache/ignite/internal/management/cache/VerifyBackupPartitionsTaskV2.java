@@ -183,11 +183,6 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
             return new IdleVerifyResultV2(errors);
     }
 
-    /** */
-    public static Exception asException(Throwable th) {
-        return th instanceof Exception ? (Exception)th : new IgniteException(th);
-    }
-
     /**
      * Job that collects update counters and hashes of local partitions.
      */

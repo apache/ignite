@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -52,7 +53,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2.asException;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.SNAPSHOT_CHECK_METAS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.SNAPSHOT_VALIDATE_PARTS;
 
@@ -144,7 +144,7 @@ public class CheckSnapshotDistributedProcess {
         if (clusterOpFut != null)
             locReq.metas = incReq.metas;
 
-        if (!incReq.nodes.contains(kctx.localNodeId()))
+        if (!incReq.nodes.contains(kctx.localNodeId()) || locReq.meta() == null)
             return FINISHED_FUT;
 
         GridFutureAdapter<HashMap<PartitionKeyV2, PartitionHashRecordV2>> locPartsChkFut = new GridFutureAdapter<>();
@@ -229,14 +229,9 @@ public class CheckSnapshotDistributedProcess {
             else {
                 assert locRq != null;
 
-                Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = results.entrySet().stream()
-                    .filter(e -> locRq.nodes.contains(e.getKey()))
-                    .collect(Collectors.toMap(e -> kctx.cluster().get().node(e.getKey()), Map.Entry::getValue));
+                Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = collecProperResults(results, locRq.nodes());
 
-                Map<ClusterNode, Exception> errors0 = errors == null
-                    ? Collections.emptyMap()
-                    : errors.entrySet().stream().filter(e -> locRq.nodes.contains(e.getKey()))
-                    .collect(Collectors.toMap(e -> kctx.cluster().get().node(e.getKey()), e -> asException(e.getValue())));
+                Map<ClusterNode, Exception> errors0 = collectProperErrors(errors, locRq.nodes);
 
                 IdleVerifyResultV2 chkRes = VerifyBackupPartitionsTaskV2.reduce(results0, errors0);
 
@@ -246,6 +241,28 @@ public class CheckSnapshotDistributedProcess {
             if (finished && log.isInfoEnabled())
                 log.info("Snapshot validation process finished, req: " + locRq + '.');
         });
+    }
+
+    /** */
+    private Map<ClusterNode, Exception> collectProperErrors(@Nullable Map<UUID, Throwable> errors, Set<UUID> requiredNodes) {
+        if (errors == null)
+            return Collections.emptyMap();
+
+        return errors.entrySet().stream().filter(e -> requiredNodes.contains(e.getKey()) && e.getValue() != null)
+            .collect(Collectors.toMap(e -> kctx.cluster().get().node(e.getKey()), e -> asException(e.getValue())));
+    }
+
+    /** */
+    private Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> collecProperResults(
+        @Nullable Map<UUID, ? extends Map<PartitionKeyV2, PartitionHashRecordV2>> results,
+        Collection<UUID> requiredNodes
+    ) {
+        if (results == null)
+            return Collections.emptyMap();
+
+        return results.entrySet().stream()
+            .filter(e -> requiredNodes.contains(e.getKey()) && e.getValue() != null)
+            .collect(Collectors.toMap(e -> kctx.cluster().get().node(e.getKey()), Map.Entry::getValue));
     }
 
     /** */
@@ -268,7 +285,7 @@ public class CheckSnapshotDistributedProcess {
             return new GridFinishedFuture<>(err);
         }
 
-        if (kctx.clientNode() || !extReq.nodes.contains(kctx.localNodeId()))
+        if (!extReq.nodes.contains(kctx.localNodeId()))
             return FINISHED_FUT;
 
         assert locReq.fut == null;
@@ -445,5 +462,10 @@ public class CheckSnapshotDistributedProcess {
         catch (Throwable th) {
             fut.onDone(th);
         }
+    }
+
+    /** */
+    private static Exception asException(Throwable th) {
+        return th instanceof Exception ? (Exception)th : new IgniteException(th);
     }
 }
