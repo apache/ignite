@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.oom;
 
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
@@ -73,12 +75,9 @@ public class OOMLeadsTest extends GridCommonAbstractTest {
         runQuery("select x, space(100+x) as av from system_range(1, 1) group by av");
 
         // oom lead sql
-        try {
-            runQuery("select x, space(10000000+x) as av from system_range(1, 1000) group by av");
-        }
-        catch (SQLException ex) {
-            // no op.
-        }
+        assertThrows(null, () ->
+                runQuery("select x, space(10000000+x) as av from system_range(1, 1000) group by av"),
+                IgniteException.class, "Out of memory");
 
         IgniteEx grd = grid(1);
 
