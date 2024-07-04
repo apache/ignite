@@ -51,7 +51,7 @@ public class SnapshotFullCheckOperationRequest extends AbstractSnapshotOperation
 
     /** Curent working future */
     @GridToStringExclude
-    transient volatile GridFutureAdapter<?> fut;
+    private transient volatile GridFutureAdapter<?> fut;
 
     /**
      * @param reqId    Request ID.
@@ -82,6 +82,18 @@ public class SnapshotFullCheckOperationRequest extends AbstractSnapshotOperation
 
         this.opCoordId = opCoordId;
         this.includeCustomHandlers = includeCustomHandlers;
+    }
+
+    /** */
+    GridFutureAdapter<?> fut() {
+        return fut;
+    }
+
+    /** */
+    synchronized void fut(GridFutureAdapter<?> fut) {
+        assert fut != null;
+
+        this.fut = fut;
     }
 
     /** {@inheritDoc} */

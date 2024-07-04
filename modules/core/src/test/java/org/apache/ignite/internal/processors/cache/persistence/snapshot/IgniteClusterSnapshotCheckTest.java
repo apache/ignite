@@ -38,6 +38,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -1111,6 +1112,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             break;
         }
 
+        AtomicInteger chkAgainIdx = new AtomicInteger(-1);
+
         try {
             discoSpi(grid(coordIdx)).block(msg -> msg instanceof FullMessage
                 && ((FullMessage<?>)msg).type() == SNAPSHOT_CHECK_METAS.ordinal());
@@ -1162,7 +1165,23 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 discoSpi(grid(coordIdx)).unblock();
 
             awaitPartitionMapExchange();
+
+            waitForCondition(() -> {
+                for (int i = 0; i < grids; ++i) {
+                    if (stopped.contains(i))
+                        continue;
+
+                    chkAgainIdx.compareAndSet(-1, i);
+
+                    if (!snp(grid(i)).checkSnpProc.requests.isEmpty())
+                        return false;
+                }
+
+                return true;
+            }, getTestTimeout());
         }
+
+        snp(grid(chkAgainIdx.get())).checkSnapshot(SNAPSHOT_NAME, null, null, false, 0, true).get();
     }
 
     /** */

@@ -343,8 +343,6 @@ public class SnapshotMetadataVerificationTask
         if (!F.isEmpty(baselineMetasLeft) && F.isEmpty(exs)) {
             throw new IgniteException("No snapshot metadatas found for the baseline nodes " +
                 "with consistent ids: " + String.join(", ", baselineMetasLeft));
-//            exs.put(locNode, new IgniteException("No snapshot metadatas found for the baseline nodes " +
-//                "with consistent ids: " + String.join(", ", baselineMetasLeft)));
         }
 
         return new SnapshotMetadataVerificationTaskResult(reduceRes, exs);
