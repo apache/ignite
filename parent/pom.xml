@@ -340,6 +340,60 @@
                                     </table>
                                 ]]>
                         </bottom>
+                        <groups>
+                            <group>
+                                <title>Common Grid APIs</title>
+                                <packages>org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.scheduler:org.apache.ignite.events:org.apache.ignite.messaging:org.apache.ignite.startup*:org.apache.ignite.mem</packages>
+                            </group>
+                            <group>
+                                <title>Data Grid APIs</title>
+                                <packages>org.apache.ignite.cache*:org.apache.ignite.transactions:org.apache.ignite.compute*:org.apache.ignite.services:org.apache.ignite.datastructures:org.apache.ignite.dataload:org.apache.ignite.streamer*:org.apache.ignite.stream*</packages>
+                            </group>
+                            <group>
+                                <title>Thin Client APIs</title>
+                                <packages>org.apache.ignite.client:org.apache.ignite.client.events</packages>
+                            </group>
+                            <group>
+                                <title>Binary Objects API</title>
+                                <packages>org.apache.ignite.binary*</packages>
+                            </group>
+                            <group>
+                                <title>SQL engines</title>
+                                <packages>org.apache.ignite.calcite:org.apache.ignite.indexing</packages>
+                            </group>
+                            <group>
+                                <title>Security APIs</title>
+                                <packages>org.apache.ignite.plugin.security:org.apache.ignite.ssl:org.apache.ignite.spi.encryption*</packages>
+                            </group>
+                            <group>
+                                <title>Maintenance and Monitoring APIs</title>
+                                <packages>org.apache.ignite.maintenance:org.apache.ignite.mbean:org.apache.ignite.mxbean:org.apache.ignite.failure:org.apache.ignite.plugin.segmentation:org.apache.ignite.logger*:org.apache.ignite.metric:org.apache.ignite.spi.systemview*</packages>
+                            </group>
+                            <group>
+                                <title>Kubernetes Integration</title>
+                                <packages>org.apache.ignite.kubernetes*</packages>
+                            </group>
+                            <group>
+                                <title>Platforms</title>
+                                <packages>org.apache.ignite.platform*:org.apache.ignite.marshaller*</packages>
+                            </group>
+                            <group>
+                                <title>Availability APIs</title>
+                                <packages>org.apache.ignite.cdc:org.apache.ignite.dump</packages>
+                            </group>
+                            <group>
+                                <title>Plugins APIs</title>
+                                <packages>org.apache.ignite.plugin*:org.apache.ignite.visor.plugin</packages>
+                            </group>
+                            <group>
+                                <title>SPI APIs</title>
+                                <packages>org.apache.ignite.spi:org.apache.ignite.spi.checkpoint*:org.apache.ignite.spi.collision*:org.apache.ignite.spi.indexing*:org.apache.ignite.spi.loadbalancing*:org.apache.ignite.spi.communication*:org.apache.ignite.spi.deployment*:org.apache.ignite.spi.swapspace*:org.apache.ignite.spi.discovery*:org.apache.ignite.spi.failover*:org.apache.ignite.spi.eventstorage*:org.apache.ignite.spi.tracing*:org.apache.ignite.spi.metric*</packages>
+                            </group>
+                            <group>
+                                <title>Development Utils</title>
+                                <packages>org.apache.ignite.development.utils*</packages>
+                            </group>
+                        </groups>
                     </configuration>
                 </plugin>
 
@@ -906,9 +960,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <configuration>
-                            <!-- TODO https://issues.apache.org/jira/browse/IGNITE-13202 -->
                             <additionalOptions>${javadoc.opts} --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</additionalOptions>
-                            <detectJavaApiLink>false</detectJavaApiLink>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -1025,6 +1077,14 @@
                                 --add-opens=java.management/sun.management=ALL-UNNAMED
                                 --add-opens java.desktop/java.awt.font=ALL-UNNAMED
                             </argLine>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <configuration>
+                            <additionalOptions>${javadoc.opts} --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</additionalOptions>
                         </configuration>
                     </plugin>
                 </plugins>
