@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 import org.apache.ignite.internal.processors.job.ComputeJobStatusEnum;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.platform.compute.PlatformFullTask;
 import org.apache.ignite.internal.processors.task.monitor.ComputeGridMonitor;
 import org.apache.ignite.internal.processors.task.monitor.ComputeTaskStatus;
 import org.apache.ignite.internal.processors.task.monitor.ComputeTaskStatusSnapshot;
@@ -642,8 +643,9 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         if (log.isDebugEnabled())
             log.debug("Task deployment: " + dep);
 
-        boolean fullSup = dep != null && taskCls != null &&
-            dep.annotation(taskCls, ComputeTaskSessionFullSupport.class) != null;
+        boolean fullSup = (dep != null && taskCls != null &&
+            dep.annotation(taskCls, ComputeTaskSessionFullSupport.class) != null) ||
+            (task instanceof PlatformFullTask && ((PlatformFullTask)task).taskSessionFullSupport());
 
         Collection<UUID> top = null;
 

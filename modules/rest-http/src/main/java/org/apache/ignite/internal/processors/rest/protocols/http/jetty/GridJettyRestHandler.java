@@ -51,6 +51,8 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.jackson.IgniteBinaryObjectJsonDeserializer;
+import org.apache.ignite.internal.jackson.IgniteObjectMapper;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationOverride;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
@@ -172,7 +174,7 @@ public class GridJettyRestHandler extends AbstractHandler {
         this.hnd = hnd;
         this.authChecker = authChecker;
         this.log = ctx.log(getClass());
-        this.jsonMapper = new GridJettyObjectMapper(ctx);
+        this.jsonMapper = new IgniteObjectMapper(ctx);
 
         // Init default page and favicon.
         try {

@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -618,7 +619,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             }
         });
 
-        T2<CountDownLatch, IgniteInternalFuture<?>> latchAndFut = runDumpAsyncAndStopBeforeStart();
+        T2<CountDownLatch, IgniteInternalFuture<?>> latchAndFut = runDumpAsyncAndStopBeforeStart(ign);
 
         cache.put(keyToFail, "test string");
 
@@ -647,7 +648,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     private void doTestDumpWithExpiry() throws Exception {
         IgniteEx ign = startGridAndFillCaches();
 
-        T2<CountDownLatch, IgniteInternalFuture<?>> latchAndFut = runDumpAsyncAndStopBeforeStart();
+        T2<CountDownLatch, IgniteInternalFuture<?>> latchAndFut = runDumpAsyncAndStopBeforeStart(ign);
 
         Thread.sleep(TTL);
 
@@ -677,7 +678,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     private void doTestConcurrentOperations(Consumer<IgniteEx> op) throws Exception {
         IgniteEx ign = startGridAndFillCaches();
 
-        T2<CountDownLatch, IgniteInternalFuture<?>> latchAndFut = runDumpAsyncAndStopBeforeStart();
+        T2<CountDownLatch, IgniteInternalFuture<?>> latchAndFut = runDumpAsyncAndStopBeforeStart(ign);
 
         // This operations will be catched by change listeners. Old value must be stored in dump.
         op.accept(ign);
@@ -707,14 +708,24 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void checkDefaultCacheEntry(DumpEntry e) {
-        super.checkDefaultCacheEntry(e);
+    @Override protected TestDumpConsumer dumpConsumer(
+        Set<String> expectedFoundCaches,
+        int expectedDfltDumpSz,
+        int expectedGrpDumpSz,
+        int expectedCnt
+    ) {
+        return new TestDumpConsumerImpl(expectedFoundCaches, expectedDfltDumpSz, expectedGrpDumpSz, expectedCnt) {
+            /** {@inheritDoc} */
+            @Override protected void checkDefaultCacheEntry(DumpEntry e) {
+                super.checkDefaultCacheEntry(e);
 
-        if (explicitTtl != null) {
-            assertTrue("Expire time must be set", e.expireTime() != 0);
-            assertTrue("Expire time must be in past", System.currentTimeMillis() >= e.expireTime());
-            assertTrue("Expire time must be set during test run", System.currentTimeMillis() - getTestTimeout() < e.expireTime());
-        }
+                if (explicitTtl != null) {
+                    assertTrue("Expire time must be set", e.expireTime() != 0);
+                    assertTrue("Expire time must be in past", System.currentTimeMillis() >= e.expireTime());
+                    assertTrue("Expire time must be set during test run", System.currentTimeMillis() - getTestTimeout() < e.expireTime());
+                }
+            }
+        };
     }
 
     /** */

@@ -23,7 +23,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
-import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.lang.GridTuple3;
@@ -50,7 +49,7 @@ public class StateCommand implements LocalCommand<NoArg, GridTuple3<UUID, String
         @Nullable Ignite ignite,
         NoArg arg,
         Consumer<String> printer
-    ) throws GridClientException {
+    ) throws Exception {
         ClusterState state;
         UUID id;
         String tag;

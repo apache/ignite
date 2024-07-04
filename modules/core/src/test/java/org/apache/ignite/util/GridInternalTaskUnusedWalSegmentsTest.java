@@ -113,7 +113,7 @@ public class GridInternalTaskUnusedWalSegmentsTest extends GridCommonAbstractTes
 
             WalTaskResult printRes = ig0.compute().execute(WalTask.class,
                     new VisorTaskArgument<>(ig0.cluster().node().id(),
-                            new WalPrintCommandArg(), false));
+                            new WalPrintCommandArg(), false)).result();
 
             assertEquals("Check that print task finished without exceptions", printRes.results().size(), 4);
 
@@ -126,7 +126,7 @@ public class GridInternalTaskUnusedWalSegmentsTest extends GridCommonAbstractTes
 
             WalTaskResult delRes = ig0.compute().execute(WalTask.class,
                     new VisorTaskArgument<>(ig0.cluster().node().id(),
-                            new WalDeleteCommandArg(), false));
+                            new WalDeleteCommandArg(), false)).result();
 
             assertEquals("Check that delete task finished with no exceptions", delRes.results().size(), 4);
 

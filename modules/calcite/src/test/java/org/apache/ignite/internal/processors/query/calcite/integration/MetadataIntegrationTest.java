@@ -18,6 +18,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.Collections;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.joining;
@@ -100,5 +104,37 @@ public class MetadataIntegrationTest extends AbstractBasicIntegrationTest {
         assertQuery("select salary, count(name) from person group by salary").columnNames("SALARY", "COUNT(NAME)").check();
 
         assertQuery("select 1, -1, 'some string' from person").columnNames("1", "-1", "'some string'").check();
+    }
+
+    /** Test implicit system fields expand by star. */
+    @Test
+    public void testSystemFieldsStarExpand() {
+        IgniteCache<Integer, Integer> cache = client.createCache(new CacheConfiguration<Integer, Integer>("test")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(
+                Collections.singletonList(new QueryEntity()
+                    .setTableName("test")
+                    .setKeyType(Integer.class.getName())
+                    .setValueType(Integer.class.getName())
+                )
+            )
+        );
+
+        cache.put(0, 0);
+
+        assertQuery("select * from test")
+            .columnNames("_KEY", "_VAL").returns(0, 0).check();
+
+        assertQuery("select * from (select * from test)")
+            .columnNames("_KEY", "_VAL").returns(0, 0).check();
+
+        assertQuery("select _KEY, _VAL from (select * from test) as t")
+            .columnNames("_KEY", "_VAL").returns(0, 0).check();
+
+        assertQuery("select * from (select _KEY, _VAL from test) as t")
+            .columnNames("_KEY", "_VAL").returns(0, 0).check();
+
+        assertQuery("select * from (select _KEY, _VAL as OTHER from test) as t")
+            .columnNames("_KEY", "OTHER").returns(0, 0).check();
     }
 }

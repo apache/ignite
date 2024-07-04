@@ -708,6 +708,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CACHES.NEAR_CACHE_EVICTION_POLICY_FACTORY.null",
                 "SYS.CACHES.NEAR_CACHE_START_SIZE.null",
                 "SYS.CACHES.DEFAULT_LOCK_TIMEOUT.null",
+                "SYS.CACHES.HAS_EXPIRING_ENTRIES.null",
                 "SYS.CACHES.INTERCEPTOR.null",
                 "SYS.CACHES.CACHE_STORE_FACTORY.null",
                 "SYS.CACHES.IS_STORE_KEEP_BINARY.null",

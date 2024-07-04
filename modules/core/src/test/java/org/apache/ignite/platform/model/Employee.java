@@ -26,6 +26,16 @@ public class Employee {
     private long salary;
 
     /** */
+    public Employee() {
+    }
+
+    /** */
+    public Employee(String fio, long salary) {
+        this.fio = fio;
+        this.salary = salary;
+    }
+
+    /** */
     public String getFio() {
         return fio;
     }
