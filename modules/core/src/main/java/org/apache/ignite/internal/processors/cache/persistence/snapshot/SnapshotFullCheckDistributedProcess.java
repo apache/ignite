@@ -155,16 +155,9 @@ public class SnapshotFullCheckDistributedProcess {
         if (!incReq.nodes.contains(kctx.localNodeId()) || locReq.meta() == null)
             return FINISHED_FUT;
 
-        GridFutureAdapter<HashMap<PartitionKeyV2, PartitionHashRecordV2>> locPartsChkFut;
+        GridFutureAdapter<HashMap<PartitionKeyV2, PartitionHashRecordV2>> locPartsChkFut = new GridFutureAdapter<>();
 
-        synchronized (locReq) {
-            GridFutureAdapter<?> locFut = locReq.fut();
-
-            if (locFut != null && (locFut.isFailed() || locFut.isCancelled()))
-                return (IgniteInternalFuture<HashMap<PartitionKeyV2, PartitionHashRecordV2>>)locFut;
-
-            locReq.fut(locPartsChkFut = new GridFutureAdapter<>());
-        }
+        locReq.fut(locPartsChkFut);
 
         ExecutorService executor = kctx.cache().context().snapshotMgr().snapshotExecutorService();
 
@@ -173,6 +166,10 @@ public class SnapshotFullCheckDistributedProcess {
 
             SnapshotHandlerContext hndCtx = new SnapshotHandlerContext(locReq.meta(), locReq.grps,
                 kctx.cluster().get().localNode(), snpDir, false, true);
+
+            // An error can occure when the local future is still null.
+            if (locReq.error() != null)
+                locPartsChkFut.onDone(locReq.error());
 
             if (locPartsChkFut.isDone())
                 return;
@@ -187,6 +184,10 @@ public class SnapshotFullCheckDistributedProcess {
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to calculate snapshot partition hashes, req: " + incReq, e);
             }
+
+            // No need to wait to the cealup if current node is just a worker.
+            if (!kctx.localNodeId().equals(locReq.opCoordId) && clusterOpFut == null)
+                clean(locReq.reqId, null, null, null);
         }));
 
         return locPartsChkFut;
@@ -261,17 +262,16 @@ public class SnapshotFullCheckDistributedProcess {
     private Throwable stopAndCleanLocRequest(SnapshotFullCheckOperationRequest rq, @Nullable Throwable err) {
         requests.remove(rq.snapshotName());
 
+        if (err == null && rq.error() != null)
+            err = rq.error();
+
+        GridFutureAdapter<?> locWorkingFut = rq.fut();
+
         boolean finished = false;
 
-        synchronized (rq) {
-            if (err == null && rq.error() != null)
-                err = rq.error();
-
-            GridFutureAdapter<?> locWorkingFut = rq.fut();
-
-            if (locWorkingFut != null)
-                finished = err == null ? locWorkingFut.onDone() : locWorkingFut.onDone(err);
-        }
+        // Try to stop local working future ASAP.
+        if (locWorkingFut != null)
+            finished = err == null ? locWorkingFut.onDone() : locWorkingFut.onDone(err);
 
         if (finished && log.isInfoEnabled())
             log.info("Finished snapshot local validation, req: " + rq + '.');
@@ -336,17 +336,19 @@ public class SnapshotFullCheckDistributedProcess {
 
         GridFutureAdapter<ArrayList<SnapshotMetadata>> locMetasChkFut = new GridFutureAdapter<>();
 
-        synchronized (locReq) {
-            assert locReq.fut() == null;
+        assert locReq.fut() == null;
 
-            locReq.fut(locMetasChkFut);
-        }
+        locReq.fut(locMetasChkFut);
 
         kctx.cache().context().snapshotMgr().snapshotExecutorService().submit(() -> stopFutureOnAnyFailure(locMetasChkFut, () -> {
             if (log.isDebugEnabled())
                 log.debug("Checking local snapshot metadatas. Request=" + locReq + '.');
 
             Collection<Integer> grpIds = F.isEmpty(locReq.groups()) ? null : F.viewReadOnly(locReq.groups(), CU::cacheId);
+
+            // An error can occure when the local future is still null.
+            if (locReq.error() != null)
+                locMetasChkFut.onDone(locReq.error());
 
             if (locMetasChkFut.isDone())
                 return;
@@ -367,7 +369,6 @@ public class SnapshotFullCheckDistributedProcess {
                 locMetasChkFut.onDone(locRqErr);
             else
                 locMetasChkFut.onDone((ArrayList<SnapshotMetadata>)locMetas);
-
         }));
 
         return locMetasChkFut;
