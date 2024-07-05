@@ -14,25 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.query.calcite.sql;
 
-package org.apache.ignite.internal.management.snapshot;
-
-import java.util.List;
-import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.VisorMultiNodeTask;
-import org.jetbrains.annotations.Nullable;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.sql.SqlNumericLiteral;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 /**
- * Base class for single node visor snapshot task.
+ * Class for numeric literal with exact value out of valid long type range.
  */
-public abstract class SnapshotOneNodeTask<A, R> extends VisorMultiNodeTask<A, SnapshotTaskResult, R> {
+public class IgniteSqlDecimalLiteral extends SqlNumericLiteral {
+    /** */
+    public IgniteSqlDecimalLiteral(SqlNumericLiteral lit) {
+        super(lit.bigDecimalValue(), lit.getPrec(), lit.getScale(), lit.isExact(), lit.getParserPosition());
+    }
+
     /** {@inheritDoc} */
-    @Nullable @Override protected SnapshotTaskResult reduce0(List<ComputeJobResult> results) {
-        assert results.size() == 1 : results.size();
-
-        ComputeJobResult res = F.first(results);
-
-        return new SnapshotTaskResult(res.getData(), res.getException());
+    @Override public RelDataType createSqlType(RelDataTypeFactory typeFactory) {
+        return typeFactory.createSqlType(SqlTypeName.DECIMAL, bigDecimalValue().precision());
     }
 }

@@ -55,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.VisorTaskResult;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -767,7 +768,7 @@ public class CommandUtils {
         Class<? extends VisorMultiNodeTask<A, R, ?>> taskCls,
         A arg,
         Collection<GridClientNode> nodes
-    ) throws GridClientException {
+    ) throws Exception {
         Collection<UUID> nodesIds = nodes.stream()
             .map(GridClientNode::nodeId)
             .collect(Collectors.toList());
@@ -783,15 +784,16 @@ public class CommandUtils {
             if (!connectable.isEmpty())
                 compute = compute.projection(connectable);
 
-            return compute.execute(
+            return ((VisorTaskResult<R>)compute.execute(
                 taskCls.getName(),
                 new VisorTaskArgument<>(nodesIds, arg, false)
-            );
+            )).result();
         }
 
         return ignite
             .compute(ignite.cluster())
-            .execute(taskCls, new VisorTaskArgument<>(nodesIds, arg, false));
+            .execute(taskCls, new VisorTaskArgument<>(nodesIds, arg, false))
+            .result();
     }
 
     /** */

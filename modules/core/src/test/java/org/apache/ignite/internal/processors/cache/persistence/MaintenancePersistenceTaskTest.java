@@ -146,14 +146,14 @@ public class MaintenancePersistenceTaskTest extends GridCommonAbstractTest {
      * @param node Ignite node.
      * @return Execution's result.
      */
-    private PersistenceTaskResult executeInfo(IgniteEx node) {
+    private PersistenceTaskResult executeInfo(IgniteEx node) throws Exception {
         VisorTaskArgument<PersistenceCommand.PersistenceTaskArg> infoArg = new VisorTaskArgument<>(
             node.localNode().id(),
             new PersistenceCommand.PersistenceInfoTaskArg(),
             false
         );
 
-        return node.compute().execute(new PersistenceTask(), infoArg);
+        return node.compute().execute(new PersistenceTask(), infoArg).result();
     }
 
     /**
@@ -162,7 +162,7 @@ public class MaintenancePersistenceTaskTest extends GridCommonAbstractTest {
      * @param node Ignite node.
      * @return Execution's result.
      */
-    private PersistenceTaskResult executeClean(IgniteEx node) {
+    private PersistenceTaskResult executeClean(IgniteEx node) throws Exception {
         PersistenceCleanCachesTaskArg arg = new PersistenceCleanCachesTaskArg();
 
         arg.caches(new String[]{CACHE_NAME});
@@ -173,6 +173,6 @@ public class MaintenancePersistenceTaskTest extends GridCommonAbstractTest {
             false
         );
 
-        return node.compute().execute(new PersistenceTask(), cleanArg);
+        return node.compute().execute(new PersistenceTask(), cleanArg).result();
     }
 }

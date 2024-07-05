@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.QueryParserMetricsHolder;
+import org.apache.ignite.internal.processors.query.QueryProperties;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
@@ -500,7 +501,14 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         parserMetrics.countCacheMiss();
 
+        QueryProperties qryProps = qryCtx != null ? qryCtx.unwrap(QueryProperties.class) : null;
+
         SqlNodeList qryList = Commons.parse(sql, FRAMEWORK_CONFIG.getParserConfig());
+
+        if (qryList.size() > 1 && qryProps != null && qryProps.isFailOnMultipleStmts()) {
+            throw new IgniteSQLException("Multiple statements queries are not supported.",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
 
         List<T> res = new ArrayList<>(qryList.size());
         List<RootQuery<Object[]>> qrys = new ArrayList<>(qryList.size());

@@ -43,6 +43,7 @@ import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlMerge;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUpdate;
@@ -55,6 +56,7 @@ import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SelectScope;
+import org.apache.calcite.sql.validate.SqlQualified;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorNamespace;
@@ -66,6 +68,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDecimalLiteral;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.internal.util.typedef.F;
@@ -368,10 +371,31 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** {@inheritDoc} */
-    @Override protected void addToSelectList(List<SqlNode> list, Set<String> aliases,
-        List<Map.Entry<String, RelDataType>> fieldList, SqlNode exp, SelectScope scope, boolean includeSystemVars) {
-        if (includeSystemVars || exp.getKind() != SqlKind.IDENTIFIER || !isSystemFieldName(deriveAlias(exp, 0)))
-            super.addToSelectList(list, aliases, fieldList, exp, scope, includeSystemVars);
+    @Override protected void addToSelectList(
+        List<SqlNode> list,
+        Set<String> aliases,
+        List<Map.Entry<String, RelDataType>> fieldList,
+        SqlNode exp,
+        SelectScope scope,
+        boolean includeSysVars
+    ) {
+        if (!includeSysVars && exp.getKind() == SqlKind.IDENTIFIER && isSystemFieldName(deriveAlias(exp, 0))) {
+            SqlQualified qualified = scope.fullyQualify((SqlIdentifier)exp);
+
+            if (qualified.namespace == null)
+                return;
+
+            if (qualified.namespace.getTable() != null) {
+                // If child is table and has only system fields, expand star to these fields.
+                // Otherwise, expand star to non-system fields only.
+                for (RelDataTypeField fld : qualified.namespace.getRowType().getFieldList()) {
+                    if (!isSystemField(fld))
+                        return;
+                }
+            }
+        }
+
+        super.addToSelectList(list, aliases, fieldList, exp, scope, includeSysVars);
     }
 
     /** {@inheritDoc} */
@@ -552,5 +576,23 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
         else
             super.inferUnknownTypes(inferredType, scope, node);
+    }
+
+    /** {@inheritDoc} */
+    @Override public SqlLiteral resolveLiteral(SqlLiteral literal) {
+        if (literal instanceof SqlNumericLiteral && literal.createSqlType(typeFactory).getSqlTypeName() == SqlTypeName.BIGINT) {
+            BigDecimal bd = literal.getValueAs(BigDecimal.class);
+
+            if (bd.scale() == 0) {
+                try {
+                    bd.longValueExact();
+                }
+                catch (ArithmeticException e) {
+                    return new IgniteSqlDecimalLiteral((SqlNumericLiteral)literal);
+                }
+            }
+        }
+
+        return super.resolveLiteral(literal);
     }
 }
