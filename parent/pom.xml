@@ -343,6 +343,10 @@
                         </bottom>
                         <groups>
                             <group>
+                                <title>Platform V DataGrid API</title>
+                                <packages>com.sbt*</packages>
+                            </group>
+                            <group>
                                 <title>Common Grid APIs</title>
                                 <packages>org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.scheduler:org.apache.ignite.events:org.apache.ignite.messaging:org.apache.ignite.startup*:org.apache.ignite.mem</packages>
                             </group>
