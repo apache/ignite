@@ -53,11 +53,16 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.SNAPSHOT_CHECK_METAS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.SNAPSHOT_VALIDATE_PARTS;
 
 /** Distributed process of snapshot full checking (with the partition hashes). */
 public class SnapshotFullCheckDistributedProcess {
+    /** */
+    private static final String METRIC_REG_NAME_PREF = metricName(SNAPSHOT_METRICS, "check");
+
     /** */
     private static final IgniteInternalFuture FINISHED_FUT = new GridFinishedFuture<>();
 
@@ -273,6 +278,8 @@ public class SnapshotFullCheckDistributedProcess {
         if (locWorkingFut != null)
             finished = err == null ? locWorkingFut.onDone() : locWorkingFut.onDone(err);
 
+        cleanMetrics(rq.snpName);
+
         if (finished && log.isInfoEnabled())
             log.info("Finished snapshot local validation, req: " + rq + '.');
 
@@ -394,6 +401,8 @@ public class SnapshotFullCheckDistributedProcess {
 
             if (locReq.error() != null)
                 throw locReq.error();
+
+            registerMetrics();
 
             locReq.metas = new HashMap<>();
 

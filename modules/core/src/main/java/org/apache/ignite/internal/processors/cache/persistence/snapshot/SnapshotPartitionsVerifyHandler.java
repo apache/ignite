@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -67,6 +68,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
@@ -100,6 +102,18 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** Logger. */
     private final IgniteLogger log;
 
+    /** */
+    private final AtomicLong total = new AtomicLong();
+
+    /** */
+    private final AtomicLong processed = new AtomicLong();
+
+    /** */
+    protected final SnapshotHandlerContext opCtx;
+
+    /** */
+    protected volatile MetricRegistry mreg;
+
     /** @param cctx Shared context. */
     public SnapshotPartitionsVerifyHandler(GridCacheSharedContext<?, ?> cctx) {
         this.cctx = cctx;
@@ -110,6 +124,52 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** {@inheritDoc} */
     @Override public SnapshotHandlerType type() {
         return SnapshotHandlerType.RESTORE;
+    }
+
+    /** */
+    protected void addTotal(long add) {
+        assert add >= 0;
+
+        long val = total.addAndGet(add);
+
+        assert val >= processed.get();
+    }
+
+    /** */
+    protected void addProcessed(long add) {
+        assert add >= 0;
+
+        long val = processed.addAndGet(add);
+
+        assert val <= total.get();
+    }
+
+    protected void registerMetrics() {
+        if (!opCtx.check())
+            return;
+
+        long startTime = System.currentTimeMillis();
+
+        mreg = cctx.kernalContext().metric().registry(metricsRegName(snpName));
+
+        assert mreg.findMetric("startTime") == null;
+        assert mreg.findMetric("requestId") == null;
+
+        mreg.register("requestId", this::requestId, UUID.class, "Snapshot operation request.");
+        mreg.register("snapshotName", this::snapshotName, String.class, "Snapshot name.");
+        mreg.register("startTime", () -> startTime, "Snapshot check start time in milliseconds.");
+        mreg.register("calculateHashesFlag", opCtx::check, "Flag of entire snapshot check (partitions hash calculation).");
+
+        if (opCtx.check())
+            mreg.register("progress", () -> total.get() > 0 ? 100.0 * processed.get() / total.get() : 0.0, "% of checked data amount.");
+    }
+
+    /** */
+    protected void clearMetrics() {
+        MetricRegistry mreg = this.mreg;
+
+        if (mreg != null)
+            cctx.kernalContext().metric().remove(mreg.name());
     }
 
     /** {@inheritDoc} */
@@ -136,50 +196,59 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         Map<Integer, File> grpDirs = new HashMap<>();
 
-        for (File dir : cacheDirectories(new File(opCtx.snapshotDirectory(), databaseRelativePath(meta.folderName())), name -> true)) {
-            int grpId = CU.cacheId(cacheGroupName(dir));
+        try {
+            registerMetrics();
 
-            if (!grps.remove(grpId))
-                continue;
+            for (File dir : cacheDirectories(new File(opCtx.snapshotDirectory(), databaseRelativePath(meta.folderName())), name -> true)) {
+                int grpId = CU.cacheId(cacheGroupName(dir));
 
-            Set<Integer> parts = meta.partitions().get(grpId) == null ? Collections.emptySet() :
-                new HashSet<>(meta.partitions().get(grpId));
-
-            for (File part : cachePartitionFiles(dir,
-                (meta.dump() ? DUMP_FILE_EXT : FILE_SUFFIX) + (meta.compressPartitions() ? ZIP_SUFFIX : "")
-            )) {
-                int partId = partId(part.getName());
-
-                if (!parts.remove(partId))
+                if (!grps.remove(grpId))
                     continue;
 
-                partFiles.add(part);
+                Set<Integer> parts = meta.partitions().get(grpId) == null ? Collections.emptySet() :
+                    new HashSet<>(meta.partitions().get(grpId));
+
+                for (File part : cachePartitionFiles(dir,
+                    (meta.dump() ? DUMP_FILE_EXT : FILE_SUFFIX) + (meta.compressPartitions() ? ZIP_SUFFIX : "")
+                )) {
+                    int partId = partId(part.getName());
+
+                    if (!parts.remove(partId))
+                        continue;
+
+                    partFiles.add(part);
+
+                    if (opCtx.check())
+                        total.addAndGet(part.length());
+                }
+
+                if (!parts.isEmpty()) {
+                    throw new IgniteException("Snapshot data doesn't contain required cache group partition " +
+                        "[grpId=" + grpId + ", snpName=" + meta.snapshotName() + ", consId=" + meta.consistentId() +
+                        ", missed=" + parts + ", meta=" + meta + ']');
+                }
+
+                grpDirs.put(grpId, dir);
             }
 
-            if (!parts.isEmpty()) {
-                throw new IgniteException("Snapshot data doesn't contain required cache group partition " +
-                    "[grpId=" + grpId + ", snpName=" + meta.snapshotName() + ", consId=" + meta.consistentId() +
-                    ", missed=" + parts + ", meta=" + meta + ']');
+            if (!grps.isEmpty()) {
+                throw new IgniteException("Snapshot data doesn't contain required cache groups " +
+                    "[grps=" + grps + ", snpName=" + meta.snapshotName() + ", consId=" + meta.consistentId() +
+                    ", meta=" + meta + ']');
             }
 
-            grpDirs.put(grpId, dir);
+            if (!opCtx.check()) {
+                log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
+
+                return Collections.emptyMap();
+            }
+
+            return meta.dump()
+                ? checkDumpFiles(opCtx, partFiles)
+                : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles, isPunchHoleEnabled(opCtx, grpDirs.keySet()));
+        } finally {
+            clearMetrics();
         }
-
-        if (!grps.isEmpty()) {
-            throw new IgniteException("Snapshot data doesn't contain required cache groups " +
-                "[grps=" + grps + ", snpName=" + meta.snapshotName() + ", consId=" + meta.consistentId() +
-                ", meta=" + meta + ']');
-        }
-
-        if (!opCtx.check()) {
-            log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
-
-            return Collections.emptyMap();
-        }
-
-        return meta.dump()
-            ? checkDumpFiles(opCtx, partFiles)
-            : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles, isPunchHoleEnabled(opCtx, grpDirs.keySet()));
     }
 
     /** */
@@ -304,6 +373,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     }
                     catch (IOException e) {
                         throw new IgniteCheckedException(e);
+                    } finally {
+                        processed.addAndGet(part.length());
                     }
 
                     return null;
@@ -370,7 +441,14 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
                     cctx.snapshotMgr().snapshotExecutorService(),
                     partFiles,
-                    part -> calculateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()))
+                    part -> {
+                        try {
+                            return calculateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()));
+                        }
+                        finally {
+                            processed.addAndGet(part.length());
+                        }
+                    }
                 );
 
                 return partitionHashRecordV2s.stream().collect(Collectors.toMap(PartitionHashRecordV2::partitionKey, r -> r));
