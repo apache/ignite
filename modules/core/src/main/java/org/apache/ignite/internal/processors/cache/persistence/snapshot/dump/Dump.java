@@ -199,7 +199,7 @@ public class Dump implements AutoCloseable {
     }
 
     /** @return List of snapshot metadata saved in {@link #dumpDir}. */
-    public List<SnapshotMetadata> metadata() {
+    public List<SnapshotMetadata> metadata() throws IOException, IgniteCheckedException  {
         return Collections.unmodifiableList(metadata);
     }
 
@@ -392,7 +392,7 @@ public class Dump implements AutoCloseable {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws IgniteCheckedException {
+    @Override public void close() throws Exception {
         closeAllComponents(cctx);
 
         if (encSpi != null)
