@@ -17,18 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
-import java.nio.file.DirectoryStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -473,6 +470,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private final boolean sequentialWrite =
         IgniteSystemProperties.getBoolean(IGNITE_SNAPSHOT_SEQUENTIAL_WRITE, DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE);
 
+    /** Snapshot validator. */
+    private final SnapshotChecker snpChecker;
+
     /**
      * @param ctx Kernal context.
      */
@@ -493,6 +493,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         // Manage remote snapshots.
         snpRmtMgr = new SequentialRemoteSnapshotManager();
+
+        snpChecker = new SnapshotChecker(ctx, marsh, ctx.pools().getSnapshotExecutorService(), U.resolveClassLoader(ctx.config()));
     }
 
     /**
@@ -1886,75 +1888,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         int incIdx,
         boolean check
     ) {
-        A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
-        A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
-        A.ensure(grps == null || grps.stream().filter(Objects::isNull).collect(Collectors.toSet()).isEmpty(),
-            "Collection of cache groups names cannot contain null elements.");
-
-        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
-
-        if (log.isInfoEnabled()) {
-            log.info("The check snapshot procedure started [snpName=" + name + ", snpPath=" + snpPath +
-                ", incIdx=" + incIdx + ", grps=" + grps + ']');
-        }
-
-        GridKernalContext kctx0 = cctx.kernalContext();
-
-        Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
-            (node) -> CU.baselineNode(node, kctx0.state().clusterState()));
-
-        Collection<Integer> grpIds = grps == null ? Collections.emptySet() : F.viewReadOnly(grps, CU::cacheId);
-
-        SnapshotMetadataVerificationTaskArg taskArg = new SnapshotMetadataVerificationTaskArg(name, snpPath, incIdx, grpIds);
-
-        kctx0.task().execute(
-            SnapshotMetadataVerificationTask.class,
-            taskArg,
-            options(bltNodes)
-        ).listen(f0 -> {
-            SnapshotMetadataVerificationTaskResult metasRes = f0.result();
-
-            if (f0.error() == null && F.isEmpty(metasRes.exceptions())) {
-                Map<ClusterNode, List<SnapshotMetadata>> metas = metasRes.meta();
-
-                Class<? extends AbstractSnapshotVerificationTask> cls;
-
-                if (includeCustomHandlers)
-                    cls = SnapshotHandlerRestoreTask.class;
-                else
-                    cls = incIdx > 0 ? IncrementalSnapshotVerificationTask.class : SnapshotPartitionsVerifyTask.class;
-
-                kctx0.task().execute(
-                        cls,
-                        new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath, incIdx, check),
-                        options(new ArrayList<>(metas.keySet()))
-                    ).listen(f1 -> {
-                        if (f1.error() == null)
-                            res.onDone(f1.result());
-                        else if (f1.error() instanceof IgniteSnapshotVerifyException)
-                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
-                                new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f1.error()).exceptions())));
-                        else
-                            res.onDone(f1.error());
-                    });
-            }
-            else {
-                if (f0.error() == null)
-                    res.onDone(new IgniteSnapshotVerifyException(metasRes.exceptions()));
-                else if (f0.error() instanceof IgniteSnapshotVerifyException)
-                    res.onDone(new SnapshotPartitionsVerifyTaskResult(null,
-                        new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f0.error()).exceptions())));
-                else
-                    res.onDone(f0.error());
-            }
-        });
-
-        if (log.isInfoEnabled()) {
-            res.listen(() -> log.info("The check snapshot procedure finished [snpName=" + name +
-                ", snpPath=" + snpPath + ", incIdx=" + incIdx + ", grps=" + grps + ']'));
-        }
-
-        return res;
+        return snpChecker.check(name, snpPath, grps, includeCustomHandlers, incIdx, check);
     }
 
     /**
@@ -1986,17 +1920,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Snapshot metadata instance.
      */
     private SnapshotMetadata readSnapshotMetadata(File smf) throws IgniteCheckedException, IOException {
-        SnapshotMetadata meta = readFromFile(smf);
-
-        String smfName = smf.getName().substring(0, smf.getName().length() - SNAPSHOT_METAFILE_EXT.length());
-
-        if (!U.maskForFileName(meta.consistentId()).equals(smfName)) {
-            throw new IgniteException(
-                "Error reading snapshot metadata [smfName=" + smfName + ", consId=" + U.maskForFileName(meta.consistentId())
-            );
-        }
-
-        return meta;
+        return checker().readSnapshotMetadata(smf);
     }
 
     /**
@@ -2005,12 +1929,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param <T> Type of metadata.
      */
     public <T> T readFromFile(File smf) throws IgniteCheckedException, IOException {
-        if (!smf.exists())
-            throw new IgniteCheckedException("Snapshot metafile cannot be read due to it doesn't exist: " + smf);
-
-        try (InputStream in = new BufferedInputStream(Files.newInputStream(smf.toPath()))) {
-            return marsh.unmarshal(in, U.resolveClassLoader(cctx.gridConfig()));
-        }
+        return checker().readFromFile(smf);
     }
 
     /**
@@ -2026,58 +1945,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         File snpDir = snapshotLocalDir(snpName, snpPath);
 
-        if (!(snpDir.exists() && snpDir.isDirectory()))
-            return Collections.emptyList();
-
-        List<File> smfs = new ArrayList<>();
-
-        try (DirectoryStream<Path> ds = Files.newDirectoryStream(snpDir.toPath())) {
-            for (Path d : ds) {
-                if (Files.isRegularFile(d) && d.getFileName().toString().toLowerCase().endsWith(SNAPSHOT_METAFILE_EXT))
-                    smfs.add(d.toFile());
-            }
-        }
-        catch (IOException e) {
-            throw new IgniteException(e);
-        }
-
-        if (smfs.isEmpty())
-            return Collections.emptyList();
-
-        Map<String, SnapshotMetadata> metasMap = new HashMap<>();
-        SnapshotMetadata prev = null;
-
-        try {
-            for (File smf : smfs) {
-                SnapshotMetadata curr = readSnapshotMetadata(smf);
-
-                if (prev != null && !prev.sameSnapshot(curr)) {
-                    throw new IgniteException("Snapshot metadata files are from different snapshots " +
-                        "[prev=" + prev + ", curr=" + curr + ']');
-                }
-
-                metasMap.put(curr.consistentId(), curr);
-
-                prev = curr;
-            }
-        }
-        catch (IgniteCheckedException | IOException e) {
-            throw new IgniteException(e);
-        }
-
-        SnapshotMetadata currNodeSmf = metasMap.remove(cctx.localNode().consistentId().toString());
-
-        // Snapshot metadata for the local node must be first in the result map.
-        if (currNodeSmf == null)
-            return new ArrayList<>(metasMap.values());
-        else {
-            List<SnapshotMetadata> result = new ArrayList<>();
-
-            result.add(currNodeSmf);
-            result.addAll(metasMap.values());
-
-            return result;
-        }
+        return checker().readSnapshotMetadatas(snpDir, cctx.localNode().consistentId());
     }
 
     /**
@@ -2571,12 +2439,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * @param log Logger.
      * @param snpDir The full path to the snapshot files.
      * @param folderName The node folder name, usually it's the same as the U.maskForFileName(consistentId).
      * @return Standalone kernal context related to the snapshot.
      * @throws IgniteCheckedException If fails.
      */
-    public StandaloneGridKernalContext createStandaloneKernalContext(
+    public static StandaloneGridKernalContext createStandaloneKernalContext(
+        IgniteLogger log,
         CompressionProcessor cmpProc,
         File snpDir,
         String folderName
@@ -2946,6 +2816,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public FileIOFactory ioFactory() {
         return ioFactory;
+    }
+
+    /** */
+    public SnapshotChecker checker() {
+        return snpChecker;
     }
 
     /**
