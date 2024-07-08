@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -44,14 +43,11 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
@@ -68,9 +64,7 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -99,7 +93,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.reader
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
-import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /** */
 public class SnapshotChecker {
@@ -143,76 +136,6 @@ public class SnapshotChecker {
         this.executor = executorSrvc;
 
         this.log = kctx.log(getClass());
-    }
-
-    /** */
-    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> check(
-        String snpName,
-        @Nullable String snpPath,
-        Collection<String> grps,
-        boolean includeCustomHandlers,
-        int incIdx,
-        boolean checkParts
-    ) {
-        A.notNullOrEmpty(snpName, "Snapshot name cannot be null or empty.");
-        A.ensure(U.alphanumericUnderscore(snpName), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
-        A.ensure(grps == null || grps.stream().filter(Objects::isNull).collect(Collectors.toSet()).isEmpty(),
-            "Collection of cache groups names cannot contain null elements.");
-
-        if (log.isInfoEnabled()) {
-            log.info("The check snapshot procedure started [snpName=" + snpName + ", snpPath=" + snpPath +
-                ", incIdx=" + incIdx + ", grps=" + grps + ']');
-        }
-
-        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
-
-        Collection<ClusterNode> bltNodes = F.view(kctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
-            (node) -> CU.baselineNode(node, kctx.state().clusterState()));
-
-        Collection<Integer> grpIds = grps == null ? Collections.emptySet() : F.viewReadOnly(grps, CU::cacheId);
-
-        SnapshotMetadataVerificationTaskArg taskArg = new SnapshotMetadataVerificationTaskArg(snpName, snpPath, incIdx, grpIds);
-
-        kctx.task().execute(
-            SnapshotMetadataVerificationTask.class,
-            taskArg,
-            options(bltNodes)
-        ).listen(metaFut -> {
-            SnapshotMetadataVerificationTaskResult metasRes = metaFut.result();
-
-            if (!shouldProceedAfterMetasResult(res, metasRes, metaFut.error()))
-                return;
-
-            Map<ClusterNode, List<SnapshotMetadata>> metas = metasRes.meta();
-
-            Class<? extends AbstractSnapshotVerificationTask> cls;
-
-            if (includeCustomHandlers)
-                cls = SnapshotHandlerRestoreTask.class;
-            else
-                cls = incIdx > 0 ? IncrementalSnapshotVerificationTask.class : SnapshotPartitionsVerifyTask.class;
-
-            kctx.task().execute(
-                cls,
-                new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath, incIdx, checkParts),
-                options(new ArrayList<>(metas.keySet()))
-            ).listen(f1 -> {
-                if (f1.error() == null)
-                    res.onDone(f1.result());
-                else if (f1.error() instanceof IgniteSnapshotVerifyException)
-                    res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
-                        new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f1.error()).exceptions())));
-                else
-                    res.onDone(f1.error());
-            });
-        });
-
-        if (log.isInfoEnabled()) {
-            res.listen(() -> log.info("The check snapshot procedure finished [snpName=" + snpName +
-                ", snpPath=" + snpPath + ", incIdx=" + incIdx + ", grps=" + grps + ']'));
-        }
-
-        return res;
     }
 
     /** */
@@ -401,28 +324,6 @@ public class SnapshotChecker {
         }
 
         return resultExceptions;
-    }
-
-    /** */
-    private static boolean shouldProceedAfterMetasResult(
-        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res,
-        SnapshotMetadataVerificationTaskResult metasRes,
-        Throwable futErr
-    ) {
-        assert futErr != null || metasRes != null;
-
-        if (futErr == null && F.isEmpty(metasRes.exceptions()))
-            return true;
-
-        if (futErr == null)
-            res.onDone(new IgniteSnapshotVerifyException(metasRes.exceptions()));
-        else if (futErr instanceof IgniteSnapshotVerifyException)
-            res.onDone(new SnapshotPartitionsVerifyTaskResult(null,
-                new IdleVerifyResultV2(((IgniteSnapshotVerifyException)futErr).exceptions())));
-        else
-            res.onDone(futErr);
-
-        return false;
     }
 
     /** */

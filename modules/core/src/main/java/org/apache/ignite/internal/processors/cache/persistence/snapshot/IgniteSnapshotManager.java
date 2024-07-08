@@ -1888,7 +1888,75 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         int incIdx,
         boolean check
     ) {
-        return snpChecker.check(name, snpPath, grps, includeCustomHandlers, incIdx, check);
+        A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
+        A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
+        A.ensure(grps == null || grps.stream().filter(Objects::isNull).collect(Collectors.toSet()).isEmpty(),
+            "Collection of cache groups names cannot contain null elements.");
+
+        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
+
+        if (log.isInfoEnabled()) {
+            log.info("The check snapshot procedure started [snpName=" + name + ", snpPath=" + snpPath +
+                ", incIdx=" + incIdx + ", grps=" + grps + ']');
+        }
+
+        GridKernalContext kctx0 = cctx.kernalContext();
+
+        Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
+            (node) -> CU.baselineNode(node, kctx0.state().clusterState()));
+
+        Collection<Integer> grpIds = grps == null ? Collections.emptySet() : F.viewReadOnly(grps, CU::cacheId);
+
+        SnapshotMetadataVerificationTaskArg taskArg = new SnapshotMetadataVerificationTaskArg(name, snpPath, incIdx, grpIds);
+
+        kctx0.task().execute(
+            SnapshotMetadataVerificationTask.class,
+            taskArg,
+            options(bltNodes)
+        ).listen(f0 -> {
+            SnapshotMetadataVerificationTaskResult metasRes = f0.result();
+
+            if (f0.error() == null && F.isEmpty(metasRes.exceptions())) {
+                Map<ClusterNode, List<SnapshotMetadata>> metas = metasRes.meta();
+
+                Class<? extends AbstractSnapshotVerificationTask> cls;
+
+                if (includeCustomHandlers)
+                    cls = SnapshotHandlerRestoreTask.class;
+                else
+                    cls = incIdx > 0 ? IncrementalSnapshotVerificationTask.class : SnapshotPartitionsVerifyTask.class;
+
+                kctx0.task().execute(
+                        cls,
+                        new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath, incIdx, check),
+                        options(new ArrayList<>(metas.keySet()))
+                    ).listen(f1 -> {
+                        if (f1.error() == null)
+                            res.onDone(f1.result());
+                        else if (f1.error() instanceof IgniteSnapshotVerifyException)
+                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
+                                new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f1.error()).exceptions())));
+                        else
+                            res.onDone(f1.error());
+                    });
+            }
+            else {
+                if (f0.error() == null)
+                    res.onDone(new IgniteSnapshotVerifyException(metasRes.exceptions()));
+                else if (f0.error() instanceof IgniteSnapshotVerifyException)
+                    res.onDone(new SnapshotPartitionsVerifyTaskResult(null,
+                        new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f0.error()).exceptions())));
+                else
+                    res.onDone(f0.error());
+            }
+        });
+
+        if (log.isInfoEnabled()) {
+            res.listen(() -> log.info("The check snapshot procedure finished [snpName=" + name +
+                ", snpPath=" + snpPath + ", incIdx=" + incIdx + ", grps=" + grps + ']'));
+        }
+
+        return res;
     }
 
     /**
@@ -1920,7 +1988,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Snapshot metadata instance.
      */
     private SnapshotMetadata readSnapshotMetadata(File smf) throws IgniteCheckedException, IOException {
-        return checker().readSnapshotMetadata(smf);
+        return snpChecker.readSnapshotMetadata(smf);
     }
 
     /**
@@ -1929,7 +1997,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param <T> Type of metadata.
      */
     public <T> T readFromFile(File smf) throws IgniteCheckedException, IOException {
-        return checker().readFromFile(smf);
+        return snpChecker.readFromFile(smf);
     }
 
     /**
@@ -1945,7 +2013,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         File snpDir = snapshotLocalDir(snpName, snpPath);
 
-        return checker().readSnapshotMetadatas(snpDir, cctx.localNode().consistentId());
+        return snpChecker.readSnapshotMetadatas(snpDir, cctx.localNode().consistentId());
     }
 
     /**
