@@ -237,21 +237,22 @@ public class SnapshotFullCheckDistributedProcess {
 
             boolean finished;
 
-            if (err == null && (!F.isEmpty(results) || !F.isEmpty(errors))) {
-                assert locRq != null;
+            // Nodes' results and errors reducing is available on a required node where the process request must be registered.
+            assert (F.isEmpty(errors) && F.isEmpty(results)) || locRq != null;
 
+            Map<ClusterNode, Exception> errors0 = locRq == null || F.isEmpty(errors)
+                ? Collections.emptyMap()
+                : collectErrors(errors, locRq.nodes());
+
+            if (err == null && !F.isEmpty(results)) {
                 Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = collecPartsHashes(results, locRq.nodes());
-                Map<ClusterNode, Exception> errors0 = collectErrors(errors, locRq.nodes);
 
                 IdleVerifyResultV2 chkRes = VerifyBackupPartitionsTaskV2.reduceHashesAndErrors(results0, errors0);
 
                 finished = clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(locRq.metas, chkRes));
             }
-            else {
-                assert err != null;
-
-                finished = finishClusterFutureWithErr(clusterOpFut, err, Collections.emptyMap());
-            }
+            else
+                finished = finishClusterFutureWithErr(clusterOpFut, err, errors0);
 
             if (finished && log.isInfoEnabled())
                 log.info("Snapshot validation process finished, req: " + locRq + '.');
@@ -280,8 +281,8 @@ public class SnapshotFullCheckDistributedProcess {
     }
 
     /** */
-    private Map<ClusterNode, Exception> collectErrors(@Nullable Map<UUID, Throwable> errors, Set<UUID> requiredNodes) {
-        if (F.isEmpty(errors))
+    private Map<ClusterNode, Exception> collectErrors(Map<UUID, Throwable> errors, Set<UUID> requiredNodes) {
+        if (errors.isEmpty())
             return Collections.emptyMap();
 
         return errors.entrySet().stream().filter(e -> requiredNodes.contains(e.getKey()) && e.getValue() != null)
