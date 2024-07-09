@@ -300,6 +300,9 @@ class IgniteSpec(metaclass=ABCMeta):
         if proc.returncode != 0:
             raise RuntimeError("Command '%s' returned non-zero exit status %d: %s" % (cmd, proc.returncode, stdout))
 
+    def envs(self):
+        return {"MAIN_CLASS": self.service.main_java_class}
+
 
 class IgniteNodeSpec(IgniteSpec):
     """
@@ -356,6 +359,3 @@ class IgniteApplicationSpec(IgniteSpec):
     def config_file_path(self):
         return self.service.config_file if self.service.config.service_type == IgniteServiceType.NODE \
             else self.service.thin_client_config_file
-
-    def envs(self):
-        return {**super().envs(), **{"MAIN_CLASS": self.service.main_java_class}}

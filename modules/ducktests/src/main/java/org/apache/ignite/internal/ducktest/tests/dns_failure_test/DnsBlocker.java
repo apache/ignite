@@ -14,46 +14,75 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package java.net;
+package org.apache.ignite.internal.ducktest.tests.dns_failure_test;
+
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.startup.cmdline.CommandLineStartup;
+import sun.net.spi.nameservice.NameService;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Scanner;
 
 /** */
-public class DnsBlocker {
+public class DnsBlocker implements NameService {
     /** */
     private static final String BLOCK_DNS_FILE = "/tmp/block_dns";
 
     /** */
-    public static final DnsBlocker INSTANCE = new DnsBlocker();
+    private final InetAddress loopback;
+
+    /** Original NameService to use after unblock. */
+    private final NameService orig;
+
+    /**
+     * @param orig Original NameService to use after unblock.
+     */
+    private DnsBlocker(NameService orig) {
+        loopback = InetAddress.getLoopbackAddress();
+        this.orig = orig;
+    }
+
+    /** Installs DnsBlocker as main NameService to JVM. */
+    private static void install() throws IgniteCheckedException {
+        List<NameService> nameSrvc = U.staticField(InetAddress.class, "nameServices");
+
+        NameService ns = new DnsBlocker(nameSrvc.get(0));
+
+        // Put the blocking name service ahead.
+        nameSrvc.add(0, ns);
+
+        System.out.println("Installed DnsBlocker as main NameService to JVM [ns=" + nameSrvc.size() + ']');
+    }
 
     /** */
-    private DnsBlocker() {
-        // No-op.
+    public static void main(String[] args) throws Exception {
+        install();
+
+        CommandLineStartup.main(args);
     }
 
-    /**
-     * Check and block hostname resolve request if needed.
-     * @param impl Implementation.
-     * @param hostname Hostname.
-     */
-    public void onHostResolve(InetAddressImpl impl, String hostname) throws UnknownHostException {
-        if (!impl.loopbackAddress().getHostAddress().equals(hostname))
+    /** */
+    @Override public InetAddress[] lookupAllHostAddr(String hostname) throws UnknownHostException {
+        if (!loopback.getHostAddress().equals(hostname))
             check(hostname);
+
+        return orig.lookupAllHostAddr(hostname);
     }
 
-    /**
-     * Check and block address resolve request if needed.
-     * @param impl Implementation.
-     * @param addr Address.
-     */
-    public void onAddrResolve(InetAddressImpl impl, byte[] addr) throws UnknownHostException {
-        if (!Arrays.equals(impl.loopbackAddress().getAddress(), addr))
+    /** */
+    @Override public String getHostByAddr(byte[] addr) throws UnknownHostException {
+        if (!Arrays.equals(loopback.getAddress(), addr))
             check(InetAddress.getByAddress(addr).toString());
+
+        return orig.getHostByAddr(addr);
     }
 
     /** */
