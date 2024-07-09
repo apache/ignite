@@ -144,7 +144,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageP
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
-import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -205,7 +204,6 @@ import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
 import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
-import static org.apache.ignite.internal.MarshallerContextImpl.resolveMappingFileStoreWorkDir;
 import static org.apache.ignite.internal.MarshallerContextImpl.saveMappings;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -219,7 +217,6 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.toDetailString;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.baselineNode;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
-import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.resolveBinaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
@@ -2504,23 +2501,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public static String snapshotMetaFileName(String consId) {
         return U.maskForFileName(consId) + SNAPSHOT_METAFILE_EXT;
-    }
-
-    /**
-     * @param log Logger.
-     * @param snpDir The full path to the snapshot files.
-     * @param folderName The node folder name, usually it's the same as the U.maskForFileName(consistentId).
-     * @return Standalone kernal context related to the snapshot.
-     * @throws IgniteCheckedException If fails.
-     */
-    public static StandaloneGridKernalContext createStandaloneKernalContext(
-        IgniteLogger log,
-        CompressionProcessor cmpProc,
-        File snpDir,
-        String folderName
-    ) throws IgniteCheckedException {
-        return new StandaloneGridKernalContext(log, cmpProc, resolveBinaryWorkDir(snpDir.getAbsolutePath(), folderName),
-            resolveMappingFileStoreWorkDir(snpDir.getAbsolutePath()));
     }
 
     /**
