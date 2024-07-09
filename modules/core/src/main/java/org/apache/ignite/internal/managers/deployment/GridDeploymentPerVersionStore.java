@@ -343,7 +343,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                         IgniteBiTuple<Class<?>, Throwable> cls = dep0.deployedClass(meta.className(), meta.alias());
 
                         if (cls.getKey() != null && cls.getValue() == null) {
-                            addParticipant((SharedDeployment)dep0, meta);
+                            ((SharedDeployment)dep0).addParticipant(meta.senderNodeId(), meta.classLoaderId());
                             skipSearchDeployment = true;
                         }
                     }
