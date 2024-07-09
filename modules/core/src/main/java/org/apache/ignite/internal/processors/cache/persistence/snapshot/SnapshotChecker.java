@@ -325,6 +325,8 @@ public class SnapshotChecker {
     }
 
     /** */
+    protected IgniteBiTuple<Map<Integer, File>, Set<File>> preparePartitions(SnapshotMetadata meta, Collection<Integer> grps, File snpDir) {
+    /** */
     private IgniteBiTuple<Map<Integer, File>, Set<File>> preparePartitions(SnapshotMetadata meta, Collection<Integer> grps, File snpDir) {
         Map<Integer, File> grpDirs = new HashMap<>();
         Set<File> partFiles = new HashSet<>();
