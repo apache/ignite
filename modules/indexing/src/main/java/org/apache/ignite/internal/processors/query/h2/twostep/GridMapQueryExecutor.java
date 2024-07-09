@@ -479,7 +479,8 @@ public class GridMapQueryExecutor {
                             timeout,
                             qryResults.queryCancel(qryIdx),
                             dataPageScanEnabled,
-                            qryInfo);
+                            qryInfo,
+                            false);
 
                         if (evt) {
                             ctx.event().record(new CacheQueryExecutedEvent<>(
@@ -507,7 +508,7 @@ public class GridMapQueryExecutor {
 
                         res.openResult(rs, qryInfo);
 
-                        final GridQueryNextPageResponse msg = prepareNextPageWithTimer(
+                        final GridQueryNextPageResponse msg = prepareNextPage(
                             nodeRess,
                             node,
                             qryResults,
@@ -862,7 +863,7 @@ public class GridMapQueryExecutor {
 
                         Boolean dataPageScanEnabled = isDataPageScanEnabled(req.getFlags());
 
-                        GridQueryNextPageResponse msg = prepareNextPageWithTimer(
+                        GridQueryNextPageResponse msg = prepareNextPage(
                             nodeRess,
                             node,
                             qryResults,
@@ -961,34 +962,6 @@ public class GridMapQueryExecutor {
 
             return msg;
         }
-    }
-
-    /**
-     * Prepares next page for query and prints warning if it took too long.
-     *
-     * @param nodeRess Results.
-     * @param node Node.
-     * @param qr Query results.
-     * @param qry Query.
-     * @param segmentId Index segment ID.
-     * @param pageSize Page size.
-     * @param dataPageScanEnabled If data page scan is enabled.
-     * @return Next page.
-     * @throws IgniteCheckedException If failed.
-     */
-    private GridQueryNextPageResponse prepareNextPageWithTimer(
-        MapNodeResults nodeRess,
-        ClusterNode node,
-        MapQueryResults qr,
-        int qry,
-        int segmentId,
-        int pageSize,
-        Boolean dataPageScanEnabled
-    ) throws IgniteCheckedException {
-        return h2.executeWithTimer(
-            () -> prepareNextPage(nodeRess, node, qr, qry, segmentId, pageSize, dataPageScanEnabled),
-            qr.result(qry).qryInfo(),
-            dataPageScanEnabled);
     }
 
     /**

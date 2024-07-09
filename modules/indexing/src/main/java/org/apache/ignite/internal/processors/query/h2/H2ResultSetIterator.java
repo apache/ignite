@@ -46,6 +46,7 @@ import org.h2.engine.Session;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.result.ResultInterface;
 import org.h2.value.Value;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_PAGE_ROWS;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_ITER_CLOSE;
@@ -123,6 +124,9 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
     /** */
     final IgniteH2Indexing h2;
 
+    /** */
+    private final H2FullTrackableQuery fullTrackableQry;
+
     /**
      * @param data Data array.
      * @param log Logger.
@@ -137,7 +141,8 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         IgniteLogger log,
         IgniteH2Indexing h2,
         H2QueryInfo qryInfo,
-        Tracing tracing
+        Tracing tracing,
+        @Nullable H2FullTrackableQuery fullTrackableQry
     ) throws IgniteCheckedException {
         ctx = h2.ctx;
         this.pageSize = pageSize;
@@ -145,6 +150,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         this.tracing = tracing;
         this.qryInfo = qryInfo;
         this.h2 = h2;
+        this.fullTrackableQry = fullTrackableQry;
 
         try {
             res = (ResultInterface)RESULT_FIELD.get(data);
@@ -314,14 +320,6 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
             return false;
     }
 
-    /** */
-    private boolean fetchNextWithTimer() throws IgniteCheckedException {
-            return h2.executeWithTimer(
-                () -> fetchNext(),
-                qryInfo,
-                false);
-    }
-
     /**
      * @return Row.
      */
@@ -336,6 +334,9 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
             return;
 
         lockTables();
+
+        if (fullTrackableQry != null)
+            h2.heavyQueriesTracker().stopTracking(fullTrackableQry, null);
 
         try {
             resultSetChecker.checkOnClose();
@@ -403,7 +404,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         if (closed)
             return false;
 
-        return hasRow || (hasRow = fetchNextWithTimer());
+        return hasRow || (hasRow = fetchNext());
     }
 
     /** {@inheritDoc} */

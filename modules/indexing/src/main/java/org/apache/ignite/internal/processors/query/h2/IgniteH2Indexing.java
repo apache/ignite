@@ -117,7 +117,6 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
-import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -413,6 +412,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
                 H2PooledConnection conn = connections().connection(qryDesc.schemaName());
 
+                H2FullTrackableQuery fullTrackableQry = new H2FullTrackableQuery(
+                    System.currentTimeMillis(),
+                    qryId,
+                    ctx.localNodeId(),
+                    qryDesc.distributedJoins(),
+                    qryDesc.enforceJoinOrder(),
+                    qryParams.lazy(),
+                    qryDesc.schemaName(),
+                    qry,
+                    null
+                );
+
+                heavyQryTracker.startTracking(fullTrackableQry);
+
                 try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_ITER_OPEN, MTC.span()))) {
                     H2Utils.setupConnection(conn, qctx,
                         qryDesc.distributedJoins(), qryDesc.enforceJoinOrder(), qryParams.lazy());
@@ -455,7 +468,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         timeout,
                         cancel,
                         qryParams.dataPageScanEnabled(),
-                        qryInfo
+                        qryInfo,
+                        false
                     );
 
                     return new H2FieldsIterator(
@@ -465,11 +479,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         log,
                         IgniteH2Indexing.this,
                         qryInfo,
-                        ctx.tracing()
+                        ctx.tracing(),
+                        fullTrackableQry
                     );
                 }
                 catch (IgniteCheckedException | RuntimeException | Error e) {
                     conn.close();
+
+                    heavyQryTracker.stopTracking(fullTrackableQry, e);
 
                     throw e;
                 }
@@ -733,14 +750,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         int timeoutMillis,
         @Nullable GridQueryCancel cancel,
         Boolean dataPageScanEnabled,
-        final H2QueryInfo qryInfo
+        final H2QueryInfo qryInfo,
+        boolean executeWithTracker
     ) throws IgniteCheckedException {
         PreparedStatement stmt = conn.prepareStatementNoCache(sql);
 
         H2Utils.bindParameters(stmt, params);
 
         return executeSqlQueryWithTimer(stmt,
-            conn, sql, timeoutMillis, cancel, dataPageScanEnabled, qryInfo);
+            conn, sql, timeoutMillis, cancel, dataPageScanEnabled, qryInfo, executeWithTracker);
     }
 
     /**
@@ -771,19 +789,33 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         int timeoutMillis,
         @Nullable GridQueryCancel cancel,
         Boolean dataPageScanEnabled,
-        final H2QueryInfo qryInfo
+        final H2QueryInfo qryInfo,
+        boolean executeWithTracker
     ) throws IgniteCheckedException {
-            return executeWithTimer(
-                () -> {
-                    try (
-                        TraceSurroundings ignored = MTC.support(ctx.tracing()
-                            .create(SQL_QRY_EXECUTE, MTC.span())
-                            .addTag(SQL_QRY_TEXT, () -> sql))
-                    ) {
-                        return executeSqlQuery(conn, stmt, timeoutMillis, cancel);
-                    }},
-                qryInfo,
-                dataPageScanEnabled);
+        if (executeWithTracker && qryInfo != null)
+            heavyQryTracker.startTracking(qryInfo);
+
+        enableDataPageScan(dataPageScanEnabled);
+
+        Throwable err = null;
+        try (
+            TraceSurroundings ignored = MTC.support(ctx.tracing()
+                .create(SQL_QRY_EXECUTE, MTC.span())
+                .addTag(SQL_QRY_TEXT, () -> sql))
+        ) {
+            return executeSqlQuery(conn, stmt, timeoutMillis, cancel);
+        }
+        catch (Throwable e) {
+            err = e;
+
+            throw e;
+        }
+        finally {
+            CacheDataTree.setDataPageScanEnabled(false);
+
+            if (executeWithTracker && qryInfo != null)
+                heavyQryTracker.stopTracking(qryInfo, err);
+        }
     }
 
     /** {@inheritDoc} */
@@ -2240,40 +2272,5 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public DistributedIndexingConfiguration distributedConfiguration() {
         return distrCfg;
-    }
-
-    /**
-     * Executes a query/fetch and prints a warning if it took too long to finish the task.
-     *
-     * @param task Query/fetch to execute.
-     * @param qryInfo Query info.
-     * @param dataPageScanEnabled Page scan enabled flag.
-     * @throws IgniteCheckedException If failed.
-     */
-    public <T> T executeWithTimer(
-        IgniteThrowableSupplier<T> task,
-        final H2QueryInfo qryInfo,
-        Boolean dataPageScanEnabled
-    ) throws IgniteCheckedException {
-        if (qryInfo != null)
-            heavyQryTracker.startTracking(qryInfo);
-
-        enableDataPageScan(dataPageScanEnabled);
-
-        Throwable err = null;
-        try {
-            return task.get();
-        }
-        catch (Throwable e) {
-            err = e;
-
-            throw e;
-        }
-        finally {
-            CacheDataTree.setDataPageScanEnabled(false);
-
-            if (qryInfo != null)
-                heavyQryTracker.stopTracking(qryInfo, err);
-        }
     }
 }
