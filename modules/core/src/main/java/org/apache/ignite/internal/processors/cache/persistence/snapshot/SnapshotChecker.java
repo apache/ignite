@@ -384,7 +384,6 @@ public class SnapshotChecker {
         ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
             .order(ByteOrder.nativeOrder()));
 
-
         FilePageStoreManager storeMgr = (FilePageStoreManager)kctx.cache().context().pageStore();
 
         EncryptionCacheKeyProvider snpEncrKeyProvider = new SnapshotEncryptionKeyProvider(kctx, grpAndPartFiles.get1());

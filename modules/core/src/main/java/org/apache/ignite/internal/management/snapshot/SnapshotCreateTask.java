@@ -57,7 +57,7 @@ public class SnapshotCreateTask extends VisorOneNodeTask<SnapshotCreateCommandAr
                 arg.snapshotName(),
                 arg.dest(),
                 arg.incremental(),
-                arg.onlyPrimary()
+                false
             );
 
             IgniteSnapshotManager.ClusterSnapshotFuture snpFut =
