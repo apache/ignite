@@ -322,19 +322,19 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
         while (true) {
             List<SharedDeployment> depsToCheck = null;
 
-            SharedDeployment dep;
+            SharedDeployment dep = null;
 
             synchronized (mux) {
                 // Check obsolete request.
                 if (isDeadClassLoader(meta))
                     return null;
 
-                Collection<GridDeployment> created = getDeployments();
-
                 boolean skipSearchDeployment = false;
 
                 // Check already exist deployment.
                 if (meta.deploymentMode() == SHARED) {
+                    Collection<GridDeployment> created = getDeployments();
+
                     for (GridDeployment dep0 : created) {
                         // hot redeploy from same node
                         if (dep0.participants().containsKey(meta.senderNodeId()) || dep0.undeployed())
@@ -398,8 +398,6 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
                 if (!skipSearchDeployment)
                     dep = (SharedDeployment)searchDeploymentCache(meta);
-                else
-                    dep = null;
 
                 if (dep == null) {
                     List<SharedDeployment> deps = cache.get(meta.userVersion());
