@@ -72,7 +72,14 @@ public class SnapshotCreateCommandArg extends IgniteDataTransferObject {
         dest = U.readString(in);
         sync = in.readBoolean();
         incremental = in.readBoolean();
-        onlyPrimary = in.readBoolean();
+
+        if (protoVer > V1)
+            onlyPrimary = in.readBoolean();
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
     }
 
     /** */

@@ -165,6 +165,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.SNAPSHOT_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
@@ -3292,11 +3293,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** @throws Exception If fails. */
     @Test
-    public void testOnlyPrimarySnapshotCreate() throws Exception {
-        int keysCnt = 2048;
+    public void testOnlyPrimariesSnapshotCreation() throws Exception {
+        int keysCnt = 400;
 
-        IgniteEx ig = startGrid(0);
-        startGrid(1);
+        IgniteEx ig = startGrids(3);
 
         ig.cluster().state(ACTIVE);
 
@@ -3304,29 +3304,22 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         TestCommandHandler h = newCommandHandler();
 
-        String full = "full";
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "create", SNAPSHOT_NAME, "--only-primary", "--incremental"));
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "create", full, "--only-primary", "--incremental"));
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "create", SNAPSHOT_NAME, "--only-primary", "--sync"));
 
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "create", full, "--sync"));
-
-        AbstractSnapshotSelfTest.checkSnapshot(full, null, false);
-
-        String onlyPrimary = "only_primary";
-
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "create", onlyPrimary, "--only-primary", "--sync"));
-
-        AbstractSnapshotSelfTest.checkSnapshot(onlyPrimary, null, true);
+        AbstractSnapshotSelfTest.checkSnapshot(SNAPSHOT_NAME, null, true);
 
         ig.destroyCache(DEFAULT_CACHE_NAME);
 
         awaitPartitionMapExchange();
 
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", onlyPrimary, "--sync"));
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", SNAPSHOT_NAME, "--sync"));
 
         List<Integer> range = IntStream.range(0, keysCnt).boxed().collect(Collectors.toList());
 
         ig.cache(DEFAULT_CACHE_NAME).forEach(e -> range.remove((Integer)e.getKey()));
+
         assertTrue("Snapshot must contains cache data [left=" + range + ']', range.isEmpty());
     }
 
