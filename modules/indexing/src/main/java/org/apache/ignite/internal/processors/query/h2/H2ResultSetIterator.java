@@ -122,7 +122,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
     private final H2QueryInfo qryInfo;
 
     /** */
-    final IgniteH2Indexing h2;
+    private final IgniteH2Indexing h2;
 
     /** */
     private final H2FullTrackableQuery fullTrackableQry;
