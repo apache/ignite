@@ -42,7 +42,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
-import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -162,11 +161,6 @@ public class SnapshotCheckDistributedProcess {
         ExecutorService executor = kctx.cache().context().snapshotMgr().snapshotExecutorService();
 
         executor.submit(() -> stopFutureOnAnyFailure(locPartsChkFut, () -> {
-            File snpDir = kctx.cache().context().snapshotMgr().snapshotLocalDir(locReq.snapshotName(), locReq.snapshotPath());
-
-            SnapshotHandlerContext hndCtx = new SnapshotHandlerContext(locReq.meta(), locReq.grps,
-                kctx.cluster().get().localNode(), snpDir, false, true);
-
             // An error can occure when the local future is still null.
             if (locReq.error() != null)
                 locPartsChkFut.onDone(locReq.error());
@@ -174,9 +168,11 @@ public class SnapshotCheckDistributedProcess {
             if (locPartsChkFut.isDone())
                 return;
 
+            File snpDir = kctx.cache().context().snapshotMgr().snapshotLocalDir(locReq.snapshotName(), locReq.snapshotPath());
+
             try {
-                Map<PartitionKeyV2, PartitionHashRecordV2> res = new SnapshotPartitionsVerifyHandler(kctx.cache().context())
-                    .invoke(hndCtx);
+                Map<PartitionKeyV2, PartitionHashRecordV2> res = kctx.cache().context().snapshotMgr().checker()
+                    .checkPartitions(locReq.meta(), snpDir, locReq.groups(), false, true, false);
 
                 locPartsChkFut.onDone(res instanceof HashMap ? (HashMap<PartitionKeyV2, PartitionHashRecordV2>)res
                     : new HashMap<>(res));
@@ -247,7 +243,7 @@ public class SnapshotCheckDistributedProcess {
             if (err == null && !F.isEmpty(results)) {
                 Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = collecPartsHashes(results, locRq.nodes());
 
-                IdleVerifyResultV2 chkRes = VerifyBackupPartitionsTaskV2.reduceHashesAndErrors(results0, errors0);
+                IdleVerifyResultV2 chkRes = SnapshotChecker.reduceHashesResults(results0, errors0);
 
                 finished = clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(locRq.metas, chkRes));
             }
@@ -341,7 +337,9 @@ public class SnapshotCheckDistributedProcess {
 
         locReq.fut(locMetasChkFut);
 
-        kctx.cache().context().snapshotMgr().snapshotExecutorService().submit(() -> stopFutureOnAnyFailure(locMetasChkFut, () -> {
+        IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
+
+        snpMgr.snapshotExecutorService().submit(() -> stopFutureOnAnyFailure(locMetasChkFut, () -> {
             if (log.isDebugEnabled())
                 log.debug("Checking local snapshot metadatas. Request=" + locReq + '.');
 
@@ -354,8 +352,11 @@ public class SnapshotCheckDistributedProcess {
             if (locMetasChkFut.isDone())
                 return;
 
-            List<SnapshotMetadata> locMetas = SnapshotMetadataVerificationTask.readAndCheckMetas(kctx, locReq.snapshotName(),
-                locReq.snapshotPath(), locReq.incrementIndex(), grpIds);
+            List<SnapshotMetadata> locMetas = snpMgr.checker().checkLocalMetas(
+                snpMgr.snapshotLocalDir(locReq.snapshotName(), locReq.snapshotPath()),
+                grpIds,
+                kctx.cluster().get().localNode().consistentId()
+            );
 
             if (!F.isEmpty(locMetas))
                 locReq.meta(locMetas.get(0));
@@ -398,7 +399,7 @@ public class SnapshotCheckDistributedProcess {
 
             locReq.metas = new HashMap<>();
 
-            Map<ClusterNode, Exception> resClusterErrors = new HashMap<>();
+            Map<ClusterNode, Exception> errs = new HashMap<>();
 
             results.forEach((nodeId, metas) -> {
                 // A node might be non-baseline (not required).
@@ -415,16 +416,14 @@ public class SnapshotCheckDistributedProcess {
                     assert kctx.cluster().get().node(nodeId) != null;
                     assert nodeErr != null;
 
-                    resClusterErrors.put(kctx.cluster().get().node(nodeId), asException(nodeErr));
+                    errs.put(kctx.cluster().get().node(nodeId), asException(nodeErr));
                 }
             });
 
-            SnapshotMetadataVerificationTaskResult metasRes = SnapshotMetadataVerificationTask.reduceClusterResults(
+            SnapshotMetadataVerificationTaskResult metasRes = new SnapshotMetadataVerificationTaskResult(
                 locReq.metas,
-                resClusterErrors,
-                locReq.snapshotName(),
-                locReq.snapshotPath(),
-                kctx.cluster().get().localNode()
+                SnapshotChecker.reduceMetasResults(locReq.snapshotName(), locReq.snapshotPath(), locReq.metas, errs,
+                    kctx.cluster().get().localNode().consistentId())
             );
 
             if (!F.isEmpty(metasRes.exceptions()))
