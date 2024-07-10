@@ -16,50 +16,55 @@
  */
 package org.apache.ignite.internal.ducktest.tests.dns_failure_test;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.startup.cmdline.CommandLineStartup;
-import sun.net.spi.nameservice.NameService;
-
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 import java.util.Scanner;
+import org.apache.ignite.startup.cmdline.CommandLineStartup;
 
 /** */
-public class DnsBlocker implements NameService {
+public class DnsBlocker implements NameServiceHandler {
     /** */
     private static final String BLOCK_DNS_FILE = "/tmp/block_dns";
+
+    /** Private class {@code java.net.InetAddress$NameService} to proxy. */
+    private static Class<?> nameSrvcCls;
 
     /** */
     private final InetAddress loopback;
 
-    /** Original NameService to use after unblock. */
-    private final NameService orig;
+    /** Original {@code NameService}. */
+    private final Object origNameSrvc;
 
     /**
-     * @param orig Original NameService to use after unblock.
+     * @param origNameSrvc Original NameService.
      */
-    private DnsBlocker(NameService orig) {
+    private DnsBlocker(Object origNameSrvc) {
         loopback = InetAddress.getLoopbackAddress();
-        this.orig = orig;
+        this.origNameSrvc = origNameSrvc;
     }
 
-    /** Installs DnsBlocker as main NameService to JVM. */
-    private static void install() throws IgniteCheckedException {
-        List<NameService> nameSrvc = U.staticField(InetAddress.class, "nameServices");
+    /** Installs {@code DnsBlocker} as main {@code NameService} to JVM. */
+    private static void install() throws Exception {
+        Field nameSrvcFld = InetAddress.class.getDeclaredField("nameService");
+        nameSrvcFld.setAccessible(true);
 
-        NameService ns = new DnsBlocker(nameSrvc.get(0));
+        nameSrvcCls = Class.forName("java.net.InetAddress$NameService");
 
-        // Put the blocking name service ahead.
-        nameSrvc.add(0, ns);
+        DnsBlocker blkNameSrvc = new DnsBlocker(nameSrvcFld.get(InetAddress.class));
 
-        System.out.println("Installed DnsBlocker as main NameService to JVM [ns=" + nameSrvc.size() + ']');
+        nameSrvcFld.set(
+            InetAddress.class,
+            Proxy.newProxyInstance(nameSrvcCls.getClassLoader(), new Class<?>[] { nameSrvcCls }, blkNameSrvc));
+
+        System.out.println("Installed DnsBlocker as main NameService to JVM");
     }
 
     /** */
@@ -74,7 +79,15 @@ public class DnsBlocker implements NameService {
         if (!loopback.getHostAddress().equals(hostname))
             check(hostname);
 
-        return orig.lookupAllHostAddr(hostname);
+        try {
+            Method lookupAllHostAddr = nameSrvcCls.getDeclaredMethod("lookupAllHostAddr", String.class);
+            lookupAllHostAddr.setAccessible(true);
+
+            return (InetAddress[])lookupAllHostAddr.invoke(origNameSrvc, hostname);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /** */
@@ -82,7 +95,15 @@ public class DnsBlocker implements NameService {
         if (!Arrays.equals(loopback.getAddress(), addr))
             check(InetAddress.getByAddress(addr).toString());
 
-        return orig.getHostByAddr(addr);
+        try {
+            Method getHostByAddr = nameSrvcCls.getDeclaredMethod("getHostByAddr", byte[].class);
+            getHostByAddr.setAccessible(true);
+
+            return (String)getHostByAddr.invoke(origNameSrvc, addr);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /** */
