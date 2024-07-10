@@ -68,16 +68,16 @@ public class SnapshotCheckDistributedProcess {
     private final GridKernalContext kctx;
 
     /** Snapshot check requests per snapshot on every node. */
-    final Map<String, SnapshotFullCheckOperationRequest> requests = new ConcurrentHashMap<>();
+    final Map<String, SnapshotCheckProcessRequest> requests = new ConcurrentHashMap<>();
 
     /** Cluster-wide operation futures per snapshot called from current node. */
     private final Map<UUID, GridFutureAdapter<SnapshotPartitionsVerifyTaskResult>> clusterOpFuts = new ConcurrentHashMap<>();
 
     /** Check metas first phase subprocess. */
-    private final DistributedProcess<SnapshotFullCheckOperationRequest, ArrayList<SnapshotMetadata>> phase1CheckMetas;
+    private final DistributedProcess<SnapshotCheckProcessRequest, ArrayList<SnapshotMetadata>> phase1CheckMetas;
 
     /** Partition hashes second phase subprocess.  */
-    private final DistributedProcess<SnapshotFullCheckOperationRequest, HashMap<PartitionKeyV2, PartitionHashRecordV2>> phase2PartsHashes;
+    private final DistributedProcess<SnapshotCheckProcessRequest, HashMap<PartitionKeyV2, PartitionHashRecordV2>> phase2PartsHashes;
 
     /** */
     public SnapshotCheckDistributedProcess(GridKernalContext kctx) {
@@ -100,7 +100,7 @@ public class SnapshotCheckDistributedProcess {
      * @param th The interrupt reason.
      * @param rqFilter If not {@code null}, used to filter which requests/process to stop. If {@code null}, stops all the validations.
      */
-    public void interrupt(Throwable th, @Nullable Function<SnapshotFullCheckOperationRequest, Boolean> rqFilter) {
+    public void interrupt(Throwable th, @Nullable Function<SnapshotCheckProcessRequest, Boolean> rqFilter) {
         if (requests.isEmpty())
             return;
 
@@ -137,8 +137,8 @@ public class SnapshotCheckDistributedProcess {
 
     /** Phase 2 beginning.  */
     private IgniteInternalFuture<HashMap<PartitionKeyV2, PartitionHashRecordV2>> validateParts(
-        SnapshotFullCheckOperationRequest incReq) {
-        SnapshotFullCheckOperationRequest locReq;
+        SnapshotCheckProcessRequest incReq) {
+        SnapshotCheckProcessRequest locReq;
 
         if (stopAndCleanOnError(incReq, null) || (locReq = requests.get(incReq.snapshotName())) == null)
             return FINISHED_FUT;
@@ -198,7 +198,7 @@ public class SnapshotCheckDistributedProcess {
      *
      * @return {@code True} if the validation stopped and cleaned. {@code False} otherwise.
      */
-    private boolean stopAndCleanOnError(SnapshotFullCheckOperationRequest req,
+    private boolean stopAndCleanOnError(SnapshotCheckProcessRequest req,
         @Nullable Map<UUID, Throwable> occuredErrors) {
         assert req != null;
 
@@ -225,7 +225,7 @@ public class SnapshotCheckDistributedProcess {
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.remove(rqId);
 
         stopFutureOnAnyFailure(clusterOpFut, () -> {
-            SnapshotFullCheckOperationRequest locRq = curRequest(null, rqId);
+            SnapshotCheckProcessRequest locRq = curRequest(null, rqId);
 
             Throwable err = opErr;
 
@@ -260,7 +260,7 @@ public class SnapshotCheckDistributedProcess {
     }
 
     /** */
-    private Throwable stopAndCleanLocRequest(SnapshotFullCheckOperationRequest rq, @Nullable Throwable err) {
+    private Throwable stopAndCleanLocRequest(SnapshotCheckProcessRequest rq, @Nullable Throwable err) {
         requests.remove(rq.snapshotName());
 
         if (err == null && rq.error() != null)
@@ -307,15 +307,15 @@ public class SnapshotCheckDistributedProcess {
      * @param procId  If {@code snpName} is {@code null}, is used to find the operation request.
      * @return Current snapshot checking request by {@code snpName} or {@code procId}.
      */
-    private @Nullable SnapshotFullCheckOperationRequest curRequest(@Nullable String snpName, UUID procId) {
+    private @Nullable SnapshotCheckProcessRequest curRequest(@Nullable String snpName, UUID procId) {
         return snpName == null
             ? requests.values().stream().filter(rq -> rq.requestId().equals(procId)).findFirst().orElse(null)
             : requests.get(snpName);
     }
 
     /** Phase 1 beginning: prepare, collect and check local metas. */
-    private IgniteInternalFuture<ArrayList<SnapshotMetadata>> prepareAndCheckMetas(SnapshotFullCheckOperationRequest extReq) {
-        SnapshotFullCheckOperationRequest locReq = requests.computeIfAbsent(extReq.snapshotName(), snpName -> extReq);
+    private IgniteInternalFuture<ArrayList<SnapshotMetadata>> prepareAndCheckMetas(SnapshotCheckProcessRequest extReq) {
+        SnapshotCheckProcessRequest locReq = requests.computeIfAbsent(extReq.snapshotName(), snpName -> extReq);
 
         if (!locReq.equals(extReq)) {
             Throwable err = new IllegalStateException("Validation of snapshot '" + extReq.snapshotName()
@@ -381,7 +381,7 @@ public class SnapshotCheckDistributedProcess {
         Map<UUID, ? extends List<SnapshotMetadata>> results,
         Map<UUID, Throwable> errors
     ) {
-        SnapshotFullCheckOperationRequest locReq = curRequest(snpName(results), procId);
+        SnapshotCheckProcessRequest locReq = curRequest(snpName(results), procId);
 
         assert locReq == null || locReq.opCoordId != null;
 
@@ -484,7 +484,7 @@ public class SnapshotCheckDistributedProcess {
         stopFutureOnAnyFailure(clusterOpFut, () -> {
             List<UUID> requiredNodes = new ArrayList<>(F.viewReadOnly(kctx.discovery().discoCache().aliveBaselineNodes(), F.node2id()));
 
-            SnapshotFullCheckOperationRequest req = new SnapshotFullCheckOperationRequest(
+            SnapshotCheckProcessRequest req = new SnapshotCheckProcessRequest(
                 rqId,
                 kctx.localNodeId(),
                 requiredNodes,
