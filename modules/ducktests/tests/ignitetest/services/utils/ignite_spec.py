@@ -245,7 +245,8 @@ class IgniteSpec(metaclass=ABCMeta):
         return {
             'EXCLUDE_TEST_CLASSES': 'true',
             'IGNITE_LOG_DIR': self.service.log_dir,
-            'USER_LIBS': ":".join(self.libs())
+            'USER_LIBS': ":".join(self.libs()),
+            "MAIN_CLASS": self.service.main_java_class
         }
 
     def config_file_path(self):
@@ -299,9 +300,6 @@ class IgniteSpec(metaclass=ABCMeta):
 
         if proc.returncode != 0:
             raise RuntimeError("Command '%s' returned non-zero exit status %d: %s" % (cmd, proc.returncode, stdout))
-
-    def envs(self):
-        return {"MAIN_CLASS": self.service.main_java_class}
 
 
 class IgniteNodeSpec(IgniteSpec):
