@@ -3294,13 +3294,17 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** @throws Exception If fails. */
     @Test
     public void testOnlyPrimariesSnapshotCreation() throws Exception {
-        int keysCnt = 400;
+        int keysCnt = 1024;
+        int servers = 4;
+        int parts = servers * 2;
 
-        IgniteEx ig = startGrids(3);
+        IgniteEx ig = startGrids(servers);
 
         ig.cluster().state(ACTIVE);
 
-        createCacheAndPreload(ig, keysCnt);
+        createCacheAndPreload(ig, DEFAULT_CACHE_NAME, keysCnt, parts, null);
+
+        assertTrue(grid(0).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getBackups() > 0);
 
         TestCommandHandler h = newCommandHandler();
 
@@ -3321,6 +3325,25 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         ig.cache(DEFAULT_CACHE_NAME).forEach(e -> range.remove((Integer)e.getKey()));
 
         assertTrue("Snapshot must contains cache data [left=" + range + ']', range.isEmpty());
+
+        File snpDir = snp(grid(0)).snapshotLocalDir(SNAPSHOT_NAME);
+
+        G.allGrids().forEach(g -> {
+            File partsDir = new File(snpDir, String.join(File.separator, "db", g.name(), "cache-" + DEFAULT_CACHE_NAME));
+
+            assertTrue(partsDir.isDirectory());
+
+            for (File f : partsDir.listFiles()) {
+                if (!f.getName().endsWith(".bin") || !f.getName().startsWith("part-"))
+                    continue;
+
+                int part = Integer.parseInt(f.getName().substring("part-".length(), f.getName().length() - ".bin".length()));
+
+                int[] primaries = g.affinity(DEFAULT_CACHE_NAME).primaryPartitions(g.cluster().localNode());
+
+                assertTrue(Arrays.stream(primaries).boxed().collect(Collectors.toSet()).contains(part));
+            }
+        });
     }
 
     /** @throws Exception If failed. */
