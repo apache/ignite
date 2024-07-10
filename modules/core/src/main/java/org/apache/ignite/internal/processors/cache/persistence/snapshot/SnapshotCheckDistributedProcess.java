@@ -56,8 +56,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.SNAPSHOT_CHECK_METAS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.SNAPSHOT_VALIDATE_PARTS;
 
-/** Distributed process of snapshot full checking (with the partition hashes). */
-public class SnapshotFullCheckDistributedProcess {
+/** Distributed process of snapshot checking (with the partition hashes). */
+public class SnapshotCheckDistributedProcess {
     /** */
     private static final IgniteInternalFuture FINISHED_FUT = new GridFinishedFuture<>();
 
@@ -80,7 +80,7 @@ public class SnapshotFullCheckDistributedProcess {
     private final DistributedProcess<SnapshotFullCheckOperationRequest, HashMap<PartitionKeyV2, PartitionHashRecordV2>> phase2PartsHashes;
 
     /** */
-    public SnapshotFullCheckDistributedProcess(GridKernalContext kctx) {
+    public SnapshotCheckDistributedProcess(GridKernalContext kctx) {
         this.kctx = kctx;
 
         log = kctx.log(getClass());

@@ -233,7 +233,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFullCheckDistributedProcess.finishClusterFutureWithErr;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckDistributedProcess.finishClusterFutureWithErr;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.formatTmpDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageIO;
@@ -387,7 +387,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> startSnpProc;
 
     /** Snapshot full validation distributed process. */
-    final SnapshotFullCheckDistributedProcess checkSnpProc;
+    final SnapshotCheckDistributedProcess checkSnpProc;
 
     /** Check previously performed snapshot operation and delete uncompleted files if we need. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> endSnpProc;
@@ -495,7 +495,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         restoreCacheGrpProc = new SnapshotRestoreProcess(ctx, locBuff);
 
-        checkSnpProc = new SnapshotFullCheckDistributedProcess(ctx);
+        checkSnpProc = new SnapshotCheckDistributedProcess(ctx);
 
         // Manage remote snapshots.
         snpRmtMgr = new SequentialRemoteSnapshotManager();
