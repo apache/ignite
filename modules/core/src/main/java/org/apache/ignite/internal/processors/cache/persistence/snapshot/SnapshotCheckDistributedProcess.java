@@ -60,11 +60,8 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.SNAPSHOT_CHECK_METAS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.SNAPSHOT_VALIDATE_PARTS;
 
-/** Distributed process of snapshot full checking (with the partition hashes). */
+/** Distributed process of snapshot checking (with the partition hashes). */
 public class SnapshotCheckDistributedProcess {
-    /** */
-    private static final String METRIC_REG_NAME_PREF = metricName(SNAPSHOT_METRICS, "check");
-
     /** */
     private static final IgniteInternalFuture FINISHED_FUT = new GridFinishedFuture<>();
 
@@ -239,28 +236,29 @@ public class SnapshotCheckDistributedProcess {
             Throwable err = opErr;
 
             if (locRq != null)
-                err = cleanLocalRequest(locRq, err);
+                err = stopAndCleanLocRequest(locRq, err);
 
             if (clusterOpFut == null || clusterOpFut.isDone())
                 return;
 
             boolean finished;
 
-            if (err == null && (!F.isEmpty(results) || !F.isEmpty(errors))) {
-                assert locRq != null;
+            // Nodes' results and errors reducing is available on a required node where the process request must be registered.
+            assert (F.isEmpty(errors) && F.isEmpty(results)) || locRq != null;
 
+            Map<ClusterNode, Exception> errors0 = locRq == null || F.isEmpty(errors)
+                ? Collections.emptyMap()
+                : collectErrors(errors, locRq.nodes());
+
+            if (err == null && !F.isEmpty(results)) {
                 Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = collecPartsHashes(results, locRq.nodes());
-                Map<ClusterNode, Exception> errors0 = collectErrors(errors, locRq.nodes);
 
                 IdleVerifyResultV2 chkRes = VerifyBackupPartitionsTaskV2.reduceHashesAndErrors(results0, errors0);
 
                 finished = clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(locRq.metas, chkRes));
             }
-            else {
-                assert err != null;
-
-                finished = finishClusterFutureWithErr(clusterOpFut, err, Collections.emptyMap());
-            }
+            else
+                finished = finishClusterFutureWithErr(clusterOpFut, err, errors0);
 
             if (finished && log.isInfoEnabled())
                 log.info("Snapshot validation process finished, req: " + locRq + '.');
@@ -268,7 +266,7 @@ public class SnapshotCheckDistributedProcess {
     }
 
     /** */
-    private Throwable cleanLocalRequest(SnapshotCheckProcessRequest rq, @Nullable Throwable err) {
+    private Throwable stopAndCleanLocRequest(SnapshotCheckProcessRequest rq, @Nullable Throwable err) {
         if (requests.remove(rq.snapshotName()) != null) {
             kctx.metric().remove(metricsRegName(rq.snapshotName()));
 
@@ -280,7 +278,7 @@ public class SnapshotCheckDistributedProcess {
             boolean finished = false;
 
             // Try to stop local working future ASAP.
-            if (locWorkingFut != null && !locWorkingFut.isDone())
+            if (locWorkingFut != null)
                 finished = err == null ? locWorkingFut.onDone() : locWorkingFut.onDone(err);
 
             if (finished && log.isInfoEnabled())
@@ -296,8 +294,8 @@ public class SnapshotCheckDistributedProcess {
     }
 
     /** */
-    private Map<ClusterNode, Exception> collectErrors(@Nullable Map<UUID, Throwable> errors, Set<UUID> requiredNodes) {
-        if (F.isEmpty(errors))
+    private Map<ClusterNode, Exception> collectErrors(Map<UUID, Throwable> errors, Set<UUID> requiredNodes) {
+        if (errors.isEmpty())
             return Collections.emptyMap();
 
         return errors.entrySet().stream().filter(e -> requiredNodes.contains(e.getKey()) && e.getValue() != null)
