@@ -970,6 +970,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         @Nullable Consumer<Ignite> beforeProceed
     ) {
         for (Ignite ig : grids) {
+            if (ig.configuration().isClientMode())
+                continue;
+
             FilePageStoreManager pageStore = (FilePageStoreManager)((IgniteEx)ig).context().cache().context().pageStore();
 
             FileIOFactory old = pageStore.getPageStoreFileIoFactory();

@@ -44,6 +44,8 @@ import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -59,7 +61,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.SNAPSHOT_VALIDATE_PARTS;
 
 /** Distributed process of snapshot full checking (with the partition hashes). */
-public class SnapshotFullCheckDistributedProcess {
+public class SnapshotCheckDistributedProcess {
     /** */
     private static final String METRIC_REG_NAME_PREF = metricName(SNAPSHOT_METRICS, "check");
 
@@ -73,19 +75,19 @@ public class SnapshotFullCheckDistributedProcess {
     private final GridKernalContext kctx;
 
     /** Snapshot check requests per snapshot on every node. */
-    final Map<String, SnapshotFullCheckOperationRequest> requests = new ConcurrentHashMap<>();
+    final Map<String, SnapshotCheckProcessRequest> requests = new ConcurrentHashMap<>();
 
     /** Cluster-wide operation futures per snapshot called from current node. */
     private final Map<UUID, GridFutureAdapter<SnapshotPartitionsVerifyTaskResult>> clusterOpFuts = new ConcurrentHashMap<>();
 
     /** Check metas first phase subprocess. */
-    private final DistributedProcess<SnapshotFullCheckOperationRequest, ArrayList<SnapshotMetadata>> phase1CheckMetas;
+    private final DistributedProcess<SnapshotCheckProcessRequest, ArrayList<SnapshotMetadata>> phase1CheckMetas;
 
     /** Partition hashes second phase subprocess.  */
-    private final DistributedProcess<SnapshotFullCheckOperationRequest, HashMap<PartitionKeyV2, PartitionHashRecordV2>> phase2PartsHashes;
+    private final DistributedProcess<SnapshotCheckProcessRequest, HashMap<PartitionKeyV2, PartitionHashRecordV2>> phase2PartsHashes;
 
     /** */
-    public SnapshotFullCheckDistributedProcess(GridKernalContext kctx) {
+    public SnapshotCheckDistributedProcess(GridKernalContext kctx) {
         this.kctx = kctx;
 
         log = kctx.log(getClass());
@@ -105,7 +107,7 @@ public class SnapshotFullCheckDistributedProcess {
      * @param th The interrupt reason.
      * @param rqFilter If not {@code null}, used to filter which requests/process to stop. If {@code null}, stops all the validations.
      */
-    public void interrupt(Throwable th, @Nullable Function<SnapshotFullCheckOperationRequest, Boolean> rqFilter) {
+    public void interrupt(Throwable th, @Nullable Function<SnapshotCheckProcessRequest, Boolean> rqFilter) {
         if (requests.isEmpty())
             return;
 
@@ -142,8 +144,8 @@ public class SnapshotFullCheckDistributedProcess {
 
     /** Phase 2 beginning.  */
     private IgniteInternalFuture<HashMap<PartitionKeyV2, PartitionHashRecordV2>> validateParts(
-        SnapshotFullCheckOperationRequest incReq) {
-        SnapshotFullCheckOperationRequest locReq;
+        SnapshotCheckProcessRequest incReq) {
+        SnapshotCheckProcessRequest locReq;
 
         if (stopAndCleanOnError(incReq, null) || (locReq = requests.get(incReq.snapshotName())) == null)
             return FINISHED_FUT;
@@ -179,9 +181,11 @@ public class SnapshotFullCheckDistributedProcess {
             if (locPartsChkFut.isDone())
                 return;
 
+            MetricRegistryImpl mreg = kctx.metric().registry(metricsRegName(locReq.snapshotName()));
+
             try {
-                Map<PartitionKeyV2, PartitionHashRecordV2> res = new SnapshotPartitionsVerifyHandler(kctx.cache().context())
-                    .invoke(hndCtx);
+                Map<PartitionKeyV2, PartitionHashRecordV2> res = new SnapshotPartitionsVerifyHandler(kctx.cache().context(),
+                    mreg.findMetric("total"), mreg.findMetric("processed")).invoke(hndCtx);
 
                 locPartsChkFut.onDone(res instanceof HashMap ? (HashMap<PartitionKeyV2, PartitionHashRecordV2>)res
                     : new HashMap<>(res));
@@ -203,7 +207,7 @@ public class SnapshotFullCheckDistributedProcess {
      *
      * @return {@code True} if the validation stopped and cleaned. {@code False} otherwise.
      */
-    private boolean stopAndCleanOnError(SnapshotFullCheckOperationRequest req,
+    private boolean stopAndCleanOnError(SnapshotCheckProcessRequest req,
         @Nullable Map<UUID, Throwable> occuredErrors) {
         assert req != null;
 
@@ -230,12 +234,12 @@ public class SnapshotFullCheckDistributedProcess {
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.remove(rqId);
 
         stopFutureOnAnyFailure(clusterOpFut, () -> {
-            SnapshotFullCheckOperationRequest locRq = curRequest(null, rqId);
+            SnapshotCheckProcessRequest locRq = curRequest(null, rqId);
 
             Throwable err = opErr;
 
             if (locRq != null)
-                err = stopAndCleanLocRequest(locRq, err);
+                err = cleanLocalRequest(locRq, err);
 
             if (clusterOpFut == null || clusterOpFut.isDone())
                 return;
@@ -264,26 +268,31 @@ public class SnapshotFullCheckDistributedProcess {
     }
 
     /** */
-    private Throwable stopAndCleanLocRequest(SnapshotFullCheckOperationRequest rq, @Nullable Throwable err) {
-        requests.remove(rq.snapshotName());
+    private Throwable cleanLocalRequest(SnapshotCheckProcessRequest rq, @Nullable Throwable err) {
+        if (requests.remove(rq.snapshotName()) != null) {
+            kctx.metric().remove(metricsRegName(rq.snapshotName()));
 
-        if (err == null && rq.error() != null)
-            err = rq.error();
+            if (err == null && rq.error() != null)
+                err = rq.error();
 
-        GridFutureAdapter<?> locWorkingFut = rq.fut();
+            GridFutureAdapter<?> locWorkingFut = rq.fut();
 
-        boolean finished = false;
+            boolean finished = false;
 
-        // Try to stop local working future ASAP.
-        if (locWorkingFut != null)
-            finished = err == null ? locWorkingFut.onDone() : locWorkingFut.onDone(err);
+            // Try to stop local working future ASAP.
+            if (locWorkingFut != null && !locWorkingFut.isDone())
+                finished = err == null ? locWorkingFut.onDone() : locWorkingFut.onDone(err);
 
-        cleanMetrics(rq.snpName);
-
-        if (finished && log.isInfoEnabled())
-            log.info("Finished snapshot local validation, req: " + rq + '.');
+            if (finished && log.isInfoEnabled())
+                log.info("Finished snapshot local validation, req: " + rq + '.');
+        }
 
         return err;
+    }
+
+    /** */
+    static String metricsRegName(String snpName) {
+        return metricName(METRIC_REG_NAME_PREF, snpName);
     }
 
     /** */
@@ -313,15 +322,15 @@ public class SnapshotFullCheckDistributedProcess {
      * @param procId  If {@code snpName} is {@code null}, is used to find the operation request.
      * @return Current snapshot checking request by {@code snpName} or {@code procId}.
      */
-    private @Nullable SnapshotFullCheckOperationRequest curRequest(@Nullable String snpName, UUID procId) {
+    private @Nullable SnapshotCheckProcessRequest curRequest(@Nullable String snpName, UUID procId) {
         return snpName == null
             ? requests.values().stream().filter(rq -> rq.requestId().equals(procId)).findFirst().orElse(null)
             : requests.get(snpName);
     }
 
     /** Phase 1 beginning: prepare, collect and check local metas. */
-    private IgniteInternalFuture<ArrayList<SnapshotMetadata>> prepareAndCheckMetas(SnapshotFullCheckOperationRequest extReq) {
-        SnapshotFullCheckOperationRequest locReq = requests.computeIfAbsent(extReq.snapshotName(), snpName -> extReq);
+    private IgniteInternalFuture<ArrayList<SnapshotMetadata>> prepareAndCheckMetas(SnapshotCheckProcessRequest extReq) {
+        SnapshotCheckProcessRequest locReq = requests.computeIfAbsent(extReq.snapshotName(), snpName -> extReq);
 
         if (!locReq.equals(extReq)) {
             Throwable err = new IllegalStateException("Validation of snapshot '" + extReq.snapshotName()
@@ -340,6 +349,8 @@ public class SnapshotFullCheckDistributedProcess {
 
             return FINISHED_FUT;
         }
+
+        registerMetrics(locReq);
 
         GridFutureAdapter<ArrayList<SnapshotMetadata>> locMetasChkFut = new GridFutureAdapter<>();
 
@@ -387,7 +398,7 @@ public class SnapshotFullCheckDistributedProcess {
         Map<UUID, ? extends List<SnapshotMetadata>> results,
         Map<UUID, Throwable> errors
     ) {
-        SnapshotFullCheckOperationRequest locReq = curRequest(snpName(results), procId);
+        SnapshotCheckProcessRequest locReq = curRequest(snpName(results), procId);
 
         assert locReq == null || locReq.opCoordId != null;
 
@@ -401,8 +412,6 @@ public class SnapshotFullCheckDistributedProcess {
 
             if (locReq.error() != null)
                 throw locReq.error();
-
-            registerMetrics();
 
             locReq.metas = new HashMap<>();
 
@@ -492,7 +501,7 @@ public class SnapshotFullCheckDistributedProcess {
         stopFutureOnAnyFailure(clusterOpFut, () -> {
             List<UUID> requiredNodes = new ArrayList<>(F.viewReadOnly(kctx.discovery().discoCache().aliveBaselineNodes(), F.node2id()));
 
-            SnapshotFullCheckOperationRequest req = new SnapshotFullCheckOperationRequest(
+            SnapshotCheckProcessRequest req = new SnapshotCheckProcessRequest(
                 rqId,
                 kctx.localNodeId(),
                 requiredNodes,
@@ -511,6 +520,22 @@ public class SnapshotFullCheckDistributedProcess {
         });
 
         return clusterOpFut;
+    }
+
+    /** */
+    protected void registerMetrics(SnapshotCheckProcessRequest rq) {
+        MetricRegistryImpl mreg = kctx.metric().registry(metricsRegName(rq.snapshotName()));
+
+        assert mreg.findMetric("startTime") == null;
+        assert mreg.findMetric("requestId") == null;
+
+        mreg.register("requestId", rq::requestId, UUID.class, "Snapshot operation request id.");
+        mreg.register("snapshotName", rq::snapshotName, String.class, "Snapshot name.");
+        mreg.register("startTime", rq::startTime, "Snapshot check start time in milliseconds.");
+
+        AtomicLongMetric total = mreg.longMetric("total", "Total data amount to check in bytes.");
+        AtomicLongMetric processed = mreg.longMetric("processed", "Processed data amount in bytes.");
+        mreg.register("progress", () -> 100.0 * processed.value() / total.value(), "% of checked data amount.");
     }
 
     /**

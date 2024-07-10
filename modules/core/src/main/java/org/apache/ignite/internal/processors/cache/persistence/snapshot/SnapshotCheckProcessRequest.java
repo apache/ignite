@@ -31,9 +31,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Snapshot full check (validation) distributed process request.
  *
- * @see SnapshotFullCheckDistributedProcess
+ * @see SnapshotCheckDistributedProcess
  */
-public class SnapshotFullCheckOperationRequest extends AbstractSnapshotOperationRequest {
+public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationRequest {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -64,7 +64,7 @@ public class SnapshotFullCheckOperationRequest extends AbstractSnapshotOperation
      * @param incIdx   Incremental snapshot index.
      * @param includeCustomHandlers   Incremental snapshot index.
      */
-    protected SnapshotFullCheckOperationRequest(
+    protected SnapshotCheckProcessRequest(
         UUID reqId,
         UUID opNodeId,
         Collection<UUID> nodes,
@@ -98,7 +98,7 @@ public class SnapshotFullCheckOperationRequest extends AbstractSnapshotOperation
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SnapshotFullCheckOperationRequest.class, this, super.toString());
+        return S.toString(SnapshotCheckProcessRequest.class, this, super.toString());
     }
 
     /** {@inheritDoc} */
@@ -112,7 +112,7 @@ public class SnapshotFullCheckOperationRequest extends AbstractSnapshotOperation
         if (!super.equals(other))
             return false;
 
-        SnapshotFullCheckOperationRequest o = (SnapshotFullCheckOperationRequest)other;
+        SnapshotCheckProcessRequest o = (SnapshotCheckProcessRequest)other;
 
         return includeCustomHandlers == o.includeCustomHandlers;
     }
