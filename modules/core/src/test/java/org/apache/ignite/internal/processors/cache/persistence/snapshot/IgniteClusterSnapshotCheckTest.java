@@ -57,7 +57,6 @@ import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
@@ -85,7 +84,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDat
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
@@ -97,9 +95,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.metric.MetricRegistry;
-import org.apache.ignite.spi.metric.DoubleMetric;
-import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.Before;
@@ -326,98 +321,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertTrue(F.isEmpty(res.exceptions()));
         assertContains(log, b.toString(),
             "The check procedure has failed, conflict partitions has been found: [counterConflicts=1, hashConflicts=0]");
-    }
-
-    /** Checks that snapshot validation metrics aren't affected by a snapshot creation. */
-    @Test
-    public void testCreateSnapshotNoValidationMetrics() throws Exception {
-        IgniteEx ig = startGridsWithCache(3, dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 16)),
-            100);
-
-        List<BlockingExecutor> execs = setBlockingSnapshotExecutor(G.allGrids());
-
-        IgniteFuture<?> fut = doTestNoSnapshotCheckMetrics(() -> {
-            IgniteFuture<?> fut0 = snp(ig).createSnapshot(SNAPSHOT_NAME);
-
-            execs.forEach(e -> e.waitForBlocked(getTestTimeout()));
-
-            return fut0;
-        });
-
-        execs.forEach(BlockingExecutor::unblock);
-
-        fut.get();
-    }
-
-    /** Tests there is no snapshot validation metrics on stapshot restore by default. */
-    @Test
-    public void testRestoreSnapshotNoValidationMetrics() throws Exception {
-        IgniteEx ig = startGridsWithCache(3, dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 16)),
-            100);
-
-        snp(ig).createSnapshot(SNAPSHOT_NAME).get();
-
-        ig.destroyCache(dfltCacheCfg.getName());
-
-        Set<UUID> waited = ConcurrentHashMap.newKeySet(G.allGrids().size());
-
-        AtomicBoolean delay = injectPausedReadsIo(G.allGrids(), grid -> waited.add(grid.cluster().localNode().id()));
-
-        delay.set(true);
-
-        IgniteFuture<?> fut = doTestNoSnapshotCheckMetrics(() -> {
-            IgniteFuture<Void> res = snp(ig).restoreSnapshot(SNAPSHOT_NAME, null);
-
-            try {
-                assertTrue(waitForCondition(() -> waited.size() == G.allGrids().size(), getTestTimeout()));
-            }
-            catch (IgniteInterruptedCheckedException e) {
-                throw new RuntimeException(e);
-            }
-
-            return res;
-        });
-
-        delay.set(false);
-
-        fut.get();
-
-        doTestNoSnapshotCheckMetrics(null);
-    }
-
-    /** Checks that there is no any snapshot validation metrics. */
-    protected @Nullable IgniteFuture<?> doTestNoSnapshotCheckMetrics(@Nullable Supplier<IgniteFuture<?>> snpOperation) {
-        List<MetricRegistry> mregs = new ArrayList<>(G.allGrids().size());
-
-        G.allGrids().forEach(ig -> {
-            MetricRegistry mreg = ((IgniteEx)ig).context().metric().registry(SnapshotCheckDistributedProcess.metricsRegName(SNAPSHOT_NAME));
-
-            assertNull(mreg.<LongMetric>findMetric("snapshotName"));
-            assertNull(mreg.<LongMetric>findMetric("progress"));
-            assertNull(mreg.<LongMetric>findMetric("requestId"));
-
-            mregs.add(mreg);
-
-            ((IgniteEx)ig).context().metric().remove(mreg.name());
-        });
-
-        if (snpOperation != null) {
-            IgniteFuture<?> fut = snpOperation.get();
-
-            for (int g = 0; g < G.allGrids().size(); ++g) {
-                IgniteEx ig = grid(g);
-
-                MetricRegistry mreg = ig.context().metric().registry(SnapshotCheckDistributedProcess.metricsRegName(SNAPSHOT_NAME));
-
-                assertNull(mreg.<LongMetric>findMetric("snapshotName"));
-                assertNull(mreg.<LongMetric>findMetric("progress"));
-                assertNull(mreg.<LongMetric>findMetric("requestId"));
-            }
-
-            return fut;
-        }
-
-        return null;
     }
 
     /**
@@ -1281,138 +1184,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         }
 
         snp(grid(chkAgainIdx.get())).checkSnapshot(SNAPSHOT_NAME, null, null, false, 0, true).get();
-    }
-
-    /** */
-    @Test
-    public void testCheckSnapshotValidationMetrics() throws Exception {
-        doTestSnapshotValidationMetrics(3, () -> new IgniteFutureImpl<>(snp(grid(3)).checkSnapshot(SNAPSHOT_NAME, null)));
-    }
-
-    /** */
-    @Test
-    public void testRestoreSnapshotValidationMetrics() throws Exception {
-        prepareGridsAndSnapshot(3, 2, 1, true);
-
-        doTestSnapshotValidationMetrics(0, () -> snp(grid(3)).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, true));
-    }
-
-    /** */
-    protected <T> void doTestSnapshotValidationMetrics(int gridsWithSnapshot, Supplier<IgniteFuture<?>> snpOperation) throws Exception {
-        if (gridsWithSnapshot > 0)
-            prepareGridsAndSnapshot(gridsWithSnapshot, gridsWithSnapshot > 2 ? gridsWithSnapshot - 1 : gridsWithSnapshot, 1, false);
-
-        // CstId -> Metric reg.
-        Map<String, MetricRegistryImpl> mregs = G.allGrids().stream().collect(Collectors.toMap(
-            g -> g.cluster().localNode().consistentId().toString(),
-            g -> ((IgniteEx)g).context().metric().registry(SnapshotCheckDistributedProcess.metricsRegName(SNAPSHOT_NAME)))
-        );
-
-        // Ensure no metrics yet.
-        mregs.values().forEach(mreg -> assertFalse(mreg.iterator().hasNext()));
-
-        Map<String, List<Double>> nodeProgresses = new ConcurrentHashMap<>();
-
-        Set<String> baseline = grid(0).cluster().currentBaselineTopology().stream().map(bl -> bl.consistentId().toString())
-            .collect(Collectors.toSet());
-
-        AtomicBoolean delyaFileIo = new AtomicBoolean(true);
-
-        Set<String> pausedNodes = ConcurrentHashMap.newKeySet();
-
-        // Delay the snp reads and register the read listeners.
-        injectPausedReadsIo(
-            G.allGrids(),
-            delyaFileIo,
-            grid -> pausedNodes.add(grid.cluster().localNode().consistentId().toString()),
-            grid -> {
-                DoubleMetric progressMetric = mregs.get(grid.cluster().localNode().consistentId()).findMetric("progress");
-
-                if (progressMetric == null)
-                    return;
-
-                List<Double> progresses = nodeProgresses.computeIfAbsent(grid.cluster().localNode().consistentId().toString(),
-                    cstId -> new ArrayList<>());
-
-                double nextProgress = progressMetric.value();
-
-                if (progresses.isEmpty() || Double.compare(progresses.get(progresses.size() - 1), nextProgress) != 0)
-                    progresses.add(nextProgress);
-            }
-        );
-
-        long timeBeforeStart = System.currentTimeMillis();
-
-        IgniteFuture<?> checkFut = snpOperation.get();
-
-        Set<UUID> rqIds = new HashSet<>();
-
-        mregs.forEach((cstId, mreg) -> {
-            if (baseline.contains(cstId)) {
-                try {
-                    assertTrue(waitForCondition(() -> mreg.findMetric("startTime") != null, getTestTimeout()));
-                    assertTrue(waitForCondition(() -> pausedNodes.contains(grid(cstId).localNode().consistentId()), getTestTimeout()));
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    throw new RuntimeException("Failed to wait for the metric 'startTime'.", e);
-                }
-
-                assertTrue(mreg.<LongMetric>findMetric("startTime").value() >= timeBeforeStart);
-                assertTrue(mreg.<LongMetric>findMetric("startTime").value() <= System.currentTimeMillis());
-
-                assertTrue(mreg.<LongMetric>findMetric("total").value() > 0L);
-                assertTrue(mreg.<LongMetric>findMetric("processed").value() >= 0L);
-                assertTrue(mreg.<LongMetric>findMetric("total").value() >= mreg.<LongMetric>findMetric("processed").value());
-                assertTrue(mreg.<DoubleMetric>findMetric("progress").value() >= 0.0);
-
-                assertEquals(SNAPSHOT_NAME, mreg.findMetric("snapshotName").getAsString());
-
-                rqIds.add(UUID.fromString(mreg.findMetric("requestId").getAsString()));
-            }
-            else
-                assertFalse(mreg.iterator().hasNext());
-        });
-
-        assertEquals(1, rqIds.size(), 1);
-        assertTrue(baseline.containsAll(pausedNodes) && pausedNodes.size() == baseline.size());
-
-        // Release I/O.
-        delyaFileIo.set(false);
-
-        checkFut.get();
-
-        G.allGrids().forEach(g -> {
-            MetricRegistryImpl mreg = mregs.get(g.cluster().localNode().consistentId());
-
-            String cstId = g.cluster().localNode().consistentId().toString();
-
-            if (baseline.contains(cstId)) {
-                assertEquals(100.0, mreg.<DoubleMetric>findMetric("progress").value());
-
-                List<Double> progress = nodeProgresses.get(cstId);
-
-                // Must be 0, 100 and at least 1 value in the middle.
-                assertTrue(progress.size() > 3);
-
-                // Ensure each next progress in not less that previous.
-                for (int p = 1; p < progress.size(); ++p)
-                    assertTrue(progress.get(p) >= progress.get(p - 1));
-
-                // Ensure new registry was just created (previous deleted).
-                try {
-                    waitForCondition(
-                        () -> !grid(cstId).context().metric()
-                            .registry(SnapshotCheckDistributedProcess.metricsRegName(SNAPSHOT_NAME)).iterator().hasNext(),
-                        getTestTimeout()
-                    );
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            else
-                assertFalse(mreg.iterator().hasNext());
-        });
     }
 
     /** */
