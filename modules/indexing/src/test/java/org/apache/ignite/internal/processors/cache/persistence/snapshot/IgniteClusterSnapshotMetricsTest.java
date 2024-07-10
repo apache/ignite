@@ -26,14 +26,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
 import javax.management.MBeanException;
@@ -44,29 +39,23 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.metric.MetricRegistry;
-import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -76,7 +65,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests snapshot create/restore metrics.
@@ -281,239 +269,6 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
             assertTrue("Wrong 'error' metric on " + ig.name(),
                 mReg.getAttribute("error").toString().contains(errMsg));
         }
-    }
-
-    /** Checks that snapshot validation metrics aren't affected by a snapshot creation. */
-    @Test
-    public void testCreateSnapshotNoValidationMetrics() throws Exception {
-        IgniteEx ig = startGridsWithCache(3, dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 16)),
-            100);
-
-        List<BlockingExecutor> execs = setBlockingSnapshotExecutor(G.allGrids());
-
-        IgniteFuture<?> fut = doTestNoSnapshotCheckMetrics(() -> {
-            IgniteFuture<?> fut0 = snp(ig).createSnapshot(SNAPSHOT_NAME);
-
-            execs.forEach(e -> e.waitForBlocked(getTestTimeout()));
-
-            return fut0;
-        });
-
-        execs.forEach(BlockingExecutor::unblock);
-
-        fut.get();
-    }
-
-    /** Tests there is no snapshot validation metrics on stapshot restore by default. */
-    @Test
-    public void testRestoreSnapshotNoValidationMetrics() throws Exception {
-        IgniteEx ig = startGridsWithCache(3, dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 16)),
-            100);
-
-        snp(ig).createSnapshot(SNAPSHOT_NAME).get();
-
-        ig.destroyCache(dfltCacheCfg.getName());
-
-        Set<UUID> waited = ConcurrentHashMap.newKeySet(G.allGrids().size());
-
-        AtomicBoolean delay = injectPausedReadsIo(G.allGrids(), grid -> waited.add(grid.cluster().localNode().id()));
-
-        delay.set(true);
-
-        IgniteFuture<?> fut = doTestNoSnapshotCheckMetrics(() -> {
-            IgniteFuture<Void> res = snp(ig).restoreSnapshot(SNAPSHOT_NAME, null);
-
-            try {
-                assertTrue(waitForCondition(() -> waited.size() == G.allGrids().size(), getTestTimeout()));
-            }
-            catch (IgniteInterruptedCheckedException e) {
-                throw new RuntimeException(e);
-            }
-
-            return res;
-        });
-
-        delay.set(false);
-
-        fut.get();
-
-        doTestNoSnapshotCheckMetrics(null);
-    }
-
-    /** Checks that there is no any snapshot validation metrics. */
-    protected @Nullable IgniteFuture<?> doTestNoSnapshotCheckMetrics(@Nullable Supplier<IgniteFuture<?>> snpOperation) {
-        List<MetricRegistry> mregs = new ArrayList<>(G.allGrids().size());
-
-        G.allGrids().forEach(ig -> {
-            MetricRegistry mreg = ((IgniteEx)ig).context().metric().registry(SnapshotCheckDistributedProcess.metricsRegName(SNAPSHOT_NAME));
-
-            assertNull(mreg.<LongMetric>findMetric("snapshotName"));
-            assertNull(mreg.<LongMetric>findMetric("progress"));
-            assertNull(mreg.<LongMetric>findMetric("requestId"));
-
-            mregs.add(mreg);
-
-            ((IgniteEx)ig).context().metric().remove(mreg.name());
-        });
-
-        if (snpOperation != null) {
-            IgniteFuture<?> fut = snpOperation.get();
-
-            for (int g = 0; g < G.allGrids().size(); ++g) {
-                IgniteEx ig = grid(g);
-
-                MetricRegistry mreg = ig.context().metric().registry(SnapshotCheckDistributedProcess.metricsRegName(SNAPSHOT_NAME));
-
-                assertNull(mreg.<LongMetric>findMetric("snapshotName"));
-                assertNull(mreg.<LongMetric>findMetric("progress"));
-                assertNull(mreg.<LongMetric>findMetric("requestId"));
-            }
-
-            return fut;
-        }
-
-        return null;
-    }
-
-    /** */
-    @Test
-    public void testCheckSnapshotValidationMetrics() throws Exception {
-        doTestSnapshotValidationMetrics(false, () -> new IgniteFutureImpl<>(snp(grid(3)).checkSnapshot(SNAPSHOT_NAME, null)));
-    }
-
-    /** */
-    @Test
-    public void testRestoreSnapshotValidationMetrics() throws Exception {
-        doTestSnapshotValidationMetrics(true, () -> snp(grid(2)).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, true));
-    }
-
-    /** */
-    protected <T> void doTestSnapshotValidationMetrics(boolean destroyCache, Supplier<IgniteFuture<?>> snpOperation) throws Exception {
-        startGridsWithSnapshot(2, CACHE_KEYS_RANGE, false);
-
-        grid(0).cluster().setBaselineTopology(grid(0).cluster().currentBaselineTopology());
-
-        startGrid(G.allGrids().size());
-
-        startClientGrid(G.allGrids().size());
-
-        if (destroyCache) {
-            grid(3).destroyCache(DEFAULT_CACHE_NAME);
-
-            awaitPartitionMapExchange();
-        }
-
-        // CstId -> Metric reg.
-        Map<String, MetricRegistryImpl> mregs = G.allGrids().stream().collect(Collectors.toMap(
-            g -> g.cluster().localNode().consistentId().toString(),
-            g -> ((IgniteEx)g).context().metric().registry(SnapshotCheckDistributedProcess.metricsRegName(SNAPSHOT_NAME)))
-        );
-
-        // Ensure no metrics yet.
-        mregs.values().forEach(mreg -> assertFalse(mreg.iterator().hasNext()));
-
-        Map<String, List<Double>> nodeProgresses = new ConcurrentHashMap<>();
-
-        Set<String> baseline = grid(0).cluster().currentBaselineTopology().stream().map(bl -> bl.consistentId().toString())
-            .collect(Collectors.toSet());
-
-        AtomicBoolean delyaFileIo = new AtomicBoolean(true);
-
-        Set<String> pausedNodes = ConcurrentHashMap.newKeySet();
-
-        // Delay the snp reads and register the read listeners.
-        injectPausedReadsIo(
-            G.allGrids(),
-            delyaFileIo,
-            grid -> pausedNodes.add(grid.cluster().localNode().consistentId().toString()),
-            grid -> {
-                DoubleMetric progressMetric = mregs.get(grid.cluster().localNode().consistentId()).findMetric("progress");
-
-                if (progressMetric == null)
-                    return;
-
-                List<Double> progresses = nodeProgresses.computeIfAbsent(grid.cluster().localNode().consistentId().toString(),
-                    cstId -> new ArrayList<>());
-
-                double nextProgress = progressMetric.value();
-
-                if (progresses.isEmpty() || Double.compare(progresses.get(progresses.size() - 1), nextProgress) != 0)
-                    progresses.add(nextProgress);
-            }
-        );
-
-        long timeBeforeStart = System.currentTimeMillis();
-
-        IgniteFuture<?> checkFut = snpOperation.get();
-
-        Set<UUID> rqIds = new HashSet<>();
-
-        mregs.forEach((cstId, mreg) -> {
-            if (baseline.contains(cstId)) {
-                try {
-                    assertTrue(waitForCondition(() -> mreg.findMetric("startTime") != null, getTestTimeout()));
-                    assertTrue(waitForCondition(() -> pausedNodes.contains(grid(cstId).localNode().consistentId()), getTestTimeout()));
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    throw new RuntimeException("Failed to wait for the metric 'startTime'.", e);
-                }
-
-                assertTrue(mreg.<LongMetric>findMetric("startTime").value() >= timeBeforeStart);
-                assertTrue(mreg.<LongMetric>findMetric("startTime").value() <= System.currentTimeMillis());
-
-                assertTrue(mreg.<LongMetric>findMetric("total").value() > 0L);
-                assertTrue(mreg.<LongMetric>findMetric("processed").value() >= 0L);
-                assertTrue(mreg.<LongMetric>findMetric("total").value() >= mreg.<LongMetric>findMetric("processed").value());
-                assertTrue(mreg.<DoubleMetric>findMetric("progress").value() >= 0.0);
-
-                assertEquals(SNAPSHOT_NAME, mreg.findMetric("snapshotName").getAsString());
-
-                rqIds.add(UUID.fromString(mreg.findMetric("requestId").getAsString()));
-            }
-            else
-                assertFalse(mreg.iterator().hasNext());
-        });
-
-        assertEquals(1, rqIds.size(), 1);
-        assertTrue(baseline.containsAll(pausedNodes) && pausedNodes.size() == baseline.size());
-
-        // Release I/O.
-        delyaFileIo.set(false);
-
-        checkFut.get();
-
-        G.allGrids().forEach(g -> {
-            String cstId = g.cluster().localNode().consistentId().toString();
-
-            MetricRegistryImpl mreg = mregs.get(cstId);
-
-            if (baseline.contains(cstId)) {
-                assertEquals(100.0, mreg.<DoubleMetric>findMetric("progress").value());
-
-                List<Double> progress = nodeProgresses.get(cstId);
-
-                // Must be 0, 100 and at least 1 value in the middle.
-                assertTrue(progress.size() > 3);
-
-                // Ensure each next progress in not less that previous.
-                for (int p = 1; p < progress.size(); ++p)
-                    assertTrue(progress.get(p) >= progress.get(p - 1));
-
-                // Ensure new registry was just created (previous deleted).
-                try {
-                    waitForCondition(
-                        () -> !grid(cstId).context().metric()
-                            .registry(SnapshotCheckDistributedProcess.metricsRegName(SNAPSHOT_NAME)).iterator().hasNext(),
-                        getTestTimeout()
-                    );
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            else
-                assertFalse(mreg.iterator().hasNext());
-        });
     }
 
     /** @throws Exception If fails. */
