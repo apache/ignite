@@ -261,21 +261,21 @@ public class SnapshotCheckDistributedProcess {
 
     /** */
     private Throwable stopAndCleanLocRequest(SnapshotCheckProcessRequest rq, @Nullable Throwable err) {
-        requests.remove(rq.snapshotName());
+        if (requests.remove(rq.snapshotName()) != null) {
+            if (err == null && rq.error() != null)
+                err = rq.error();
 
-        if (err == null && rq.error() != null)
-            err = rq.error();
+            GridFutureAdapter<?> locWorkingFut = rq.fut();
 
-        GridFutureAdapter<?> locWorkingFut = rq.fut();
+            boolean finished = false;
 
-        boolean finished = false;
+            // Try to stop local working future ASAP.
+            if (locWorkingFut != null)
+                finished = err == null ? locWorkingFut.onDone() : locWorkingFut.onDone(err);
 
-        // Try to stop local working future ASAP.
-        if (locWorkingFut != null)
-            finished = err == null ? locWorkingFut.onDone() : locWorkingFut.onDone(err);
-
-        if (finished && log.isInfoEnabled())
-            log.info("Finished snapshot local validation, req: " + rq + '.');
+            if (finished && log.isInfoEnabled())
+                log.info("Finished snapshot local validation, req: " + rq + '.');
+        }
 
         return err;
     }
