@@ -109,7 +109,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
     /** @param cctx Shared context. */
     public SnapshotPartitionsVerifyHandler(GridCacheSharedContext<?, ?> cctx) {
-        this(cctx, null ,null);
+        this(cctx, null, null);
     }
 
     /**

@@ -63,6 +63,9 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 /** Distributed process of snapshot checking (with the partition hashes). */
 public class SnapshotCheckDistributedProcess {
     /** */
+    private static final String METRIC_REG_NAME_PREF = metricName(SNAPSHOT_METRICS, "check");
+
+    /** */
     private static final IgniteInternalFuture FINISHED_FUT = new GridFinishedFuture<>();
 
     /** */
@@ -521,7 +524,7 @@ public class SnapshotCheckDistributedProcess {
     }
 
     /** */
-    protected void registerMetrics(SnapshotCheckProcessRequest rq) {
+    private void registerMetrics(SnapshotCheckProcessRequest rq) {
         MetricRegistryImpl mreg = kctx.metric().registry(metricsRegName(rq.snapshotName()));
 
         assert mreg.findMetric("startTime") == null;
