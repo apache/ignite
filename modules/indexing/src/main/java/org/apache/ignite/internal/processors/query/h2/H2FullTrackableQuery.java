@@ -17,8 +17,8 @@ public class H2FullTrackableQuery implements TrackableQuery {
     /** Query id. */
     private final long qryId;
 
-    /** Local node id. */
-    private final UUID locNodeId;
+    /** Aggregator node id. */
+    private final UUID aggrNodeId;
 
     /** Distributed joins flag. */
     private final boolean distributedJoin;
@@ -41,7 +41,7 @@ public class H2FullTrackableQuery implements TrackableQuery {
     /**
      * @param beginTs Begin timestamp.
      * @param qryId Query id.
-     * @param locNodeId Local node id.
+     * @param aggrNodeId Aggregator node id.
      * @param distributedJoin Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
      * @param lazy Lazy mode flag.
@@ -52,7 +52,7 @@ public class H2FullTrackableQuery implements TrackableQuery {
     public H2FullTrackableQuery(
         long beginTs,
         long qryId,
-        UUID locNodeId,
+        UUID aggrNodeId,
         boolean distributedJoin,
         boolean enforceJoinOrder,
         boolean lazy,
@@ -62,7 +62,7 @@ public class H2FullTrackableQuery implements TrackableQuery {
     ) {
         this.beginTs = beginTs;
         this.qryId = qryId;
-        this.locNodeId = locNodeId;
+        this.aggrNodeId = aggrNodeId;
         this.distributedJoin = distributedJoin;
         this.enforceJoinOrder = enforceJoinOrder;
         this.lazy = lazy;
@@ -81,9 +81,9 @@ public class H2FullTrackableQuery implements TrackableQuery {
         StringBuilder msgSb = new StringBuilder();
 
         if (qryId == RunningQueryManager.UNDEFINED_QUERY_ID)
-            msgSb.append(" [globalQueryId=(undefined), node=").append(locNodeId);
+            msgSb.append(" [globalQueryId=(undefined), node=").append(aggrNodeId);
         else
-            msgSb.append(" [globalQueryId=").append(QueryUtils.globalQueryId(locNodeId, qryId));
+            msgSb.append(" [globalQueryId=").append(QueryUtils.globalQueryId(aggrNodeId, qryId));
 
         if (additionalInfo != null)
             msgSb.append(", ").append(additionalInfo);
