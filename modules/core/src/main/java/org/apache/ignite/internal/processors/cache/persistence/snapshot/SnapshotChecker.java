@@ -396,9 +396,10 @@ public class SnapshotChecker {
         Set<Integer> grpIds,
         SnapshotMetadata meta,
         boolean forCreation,
-        boolean skipHash,
-        boolean punchHoleEnabled
+        boolean skipHash
     ) throws IgniteCheckedException {
+        boolean pouchHoleEnabled = isPunchHoleEnabled(meta, snpDir, grpIds);
+
         IgniteBiTuple<Map<Integer, File>, Set<File>> grpAndPartFiles = preparePartitions(meta, grpIds, snpDir);
 
         Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();
@@ -424,7 +425,7 @@ public class SnapshotChecker {
                     ) {
                         pageStore.init();
 
-                        if (punchHoleEnabled && meta.isGroupWithCompression(grpId) && forCreation) {
+                        if (pouchHoleEnabled && meta.isGroupWithCompression(grpId) && forCreation) {
                             byte pageType = partId == INDEX_PARTITION ? FLAG_IDX : FLAG_DATA;
 
                             checkPartitionsPageCrcSum(() -> pageStore, partId, pageType, (id, buffer) -> {
@@ -593,7 +594,7 @@ public class SnapshotChecker {
         if (meta.dump())
             return checkDumpFiles(snpDir, meta, grps, locNode.consistentId(), skipPartsHashes);
 
-        return checkSnapshotFiles(snpDir, grps, meta, forCreation, skipPartsHashes, isPunchHoleEnabled(meta, snpDir, grps));
+        return checkSnapshotFiles(snpDir, grps, meta, forCreation, skipPartsHashes);
     }
 
     /** */
