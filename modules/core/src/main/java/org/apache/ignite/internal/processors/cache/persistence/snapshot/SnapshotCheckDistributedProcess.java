@@ -277,7 +277,7 @@ public class SnapshotCheckDistributedProcess {
         if (locWorkingFut != null)
             finished = err == null ? locWorkingFut.onDone() : locWorkingFut.onDone(err);
 
-        kctx.metric().remove(metricsRegName(rq.snapshotName()));
+        kctx.metric().remove(metricsRegName(locRq.snapshotName()));
 
         requests.remove(locRq.snapshotName());
 
