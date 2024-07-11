@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
@@ -38,65 +37,14 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** Shared context. */
     protected final GridCacheSharedContext<?, ?> cctx;
 
-    /** Logger. */
-    private final IgniteLogger log;
-
-    /** Metric of total amount to check in bytes. */
-    @Nullable private final AtomicLongMetric metricTotal;
-
-    /** Metric of checked data amount in bytes. */
-    @Nullable private final AtomicLongMetric metricProcessed;
-
     /** @param cctx Shared context. */
     public SnapshotPartitionsVerifyHandler(GridCacheSharedContext<?, ?> cctx) {
-        this(cctx, null, null);
-    }
-
-    /**
-     * @param cctx Shared context.
-     * @param metricTotal Metric of total amount to check in bytes.
-     * @param metricProcessed Metric of checked data amount in bytes.
-     */
-    public SnapshotPartitionsVerifyHandler(
-        GridCacheSharedContext<?, ?> cctx,
-        @Nullable AtomicLongMetric metricTotal,
-        @Nullable AtomicLongMetric metricProcessed
-    ) {
         this.cctx = cctx;
-
-        log = cctx.logger(getClass());
-
-        this.metricTotal = metricTotal;
-        this.metricProcessed = metricProcessed;
     }
 
     /** {@inheritDoc} */
     @Override public SnapshotHandlerType type() {
         return SnapshotHandlerType.RESTORE;
-    }
-
-    /** */
-    protected void increaseTotalMetric(long add) {
-        assert add >= 0;
-
-        if (metricTotal == null || add == 0)
-            return;
-
-        metricTotal.add(add);
-
-        assert metricProcessed == null || metricTotal.value() >= metricProcessed.value();
-    }
-
-    /** */
-    protected void increaseProcessedMetric(long add) {
-        assert add >= 0;
-
-        if (metricProcessed == null || add == 0)
-            return;
-
-        metricProcessed.add(add);
-
-        assert metricTotal == null || metricProcessed.value() <= metricTotal.value();
     }
 
     /** {@inheritDoc} */
