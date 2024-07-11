@@ -427,15 +427,16 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
             delyaFileIo,
             grid -> pausedNodes.add(grid.cluster().localNode().consistentId().toString()),
             grid -> {
-                DoubleMetric progressMetric = mregs.get(grid.cluster().localNode().consistentId()).findMetric("progress");
+                DoubleMetric progress = mregs.get(grid.cluster().localNode().consistentId().toString())
+                    .findMetric(SnapshotCheckDistributedProcess.METRIC_NAME_PROGRESS);
 
-                if (progressMetric == null)
+                if (progress == null)
                     return;
 
                 List<Double> progresses = nodeProgresses.computeIfAbsent(grid.cluster().localNode().consistentId().toString(),
                     cstId -> new ArrayList<>());
 
-                double nextProgress = progressMetric.value();
+                double nextProgress = progress.value();
 
                 if (progresses.isEmpty() || Double.compare(progresses.get(progresses.size() - 1), nextProgress) != 0)
                     progresses.add(nextProgress);
@@ -451,24 +452,32 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
         mregs.forEach((cstId, mreg) -> {
             if (baseline.contains(cstId)) {
                 try {
-                    assertTrue(waitForCondition(() -> mreg.findMetric("startTime") != null, getTestTimeout()));
-                    assertTrue(waitForCondition(() -> pausedNodes.contains(grid(cstId).localNode().consistentId()), getTestTimeout()));
+                    assertTrue(waitForCondition(() -> mreg.findMetric(SnapshotCheckDistributedProcess.METRIC_NAME_START_TIME) != null,
+                        getTestTimeout()));
+                    assertTrue(waitForCondition(() -> pausedNodes.contains(grid(cstId).localNode().consistentId().toString()),
+                        getTestTimeout()));
                 }
                 catch (IgniteInterruptedCheckedException e) {
                     throw new RuntimeException("Failed to wait for the metric 'startTime'.", e);
                 }
 
-                assertTrue(mreg.<LongMetric>findMetric("startTime").value() >= timeBeforeStart);
-                assertTrue(mreg.<LongMetric>findMetric("startTime").value() <= System.currentTimeMillis());
+                LongMetric startTime = mreg.findMetric(SnapshotCheckDistributedProcess.METRIC_NAME_START_TIME);
 
-                assertTrue(mreg.<LongMetric>findMetric("total").value() > 0L);
-                assertTrue(mreg.<LongMetric>findMetric("processed").value() >= 0L);
-                assertTrue(mreg.<LongMetric>findMetric("total").value() >= mreg.<LongMetric>findMetric("processed").value());
-                assertTrue(mreg.<DoubleMetric>findMetric("progress").value() >= 0.0);
+                assertTrue(startTime.value() >= timeBeforeStart);
+                assertTrue(startTime.value() <= System.currentTimeMillis());
 
-                assertEquals(SNAPSHOT_NAME, mreg.findMetric("snapshotName").getAsString());
+                LongMetric total = mreg.findMetric(SnapshotCheckDistributedProcess.METRIC_NAME_TOTAL);
+                LongMetric processed = mreg.findMetric(SnapshotCheckDistributedProcess.METRIC_NAME_PROCESSED);
 
-                rqIds.add(UUID.fromString(mreg.findMetric("requestId").getAsString()));
+                assertTrue(total.value() > 0L);
+                assertTrue(processed.value() >= 0L);
+                assertTrue(total.value() >= processed.value());
+
+                assertTrue(mreg.<DoubleMetric>findMetric(SnapshotCheckDistributedProcess.METRIC_NAME_PROGRESS).value() >= 0.0);
+
+                assertEquals(SNAPSHOT_NAME, mreg.findMetric(SnapshotCheckDistributedProcess.METRIC_NAME_SNP_NAME).getAsString());
+
+                rqIds.add(UUID.fromString(mreg.findMetric(SnapshotCheckDistributedProcess.METRIC_NAME_RQ_ID).getAsString()));
             }
             else
                 assertFalse(mreg.iterator().hasNext());
@@ -488,7 +497,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
             MetricRegistryImpl mreg = mregs.get(cstId);
 
             if (baseline.contains(cstId)) {
-                assertEquals(100.0, mreg.<DoubleMetric>findMetric("progress").value());
+                assertEquals(100.0, mreg.<DoubleMetric>findMetric(SnapshotCheckDistributedProcess.METRIC_NAME_PROGRESS).value());
 
                 List<Double> progress = nodeProgresses.get(cstId);
 

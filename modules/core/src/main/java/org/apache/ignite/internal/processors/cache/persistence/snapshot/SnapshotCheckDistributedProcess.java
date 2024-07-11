@@ -68,6 +68,24 @@ public class SnapshotCheckDistributedProcess {
     private static final IgniteInternalFuture FINISHED_FUT = new GridFinishedFuture<>();
 
     /** */
+    static final String METRIC_NAME_TOTAL = "total";
+
+    /** */
+    static final String METRIC_NAME_PROCESSED = "processed";
+    /** */
+
+    static final String METRIC_NAME_PROGRESS = "progress";
+
+    /** */
+    static final String METRIC_NAME_START_TIME = "startTime";
+
+    /** */
+    static final String METRIC_NAME_RQ_ID = "requestId";
+
+    /** */
+    static final String METRIC_NAME_SNP_NAME = "snapshotName";
+
+    /** */
     private final IgniteLogger log;
 
     /** */
@@ -175,13 +193,14 @@ public class SnapshotCheckDistributedProcess {
             if (locPartsChkFut.isDone())
                 return;
 
-            MetricRegistryImpl mreg = kctx.metric().registry(metricsRegName(locReq.snapshotName()));
-
             File snpDir = kctx.cache().context().snapshotMgr().snapshotLocalDir(locReq.snapshotName(), locReq.snapshotPath());
+
+            MetricRegistryImpl mreg = kctx.metric().registry(metricsRegName(locReq.snapshotName()));
 
             try {
                 Map<PartitionKeyV2, PartitionHashRecordV2> res = kctx.cache().context().snapshotMgr().checker()
-                    .checkPartitions(locReq.meta(), snpDir, locReq.groups(), false, true, false);
+                    .checkPartitions(locReq.meta(), snpDir, locReq.groups(), false, true, false,
+                        mreg.findMetric(METRIC_NAME_TOTAL), mreg.findMetric(METRIC_NAME_PROCESSED));
 
                 locPartsChkFut.onDone(res instanceof HashMap ? (HashMap<PartitionKeyV2, PartitionHashRecordV2>)res
                     : new HashMap<>(res));
@@ -526,16 +545,17 @@ public class SnapshotCheckDistributedProcess {
     private void registerMetrics(SnapshotCheckProcessRequest rq) {
         MetricRegistryImpl mreg = kctx.metric().registry(metricsRegName(rq.snapshotName()));
 
-        assert mreg.findMetric("startTime") == null;
-        assert mreg.findMetric("requestId") == null;
+        assert mreg.findMetric(METRIC_NAME_START_TIME) == null;
+        assert mreg.findMetric(METRIC_NAME_RQ_ID) == null;
 
-        mreg.register("requestId", rq::requestId, UUID.class, "Snapshot operation request id.");
-        mreg.register("snapshotName", rq::snapshotName, String.class, "Snapshot name.");
-        mreg.register("startTime", rq::startTime, "Snapshot check start time in milliseconds.");
+        mreg.register(METRIC_NAME_RQ_ID, rq::requestId, UUID.class, "Snapshot operation request id.");
+        mreg.register(METRIC_NAME_SNP_NAME, rq::snapshotName, String.class, "Snapshot name.");
+        mreg.register(METRIC_NAME_START_TIME, rq::startTime, "Snapshot check start time in milliseconds.");
 
-        AtomicLongMetric total = mreg.longMetric("total", "Total data amount to check in bytes.");
-        AtomicLongMetric processed = mreg.longMetric("processed", "Processed data amount in bytes.");
-        mreg.register("progress", () -> 100.0 * processed.value() / total.value(), "% of checked data amount.");
+        AtomicLongMetric total = mreg.longMetric(METRIC_NAME_TOTAL, "Total data amount to check in bytes.");
+        AtomicLongMetric processed = mreg.longMetric(METRIC_NAME_PROCESSED, "Processed data amount in bytes.");
+
+        mreg.register(METRIC_NAME_PROGRESS, () -> 100.0 * processed.value() / total.value(), "% of checked data amount.");
     }
 
     /**

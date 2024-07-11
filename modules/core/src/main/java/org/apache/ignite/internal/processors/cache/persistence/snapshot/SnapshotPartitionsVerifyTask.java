@@ -90,7 +90,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
                 File snpDir = cctx.snapshotMgr().snapshotLocalDir(snpName, snpPath);
                 SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpDir, consId);
 
-                return cctx.snapshotMgr().checker().checkPartitions(meta, snpDir, rqGrps, false, check, false);
+                return cctx.snapshotMgr().checker().checkPartitions(meta, snpDir, rqGrps, false, check, false, null, null);
             }
             catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);

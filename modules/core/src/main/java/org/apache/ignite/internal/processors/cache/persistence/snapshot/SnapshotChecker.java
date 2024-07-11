@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -346,7 +347,12 @@ public class SnapshotChecker {
     }
 
     /** */
-    private IgniteBiTuple<Map<Integer, File>, Set<File>> preparePartitions(SnapshotMetadata meta, Collection<Integer> grps, File snpDir) {
+    private IgniteBiTuple<Map<Integer, File>, Set<File>> preparePartitions(
+        SnapshotMetadata meta,
+        Collection<Integer> grps,
+        File snpDir,
+        @Nullable AtomicLongMetric metricTotal
+    ) {
         Map<Integer, File> grpDirs = new HashMap<>();
         Set<File> partFiles = new HashSet<>();
 
@@ -363,15 +369,18 @@ public class SnapshotChecker {
             Set<Integer> parts = new HashSet<>(meta.partitions().get(grpId) == null ? Collections.emptySet()
                 : meta.partitions().get(grpId));
 
-            for (File partFile : cachePartitionFiles(dir,
+            for (File part : cachePartitionFiles(dir,
                 (meta.dump() ? DUMP_FILE_EXT : FILE_SUFFIX) + (meta.compressPartitions() ? ZIP_SUFFIX : "")
             )) {
-                int partId = partId(partFile.getName());
+                int partId = partId(part.getName());
 
                 if (!parts.remove(partId))
                     continue;
 
-                partFiles.add(partFile);
+                partFiles.add(part);
+
+                if (metricTotal != null)
+                    metricTotal.add(part.length());
             }
 
             if (!parts.isEmpty()) {
@@ -396,11 +405,13 @@ public class SnapshotChecker {
         Set<Integer> grpIds,
         SnapshotMetadata meta,
         boolean forCreation,
-        boolean skipHash
+        boolean skipHash,
+        @Nullable AtomicLongMetric metricTotal,
+        @Nullable AtomicLongMetric metricProcessed
     ) throws IgniteCheckedException {
         boolean pouchHoleEnabled = isPunchHoleEnabled(meta, snpDir, grpIds);
 
-        IgniteBiTuple<Map<Integer, File>, Set<File>> grpAndPartFiles = preparePartitions(meta, grpIds, snpDir);
+        IgniteBiTuple<Map<Integer, File>, Set<File>> grpAndPartFiles = preparePartitions(meta, grpIds, snpDir, metricTotal);
 
         Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();
         ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
@@ -510,6 +521,10 @@ public class SnapshotChecker {
                     catch (IOException e) {
                         throw new IgniteCheckedException(e);
                     }
+                    finally {
+                        if (metricProcessed != null)
+                            metricProcessed.add(part.length());
+                    }
 
                     return null;
                 }
@@ -565,7 +580,9 @@ public class SnapshotChecker {
         @Nullable Collection<String> groups,
         boolean forCreation,
         boolean checkParts,
-        boolean skipPartsHashes
+        boolean skipPartsHashes,
+        @Nullable AtomicLongMetric metricTotal,
+        @Nullable AtomicLongMetric metricProcessed
     ) throws IgniteCheckedException {
         if (!snpDir.exists())
             throw new IgniteCheckedException("Snapshot directory doesn't exists: " + snpDir);
@@ -592,9 +609,9 @@ public class SnapshotChecker {
         }
 
         if (meta.dump())
-            return checkDumpFiles(snpDir, meta, grps, locNode.consistentId(), skipPartsHashes);
+            return checkDumpFiles(snpDir, meta, grps, locNode.consistentId(), skipPartsHashes, metricTotal, metricProcessed);
 
-        return checkSnapshotFiles(snpDir, grps, meta, forCreation, skipPartsHashes);
+        return checkSnapshotFiles(snpDir, grps, meta, forCreation, skipPartsHashes, metricTotal, metricProcessed);
     }
 
     /** */
@@ -622,19 +639,29 @@ public class SnapshotChecker {
         SnapshotMetadata meta,
         Collection<Integer> grpIds,
         Object nodeCstId,
-        boolean skipHash
+        boolean skipHash,
+        @Nullable AtomicLongMetric metricTotal,
+        @Nullable AtomicLongMetric metricProcessed
     ) {
         EncryptionSpi encSpi = meta.encryptionKey() != null ? encryptionSpi : null;
 
         try (Dump dump = new Dump(snpDir, U.maskForFileName(nodeCstId.toString()), true, true, encSpi, log)) {
-            IgniteBiTuple<Map<Integer, File>, Set<File>> grpAndPartFiles = preparePartitions(meta, grpIds, dump.dumpDirectory());
+            IgniteBiTuple<Map<Integer, File>, Set<File>> grpAndPartFiles = preparePartitions(meta, grpIds, dump.dumpDirectory(),
+                metricTotal);
 
             Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
                 executor,
                 grpAndPartFiles.get2(),
-                part -> calculateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()),
-                    skipHash, nodeCstId, U.maskForFileName(nodeCstId.toString()))
-            );
+                part -> {
+                    try {
+                        return calculateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()),
+                            skipHash, nodeCstId, U.maskForFileName(nodeCstId.toString()));
+                    }
+                    finally {
+                        if (metricProcessed != null)
+                            metricProcessed.add(part.length());
+                    }
+                });
 
             return partitionHashRecordV2s.stream().collect(Collectors.toMap(PartitionHashRecordV2::partitionKey, r -> r));
         }
