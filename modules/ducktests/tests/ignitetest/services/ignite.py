@@ -27,6 +27,6 @@ class IgniteService(IgniteAwareService):
     APP_SERVICE_CLASS = "org.apache.ignite.startup.cmdline.CommandLineStartup"
 
     def __init__(self, context, config, num_nodes, jvm_opts=None, merge_with_default=True, startup_timeout_sec=60,
-                 shutdown_timeout_sec=60, modules=None):
-        super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, self.APP_SERVICE_CLASS,
+                 shutdown_timeout_sec=60, modules=None, main_java_class=APP_SERVICE_CLASS):
+        super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class,
                          modules, jvm_opts=jvm_opts, merge_with_default=merge_with_default)
