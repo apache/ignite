@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Snapshot full check (validation) distributed process request.
  *
- * @see SnapshotCheckDistributedProcess
+ * @see SnapshotCheckProcess
  */
 public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationRequest {
     /** Serial version uid. */

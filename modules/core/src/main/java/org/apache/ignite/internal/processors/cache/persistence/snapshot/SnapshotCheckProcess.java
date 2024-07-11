@@ -60,7 +60,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.SNAPSHOT_VALIDATE_PARTS;
 
 /** Distributed process of snapshot checking (with the partition hashes). */
-public class SnapshotCheckDistributedProcess {
+public class SnapshotCheckProcess {
     /** */
     private static final String METRIC_REG_NAME_PREF = metricName(SNAPSHOT_METRICS, "check");
 
@@ -104,7 +104,7 @@ public class SnapshotCheckDistributedProcess {
     private final DistributedProcess<SnapshotCheckProcessRequest, HashMap<PartitionKeyV2, PartitionHashRecordV2>> phase2PartsHashes;
 
     /** */
-    public SnapshotCheckDistributedProcess(GridKernalContext kctx) {
+    public SnapshotCheckProcess(GridKernalContext kctx) {
         this.kctx = kctx;
 
         log = kctx.log(getClass());

@@ -345,7 +345,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
         List<MetricRegistry> mregs = new ArrayList<>(G.allGrids().size());
 
         G.allGrids().forEach(ig -> {
-            MetricRegistry mreg = ((IgniteEx)ig).context().metric().registry(SnapshotCheckDistributedProcess.metricsRegName(SNAPSHOT_NAME));
+            MetricRegistry mreg = ((IgniteEx)ig).context().metric().registry(SnapshotCheckProcess.metricsRegName(SNAPSHOT_NAME));
 
             assertNull(mreg.<LongMetric>findMetric("snapshotName"));
             assertNull(mreg.<LongMetric>findMetric("progress"));
@@ -362,7 +362,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
             for (int g = 0; g < G.allGrids().size(); ++g) {
                 IgniteEx ig = grid(g);
 
-                MetricRegistry mreg = ig.context().metric().registry(SnapshotCheckDistributedProcess.metricsRegName(SNAPSHOT_NAME));
+                MetricRegistry mreg = ig.context().metric().registry(SnapshotCheckProcess.metricsRegName(SNAPSHOT_NAME));
 
                 assertNull(mreg.<LongMetric>findMetric("snapshotName"));
                 assertNull(mreg.<LongMetric>findMetric("progress"));
@@ -406,7 +406,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
         // CstId -> Metric reg.
         Map<String, MetricRegistryImpl> mregs = G.allGrids().stream().collect(Collectors.toMap(
             g -> g.cluster().localNode().consistentId().toString(),
-            g -> ((IgniteEx)g).context().metric().registry(SnapshotCheckDistributedProcess.metricsRegName(SNAPSHOT_NAME)))
+            g -> ((IgniteEx)g).context().metric().registry(SnapshotCheckProcess.metricsRegName(SNAPSHOT_NAME)))
         );
 
         // Ensure no metrics yet.
@@ -428,7 +428,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
             grid -> pausedNodes.add(grid.cluster().localNode().consistentId().toString()),
             grid -> {
                 DoubleMetric progress = mregs.get(grid.cluster().localNode().consistentId().toString())
-                    .findMetric(SnapshotCheckDistributedProcess.METRIC_NAME_PROGRESS);
+                    .findMetric(SnapshotCheckProcess.METRIC_NAME_PROGRESS);
 
                 if (progress == null)
                     return;
@@ -452,7 +452,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
         mregs.forEach((cstId, mreg) -> {
             if (baseline.contains(cstId)) {
                 try {
-                    assertTrue(waitForCondition(() -> mreg.findMetric(SnapshotCheckDistributedProcess.METRIC_NAME_START_TIME) != null,
+                    assertTrue(waitForCondition(() -> mreg.findMetric(SnapshotCheckProcess.METRIC_NAME_START_TIME) != null,
                         getTestTimeout()));
                     assertTrue(waitForCondition(() -> pausedNodes.contains(grid(cstId).localNode().consistentId().toString()),
                         getTestTimeout()));
@@ -461,23 +461,23 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
                     throw new RuntimeException("Failed to wait for the metric 'startTime'.", e);
                 }
 
-                LongMetric startTime = mreg.findMetric(SnapshotCheckDistributedProcess.METRIC_NAME_START_TIME);
+                LongMetric startTime = mreg.findMetric(SnapshotCheckProcess.METRIC_NAME_START_TIME);
 
                 assertTrue(startTime.value() >= timeBeforeStart);
                 assertTrue(startTime.value() <= System.currentTimeMillis());
 
-                LongMetric total = mreg.findMetric(SnapshotCheckDistributedProcess.METRIC_NAME_TOTAL);
-                LongMetric processed = mreg.findMetric(SnapshotCheckDistributedProcess.METRIC_NAME_PROCESSED);
+                LongMetric total = mreg.findMetric(SnapshotCheckProcess.METRIC_NAME_TOTAL);
+                LongMetric processed = mreg.findMetric(SnapshotCheckProcess.METRIC_NAME_PROCESSED);
 
                 assertTrue(total.value() > 0L);
                 assertTrue(processed.value() >= 0L);
                 assertTrue(total.value() >= processed.value());
 
-                assertTrue(mreg.<DoubleMetric>findMetric(SnapshotCheckDistributedProcess.METRIC_NAME_PROGRESS).value() >= 0.0);
+                assertTrue(mreg.<DoubleMetric>findMetric(SnapshotCheckProcess.METRIC_NAME_PROGRESS).value() >= 0.0);
 
-                assertEquals(SNAPSHOT_NAME, mreg.findMetric(SnapshotCheckDistributedProcess.METRIC_NAME_SNP_NAME).getAsString());
+                assertEquals(SNAPSHOT_NAME, mreg.findMetric(SnapshotCheckProcess.METRIC_NAME_SNP_NAME).getAsString());
 
-                rqIds.add(UUID.fromString(mreg.findMetric(SnapshotCheckDistributedProcess.METRIC_NAME_RQ_ID).getAsString()));
+                rqIds.add(UUID.fromString(mreg.findMetric(SnapshotCheckProcess.METRIC_NAME_RQ_ID).getAsString()));
             }
             else
                 assertFalse(mreg.iterator().hasNext());
@@ -497,7 +497,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
             MetricRegistryImpl mreg = mregs.get(cstId);
 
             if (baseline.contains(cstId)) {
-                assertEquals(100.0, mreg.<DoubleMetric>findMetric(SnapshotCheckDistributedProcess.METRIC_NAME_PROGRESS).value());
+                assertEquals(100.0, mreg.<DoubleMetric>findMetric(SnapshotCheckProcess.METRIC_NAME_PROGRESS).value());
 
                 List<Double> progress = nodeProgresses.get(cstId);
 
@@ -512,7 +512,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
                 try {
                     waitForCondition(
                         () -> !grid(cstId).context().metric()
-                            .registry(SnapshotCheckDistributedProcess.metricsRegName(SNAPSHOT_NAME)).iterator().hasNext(),
+                            .registry(SnapshotCheckProcess.metricsRegName(SNAPSHOT_NAME)).iterator().hasNext(),
                         getTestTimeout()
                     );
                 }
