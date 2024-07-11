@@ -1959,14 +1959,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
-     * @param topic The topic to interrupt receiver from.
-     * @param ex Exception.
-     */
-    public void interruptTransmissionReceiver(Object topic, Exception ex) {
-        interruptReceiver(rcvCtxs.remove(topic), ex);
-    }
-
-    /**
      * This method must be used prior to opening a {@link TransmissionSender} by calling
      * {@link #openTransmissionSender(UUID, Object)} to ensure that remote and local nodes
      * are fully support direct {@link SocketChannel} connection to transfer data.
