@@ -65,9 +65,6 @@ public class SnapshotCheckProcess {
     private static final String METRIC_REG_NAME_PREF = metricName(SNAPSHOT_METRICS, "check");
 
     /** */
-    private static final IgniteInternalFuture FINISHED_FUT = new GridFinishedFuture<>();
-
-    /** */
     static final String METRIC_NAME_TOTAL = "total";
 
     /** */
@@ -156,7 +153,7 @@ public class SnapshotCheckProcess {
     ) {
         clean(procId, null, results, errors);
 
-        return FINISHED_FUT;
+        return new GridFinishedFuture<>();
     }
 
     /** Phase 2 beginning.  */
@@ -165,7 +162,7 @@ public class SnapshotCheckProcess {
         SnapshotCheckProcessRequest locReq;
 
         if (stopAndCleanOnError(incReq, null) || (locReq = requests.get(incReq.snapshotName())) == null)
-            return FINISHED_FUT;
+            return new GridFinishedFuture<>();
 
         assert locReq.equals(incReq);
 
@@ -177,7 +174,7 @@ public class SnapshotCheckProcess {
 
         // Local meta might be null if current node started after the snapshot creation or placement.
         if (!incReq.nodes.contains(kctx.localNodeId()) || locReq.meta() == null)
-            return FINISHED_FUT;
+            return new GridFinishedFuture<>();
 
         GridFutureAdapter<HashMap<PartitionKeyV2, PartitionHashRecordV2>> locPartsChkFut = new GridFutureAdapter<>();
 
@@ -363,7 +360,7 @@ public class SnapshotCheckProcess {
                     + ". Current node is not required.");
             }
 
-            return FINISHED_FUT;
+            return new GridFinishedFuture<>();
         }
 
         registerMetrics(locReq);
