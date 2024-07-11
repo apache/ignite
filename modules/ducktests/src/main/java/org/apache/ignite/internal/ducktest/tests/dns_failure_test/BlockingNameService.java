@@ -26,15 +26,19 @@ import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Scanner;
+
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.startup.cmdline.CommandLineStartup;
 
 /** */
-public class DnsBlocker implements NameServiceHandler {
+public class BlockingNameService implements NameServiceHandler {
     /** */
     private static final String BLOCK_DNS_FILE = "/tmp/block_dns";
 
-    /** Private class {@code java.net.InetAddress$NameService} to proxy. */
+    /** Private {@code NameService} class to proxy. */
     private static Class<?> nameSrvcCls;
 
     /** */
@@ -44,21 +48,21 @@ public class DnsBlocker implements NameServiceHandler {
     private final Object origNameSrvc;
 
     /**
-     * @param origNameSrvc Original NameService.
+     * @param origNameSrvc Original {@code NameService}.
      */
-    private DnsBlocker(Object origNameSrvc) {
+    private BlockingNameService(Object origNameSrvc) {
         loopback = InetAddress.getLoopbackAddress();
         this.origNameSrvc = origNameSrvc;
     }
 
-    /** Installs {@code DnsBlocker} as main {@code NameService} to JVM. */
-    private static void install() throws Exception {
+    /** Installs {@code BlockingNameService} as main {@code NameService} to JVM11. */
+    private static void installJdk11() throws Exception {
         Field nameSrvcFld = InetAddress.class.getDeclaredField("nameService");
         nameSrvcFld.setAccessible(true);
 
         nameSrvcCls = Class.forName("java.net.InetAddress$NameService");
 
-        DnsBlocker blkNameSrvc = new DnsBlocker(nameSrvcFld.get(InetAddress.class));
+        BlockingNameService blkNameSrvc = new BlockingNameService(nameSrvcFld.get(InetAddress.class));
 
         nameSrvcFld.set(
             InetAddress.class,
@@ -67,9 +71,32 @@ public class DnsBlocker implements NameServiceHandler {
         System.out.println("Installed DnsBlocker as main NameService to JVM");
     }
 
+    /** Installs {@code BlockingNameService} as main {@code NameService} to JVM8. */
+    private static void installJdk8() throws Exception {
+        Field nameSrvcFld = InetAddress.class.getDeclaredField("nameServices");
+        nameSrvcFld.setAccessible(true);
+
+        nameSrvcCls = Class.forName("sun.net.spi.nameservice.NameService");
+
+        BlockingNameService blkNameSrvc = new BlockingNameService(((List)nameSrvcFld.get(InetAddress.class)).get(0));
+
+        nameSrvcFld.set(InetAddress.class, F.asList(
+            Proxy.newProxyInstance(InetAddress.class.getClassLoader(), new Class<?>[] { nameSrvcCls }, blkNameSrvc)
+        ));
+    }
+
     /** */
     public static void main(String[] args) throws Exception {
-        install();
+        String jdkVer = U.jdkVersion();
+
+        if ("1.8".equals(jdkVer))
+            installJdk8();
+        else if ("11".equals(jdkVer))
+            installJdk11();
+        else
+            throw new IllegalArgumentException("Unsupported JDK version: " + jdkVer);
+
+        System.out.println("Installed BlockingNameService as main NameService to JVM");
 
         CommandLineStartup.main(args);
     }

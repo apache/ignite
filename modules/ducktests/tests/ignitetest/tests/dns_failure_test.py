@@ -109,7 +109,7 @@ class DnsFailureTest(IgniteTest):
             ignite_config,
             startup_timeout_sec=120,
             num_nodes=num_nodes,
-            main_java_class="org.apache.ignite.internal.ducktest.tests.dns_failure_test.DnsBlocker")
+            main_java_class="org.apache.ignite.internal.ducktest.tests.dns_failure_test.BlockingNameService")
 
         return ignite
 

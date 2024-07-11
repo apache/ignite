@@ -30,7 +30,7 @@ interface NameServiceHandler extends InvocationHandler {
     /** Intercepts {@code NameService#getHostByAddr}. */
     public String getHostByAddr(byte[] addr) throws UnknownHostException;
 
-    /** Delegate {@code NameService} methods to {@link DnsBlocker}. */
+    /** Delegate {@code NameService} methods to {@link BlockingNameService}. */
     @Override public default Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         String name = method.getName();
 
