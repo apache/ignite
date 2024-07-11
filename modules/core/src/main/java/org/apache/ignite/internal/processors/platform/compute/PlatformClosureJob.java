@@ -73,7 +73,7 @@ public class PlatformClosureJob extends PlatformAbstractJob {
 
                 out.synchronize();
 
-                ctx.gateway().computeJobExecute(mem.pointer());
+                ctx.gateway().computeJobExecute(mem.pointer(), null);
 
                 PlatformInputStream in = mem.input();
 
@@ -91,7 +91,7 @@ public class PlatformClosureJob extends PlatformAbstractJob {
             // Local job execution.
             assert ptr != 0;
 
-            return runLocal(ctx, false);
+            return runLocal(ctx, false, null);
         }
     }
 

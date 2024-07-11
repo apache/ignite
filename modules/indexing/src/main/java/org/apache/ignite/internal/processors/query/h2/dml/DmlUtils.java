@@ -51,7 +51,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.h2.util.DateTimeUtils;
 import org.h2.util.LocalDateTimeUtils;
 import org.h2.value.Value;
@@ -196,6 +195,8 @@ public class DmlUtils {
     private static long dmlDoInsert(UpdatePlan plan, Iterable<List<?>> cursor, int pageSize) throws IgniteCheckedException {
         GridCacheContext cctx = plan.cacheContext();
 
+        final String errMsg = "Failed to INSERT some keys because they are already in cache [keys=";
+
         // If we have just one item to put, just do so
         if (plan.rowCount() == 1) {
             IgniteBiTuple t = plan.processRow(cursor.iterator().next());
@@ -208,7 +209,7 @@ public class DmlUtils {
                 if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                     return 1;
                 else
-                    throw new TransactionDuplicateKeyException("Duplicate key during INSERT [key=" + t.getKey() + ']');
+                    throw new IgniteSQLException(errMsg + '[' + t.getKey() + "]]", DUPLICATE_KEY);
             }
         }
         else {
@@ -226,8 +227,7 @@ public class DmlUtils {
             SQLException resEx = snd.error();
 
             if (!F.isEmpty(snd.failedKeys())) {
-                String msg = "Failed to INSERT some keys because they are already in cache " +
-                    "[keys=" + snd.failedKeys() + ']';
+                String msg = errMsg + snd.failedKeys() + ']';
 
                 SQLException dupEx = new SQLException(msg, SqlStateCode.CONSTRAINT_VIOLATION);
 

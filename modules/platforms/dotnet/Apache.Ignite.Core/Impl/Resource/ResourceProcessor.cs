@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+using Apache.Ignite.Core.Compute;
+
 namespace Apache.Ignite.Core.Impl.Resource
 {
     using System;
@@ -90,6 +92,21 @@ namespace Apache.Ignite.Core.Impl.Resource
             Debug.Assert(store != null);
 
             Descriptor(store.GetType()).InjectStoreSession(store, ses);
+        }
+
+        /// <summary>
+        /// Injects compute task session into a job or task.
+        /// </summary>
+        /// <param name="target">Compute job or task</param>
+        /// <param name="taskSes">Compute task session</param>
+        public static void InjectComputeTaskSession(object target, IComputeTaskSession taskSes)
+        {
+            if (target != null)
+            {
+                var desc = Descriptor(target.GetType());
+    
+                desc.InjectTaskSession(target, taskSes);
+            }
         }
     }
 }

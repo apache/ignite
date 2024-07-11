@@ -23,8 +23,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.concurrent.Callable;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -190,11 +190,33 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
     }
 
     /**
-     *
+     * Checks whether it's impossible to insert duplicate in single key statement.
      */
     @Test
-    public void testDuplicateKeys() throws InterruptedException {
-        jcache(0).put("p2", new Person(2, "Joe", "Black", 35));
+    public void testDuplicateSingleKey() throws InterruptedException {
+        doTestDuplicate(
+            () -> stmt.execute(SQL),
+            "insert into Person(_key, id, firstName, lastName, age) values " +
+                    "('p2', 2, 'Joe', 'Black', 35)"
+        );
+    }
+
+    /**
+     * Checks whether it's impossible to insert duplicate in multiple keys statement.
+     */
+    @Test
+    public void testDuplicateMultipleKeys() throws InterruptedException {
+        doTestDuplicate(
+            () -> jcache(0).put("p2", new Person(2, "Joe", "Black", 35)),
+            SQL
+        );
+    }
+
+    /**
+     *
+     */
+    private void doTestDuplicate(RunnableX initClosure, String sql) throws InterruptedException {
+        initClosure.run();
 
         LogListener lsnr = LogListener
             .matches("Failed to execute SQL query")
@@ -202,12 +224,7 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
 
         srvLog.registerListener(lsnr);
 
-        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
-                /** {@inheritDoc} */
-                @Override public Object call() throws Exception {
-                    return stmt.execute(SQL);
-                }
-            }, SQLException.class,
+        GridTestUtils.assertThrowsAnyCause(log, () -> stmt.execute(sql), SQLException.class,
             "Failed to INSERT some keys because they are already in cache [keys=[p2]]");
 
         assertFalse(lsnr.check(1000L));

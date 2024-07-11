@@ -14,21 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package java.net;
 
-/** */
-public class BlockingDnsInet4AddressImpl extends Inet4AddressImpl {
-    /** {@inheritDoc} */
-    @Override public InetAddress[] lookupAllHostAddr(String hostname) throws UnknownHostException {
-        DnsBlocker.INSTANCE.onHostResolve(this, hostname);
+namespace Apache.Ignite.Core.Resource
+{
+    using System;
+    using Compute;
+    using static System.AttributeTargets;
 
-        return super.lookupAllHostAddr(hostname);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getHostByAddr(byte[] addr) throws UnknownHostException {
-        DnsBlocker.INSTANCE.onAddrResolve(this, addr);
-
-        return super.getHostByAddr(addr);
+    /// <summary>
+    /// Injects <see cref="IComputeTaskSession"/> into implementations of
+    /// <see cref="IComputeTask{TJobRes,TReduceRes}"/> and <see cref="IComputeJob{TRes}"/>.
+    /// </summary>
+    [AttributeUsage(Field | Method | Property)]
+    public sealed class TaskSessionResourceAttribute : Attribute
+    {
+        // No-op.
     }
 }

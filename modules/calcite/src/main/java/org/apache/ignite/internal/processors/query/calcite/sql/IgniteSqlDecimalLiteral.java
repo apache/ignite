@@ -14,32 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.query.calcite.sql;
 
-package org.apache.ignite.transactions;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.sql.SqlNumericLiteral;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 /**
- * Exception thrown whenever transaction tries to inserts entry with same mvcc version more than once.
+ * Class for numeric literal with exact value out of valid long type range.
  */
-public class TransactionDuplicateKeyException extends TransactionException {
+public class IgniteSqlDecimalLiteral extends SqlNumericLiteral {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * Creates new duplicate ket exception with given error message.
-     *
-     * @param msg Error message.\
-     * @param cause Optional nested exception (can be {@code null}).
-     */
-    public TransactionDuplicateKeyException(String msg, Exception cause) {
-        super(msg, cause);
+    public IgniteSqlDecimalLiteral(SqlNumericLiteral lit) {
+        super(lit.bigDecimalValue(), lit.getPrec(), lit.getScale(), lit.isExact(), lit.getParserPosition());
     }
 
-    /**
-     * Creates new duplicate ket exception with given error message.
-     *
-     * @param msg Error message.
-     */
-    public TransactionDuplicateKeyException(String msg) {
-        super(msg);
+    /** {@inheritDoc} */
+    @Override public RelDataType createSqlType(RelDataTypeFactory typeFactory) {
+        return typeFactory.createSqlType(SqlTypeName.DECIMAL, bigDecimalValue().precision());
     }
 }

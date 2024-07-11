@@ -15,24 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tools.ant.beautifier;
+package org.apache.ignite.dump;
+
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- * Lexical token type.
+ * Json test suite.
  */
-enum GridJavadocTokenType {
-    /** HTML instruction.  */
-    TOKEN_INSTR,
-
-    /** HTML comment. */
-    TOKEN_COMM,
-
-    /** HTML open tag. */
-    TOKEN_OPEN_TAG,
-
-    /** HTML close tag. */
-    TOKEN_CLOSE_TAG,
-
-    /** HTML text. */
-    TOKEN_TEXT
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    JsonDumpConsumerTest.class
+})
+public class IgniteJsonSuite {
 }

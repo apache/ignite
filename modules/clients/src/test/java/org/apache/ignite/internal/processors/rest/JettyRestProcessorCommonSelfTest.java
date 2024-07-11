@@ -29,7 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
+import org.apache.ignite.internal.jackson.IgniteObjectMapper;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
@@ -48,7 +48,7 @@ public abstract class JettyRestProcessorCommonSelfTest extends AbstractRestProce
     private static final int DFLT_REST_PORT = 8091;
 
     /** JSON to java mapper. */
-    protected static final ObjectMapper JSON_MAPPER = new GridJettyObjectMapper();
+    protected static final ObjectMapper JSON_MAPPER = new IgniteObjectMapper();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

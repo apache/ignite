@@ -198,15 +198,6 @@ namespace ignite
                     break;
                 }
 
-                case OperationCallback::COMPUTE_JOB_EXECUTE:
-                {
-                    SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
-
-                    env->Get()->ComputeJobExecute(mem);
-
-                    break;
-                }
-
                 case OperationCallback::COMPUTE_JOB_DESTROY:
                 {
                     env->Get()->ComputeJobDestroy(val);
@@ -319,6 +310,15 @@ namespace ignite
 
             switch (type)
             {
+                case OperationCallback::COMPUTE_JOB_EXECUTE:
+                {
+                    SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val1);
+
+                    env->Get()->ComputeJobExecute(mem);
+
+                    break;
+                }
+
                 case OperationCallback::COMPUTE_JOB_EXECUTE_LOCAL:
                 {
                     env->Get()->ComputeJobExecuteLocal(val1);

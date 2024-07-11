@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -149,8 +148,8 @@ public class IgniteCacheSqlInsertValidationSelfTest extends AbstractIndexingComm
 
         GridTestUtils.assertThrows(log(),
             () -> execute("INSERT INTO FORGOTTEN_KEY_FLDS(FK1, FK2, FV1, FV2) VALUES (8,9,10,11)"),
-            TransactionDuplicateKeyException.class,
-            "Duplicate key during INSERT");
+            IgniteSQLException.class,
+            "Failed to INSERT some keys because they are already in cache");
     }
 
     /**

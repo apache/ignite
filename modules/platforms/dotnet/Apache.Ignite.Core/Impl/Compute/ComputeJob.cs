@@ -131,6 +131,16 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /// <summary>
+        /// Injects compute task session into wrapped object.
+        /// </summary>
+        [TaskSessionResource]
+        public void InjectTaskSession(IComputeTaskSession taskSes)
+        {
+            // Propagate injection
+            ResourceProcessor.InjectComputeTaskSession(Job, taskSes);
+        }
+
+        /// <summary>
         /// Gets the inner job.
         /// </summary>
         public object Job

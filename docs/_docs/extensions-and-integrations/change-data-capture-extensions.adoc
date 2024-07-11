@@ -241,6 +241,19 @@ You should consider the nature of your transactions, the rate of change of your 
 
 Custom conflict resolver can be set via `conflictResolver` and allows to compare or merge the conflict data in any required way.
 
+=== Conflict Resolver Metrics
+
+The Ignite's built-in `CacheVersionConflictResolverPluginProvider` provides the following metrics:
+
+[cols="35%,65%",opts="header"]
+|===
+|Name |Description
+| `AcceptedCount` | Count of accepted entries.
+| `RejectedCount` | Count of rejected entries.
+|===
+
+These metrics are registered under `conflict-resolver` registry for each node configured with this plugin.
+
 === Configuration example
 Configuration is done via Ignite node plugin:
 

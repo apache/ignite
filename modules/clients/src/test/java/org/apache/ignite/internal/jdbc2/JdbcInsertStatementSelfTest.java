@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.concurrent.Callable;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -154,18 +155,35 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
     }
 
     /**
-     *
+     * Checks whether it's impossible to insert duplicate in single key statement.
      */
     @Test
-    public void testDuplicateKeys() {
-        jcache(0).put("p2", new Person(2, "Joe", "Black", 35));
+    public void testDuplicateSingleKey() {
+        doTestDuplicate(
+            () -> stmt.execute(SQL),
+            "insert into Person(_key, id, firstName, lastName, age, data) values " +
+                "('p2', 2, 'Joe', 'Black', 35, RAWTOHEX('Black'))"
+        );
+    }
 
-        Throwable reason = GridTestUtils.assertThrows(log, new Callable<Object>() {
-            /** {@inheritDoc} */
-            @Override public Object call() throws Exception {
-                return stmt.execute(SQL);
-            }
-        }, SQLException.class, null);
+    /**
+     * Checks whether it's impossible to insert duplicate in multiple keys statement.
+     */
+    @Test
+    public void testDuplicateMultipleKeys() {
+        doTestDuplicate(
+            () -> jcache(0).put("p2", new Person(2, "Joe", "Black", 35)),
+            SQL
+        );
+    }
+
+    /**
+     *
+     */
+    private void doTestDuplicate(RunnableX initClosure, String sql) {
+        initClosure.run();
+
+        Throwable reason = GridTestUtils.assertThrows(log, () -> stmt.execute(sql), SQLException.class, null);
 
         reason = reason.getCause();
 

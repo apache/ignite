@@ -31,7 +31,6 @@ import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -295,8 +294,6 @@ public abstract class SqlListenerUtils {
     public static int exceptionToSqlErrorCode(Throwable e) {
         if (e instanceof QueryCancelledException)
             return IgniteQueryErrorCode.QUERY_CANCELED;
-        if (e instanceof TransactionDuplicateKeyException)
-            return IgniteQueryErrorCode.DUPLICATE_KEY;
         if (e instanceof IgniteSQLException)
             return ((IgniteSQLException)e).statusCode();
         else

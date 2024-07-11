@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.UUID;
-import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -172,25 +172,41 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     }
 
     /**
-     *
+     * Checks whether it's impossible to insert duplicate in single key statement.
      */
     @Test
-    public void testDuplicateKeysException() {
+    public void testDuplicateSingleKey() {
+        doTestDuplicate(
+            p -> p.query(new SqlFieldsQuery("insert into Integer(_key, _val) values (1, ?), " +
+                "(?, 5), (5, 6)").setArgs(2, 3)),
+            new SqlFieldsQuery("insert into Integer(_key, _val) values (?, ?)").setArgs(3, 5)
+        );
+    }
+
+    /**
+     *  Checks whether it's impossible to insert duplicate in multiple keys statement.
+     */
+    @Test
+    public void testDuplicateMultipleKeys() {
+        doTestDuplicate(
+            p -> p.put(3, 5),
+            new SqlFieldsQuery("insert into Integer(_key, _val) values (1, ?), " +
+                "(?, 4), (5, 6)").setArgs(2, 3)
+        );
+    }
+
+    /**
+     *
+     */
+    private void doTestDuplicate(Consumer<IgniteCache<Integer, Integer>> initAction, SqlFieldsQuery sql) {
         final IgniteCache<Integer, Integer> p = ignite(0).cache("I2I");
 
         p.clear();
 
-        p.put(3, 5);
+        initAction.accept(p);
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            /** {@inheritDoc} */
-            @Override public Void call() throws Exception {
-                p.query(new SqlFieldsQuery("insert into Integer(_key, _val) values (1, ?), " +
-                    "(?, 4), (5, 6)").setArgs(2, 3));
-
-                return null;
-            }
-        }, CacheException.class, "Failed to INSERT some keys because they are already in cache [keys=[3]]");
+        GridTestUtils.assertThrows(log, () -> p.query(sql), CacheException.class,
+            "Failed to INSERT some keys because they are already in cache [keys=[3]]");
 
         assertEquals(2, (int)p.get(1));
         assertEquals(5, (int)p.get(3));

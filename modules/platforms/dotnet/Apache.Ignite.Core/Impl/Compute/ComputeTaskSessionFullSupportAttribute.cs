@@ -14,21 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package java.net;
 
-/** */
-public class BlockingDnsInet6AddressImpl extends Inet6AddressImpl {
-    /** {@inheritDoc} */
-    @Override public InetAddress[] lookupAllHostAddr(String hostname) throws UnknownHostException {
-        DnsBlocker.INSTANCE.onHostResolve(this, hostname);
+namespace Apache.Ignite.Core.Compute
+{
+    using System;
+    using static System.AttributeTargets;
 
-        return super.lookupAllHostAddr(hostname);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getHostByAddr(byte[] addr) throws UnknownHostException {
-        DnsBlocker.INSTANCE.onAddrResolve(this, addr);
-
-        return super.getHostByAddr(addr);
+    /// <summary>
+    /// Enables distributing <see cref="IComputeTaskSession"/>'s attributes from
+    /// <see cref="IComputeTask{TArg,TJobRes,TRes}"/> to <see cref="IComputeJob{TRes}"/> that the task creates.
+    /// <see cref="IComputeTask{TArg,TJobRes,TRes}"/> implementations must be annotated with the
+    /// <see cref="ComputeTaskSessionFullSupportAttribute"/> to enable the features depending on the
+    /// <see cref="IComputeTaskSession"/> attributes.
+    /// By default attributes and checkpoints are disabled for performance reasons.
+    /// </summary>
+    [AttributeUsage(Class | Struct)]
+    public sealed class ComputeTaskSessionFullSupportAttribute : Attribute
+    {
+        // No-op.
     }
 }

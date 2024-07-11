@@ -24,6 +24,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -36,8 +37,21 @@ public class IgniteRexBuilder extends RexBuilder {
 
     /** {@inheritDoc} */
     @Override protected RexLiteral makeLiteral(@Nullable Comparable o, RelDataType type, SqlTypeName typeName) {
-        if (o != null && typeName == SqlTypeName.DECIMAL && TypeUtils.hasScale(type))
-            return super.makeLiteral(((BigDecimal)o).setScale(type.getScale(), RoundingMode.HALF_UP), type, typeName);
+        if (o != null && typeName == SqlTypeName.DECIMAL) {
+            BigDecimal bd = (BigDecimal)o;
+
+            if (type.getSqlTypeName() == SqlTypeName.BIGINT) {
+                try {
+                    bd.longValueExact();
+                }
+                catch (ArithmeticException e) {
+                    throw new IgniteSQLException(SqlTypeName.BIGINT.getName() + " overflow", e);
+                }
+            }
+
+            if (TypeUtils.hasScale(type))
+                return super.makeLiteral(bd.setScale(type.getScale(), RoundingMode.HALF_UP), type, typeName);
+        }
 
         return super.makeLiteral(o, type, typeName);
     }

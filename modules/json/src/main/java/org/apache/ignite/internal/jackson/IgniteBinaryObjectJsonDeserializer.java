@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
+package org.apache.ignite.internal.jackson;
 
 import java.io.IOException;
 import java.util.Collections;

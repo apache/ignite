@@ -163,8 +163,10 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 long taskPtr = reader.readLong();
                 long topVer = reader.readLong();
                 String taskName = reader.readString();
+                boolean taskSesFullSupport = reader.readBoolean();
 
-                final PlatformFullTask task = new PlatformFullTask(platformCtx, platformGrp, taskPtr, topVer, taskName);
+                final PlatformFullTask task = new PlatformFullTask(
+                    platformCtx, platformGrp, taskPtr, topVer, taskName, taskSesFullSupport);
 
                 return executeNative0(task);
             }

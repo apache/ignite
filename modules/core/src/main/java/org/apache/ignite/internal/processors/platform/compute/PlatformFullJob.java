@@ -22,13 +22,18 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
+import org.apache.ignite.internal.processors.platform.PlatformTarget;
+import org.apache.ignite.internal.processors.platform.PlatformTargetProxy;
+import org.apache.ignite.internal.processors.platform.PlatformTargetProxyImpl;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.resources.TaskSessionResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -63,6 +68,10 @@ public class PlatformFullJob extends PlatformAbstractJob {
 
     /** Serialized job. */
     private transient byte state;
+
+    /** Task session of this job. */
+    @TaskSessionResource
+    private transient ComputeTaskSession ses;
 
     /**
      * {@link Externalizable} support.
@@ -111,8 +120,11 @@ public class PlatformFullJob extends PlatformAbstractJob {
         }
 
         try {
+            final PlatformTarget platformSes = new PlatformComputeTaskSession(ctx, ses);
+            final PlatformTargetProxy platformSesProxy = new PlatformTargetProxyImpl(platformSes, ctx);
+
             if (task != null)
-                return runLocal(ctx, cancel);
+                return runLocal(ctx, cancel, platformSesProxy);
             else {
                 try (PlatformMemory mem = ctx.memory().allocate()) {
                     PlatformOutputStream out = mem.output();
@@ -122,7 +134,7 @@ public class PlatformFullJob extends PlatformAbstractJob {
 
                     out.synchronize();
 
-                    ctx.gateway().computeJobExecute(mem.pointer());
+                    ctx.gateway().computeJobExecute(mem.pointer(), platformSesProxy);
 
                     PlatformInputStream in = mem.input();
 

@@ -1162,12 +1162,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 int cnt = 0;
 
-                boolean stop = false;
                 boolean pageSent = false;
 
                 Collection<Object> data = new ArrayList<>(pageSize);
-
-                AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
 
                 final boolean statsEnabled = cctx.statisticsEnabled();
 
@@ -1289,20 +1286,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                             onPageReady(loc, qryInfo, res.metadata(), data, finished, null);
 
-                            pageSent = true;
-
                             res.onPageSend();
 
                             if (!finished)
                                 rmvIter = false;
 
-                            if (!qryInfo.allPages())
-                                return;
-
-                            data = new ArrayList<>(pageSize);
-
-                            if (stop)
-                                break; // while
+                            return;
                         }
                     }
                 }

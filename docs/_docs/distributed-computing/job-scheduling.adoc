@@ -15,6 +15,7 @@
 = Job Scheduling
 
 :javaFile: {javaCodeDir}/JobScheduling.java
+:csharpFile: {csharpCodeDir}/JobScheduling.cs
 
 When jobs arrive at the destination node, they are submitted to a thread pool and scheduled for execution in random order.
 However, you can change job ordering by configuring `CollisionSpi`.
@@ -70,9 +71,16 @@ tab:C++[unsupported]
 
 Task priorities are set in the link:distributed-computing/map-reduce#distributed-task-session[task session] via the `grid.task.priority` attribute. If no priority is assigned to a task, then the default priority of 0 is used.
 
-
+[tabs]
+--
+tab:Java[]
 [source, java]
 ----
 include::{javaFile}[tag=task-priority,indent=0]
 ----
-
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{csharpFile}[tag=task-priority,indent=0]
+----
+--
