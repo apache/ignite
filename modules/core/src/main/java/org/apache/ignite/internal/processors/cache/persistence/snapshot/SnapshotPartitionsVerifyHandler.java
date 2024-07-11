@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
@@ -38,14 +37,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** Shared context. */
     protected final GridCacheSharedContext<?, ?> cctx;
 
-    /** Logger. */
-    private final IgniteLogger log;
-
     /** @param cctx Shared context. */
     public SnapshotPartitionsVerifyHandler(GridCacheSharedContext<?, ?> cctx) {
         this.cctx = cctx;
-
-        log = cctx.logger(getClass());
     }
 
     /** {@inheritDoc} */
