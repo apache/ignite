@@ -145,12 +145,12 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
      * @return Idle verify job result constructed from results of remote executions.
      */
     public static IdleVerifyResultV2 reduce0(List<ComputeJobResult> results) {
-        Map<ClusterNode, Exception> errors = new HashMap<>();
+        Map<ClusterNode, Exception> ex = new HashMap<>();
         Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> hashes = new HashMap<>();
 
         for (ComputeJobResult res : results) {
             if (res.getException() != null) {
-                errors.put(res.getNode(), res.getException());
+                ex.put(res.getNode(), res.getException());
 
                 continue;
             }
@@ -158,7 +158,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
             hashes.put(res.getNode(), res.getData());
         }
 
-        return SnapshotChecker.reduceHashesResults(hashes, errors);
+        return SnapshotChecker.reduceHashesResults(hashes, ex);
     }
 
     /**

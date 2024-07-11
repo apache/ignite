@@ -272,12 +272,12 @@ public class SnapshotChecker {
     /** */
     public static IdleVerifyResultV2 reduceHashesResults(
         Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results,
-        Map<ClusterNode, Exception> errors
+        Map<ClusterNode, Exception> ex
     ) {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
 
         results.forEach((node, nodeHashes) -> {
-            assert errors.get(node) == null;
+            assert ex.get(node) == null;
 
             for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> e : nodeHashes.entrySet()) {
                 List<PartitionHashRecordV2> records = clusterHashes.computeIfAbsent(e.getKey(), k -> new ArrayList<>());
@@ -286,10 +286,10 @@ public class SnapshotChecker {
             }
         });
 
-        if (results.size() != errors.size())
-            return new IdleVerifyResultV2(clusterHashes, errors);
+        if (results.size() != ex.size())
+            return new IdleVerifyResultV2(clusterHashes, ex);
         else
-            return new IdleVerifyResultV2(errors);
+            return new IdleVerifyResultV2(ex);
     }
 
     /** */
