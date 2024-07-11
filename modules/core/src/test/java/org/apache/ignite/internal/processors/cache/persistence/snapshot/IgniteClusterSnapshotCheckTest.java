@@ -1173,7 +1173,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
                     chkAgainIdx.compareAndSet(-1, i);
 
-                    if (!snp(grid(i)).checkSnpProc.requests.isEmpty())
+                    if (!snp(grid(i)).checkSnpProc.requests().isEmpty())
                         return false;
                 }
 
