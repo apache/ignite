@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotChecker;
 import org.apache.ignite.internal.processors.cache.verify.GridNotIdleException;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -111,7 +112,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
 
     /** {@inheritDoc} */
     @Nullable @Override public IdleVerifyResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
-        return reduceJobResults(results);
+        return reduce0(results);
     }
 
     /** {@inheritDoc} */
@@ -139,43 +140,25 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
         }
     }
 
-    /** */
-    public static IdleVerifyResultV2 reduceJobResults(List<ComputeJobResult> jobResults) throws IgniteException {
-        Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results = new HashMap<>();
+    /**
+     * @param results Received results of broadcast remote requests.
+     * @return Idle verify job result constructed from results of remote executions.
+     */
+    public static IdleVerifyResultV2 reduce0(List<ComputeJobResult> results) {
         Map<ClusterNode, Exception> errors = new HashMap<>();
+        Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> hashes = new HashMap<>();
 
-        jobResults.forEach(jr -> {
-            if (jr.getData() != null)
-                results.put(jr.getNode(), jr.getData());
+        for (ComputeJobResult res : results) {
+            if (res.getException() != null) {
+                errors.put(res.getNode(), res.getException());
 
-            if (jr.getException() != null)
-                errors.put(jr.getNode(), jr.getException());
-        });
-
-        return reduceHashesAndErrors(results, errors);
-    }
-
-    /** */
-    public static IdleVerifyResultV2 reduceHashesAndErrors(
-        Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results,
-        Map<ClusterNode, Exception> errors
-    ) {
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
-
-        results.forEach((node, nodeHashes) -> {
-            assert errors.get(node) == null;
-
-            for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> e : nodeHashes.entrySet()) {
-                List<PartitionHashRecordV2> records = clusterHashes.computeIfAbsent(e.getKey(), k -> new ArrayList<>());
-
-                records.add(e.getValue());
+                continue;
             }
-        });
 
-        if (results.size() != errors.size())
-            return new IdleVerifyResultV2(clusterHashes, errors);
-        else
-            return new IdleVerifyResultV2(errors);
+            hashes.put(res.getNode(), res.getData());
+        }
+
+        return SnapshotChecker.reduceHashesResults(hashes, errors);
     }
 
     /**
