@@ -265,24 +265,24 @@ public class SnapshotCheckDistributedProcess {
     }
 
     /** */
-    private Throwable stopAndCleanLocRequest(SnapshotCheckProcessRequest rq, @Nullable Throwable err) {
+    private Throwable stopAndCleanLocRequest(SnapshotCheckProcessRequest locRq, @Nullable Throwable err) {
+        if (err == null && locRq.error() != null)
+            err = locRq.error();
+
+        GridFutureAdapter<?> locWorkingFut = locRq.fut();
+
+        boolean finished = false;
+
+        // Try to stop local working future ASAP.
+        if (locWorkingFut != null)
+            finished = err == null ? locWorkingFut.onDone() : locWorkingFut.onDone(err);
+
         kctx.metric().remove(metricsRegName(rq.snapshotName()));
 
-        if (requests.remove(rq.snapshotName()) != null) {
-            if (err == null && rq.error() != null)
-                err = rq.error();
+        requests.remove(locRq.snapshotName());
 
-            GridFutureAdapter<?> locWorkingFut = rq.fut();
-
-            boolean finished = false;
-
-            // Try to stop local working future ASAP.
-            if (locWorkingFut != null)
-                finished = err == null ? locWorkingFut.onDone() : locWorkingFut.onDone(err);
-
-            if (finished && log.isInfoEnabled())
-                log.info("Finished snapshot local validation, req: " + rq + '.');
-        }
+        if (finished && log.isInfoEnabled())
+            log.info("Finished snapshot local validation, req: " + locRq + '.');
 
         return err;
     }
