@@ -101,7 +101,7 @@ public class SnapshotCheckProcess {
      * @param th The interrupt reason.
      * @param rqFilter If not {@code null}, used to filter which requests/process to stop. If {@code null}, stops all the validations.
      */
-    public void interrupt(Throwable th, @Nullable Function<SnapshotCheckProcessRequest, Boolean> rqFilter) {
+    void interrupt(Throwable th, @Nullable Function<SnapshotCheckProcessRequest, Boolean> rqFilter) {
         requests.values().forEach(rq -> {
             if (rqFilter == null || rqFilter.apply(rq)) {
                 rq.error(th);
@@ -192,15 +192,15 @@ public class SnapshotCheckProcess {
      *
      * @return {@code True} if the validation was stopped and cleaned. {@code False} otherwise.
      */
-    private boolean stopAndCleanOnError(SnapshotCheckProcessRequest req, @Nullable Map<UUID, Throwable> occuredErrors) {
+    private boolean stopAndCleanOnError(SnapshotCheckProcessRequest req, @Nullable Map<UUID, Throwable> occurredErrors) {
         assert req != null;
 
-        assert F.isEmpty(occuredErrors) || req.nodes().containsAll(occuredErrors.keySet());
+        assert F.isEmpty(occurredErrors) || req.nodes().containsAll(occurredErrors.keySet());
 
-        if (F.isEmpty(occuredErrors) && req.error() == null)
+        if (F.isEmpty(occurredErrors) && req.error() == null)
             return false;
 
-        clean(req.requestId(), req.error(), null, occuredErrors);
+        clean(req.requestId(), req.error(), null, occurredErrors);
 
         return true;
     }
@@ -293,7 +293,7 @@ public class SnapshotCheckProcess {
     }
 
     /**
-     * @param snpName Snapshot name of the validation process. If {@coe null}, ignored.
+     * @param snpName Snapshot name of the validation process. If {@code null}, ignored.
      * @param procId  If {@code snpName} is {@code null}, is used to find the operation request.
      * @return Current snapshot checking request by {@code snpName} or {@code procId}.
      */
@@ -339,9 +339,11 @@ public class SnapshotCheckProcess {
 
             Collection<Integer> grpIds = F.isEmpty(locReq.groups()) ? null : F.viewReadOnly(locReq.groups(), CU::cacheId);
 
-            // An error can occure when the local future is still null.
-            if (locReq.error() != null)
-                locMetasChkFut.onDone(locReq.error());
+            // An error can occur when the local future is not initialized yet.
+            Throwable locReqErr = locReq.error();
+
+            if (locReqErr != null)
+                locMetasChkFut.onDone(locReqErr);
 
             if (locMetasChkFut.isDone())
                 return;
@@ -358,13 +360,7 @@ public class SnapshotCheckProcess {
             if (!(locMetas instanceof ArrayList))
                 locMetas = new ArrayList<>(locMetas);
 
-            // A node might have already gone before this. No need to proceed.
-            Throwable locRqErr = locReq.error();
-
-            if (locRqErr != null)
-                locMetasChkFut.onDone(locRqErr);
-            else
-                locMetasChkFut.onDone((ArrayList<SnapshotMetadata>)locMetas);
+            locMetasChkFut.onDone((ArrayList<SnapshotMetadata>)locMetas);
         }));
 
         return locMetasChkFut;
