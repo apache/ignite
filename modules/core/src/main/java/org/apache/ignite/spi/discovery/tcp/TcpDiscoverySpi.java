@@ -2288,8 +2288,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 sslSrvSockFactory = sslCtx.getServerSocketFactory();
             }
             catch (IgniteException e) {
-                throw new IgniteSpiException("Failed to create SSL context. SSL factory: "
-                    + ignite.configuration().getSslContextFactory(), e);
+                throw new IgniteSpiException("Failed to create SSL context. SSL factory: " + ignite.configuration().getSslContextFactory(), e);
             }
         }
 
@@ -2323,6 +2322,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             log.debug(configInfo("ipFinderCleanFreq", ipFinderCleanFreq));
             log.debug(configInfo("metricsUpdateFreq", metricsUpdateFreq));
             log.debug(configInfo("statsPrintFreq", statsPrintFreq));
+        }else if(!log.isInfoEnabled())
+        {
+            log.info("Failure detection timeout is ignored, because at least one of the parameters from this list" +
+                    "has been set explicitly to default : 'sockTimeout', 'ackTimeout', 'maxAckTimeout', 'reconnectCount'.");
+            log.info(configInfo("sockTimeout", sockTimeout));
+            log.info(configInfo("ackTimeout", ackTimeout));
+            log.info(configInfo("maxAckTimeout", maxAckTimeout));
+            log.info(configInfo("reconnectCount", reconCnt));
         }
 
         // Warn on odd network timeout.
