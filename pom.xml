@@ -161,7 +161,51 @@
                                     </tagletArtifact>
                                     <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
                                     <destDir>core</destDir>
-                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.communication.tcp.internal:org.apache.ignite.spi.discovery.zk.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick:org.apache.ignite.webtest</subpackages>
+
+                                    <excludePackageNames>
+                                    <!-- External packages, usage of -subpackages flag leads to incorrect handling of excludePackageNames. -->
+                                    <!-- https://issues.apache.org/jira/browse/MJAVADOC-797 -->
+                                        io
+                                        :io.*
+                                        :org.apache.calcite
+                                        :org.apache.calcite.*
+                                        :org.jsr166
+                                        :org.jsr166.*
+                                        :org.mindrot
+                                        :org.mindrot.*
+
+                                    <!-- For each package use 2 patterns - direct and with .* suffix. -->
+                                        :org.apache.ignite.codegen
+                                        :org.apache.ignite.codegen.*
+                                        :org.apache.ignite.examples
+                                        :org.apache.ignite.examples.*
+                                        :org.apache.ignite.internal
+                                        :org.apache.ignite.internal.*
+                                        :org.apache.ignite.schema
+                                        :org.apache.ignite.schema.*
+                                        :org.apache.ignite.tests
+                                        :org.apache.ignite.tests.*
+                                        :org.apache.ignite.tools
+                                        :org.apache.ignite.tools.*
+                                        :org.apache.ignite.util
+                                        :org.apache.ignite.util.*
+                                        :org.apache.ignite.spi.discovery.tcp.messages
+                                        :org.apache.ignite.spi.discovery.tcp.messages.*
+                                        :org.apache.ignite.spi.discovery.tcp.internal
+                                        :org.apache.ignite.spi.discovery.tcp.internal.*
+                                        :org.apache.ignite.spi.communication.tcp.internal
+                                        :org.apache.ignite.spi.communication.tcp.internal.*
+                                        :org.apache.ignite.spi.discovery.zk.internal
+                                        :org.apache.ignite.spi.discovery.zk.internal.*
+                                        :org.apache.ignite.spi.deployment.uri.scanners
+                                        :org.apache.ignite.spi.deployment.uri.scanners.*
+                                        :org.apache.ignite.spi.deployment.uri.tasks
+                                        :org.apache.ignite.spi.deployment.uri.tasks.*
+                                        :org.apache.ignite.yardstick
+                                        :org.apache.ignite.yardstick.*
+                                        :org.apache.ignite.webtest
+                                        :org.apache.ignite.webtest.*
+                                    </excludePackageNames>
                                 </configuration>
                             </execution>
                         </executions>
@@ -195,7 +239,7 @@
 
                                             <taskdef name="doctask" classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask" />
 
-                                            <doctask css="dotted" dir="target/javadoc/core">
+                                            <doctask dir="target/javadoc/core">
                                                 <include name="**/*.html" />
                                                 <exclude name="overview-frame.html" />
                                                 <exclude name="allclasses-frame.html" />
