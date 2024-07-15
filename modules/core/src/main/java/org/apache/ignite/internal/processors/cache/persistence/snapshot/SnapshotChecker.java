@@ -597,6 +597,7 @@ public class SnapshotChecker {
         boolean checkParts,
         boolean skipPartsHashes
     ) {
+        // Run result awaitinh in the default executor to avoid blocking if the executor has just one thread.
         return CompletableFuture.supplyAsync(() -> {
             if (!snpDir.exists())
                 throw new IllegalStateException("Snapshot directory doesn't exists: " + snpDir);
@@ -631,7 +632,7 @@ public class SnapshotChecker {
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to check partitions of snapshot '" + meta.snapshotName() + "'.", e);
             }
-        }, executor);
+        });
     }
 
     /** */
