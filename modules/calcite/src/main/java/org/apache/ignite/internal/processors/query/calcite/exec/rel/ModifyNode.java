@@ -29,9 +29,9 @@ import javax.cache.processor.MutableEntry;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProxyImpl;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
@@ -198,9 +198,10 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
 
         GridCacheContext<Object, Object> cctx = desc.cacheContext();
 
-        boolean sqlTxAwareEnabled = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION);
-        if (sqlTxAwareEnabled && cctx.transactional() && cctx.shared().tm().inUserTx()) {
-            invokeInsideTx(tuples);
+        GridNearTxLocal userTx = context().unwrap(GridNearTxLocal.class);
+
+        if (userTx != null) {
+            invokeInsideTx(userTx, tuples);
 
             updatedRows += tuples.size();
         }
@@ -236,30 +237,37 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     }
 
     /** */
-    private void invokeInsideTx(List<ModifyTuple> tuples) throws IgniteCheckedException {
-        GridCacheProxyImpl<Object, Object> cache = desc.cacheContext().cache().keepBinary();
+    private void invokeInsideTx(GridNearTxLocal userTx, List<ModifyTuple> tuples) throws IgniteCheckedException {
+        userTx.resume();
 
-        for (ModifyTuple entry : tuples) {
-            assert entry.getOp() == op || op == TableModify.Operation.MERGE : entry.getOp();
+        try {
+            GridCacheProxyImpl<Object, Object> cache = desc.cacheContext().cache().keepBinary();
 
-            switch (entry.getOp()) {
-                case INSERT:
-                    if (cache.get(entry.getKey()) != null)
-                        throw conflictKeysException(Collections.singletonList(entry.getKey()));
+            for (ModifyTuple entry : tuples) {
+                assert entry.getOp() == op || op == TableModify.Operation.MERGE : entry.getOp();
 
-                case UPDATE:
-                    cache.put(entry.getKey(), entry.getValue());
+                switch (entry.getOp()) {
+                    case INSERT:
+                        if (cache.get(entry.getKey()) != null)
+                            throw conflictKeysException(Collections.singletonList(entry.getKey()));
 
-                    break;
-                case DELETE:
-                    assert op == TableModify.Operation.DELETE;
+                    case UPDATE:
+                        cache.put(entry.getKey(), entry.getValue());
 
-                    cache.remove(entry.getKey());
+                        break;
+                    case DELETE:
+                        assert op == TableModify.Operation.DELETE;
 
-                    break;
-                default:
-                    throw new AssertionError("Unexpected tuple operation: " + entry.getOp());
+                        cache.remove(entry.getKey());
+
+                        break;
+                    default:
+                        throw new AssertionError("Unexpected tuple operation: " + entry.getOp());
+                }
             }
+        }
+        finally {
+            userTx.suspend();
         }
     }
 

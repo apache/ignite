@@ -87,6 +87,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -158,6 +159,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_TX_AWARE_QUERIES;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_SCHEMA;
@@ -3029,7 +3031,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (qry.isLocal() && ctx.clientNode())
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
 
-        return executeQuerySafe(cctx, () -> {
+        final GridNearTxLocal userTx = IgniteSystemProperties.getBoolean(IGNITE_ALLOW_TX_AWARE_QUERIES)
+            ? ctx.cache().context().tm().userTx()
+            : null;
+
+        return executeQuerySafe(cctx, userTx, () -> {
             final String schemaName = qry.getSchema() == null ? schemaName(cctx) : qry.getSchema();
 
             IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>> clo =
@@ -3048,9 +3054,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                 failOnMultipleStmts
                             );
 
+                            QueryContext qryCtx = QueryContext.of(qry, cliCtx, cancel, qryProps, userTx);
+
                             if (qry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)qry).isBatched()) {
                                 res = qryEngine.queryBatched(
-                                    QueryContext.of(qry, cliCtx, cancel, qryProps),
+                                    qryCtx,
                                     schemaName,
                                     qry.getSql(),
                                     ((SqlFieldsQueryEx)qry).batchedArguments()
@@ -3058,7 +3066,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             }
                             else {
                                 res = qryEngine.query(
-                                    QueryContext.of(qry, cliCtx, cancel, qryProps),
+                                    qryCtx,
                                     schemaName,
                                     qry.getSql(),
                                     qry.getArgs() != null ? qry.getArgs() : X.EMPTY_OBJECT_ARRAY
@@ -3094,7 +3102,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     ) {
         checkxModuleEnabled();
 
-        return executeQuerySafe(null, () -> {
+        return executeQuerySafe(null, null, () -> {
             final String schemaName = qry.getSchema() == null ? QueryUtils.DFLT_SCHEMA : qry.getSchema();
 
             QueryEngine qryEngine = engineForQuery(cliCtx, qry);
@@ -3122,7 +3130,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     ) {
         checkxModuleEnabled();
 
-        return executeQuerySafe(null, () -> {
+        return executeQuerySafe(null, null, () -> {
             final String schemaName = qry.getSchema() == null ? QueryUtils.DFLT_SCHEMA : qry.getSchema();
 
             QueryEngine qryEngine = engineForQuery(cliCtx, qry);
@@ -3199,27 +3207,43 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Execute query setting busy lock, preserving current cache context and properly handling checked exceptions.
      *
      * @param cctx Cache context.
+     * @param userTx User transaction.
      * @param supplier Code to be executed.
      * @return Result.
      */
-    private <T> T executeQuerySafe(@Nullable final GridCacheContext<?, ?> cctx, GridPlainOutClosure<T> supplier) {
+    private <T> T executeQuerySafe(
+        @Nullable final GridCacheContext<?, ?> cctx,
+        @Nullable final GridNearTxLocal userTx,
+        GridPlainOutClosure<T> supplier
+    ) {
         GridCacheContext oldCctx = curCache.get();
 
         curCache.set(cctx);
 
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to execute query (grid is stopping).");
-
         try {
-            return supplier.apply();
+            if (!busyLock.enterBusy())
+                throw new IllegalStateException("Failed to execute query (grid is stopping).");
+
+            if (userTx != null)
+                userTx.suspend();
+
+            try {
+                return supplier.apply();
+            }
+            catch (IgniteCheckedException e) {
+                throw new CacheException(e);
+            }
+            finally {
+                curCache.set(oldCctx);
+
+                busyLock.leaveBusy();
+
+                if (userTx != null)
+                    userTx.resume();
+            }
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
-        }
-        finally {
-            curCache.set(oldCctx);
-
-            busyLock.leaveBusy();
+            throw new IgniteException(e);
         }
     }
 
