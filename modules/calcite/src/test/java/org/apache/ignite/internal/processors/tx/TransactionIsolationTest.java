@@ -43,6 +43,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+
 /** */
 @RunWith(Parameterized.class)
 public class TransactionIsolationTest extends GridCommonAbstractTest {
@@ -86,7 +89,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     private TransactionConcurrency txConcurrency = TransactionConcurrency.OPTIMISTIC;
 
     /** */
-    private TransactionIsolation txIsolation = TransactionIsolation.READ_COMMITTED;
+    private TransactionIsolation txIsolation = READ_COMMITTED;
 
     /** @return Test parameters. */
     @Parameterized.Parameters(name = "insert={0},update={1},delete={2}")
@@ -158,6 +161,15 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testVisibility() {
+        try (Transaction tx = cli.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 1_000, 10)) {
+
+            tx.rollback();
+        }
+    }
+
+    /** */
+    @Test
     public void testInsert() {
         insideRollbackedTx(() -> {
             assertNull(CACHE, select(4, CACHE));
@@ -205,11 +217,11 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
             delete(1);
 
             assertNull(select(1, CACHE));
-            //assertNull(select(1, SQL));
+            assertNull(select(1, SQL));
         });
 
         assertEquals(JOHN, select(1, CACHE));
-        //assertEquals(JOHN, select(1, SQL));
+        assertEquals(JOHN, select(1, SQL));
     }
 
     /** */
