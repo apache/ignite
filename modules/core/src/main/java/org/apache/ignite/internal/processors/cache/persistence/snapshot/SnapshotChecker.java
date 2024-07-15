@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
@@ -219,53 +220,65 @@ public class SnapshotChecker {
         }
     }
 
-    /** */
-    public List<SnapshotMetadata> checkLocalMetas(File snpFullPath, @Nullable Collection<Integer> cacheGrpIds,
-        @Nullable Object locNodeConsistId) {
-        List<SnapshotMetadata> snpMetas = readSnapshotMetadatas(snpFullPath, locNodeConsistId);
-
-        for (SnapshotMetadata meta : snpMetas) {
-            byte[] snpMasterKeyDigest = meta.masterKeyDigest();
-
-            if (encryptionSpi.masterKeyDigest() == null && snpMasterKeyDigest != null) {
-                throw new IllegalStateException("Snapshot '" + meta.snapshotName() + "' has encrypted caches " +
-                    "while encryption is disabled. To restore this snapshot, start Ignite with configured " +
-                    "encryption and the same master key.");
-            }
-
-            if (snpMasterKeyDigest != null && !Arrays.equals(snpMasterKeyDigest, encryptionSpi.masterKeyDigest())) {
-                throw new IllegalStateException("Snapshot '" + meta.snapshotName() + "' has different master " +
-                    "key digest. To restore this snapshot, start Ignite with the same master key.");
-            }
-
-            Collection<Integer> grpIdsToFind = new HashSet<>(F.isEmpty(cacheGrpIds) ? meta.cacheGroupIds() : cacheGrpIds);
-
-            if (meta.hasCompressedGroups() && grpIdsToFind.stream().anyMatch(meta::isGroupWithCompression)) {
-                try {
-                    compression.checkPageCompressionSupported();
-                }
-                catch (NullPointerException | IgniteCheckedException e) {
-                    String grpWithCompr = grpIdsToFind.stream().filter(meta::isGroupWithCompression)
-                        .map(String::valueOf).collect(Collectors.joining(", "));
-
-                    String msg = "Requested cache groups [" + grpWithCompr + "] for check " +
-                        "from snapshot '" + meta.snapshotName() + "' are compressed while " +
-                        "disk page compression is disabled. To check these groups please " +
-                        "start Ignite with ignite-compress module in classpath";
-
-                    throw new IllegalStateException(msg);
-                }
-            }
-
-            grpIdsToFind.removeAll(meta.partitions().keySet());
-
-            if (!grpIdsToFind.isEmpty() && !new HashSet<>(meta.cacheGroupIds()).containsAll(grpIdsToFind)) {
-                throw new IllegalArgumentException("Cache group(s) was not found in the snapshot [groups=" + grpIdsToFind +
-                    ", snapshot=" + meta.snapshotName() + ']');
-            }
+    /** Launches local metas checking and waits for the result, handles execution exceptions. */
+    public List<SnapshotMetadata> checkLocalMetasResult(File snpPath, @Nullable Collection<Integer> grpIds, @Nullable Object locNodeCstId) {
+        try {
+            return checkLocalMetas(snpPath, grpIds, locNodeCstId).get();
         }
+        catch (Exception e) {
+            throw new IgniteException("Failed to check snapshot metadatas of snapshot '" + snpPath.getName() + "'.", e);
+        }
+    }
 
-        return snpMetas;
+    /** Launches local metas checking. */
+    public CompletableFuture<List<SnapshotMetadata>> checkLocalMetas(File snpPath, @Nullable Collection<Integer> grpIds,
+        @Nullable Object locNodeCstId) {
+        return CompletableFuture.supplyAsync(() -> {
+            List<SnapshotMetadata> snpMetas = readSnapshotMetadatas(snpPath, locNodeCstId);
+
+            for (SnapshotMetadata meta : snpMetas) {
+                byte[] snpMasterKeyDigest = meta.masterKeyDigest();
+
+                if (encryptionSpi.masterKeyDigest() == null && snpMasterKeyDigest != null) {
+                    throw new IllegalStateException("Snapshot '" + meta.snapshotName() + "' has encrypted caches " +
+                        "while encryption is disabled. To restore this snapshot, start Ignite with configured " +
+                        "encryption and the same master key.");
+                }
+
+                if (snpMasterKeyDigest != null && !Arrays.equals(snpMasterKeyDigest, encryptionSpi.masterKeyDigest())) {
+                    throw new IllegalStateException("Snapshot '" + meta.snapshotName() + "' has different master " +
+                        "key digest. To restore this snapshot, start Ignite with the same master key.");
+                }
+
+                Collection<Integer> grpIdsToFind = new HashSet<>(F.isEmpty(grpIds) ? meta.cacheGroupIds() : grpIds);
+
+                if (meta.hasCompressedGroups() && grpIdsToFind.stream().anyMatch(meta::isGroupWithCompression)) {
+                    try {
+                        compression.checkPageCompressionSupported();
+                    }
+                    catch (NullPointerException | IgniteCheckedException e) {
+                        String grpWithCompr = grpIdsToFind.stream().filter(meta::isGroupWithCompression)
+                            .map(String::valueOf).collect(Collectors.joining(", "));
+
+                        String msg = "Requested cache groups [" + grpWithCompr + "] for check " +
+                            "from snapshot '" + meta.snapshotName() + "' are compressed while " +
+                            "disk page compression is disabled. To check these groups please " +
+                            "start Ignite with ignite-compress module in classpath";
+
+                        throw new IllegalStateException(msg);
+                    }
+                }
+
+                grpIdsToFind.removeAll(meta.partitions().keySet());
+
+                if (!grpIdsToFind.isEmpty() && !new HashSet<>(meta.cacheGroupIds()).containsAll(grpIdsToFind)) {
+                    throw new IllegalArgumentException("Cache group(s) was not found in the snapshot [groups=" + grpIdsToFind +
+                        ", snapshot=" + meta.snapshotName() + ']');
+                }
+            }
+
+            return snpMetas;
+        }, executor);
     }
 
     /** */
@@ -516,7 +529,7 @@ public class SnapshotChecker {
             );
         }
         catch (Throwable t) {
-            log.error("Error executing handler: ", t);
+            log.error("An error occurred on snapshot partitions validation.", t);
 
             throw t;
         }
@@ -558,43 +571,67 @@ public class SnapshotChecker {
         return rootIO.getCount(pageAddr) != 0;
     }
 
-    /** Checks local partitions. */
-    public Map<PartitionKeyV2, PartitionHashRecordV2> checkPartitions(
+    /** Launches local partitions checking and waits for the result, handles execution exceptions. */
+    public Map<PartitionKeyV2, PartitionHashRecordV2> checkPartitionsResult(
         SnapshotMetadata meta,
         File snpDir,
         @Nullable Collection<String> groups,
         boolean forCreation,
         boolean checkParts,
         boolean skipPartsHashes
-    ) throws IgniteCheckedException {
-        if (!snpDir.exists())
-            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + snpDir);
-
-        ClusterNode locNode = kctx.cluster().get().localNode();
-
-        Set<Integer> grps = F.isEmpty(groups)
-            ? new HashSet<>(meta.partitions().keySet())
-            : groups.stream().map(CU::cacheId).collect(Collectors.toSet());
-
-        if (forCreation) {
-            grps = grps.stream().filter(grp -> grp == MetaStorage.METASTORAGE_CACHE_ID ||
-                CU.affinityNode(
-                    locNode,
-                    kctx.cache().cacheGroupDescriptor(grp).config().getNodeFilter()
-                )
-            ).collect(Collectors.toSet());
+    ) {
+        try {
+            return checkPartitions(meta, snpDir, groups, forCreation, checkParts, skipPartsHashes).get();
         }
-
-        if (!checkParts) {
-            log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
-
-            return Collections.emptyMap();
+        catch (Exception e) {
+            throw new IgniteException("Failed to get result of partitions validation of snapshot '" + meta.snapshotName() + "'.", e);
         }
+    }
 
-        if (meta.dump())
-            return checkDumpFiles(snpDir, meta, grps, locNode.consistentId(), skipPartsHashes);
+    /** Launches local partitions checking. */
+    public CompletableFuture<Map<PartitionKeyV2, PartitionHashRecordV2>> checkPartitions(
+        SnapshotMetadata meta,
+        File snpDir,
+        @Nullable Collection<String> groups,
+        boolean forCreation,
+        boolean checkParts,
+        boolean skipPartsHashes
+    ) {
+        return CompletableFuture.supplyAsync(() -> {
+            if (!snpDir.exists())
+                throw new IllegalStateException("Snapshot directory doesn't exists: " + snpDir);
 
-        return checkSnapshotFiles(snpDir, grps, meta, forCreation, skipPartsHashes);
+            ClusterNode locNode = kctx.cluster().get().localNode();
+
+            Set<Integer> grps = F.isEmpty(groups)
+                ? new HashSet<>(meta.partitions().keySet())
+                : groups.stream().map(CU::cacheId).collect(Collectors.toSet());
+
+            if (forCreation) {
+                grps = grps.stream().filter(grp -> grp == MetaStorage.METASTORAGE_CACHE_ID ||
+                    CU.affinityNode(
+                        locNode,
+                        kctx.cache().cacheGroupDescriptor(grp).config().getNodeFilter()
+                    )
+                ).collect(Collectors.toSet());
+            }
+
+            if (!checkParts) {
+                log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
+
+                return Collections.emptyMap();
+            }
+
+            if (meta.dump())
+                return checkDumpFiles(snpDir, meta, grps, locNode.consistentId(), skipPartsHashes);
+
+            try {
+                return checkSnapshotFiles(snpDir, grps, meta, forCreation, skipPartsHashes);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to check partitions of snapshot '" + meta.snapshotName() + "'.", e);
+            }
+        }, executor);
     }
 
     /** */

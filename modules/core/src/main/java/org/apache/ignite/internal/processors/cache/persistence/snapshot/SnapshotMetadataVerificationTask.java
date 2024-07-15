@@ -100,7 +100,7 @@ public class SnapshotMetadataVerificationTask
         @Override public List<SnapshotMetadata> execute() {
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-            List<SnapshotMetadata> snpMeta = snpMgr.checker().checkLocalMetas(
+            List<SnapshotMetadata> snpMeta = snpMgr.checker().checkLocalMetasResult(
                 snpMgr.snapshotLocalDir(arg.snapshotName(), arg.snapshotPath()),
                 arg.grpIds(),
                 ignite.localNode().consistentId()
