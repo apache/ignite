@@ -312,17 +312,17 @@ public class SnapshotChecker {
         @Nullable Map<ClusterNode, Exception> exceptions,
         Object curNodeCstId
     ) {
-        Map<ClusterNode, Exception> resultExceptions = F.isEmpty(exceptions) ? Collections.emptyMap() : new HashMap<>(exceptions);
+        Map<ClusterNode, Exception> mappedExceptions = F.isEmpty(exceptions) ? Collections.emptyMap() : new HashMap<>(exceptions);
 
         SnapshotMetadata firstMeta = null;
         Set<String> baselineNodes = Collections.emptySet();
 
         for (Map.Entry<ClusterNode, List<SnapshotMetadata>> nme : allMetas.entrySet()) {
             ClusterNode node = nme.getKey();
-            Exception e = exceptions.get(node);
+            Exception e = mappedExceptions.get(node);
 
             if (e != null) {
-                resultExceptions.put(node, e);
+                mappedExceptions.put(node, e);
 
                 continue;
             }
@@ -337,13 +337,13 @@ public class SnapshotChecker {
                 baselineNodes.remove(meta.consistentId());
 
                 if (!firstMeta.sameSnapshot(meta)) {
-                    resultExceptions.put(node, new IgniteException("An error occurred during comparing snapshot metadata "
+                    mappedExceptions.put(node, new IgniteException("An error occurred during comparing snapshot metadata "
                         + "from cluster nodes [firstMeta=" + firstMeta + ", meta=" + meta + ", nodeId=" + node.id() + ']'));
                 }
             }
         }
 
-        if (firstMeta == null && resultExceptions.isEmpty()) {
+        if (firstMeta == null && mappedExceptions.isEmpty()) {
             assert !allMetas.isEmpty();
 
             throw new IllegalArgumentException("Snapshot does not exists [snapshot=" + snpName
@@ -355,7 +355,7 @@ public class SnapshotChecker {
                 "with consistent ids: " + String.join(", ", baselineNodes));
         }
 
-        return resultExceptions;
+        return mappedExceptions;
     }
 
     /** */
