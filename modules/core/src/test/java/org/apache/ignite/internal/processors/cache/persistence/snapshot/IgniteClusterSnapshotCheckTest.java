@@ -634,7 +634,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     SNAPSHOT_CHECK_METAS,
                     SNAPSHOT_VALIDATE_PARTS,
                     true,
-                    true,
+                    false,
                     null,
                     null
                 );
@@ -748,7 +748,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     SNAPSHOT_CHECK_METAS,
                     SNAPSHOT_VALIDATE_PARTS,
                     true,
-                    true,
+                    false,
                     null,
                     () -> grid(0).destroyCache(DEFAULT_CACHE_NAME)
                 );
@@ -773,7 +773,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     SNAPSHOT_CHECK_METAS,
                     SNAPSHOT_VALIDATE_PARTS,
                     true,
-                    true,
+                    false,
                     null,
                     () -> grid(0).destroyCache(DEFAULT_CACHE_NAME)
                 );
@@ -988,29 +988,32 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
      *
      * @param originatorOp First snapshot operation on an originator node.
      * @param trierOp Second concurrent snapshot operation on a trier node.
-     * @param firstFullMsgToDelay First distributed process full message of {@code originatorOp} to delay on the coordinator
+     * @param firstDelay First distributed process full message of {@code originatorOp} to delay on the coordinator
      *                            to launch {@code trierOp}.
-     * @param secondFullMsgToDelay Second distributed process full message of {@code originatorOp} to delay on the coordinator
+     * @param secondDelay Second distributed process full message of {@code originatorOp} to delay on the coordinator
      *                             to launch {@code trierOp} again.
      * @param expectFailure If {@code true}, the 'snapshot-check-is-in-progress' error is excepted during excution of
      *                      {@code trierOp}. Otherwise, {@code trierOp} must successfully finish.
-     * @param sameOperation If {@code true}, {@code firstFullMsgToDelay} and {@code secondFullMsgToDelay} are expected for
-     *                      both {@code originatorOp} and {@code trierOp}. Otherwise, only for {@code originatorOp}.
-     * @param step2preparation If not {@code null}, is executed before delaying and waiting for {@code secondFullMsgToDelay}.
+     * @param waitForBothFirstDelays If {@code true}, {@code firstDelay} are awaited for both concurrend operations before proceed.
+     * @param step2preparation If not {@code null}, is executed before delaying and waiting for {@code secondDelay}.
      * @param cleaner If not {@code null}, is executed at the end.
      */
     private void doTestConcurrentSnpCheckOperations(
         Supplier<IgniteFuture<?>> originatorOp,
         Supplier<IgniteFuture<?>> trierOp,
-        DistributedProcess.DistributedProcessType firstFullMsgToDelay,
-        @Nullable DistributedProcess.DistributedProcessType secondFullMsgToDelay,
+        DistributedProcess.DistributedProcessType firstDelay,
+        @Nullable DistributedProcess.DistributedProcessType secondDelay,
         boolean expectFailure,
-        boolean sameOperation,
+        boolean waitForBothFirstDelays,
         @Nullable Runnable step2preparation,
         @Nullable Runnable cleaner
     ) throws Exception {
         try {
-            discoSpi(grid(0)).block(msg -> msg instanceof FullMessage && ((FullMessage<?>)msg).type() == firstFullMsgToDelay.ordinal());
+            AtomicBoolean firstDelayed = new AtomicBoolean();
+
+            // Block any matching if the operation is the same. Otherwise, block only firts.
+            discoSpi(grid(0)).block(msg -> msg instanceof FullMessage && ((FullMessage<?>)msg).type() == firstDelay.ordinal()
+                && (waitForBothFirstDelays || firstDelayed.compareAndSet(false, true)));
 
             IgniteFuture<?> fut = originatorOp.get();
 
@@ -1026,7 +1029,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     "Validation of snapshot '" + SNAPSHOT_NAME + "' has already started"
                 );
 
-                if (secondFullMsgToDelay == null) {
+                if (secondDelay == null) {
                     discoSpi(grid(0)).unblock();
 
                     fut.get(getTestTimeout());
@@ -1035,7 +1038,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 }
 
                 discoSpi(grid(0)).blockNextAndRelease(msg -> msg instanceof FullMessage
-                    && ((FullMessage<?>)msg).type() == secondFullMsgToDelay.ordinal());
+                    && ((FullMessage<?>)msg).type() == secondDelay.ordinal());
 
                 discoSpi(grid(0)).waitBlocked(getTestTimeout());
 
@@ -1054,20 +1057,20 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 fut.get(getTestTimeout());
             }
             else {
-                if (sameOperation) {
+                if (waitForBothFirstDelays) {
                     discoSpi(grid(0)).waitBlockedSize(2, getTestTimeout());
 
-                    if (secondFullMsgToDelay != null) {
+                    if (secondDelay != null) {
                         discoSpi(grid(0)).blockNextAndRelease(msg -> msg instanceof FullMessage
-                            && ((FullMessage<?>)msg).type() == secondFullMsgToDelay.ordinal());
+                            && ((FullMessage<?>)msg).type() == secondDelay.ordinal());
 
                         discoSpi(grid(0)).waitBlockedSize(2, getTestTimeout());
                     }
                 }
                 else {
-                    if (secondFullMsgToDelay != null) {
+                    if (secondDelay != null) {
                         discoSpi(grid(0)).blockNextAndRelease(msg -> msg instanceof FullMessage
-                            && ((FullMessage<?>)msg).type() == secondFullMsgToDelay.ordinal());
+                            && ((FullMessage<?>)msg).type() == secondDelay.ordinal());
 
                         discoSpi(grid(0)).waitBlocked(getTestTimeout());
                     }
