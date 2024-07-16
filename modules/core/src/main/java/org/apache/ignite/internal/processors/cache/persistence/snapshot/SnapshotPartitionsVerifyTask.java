@@ -91,7 +91,8 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
             try {
                 SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpDir, consId);
 
-                return cctx.snapshotMgr().checker().checkPartitionsResult(meta, snpDir, rqGrps, false, check, false, null ,null);
+                return cctx.snapshotMgr().checker().checkPartitionsResult(meta, snpDir, rqGrps, false, check,
+                    false, null, null);
             }
             catch (IOException | IgniteCheckedException e) {
                 throw new IgniteException("Failed to read snapshot metadatas of the snapshot '" + snpName + "'.", e);

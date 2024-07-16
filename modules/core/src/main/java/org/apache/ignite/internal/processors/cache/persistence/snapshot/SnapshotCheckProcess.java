@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
@@ -186,22 +187,20 @@ public class SnapshotCheckProcess {
 
                 MetricRegistryImpl mreg = kctx.metric().registry(metricsRegName(locReq.snapshotName()));
 
-                kctx.cache().context().snapshotMgr().checker().checkPartitions(locReq.meta(), snpDir, locReq.groups(), false, true, false, mreg.findMetric(METRIC_NAME_TOTAL), mreg.findMetric(METRIC_NAME_PROCESSED))
-                    .whenComplete((res, err) -> {
-                        if (err != null)
-                            locPartsChkFut.onDone(err);
-                        else
-                            locPartsChkFut.onDone(new CheckResultDTO(res));
-                    });
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to calculate snapshot partition hashes, req: " + req, e);
-            }
+                SnapshotChecker checker = kctx.cache().context().snapshotMgr().checker();
 
-            // No need to wait to the clean if current node is just a worker.
-            if (!kctx.localNodeId().equals(locReq.opCoordId) && clusterOpFut == null)
-                clean(locReq.reqId, null, null, null);
-        }));
+                CompletableFuture<Map<PartitionKeyV2, PartitionHashRecordV2>> chkFut = checker.checkPartitions(locReq.meta(),
+                    snpDir, locReq.groups(), false, true, false, mreg.findMetric(METRIC_NAME_TOTAL),
+                    mreg.findMetric(METRIC_NAME_PROCESSED));
+
+                chkFut.whenComplete((res, err) -> {
+                    if (err != null)
+                        locPartsChkFut.onDone(err);
+                    else
+                        locPartsChkFut.onDone(new CheckResultDTO(res));
+                });
+            }
+        });
 
         return locPartsChkFut;
     }
