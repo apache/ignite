@@ -155,12 +155,6 @@ public class SnapshotCheckProcess {
         stopFutureOnAnyFailure(locPartsChkFut, () -> {
             locReq.fut(locPartsChkFut);
 
-            // An error can occure when the local future is still null.
-            Throwable lorReqErr = locReq.error();
-
-            if (lorReqErr != null)
-                locPartsChkFut.onDone(lorReqErr);
-
             if (!locPartsChkFut.isDone()) {
                 File snpDir = kctx.cache().context().snapshotMgr().snapshotLocalDir(locReq.snapshotName(), locReq.snapshotPath());
 
@@ -205,12 +199,12 @@ public class SnapshotCheckProcess {
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.remove(rqId);
 
         stopFutureOnAnyFailure(clusterOpFut, () -> {
-            SnapshotCheckProcessRequest locRq = currentRequest(null, rqId);
+            SnapshotCheckProcessRequest loqReq = currentRequest(null, rqId);
 
             Throwable err = opErr;
 
-            if (locRq != null)
-                err = stopAndCleanLocRequest(locRq, err);
+            if (loqReq != null)
+                err = stopAndCleanLocRequest(loqReq, err);
 
             if (clusterOpFut == null || clusterOpFut.isDone())
                 return;
@@ -218,26 +212,26 @@ public class SnapshotCheckProcess {
             boolean finished;
 
             // Nodes' results and errors reducing is available on a required node where the process request must be registered.
-            assert (F.isEmpty(errors) && F.isEmpty(results)) || locRq != null;
+            assert (F.isEmpty(errors) && F.isEmpty(results)) || loqReq != null;
 
-            Map<ClusterNode, Exception> errors0 = locRq == null || F.isEmpty(errors)
+            Map<ClusterNode, Exception> errors0 = loqReq == null || F.isEmpty(errors)
                 ? Collections.emptyMap()
-                : collectErrors(errors, locRq.nodes());
+                : collectErrors(errors, loqReq.nodes());
 
             if (err == null && !F.isEmpty(results)) {
                 assert results.values().stream().noneMatch(res -> res != null && res.metas != null);
 
-                Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = collectPartsHashes(results, locRq.nodes());
+                Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = collectPartsHashes(results, loqReq.nodes());
 
                 IdleVerifyResultV2 chkRes = SnapshotChecker.reduceHashesResults(results0, errors0);
 
-                finished = clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(locRq.metas, chkRes));
+                finished = clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(loqReq.metas, chkRes));
             }
             else
                 finished = finishClusterFutureWithErr(clusterOpFut, err, errors0);
 
             if (finished && log.isInfoEnabled())
-                log.info("Snapshot validation process finished, req: " + locRq + '.');
+                log.info("Snapshot validation process finished, req: " + loqReq + '.');
         });
     }
 
@@ -296,21 +290,21 @@ public class SnapshotCheckProcess {
     }
 
     /** Phase 1 beginning: prepare, collect and check local metas. */
-    private IgniteInternalFuture<CheckResultDTO> prepareAndCheckMetas(SnapshotCheckProcessRequest extReq) {
-        SnapshotCheckProcessRequest locReq = requests.computeIfAbsent(extReq.snapshotName(), snpName -> extReq);
+    private IgniteInternalFuture<CheckResultDTO> prepareAndCheckMetas(SnapshotCheckProcessRequest req) {
+        SnapshotCheckProcessRequest locReq = requests.computeIfAbsent(req.snapshotName(), snpName -> req);
 
-        if (!locReq.equals(extReq)) {
-            Throwable err = new IllegalStateException("Validation of snapshot '" + extReq.snapshotName()
+        if (!locReq.equals(req)) {
+            Throwable err = new IllegalStateException("Validation of snapshot '" + req.snapshotName()
                 + "' has already started. Request=" + locReq + '.');
 
-            clean(extReq.requestId(), err, null, null);
+            clean(req.requestId(), err, null, null);
 
             return new GridFinishedFuture<>(err);
         }
 
-        if (!extReq.nodes.contains(kctx.localNodeId())) {
+        if (!req.nodes.contains(kctx.localNodeId())) {
             if (log.isDebugEnabled()) {
-                log.debug("Skipping snapshot local metadatas collecting for snapshot validation, request=" + extReq
+                log.debug("Skipping snapshot local metadatas collecting for snapshot validation, request=" + req
                     + ". Current node is not required.");
             }
 
@@ -332,10 +326,8 @@ public class SnapshotCheckProcess {
             Collection<Integer> grpIds = F.isEmpty(locReq.groups()) ? null : F.viewReadOnly(locReq.groups(), CU::cacheId);
 
             // An error can occur when the local future is not initialized yet.
-            Throwable locReqErr = locReq.error();
-
-            if (locReqErr != null)
-                locMetasChkFut.onDone(locReqErr);
+            if (locReq.error() != null)
+                locMetasChkFut.onDone(locReq.error());
 
             if (!locMetasChkFut.isDone()) {
                 snpMgr.checker().checkLocalMetas(
@@ -374,14 +366,9 @@ public class SnapshotCheckProcess {
         Throwable stopClusterProcErr = null;
 
         try {
-            assert !F.isEmpty(results) || !F.isEmpty(errors) || locReq.error() != null;
+            assert !F.isEmpty(results) && F.isEmpty(errors);
 
-            if (locReq.error() != null)
-                throw locReq.error();
-
-            locReq.metas = new HashMap<>();
-
-            Map<ClusterNode, Exception> errs = new HashMap<>();
+            Map<ClusterNode, List<SnapshotMetadata>> metas = new HashMap<>();
 
             results.forEach((nodeId, nodeRes) -> {
                 // A node might be non-baseline (not required).
@@ -389,21 +376,15 @@ public class SnapshotCheckProcess {
                     assert nodeRes != null && nodeRes.partsHashes == null;
                     assert kctx.cluster().get().node(nodeId) != null;
 
-                    locReq.metas.put(kctx.cluster().get().node(nodeId), nodeRes.metas);
+                    metas.put(kctx.cluster().get().node(nodeId), nodeRes.metas);
                 }
             });
 
-            errors.forEach((nodeId, nodeErr) -> {
-                assert locReq.nodes.contains(nodeId);
-                assert kctx.cluster().get().node(nodeId) != null;
-                assert nodeErr != null;
-
-                errs.put(kctx.cluster().get().node(nodeId), asException(nodeErr));
-            });
+            locReq.metas = metas;
 
             SnapshotMetadataVerificationTaskResult metasRes = new SnapshotMetadataVerificationTaskResult(
                 locReq.metas,
-                SnapshotChecker.reduceMetasResults(locReq.snapshotName(), locReq.snapshotPath(), locReq.metas, errs,
+                SnapshotChecker.reduceMetasResults(locReq.snapshotName(), locReq.snapshotPath(), locReq.metas, null,
                     kctx.cluster().get().localNode().consistentId())
             );
 
@@ -427,11 +408,6 @@ public class SnapshotCheckProcess {
     private @Nullable String snpName(@Nullable Map<UUID, CheckResultDTO> results) {
         if (F.isEmpty(results))
             return null;
-
-        // Ensure the same snapshot name or empty.
-        assert F.flatCollections(results.values().stream().filter(r -> r != null && r.metas != null).map(res -> res.metas)
-            .collect(Collectors.toList())).stream().map(SnapshotMetadata::snapshotName).collect(Collectors.toSet()).size() < 2
-            : "Empty or not unique snapshot names in the snapshot metadatas.";
 
         for (CheckResultDTO nodeRes : results.values()) {
             if (nodeRes == null || F.isEmpty(nodeRes.metas))

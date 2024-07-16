@@ -309,17 +309,17 @@ public class SnapshotChecker {
         String snpName,
         @Nullable String snpPath,
         Map<ClusterNode, List<SnapshotMetadata>> allMetas,
-        Map<ClusterNode, Exception> knownExceptions,
+        @Nullable Map<ClusterNode, Exception> exceptions,
         Object curNodeCstId
     ) {
-        Map<ClusterNode, Exception> resultExceptions = new HashMap<>(knownExceptions);
+        Map<ClusterNode, Exception> resultExceptions = F.isEmpty(exceptions) ? Collections.emptyMap() : new HashMap<>(exceptions);
 
         SnapshotMetadata firstMeta = null;
         Set<String> baselineNodes = Collections.emptySet();
 
         for (Map.Entry<ClusterNode, List<SnapshotMetadata>> nme : allMetas.entrySet()) {
             ClusterNode node = nme.getKey();
-            Exception e = knownExceptions.get(node);
+            Exception e = exceptions.get(node);
 
             if (e != null) {
                 resultExceptions.put(node, e);
@@ -350,7 +350,7 @@ public class SnapshotChecker {
                 + (snpPath != null ? ", baseDir=" + snpPath : "") + ", consistentId=" + curNodeCstId + ']');
         }
 
-        if (!F.isEmpty(baselineNodes) && F.isEmpty(knownExceptions)) {
+        if (!F.isEmpty(baselineNodes) && F.isEmpty(exceptions)) {
             throw new IgniteException("No snapshot metadatas found for the baseline nodes " +
                 "with consistent ids: " + String.join(", ", baselineNodes));
         }
