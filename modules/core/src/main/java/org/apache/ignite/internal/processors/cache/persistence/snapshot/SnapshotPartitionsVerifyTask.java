@@ -86,14 +86,15 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
                     "[snpName=" + snpName + ", consId=" + consId + ']');
             }
 
+            File snpDir = cctx.snapshotMgr().snapshotLocalDir(snpName, snpPath);
+
             try {
-                File snpDir = cctx.snapshotMgr().snapshotLocalDir(snpName, snpPath);
                 SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpDir, consId);
 
-                return cctx.snapshotMgr().checker().checkPartitions(meta, snpDir, rqGrps, false, check, false, null, null);
+                return cctx.snapshotMgr().checker().checkPartitionsResult(meta, snpDir, rqGrps, false, check, false, null ,null);
             }
-            catch (IgniteCheckedException | IOException e) {
-                throw new IgniteException(e);
+            catch (IOException | IgniteCheckedException e) {
+                throw new IgniteException("Failed to read snapshot metadatas of the snapshot '" + snpName + "'.", e);
             }
             finally {
                 if (log.isInfoEnabled()) {
