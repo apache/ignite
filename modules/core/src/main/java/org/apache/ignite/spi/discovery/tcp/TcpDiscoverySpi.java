@@ -1666,13 +1666,21 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      *
      * @param sock Socket to check.
      * @param writeErr Error on writing a message to the socket.
-     * @param timeout Timeout on receiving the response.
      * @return {@code SSLException} in case of SSL error, or {@code null} otherwise.
      */
-    private @Nullable SSLException checkSslException(Socket sock, Exception writeErr, long timeout) {
+    private @Nullable SSLException checkSslException(Socket sock, Exception writeErr) {
+        if (!sslEnable)
+            return null;
+
+        SSLException sslEx = X.cause(writeErr, SSLException.class);
+
+        if (sslEx != null)
+            return sslEx;
+
         try {
-            if (sslEnable && X.hasCause(writeErr, SocketException.class))
-                readReceipt(sock, timeout);
+            // Set timeout to 1ms, in this case of closed socket it should return fast.
+            if (X.hasCause(writeErr, SocketException.class))
+                readReceipt(sock, 1);
         }
         catch (SSLException sslErr) {
             return sslErr;
@@ -1741,7 +1749,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             out.flush();
         }
         catch (IOException e) {
-            SSLException sslEx = checkSslException(sock, e, timeout);
+            SSLException sslEx = checkSslException(sock, e);
 
             err = sslEx == null ? e : sslEx;
         }
@@ -1851,7 +1859,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             U.marshal(marshaller(), msg, out);
         }
         catch (IgniteCheckedException e) {
-            SSLException sslEx = checkSslException(sock, e, timeout);
+            SSLException sslEx = checkSslException(sock, e);
 
             err = sslEx == null ? e : new IgniteCheckedException(sslEx);
         }
@@ -1898,7 +1906,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             out.flush();
         }
         catch (IOException e) {
-            SSLException sslEx = checkSslException(sock, e, timeout);
+            SSLException sslEx = checkSslException(sock, e);
 
             err = sslEx == null ? e : sslEx;
         }
