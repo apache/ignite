@@ -182,7 +182,7 @@ Kafka to Ignite configuration file should contain the following beans that will 
 | `kafkaRequestTimeout` | Kafka request timeout in milliseconds.  | `3000`
 | `maxBatchSize` | Maximum number of events to be sent to destination cluster in a single batch. | 1024
 | `threadCount` | Count of threads to proceed consumers. Each thread poll records from dedicated partitions in round-robin manner. | 16
-|`metricRegistryName`| Name for metric registry. `org.apache.metricRegistryName.cdc.applier` | metrics
+|`metricRegistryName`| Name for metric registry. `org.apache.metricRegistryName.cdc.applier` | cdc-kafka-to-ignite
 |===
 
 === Metrics
