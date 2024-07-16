@@ -138,7 +138,14 @@ public class SnapshotCheckProcess {
 
         SnapshotCheckProcessRequest locReq = currentRequest(null, req.requestId());
 
+        if (locReq == null)
+            return new GridFinishedFuture<>();
+
         assert locReq.equals(req);
+
+        // Store metas on the originator to redulte relusts later.
+        if (req.operationalNodeId().equals(kctx.localNodeId()))
+            locReq.metas = req.metas;
 
         // Local meta might be null if current node started after the snapshot creation or placement.
         if (!req.nodes.contains(kctx.localNodeId()) || locReq.meta() == null)
@@ -295,10 +302,6 @@ public class SnapshotCheckProcess {
 
             Collection<Integer> grpIds = F.isEmpty(locReq.groups()) ? null : F.viewReadOnly(locReq.groups(), CU::cacheId);
 
-            // An error can occur when the local future is not initialized yet.
-            if (locReq.error() != null)
-                locMetasChkFut.onDone(locReq.error());
-
             if (!locMetasChkFut.isDone()) {
                 snpMgr.checker().checkLocalMetas(
                     snpMgr.snapshotLocalDir(locReq.snapshotName(), locReq.snapshotPath()),
@@ -334,8 +337,7 @@ public class SnapshotCheckProcess {
 
         SnapshotCheckProcessRequest locReq = currentRequest(snpName(results), procId);
 
-        // The originator node requires metas too to properly reduce partitions validation result later.
-        if (locReq == null || (!locReq.opCoordId.equals(kctx.localNodeId()) && !locReq.operationalNodeId().equals(kctx.localNodeId())))
+        if (locReq == null || !locReq.opCoordId.equals(kctx.localNodeId()))
             return;
 
         Throwable stopClusterProcErr = null;
