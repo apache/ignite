@@ -21,7 +21,6 @@ import java.util.EnumMap;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
@@ -38,16 +37,17 @@ import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
  */
-public class MessageServiceImpl extends AbstractService implements MessageService, MarshallingContext {
+public class MessageServiceImpl extends AbstractService implements MessageService {
     /** */
     private final GridMessageListener msgLsnr;
+
+    /** */
+    private final GridKernalContext kctx;
 
     /** */
     private UUID localNodeId;
@@ -56,16 +56,10 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     private GridIoManager ioManager;
 
     /** */
-    private ClassLoader classLoader;
-
-    /** */
     private QueryTaskExecutor taskExecutor;
 
     /** */
     private FailureProcessor failureProcessor;
-
-    /** */
-    private Marshaller marsh;
 
     /** */
     private EnumMap<MessageType, MessageListener> lsnrs;
@@ -74,6 +68,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     public MessageServiceImpl(GridKernalContext ctx) {
         super(ctx);
 
+        kctx = ctx;
         msgLsnr = this::onMessage;
     }
 
@@ -106,18 +101,6 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     }
 
     /**
-     * @param classLoader Class loader.
-     */
-    public void classLoader(ClassLoader classLoader) {
-        this.classLoader = classLoader;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ClassLoader classLoader() {
-        return classLoader;
-    }
-
-    /**
      * @param taskExecutor Task executor.
      */
     public void taskExecutor(QueryTaskExecutor taskExecutor) {
@@ -129,18 +112,6 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
      */
     public QueryTaskExecutor taskExecutor() {
         return taskExecutor;
-    }
-
-    /**
-     * @param marsh Marshaller.
-     */
-    public void marshaller(Marshaller marsh) {
-        this.marsh = marsh;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Marshaller marshaller() {
-        return marsh;
     }
 
     /**
@@ -160,16 +131,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
         localNodeId(ctx.localNodeId());
-        classLoader(U.resolveClassLoader(ctx.config()));
         ioManager(ctx.io());
-
-        @SuppressWarnings("deprecation")
-        Marshaller marsh0 = ctx.config().getMarshaller();
-
-        if (marsh0 == null) // Stubbed context doesn't have a marshaller
-            marsh0 = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
-
-        marshaller(marsh0);
 
         CalciteQueryProcessor proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
 
@@ -225,7 +187,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     protected void prepareMarshal(Message msg) throws IgniteCheckedException {
         try {
             if (msg instanceof MarshalableMessage)
-                ((MarshalableMessage)msg).prepareMarshal(this);
+                ((MarshalableMessage)msg).prepareMarshal(kctx);
         }
         catch (Exception e) {
             failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
@@ -238,7 +200,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     protected void prepareUnmarshal(Message msg) throws IgniteCheckedException {
         try {
             if (msg instanceof MarshalableMessage)
-                ((MarshalableMessage)msg).prepareUnmarshal(this);
+                ((MarshalableMessage)msg).prepareUnmarshal(kctx);
         }
         catch (Exception e) {
             failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
