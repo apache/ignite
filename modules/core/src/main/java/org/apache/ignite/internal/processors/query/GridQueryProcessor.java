@@ -3054,7 +3054,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                 failOnMultipleStmts
                             );
 
-                            QueryContext qryCtx = QueryContext.of(qry, cliCtx, cancel, qryProps, userTx);
+                            QueryContext qryCtx = QueryContext.of(
+                                qry,
+                                cliCtx,
+                                cancel,
+                                qryProps,
+                                userTx == null ? null : userTx.xidVersion()
+                            );
 
                             if (qry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)qry).isBatched()) {
                                 res = qryEngine.queryBatched(

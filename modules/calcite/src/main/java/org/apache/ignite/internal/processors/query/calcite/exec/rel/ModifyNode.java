@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.ModifyTuple;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -188,7 +189,6 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     }
 
     /** */
-    @SuppressWarnings("unchecked")
     private void flushTuples(boolean force) throws IgniteCheckedException {
         if (F.isEmpty(tuples) || !force && tuples.size() < MODIFY_BATCH_SIZE)
             return;
@@ -196,9 +196,9 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         List<ModifyTuple> tuples = this.tuples;
         this.tuples = new ArrayList<>(MODIFY_BATCH_SIZE);
 
-        GridCacheContext<Object, Object> cctx = desc.cacheContext();
+        GridCacheContext<?, ?> cctx = desc.cacheContext();
 
-        GridNearTxLocal userTx = context().unwrap(GridNearTxLocal.class);
+        final GridNearTxLocal userTx = Commons.queryTransaction(context(), cctx.shared());
 
         if (userTx != null) {
             invokeInsideTx(userTx, tuples);

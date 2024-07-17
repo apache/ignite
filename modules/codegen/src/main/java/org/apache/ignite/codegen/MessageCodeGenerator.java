@@ -44,6 +44,7 @@ import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -164,7 +165,7 @@ public class MessageCodeGenerator {
      * @throws Exception In case of error.
      */
     public static void main(String[] args) throws Exception {
-        String srcDir = DFLT_SRC_DIR;
+        String srcDir = CALCITE_SRC_DIR;
 
         if (args != null && args.length > 0)
             srcDir = args[0];
@@ -242,6 +243,7 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridH2DmlResponse.class);
 //        gen.generateAndWrite(GenerateEncryptionKeyRequest.class);
 //        gen.generateAndWrite(GenerateEncryptionKeyResponse.class);
+          gen.generateAndWrite(QueryStartRequest.class);
     }
 
     /**

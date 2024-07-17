@@ -305,6 +305,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             NoOpMemoryTracker.INSTANCE,
             NoOpIoTracker.INSTANCE,
             0,
+            ImmutableMap.of(),
             ImmutableMap.of()
         );
     }

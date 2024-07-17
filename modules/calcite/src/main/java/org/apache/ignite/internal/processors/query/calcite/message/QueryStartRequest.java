@@ -18,11 +18,16 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -63,6 +68,10 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     private long timeout;
 
     /** */
+    @GridDirectMap(keyType = IgniteTxKey.class, valueType = IgniteTxEntry.class)
+    private @Nullable Map<IgniteTxKey, IgniteTxEntry> txWriteState;
+
+    /** */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public QueryStartRequest(
         UUID qryId,
@@ -74,7 +83,8 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         int totalFragmentsCnt,
         Object[] params,
         @Nullable byte[] paramsBytes,
-        long timeout
+        long timeout,
+        Map<IgniteTxKey, IgniteTxEntry> txWriteState
     ) {
         this.qryId = qryId;
         this.originatingQryId = originatingQryId;
@@ -86,6 +96,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         this.params = params;
         this.paramsBytes = paramsBytes; // If we already have marshalled params, use it.
         this.timeout = timeout;
+        this.txWriteState = txWriteState;
     }
 
     /** */
@@ -166,6 +177,13 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return timeout;
     }
 
+    /**
+     * @return Transaction write set.
+     */
+    public @Nullable Map<IgniteTxKey, IgniteTxEntry> txWriteState() {
+        return txWriteState;
+    }
+
     /** {@inheritDoc} */
     @Override public void prepareMarshal(MarshallingContext ctx) throws IgniteCheckedException {
         if (paramsBytes == null && params != null)
@@ -243,6 +261,12 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 writer.incrementState();
 
             case 8:
+                if (!writer.writeMap("txWriteSet", txWriteState, MessageCollectionItemType.MSG, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 9:
                 if (!writer.writeAffinityTopologyVersion("ver", ver))
                     return false;
 
@@ -326,6 +350,14 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 8:
+                txWriteState = reader.readMap("txWriteSet", MessageCollectionItemType.MSG, MessageCollectionItemType.MSG, false);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 9:
                 ver = reader.readAffinityTopologyVersion("ver");
 
                 if (!reader.isLastRead())
@@ -345,6 +377,6 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 9;
+        return 10;
     }
 }
