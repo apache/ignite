@@ -21,14 +21,18 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.stream.Collectors;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -330,7 +334,14 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
      * @return Full string representation.
      */
     public String toFullString() {
-        return S.toString(GridDhtPartitionMap.class, this, "top", top, "updateSeq", updateSeq, "size", size(), "map", map.toString());
+        Map<GridDhtPartitionState, String> compactMap = map.keySet()
+            .stream()
+            .collect(Collectors.groupingBy(map::get))
+            .entrySet()
+            .stream()
+            .collect(Collectors.toMap(Entry::getKey, entry -> GridToStringBuilder.compact(entry.getValue())));
+
+        return S.toString(GridDhtPartitionMap.class, this, "top", top, "updateSeq", updateSeq, "size", size(), "map", compactMap.toString());
     }
 
     /** {@inheritDoc} */
