@@ -53,9 +53,6 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     private UUID localNodeId;
 
     /** */
-    private GridIoManager ioManager;
-
-    /** */
     private QueryTaskExecutor taskExecutor;
 
     /** */
@@ -87,17 +84,10 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     }
 
     /**
-     * @param ioManager IO manager.
-     */
-    public void ioManager(GridIoManager ioManager) {
-        this.ioManager = ioManager;
-    }
-
-    /**
      * @return IO manager.
      */
     public GridIoManager ioManager() {
-        return ioManager;
+        return kctx.io();
     }
 
     /**
@@ -131,7 +121,6 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
         localNodeId(ctx.localNodeId());
-        ioManager(ctx.io());
 
         CalciteQueryProcessor proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
 
