@@ -28,12 +28,14 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.apache.ignite.internal.util.typedef.F;
@@ -297,6 +299,9 @@ public abstract class QueryChecker {
     private String exactPlan;
 
     /** */
+    private FrameworkConfig frameworkCfg;
+
+    /** */
     public QueryChecker(String qry) {
         this.qry = qry;
     }
@@ -318,6 +323,13 @@ public abstract class QueryChecker {
     /** */
     public QueryChecker withParams(Object... params) {
         this.params = params;
+
+        return this;
+    }
+
+    /** */
+    public QueryChecker withFrameworkConfig(FrameworkConfig frameworkCfg) {
+        this.frameworkCfg = frameworkCfg;
 
         return this;
     }
@@ -370,8 +382,10 @@ public abstract class QueryChecker {
         // Check plan.
         QueryEngine engine = getEngine();
 
+        QueryContext ctx = frameworkCfg != null ? QueryContext.of(frameworkCfg) : null;
+
         List<FieldsQueryCursor<List<?>>> explainCursors =
-            engine.query(null, "PUBLIC", "EXPLAIN PLAN FOR " + qry, params);
+            engine.query(ctx, "PUBLIC", "EXPLAIN PLAN FOR " + qry, params);
 
         FieldsQueryCursor<List<?>> explainCursor = explainCursors.get(0);
         List<List<?>> explainRes = explainCursor.getAll();
@@ -387,7 +401,7 @@ public abstract class QueryChecker {
 
         // Check result.
         List<FieldsQueryCursor<List<?>>> cursors =
-            engine.query(null, "PUBLIC", qry, params);
+            engine.query(ctx, "PUBLIC", qry, params);
 
         FieldsQueryCursor<List<?>> cur = cursors.get(0);
 
