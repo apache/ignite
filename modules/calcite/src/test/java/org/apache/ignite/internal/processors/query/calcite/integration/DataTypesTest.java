@@ -481,6 +481,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
         assertQuery("select decode(?, 0, 0.0, 1, 1.000)").withParams(0).returns(new BigDecimal("0.000")).check();
         assertQuery("select decode(?, 0, 0.000, 1, 1.0)").withParams(1).returns(new BigDecimal("1.000")).check();
 
+        // With callRewrite==true function COALESCE is rewritten to CASE and CoalesceImplementor can't be checked.
         FrameworkConfig frameworkCfg = Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
             .sqlValidatorConfig(FRAMEWORK_CONFIG.getSqlValidatorConfig().withCallRewrite(false))
             .build();
