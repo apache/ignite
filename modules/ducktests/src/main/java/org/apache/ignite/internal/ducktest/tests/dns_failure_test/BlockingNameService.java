@@ -55,8 +55,8 @@ public class BlockingNameService implements NameServiceHandler {
         this.origNameSrvc = origNameSrvc;
     }
 
-    /** Installs {@code BlockingNameService} as main {@code NameService} to JVM11. */
-    private static void installJdk11() throws Exception {
+    /** Installs {@code BlockingNameService} as main {@code NameService} to JVM 9 and above. */
+    private static void installJdk9Plus() throws Exception {
         Field nameSrvcFld = InetAddress.class.getDeclaredField("nameService");
         nameSrvcFld.setAccessible(true);
 
@@ -91,8 +91,8 @@ public class BlockingNameService implements NameServiceHandler {
 
         if ("1.8".equals(jdkVer))
             installJdk8();
-        else if ("11".equals(jdkVer))
-            installJdk11();
+        else if (Integer.parseInt(jdkVer) >= 9)
+            installJdk9Plus();
         else
             throw new IllegalArgumentException("Unsupported JDK version: " + jdkVer);
 
