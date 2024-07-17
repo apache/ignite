@@ -47,6 +47,9 @@ public class GridCacheContextInfo<K, V> {
     /** Full cache context. Can be {@code null} in case a cache is not started. */
     @Nullable private volatile GridCacheContext<K, V> cctx;
 
+    /** Cache descriptor is used to patch cache config on client. */
+    @Nullable private final DynamicCacheDescriptor cacheDesc;
+
     /**
      * Constructor of full cache context.
      *
@@ -62,6 +65,7 @@ public class GridCacheContextInfo<K, V> {
         this.clientCache = clientCache;
 
         this.cctx = cctx;
+        this.cacheDesc = null;
     }
 
     /**
@@ -70,6 +74,8 @@ public class GridCacheContextInfo<K, V> {
      * @param cacheDesc Cache descriptor.
      */
     public GridCacheContextInfo(DynamicCacheDescriptor cacheDesc) {
+        this.cacheDesc = cacheDesc;
+
         config = cacheDesc.cacheConfiguration();
         dynamicDeploymentId = cacheDesc.deploymentId();
         groupId = cacheDesc.groupId();
@@ -192,6 +198,10 @@ public class GridCacheContextInfo<K, V> {
             CacheConfiguration<K, V> oldCfg = config;
 
             config = GridCacheUtils.patchCacheConfiguration(oldCfg, op);
+
+            assert cacheDesc != null;
+
+            cacheDesc.cacheConfiguration(config);
         }
     }
 
