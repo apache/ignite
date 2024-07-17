@@ -26,7 +26,6 @@ from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.services.utils.jvm_utils import java_major_version
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
@@ -61,10 +60,6 @@ class DnsFailureTest(IgniteTest):
         )
 
         ignites = self.__prepare_service(ignite_config, 3)
-
-        java_version = ignites.java_version()
-        if java_major_version(java_version) not in [8, 11, 17]:
-            return f"Ignored on java {java_version}"
 
         self.__unblock_dns(ignites)
 
