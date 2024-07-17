@@ -85,7 +85,17 @@ public class SnapshotCheckProcess {
         phase2PartsHashes = new DistributedProcess<>(kctx, SNAPSHOT_VALIDATE_PARTS, this::validateParts,
             this::reduceValidatePartsAndFinish);
 
-        kctx.event().addLocalEventListener((evt) -> nodeLeft(((DiscoveryEvent)evt).eventNode()), EVT_NODE_FAILED, EVT_NODE_LEFT);
+        kctx.event().addLocalEventListener((evt) -> {
+            DiscoveryEvent devt = (DiscoveryEvent)evt;
+
+            if (devt.eventNode().isClient() || requests.isEmpty())
+                return;
+
+            interrupt(
+                new ClusterTopologyCheckedException("Snapshot checking stopped. A node left the cluster: " + devt.eventNode() + '.'),
+                req -> req.nodes().contains(devt.eventNode().id())
+            );
+        }, EVT_NODE_FAILED, EVT_NODE_LEFT);
     }
 
     /** */
@@ -100,24 +110,13 @@ public class SnapshotCheckProcess {
      * @param rqFilter If not {@code null}, used to filter which requests/process to stop. If {@code null}, stops all the validations.
      */
     void interrupt(Throwable th, @Nullable Function<SnapshotCheckProcessRequest, Boolean> rqFilter) {
-        requests.values().forEach(rq -> {
-            if (rqFilter == null || rqFilter.apply(rq)) {
-                rq.error(th);
+        requests.values().forEach(req -> {
+            if (rqFilter == null || rqFilter.apply(req)) {
+                req.error(th);
 
-                clean(rq.requestId(), th, null, null);
+                clean(req.requestId(), th, null, null);
             }
         });
-    }
-
-    /** Stops the related validation if the node is a mandatory one. */
-    private void nodeLeft(ClusterNode node) {
-        if (node.isClient() || requests.isEmpty())
-            return;
-
-        interrupt(
-            new ClusterTopologyCheckedException("Snapshot checking stopped. A node left the cluster: " + node + '.'),
-            rq -> rq.nodes().contains(node.id())
-        );
     }
 
     /** Phase 2 and process finish. */
@@ -182,30 +181,45 @@ public class SnapshotCheckProcess {
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.remove(reqId);
 
         stopFutureOnAnyFailure(clusterOpFut, () -> {
-            SnapshotCheckProcessRequest loqReq = currentRequest(null, reqId);
+            SnapshotCheckProcessRequest locReq = currentRequest(null, reqId);
 
             Throwable err = opErr;
 
-            if (loqReq != null)
-                err = stopAndCleanLocRequest(loqReq, err);
+            if (locReq != null) {
+                if (err == null && locReq.error() != null)
+                    err = locReq.error();
+
+                GridFutureAdapter<?> locWorkingFut = locReq.fut();
+
+                boolean finished = false;
+
+                // Try to stop local working future ASAP.
+                if (locWorkingFut != null)
+                    finished = err == null ? locWorkingFut.onDone() : locWorkingFut.onDone(err);
+
+                requests.remove(locReq.snapshotName());
+
+                if (finished && log.isInfoEnabled())
+                    log.info("Finished snapshot local validation, req: " + locReq + '.');
+            }
 
             if (clusterOpFut == null || clusterOpFut.isDone())
                 return;
 
             boolean finished;
 
-            Map<ClusterNode, Exception> errors0 = collectErrors(errors, loqReq != null ? loqReq.nodes() : null);
+            Map<ClusterNode, Exception> errors0 = collectErrors(errors, locReq != null ? locReq.nodes() : null);
 
             if (err == null && !F.isEmpty(results)) {
                 assert results.values().stream().noneMatch(res -> res != null && res.metas != null);
-                assert loqReq != null;
+                assert locReq != null;
 
                 Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = collectPartsHashes(results,
-                    loqReq != null ? loqReq.nodes() : null);
+                    locReq != null ? locReq.nodes() : null);
 
                 IdleVerifyResultV2 chkRes = SnapshotChecker.reduceHashesResults(results0, errors0);
 
-                finished = clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(loqReq.metas, chkRes));
+                finished = clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(locReq.metas, chkRes));
             }
             else
                 finished = finishClusterFutureWithErr(clusterOpFut, err, errors0);
@@ -214,28 +228,7 @@ public class SnapshotCheckProcess {
                 log.info("Snapshot validation process finished, reqId: " + reqId + '.');
         });
     }
-
-    /** */
-    private Throwable stopAndCleanLocRequest(SnapshotCheckProcessRequest locRq, @Nullable Throwable err) {
-        if (err == null && locRq.error() != null)
-            err = locRq.error();
-
-        GridFutureAdapter<?> locWorkingFut = locRq.fut();
-
-        boolean finished = false;
-
-        // Try to stop local working future ASAP.
-        if (locWorkingFut != null)
-            finished = err == null ? locWorkingFut.onDone() : locWorkingFut.onDone(err);
-
-        requests.remove(locRq.snapshotName());
-
-        if (finished && log.isInfoEnabled())
-            log.info("Finished snapshot local validation, req: " + locRq + '.');
-
-        return err;
-    }
-
+    
     /** */
     private Map<ClusterNode, Exception> collectErrors(@Nullable Map<UUID, Throwable> errors, @Nullable Set<UUID> requiredNodes) {
         if (F.isEmpty(errors))
@@ -266,7 +259,7 @@ public class SnapshotCheckProcess {
      */
     private @Nullable SnapshotCheckProcessRequest currentRequest(@Nullable String snpName, UUID procId) {
         return snpName == null
-            ? requests.values().stream().filter(rq -> rq.requestId().equals(procId)).findFirst().orElse(null)
+            ? requests.values().stream().filter(req -> req.requestId().equals(procId)).findFirst().orElse(null)
             : requests.get(snpName);
     }
 
@@ -367,7 +360,7 @@ public class SnapshotCheckProcess {
             );
 
             if (!F.isEmpty(metasRes.exceptions()))
-                stopClusterProcErr = new IgniteSnapshotVerifyException(metasRes.exceptions());
+                throw new IgniteSnapshotVerifyException(metasRes.exceptions());
         }
         catch (Throwable th) {
             stopClusterProcErr = th;
