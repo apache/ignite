@@ -24,7 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -109,7 +109,7 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         if (mRows != null || rows == null)
             return;
 
@@ -127,7 +127,7 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         if (rows != null || mRows == null)
             return;
 

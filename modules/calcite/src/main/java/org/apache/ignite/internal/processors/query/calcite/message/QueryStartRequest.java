@@ -21,8 +21,8 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -169,7 +169,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         if (paramsBytes == null && params != null)
             paramsBytes = U.marshal(ctx, params);
 
@@ -177,9 +177,9 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         if (params == null && paramsBytes != null)
-            params = U.unmarshal(ctx, paramsBytes, U.resolveClassLoader(ctx.config()));
+            params = U.unmarshal(ctx, paramsBytes, U.resolveClassLoader(ctx.gridConfig()));
 
         fragmentDesc.prepareUnmarshal(ctx);
     }

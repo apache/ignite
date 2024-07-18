@@ -30,6 +30,7 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
@@ -47,10 +48,14 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     private final GridMessageListener msgLsnr;
 
     /** */
-    private final GridKernalContext kctx;
+    private final GridCacheSharedContext<?, ?> ctx;
 
     /** */
     private UUID localNodeId;
+
+    /** */
+    private final GridIoManager ioManager;
+
 
     /** */
     private QueryTaskExecutor taskExecutor;
@@ -65,7 +70,8 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     public MessageServiceImpl(GridKernalContext ctx) {
         super(ctx);
 
-        kctx = ctx;
+        this.ctx = ctx.cache().context();
+        this.ioManager = ctx.io();
         msgLsnr = this::onMessage;
     }
 
@@ -87,7 +93,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
      * @return IO manager.
      */
     public GridIoManager ioManager() {
-        return kctx.io();
+        return ioManager;
     }
 
     /**
@@ -176,7 +182,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     protected void prepareMarshal(Message msg) throws IgniteCheckedException {
         try {
             if (msg instanceof MarshalableMessage)
-                ((MarshalableMessage)msg).prepareMarshal(kctx);
+                ((MarshalableMessage)msg).prepareMarshal(ctx);
         }
         catch (Exception e) {
             failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
@@ -189,7 +195,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     protected void prepareUnmarshal(Message msg) throws IgniteCheckedException {
         try {
             if (msg instanceof MarshalableMessage)
-                ((MarshalableMessage)msg).prepareUnmarshal(kctx);
+                ((MarshalableMessage)msg).prepareUnmarshal(ctx);
         }
         catch (Exception e) {
             failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));

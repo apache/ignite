@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -52,15 +52,15 @@ public final class GenericValueMessage implements ValueMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         if (val != null && serialized == null)
             serialized = U.marshal(ctx, val);
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         if (serialized != null && val == null) {
-            val = U.unmarshal(ctx, serialized, U.resolveClassLoader(ctx.config()));
+            val = U.unmarshal(ctx, serialized, U.resolveClassLoader(ctx.gridConfig()));
         }
     }
 
