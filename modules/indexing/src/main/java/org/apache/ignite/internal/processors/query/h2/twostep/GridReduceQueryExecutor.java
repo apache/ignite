@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.h2.H2FieldsIterator;
-import org.apache.ignite.internal.processors.query.h2.H2FullTrackableQuery;
 import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -78,7 +77,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
-import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.util.typedef.C2;
@@ -415,19 +413,6 @@ public class GridReduceQueryExecutor {
 
             boolean release = true;
 
-            H2FullTrackableQuery fullTrackableQry = new H2FullTrackableQuery(
-                qryStartTime,
-                qryId,
-                ctx.localNodeId(),
-                qry.distributedJoins(),
-                enforceJoinOrder,
-                lazy,
-                schemaName,
-                qry.originalSql(),
-                nodes);
-
-            heavyQryTracker().startTracking(fullTrackableQry);
-
             try {
                 final ReduceQueryRun r = createReduceQueryRun(conn, mapQueries, nodes,
                     pageSize, nodeToSegmentsCnt, skipMergeTbl, qry.explain(), dataPageScanEnabled);
@@ -497,8 +482,7 @@ public class GridReduceQueryExecutor {
                             r,
                             qryReqId,
                             qry.distributedJoins(),
-                            ctx.tracing(),
-                            fullTrackableQry);
+                            ctx.tracing());
 
                         release = false;
 
@@ -516,11 +500,8 @@ public class GridReduceQueryExecutor {
 
                         H2Utils.setupConnection(conn, qctx, false, enforceJoinOrder);
 
-                        if (qry.explain()) {
-                            heavyQryTracker().stopTracking(fullTrackableQry, null);
-
+                        if (qry.explain())
                             return explainPlan(conn, qry, params);
-                        }
 
                         GridCacheSqlQuery rdc = qry.reduceQuery();
 
@@ -547,8 +528,7 @@ public class GridReduceQueryExecutor {
                             timeoutMillis,
                             cancel,
                             dataPageScanEnabled,
-                            qryInfo,
-                            false
+                            qryInfo
                         );
 
                         resIter = new H2FieldsIterator(
@@ -558,8 +538,7 @@ public class GridReduceQueryExecutor {
                             log,
                             h2,
                             qryInfo,
-                            ctx.tracing(),
-                            fullTrackableQry
+                            ctx.tracing()
                         );
 
                         conn = null;
@@ -569,9 +548,6 @@ public class GridReduceQueryExecutor {
                 }
                 catch (IgniteCheckedException | RuntimeException e) {
                     release = true;
-
-                    if (fullTrackableQry != null)
-                        heavyQryTracker().stopTracking(fullTrackableQry, e);
 
                     if (e instanceof CacheException) {
                         if (QueryUtils.wasCancelled(e))
@@ -1144,8 +1120,7 @@ public class GridReduceQueryExecutor {
                     0,
                     null,
                     null,
-                    null,
-                    true);
+                    null);
 
             lists.add(F.asList(getPlan(rs)));
         }
@@ -1165,7 +1140,7 @@ public class GridReduceQueryExecutor {
             F.asList(rdc.parameters(params)),
             0,
             null,
-            null, null, true);
+            null, null);
 
         lists.add(F.asList(getPlan(rs)));
 
@@ -1406,10 +1381,5 @@ public class GridReduceQueryExecutor {
         originalQry.hasSubQueries(hasSubQries);
 
         return Collections.singletonList(originalQry);
-    }
-
-    /** */
-    public HeavyQueriesTracker heavyQryTracker() {
-        return h2.heavyQueriesTracker();
     }
 }

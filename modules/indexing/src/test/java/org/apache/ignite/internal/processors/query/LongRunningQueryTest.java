@@ -22,14 +22,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
@@ -61,23 +59,15 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     /** Lazy query mode. */
     private boolean lazy;
 
-    /** Using merge table flag. */
-    private boolean withMergeTable;
-
-    /** Distributed joins flag. */
-    private boolean distributedJoins;
-
-    /** Ignite instance. */
-    private Ignite ignite;
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        ignite = startGrid();
+        startGrid();
 
         IgniteCache c = grid().createCache(new CacheConfiguration<Long, Long>()
             .setName("test")
+            .setSqlSchema("TEST")
             .setQueryEntities(Collections.singleton(new QueryEntity(Long.class, Long.class)
                 .setTableName("test")
                 .addQueryField("id", Long.class.getName(), null)
@@ -97,18 +87,6 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         stopAllGrids();
 
         super.afterTest();
-    }
-
-    /**
-     * @param name Name.
-     * @param idxTypes Index types.
-     */
-    @SuppressWarnings("unchecked")
-    private static CacheConfiguration cacheConfig(String name, Class<?>... idxTypes) {
-        return new CacheConfiguration()
-            .setName(name)
-            .setIndexedTypes(idxTypes)
-            .setSqlFunctionClasses(TestSQLFunctions.class);
     }
 
     /**
@@ -145,24 +123,6 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         checkLongRunning();
         checkFastQueries();
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testLongDistributedLazyWithMergeTable() {
-        local = false;
-        lazy = true;
-
-        withMergeTable = true;
-
-        try {
-            checkLongRunning();
-        }
-        finally {
-            withMergeTable = false;
-        }
     }
 
     /**
@@ -234,7 +194,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         // Several fast queries.
         for (int i = 0; i < 10; ++i)
-            sql("test", "SELECT * FROM test").getAll();
+            sql("SELECT * FROM test").getAll();
 
         assertFalse(lsnr.check());
     }
@@ -268,7 +228,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         testLog.registerListener(lsnr);
 
-        try (FieldsQueryCursor cur = sql("test", "SELECT T0.id FROM test AS T0, test AS T1")) {
+        try (FieldsQueryCursor cur = sql("SELECT T0.id FROM test AS T0, test AS T1")) {
             Iterator it = cur.iterator();
 
             while (it.hasNext())
@@ -283,7 +243,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * @param args Query parameters.
      */
     private void sqlCheckLongRunning(String sql, Object... args) {
-        GridTestUtils.assertThrowsAnyCause(log, () -> sql("test", sql, args).getAll(), QueryCancelledException.class, "");
+        GridTestUtils.assertThrowsAnyCause(log, () -> sql(sql, args).getAll(), QueryCancelledException.class, "");
     }
 
     /**
@@ -291,75 +251,40 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * @param args Query parameters.
      */
     private void sqlCheckLongRunningLazy(String sql, Object... args) {
-        pageSize = 1;
-
-        try {
-            assertFalse(sql("test", sql, args).iterator().next().isEmpty());
-        }
-        finally {
-            pageSize = DEFAULT_PAGE_SIZE;
-        }
-    }
-
-    /**
-     * @param sql SQL query.
-     * @param args Query parameters.
-     */
-    private void sqlCheckLongRunningLazyWithMergeTable(String sql, Object... args) {
-        distributedJoins = true;
-
-        try {
-            CacheConfiguration ccfg1 = cacheConfig("pers", Integer.class, Person.class);
-            CacheConfiguration ccfg2 = cacheConfig("org", Integer.class, Organization.class);
-
-            IgniteCache<Integer, Person> cache1 = ignite.getOrCreateCache(ccfg1);
-            IgniteCache<Integer, Organization> cache2 = ignite.getOrCreateCache(ccfg2);
-
-            cache2.put(1, new Organization("o1"));
-            cache2.put(2, new Organization("o2"));
-            cache1.put(3, new Person(1, "p1"));
-            cache1.put(4, new Person(2, "p2"));
-            cache1.put(5, new Person(3, "p3"));
-
-            assertFalse(sql("pers", sql, args).getAll().isEmpty());
-        }
-        finally {
-            distributedJoins = false;
-        }
+        assertFalse("Iterator with query results must not be empty.", sql(sql, args).iterator().next().isEmpty());
     }
 
     /**
      * Execute long-running sql with a check for errors.
      */
     private void sqlCheckLongRunning() {
-        if (lazy && withMergeTable) {
-            String select = "select o.name n1, p.name n2 from Person p, \"org\".Organization o" +
-                " where p.orgId = o._key and o._key=1 and o._key < sleep_func(?)" +
-                " union select o.name n1, p.name n2 from Person p, \"org\".Organization o" +
-                " where p.orgId = o._key and o._key=2";
+        if (lazy) {
+            pageSize = 1;
 
-            sqlCheckLongRunningLazyWithMergeTable(select, 2000);
+            try {
+                sqlCheckLongRunningLazy("SELECT * FROM test WHERE _key < sleep_func(?)", 2000);
+            }
+            finally {
+                pageSize = DEFAULT_PAGE_SIZE;
+            }
         }
-        else if (lazy && !withMergeTable)
-            sqlCheckLongRunningLazy("SELECT * FROM test WHERE _key < sleep_func(?)", 2000);
         else
             sqlCheckLongRunning("SELECT T0.id FROM test AS T0, test AS T1, test AS T2 where T0.id > ?", 0);
     }
 
     /**
-     * @param cacheName Cache name.
      * @param sql SQL query.
      * @param args Query parameters.
      * @return Results cursor.
      */
-    private FieldsQueryCursor<List<?>> sql(String cacheName, String sql, Object... args) {
-        return ignite.cache(cacheName).query(new SqlFieldsQuery(sql)
+    private FieldsQueryCursor<List<?>> sql(String sql, Object... args) {
+        return grid().context().query().querySqlFields(new SqlFieldsQuery(sql)
             .setTimeout(10, TimeUnit.SECONDS)
             .setLocal(local)
             .setLazy(lazy)
             .setPageSize(pageSize)
-            .setDistributedJoins(distributedJoins)
-            .setArgs(args));
+            .setSchema("TEST")
+            .setArgs(args), false);
     }
 
     /**
@@ -409,39 +334,5 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      */
     private HeavyQueriesTracker heavyQueriesTracker() {
         return ((IgniteH2Indexing)grid().context().query().getIndexing()).heavyQueriesTracker();
-    }
-
-    /** */
-    private static class Person {
-        /** */
-        @QuerySqlField(index = true)
-        int orgId;
-
-        /** */
-        @QuerySqlField(index = true)
-        String name;
-
-        /**
-         * @param orgId Organization ID.
-         * @param name Name.
-         */
-        public Person(int orgId, String name) {
-            this.orgId = orgId;
-            this.name = name;
-        }
-    }
-
-    /** */
-    private static class Organization {
-        /** */
-        @QuerySqlField
-        String name;
-
-        /**
-         * @param name Organization name.
-         */
-        public Organization(String name) {
-            this.name = name;
-        }
     }
 }

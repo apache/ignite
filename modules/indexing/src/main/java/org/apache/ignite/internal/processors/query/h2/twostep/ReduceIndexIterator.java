@@ -23,13 +23,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.query.running.TrackableQuery;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.h2.index.Cursor;
 import org.h2.result.Row;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_ITER_CLOSE;
 
@@ -67,9 +65,6 @@ public class ReduceIndexIterator implements Iterator<List<?>>, AutoCloseable {
     /** Tracing processor. */
     private final Tracing tracing;
 
-    /** Trackable query. */
-    private final TrackableQuery fullTrackableQry;
-
     /**
      * Constructor.
      *
@@ -85,8 +80,7 @@ public class ReduceIndexIterator implements Iterator<List<?>>, AutoCloseable {
         ReduceQueryRun run,
         long qryReqId,
         boolean distributedJoins,
-        Tracing tracing,
-        @Nullable TrackableQuery fullTrackableQry
+        Tracing tracing
     ) {
         this.rdcExec = rdcExec;
         this.nodes = nodes;
@@ -94,7 +88,6 @@ public class ReduceIndexIterator implements Iterator<List<?>>, AutoCloseable {
         this.qryReqId = qryReqId;
         this.distributedJoins = distributedJoins;
         this.tracing = tracing;
-        this.fullTrackableQry = fullTrackableQry;
 
         rdcIter = run.reducers().iterator();
 
@@ -125,9 +118,6 @@ public class ReduceIndexIterator implements Iterator<List<?>>, AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
-        if (fullTrackableQry != null)
-            rdcExec.heavyQryTracker().stopTracking(fullTrackableQry, null);
-
         try (TraceSurroundings ignored = MTC.support(tracing.create(SQL_ITER_CLOSE, MTC.span()))) {
             releaseIfNeeded();
         }

@@ -24,7 +24,6 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.tracing.Tracing;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Special field set iterator based on database result set.
@@ -50,11 +49,10 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
         IgniteLogger log,
         IgniteH2Indexing h2,
         H2QueryInfo qryInfo,
-        Tracing tracing,
-        @Nullable H2FullTrackableQuery fullTrackableQry
+        Tracing tracing
     )
         throws IgniteCheckedException {
-        super(data, pageSize, log, h2, qryInfo, tracing, fullTrackableQry);
+        super(data, pageSize, log, h2, qryInfo, tracing);
 
         assert conn != null;
 
