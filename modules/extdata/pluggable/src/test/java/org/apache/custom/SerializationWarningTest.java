@@ -68,7 +68,7 @@ public class SerializationWarningTest extends GridCommonAbstractTest {
 
         assertFalse(lsnr.check());
 
-        srv.compute().execute(TestNotManagementTask.class.getName(), new TestExteralizableArg());
+        srv.compute().execute(TestNotManagementTask.class.getName(), new TestExternalizableArg());
 
         assertTrue(lsnr.check());
     }
@@ -105,10 +105,10 @@ public class SerializationWarningTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestNotManagementTask extends ComputeTaskAdapter<TestExteralizableArg, TestExteralizableArg> {
+    private static class TestNotManagementTask extends ComputeTaskAdapter<TestExternalizableArg, TestExternalizableArg> {
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable TestExteralizableArg arg) throws IgniteException {
+            @Nullable TestExternalizableArg arg) throws IgniteException {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             for (ClusterNode node : subgrid) {
@@ -123,18 +123,18 @@ public class SerializationWarningTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public TestExteralizableArg reduce(List<ComputeJobResult> results) throws IgniteException {
+        @Nullable @Override public TestExternalizableArg reduce(List<ComputeJobResult> results) throws IgniteException {
             return results.get(0).getData();
         }
     }
 
     /** */
-    private static class TestExteralizableArg implements Externalizable {
+    private static class TestExternalizableArg implements Externalizable {
         /** */
         private static final long serialVersionUID = 0;
 
         /** */
-        public TestExteralizableArg() { }
+        public TestExternalizableArg() { }
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) {
