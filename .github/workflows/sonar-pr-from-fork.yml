@@ -29,7 +29,7 @@ concurrency:
 
 jobs:
   sonarcloud:
-    if: github.repository == 'apache/ignite'
+    if: github.repository == 'skorotkov/ignite'
     name: Sonar Analysis
     runs-on: ubuntu-latest
     steps:
@@ -81,18 +81,17 @@ jobs:
           -Dsonar.pullrequest.branch=${PULLREQUEST_BRANCH}
           -Dsonar.pullrequest.base=${PULLREQUEST_BASE}
           -Dsonar.pullrequest.key=${PULLREQUEST_KEY}
-          -Dsonar.pullrequest.github.repository=apache/ignite
-          -Dsonar.pullrequest.provider=GitHub 
+          -Dsonar.pullrequest.github.repository=skorotkov/ignite
+          -Dsonar.pullrequest.provider=GitHub
           -Dsonar.pullrequest.github.summary_comment=true
-          -Dsonar.projectKey=apache_ignite
-          -Dsonar.login=${SONARCLOUD_TOKEN}
+          -Dsonar.projectKey=skorotkov_ignite
           -B -V
         env:
           MAVEN_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
           SONAR_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
           JAVA_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           PULLREQUEST_BRANCH: ${{ github.head_ref }}
           PULLREQUEST_BASE: ${{ github.base_ref }}
           PULLREQUEST_KEY: ${{ github.event.pull_request.number }}
