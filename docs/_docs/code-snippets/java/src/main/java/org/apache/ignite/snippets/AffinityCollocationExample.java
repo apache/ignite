@@ -30,12 +30,10 @@ public class AffinityCollocationExample {
 
     static class Person {
         private int id;
-        private String companyId;
         private String name;
 
-        public Person(int id, String companyId, String name) {
+        public Person(int id, String name) {
             this.id = id;
-            this.companyId = companyId;
             this.name = name;
         }
 
@@ -82,7 +80,7 @@ public class AffinityCollocationExample {
             IgniteCache<String, Company> companyCache = ignite.getOrCreateCache(companyCfg);
 
             Company c1 = new Company("company1", "My company");
-            Person p1 = new Person(1, c1.getId(), "John");
+            Person p1 = new Person(1, "John");
 
             // Both the p1 and c1 objects will be cached on the same node
             personCache.put(new PersonKey(p1.getId(), c1.getId()), p1);
@@ -95,7 +93,7 @@ public class AffinityCollocationExample {
 
     // tag::affinity-key-class[]
     public void configureAffinitKeyWithAffinityKeyClass() {
-        CacheConfiguration<AffinityKey<Integer>, Person> personCfg = new CacheConfiguration<AffinityKey<Integer>, Person>(
+        CacheConfiguration<AffinityKey<Integer>, Person> personCfg = new CacheConfiguration<AffinityKey<PersonKey>, Person>(
                 "persons");
         personCfg.setBackups(1);
 
@@ -104,18 +102,18 @@ public class AffinityCollocationExample {
 
         Ignite ignite = Ignition.start();
 
-        IgniteCache<AffinityKey<Integer>, Person> personCache = ignite.getOrCreateCache(personCfg);
+        IgniteCache<AffinityKey<PersonKey>, Person> personCache = ignite.getOrCreateCache(personCfg);
         IgniteCache<String, Company> companyCache = ignite.getOrCreateCache(companyCfg);
 
         Company c1 = new Company("company1", "My company");
-        Person p1 = new Person(1, c1.getId(), "John");
+        Person p1 = new Person(1, "John");
 
         // Both the p1 and c1 objects will be cached on the same node
-        personCache.put(new AffinityKey<Integer>(p1.getId(), c1.getId()), p1);
+        personCache.put(new AffinityKey<Integer>(new PersonKey(1, c1.getId()), c1.getId()), p1);
         companyCache.put(c1.getId(), c1);
 
         // Get the person object
-        p1 = personCache.get(new AffinityKey(1, "company1"));
+        p1 = personCache.get(new AffinityKey(new PersonKey(1, "company1"), "company1"));
     }
 
     // end::affinity-key-class[]
@@ -125,7 +123,7 @@ public class AffinityCollocationExample {
         personCfg.setBackups(1);
 
         // Configure the affinity key
-        personCfg.setKeyConfiguration(new CacheKeyConfiguration("Person", "companyId"));
+        personCfg.setKeyConfiguration(new CacheKeyConfiguration(PersonKey.class.getName(), "companyId"));
 
         CacheConfiguration<String, Company> companyCfg = new CacheConfiguration<String, Company>("companies");
         companyCfg.setBackups(1);
@@ -136,7 +134,7 @@ public class AffinityCollocationExample {
         IgniteCache<String, Company> companyCache = ignite.getOrCreateCache(companyCfg);
 
         Company c1 = new Company("company1", "My company");
-        Person p1 = new Person(1, c1.getId(), "John");
+        Person p1 = new Person(1, "John");
 
         // Both the p1 and c1 objects will be cached on the same node
         personCache.put(new PersonKey(1, c1.getId()), p1);

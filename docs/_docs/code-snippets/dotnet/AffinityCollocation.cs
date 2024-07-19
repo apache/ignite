@@ -28,8 +28,6 @@ namespace dotnet_helloworld
     {
         public int Id { get; set; }
         public string Name { get; set; }
-        public int CityId { get; set; }
-        public string CompanyId { get; set; }
     }
 
     class PersonKey
@@ -71,8 +69,8 @@ namespace dotnet_helloworld
 
                 var company = new Company {Name = "Company1"};
 
-                personCache.Put(new PersonKey {Id = 1, CompanyId = "company1_key"}, person);
-                companyCache.Put("company1_key", company);
+                personCache.Put(new PersonKey {Id = 1, CompanyId = "company1"}, person);
+                companyCache.Put("company1", company);
             }
         }
     }
@@ -88,8 +86,8 @@ namespace dotnet_helloworld
                 {
                     new CacheKeyConfiguration
                     {
-                        TypeName = nameof(Person),
-                        AffinityKeyFieldName = nameof(Person.CompanyId)
+                        TypeName = nameof(PersonKey),
+                        AffinityKeyFieldName = nameof(PersonKey.CompanyId)
                     } 
                 }
             };
@@ -103,7 +101,7 @@ namespace dotnet_helloworld
 
             var companyId = "company_1";
             Company c1 = new Company {Name = "My company"};
-            Person p1 = new Person {Id = 1, Name = "John", CompanyId = companyId};
+            Person p1 = new Person {Id = 1, Name = "John"};
 
             // Both the p1 and c1 objects will be cached on the same node
             personCache.Put(new PersonKey {Id = 1, CompanyId = companyId}, p1);
@@ -127,14 +125,14 @@ namespace dotnet_helloworld
 
             var companyId = "company_1";
             Company c1 = new Company {Name = "My company"};
-            Person p1 = new Person {Id = 1, Name = "John", CompanyId = companyId};
+            Person p1 = new Person {Id = 1, Name = "John"};
 
             // Both the p1 and c1 objects will be cached on the same node
-            personCache.Put(new AffinityKey(1, companyId), p1);
+            personCache.Put(new AffinityKey(new PersonKey {Id = 1, CompanyId = companyId}, companyId), p1);
             companyCache.Put(companyId, c1);
 
             // Get the person object
-            p1 = personCache.Get(new AffinityKey(1, companyId));
+            p1 = personCache.Get(new AffinityKey(new PersonKey {Id = 1, CompanyId = companyId}, companyId));
             // end::affinity-key-class[]
         }
     }
