@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -31,7 +32,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.ExecutionNodeMemoryTracker;
@@ -106,7 +106,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     private final long timeout;
 
     /** */
-    private final Map<IgniteTxKey, IgniteTxEntry> txWriteMap;
+    private final Collection<IgniteTxEntry> txWriteEntries;
 
     /** */
     private final long startTs;
@@ -134,7 +134,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         IoTracker ioTracker,
         long timeout,
         Map<String, Object> params,
-        @Nullable Map<IgniteTxKey, IgniteTxEntry> txWriteMap
+        @Nullable Collection<IgniteTxEntry> txWriteEntries
     ) {
         super(qctx);
 
@@ -149,7 +149,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         this.ioTracker = ioTracker;
         this.params = params;
         this.timeout = timeout;
-        this.txWriteMap = txWriteMap;
+        this.txWriteEntries = txWriteEntries;
 
         startTs = U.currentTimeMillis();
 
@@ -300,8 +300,8 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /**
      * @return Transaction write map
      */
-    public Map<IgniteTxKey, IgniteTxEntry> getTxWriteMap() {
-        return txWriteMap;
+    public Collection<IgniteTxEntry> getTxWriteEntries() {
+        return txWriteEntries;
     }
 
     /**
