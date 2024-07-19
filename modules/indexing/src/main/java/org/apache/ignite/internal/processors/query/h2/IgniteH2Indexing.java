@@ -2276,8 +2276,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         IgniteThrowableSupplier<T> task,
         final H2QueryInfo qryInfo
     ) throws IgniteCheckedException {
-        if (qryInfo.isSuspended())
-            qryInfo.resumeTracking();
+        qryInfo.resumeTracking();
 
         try {
             return task.get();
