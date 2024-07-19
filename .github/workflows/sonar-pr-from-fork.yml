@@ -92,7 +92,7 @@ jobs:
           SONAR_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
           JAVA_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONARCLOUD_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
           PULLREQUEST_BRANCH: ${{ github.head_ref }}
           PULLREQUEST_BASE: ${{ github.base_ref }}
           PULLREQUEST_KEY: ${{ github.event.pull_request.number }}
