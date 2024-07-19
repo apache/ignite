@@ -43,6 +43,7 @@ import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -54,7 +55,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.managers.deployment.GridDeployment.visorManagementTask;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isGeometryClass;
 import static org.apache.ignite.internal.util.IgniteUtils.isLambda;
 
@@ -235,7 +235,7 @@ public class BinaryClassDescriptor {
         }
 
         if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls) && !QueryUtils.isGeometryClass(cls)
-            && !visorManagementTask(null, cls)) {
+            && !(IgniteDataTransferObject.class.isAssignableFrom(cls))) {
             U.warnDevOnly(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
                 BinaryMarshaller.class.getSimpleName() + " because it either implements Externalizable interface " +
                 "or have writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
