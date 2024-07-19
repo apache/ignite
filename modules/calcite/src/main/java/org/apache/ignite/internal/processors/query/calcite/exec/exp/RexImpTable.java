@@ -1963,7 +1963,7 @@ public class RexImpTable {
             final Expression convertedCallVal =
                 noConvert
                     ? callVal
-                    : ConverterUtils.convert(callVal, returnType);
+                    : ConverterUtils.convert(callVal, call.getType());
 
             final Expression valExpression =
                 Expressions.condition(condition,
