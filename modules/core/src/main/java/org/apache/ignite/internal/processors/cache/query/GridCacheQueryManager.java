@@ -427,6 +427,29 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
     }
 
+//    /**
+//     * Update key statistics.
+//     *
+//     * @param key Updated key.
+//     */
+//    private void updateStatistics(KeyCacheObject key) {
+//        qryProc.statsManager().onRowUpdated();
+//
+//        GridCacheContext cacheCtx = cacheInfo.cacheContext();
+//        if (cacheCtx == null)
+//            return;
+//
+//        IgniteH2Indexing indexing = (IgniteH2Indexing)cacheCtx.kernalContext().query().getIndexing();
+//        try {
+//            indexing.statsManager().onRowUpdated(this.identifier().schema(),
+//                this.identifier.table(), key.partition(), key.valueBytes(this.cacheContext().cacheObjectContext()));
+//        }
+//        catch (IgniteCheckedException e) {
+//            if (log.isDebugEnabled())
+//                log.debug("Error while updating statistics obsolescence due to " + e.getMessage());
+//        }
+//    }
+
     /**
      * @param key Key.
      * @param prevRow Previous row.

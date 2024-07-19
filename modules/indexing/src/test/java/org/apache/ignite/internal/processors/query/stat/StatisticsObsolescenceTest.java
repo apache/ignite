@@ -19,15 +19,17 @@ package org.apache.ignite.internal.processors.query.stat;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-
-import static org.apache.ignite.internal.processors.query.stat.IgniteStatisticsHelper.buildDefaultConfigurations;
 
 /**
  * Test for statistics obsolescence.
@@ -48,7 +50,13 @@ public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
         try {
             startGridsMultiThreaded(servers);
 
+            Ignite thick = startClientGrid(servers);
+
+            IgniteClient thin = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800"));
+
             long top = grid(0).cluster().topologyVersion();
+
+            grid(0).cluster().setBaselineTopology(top);
 
             createSmallTable(0, null);
 
@@ -57,12 +65,15 @@ public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
             if (log.isInfoEnabled())
                 log.info("Enabling statistic for the table " + SMALL_TARGET);
 
-            StatisticsObjectConfiguration[] statCfgs = buildDefaultConfigurations(SMALL_TARGET);
-
+//            StatisticsObjectConfiguration[] statCfgs = buildDefaultConfigurations(SMALL_TARGET);
             // This FIXES the test (workaround).
             // statCfgs[0] = new StatisticsObjectConfiguration(statCfgs[0].key(), statCfgs[0].columns().values(), (byte)-1);
+//            statisticsMgr(0).collectStatistics(statCfgs);
 
-            statisticsMgr(0).collectStatistics(statCfgs);
+//            client.cache("SMALLnull").query(new SqlFieldsQuery("ANALYZE SMALL")).getAll();
+            thin.cache("SMALLnull").query(new SqlFieldsQuery("ANALYZE SMALL")).getAll();
+//            thick.cache("SMALLnull").query(new SqlFieldsQuery("REFRESH STATISTICS PUBLIC.SMALL")).getAll();
+            thin.cache("SMALLnull").query(new SqlFieldsQuery("REFRESH STATISTICS PUBLIC.SMALL")).getAll();
 
             // Initialized, empty statistics.
             assertTrue(GridTestUtils.waitForCondition(() -> statisticsMgr(0).getLocalStatistics(SMALL_KEY) != null, getTestTimeout()));
@@ -98,7 +109,15 @@ public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
                     log.info("The loading stopped.");
             });
 
-            // Here we get non-zero, updated statistics.
+//            GridTestUtils.runAsync(() -> {
+//                for (int i = 0; i < 10; ++i) {
+//                    thin.cache("SMALLnull").query(new SqlFieldsQuery("REFRESH STATISTICS PUBLIC.SMALL")).getAll();
+//
+//                    Thread.sleep(100);
+//                }
+//            });
+
+            // Here we get not empty, updated statistics.
             assertTrue(GridTestUtils.waitForCondition(() -> {
                 ObjectStatisticsImpl updatedStat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
