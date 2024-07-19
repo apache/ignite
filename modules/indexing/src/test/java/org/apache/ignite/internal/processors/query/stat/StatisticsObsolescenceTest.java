@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -56,7 +57,12 @@ public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
             if (log.isInfoEnabled())
                 log.info("Enabling statistic for the table " + SMALL_TARGET);
 
-            statisticsMgr(0).collectStatistics(buildDefaultConfigurations(SMALL_TARGET));
+            StatisticsObjectConfiguration[] statCfgs = buildDefaultConfigurations(SMALL_TARGET);
+
+            // This FIXES the test (workaround).
+            // statCfgs[0] = new StatisticsObjectConfiguration(statCfgs[0].key(), statCfgs[0].columns().values(), (byte)-1);
+
+            statisticsMgr(0).collectStatistics(statCfgs);
 
             // Initialized, empty statistics.
             assertTrue(GridTestUtils.waitForCondition(() -> statisticsMgr(0).getLocalStatistics(SMALL_KEY) != null, getTestTimeout()));

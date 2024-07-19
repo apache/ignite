@@ -245,7 +245,8 @@ class IgniteSpec(metaclass=ABCMeta):
         return {
             'EXCLUDE_TEST_CLASSES': 'true',
             'IGNITE_LOG_DIR': self.service.log_dir,
-            'USER_LIBS': ":".join(self.libs())
+            'USER_LIBS': ":".join(self.libs()),
+            "MAIN_CLASS": self.service.main_java_class
         }
 
     def config_file_path(self):
@@ -356,6 +357,3 @@ class IgniteApplicationSpec(IgniteSpec):
     def config_file_path(self):
         return self.service.config_file if self.service.config.service_type == IgniteServiceType.NODE \
             else self.service.thin_client_config_file
-
-    def envs(self):
-        return {**super().envs(), **{"MAIN_CLASS": self.service.main_java_class}}

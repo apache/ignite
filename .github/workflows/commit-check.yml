@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Code Style, Abandoned Tests
+name: Code Style, Abandoned Tests, Javadocs
 on:
   pull_request:
   push:
@@ -66,6 +66,10 @@ jobs:
         if: ${{ matrix.java == '8' }}
         run : |
           ./mvnw test -Pcheck-test-suites,all-java,all-scala,scala -B -V
+
+      - name: Check javadocs.
+        run : |
+          ./mvnw -DskipTests install -pl modules/tools -B -V && ./mvnw initialize -Pjavadoc -B -V
 
   check-dotnet:
     name: Сheck .NET code
