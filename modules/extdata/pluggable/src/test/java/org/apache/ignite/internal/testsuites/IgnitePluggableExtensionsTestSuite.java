@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.testsuites;
 
+import org.apache.custom.SerializationWarningTest;
 import org.apache.ignite.internal.commandline.ExtendedControlUtilityTest;
 import org.apache.ignite.internal.plugin.ExtendedLogoTest;
 import org.junit.runner.RunWith;
@@ -29,6 +30,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     ExtendedLogoTest.class,
     ExtendedControlUtilityTest.class,
+    SerializationWarningTest.class
 })
 public class IgnitePluggableExtensionsTestSuite {
 }
