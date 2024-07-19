@@ -393,7 +393,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @param taskCls Task class.
      * @return {@code True} if task is internal.
      */
-    public boolean visorManagementTask(@Nullable ComputeTask<?, ?> task, @NotNull Class<?> taskCls) {
+    public static boolean visorManagementTask(@Nullable ComputeTask<?, ?> task, @NotNull Class<?> taskCls) {
         return VisorMultiNodeTask.class.isAssignableFrom(task instanceof GridPeerDeployAware ?
                 ((GridPeerDeployAware)task).deployClass() : taskCls);
     }
