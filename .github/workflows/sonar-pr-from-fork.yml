@@ -67,6 +67,13 @@ jobs:
         run: |
           ./mvnw clean install -P all-java,lgpl,examples,skip-docs -DskipTests -B -V          
 
+      - name: Set up JDK17 for Sonar scanner
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
       - name: Sonar Analyze Upload
         run: >
           ./mvnw org.sonarsource.scanner.maven:sonar-maven-plugin:sonar 
