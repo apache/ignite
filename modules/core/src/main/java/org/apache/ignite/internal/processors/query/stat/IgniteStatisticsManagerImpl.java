@@ -60,7 +60,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     private static final StatisticsUsageState DEFAULT_STATISTICS_USAGE_STATE = ON;
 
     /** Interval to check statistics obsolescence in seconds. */
-    private static final int OBSOLESCENCE_INTERVAL = 60;
+    static final int OBSOLESCENCE_INTERVAL = 20;
 
     /** Logger. */
     private final IgniteLogger log;

@@ -119,7 +119,7 @@ public class StatisticsCommandDdlIntegrationTest extends AbstractDdlIntegrationT
 
         // MAX_CHANGED_PARTITION_ROWS_PERCENT overrides old settings for all columns.
         sql(String.format(
-            "ANALYZE %s(%s) WITH DISTINCT=6,NULLS=7,TOTAL=8,MAX_CHANGED_PARTITION_ROWS_PERCENT=-1",
+            "ANALYZE %s(%s) WITH DISTINCT=6,NULLS=7,TOTAL=8,MAX_CHANGED_PARTITION_ROWS_PERCENT=2",
             TABLE_NAME, NAME_FIELD
         ));
 
@@ -131,8 +131,8 @@ public class StatisticsCommandDdlIntegrationTest extends AbstractDdlIntegrationT
         long ver = (Long)res.get(0).get(9);
 
         assertThat(res, hasItems(
-            Lists.newArrayList(PUBLIC_SCHEMA, "TABLE", TABLE_NAME, ID_FIELD, (byte)-1, 6L, 5L, 7L, 8, ver),
-            Lists.newArrayList(PUBLIC_SCHEMA, "TABLE", TABLE_NAME, NAME_FIELD, (byte)-1, 7L, 6L, 8L, null, ver)
+            Lists.newArrayList(PUBLIC_SCHEMA, "TABLE", TABLE_NAME, ID_FIELD, (byte)2, 6L, 5L, 7L, 8, ver),
+            Lists.newArrayList(PUBLIC_SCHEMA, "TABLE", TABLE_NAME, NAME_FIELD, (byte)2, 7L, 6L, 8L, null, ver)
         ));
     }
 

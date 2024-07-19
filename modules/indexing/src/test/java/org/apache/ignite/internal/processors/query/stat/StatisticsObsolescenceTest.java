@@ -17,141 +17,201 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.query.stat.IgniteStatisticsHelper.buildDefaultConfigurations;
+import static org.apache.ignite.internal.processors.query.stat.IgniteStatisticsManagerImpl.OBSOLESCENCE_INTERVAL;
 
 /**
  * Test for statistics obsolescence.
  */
 public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
-    /** Ensured IgniteStatisticsManagerImpl#OBSOLESCENCE_INTERVAL. 5 minutes. */
+    /** */
+    private long testTimeout = super.getTestTimeout();
+
+    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 5L * 60L * 1000L;
+        return testTimeout;
     }
 
     /** */
     @Test
-    public void testObsolescenceUnderLoad() throws Exception {
-        int servers = 2;
+    public void testObsolescenceWithInserting() throws Exception {
+        doTestObsolescenceUnderLoad(0, 0L, 0L, 1,
+            key -> sql(String.format("INSERT INTO small(a, b, c) VALUES(%d, %d, %d)", key, key, key)));
+    }
+
+    /** */
+    @Test
+    public void testObsolescenceWithUpdating() throws Exception {
+        doTestObsolescenceUnderLoad(10000, 10000L, 1L, 0, key -> sql("UPDATE small set b=b+1 where a=" + key));
+    }
+
+    /** */
+    private void doTestObsolescenceUnderLoad(int preloadCnt, long maxKey, long firstKey, int rowCntCmp, Consumer<Long> crud) throws Exception {
+        // Ensured IgniteStatisticsManagerImpl#OBSOLESCENCE_INTERVAL.
+        testTimeout = 3L * OBSOLESCENCE_INTERVAL * 1000L;
 
         AtomicBoolean stop = new AtomicBoolean();
 
         try {
-            startGridsMultiThreaded(servers);
+            startGridsMultiThreaded(2);
 
-            Ignite thick = startClientGrid(servers);
-
-            IgniteClient thin = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800"));
-
-            long top = grid(0).cluster().topologyVersion();
-
-            grid(0).cluster().setBaselineTopology(top);
-
-            createSmallTable(0, null);
+            createSmallTable(preloadCnt, null);
 
             statisticsMgr(0).usageState(StatisticsUsageState.ON);
+            statisticsMgr(0).collectStatistics(buildDefaultConfigurations(SMALL_TARGET));
 
-            if (log.isInfoEnabled())
-                log.info("Enabling statistic for the table " + SMALL_TARGET);
-
-//            StatisticsObjectConfiguration[] statCfgs = buildDefaultConfigurations(SMALL_TARGET);
-            // This FIXES the test (workaround).
-            // statCfgs[0] = new StatisticsObjectConfiguration(statCfgs[0].key(), statCfgs[0].columns().values(), (byte)-1);
-//            statisticsMgr(0).collectStatistics(statCfgs);
-
-//            client.cache("SMALLnull").query(new SqlFieldsQuery("ANALYZE SMALL")).getAll();
-            thin.cache("SMALLnull").query(new SqlFieldsQuery("ANALYZE SMALL")).getAll();
-//            thick.cache("SMALLnull").query(new SqlFieldsQuery("REFRESH STATISTICS PUBLIC.SMALL")).getAll();
-            thin.cache("SMALLnull").query(new SqlFieldsQuery("REFRESH STATISTICS PUBLIC.SMALL")).getAll();
-
-            // Initialized, empty statistics.
+            // Initialized statistics.
             assertTrue(GridTestUtils.waitForCondition(() -> statisticsMgr(0).getLocalStatistics(SMALL_KEY) != null, getTestTimeout()));
             assertTrue(GridTestUtils.waitForCondition(() -> statisticsMgr(1).getLocalStatistics(SMALL_KEY) != null, getTestTimeout()));
 
-            if (log.isInfoEnabled())
-                log.info("Got first, empty statistic of the table " + SMALL_TARGET);
+            ObjectStatisticsImpl initStat1 = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
+            ObjectStatisticsImpl initStat2 = (ObjectStatisticsImpl)statisticsMgr(1).getLocalStatistics(SMALL_KEY);
 
-            ObjectStatisticsImpl emptyStat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
-
-            assertTrue(emptyStat.rowCount() == 0);
+            assertEquals(preloadCnt, initStat1.rowCount() + initStat2.rowCount());
 
             GridTestUtils.runAsync(() -> {
-                AtomicLong key = new AtomicLong();
+                AtomicLong key = new AtomicLong(firstKey);
 
-                if (log.isInfoEnabled())
-                    log.info("Starting the loading...");
-
-                long time = System.nanoTime();
+                long a;
 
                 while (!stop.get()) {
-                    sql(String.format("INSERT INTO small(a, b, c) VALUES(%d, %d, %d)", key.incrementAndGet(), key.get(), key.get() % 10));
+                    a = key.incrementAndGet();
 
-                    if (U.nanosToMillis(System.nanoTime() - time) > 10_000L) {
-                        time = System.nanoTime();
+                    if (maxKey > 0 && a > maxKey)
+                        key.set(a = firstKey);
 
-                        if (log.isInfoEnabled())
-                            log.info("Loaded " + grid(0).cache("SMALLnull").size() + " records.");
-                    }
+                    crud.accept(a);
                 }
-
-                if (log.isInfoEnabled())
-                    log.info("The loading stopped.");
             });
 
-//            GridTestUtils.runAsync(() -> {
-//                for (int i = 0; i < 10; ++i) {
-//                    thin.cache("SMALLnull").query(new SqlFieldsQuery("REFRESH STATISTICS PUBLIC.SMALL")).getAll();
-//
-//                    Thread.sleep(100);
-//                }
-//            });
+            waitForStatsUpdates(initStat1);
 
-            // Here we get not empty, updated statistics.
-            assertTrue(GridTestUtils.waitForCondition(() -> {
-                ObjectStatisticsImpl updatedStat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
+            ObjectStatisticsImpl updatedStat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
-                return updatedStat != null && updatedStat.rowCount() > emptyStat.rowCount();
-            }, getTestTimeout()));
+            assertTrue(rowCntCmp > 0 ? updatedStat.rowCount() > initStat1.rowCount() :
+                (rowCntCmp < 0 ? initStat1.rowCount() < updatedStat.rowCount() : initStat1.rowCount() == updatedStat.rowCount()));
 
-            // First not empty statistics (rowCount > 0).
-            ObjectStatisticsImpl firstNotEmpty = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
-
-            assertTrue(firstNotEmpty.rowCount() > 0);
-
-            if (log.isInfoEnabled())
-                log.info("Got first not empty statistic: " + firstNotEmpty);
-
-            // FAILS here with a timeout.
             // Continuing data loading, the table is being updated. Since the row count is inreasing, we must obtain a
             // new statistics, greather than {@code firstNotEmpty}.
-            assertTrue(GridTestUtils.waitForCondition(() -> {
-                ObjectStatisticsImpl updatedStat2 = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
+            waitForStatsUpdates(updatedStat);
 
-                return updatedStat2 != null && updatedStat2.rowCount() > firstNotEmpty.rowCount();
-            }, getTestTimeout()));
+            ObjectStatisticsImpl updatedStat2 = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
-            // Ensure the topology hasn't changed and didn't trigger the statistics.
-            assertEquals(top, grid(0).cluster().topologyVersion());
-
-            ObjectStatisticsImpl secondNotEmpty = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
-
-            if (log.isInfoEnabled())
-                log.info("Got second not empty statistic: " + secondNotEmpty);
+            assertTrue(rowCntCmp > 0 ? updatedStat2.rowCount() > updatedStat.rowCount() :
+                (rowCntCmp < 0 ? updatedStat2.rowCount() < updatedStat.rowCount() : updatedStat2.rowCount() == updatedStat.rowCount()));
         }
         finally {
             stop.set(true);
         }
+    }
+
+    /** */
+    private void waitForStatsUpdates(ObjectStatisticsImpl compareTo) throws IgniteInterruptedCheckedException {
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+            ObjectStatisticsImpl updatedStat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
+
+            if (updatedStat == null)
+                return false;
+
+            AtomicBoolean passed = new AtomicBoolean(true);
+
+            updatedStat.columnsStatistics().forEach((col, stat) -> {
+                ColumnStatistics compared = compareTo.columnStatistics(col);
+
+                assert compared != null;
+
+                if (compared.createdAt() >= stat.createdAt())
+                    passed.set(false);
+            });
+
+            return passed.get();
+        }, getTestTimeout()));
+    }
+
+    /**
+     * Test statistics refreshing after significant changes of base table:
+     * 1) Create and populate small table
+     * 2) Analyze it and get local statistics
+     * 3) Insert same number of rows into small table
+     * 4) Check that statistics refreshed and its values changed.
+     *
+     * @throws Exception In case of error.
+     */
+    @Test
+    public void testObsolescence() throws Exception {
+        startGridsMultiThreaded(1);
+
+        createSmallTable(null);
+
+        statisticsMgr(0).collectStatistics(buildDefaultConfigurations(SMALL_TARGET));
+
+        assertTrue(GridTestUtils.waitForCondition(() -> statisticsMgr(0).getLocalStatistics(SMALL_KEY) != null, TIMEOUT));
+
+        ObjectStatisticsImpl stat1 = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
+
+        assertNotNull(stat1);
+
+        for (int i = SMALL_SIZE; i < 2 * SMALL_SIZE; i++)
+            sql(String.format("INSERT INTO small(a, b, c) VALUES(%d, %d, %d)", i, i, i % 10));
+
+        statisticsMgr(0).processObsolescence();
+
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+            ObjectStatisticsImpl stat2 = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
+
+            return stat2 != null && stat2.rowCount() > stat1.rowCount();
+        }, TIMEOUT));
+    }
+
+    /**
+     * Test activation with statistics with topology changes.
+     *
+     * 1) Start two node cluster.
+     * 2) Activate cluster.
+     * 3) Create table and analyze it.
+     * 4) Inactivate cluster and change it's topology.
+     * 5) Get obsolescence map size for created table.
+     * 6) Activate cluster again.
+     * 7) Check that obsolescence map size changed due to new topology.
+     *
+     * @throws Exception In case of errors.
+     */
+    @Test
+    public void testInactiveLoad() throws Exception {
+        Ignite ignite = startGrid(0);
+        Ignite ignite1 = startGrid(1);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        createSmallTable(null);
+        collectStatistics(StatisticsType.GLOBAL, "SMALL");
+
+        ignite.cluster().state(ClusterState.INACTIVE);
+
+        ignite1.close();
+
+        Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> statObs = GridTestUtils
+            .getFieldValue(statisticsMgr(0).statisticsRepository(), "statObs");
+
+        Integer oldSize = statObs.get(SMALL_KEY).size();
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        assertTrue(GridTestUtils.waitForCondition(() -> statObs.get(SMALL_KEY).size() > oldSize, TIMEOUT));
     }
 
     /** {@inheritDoc} */

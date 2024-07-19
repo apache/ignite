@@ -261,7 +261,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Create SQL table with the given index and fill with samll amount of data.
+     * Create SQL table with the given index and fill with small amount of data.
      *
      * @param suffix Table idx, if {@code null} - name "SMALL" without index will be used.
      * @return Table name.
