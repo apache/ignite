@@ -106,6 +106,7 @@
             "loadingMessageWithDemoDisabled": "Loading query notebook screen...",
             "newQueryNamePrefix": "Query",
             "newScanNamePrefix": "Scan",
+            "newGremlinNamePrefix": "Gremlin",
             "clearQueryResultConfirmationMessage": "Are you sure you want to clear query result?",
             "queryTooltip": {
                 "clusterIsInactive": "Cluster is inactive",
@@ -274,6 +275,7 @@
             "saveNotebookNameButtonTooltip": "Save notebook name",
             "addQueryButtonLabel": "Add query",
             "addScanButtonLabel": "Add scan",
+            "addGremlinButtonLabel": "Add Gremlin",
             "breadcrumbs": {
                 "parent": "Notebooks",
                 "here": "Notebook '{{name}}'"

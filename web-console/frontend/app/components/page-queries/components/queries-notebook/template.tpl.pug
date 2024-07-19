@@ -527,6 +527,98 @@ mixin paragraph-query
                     i.fa.fa-chevron-circle-right
                     a(translate='queries.notebook.queryResult.nextButtonLabel')
 
+mixin paragraph-gremlin
+    panel-title {{ paragraph.name }}
+    panel-actions
+        query-actions-button(actions='$ctrl.queryActions' item='paragraph')
+    panel-content
+        .col-sm-12
+            .col-xs-8.col-sm-9(style='border-right: 1px solid #eee')
+                .sql-editor(ignite-ace='{onLoad: aceInit(paragraph), theme: "chrome", mode: "groovy", require: ["ace/ext/language_tools"],' +
+                'advanced: {enableSnippets: false, enableBasicAutocompletion: false, enableLiveAutocompletion: false}}'
+                ng-model='paragraph.query' on-selection-change='paragraph.partialQuery = $event')
+            .col-xs-4.col-sm-3
+                div(ng-show='caches.length > 0' style='padding: 5px 10px' st-table='displayedCaches' st-safe-src='caches')
+                    lable.labelField.labelFormField(translate='queries.notebook.queryResult.cachesMetadataInput.label')
+                    i.fa.fa-database.tipField(
+                        translate-attr='::{title: "queries.notebook.queryResult.cachesMetadataInput.metadataButtonTooltip"}'
+                        bs-popover
+                        data-template-url='{{ $ctrl.cacheMetadataTemplateUrl }}'
+                        data-placement='bottom-right'
+                        data-trigger='click'                        
+                        data-container=`#{{ paragraph.id }}`
+                    )
+                    .input-tip
+                        input.form-control(
+                            type='text'
+                            st-search='label'
+                            translate-attr='::{placeholder: "queries.notebook.queryResult.cachesMetadataInput.filterPlaceholder"}'
+                        )
+
+                    .queries-notebook-displayed-caches
+                        div(ng-repeat='cache in displayedCaches track by cache.value')
+                            +form-field__radio({
+                                label: '{{ cache.label }}',
+                                model: 'paragraph.cacheName',
+                                name: '"cache_" + [paragraph.id, $index].join("_")',
+                                value: 'cache.value'
+                            })
+
+                    .empty-caches(ng-show='displayedCaches.length == 0 && caches.length != 0')
+                        no-data
+                            label(translate='queries.notebook.queryResult.wrongCachesFilterError')
+
+                    .settings-row
+                        .row(ng-if='displayedCaches.length > 0 && ddlAvailable(paragraph)')
+                            +form-field__checkbox({
+                                label: '{{::"queries.notebook.queryResult.useAsDefaultSchemaInput.label"|translate}}',
+                                model: 'paragraph.useAsDefaultSchema',
+                                name: '"useAsDefaultSchema" + paragraph.id',
+                                tip: '{{::"queries.notebook.queryResult.useAsDefaultSchemaInput.tooltip"|translate}}',
+                                tipOpts: { placement: 'top' }
+                            })
+                .empty-caches(ng-show='caches.length == 0')
+                    no-data(handle-cluster-inactive='true')
+                        label(translate='queries.notebook.queryResult.noCaches')
+        .col-sm-12.sql-controls
+            div
+                +query-actions
+
+            +query-settings
+        .col-sm-12.sql-result(ng-if='paragraph.queryExecuted()' ng-switch='paragraph.resultType()')
+            .error(ng-switch-when='error')
+                label(
+                    translate='queries.notebook.queryResult.genericError'
+                    translate-values='{error: paragraph.error.message}'
+                )
+                br
+                a(
+                    ng-show='paragraph.resultType() === "error"'
+                    ng-click='showStackTrace(paragraph)'
+                    translate='queries.notebook.queryResult.showMoreButtonLabel'
+                )
+            .empty(
+                ng-switch-when='empty'
+                translate='queries.notebook.queryResult.emptyResult'
+                translate-values='{duration: (paragraph.duration | duration)}'
+            )
+            .table(ng-switch-when='table')
+                +table-result-heading-query
+                +table-result-body
+            .chart(ng-switch-when='chart')
+                +chart-result
+            .footer.clearfix(ng-show='paragraph.resultType() !== "error"')
+                a.pull-left(
+                    ng-click='showResultQuery(paragraph)'
+                    translate='queries.notebook.queryResult.showQueryButtonLabel'
+                )
+
+                -var nextVisibleCondition = 'paragraph.resultType() !== "error" && !paragraph.loading && paragraph.queryId && paragraph.nonRefresh() && (paragraph.table() || paragraph.chart() && !paragraph.scanExplain())'
+
+                .pull-right(ng-show=`${nextVisibleCondition}` ng-class='{disabled: paragraph.loading}' ng-click='!paragraph.loading && nextPage(paragraph)')
+                    i.fa.fa-chevron-circle-right
+                    a(translate='queries.notebook.queryResult.nextButtonLabel')
+
 div(ng-if='notebook')
     .notebooks-top
         h1(ng-hide='notebook.edit')
@@ -561,6 +653,10 @@ div(ng-if='notebook')
             button.btn-ignite.btn-ignite--primary(ng-click='addScan()' ignite-on-click-focus=focusId)
                 svg.icon-left(ignite-icon='plus')
                 span(translate='queries.notebook.addScanButtonLabel')
+
+            button.btn-ignite.btn-ignite--primary(ng-click='addGremlin()' ignite-on-click-focus=focusId)
+                svg.icon-left(ignite-icon='plus')
+                span(translate='queries.notebook.addGremlinButtonLabel')
 
 div
     breadcrumbs
@@ -626,3 +722,10 @@ div
                         on-open='$ctrl.onParagraphOpen($index)'
                     )
                         +paragraph-query
+                    panel-collapsible(
+                        ng-if='paragraph.queryType === "GREMLIN"'
+                        opened='$ctrl.isParagraphOpened($index)'
+                        on-close='$ctrl.onParagraphClose($index)'
+                        on-open='$ctrl.onParagraphOpen($index)'
+                    )
+                        +paragraph-gremlin

@@ -73,9 +73,6 @@ public class JdbcQueryExecutor implements Callable<JsonObject> {
             long end = System.currentTimeMillis();
             queryResult.put("duration", end-start);
             
-            
-           
-            queryResult.put("protocolVersion", 1);
             return queryResult;
             
         } catch (SQLException ex) {

@@ -361,7 +361,10 @@ public class Notebook extends AbstractDto {
         SQL_FIELDS,
 
         /** */
-        SCAN
+        SCAN,
+        
+        /** graph */
+        GREMLIN
     }
 
     /**

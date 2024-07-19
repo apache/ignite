@@ -3,6 +3,7 @@ package org.apache.ignite.console.agent.db;
 import static org.apache.ignite.console.utils.Utils.fromJson;
 
 import java.io.IOException;
+import java.sql.Driver;
 import java.sql.SQLException;
 import javax.sql.DataSource;
 
@@ -20,6 +21,7 @@ import org.springframework.jndi.JndiObjectFactoryBean;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -34,26 +36,67 @@ import javax.naming.NamingException;
 import javax.naming.spi.NamingManager;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
-
+import org.apache.commons.dbcp2.BasicDataSource;
 import io.vertx.core.json.JsonObject;
 
 public class DataSourceManager {
 	
 	private static Map<String,Object> POOL = new ConcurrentHashMap<>();
+	/** */
+    public static final Map<String, Driver> drivers = new HashMap<>();
 	private static InitialContext initialContext = null;
 	private static HttpClient serverClient;
 	private static String datasourceGetUrl = "";
 	private static String datasourceCreateUrl = "";
 	private static Collection<String> serverTokens;
 	
+	static class DBinitialContext extends InitialContext {
+		
+		public DBinitialContext() throws NamingException {
+			super(true);
+		}
+		
+		public DBinitialContext(Hashtable<?,?> environment) throws NamingException {
+			super(environment);
+		}
+
+	    public void bind(String key, Object value) {
+	    	POOL.put(key.toLowerCase(), value);
+	    }
+	    
+	    public void rebind(String key, Object value) {
+	    	POOL.put(key.toLowerCase(), value);
+	    }
+	    
+	    public void unbind(String name){
+	    	POOL.remove(name);
+	    }
+
+	    public Object lookup(String key) throws NamingException {
+	        Object result = POOL.get(key.toLowerCase());
+	        if(result==null && key.startsWith("java:jdbc/")) {
+	        	result = getJNDIDataSource(key.substring("java:jdbc/".length()));
+	        	if(result!=null) {
+	        		POOL.put(key, result);
+	        	}
+	        }
+	        return result;
+	    }
+	    
+	    public void close() throws NamingException {
+	    	
+	    }
+	};
+	
 	
 	public static void init(HttpClient client,String serverUri,Collection<String> tokens) {
 		serverClient = client;
 		serverTokens = tokens;
+		
+		if(initialContext!=null) {
+			return;
+		}
+		
 		if (serverUri.startsWith("ws:/")) {
 			serverUri = serverUri.replaceAll("ws:/", "http:/");
 		}
@@ -62,30 +105,12 @@ public class DataSourceManager {
 		}
 		datasourceGetUrl = serverUri+"/api/v1/datasource";
 		datasourceCreateUrl = serverUri+"/api/v1/datasource";
-		if(initialContext!=null) {
-			return;
-		}
+		
 		try {
-			initialContext = new InitialContext() {		    
-
-			    public void bind(String key, Object value) {
-			    	POOL.put(key.toLowerCase(), value);
-			    }
-
-			    public Object lookup(String key) throws NamingException {
-			        Object result = POOL.get(key.toLowerCase());
-			        if(result==null && key.startsWith("java:jdbc/")) {
-			        	result = getJNDIDataSource(key.substring("java:jdbc/".length()));
-			        	if(result!=null) {
-			        		POOL.put(key, result);
-			        	}
-			        }
-			        return result;
-			    }
-			};
 			
+			initialContext = new DBinitialContext();
 			// Activate the initial context
-			NamingManager.setInitialContextFactoryBuilder(environment -> environment1 -> initialContext);
+			NamingManager.setInitialContextFactoryBuilder(environment -> environment1 -> new DBinitialContext());
 			
 		} catch (NamingException e) {
 			// TODO Auto-generated catch block
@@ -114,32 +139,35 @@ public class DataSourceManager {
 	}
 	
 	
-	public static DataSource bindDataSource(String jndiName, DBInfo info) {
-		HikariConfig config = new HikariConfig();
-		config.setMinimumIdle(1);
-		config.setMaximumPoolSize(8);
-		config.setJdbcUrl(info.jdbcUrl);
-		config.setUsername(info.getUserName());
-	    config.setPassword(info.getPassword());
-	    
-		if(info.getJdbcProp()!=null) {
-		    config.setDataSourceProperties(info.getJdbcProp());
-		}
+	public static DataSource bindDataSource(String jndiName, DBInfo info) {			
+		return bindDataSource(jndiName,info,drivers.get(info.getDriverCls()));
+	}
+	
+	public static DataSource bindDataSource(String jndiName, DBInfo info, Driver driver) {
 
-		DataSource dataSource = new HikariDataSource(config);
+		BasicDataSource dataSource = new BasicDataSource();
+		dataSource.setDriver(driver);
+		dataSource.setUrl(info.jdbcUrl);
+		dataSource.setUsername(info.getUserName());
+		dataSource.setPassword(info.getPassword());
 		
-		if(info.jdbcUrl.startsWith("jdbc:h2:")) {
-			config.setIsolateInternalQueries(true);
-			config.setDriverClassName("org.h2.Driver");			
-			dataSource = new HikariDataSource(config);
+		dataSource.setDefaultSchema(info.getSchemaName());
+		
+		
+		if(info.jdbcUrl.startsWith("jdbc:h2:")) {			
+			dataSource.setDriverClassName("org.h2.Driver");
 		}
 		else {
-			config.setDriverClassName(info.getDriverCls());
-			dataSource = new HikariDataSource(config);
+			dataSource.setDriverClassName(info.getDriverCls());
 		}
 		
 		try {
-			initialContext.bind("java:jdbc/"+jndiName, dataSource);
+			try {				
+				initialContext.rebind("java:jdbc/"+jndiName, dataSource);				
+			} catch (NamingException e) {
+				initialContext.bind("java:jdbc/"+jndiName, dataSource);
+			}
+			
 		} catch (NamingException e) {
 			e.printStackTrace();
 		}
@@ -153,23 +181,26 @@ public class DataSourceManager {
 		try {
 			for(String token: serverTokens) {
 				Request req = serverClient.newRequest(datasourceGetUrl);
-				req.header("TOKEN", token);
+				req.header("Authorization", "token "+token);
 				req.method(HttpMethod.GET);
 				ContentResponse response = req.send();
 				String body = response.getContentAsString();
-				TypeReference<List<DBInfo>> typeRef = new TypeReference<List<DBInfo>>() {};
-				List<DBInfo> datasources  = fromJson(body,typeRef);
-				for(DBInfo dbInfo: datasources) {
-					if(dbInfo.getJndiName().equalsIgnoreCase(jndi)) {
-						try {
-							dataSource = bindDataSource(jndi, dbInfo);
-							return dataSource;
-						} catch (Exception e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+				if(body.startsWith("[")) {
+					TypeReference<List<DBInfo>> typeRef = new TypeReference<List<DBInfo>>() {};
+					List<DBInfo> datasources  = fromJson(body,typeRef);
+					for(DBInfo dbInfo: datasources) {
+						if(dbInfo.getJndiName().equalsIgnoreCase(jndi)) {
+							try {
+								dataSource = bindDataSource(jndi, dbInfo);
+								return dataSource;
+							} catch (Exception e) {							
+								e.printStackTrace();
+							}
 						}
 					}
-				}				
+					break;
+				}
+					
 			}
 		} catch (InterruptedException e1) {
 			// TODO Auto-generated catch block

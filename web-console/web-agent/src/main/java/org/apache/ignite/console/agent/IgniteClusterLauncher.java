@@ -46,6 +46,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -204,7 +205,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
     }
 
     /** */
-    public static String registerNodeUrl(Ignite ignite) {
+    public static String registerNodeUrl(Ignite ignite,String clusterId) {
     	 ClusterNode node = ignite.cluster().localNode();    	 
 
          Collection<String> jettyAddrs = node.attribute(ATTR_REST_JETTY_ADDRS);
@@ -229,7 +230,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 
          String nodeUrl = String.format("http://%s:%d/%s", jettyHost, jettyPort, ignite.configuration().getIgniteInstanceName());
 
-         RestClusterHandler.registerNodeUrl(ignite.cluster().localNode().id().toString(),nodeUrl,ignite.name());
+         RestClusterHandler.registerNodeUrl(clusterId,nodeUrl,ignite.name());
          
          return nodeUrl;
     }
@@ -243,8 +244,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 	    		String gridName = ignite.configuration().getIgniteInstanceName();
 	    		Ignition.stop(gridName,true);
 	    		clusterName = null;
-	    		RestClusterHandler.clusterUrlMap.remove(nodeId);
-	    		RestClusterHandler.clusterNameMap.remove(nodeId);
+	    		
     		}
 	    	catch(IgniteIllegalStateException | IllegalArgumentException  e) {
 	    		//-log.error("Failed to stop cluster node: "+nodeId,e);
@@ -260,27 +260,29 @@ public class IgniteClusterLauncher implements StartNodeCallable{
      * Start ignite node with cacheEmployee and populate it with data.
      * @throws IgniteCheckedException 
      */
-    public static Ignite trySingleStart(String clusterId,String clusterName,String cfgFile) throws IgniteCheckedException {
+    public static Ignite trySingleStart(String clusterId,String clusterName,int nodeIndex,boolean isLastNode,String cfgFile) throws IgniteCheckedException {
     	
-        return trySingleStart(clusterId,clusterName,cfgFile,null);
+        return trySingleStart(clusterId,clusterName,nodeIndex,isLastNode,cfgFile,null);
     }
     
     /**
      * Start ignite node with cacheEmployee and populate it with data.
      * @throws IgniteCheckedException 
      */
-    public static Ignite trySingleStart(String clusterId,String clusterName,String cfgFile,String preCfgFile) throws IgniteCheckedException {
+    public static Ignite trySingleStart(String clusterId,String clusterName,int nodeIndex,boolean isLastNode,String cfgFile,String preCfgFile) throws IgniteCheckedException {
     	Ignite ignite = null;    	
     	
-    	// 单个节点： clusterID和nodeID相同
+    	// 最后一个节点： clusterID和nodeID相同
     	UUID nodeID = null;
-    	try {
-    		nodeID = UUID.fromString(clusterId);
-    		ignite = Ignition.ignite(UUID.fromString(clusterId));
-    		return ignite;
-    	}
-    	catch(IgniteIllegalStateException | IllegalArgumentException  e) {
-    		
+    	if(isLastNode) {	    	
+	    	try {
+	    		nodeID = UUID.fromString(clusterId);
+	    		ignite = Ignition.ignite(UUID.fromString(clusterId));
+	    		return ignite;
+	    	}
+	    	catch(IgniteIllegalStateException | IllegalArgumentException  e) {
+	    		
+	    	}
     	}
     	
     	// 基于Instance Name 查找ignite
@@ -316,14 +318,23 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 			cfgWorkMap = IgnitionEx.loadConfigurations(springCfgUrl);			
 			//only on node per jvm.					
 			IgniteConfiguration cfg = cfgWorkMap.get1().iterator().next();			
-
-			cfg.setNodeId(nodeID);
-			if(cfg.getConsistentId()==null)
-				cfg.setConsistentId(clusterId);
+			
+			// 最后一个节点： clusterID和nodeID相同
+			if(isLastNode) {
+				cfg.setNodeId(nodeID);
+				if(cfg.getConsistentId()==null)
+					cfg.setConsistentId(clusterId);
+			}
+			else {
+				cfg.setClusterStateOnStart(ClusterState.INACTIVE);
+				if(cfg.getConsistentId()==null)
+					cfg.setConsistentId(clusterId+"_"+nodeIndex);			
+			}
+			
 			if(cfg.getIgniteInstanceName()==null)
 				cfg.setIgniteInstanceName(clusterName);
 			
-			IgniteClusterLauncher.singleIgniteConfiguration(cfg,preCfg);
+			singleIgniteConfiguration(cfg,preCfg);
 			
 			ignite = IgnitionEx.start(cfg,cfgWorkMap.get2());
 			
@@ -347,6 +358,15 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 			    	}
 				}							
 			}
+		}
+        
+        if(isLastNode && ignite!=null) {
+        	try {
+				Thread.sleep(1000*nodeIndex);
+			} catch (InterruptedException e) {				
+				e.printStackTrace();
+			}
+			ignite.cluster().state(ClusterState.ACTIVE);
 		}
         return ignite;
     }

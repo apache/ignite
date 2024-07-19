@@ -77,11 +77,9 @@ public class JdbcExecutor implements AutoCloseable {
     private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(JdbcExecutor.class));
     public static final JsonNodeFactory jsonNodeFactory = new JsonNodeFactory(true);
     
-    private DatabaseListener dbListener;
-
-  
+    private DatabaseListener dbListener;  
     
-    int jdbcQueryCancellationTime = 10000;
+    private int jdbcQueryCancellationTime = 10000;
     
     private DbMetadataReader metadataReader = new DbMetadataReader();
 
@@ -179,8 +177,12 @@ public class JdbcExecutor implements AutoCloseable {
             		node.put("replicaCount", dbInfo.top.getNodes().size());
             		node.put("attributes", dbInfo.getJdbcProp());
             		node.put("isActive", dbInfo.top.isActive());
-            		node.getJsonObject("attributes").put("database.version", dbInfo.driverCls);
-            		node.getJsonObject("attributes").put("os.name", "Linux");
+            		node.getJsonObject("attributes").put("database.driverCls", dbInfo.driverCls);
+            		if(params.getBoolean("attr",false)) {
+	            		System.getenv().forEach((k,v)->{
+	            			node.getJsonObject("attributes").put(k, v);
+	            		});
+            		}
             		
                     result.add(node);
                     res.put("result", result);
@@ -188,7 +190,7 @@ public class JdbcExecutor implements AutoCloseable {
             	}
             	else if("metadata".equals(cmd)) {
             		
-            		List<String> schemas = new ArrayList<>(2);
+            		List<String> schemas = new ArrayList<>();
             		String schema = params.getString("cacheName");
             		if(!StringUtil.isEmpty(schema)) {
             			schemas.add(schema);
@@ -202,7 +204,7 @@ public class JdbcExecutor implements AutoCloseable {
             		ArrayNode arr = new ArrayNode(jsonNodeFactory);   
             		ObjectNode cachesMap = new ObjectNode(jsonNodeFactory);
                     for (DbTable table: meta) {
-                    	ObjectNode caches = cachesMap.with(table.getSchema());
+                    	ObjectNode caches = cachesMap.withObject(table.getSchema());
                     	if(caches.isEmpty()) {
                     		caches.put("cacheName",table.getSchema());
                     		arr.add(caches);
@@ -213,7 +215,7 @@ public class JdbcExecutor implements AutoCloseable {
                     	ArrayNode types = caches.withArray("types");  
                     	types.add(typeName);
                     	
-                    	ObjectNode fields = caches.with("fields");
+                    	ObjectNode fields = caches.withObject("fields");
                     	ObjectNode column = new ObjectNode(jsonNodeFactory);
                     	
                     	for(DbColumn col: table.getColumns()) {
@@ -228,7 +230,7 @@ public class JdbcExecutor implements AutoCloseable {
                     	fields.set(typeName, column);
                     	
                     	
-                    	ObjectNode indexes = caches.with("indexes");
+                    	ObjectNode indexes = caches.withObject("indexes");
                     	ArrayNode index = new ArrayNode(jsonNodeFactory);  
                     	
                     	for(VisorQueryIndex idx: table.getIndexes()) {

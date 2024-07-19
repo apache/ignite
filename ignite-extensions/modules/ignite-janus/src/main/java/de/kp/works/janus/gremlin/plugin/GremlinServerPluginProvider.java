@@ -48,7 +48,6 @@ import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.graphdb.server.JanusGraphServer;
 
-import de.kp.works.ignite.IgniteContext;
 
 
 /**
@@ -65,7 +64,7 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
 
 	private GremlinPlugin gremlin = new GremlinPlugin();
 	
-	private int counter = 0;
+	private static int counter = 0;
 
 	/** Ignite logger. */
 	private IgniteLogger log;
@@ -81,7 +80,7 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
 	/** {@inheritDoc} */
 	@Override
 	public String version() {
-		return "3.7.0";
+		return "3.7.2";
 	}
 
 	/** {@inheritDoc} */
@@ -119,8 +118,7 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
 			cfg = new GremlinPluginConfiguration();
 		}
 
-		boolean per = ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration()
-				.isPersistenceEnabled();
+		boolean per = igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().isPersistenceEnabled();
 		if (cfg != null && per) {
 			cfg.setPersistenceEnabled(true);
 		}
@@ -134,7 +132,8 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
 				if(settings==null) {
 					settings = Settings.read(cfg.getGremlinServerCfg());
 				}
-				if(settings.graphs.isEmpty()) {
+				
+				if(!settings.graphs.containsKey(databaseName)) {
 					String configBase = ctx.igniteConfiguration().getIgniteHome() + "/config/gremlin-server";
 	
 					File graphFile = new File(configBase, "janus-" + databaseName + ".properties");
@@ -189,9 +188,11 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
 			try {
 				janusGraphServer = new JanusGraphServer(cfg.getGremlinServerCfg());
 		        janusGraphServer.start().exceptionally(t -> {
+		        	
 		        	log.error("JanusGraph Server was unable to start and will now begin shutdown", t);
 		            janusGraphServer.stop().join();
 		            return null;
+		            
 		        }).join();
 				
 				gremlin.graphManager = janusGraphServer.getGremlinServer().getServerGremlinExecutor().getGraphManager();
@@ -209,24 +210,26 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
 
 	/** {@inheritDoc} */
 	@Override
-	public void onIgniteStop(boolean cancel) {
-		if(cfg!=null) {
-			counter--;
-		}
+	public void onIgniteStop(boolean cancel) {		
 		
 		if(gremlin.graphManager!=null) {			
-			JanusGraph graph = (JanusGraph)gremlin.graphManager.getGraph(databaseName);
-			gremlin.graphManager = null;
-			if(graph!=null) {				
-				graph.close();
+			try {
+				gremlin.graphManager.removeGraph(gremlin.databaseName);
+			} 
+			catch (Exception e) {	
+				
 			}
+			gremlin.graphManager = null;			
 		}
 		
-		if (janusGraphServer!= null && counter<=0) {
-			log.info("JanusGremlinServer", "shutting down " + janusGraphServer.toString());
-			janusGraphServer.stop();			
-			janusGraphServer = null;
-		}		
+		if(cfg!=null) {
+			counter--;
+			if (janusGraphServer!= null && counter<=0) {
+				log.info("JanusGremlinServer", "shutting down " + janusGraphServer.toString());
+				janusGraphServer.stop();			
+				janusGraphServer = null;
+			}
+		}	
 	}
 
 	/** {@inheritDoc} */

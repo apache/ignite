@@ -37,6 +37,7 @@ public class AuthenticationTokenFilter implements Filter{
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse,FilterChain filterChain)
             throws IOException, ServletException{
+    	Authentication old = SecurityContextHolder.getContext().getAuthentication();
         if (servletRequest instanceof HttpServletRequest){
         	String uri = ((HttpServletRequest) servletRequest).getRequestURI();
         	
@@ -57,6 +58,7 @@ public class AuthenticationTokenFilter implements Filter{
             }
         }
         filterChain.doFilter(servletRequest, servletResponse);
+        SecurityContextHolder.getContext().setAuthentication(old);
     }
 
 	public AccountsService getAccountsService() {

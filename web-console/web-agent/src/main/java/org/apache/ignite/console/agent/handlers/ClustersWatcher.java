@@ -123,7 +123,9 @@ public class ClustersWatcher implements Closeable {
         	for(ClusterHandler hnd: clusterHnds) {
 	        	
         		List<TopologySnapshot>  ctops = hnd.topologySnapshot();
-	            tops.addAll(ctops);
+        		if(ctops!=null) {
+        			tops.addAll(ctops);
+        		}
         	}
             
             sendTopology(ses, tops);

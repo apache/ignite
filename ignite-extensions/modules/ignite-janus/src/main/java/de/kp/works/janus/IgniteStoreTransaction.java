@@ -18,6 +18,7 @@ package de.kp.works.janus;
  * 
  */
 
+import org.apache.ignite.transactions.Transaction;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.common.AbstractStoreTransaction;
@@ -25,19 +26,24 @@ import org.janusgraph.diskstorage.common.AbstractStoreTransaction;
  * This class is introduced for future (additional) transaction support
  */
 public class IgniteStoreTransaction extends AbstractStoreTransaction {
+	
+	final Transaction t;
 
-	public IgniteStoreTransaction(BaseTransactionConfig config) {
+	public IgniteStoreTransaction(Transaction t, BaseTransactionConfig config) {
 		super(config);
+		this.t = t;
 	}
 
 	@Override
 	public void commit() throws BackendException {
+		t.commit();
 		super.commit();
 	}
 
 	@Override
 	public void rollback() throws BackendException {
-		super.rollback();
+		t.rollback();
+		super.rollback();		
 	}
 
 }

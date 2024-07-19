@@ -12,4 +12,6 @@ public interface ClusterHandler {
 	public abstract RestResult restCommand(String clusterId,JsonObject params) throws Throwable;
     
     public abstract List<TopologySnapshot> topologySnapshot();
+    
+    public void close();
 }

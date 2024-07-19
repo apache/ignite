@@ -846,7 +846,11 @@ export class ModalImportModels {
                 return;
 
             const act = $scope.importDomain.action;
-
+            // add@byron
+            if($scope.ui.selectedJdbcDriverJar>=0){
+                $scope.selectedPreset.jdbcDriverJar = $scope.jdbcDriverJars[$scope.ui.selectedJdbcDriverJar].label
+            }
+            // end@
             if (act === 'drivers' && $scope.importDomain.jdbcDriversNotFound)
                 this.onHide();
             else if (act === 'connect')

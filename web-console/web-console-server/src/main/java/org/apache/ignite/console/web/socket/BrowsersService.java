@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -182,6 +183,44 @@ public class BrowsersService extends AbstractSocketHandler {
                     
                 case AGENT_START_CLUSTER:
                 case AGENT_STOP_CLUSTER:
+                	try {
+                		payload = fromJson(evt.getPayload());
+
+                        clusterId = payload.getString("id");
+
+                        if (F.isEmpty(clusterId))
+                            throw new IllegalStateException(messages.getMessage("err.missing-cluster-id-param"));
+                        
+                        // last node will active cluster
+                        int nodeIndex = 0;
+                        AgentKey key = new AgentKey(accId);
+                        List<WebSocketSession> nids = agentsSrvc.findLocalAgents(key);
+                        if (!nids.isEmpty()) {
+                        	for(WebSocketSession sess: nids) {
+                        		evt.setNodeSeq(nodeIndex);
+                        		if(nodeIndex==nids.size()-1) {
+                        			evt.setLastNode(true);
+                        			agentsSrvc.sendMessageWithResponse(sess, evt, this.transitionSrvc.localNodeId());
+                        		}
+                        		else {
+                        			agentsSrvc.sendMessage(sess, evt);
+                        		}
+                        		nodeIndex++;
+                        	}
+                        }                        	
+                        else {
+                        	log.warn("Not found any cluster agent for : " + evt);
+                        	sendMessageQuiet(ses, evt.response("Failed to send event to agent: Not found any cluster agent"));
+                        }
+                    }
+                    catch (ClusterGroupEmptyException ignored) {
+                        // No-op.
+                    }
+                    catch (Exception e) {
+                        log.warn("Failed to send response to browser: " + evt, e);
+                    }
+                    break;
+                    
                 case AGENT_CALL_CLUSTER_SERVICE:
                 case AGENT_CALL_CLUSTER_COMMAND:
                 	try {
@@ -314,7 +353,9 @@ public class BrowsersService extends AbstractSocketHandler {
 
 		registerVisorTask("querySqlX2", igniteCmd("qryfldexe"), Map.class.getName());
 		// scanf
-		registerVisorTask("queryScanX2", igniteCmd("qryscanexe"), Map.class.getName());
+		registerVisorTask("queryScanX2", igniteCmd("qryscanexe"), Map.class.getName());		
+		// gremlin
+		registerVisorTask("queryGremlin", igniteCmd("qrygremlinexe"), Map.class.getName());
 
 		registerVisorTask("queryFetch", igniteCmd("qryfetch"), Map.class.getName());
 
@@ -392,7 +433,6 @@ public class BrowsersService extends AbstractSocketHandler {
             return payload;
         	
         }
-
         
     }
 

@@ -67,7 +67,7 @@ public final class IgniteUtil{
         final CacheConfiguration<String, BinaryObject> cfg = new CacheConfiguration<>();
         cfg.setName(table);
         cfg.setStoreKeepBinary(false);
-        cfg.setIndexedTypes(new Class[] { String.class, BinaryObject.class });
+        
         cfg.setCacheMode(cacheMode);
         cfg.setQueryEntities(qes);
         // add@byron

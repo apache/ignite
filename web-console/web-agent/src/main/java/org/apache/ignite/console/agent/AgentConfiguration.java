@@ -161,8 +161,13 @@ public class AgentConfiguration implements PluginConfiguration {
     @Parameter(names = {"-pksp", "--passwords-key-store-password"},
             description = "Password for passwords key store")
     private String passwordsStorePass;
-
+    
     /** */
+    @Parameter(names = {"-gmsp", "--gremlin-server-port"},
+            description = "Port for Gremlin server, default 8182")
+    private int gremlinPort = 8182;    
+
+	/** */
     @Parameter(names = {"-h", "--help"}, help = true, description = "Print this help message")
     private boolean help;
 
@@ -521,6 +526,14 @@ public class AgentConfiguration implements PluginConfiguration {
         return this;
     }
 
+    public int gremlinPort() {
+		return gremlinPort;
+	}
+
+	public void gremlinPort(int gremlinPort) {
+		this.gremlinPort = gremlinPort;
+	}
+	
     /**
      * @return {@code true} If agent options usage should be printed.
      */
@@ -572,6 +585,16 @@ public class AgentConfiguration implements PluginConfiguration {
 
         if (val != null)
             driversFolder(val);
+        
+        val = props.getProperty("disable-demo");
+
+        if (val != null)
+            disableDemo(val.equals("true"));
+        
+        val = props.getProperty("disable-vertx");
+
+        if (val != null)
+        	disableVertx(val.equals("true"));
 
         val = props.getProperty("node-key-store");
 
@@ -622,6 +645,11 @@ public class AgentConfiguration implements PluginConfiguration {
 
         if (val != null)
             cipherSuites(Arrays.asList(val.split(",")));
+        
+        val = props.getProperty("gremlin-server-port");
+
+        if (val != null)
+            gremlinPort(Integer.parseInt(val));
     }
 
     /**

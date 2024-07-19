@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteLogger;
@@ -66,6 +67,7 @@ public class RestClusterHandler extends AbstractClusterHandler {
     
     public static final Map<String, String> clusterNameMap = U.newHashMap(2);
     
+    public static final Map<String, Integer> deactivedCluster = new ConcurrentHashMap<>();    
     /** */
     private static final String EXPIRED_SES_ERROR_MSG = "Failed to handle request - unknown session token (maybe expired session)";
 
@@ -96,6 +98,15 @@ public class RestClusterHandler extends AbstractClusterHandler {
     		urls.add(url);
     	}
     }
+    
+    public static boolean deactivedCluster(String id) {
+		Integer count = deactivedCluster.compute(id,(k,v)->{ return v==null? 1: ++v;});
+		if(count>1) {
+			
+			return true;
+		}
+		return false;
+	}
 
 
     /** {@inheritDoc} */
@@ -256,7 +267,7 @@ public class RestClusterHandler extends AbstractClusterHandler {
     public List<TopologySnapshot> topologySnapshot() {
     	List<TopologySnapshot> tops = new LinkedList<>(); 
     	
-    	for(String cluster: RestClusterHandler.clusterUrlMap.keySet()) {
+    	for(String cluster: clusterUrlMap.keySet()) {
             try {
             	
                 RestResult res = topology(cluster);
@@ -271,13 +282,19 @@ public class RestClusterHandler extends AbstractClusterHandler {
 
                 TopologySnapshot newTop = new TopologySnapshot(nodes);
 
-                if (!newTop.sameNodes(latestTop))
-                    log.info("Connection successfully established to cluster with nodes: " + nid8(newTop.nids()));
-                else if (!Objects.equals(latestTop.nids(), newTop.nids()))
+                if (!newTop.sameNodes(latestTop)) {
+                	if(log.isDebugEnabled())
+                		log.info("Connection successfully established to cluster with nodes: " + nid8(newTop.nids()));
+                }
+                else if (!Objects.equals(latestTop.nids(), newTop.nids())) {
                     log.info("Cluster topology changed, new topology: " + nid8(newTop.nids()));
+                }
                 
                 if(cluster.isEmpty()) {
                 	cluster = F.first(nodes).getConsistentId().toString();
+                	if(clusterNameMap.containsValue(cluster)) {
+                		continue;
+                	}
                 }
 
                 boolean active = active(fromString(newTop.getClusterVersion()), cluster, F.first(newTop.nids()));
@@ -294,10 +311,23 @@ public class RestClusterHandler extends AbstractClusterHandler {
             }
             catch (Throwable e) {
                 onFailedClusterRequest(e);
-
+                
+                TopologySnapshot dieTop = new TopologySnapshot();
+                dieTop.setId(cluster);
+                dieTop.setActive(false);
+                dieTop.setName(RestClusterHandler.clusterNameMap.getOrDefault(cluster, cluster));
+                tops.add(dieTop);
+                
+                RestClusterHandler.deactivedCluster(cluster);
                 latestTop = null;
             }
         }
+    	
+    	for(String nodeId: deactivedCluster.keySet()) {
+    		RestClusterHandler.clusterUrlMap.remove(nodeId);
+    		RestClusterHandler.clusterNameMap.remove(nodeId);
+    	}
+    	deactivedCluster.clear();
     	return tops;
     }
 }

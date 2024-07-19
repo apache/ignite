@@ -4,6 +4,8 @@ import com.google.common.base.Preconditions;
 import de.kp.works.ignite.IgniteClient;
 import de.kp.works.ignite.IgniteContext;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.transactions.Transaction;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.StoreMetaData.Container;
@@ -40,7 +42,8 @@ public class IgniteStoreManager implements KeyColumnValueStoreManager {
 		ignite = IgniteContext.getInstance(cfg,igniteNamespace).getIgnite();
 		namespace = ignite.name();
 		database = new IgniteClient(ignite);
-		
+		IgniteConfiguration igniteCfg = ignite.configuration();
+		boolean persists = igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().isPersistenceEnabled();
         /*
          * Initialize minimal store features; JanusGraph comes with
          * a wide range of additional features, so this is the place
@@ -48,7 +51,7 @@ public class IgniteStoreManager implements KeyColumnValueStoreManager {
          */
 		features = new StandardStoreFeatures.Builder()
 				.keyConsistent(configuration)
-				.persists(true)
+				.persists(persists)
 				/*
 				 * If this flag is set to `false`, JanusGraph with do this
 				 * via [ExpectedValueCheckingStoreManager], which is less
@@ -71,6 +74,7 @@ public class IgniteStoreManager implements KeyColumnValueStoreManager {
 				 */
                 .orderedScan(false)
                 .unorderedScan(true)
+                .transactional(true)
 			 	.build();
 		
 		/*
@@ -81,25 +85,21 @@ public class IgniteStoreManager implements KeyColumnValueStoreManager {
 	}
 
 	public StoreTransaction beginTransaction(BaseTransactionConfig config) {
-		return new IgniteStoreTransaction(config);
+		Transaction t = ignite.transactions().txStart();
+		return new IgniteStoreTransaction(t, config);
 	}
 
 	public void close() {
-
 		for (IgniteStore store : stores.values()) {
             store.close();
         }
-
-		stores.clear();
-		
+		stores.clear();		
 	}
 
 	public void clearStorage() {
-
 		for (IgniteStore store : stores.values()) {
             store.clear();
         }
-
         stores.clear();
 		
 	}

@@ -44,6 +44,7 @@ import org.apache.tinkerpop.gremlin.server.Settings;
 import org.apache.tinkerpop.gremlin.server.util.ServerGremlinExecutor;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
+
 import org.jetbrains.annotations.Nullable;
 import de.kp.works.ignite.IgniteConnect;
 
@@ -53,10 +54,12 @@ import de.kp.works.ignite.IgniteConnect;
  */
 public class GremlinServerPluginProvider implements PluginProvider<GremlinPluginConfiguration> {
 
-	//  One server per Instance
-	public GremlinServer gremlinServer;
+	//  One server for all ignite Instance
+	public static GremlinServer gremlinServer;
 	
-	public Settings settings;	
+	public static Settings settings;
+	
+	private static int counter = 0;
 
 	private String databaseName;
 
@@ -76,7 +79,7 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
 	/** {@inheritDoc} */
 	@Override
 	public String version() {
-		return "3.7.0";
+		return "3.7.2";
 	}
 
 	/** {@inheritDoc} */
@@ -114,8 +117,7 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
 			cfg = new GremlinPluginConfiguration();
 		}
 
-		boolean per = ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration()
-				.isPersistenceEnabled();
+		boolean per = igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().isPersistenceEnabled();
 		if (cfg != null && per) {
 			cfg.setPersistenceEnabled(true);
 		}
@@ -124,24 +126,27 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
 			try {
 				databaseName = igniteCfg.getIgniteInstanceName();
 				gremlin.databaseName = databaseName;
-				
-				settings = Settings.read(cfg.getGremlinServerCfg());
+				if(settings==null) {
+					settings = Settings.read(cfg.getGremlinServerCfg());
+				}
 				
 				String configBase = ctx.igniteConfiguration().getIgniteHome() + "/config/gremlin-server";
 
-				File graphFile = new File(configBase, "graph-" + databaseName + ".properties");
+				File graphFile = new File(configBase, "ignite-" + databaseName + ".properties");
 				if (graphFile.exists()) {
 					log.info(databaseName + "::load gremlim graph config file " + graphFile.getAbsolutePath());
 					gremlin.graphConfigFile =  graphFile.getAbsolutePath();
 				} else {
-					graphFile = new File(configBase, "graph-default.properties");
+					graphFile = new File(configBase, "ignite-default.properties");
 					log.info(databaseName + "::load default gremlim graph config file " + graphFile.getAbsolutePath());
 					gremlin.graphConfigFile = graphFile.getAbsolutePath();
-				}				
+				}	
+				
+				settings.graphs.put(databaseName, gremlin.graphConfigFile);
 				
 				// 设置默认的ignite
 				IgniteConnect.defaultIgnite = ignite;
-				
+				counter++;
 			} catch (Exception e) {
 				log.error(e.getMessage(), e);
 			}
@@ -164,19 +169,13 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
 
 	/** {@inheritDoc} */
 	@Override
-	public void start(PluginContext ctx) {		
-		if (settings != null) {			
-			
-		}
-
+	public void start(PluginContext ctx) {
 	}
 
 	/** {@inheritDoc} */
 	@Override
 	public void stop(boolean cancel) {
-		if (gremlinServer != null) {
-			
-		}
+		
 	}
 
 	/** {@inheritDoc} */
@@ -189,10 +188,9 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
 				if (workerPool == null) {
 					workerPool = ((IgniteEx) IgniteConnect.defaultIgnite).context().pools().getServiceExecutorService();
 				}
-				gremlinServer = new GremlinServer(settings, workerPool);
-				gremlin.graphManager = gremlinServer.getServerGremlinExecutor().getGraphManager();
+				gremlinServer = new GremlinServer(settings, workerPool);				
 
-				CompletableFuture<Void> serverStarted = gremlinServer.start().thenAcceptAsync(GremlinServerPluginProvider::configure);
+				CompletableFuture<Void> serverStarted = gremlinServer.start().thenAcceptAsync(this::configure);
 				serverStarted.join();
 
 				log.info("TinkerPop: {}\n", GremlinServer.getHeader());
@@ -206,25 +204,38 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
 		
 	}
 
-	private static void configure(ServerGremlinExecutor serverGremlinExecutor) {
-		GraphManager graphManager = serverGremlinExecutor.getGraphManager();
-		
+	private void configure(ServerGremlinExecutor serverGremlinExecutor) {
+		gremlin.graphManager = serverGremlinExecutor.getGraphManager();		
 
 	}
 
 	/** {@inheritDoc} */
 	@Override
 	public void onIgniteStop(boolean cancel) {
-		if (gremlin.graphManager == null) {
-			return ;
+		
+		if(gremlin.graphManager!=null) {			
+			try {
+				gremlin.graphManager.removeGraph(gremlin.databaseName);
+			} 
+			catch (Exception e) {				
+				e.printStackTrace();
+			}
+			gremlin.graphManager = null;			
 		}
-		try {
-			log.info("GremlinServer", "shutting down " + gremlinServer.toString());
-			gremlinServer.stop();
-			gremlinServer = null;
-		} catch (Exception e) {
-			log.error("GremlinServer close fail.", e);
-		}
+		
+		if(cfg!=null) {
+			counter--;
+			if (counter<=0 && gremlinServer!= null) {
+				try {
+					log.info("GremlinServer", "shutting down " + gremlinServer.toString());
+					gremlinServer.stop();
+					gremlinServer = null;
+				} catch (Exception e) {
+					log.error("GremlinServer close fail.", e);
+				}
+			}
+		}		
+		
 	}
 
 	/** {@inheritDoc} */

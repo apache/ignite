@@ -61,7 +61,7 @@ let paragraphId = 0;
 
 class Paragraph {
     name: string;
-    queryType: 'SCAN' | 'SQL_FIELDS';
+    queryType: 'SCAN' | 'SQL_FIELDS' | 'GREMLIN';
 
     constructor($animate, $timeout, JavaTypes, errorParser, paragraph, private $translate: ng.translate.ITranslateService) {
         const self = this;
@@ -1121,6 +1121,28 @@ export class NotebookCtrl {
             $scope.addParagraph(paragraph, sz);
         };
 
+        $scope.addGremlin = function() {
+            const sz = $scope.notebook.paragraphs.length;
+
+            ActivitiesData.post({ group: 'sql', action: '/queries/add/gremlin' });
+
+            const paragraph = _newParagraph({
+                name: $translate.instant('queries.notebook.newGremlinNamePrefix') + (sz === 0 ? '' : sz),
+                query: "g.V().property('label', 'value')",
+                pageSize: $scope.pageSizesOptions[1].value,
+                timeLineSpan: $scope.timeLineSpans[0],
+                result: 'NONE',
+                rate: {
+                    value: 1,
+                    unit: 60000,
+                    installed: false
+                },
+                queryType: 'GREMLIN'
+            });
+
+            $scope.addParagraph(paragraph, sz);
+        };
+
         function _saveChartSettings(paragraph) {
             if (!_.isEmpty(paragraph.charts)) {
                 const chart = paragraph.charts[0].api.getScope().chart;
@@ -1276,7 +1298,16 @@ export class NotebookCtrl {
          * @return {Observable<VisorQueryResult>} Observable with first query result page.
          */
         const _executeQuery0 = (queryType, qryArg, onQueryStarted: (res) => any = () => {}) => {
-            return from(queryType === 'SCAN' ? agentMgr.queryScan(qryArg) : agentMgr.querySql(qryArg)).pipe(
+            let query = null;
+            if (queryType === 'SCAN'){
+                query = agentMgr.queryScan(qryArg);
+            }                
+            else if (queryType === 'GREMLIN'){
+                query = agentMgr.queryGremlin(qryArg);
+            }                
+            else
+                query = agentMgr.querySql(qryArg);
+            return from(query).pipe(
                 tap((res) => {
                     onQueryStarted(res);
                     $scope.$applyAsync();

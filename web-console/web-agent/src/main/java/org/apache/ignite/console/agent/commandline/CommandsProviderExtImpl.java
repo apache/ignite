@@ -33,6 +33,7 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -64,13 +65,13 @@ public class CommandsProviderExtImpl implements CommandsProvider {
         /** {@inheritDoc} */
         @Override public Boolean execute(GridClient cli, Ignite ignite0, NodeStartCommandArg arg, Consumer<String> printer) {
             printer.accept("Start Node: "+ arg.instanceName() + ", cfg: " + arg.cfgPath());            
-
+            boolean isLastNode = !F.isEmpty(arg.clusterId());
 			// 启动一个独立的node，jvm内部的node之间相互隔离
 			Ignite ignite;
 			try {
-				ignite = IgniteClusterLauncher.trySingleStart(arg.clusterId(), arg.instanceName(),arg.cfgPath());
-				if(ignite!=null) {
-					IgniteClusterLauncher.registerNodeUrl(ignite);
+				ignite = IgniteClusterLauncher.trySingleStart(arg.clusterId(), arg.instanceName(), 0, isLastNode, arg.cfgPath());
+				if(ignite!=null && isLastNode) {
+					IgniteClusterLauncher.registerNodeUrl(ignite,arg.clusterId());
 					
 					IgniteClusterLauncher.deployServices(ignite.services(ignite.cluster().forServers()));
 		        	return true;
@@ -94,11 +95,12 @@ public class CommandsProviderExtImpl implements CommandsProvider {
         @Argument
         private String instanceName;
         
-        @Argument
+        @Argument(optional=true)
         private String clusterId; // UUID
         
         @Argument
         private String cfgPath;
+
 
         /** {@inheritDoc} */
         @Override protected void writeExternalData(ObjectOutput out) throws IOException {
@@ -160,7 +162,7 @@ public class CommandsProviderExtImpl implements CommandsProvider {
         /** {@inheritDoc} */
         @Override public Boolean execute(GridClient cli, Ignite ignite, NodeStopCommandArg arg, Consumer<String> printer) {
             printer.accept("Stop Node: "+ arg.instanceName() + ", clusterId: " + arg.clusterId());
-            
+            boolean isLastNode = !F.isEmpty(arg.clusterId());
             IgniteClusterLauncher.stopIgnite(arg.instanceName(),arg.clusterId());
 
             return true;
@@ -176,7 +178,7 @@ public class CommandsProviderExtImpl implements CommandsProvider {
         @Argument
         private String instanceName;
         
-        @Argument
+        @Argument(optional=true)
         private String clusterId; // UUID
 
         /** {@inheritDoc} */

@@ -30,8 +30,8 @@
         <okhttp.version>3.14.4</okhttp.version>
         <scala.version>2.11.12</scala.version>
         <spark.version>2.4.7</spark.version>
-        <tinkerpop.version>3.7.0</tinkerpop.version>
-		<gremlin.version>3.7.0</gremlin.version>
+        <tinkerpop.version>3.7.2</tinkerpop.version>
+		<gremlin.version>3.7.2</gremlin.version>
 
      </properties>
 

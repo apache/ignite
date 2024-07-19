@@ -38,26 +38,22 @@ public final class IgniteGraphUtils {
 
     private static final Map<String, IgniteConnection> connections = new ConcurrentHashMap<>();
 
-    public static IgniteConnection getConnection(IgniteGraphConfiguration config) {
-
-        IgniteConnection conn;
-
-        String namespace = config.getGraphNamespace();
+    public static IgniteConnection getConnection(String namespace,IgniteGraphConfiguration config) {
 
         /* Check whether connection already exists */
-        conn = connections.get(namespace);
+        IgniteConnection conn = connections.get(namespace);
         if (conn != null) return conn;
         
         String igniteCfg = config.getString("gremlin.graph.ignite.cfg");        
 
         conn = new IgniteConnection(namespace,igniteCfg);
 
-        connections.put(config.getGraphNamespace(), conn);
+        connections.put(namespace, conn);
         return conn;
     }
 
     public static String getTableName(IgniteGraphConfiguration config, String name) {
-        String ns = config.getGraphNamespace();
+        String ns = config.getNamespace();
         return ns + "_" + name;
     }
 

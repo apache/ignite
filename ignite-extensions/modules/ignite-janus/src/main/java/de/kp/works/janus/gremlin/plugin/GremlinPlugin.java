@@ -8,7 +8,7 @@ public class GremlinPlugin implements IgnitePlugin{
 
 	String databaseName;
 	
-	GraphManager graphManager;	
+	GraphManager graphManager;
 	
 	
 	public GraphManager getGraphManager() {

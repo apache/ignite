@@ -54,7 +54,7 @@ public class IgniteGraphManager extends DefaultGraphManager {
         try {
         	
         	Configurations configs = new Configurations();
-            final Graph newGraph = IgniteGraph.open(configs.properties(configurationFile));
+            final Graph newGraph = IgniteGraph.open(name,configs.properties(configurationFile));
             putGraph(name, newGraph);
             
             logger.info("Graph [{}] was successfully configured via [{}].", name, configurationFile);

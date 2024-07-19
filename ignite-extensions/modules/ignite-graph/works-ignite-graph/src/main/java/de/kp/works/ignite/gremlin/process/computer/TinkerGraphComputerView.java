@@ -155,9 +155,8 @@ public final class TinkerGraphComputerView {
                 this.addPropertiesToOriginalGraph();
                 return this.graph;
             } else {
-            	IgniteGraphConfiguration config = this.graph.configuration();
-            	config.setGraphNamespace(resultGraph.name());
-                final IgniteGraph newGraph = IgniteGraph.open(config);
+            	IgniteGraphConfiguration config = this.graph.configuration();            	
+                final IgniteGraph newGraph = IgniteGraph.open(resultGraph.name(),config);
                 this.graph.vertices().forEachRemaining(vertex -> {
                     final Vertex newVertex = newGraph.addVertex(T.id, vertex.id(), T.label, vertex.label());
                     vertex.properties().forEachRemaining(vertexProperty -> {
@@ -174,9 +173,8 @@ public final class TinkerGraphComputerView {
                 this.addPropertiesToOriginalGraph();
                 return this.graph;
             } else {
-            	IgniteGraphConfiguration config = this.graph.configuration();
-            	config.setGraphNamespace(resultGraph.name());
-                final IgniteGraph newGraph = IgniteGraph.open(config);
+            	IgniteGraphConfiguration config = this.graph.configuration();            	
+                final IgniteGraph newGraph = IgniteGraph.open(resultGraph.name(),config);
                 this.graph.vertices().forEachRemaining(vertex -> {
                     final Vertex newVertex = newGraph.addVertex(T.id, vertex.id(), T.label, vertex.label());
                     vertex.properties().forEachRemaining(vertexProperty -> {

@@ -42,6 +42,7 @@ import static org.apache.ignite.console.websocket.WebSocketEvents.SCHEMA_IMPORT_
 
 import java.io.File;
 import java.net.URI;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -52,6 +53,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -79,10 +81,13 @@ import org.apache.ignite.console.websocket.AgentHandshakeRequest;
 import org.apache.ignite.console.websocket.AgentHandshakeResponse;
 import org.apache.ignite.console.websocket.WebSocketRequest;
 import org.apache.ignite.console.websocket.WebSocketResponse;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.ignite.services.Service;
 import org.eclipse.jetty.client.HttpClient;
@@ -98,6 +103,7 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.slf4j.LoggerFactory;
 
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -170,9 +176,9 @@ public class WebSocketRouter implements AutoCloseable {
         httpClient = new HttpClient(createServerSslFactory(cfg));
         httpClient.setMaxConnectionsPerDestination(2);
         httpClient.setConnectBlocking(false);
-        httpClient.setConnectTimeout(500);
+        httpClient.setConnectTimeout(1000);
         httpClient.setFollowRedirects(false);
-        httpClient.setExecutor(RestExecutor.executor);
+        httpClient.setExecutor(RestExecutor.executor);       
         
         
         // TODO GG-18379 Investigate how to establish native websocket connection with proxy.
@@ -242,6 +248,11 @@ public class WebSocketRouter implements AutoCloseable {
     /** {@inheritDoc} */
     @Override public void close() {
         log.info("Stopping Web Console Agent...");
+        
+        vertxClusterHnd.close();
+        dbHnd.close();
+        demoClusterHnd.close();
+        clusterHnd.close();
 
         stopClient();
 
@@ -270,10 +281,15 @@ public class WebSocketRouter implements AutoCloseable {
 
             
             client = new WebSocketClient(httpClient);            
-
             
             client.start();
-            client.connect(this, URI.create(cfg.serverUri()).resolve(AGENTS_PATH)).get(5L, TimeUnit.SECONDS);
+            Session session = client.connect(this, URI.create(cfg.serverUri()).resolve(AGENTS_PATH)).get(5L, TimeUnit.SECONDS);
+            session.getPolicy().setMaxTextMessageSize(1024*1024);
+            session.getPolicy().setMaxBinaryMessageSize(1024*1024);
+            session.getPolicy().setMaxTextMessageBufferSize(1024*1024);
+            session.getPolicy().setMaxBinaryMessageBufferSize(1024*1024);
+            session.setIdleTimeout(60*60000);
+            
             reconnectCnt.set(0);
             
         }
@@ -385,13 +401,14 @@ public class WebSocketRouter implements AutoCloseable {
     /**
      * @param tok Token to revoke.
      */
-    private JsonObject processClusterStart(String msg) {
-        log.info("Cluster start msg has been revoked: " + msg);
+    private JsonObject processClusterStart(WebSocketRequest evt) {
+        log.info("Cluster start msg has been revoked: " + evt.getNodeSeq());
         JsonObject stat = new JsonObject();
-        JsonObject json = fromJson(msg);
-       
+        JsonObject json = fromJson(evt.getPayload());
+        
+        boolean isLastNode = evt.isLastNode();       
         String clusterId = json.getString("id");
-        if(DEMO_CLUSTER_ID.equals(clusterId)) {
+        if(DEMO_CLUSTER_ID.equals(clusterId) || AgentClusterDemo.SRV_NODE_NAME.equals(clusterId)) {
         	json.put("demo", true);
         }
         String clusterName = Utils.escapeFileName(json.getString("name"));
@@ -399,8 +416,8 @@ public class WebSocketRouter implements AutoCloseable {
 			
 			String unzipDest = IgniteClusterLauncher.saveBlobToFile(json);
 			
-			Boolean restart = json.getBoolean("restart");
-			if(restart!=null && restart) {				
+			Boolean restart = json.getBoolean("restart",false);
+			if(restart) {			
 	        	IgniteClusterLauncher.stopIgnite(clusterName,clusterId);
 			}
 			
@@ -414,16 +431,18 @@ public class WebSocketRouter implements AutoCloseable {
 				File configFile = new File(U.getIgniteHome()+ "/config/clusters/"+clusterName+"-config.xml");
 				
 				if(startIniFile.exists()) {
-					try {						
-		        		ignite = Ignition.allGrids().get(0);
-		        		ignite.cluster().startNodes(startIniFile, restart, 60*1000, 1);
-			    		stat.put("status", "started");
-		    		}
-			    	catch(IgniteIllegalStateException e) {	
-			    		stat.put("message", e.getMessage());
-			    		stat.put("status", "stoped");
-			    		return stat;
-			    	}
+					if(isLastNode) {
+						try {						
+			        		ignite = Ignition.allGrids().get(0);
+			        		ignite.cluster().startNodes(startIniFile, restart, 60*1000, 1);
+				    		stat.put("status", "started");
+			    		}
+				    	catch(IgniteIllegalStateException e) {	
+				    		stat.put("message", e.getMessage());
+				    		stat.put("status", "stoped");
+				    		return stat;
+				    	}
+					}
 				}
 				else {
 				
@@ -433,46 +452,70 @@ public class WebSocketRouter implements AutoCloseable {
 		        	
 		        	if(configWorkFile.exists() && configFile.exists()) {
 		        		// 合并并启动一个服务端已经配置好的node
-		        		ignite = IgniteClusterLauncher.trySingleStart(clusterId,clusterName,cfgFile,configFile.toString());
+		        		ignite = IgniteClusterLauncher.trySingleStart(clusterId,clusterName,evt.getNodeSeq(),isLastNode,cfgFile,configFile.toString());
 		        	}					
 		        	else if(configWorkFile.exists()) {
 		        		// 启动一个独立的node，jvm内部的node之间相互隔离
-		        		ignite = IgniteClusterLauncher.trySingleStart(clusterId,clusterName,cfgFile);
+		        		ignite = IgniteClusterLauncher.trySingleStart(clusterId,clusterName,evt.getNodeSeq(),isLastNode,cfgFile);
 		        	}		        	
 		        	else if(configFile.exists()) {
 		        		// 启动一个服务端已经配置好的node
-		        		ignite = IgniteClusterLauncher.trySingleStart(clusterId,clusterName,null,configFile.toString());
+		        		ignite = IgniteClusterLauncher.trySingleStart(clusterId,clusterName,evt.getNodeSeq(),isLastNode,null,configFile.toString());
+		        	}
+		        	else {		        		
+		        		stat.put("message", "not found cfg file, please deploy cfg first!");		        		
 		        	}
 					
 					if(ignite!=null) {
-						IgniteClusterLauncher.registerNodeUrl(ignite);
-						
-						IgniteClusterLauncher.deployServices(ignite.services(ignite.cluster().forServers()));
+						IgniteClusterLauncher.registerNodeUrl(ignite,clusterId);
+						if(isLastNode) {
+							IgniteClusterLauncher.deployServices(ignite.services(ignite.cluster().forServers()));
+						}
 			        	stat.put("status", "started");
+			        	stat.put("message","Ignite started successfully.");
 					}
 					else {
 						stat.put("status", "stoped");
+						return stat;
 					}
 				}
 				
 			}
 			else {
-				// 启动一个共享型的node，jvm内部的grid node会组成集群
+				// 启动一个内存型的node，有多少个Agent就有多少个Demo Node
+				String work = U.workDirectory(null, null);
+				String cfgFile = String.format("%s/config/%s/src/main/resources/META-INF/%s-server.xml", work, clusterName,clusterName);
+	        	File configWorkFile = new File(cfgFile);
+	        	
 				IgniteConfiguration cfg = new IgniteConfiguration();
-				cfg.setIgniteInstanceName(clusterName);
-				cfg.setConsistentId(clusterId);
-				cfg.setNodeId(UUID.fromString(clusterId));
-				// 启动多个节点，并且在最后一个节点部署服务
-	        	boolean rv = AgentClusterDemo.tryStart(cfg).await(60,TimeUnit.SECONDS);
-	        	if(rv) {
+				if(configWorkFile.exists()) {
+					IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap=null;
+			    	if(ignite==null) {
+						URL springPreCfgUrl = U.resolveSpringUrl(configWorkFile.toString());			
+						cfgMap = IgnitionEx.loadConfigurations(springPreCfgUrl);
+						
+						Collection<IgniteConfiguration> cfgList = cfgMap.get1();
+						for(IgniteConfiguration cfg0: cfgList) {
+							if(clusterName.equals(cfg0.getIgniteInstanceName())){
+								cfg = cfg0;
+							}				
+						}
+					}
+				}
+				
+				// 启动Demo节点，并且在最后一个节点部署服务
+	        	ignite = AgentClusterDemo.tryStart(cfg,evt.getNodeSeq(),isLastNode);
+	        	if(ignite!=null) {
 	        		stat.put("status", "started");
 	        	}
-			}
+	        	else {
+	        		stat.put("message","Demo Ignite already started.");
+	        	}
+	        	return stat;
+			}			
 			
-			stat.put("message","Ignite started successfully.");
 			
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
+		} catch (Exception e) {			
 			e.printStackTrace();
 			stat.put("message", e.getMessage());
 			stat.put("status", "stoped");
@@ -484,10 +527,11 @@ public class WebSocketRouter implements AutoCloseable {
     /**
      * @param tok Token to revoke.
      */
-    private JsonObject processClusterStop(String msg) {
-        log.info("Cluster stop msg has been revoked: " + msg);
+    private JsonObject processClusterStop(WebSocketRequest evt) {
+        log.info("Cluster stop msg has been revoked: " + evt.getPayload());
         JsonObject stat = new JsonObject();
-        JsonObject json = fromJson(msg);
+        JsonObject json = fromJson(evt.getPayload());
+        boolean isLastNode = evt.isLastNode();
         String clusterName = Utils.escapeFileName(json.getString("name"));
         if(json.getBoolean("demo",false)) {
         	AgentClusterDemo.stop();
@@ -497,7 +541,7 @@ public class WebSocketRouter implements AutoCloseable {
         	
         	File startIniFile = new File(U.getIgniteHome()+ "/config/clusters/"+clusterName+"-start-nodes.ini");
 			
-			if(startIniFile.exists()) {
+			if(isLastNode && startIniFile.exists()) {
 				try {						
 	        		Ignite ignite = Ignition.ignite(clusterName);	        		
 	        		ignite.cluster().stopNodes();
@@ -651,12 +695,12 @@ public class WebSocketRouter implements AutoCloseable {
                     return;
                     
                 case AGENT_START_CLUSTER:
-                	msgRet = processClusterStart(evt.getPayload());
+                	msgRet = processClusterStart(evt);
                 	send(ses, evt.response(msgRet));
                 	break;
                 	
                 case AGENT_STOP_CLUSTER:
-                	msgRet = processClusterStop(evt.getPayload());
+                	msgRet = processClusterStop(evt);
                 	send(ses, evt.response(msgRet));
                 	break;
                 	
@@ -693,18 +737,39 @@ public class WebSocketRouter implements AutoCloseable {
                     RestRequest reqRest = fromJson(evt.getPayload(), RestRequest.class);
 
                     JsonObject params = new JsonObject(reqRest.getParams());
-
+                    String cmd = params.getString("cmd");
                     RestResult res;
 
                     try {
-                    	if(DEMO_CLUSTER_ID.equals(reqRest.getClusterId())) {
+                    	if("qrygremlinexe".equals(cmd) || "qrygroovyexe".equals(cmd)) {
+                    		// Gremlin Query or Execute groovy code
+                    		res = vertxClusterHnd.restCommand(reqRest.getClusterId(),params);
+                		}                    	
+                    	else if(DEMO_CLUSTER_ID.equals(reqRest.getClusterId())) {
                     		res = demoClusterHnd.restCommand(reqRest.getClusterId(),params);
                     	}
                     	else if(dbHnd.isDBCluster(reqRest.getClusterId())) {
                     		res = dbHnd.restCommand(reqRest.getClusterId(), params);
                     	}
-                    	else {
+                    	else if(vertxClusterHnd.isVertxCluster(reqRest.getClusterId())) {
+                    		// inner task call
+                    		res = vertxClusterHnd.restCommand(reqRest.getClusterId(),params);
+                		} 
+                    	else {                    		
                     		res = clusterHnd.restCommand(reqRest.getClusterId(),params);
+                    	}
+                    	
+                    	if(cmd.equals("top") && params.getBoolean("attr",false)) {
+                    		JsonArray nodes = new JsonArray(res.getData());
+                    		for(int i=0;i<nodes.size();i++) {
+                    			JsonObject node = nodes.getJsonObject(i);
+                    			JsonObject attr = node.getJsonObject("attributes");
+                    			if(attr!=null) {
+                    				attr.remove("java.library.path");
+                    				attr.remove("java.class.path");
+                    			}
+                    		}
+                    		res = RestResult.success(nodes.toString(), res.getSessionToken());
                     	}
                     }
                     catch (Throwable e) {
@@ -777,7 +842,7 @@ public class WebSocketRouter implements AutoCloseable {
     @OnWebSocketClose
     public void onClose(int statusCode, String reason) {
         if (reconnectCnt.get() == 0) {
-            log.info("Websocket connection closed with code: " + statusCode);
+            log.info("Websocket connection closed with code: " + statusCode+ ", reason:"+reason);
 
             connect();
         }

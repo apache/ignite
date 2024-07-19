@@ -21,7 +21,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import com.fasterxml.jackson.core.type.TypeReference;
+
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.apache.ignite.console.repositories.ConfigurationsRepository;
 import org.apache.ignite.console.web.model.ConfigurationKey;
@@ -46,7 +47,7 @@ public class DemoService {
     private static final Logger log = LoggerFactory.getLogger(DemoService.class);
 
     /** Demo clusters. */
-    private List<JsonObject> clusters;
+    private JsonArray clusters;
 
     /** Repository to work with configurations. */
     private final ConfigurationsRepository cfgsRepo;
@@ -107,7 +108,7 @@ public class DemoService {
 
                 String content = FileCopyUtils.copyToString(new InputStreamReader(res.getInputStream(), UTF_8));
 
-                clusters = fromJson(content, new TypeReference<List<JsonObject>>() { });
+                clusters = new JsonArray(content);
             }
             catch (Exception e) {
                 log.error("Failed to get demo clusters", e);
@@ -115,7 +116,8 @@ public class DemoService {
         }
 
         if (!F.isEmpty(clusters)) {
-            for (JsonObject json : clusters) {
+            for (int i=0;i<clusters.size();i++) {
+            	JsonObject json = clusters.getJsonObject(i);
                 JsonObject cluster = json.getJsonObject("cluster");
 
                 cluster.put("id", UUID.randomUUID().toString());

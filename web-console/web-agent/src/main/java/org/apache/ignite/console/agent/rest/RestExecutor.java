@@ -52,7 +52,7 @@ public class RestExecutor implements AutoCloseable {
     /** */
     private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(RestExecutor.class));
     /** */
-    public static QueuedThreadPool executor = new QueuedThreadPool(32);
+    public static QueuedThreadPool executor = new QueuedThreadPool(64);
     static {
     	executor.setName("Agent http client");    	
     }
@@ -65,6 +65,7 @@ public class RestExecutor implements AutoCloseable {
      */
     public RestExecutor(SslContextFactory sslCtxFactory) {
         httpClient = new HttpClient(sslCtxFactory);
+        httpClient.setMaxConnectionsPerDestination(1);
         httpClient.setExecutor(executor);
     }
 

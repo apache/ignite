@@ -21,7 +21,7 @@ export default class PermanentNotifications {
 
     closeDemo() {
         this.$window.close();
-        this.AgentManager.stopCluster({id:'demo',name:'demo-server',demo:true})
+        this.AgentManager.stopCluster({id:'demo-server',name:'demo-server',demo:true})
     }
 
     revertIdentity() {

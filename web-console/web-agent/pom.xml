@@ -59,6 +59,18 @@
             <version>${web-console.ignite.version}</version>           
         </dependency>
         
+        <dependency>
+            <groupId>org.apache.tinkerpop</groupId>
+            <artifactId>gremlin-groovy</artifactId>
+            <version>${tinkerpop.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.apache.tinkerpop</groupId>
+            <artifactId>gremlin-driver</artifactId>
+            <version>${tinkerpop.version}</version>
+        </dependency>        
+        
          <dependency>
              <groupId>org.apache.ignite</groupId>
              <artifactId>ignite-control-utility</artifactId>
@@ -157,13 +169,14 @@
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>5.1.44</version>
-        </dependency>
+        </dependency>        
         
-        <dependency>
-            <groupId>com.zaxxer</groupId>
-            <artifactId>HikariCP</artifactId>
-            <version>${java7.hikaricp.version}</version>
-        </dependency>
+		<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-dbcp2 -->
+		<dependency>
+		    <groupId>org.apache.commons</groupId>
+		    <artifactId>commons-dbcp2</artifactId>
+		    <version>2.8.0</version>
+		</dependency>
 
       
     </dependencies>

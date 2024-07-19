@@ -129,7 +129,7 @@ public abstract class AbstractSocketHandler extends TextWebSocketHandler {
      * @throws IOException If failed to send message.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    protected void sendMessage(WebSocketSession ses, WebSocketEvent evt) throws IOException {
+    public void sendMessage(WebSocketSession ses, WebSocketEvent evt) throws IOException {
         synchronized (ses) {
             ses.sendMessage(new TextMessage(toJson(evt)));
         }
@@ -139,7 +139,7 @@ public abstract class AbstractSocketHandler extends TextWebSocketHandler {
      * @param ses Session to send message.
      * @param evt Event.
      */
-    protected void sendMessageQuiet(WebSocketSession ses, WebSocketEvent evt) {
+    public void sendMessageQuiet(WebSocketSession ses, WebSocketEvent evt) {
         try {
             sendMessage(ses, evt);
         }

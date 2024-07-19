@@ -544,7 +544,7 @@ export default class AgentManager {
                         throw new Error('Access denied. You are not authorized to access this functionality.');
 
                     default:
-                        throw new Error('Illegal status in node response');
+                        throw new Error('Illegal status in node response:' + res.error);
                 }
             });
     }
@@ -866,6 +866,37 @@ export default class AgentManager {
                     
                 });
         }
+    }
+
+    /**
+     * @param {String} nid Node id.
+     * @param {String} cacheName Cache name.
+     * @param {String} [query] Query if null then scan query.
+     * @param {Boolean} nonCollocatedJoins Flag whether to execute non collocated joins.
+     * @param {Boolean} enforceJoinOrder Flag whether enforce join order is enabled.
+     * @param {Boolean} replicatedOnly Flag whether query contains only replicated tables.
+     * @param {Boolean} local Flag whether to execute query locally.
+     * @param {Number} pageSize
+     * @param {Boolean} [lazy] query flag.
+     * @param {Boolean} [collocated] Collocated query.
+     * @returns {Promise.<VisorQueryResult>} Query execution result.
+     */
+    queryGremlin({nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSize, lazy = false, collocated = false}) {
+        if (this.available(IGNITE_2_0)) {
+            let args = {cacheName, qry:query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSize, lazy, collocated};
+            
+            return this.visorTask<AgentTypes.QuerySqlX2Response>('queryGremlin', nid, args).then((data) => {                
+                if (!('error' in data) || !(data.error)){
+                    if('result' in data){
+                        return data.result
+                    }
+                    return data;
+                }                   
+
+                return Promise.reject(data.error);
+            });
+        }
+        
     }
 
     /**

@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.TOPOLOG
  */
 public class DemoClusterHandler extends AbstractClusterHandler{
     /** Demo cluster ID. */
-    public static final String DEMO_CLUSTER_ID = UUID.randomUUID().toString();
+    public static String DEMO_CLUSTER_ID;
 
     /** Demo cluster name. */
     public static final String DEMO_CLUSTER_NAME = "demo-cluster";
@@ -56,6 +56,7 @@ public class DemoClusterHandler extends AbstractClusterHandler{
      */
     DemoClusterHandler(AgentConfiguration cfg) {
         super(cfg, null);
+        DEMO_CLUSTER_ID = F.first(cfg.tokens());
     }
 
     /** {@inheritDoc} */
@@ -63,11 +64,7 @@ public class DemoClusterHandler extends AbstractClusterHandler{
         if (AgentClusterDemo.getDemoUrl() == null) {
             if (cfg.disableDemo())
                 return RestResult.fail(404, "Demo mode disabled by administrator.");
-
-            IgniteConfiguration cfg = new IgniteConfiguration();
-            AgentClusterDemo.tryStart(cfg).await();
-
-            if (AgentClusterDemo.getDemoUrl() == null)
+            else
                 return RestResult.fail(404, "Failed to send request because of embedded node for demo mode is not started yet.");
         }
 
@@ -84,25 +81,32 @@ public class DemoClusterHandler extends AbstractClusterHandler{
         TopologySnapshot top;
 
         if (AgentClusterDemo.getDemoUrl() != null) {
-            IgniteEx ignite = (IgniteEx)F.first(Ignition.allGrids());
+        	try {
+	            IgniteEx ignite = (IgniteEx)Ignition.ignite(AgentClusterDemo.SRV_NODE_NAME);
+	
+	            Collection<GridClientNodeBean> nodes = collectNodes(ignite.context());
+	
+	            top = new TopologySnapshot(nodes);
+	            top.setClusterVersion(VER_STR);
+	            top.setActive(ignite.cluster().active());
+	            top.setId(DEMO_CLUSTER_ID.toString());
+	            top.setName(DEMO_CLUSTER_NAME);
+	            top.setDemo(true);        
 
-            Collection<GridClientNodeBean> nodes = collectNodes(ignite.context());
-
-            top = new TopologySnapshot(nodes);
-
-            top.setActive(ignite.cluster().active());
+	            return List.of(top);
+        	}
+        	catch(Exception e) {
+        		return null;
+        	}
         }
         else {
-            top = new TopologySnapshot();
-            
+        	top = new TopologySnapshot();        	
             top.setClusterVersion(VER_STR);
-        }
-
-        top.setId(DEMO_CLUSTER_ID.toString());
-        top.setName(DEMO_CLUSTER_NAME);
-        top.setDemo(true);        
-
-        return List.of(top);
+            top.setId(DEMO_CLUSTER_ID.toString());
+            top.setName(DEMO_CLUSTER_NAME);
+            top.setDemo(true);
+            return List.of(top);
+        }        
     }
 
     /**

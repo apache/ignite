@@ -218,4 +218,8 @@ public class TransitionService {
     public void sendResponse(UUID nid, WebSocketRequest evt) {
         ignite.message(ignite.cluster().forNodeId(nid)).send(SEND_RESPONSE, evt);
     }
+    
+    public UUID localNodeId() {
+    	return ignite.cluster().localNode().id();
+    }
 }

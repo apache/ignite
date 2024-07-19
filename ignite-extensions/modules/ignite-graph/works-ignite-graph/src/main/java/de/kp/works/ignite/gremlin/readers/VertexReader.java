@@ -59,6 +59,8 @@ public class VertexReader extends LoadingElementReader<Vertex> {
         for (IgniteColumn column : result.getColumns()) {
             String colName = column.getColName();
             switch (colName) {
+            	case IgniteConstants.ID_COL_NAME:
+            		break;
                 case IgniteConstants.LABEL_COL_NAME:
                     label = column.getColValue().toString();
                     break;

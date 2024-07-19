@@ -53,7 +53,7 @@ public abstract class IgniteElement implements Element,java.io.Serializable {
                             Long updatedAt,
                             Map<String, Object> properties,
                             boolean propertiesFullyLoaded) {       
-        this.namespace = graph.getIgniteGraphConfiguration().getGraphNamespace();
+        this.namespace = graph.admin.namespace();
         this.id = id;
         this.label = label;
         this.createdAt = createdAt;
@@ -124,13 +124,13 @@ public abstract class IgniteElement implements Element,java.io.Serializable {
         return propertiesFullyLoaded;
     }
 
-    public void copyFrom(IgniteElement element) {
+    public void copyFrom(IgniteElement element) {    	
         if (element.label != null) this.label = element.label;
         if (element.createdAt != null) this.createdAt = element.createdAt;
         if (element.updatedAt != null) this.updatedAt = element.updatedAt;
         if (element.properties != null
                 && (element.propertiesFullyLoaded || this.properties == null)) {
-            this.properties = new ConcurrentHashMap<>(element.properties);
+            this.properties = element.properties;
             this.propertiesFullyLoaded = element.propertiesFullyLoaded;
         }
     }

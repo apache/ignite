@@ -46,8 +46,6 @@ public class DbMetadataReader {
     /** Logger. */
     private static final Logger log = LoggerFactory.getLogger(DbMetadataReader.class.getName());
 
-    /** */
-    private final Map<String, Driver> drivers = new HashMap<>();
 
     /**
      * Get specified dialect object for selected database.
@@ -136,7 +134,7 @@ public class DbMetadataReader {
      */
     public Connection connect(String jdbcDrvJarPath, DBInfo dbInfo)
         throws SQLException {
-        Driver drv = drivers.get(dbInfo.getDriverCls());
+        Driver drv = DataSourceManager.drivers.get(dbInfo.getDriverCls());
 
         if (drv == null && jdbcDrvJarPath!=null) {
         	
@@ -155,7 +153,8 @@ public class DbMetadataReader {
 
                 drv = (Driver)Class.forName(dbInfo.getDriverCls(), true, ucl).newInstance();
 
-                drivers.put(dbInfo.getDriverCls(), drv);
+                DataSourceManager.drivers.put(dbInfo.getDriverCls(), drv);                
+                
             }
             catch (Exception e) {
                 throw new IllegalStateException(e);
@@ -166,7 +165,7 @@ public class DbMetadataReader {
             try {
                 drv = (Driver)Class.forName(dbInfo.getDriverCls()).newInstance();
 
-                drivers.put(dbInfo.getDriverCls(), drv);
+                DataSourceManager.drivers.put(dbInfo.getDriverCls(), drv);
             }
             catch (Exception e) {
                 throw new IllegalStateException(e);
@@ -176,7 +175,7 @@ public class DbMetadataReader {
         Connection conn = drv.connect(dbInfo.jdbcUrl, dbInfo.getJdbcProp());
 
         if (conn == null)
-            throw new IllegalStateException("Connection was not established (JDBC driver returned null value).");
+            throw new IllegalStateException("Connection was not established (JDBC driver returned null value).");        
 
         return conn;
     }

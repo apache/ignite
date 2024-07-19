@@ -47,7 +47,7 @@ public class DatabaseListener {
 
 	/** Index of alive node URI. jndiName->DBInfo*/
 	final public Map<String, DBInfo> clusters = new ConcurrentHashMap<>();
-	final public Map<String,Integer> deactivedCluster = new ConcurrentHashMap<>();
+	final public Map<String, Integer> deactivedCluster = new ConcurrentHashMap<>();
 	
 	public boolean deactivedCluster(String id) {
 		Integer count = deactivedCluster.compute(id,(k,v)->{ return v==null? 1: ++v;});

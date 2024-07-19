@@ -29,18 +29,31 @@ export default class DemoModeButton {
         const user = await this.User.current$.pipe(take(1)).toPromise();
 
         if (disconnected || demoEnabled || _.isNil(demoEnabled)) {
-            if (!user.demoCreated)
+            if (!user.demoCreated){
+                this.clusterStart();
                 return this._openTab('demo.reset');
+            }                
 
             this.Confirm.confirm(this.$translate.instant('demoModeButton.continueConfirmationMessage'), true, false)
                 .then((resume) => {
-                    if (resume)
+                    if (resume){                        
                         return this._openTab('demo.resume');
-
+                    }
                     this._openTab('demo.reset');
                 });
         }
         else
             this.Messages.showError(this.$translate.instant('demoModeButton.demoModeDisabledErrorMessage'));
+    }
+    
+    clusterStart() {        
+        this.agentMgr.startCluster({id:'demo-server',name:'demo-server',demo:true}).then((msg) => {  
+            if(msg.message){
+                this.Messages.showError(msg.message); 
+            }
+        })
+       .catch((e) => {
+            this.Messages.showError(e.message);       
+        });
     }
 }

@@ -31,13 +31,13 @@ public class IgniteGraphConfiguration extends AbstractConfiguration implements S
     private static final long serialVersionUID = -7150699702127992270L;
 
     private final PropertiesConfiguration conf;
+    private final String namespace;
 
     public static final Class<? extends Graph> IGNITE_GRAPH_CLASS = IgniteGraph.class;
 
     public static final String IGNITE_GRAPH_CLASSNAME = IGNITE_GRAPH_CLASS.getCanonicalName();
 
-    public static class Keys {
-        public static final String GRAPH_NAMESPACE             = "gremlin.ignite.namespace";
+    public static class Keys {        
         public static final String GRAPH_CLASS                 = "gremlin.graph";
         public static final String GRAPH_PROPERTY_TYPE         = "gremlin.graph.propertyType";
         public static final String GLOBAL_CACHE_MAX_SIZE       = "gremlin.ignite.globalCacheMaxSize";
@@ -51,31 +51,19 @@ public class IgniteGraphConfiguration extends AbstractConfiguration implements S
      * A minimal configuration for the IgniteGraph
      */
     public IgniteGraphConfiguration() {
+    	this.namespace = "default";
         conf = new PropertiesConfiguration();
         conf.setProperty(Keys.GRAPH_CLASS, IGNITE_GRAPH_CLASSNAME);
     }
 
-    public IgniteGraphConfiguration(Configuration config) {
+    public IgniteGraphConfiguration(String namespace,Configuration config) {
+    	this.namespace = namespace;
         conf = new PropertiesConfiguration();
         conf.setProperty(Keys.GRAPH_CLASS, IGNITE_GRAPH_CLASSNAME);
         if (config != null) {
             config.getKeys().forEachRemaining(key ->
                     conf.setProperty(key.replace("..", "."), config.getProperty(key)));
         }
-    }
-
-    public String getGraphNamespace() {
-        return conf.getString(Keys.GRAPH_NAMESPACE, "default");
-    }
-
-    public IgniteGraphConfiguration setGraphNamespace(String name) {
-        if (!isValidGraphName(name)) {
-            throw new IllegalArgumentException("Invalid graph namespace."
-                    + " Only alphanumerics and underscores are allowed");
-        }
-
-        conf.setProperty(Keys.GRAPH_NAMESPACE, name);
-        return this;
     }
 
     private static boolean isValidGraphName(String name) {
@@ -132,5 +120,9 @@ public class IgniteGraphConfiguration extends AbstractConfiguration implements S
     protected void clearPropertyDirect(String key) {
         conf.clearProperty(key);
     }
+
+	public String getNamespace() {
+		return namespace;
+	}
 
 }

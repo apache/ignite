@@ -25,7 +25,7 @@ form(novalidate name=form)
                 name: '"clusterName"',
                 placeholder: 'Input name',
                 required: true,
-                disable: true,             
+                disabled: true,             
                 tip: 'Instance name allows to indicate to what grid this particular grid instance belongs to'
             })(
                 ignite-unique='$ctrl.shortClusters'
@@ -42,7 +42,7 @@ form(novalidate name=form)
                 name: '"discovery"',               
                 placeholder: 'Choose discovery',
                 options: '$ctrl.Clusters.discoveries',
-                disable: true,
+                disabled: true,
                 tip: 'Discovery allows to discover remote nodes in grid\
                 <ul>\
                     <li>Static IPs - IP Finder which works only with pre configured list of IP addresses specified</li>\
@@ -77,7 +77,7 @@ form(novalidate name=form)
                                 label: 'Name',
                                 model: '$item.name',
                                 name: '"name"',
-                                disable: true,
+                                disabled: true,
                                 required: true
                             })(
                                 ignite-unique='$ctrl.shortCaches'
@@ -98,6 +98,7 @@ form(novalidate name=form)
                                 model: '$item.atomicityMode',
                                 name: '"atomicityMode"',
                                 placeholder: 'ATOMIC',
+                                disabled: true,
                                 options: '::$ctrl.Caches.atomicityModes'
                             })
                         div(ng-show='$ctrl.Caches.shouldShowCacheBackupsCount($item)')
@@ -106,6 +107,7 @@ form(novalidate name=form)
                                 model: '$item.backups',
                                 name: '"backups"',
                                 placeholder: '0',
+                                disabled: true,
                                 min: 0
                             })
                     

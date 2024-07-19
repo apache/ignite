@@ -19,6 +19,7 @@ package org.apache.ignite.console.web.socket;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -43,12 +44,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static org.apache.ignite.console.utils.Utils.extractErrorMessage;
 import static org.apache.ignite.console.utils.Utils.fromJson;
+import static org.apache.ignite.console.utils.Utils.toJson;
 import static org.apache.ignite.console.websocket.AgentHandshakeRequest.SUPPORTED_VERS;
 
 import static org.apache.ignite.console.websocket.WebSocketEvents.*;
@@ -275,7 +278,7 @@ public class AgentsService extends AbstractSocketHandler {
     void sendLocally(AgentRequest req) throws IllegalStateException, IOException {
         WebSocketSession ses = findLocalAgent(req.getKey()).orElseThrow(IllegalStateException::new);
 
-        WebSocketEvent evt = req.getEvent();
+        WebSocketRequest evt = req.getEvent();
 
         log.debug("Found local agent session [session={}, event={}]", ses, evt);
 
@@ -392,6 +395,29 @@ public class AgentsService extends AbstractSocketHandler {
             .findFirst()
             .map(Map.Entry::getKey);
     }
+    
+    /**
+     * @param key Agent key.
+     */
+    public List<WebSocketSession> findLocalAgents(AgentKey key) {
+        return locAgents.entrySet().stream()
+            .filter((e) -> {
+                Set<UUID> accIds = e.getValue().getAccIds();
+                Set<String> clusterIds = e.getValue().getClusterIds();
+
+                UUID accId = key.getAccId();
+                String clusterId = key.getClusterId();
+
+                if (F.isEmpty(clusterId))
+                    return accIds.contains(accId);
+
+                if (accId == null)
+                    return clusterIds.contains(clusterId);
+
+                return accIds.contains(accId) && clusterIds.contains(clusterId);
+            })            
+            .map(Map.Entry::getKey).collect(java.util.stream.Collectors.toList());
+    }
 
     /**
      * @param accIds Account IDs.
@@ -429,5 +455,8 @@ public class AgentsService extends AbstractSocketHandler {
         locAgents.put(ses, new AgentSession(accIds));
     }
     
-    
+    public void sendMessageWithResponse(WebSocketSession ses, WebSocketEvent evt, UUID fromNodeId) throws IOException {
+        super.sendMessage(ses, evt);
+        srcOfRequests.put(evt.getRequestId(), fromNodeId);
+    }
 }

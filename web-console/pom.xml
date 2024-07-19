@@ -45,6 +45,7 @@
         <commons.compress.version>1.20</commons.compress.version>        
         <java7.hikaricp.version>2.4.7</java7.hikaricp.version>
         <vertx.version>4.4.5</vertx.version>
+        <tinkerpop.version>3.7.0</tinkerpop.version>
     </properties>
 
     <modules>

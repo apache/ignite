@@ -53,5 +53,8 @@ public class IgniteConnection {
     public IgniteAdmin getAdmin() {
         return admin;
     }
-
+    
+    public String namespace() {
+        return admin.namespace();
+    }
 }

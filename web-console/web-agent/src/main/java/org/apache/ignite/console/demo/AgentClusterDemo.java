@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -78,13 +79,13 @@ public class AgentClusterDemo {
     private static final AtomicBoolean initGuard = new AtomicBoolean();
 
     /** */
-    public static final String SRV_NODE_NAME = "demo-server-";
+    public static final String SRV_NODE_NAME = "demo-server";
 
     /** */
-    private static final String CLN_NODE_NAME = "demo-client-";
+    public static final String CLN_NODE_NAME = "demo-client";
 
-    /** Node count 2 means 3 node*/
-    private static final int NODE_CNT = 2;
+    /** Node count */
+    private static final int NODE_CNT = 10;
 
     /** */
     private static final int WAL_SEGMENTS = 5;
@@ -92,8 +93,6 @@ public class AgentClusterDemo {
     /** WAL file segment size, 16MBytes. */
     private static final int WAL_SEGMENT_SZ = 16 * 1024 * 1024;
 
-    /** */
-    private static CountDownLatch initLatch = new CountDownLatch(1);
 
     /** */
     private static volatile String demoUrl;
@@ -111,10 +110,10 @@ public class AgentClusterDemo {
 
         cfg.setGridLogger(new Slf4jLogger());
 
-        cfg.setIgniteInstanceName((client ? CLN_NODE_NAME : SRV_NODE_NAME) + gridIdx);
+        cfg.setIgniteInstanceName((client ? CLN_NODE_NAME : SRV_NODE_NAME));
         cfg.setLocalHost("127.0.0.1");
         cfg.setEventStorageSpi(new MemoryEventStorageSpi());
-        cfg.setConsistentId(cfg.getIgniteInstanceName());
+        cfg.setConsistentId(cfg.getIgniteInstanceName()+"_"+ gridIdx);
 
         File workDir = new File(U.workDirectory(null, null), "demo-work");
 
@@ -127,7 +126,7 @@ public class AgentClusterDemo {
 
         cfg.setIncludeEventTypes(evts);
 
-        cfg.getConnectorConfiguration().setPort(basePort);
+        cfg.getConnectorConfiguration().setPort(basePort + gridIdx);
 
         System.setProperty(IGNITE_JETTY_PORT, String.valueOf(basePort + 10 + gridIdx));
 
@@ -162,7 +161,7 @@ public class AgentClusterDemo {
         dataRegCfg.setName("demo");
         dataRegCfg.setMetricsEnabled(true);
         dataRegCfg.setMaxSize(DFLT_DATA_REGION_INITIAL_SIZE);
-        dataRegCfg.setPersistenceEnabled(!true);
+        dataRegCfg.setPersistenceEnabled(false);
         dataRegCfg.setLazyMemoryAllocation(true);
 
         DataStorageConfiguration dataStorageCfg = new DataStorageConfiguration();
@@ -209,7 +208,7 @@ public class AgentClusterDemo {
     /**
      * Start ignite node with cacheEmployee and populate it with data.
      */
-    public static CountDownLatch tryStart(IgniteConfiguration cfg) {
+    public static Ignite tryStart(IgniteConfiguration cfg, int idx, boolean lastNode) {
         if (initGuard.compareAndSet(false, true)) {
             log.info("DEMO: Starting embedded nodes for demo...");
 
@@ -222,93 +221,92 @@ public class AgentClusterDemo {
             System.setProperty(IGNITE_SQL_DISABLE_SYSTEM_VIEWS, "false");
             
             final AtomicInteger basePort = new AtomicInteger(60700);
-            final AtomicInteger cnt = new AtomicInteger(-1);
+           
+            int port = basePort.get();
+            Ignite ignite = null;
 
-            final ScheduledExecutorService execSrv = newScheduledThreadPool(1, "demo-nodes-start");
+            try {
+                igniteConfiguration(cfg, port, idx, false);
 
-            execSrv.scheduleWithFixedDelay(() -> {
-                int idx = cnt.incrementAndGet();
-                int port = basePort.get();
+                if (lastNode) {
+                    U.delete(Paths.get(cfg.getWorkDirectory()));
 
-                boolean first = idx == 0;
+                    U.resolveWorkDirectory(
+                        cfg.getWorkDirectory(),
+                        cfg.getDataStorageConfiguration().getStoragePath(),
+                        true
+                    );
+                    cfg.setNodeId(UUID.fromString(DemoClusterHandler.DEMO_CLUSTER_ID));                        
+                }
+                else {
+                	cfg.setNodeId(null);
+                	cfg.setClusterStateOnStart(ClusterState.INACTIVE);
+                }
 
-                try {
-                    igniteConfiguration(cfg, port, idx, false);
+                ignite = Ignition.start(cfg);
 
-                    if (first) {
-                        U.delete(Paths.get(cfg.getWorkDirectory()));
+                if (ignite!=null) {
+                    ClusterNode node = ignite.cluster().localNode();
 
-                        U.resolveWorkDirectory(
-                            cfg.getWorkDirectory(),
-                            cfg.getDataStorageConfiguration().getStoragePath(),
-                            true
-                        );
-                        cfg.setNodeId(UUID.fromString(DemoClusterHandler.DEMO_CLUSTER_ID));                        
+                    Collection<String> jettyAddrs = node.attribute(ATTR_REST_JETTY_ADDRS);
+                    Integer jettyPort = node.attribute(ATTR_REST_JETTY_PORT);
+                    if (jettyAddrs==null || jettyPort == null) {
+                    	ignite.close();
+                        throw new IgniteException("DEMO: Failed to start Jetty REST server on embedded node");
                     }
-                    else {
-                    	cfg.setNodeId(null);
+                    
+                    String jettyHost = "127.0.0.1";
+                    for(String host: jettyAddrs) {
+	                   	 if(!host.startsWith("0")) {
+	                   		 jettyHost = host;
+	                   	 }
                     }
 
-                    Ignite ignite = Ignition.start(cfg);
+                    log.info("Cluster: Started embedded node for data analysis purpose [TCP binary port={}, Jetty REST port={}]", ignite.configuration().getConnectorConfiguration().getPort(), jettyPort);
 
-                    if (first) {
-                        ClusterNode node = ignite.cluster().localNode();
+                    String nodeUrl = String.format("http://%s:%d/%s", jettyHost, jettyPort, ignite.configuration().getIgniteInstanceName());
 
-                        Collection<String> jettyAddrs = node.attribute(ATTR_REST_JETTY_ADDRS);
+                    demoUrl = nodeUrl;                    
+                    
+                }                    
+            }
+            catch (Throwable e) {
+                if (lastNode) {
+                    basePort.getAndAdd(50);
 
-                        if (jettyAddrs == null) {
-                            Ignition.stopAll(true);
+                    log.warn("DEMO: Failed to start embedded node.", e);
+                }
+                else
+                    log.error("DEMO: Failed to start embedded node.", e);
+            }
+            finally {
+                if (lastNode && ignite != null) {
+                    try {
+                    	Thread.sleep(1000*idx);
+                        ignite.cluster().state(ClusterState.ACTIVE);
 
-                            throw new IgniteException("DEMO: Failed to start Jetty REST server on embedded node");
-                        }
-                        demoUrl = IgniteClusterLauncher.registerNodeUrl(ignite);
-                        
-                        initLatch.countDown();
+                        deployServices(ignite.services(ignite.cluster().forServers()));
+
+                        log.info("DEMO: All embedded nodes for demo successfully started");
+                    }
+                    catch (Throwable ignored) {
+                        log.info("DEMO: Failed to launch demo load");
                     }                    
                 }
-                catch (Throwable e) {
-                    if (first) {
-                        basePort.getAndAdd(50);
-
-                        log.warn("DEMO: Failed to start embedded node.", e);
-                    }
-                    else
-                        log.error("DEMO: Failed to start embedded node.", e);
-                }
-                finally {
-                    if (idx == NODE_CNT) {
-                        try {
-                            Ignite ignite = Ignition.ignite(SRV_NODE_NAME + 0);
-
-                            if (ignite != null) {
-                                ignite.cluster().active(true);
-
-                                deployServices(ignite.services(ignite.cluster().forServers()));
-                            }
-
-                            log.info("DEMO: All embedded nodes for demo successfully started");
-                        }
-                        catch (Throwable ignored) {
-                            log.info("DEMO: Failed to launch demo load");
-                        }
-
-                        execSrv.shutdown();
-                    }
-                }
-            }, 1, 5, TimeUnit.SECONDS);
+            }
+            return ignite;
         }
-
-        return initLatch;
+        return null;
     }
 
     /** */
     public static void stop() {
         demoUrl = null;
 
-        Ignition.stopAll(true);
-
-        initLatch = new CountDownLatch(1);
-
+        Ignition.stop(SRV_NODE_NAME,true);
+        
+        Ignition.stop(CLN_NODE_NAME,true);
+        
         initGuard.compareAndSet(true, false);
     }
 }

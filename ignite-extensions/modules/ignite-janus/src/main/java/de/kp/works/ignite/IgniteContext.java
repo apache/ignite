@@ -76,24 +76,16 @@ public class IgniteContext {
 			
 			}
 			catch(IgniteIllegalStateException e) {
-				if(cfg!=null) {
-					if(name==null || name.isBlank()) {
-						name = "ignite-bankend.cfg";
-					}
-					IgniteConfiguration config = Ignition.loadSpringBean(cfg, name);				
-					ignite = Ignition.start(config);
+				if(name==null || name.isBlank()) {
+					name = "ignite-bankend.cfg";
 				}
-				else {
-					throw e;
-				}
+				IgniteConfiguration config = Ignition.loadSpringBean(cfg, name);				
+				ignite = Ignition.start(config);
 			}
 		}
-		// ignite not started
-		else if(cfg!=null) {
-			ignite = Ignition.start(cfg);
-		}
 		else {
-			ignite = Ignition.start();
+			// ignite not started
+			ignite = Ignition.start(cfg);
 		}
 	}	
 

@@ -68,6 +68,7 @@ import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.slf4j.LoggerFactory;
 
+import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -358,8 +359,7 @@ public class DatabaseHandler  implements ClusterHandler {
 		            top.setName(info.getDb()+"-"+info.getJndiName());
 		            top.setDemo(false); 
 		            top.setActive(true);
-		            if(schemas.isEmpty()) {
-		            	
+		            if(schemas.isEmpty()) {		            	
 		            	top.setActive(false);
 		            	databaseListener.deactivedCluster(info.getId().toString());
 		            }
@@ -368,8 +368,7 @@ public class DatabaseHandler  implements ClusterHandler {
 	        	} 
 	        	else {
 	        		Collection<GridClientCacheBean> schemas = schemas(info);
-	        		if(schemas.isEmpty()) {
-	        			
+	        		if(schemas.isEmpty()) {	        			
 		            	info.top.setActive(false);
 		            	databaseListener.deactivedCluster(info.getId().toString());
 		            }
@@ -384,5 +383,12 @@ public class DatabaseHandler  implements ClusterHandler {
         } 
         
         return tops;
+    }
+    
+    public void close() {
+    	for (Entry<String, DBInfo> ent: databaseListener.clusters.entrySet()) {
+    		DBInfo info = ent.getValue();
+    		databaseListener.deactivedCluster(info.getId().toString());
+    	}
     }
 }

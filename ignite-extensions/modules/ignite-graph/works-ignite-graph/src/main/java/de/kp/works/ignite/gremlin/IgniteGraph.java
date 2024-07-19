@@ -105,20 +105,20 @@ public class IgniteGraph implements Graph {
      * This method is invoked by Gremlin's GraphFactory
      * and defines the starting point for further tasks.
      */
-    public static IgniteGraph open(final Configuration properties) throws IgniteGraphException {
-        return new IgniteGraph(properties);
+    public static IgniteGraph open(String name,Configuration properties) throws IgniteGraphException {
+        return new IgniteGraph(name,properties);
     }
     
     public static IgniteGraph getGraph(String name) throws IgniteGraphException {
         return graphInstances.get(name);
     }
 
-    public IgniteGraph(Configuration properties) {
-        this(new IgniteGraphConfiguration(properties));        
+    public IgniteGraph(String name,Configuration properties) {
+        this(new IgniteGraphConfiguration(name,properties));        
     }
 
     public IgniteGraph(IgniteGraphConfiguration config) throws IgniteGraphException {
-        this(config, IgniteGraphUtils.getConnection(config));
+        this(config, IgniteGraphUtils.getConnection(config.getNamespace(),config));
     }
 
     public IgniteGraph(IgniteGraphConfiguration config, IgniteConnection connection) throws IgniteGraphException {
@@ -154,7 +154,7 @@ public class IgniteGraph implements Graph {
                 .expireAfterAccess(config.getRelationshipCacheTtlSecs(), TimeUnit.SECONDS)
                 .build();
         
-        graphInstances.put(config.getGraphNamespace(), this);
+        graphInstances.put(connection.namespace(), this);
 
     }
     
@@ -176,7 +176,7 @@ public class IgniteGraph implements Graph {
             IgniteGraphUtils.createTables(config, admin);
             
         } catch (Exception e) {
-        	logger.error("Failed to create table for graph "+ config.getGraphNamespace(), e);
+        	logger.error("Failed to create table for graph "+ admin.namespace(), e);
             throw new IgniteGraphException(e);
         }
 
@@ -355,8 +355,7 @@ public class IgniteGraph implements Graph {
 
     public Vertex findOrCreateVertex(Object id) {
         return findVertex(id, true);
-    }
-    
+    }   
   
 
     /**
