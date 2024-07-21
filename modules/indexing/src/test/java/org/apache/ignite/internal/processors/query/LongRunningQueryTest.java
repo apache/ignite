@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
@@ -33,6 +34,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.processors.query.h2.H2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -51,6 +53,12 @@ import static org.h2.engine.Constants.DEFAULT_PAGE_SIZE;
 public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int KEY_CNT = 1000;
+
+    /** External wait time. */
+    private static final int EXT_WAIT_TIME = 2000;
+
+    /** External wait time relative error. */
+    private static final int EXT_WAIT_REL_ERR = (int)(EXT_WAIT_TIME * 0.01);
 
     /** Page size. */
     private int pageSize = DEFAULT_PAGE_SIZE;
@@ -175,6 +183,46 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         checkLongRunning();
         checkFastQueries();
+    }
+
+    /**
+     * Test checks that no long-running queries warnings are printed in case of external waits.
+     */
+    @Test
+    public void testLazyWithExternalWait() throws InterruptedException {
+        local = false;
+        lazy = true;
+
+        pageSize = 1;
+
+        LogListener lsnr = LogListener
+            .matches(LONG_QUERY_EXEC_MSG)
+            .build();
+
+        testLog().registerListener(lsnr);
+
+        try {
+            Iterator<List<?>> it = sql("test", "select * from test").iterator();
+
+            it.next();
+
+            Thread.sleep(EXT_WAIT_TIME);
+
+            it.next();
+
+            ConcurrentHashMap qrys = GridTestUtils.getFieldValue(heavyQueriesTracker(), "qrys");
+
+            H2QueryInfo qry = (H2QueryInfo)qrys.keySet().iterator().next();
+
+            long extWait = GridTestUtils.getFieldValue(qry, "extWait");
+
+            assertTrue(extWait >= EXT_WAIT_TIME - EXT_WAIT_REL_ERR);
+
+            assertFalse(lsnr.check());
+        }
+        finally {
+            pageSize = DEFAULT_PAGE_SIZE;
+        }
     }
 
     /**
