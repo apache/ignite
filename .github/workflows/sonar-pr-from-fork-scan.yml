@@ -15,12 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-name: Sonar Quality Pull Request Analysis (Scan)
+name: Sonar Quality Pull Request Analysis Scan
 
 # TODO IGNITE-20466 Investigate and fix the issue with running this workflow on PRs from forks.
 on:
   workflow_run:
-    workflows: ["Sonar Quality Pull Request Analysis (Build)"]
+    workflows: ["Sonar Quality Pull Request Analysis Build"]
     types:
       - completed
 
@@ -38,7 +38,7 @@ jobs:
       actions: read
     steps:
       - name: 'Sonar analysis'
-        uses: sonar-fork
+        uses: ../actions/sonar-fork
         with:
           distribution: 'temurin'
           java-version: '17'
