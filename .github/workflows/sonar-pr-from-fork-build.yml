@@ -68,4 +68,4 @@ jobs:
           ./mvnw clean install -P all-java,lgpl,examples,skip-docs -DskipTests -B -V          
 
       - name: Prepare Sonar analysis
-        uses: ../actions/sonar-fork
+        uses: .github/actions/sonar-fork

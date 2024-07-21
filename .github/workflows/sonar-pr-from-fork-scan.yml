@@ -38,7 +38,7 @@ jobs:
       actions: read
     steps:
       - name: 'Sonar analysis'
-        uses: ../actions/sonar-fork
+        uses: .github/actions/sonar-fork
         with:
           distribution: 'temurin'
           java-version: '17'
