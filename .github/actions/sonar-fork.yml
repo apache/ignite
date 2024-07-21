@@ -1,0 +1,146 @@
+name: 'Sonar Fork Analysis'
+description: 'Sonar scan external forks of your project'
+inputs:
+  java-version:
+    description: 'The Java version to set up. Takes a whole or semver Java version. See examples of supported syntax in actions/setup-java README file'
+  distribution:
+    description: 'Java distribution. See the list of supported distributions in actions/setup-java README file'
+  github-token:
+    description: 'The GitHub token used to authenticate with the GitHub API.'
+  sonar-token:
+    description: 'The Sonar token used to authenticate with the Sonar API.'
+  project-key:
+    description: 'The project''s unique key assigned by Sonar.'
+branding:
+  icon: search
+  color: blue
+runs:
+  using: "composite"
+  steps:
+#    - name: 'Infer build type'
+#      if: github.event_name != 'workflow_run'
+#      shell: bash
+#      run: echo "build_type=$(test -f pom.xml && echo maven || echo gradle)" >> "$GITHUB_ENV"
+
+    ### PREPARE ANALYSIS ###
+    - name: 'Prepare pull request artifact'
+      if: github.event_name != 'workflow_run'
+      shell: bash
+      run: |
+        echo ${{ github.event.pull_request.number }} >> pr-event.txt
+        echo ${{ github.event.pull_request.head.ref }} >> pr-event.txt
+        echo ${{ github.event.pull_request.base.ref }} >> pr-event.txt
+
+    - name: 'Prepare output artifact'
+      if: github.event_name != 'workflow_run'
+      shell: bash
+      run: find -iname "*target" -type d -exec tar -rf output.tar {} \+
+
+    - name: 'Set groupId'
+      if: github.event_name != 'workflow_run'
+      shell: bash
+      run: echo "group_id=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.groupId | tr . /)" >> "$GITHUB_ENV"
+
+    - name: 'Prepare repository artifact'
+      if: github.event_name != 'workflow_run'
+      shell: bash
+      run: |
+        pushd ~/.m2/repository
+        find -path "./${group_id}/*" -exec tar -rf repository.tar {} \+
+        popd
+        mv ~/.m2/repository/repository.tar .
+
+    - name: 'Upload sonar artifact'
+      if: github.event_name != 'workflow_run'
+      uses: actions/upload-artifact@v4
+      with:
+        name: sonar-artifact
+        path: |
+          pr-event.txt
+          output.tar
+          repository.tar
+        if-no-files-found: error
+        retention-days: 1
+
+    ### EXECUTE ANALYSIS ###
+    - name: 'Checkout project'
+      if: github.event_name == 'workflow_run'
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ github.event.workflow_run.head_repository.full_name }}
+        ref: ${{ github.event.workflow_run.head_branch }}
+        fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of Sonar analysis
+
+#    - name: 'Infer build type'
+#      if: github.event_name == 'workflow_run'
+#      shell: bash
+#      run: echo "build_type=$(test -f pom.xml && echo maven || echo gradle)" >> "$GITHUB_ENV"
+
+    - name: 'Infer build command - Maven'
+      if: github.event_name == 'workflow_run'
+      shell: bash
+      run: echo "build_command=$(test -f mvnw && echo ./mvnw || echo mvn)" >> "$GITHUB_ENV"
+
+    - name: 'Set up Java'
+      if: github.event_name == 'workflow_run'
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ inputs.java-version }}
+        distribution: ${{ inputs.distribution }}
+        cache: ${{ env.build_type }}
+
+    - name: 'Cache SonarCloud packages'
+      if: github.event_name == 'workflow_run'
+      uses: actions/cache@v4
+      with:
+        path: ~/.sonar/cache
+        key: ${{ runner.os }}-sonar
+        restore-keys: ${{ runner.os }}-sonar
+
+    - name: 'Download sonar artifact'
+      if: github.event_name == 'workflow_run'
+      uses: actions/download-artifact@v4
+      with:
+        name: sonar-artifact
+        run-id: ${{ github.event.workflow_run.id }}
+        github-token: ${{ inputs.github-token }}
+        merge-multiple: true
+
+    - name: 'Extract output artifact'
+      if: github.event_name == 'workflow_run'
+      shell: bash
+      run: tar -xf output.tar
+
+    - name: 'Extract repository artifact'
+      if: github.event_name == 'workflow_run' && env.build_type == 'maven'
+      shell: bash
+      run: |
+        mkdir -p ~/.m2/repository
+        tar -xf repository.tar -C ~/.m2/repository
+
+    - name: 'Read pull request event'
+      if: github.event_name == 'workflow_run'
+      shell: bash
+      run: |
+        echo "pr_number=$(sed '1q;d' pr-event.txt)" >> "$GITHUB_ENV"
+        echo "pr_head_ref=$(sed '2q;d' pr-event.txt)" >> "$GITHUB_ENV"
+        echo "pr_base_ref=$(sed '3q;d' pr-event.txt)" >> "$GITHUB_ENV"
+
+    - name: 'Sonar analysis - Maven'
+      if: github.event_name == 'workflow_run' && env.build_type == 'maven'
+      shell: bash
+      run: >
+        ${{ env.build_command }} -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+        -P all-java,lgpl,examples,skip-docs
+        -Dsonar.projectKey=${{ inputs.project-key }}
+        -Dsonar.token=${{ inputs.sonar-token }}
+        ${{ github.event.workflow_run.event == 'pull_request' && format('{0}{1}', '-Dsonar.scm.revision=', github.event.workflow_run.head_sha) || '' }}
+        ${{ github.event.workflow_run.event == 'pull_request' && format('{0}{1}', '-Dsonar.pullrequest.key=', env.pr_number) || '' }}
+        ${{ github.event.workflow_run.event == 'pull_request' && format('{0}{1}', '-Dsonar.pullrequest.branch=', env.pr_head_ref) || '' }}
+        ${{ github.event.workflow_run.event == 'pull_request' && format('{0}{1}', '-Dsonar.pullrequest.base=', env.pr_base_ref) || '' }}
+        -Dsonar.pullrequest.github.summary_comment=true
+        -B -V
+      env:
+        MAVEN_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
+        SONAR_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
+        JAVA_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"

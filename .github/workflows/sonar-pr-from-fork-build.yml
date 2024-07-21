@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-name: Sonar Quality Pull Request Analysis
+name: Sonar Quality Pull Request Analysis (Build)
 
 # TODO IGNITE-20466 Investigate and fix the issue with running this workflow on PRs from forks.
 on: pull_request
@@ -67,31 +67,5 @@ jobs:
         run: |
           ./mvnw clean install -P all-java,lgpl,examples,skip-docs -DskipTests -B -V          
 
-      - name: Set up JDK17 for Sonar scanner
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'maven'
-
-      - name: Sonar Analyze Upload
-        run: >
-          ./mvnw org.sonarsource.scanner.maven:sonar-maven-plugin:sonar 
-          -P all-java,lgpl,examples,skip-docs
-          -Dsonar.pullrequest.branch=${PULLREQUEST_BRANCH}
-          -Dsonar.pullrequest.base=${PULLREQUEST_BASE}
-          -Dsonar.pullrequest.key=${PULLREQUEST_KEY}
-          -Dsonar.pullrequest.github.repository=skorotkov/ignite
-          -Dsonar.pullrequest.provider=GitHub
-          -Dsonar.pullrequest.github.summary_comment=true
-          -Dsonar.projectKey=skorotkov_ignite
-          -B -V
-        env:
-          MAVEN_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
-          SONAR_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
-          JAVA_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          PULLREQUEST_BRANCH: ${{ github.head_ref }}
-          PULLREQUEST_BASE: ${{ github.base_ref }}
-          PULLREQUEST_KEY: ${{ github.event.pull_request.number }}
+      - name: Prepare Sonar analysis
+        uses: sonar-fork
