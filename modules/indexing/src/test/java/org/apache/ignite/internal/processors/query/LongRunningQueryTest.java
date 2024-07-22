@@ -186,43 +186,27 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Test checks that no long-running queries warnings are printed in case of external waits.
+     * Test checks that no long-running queries warnings are printed in case of external waits during
+     * the execution of distributed queries.
      */
     @Test
-    public void testLazyWithExternalWait() throws InterruptedException {
+    public void testDistributedLazyWithExternalWait() throws InterruptedException {
         local = false;
         lazy = true;
 
-        pageSize = 1;
+        checkLazyWithExternalWait();
+    }
 
-        LogListener lsnr = LogListener
-            .matches(LONG_QUERY_EXEC_MSG)
-            .build();
+    /**
+     * Test checks that no long-running queries warnings are printed in case of external waits during
+     * the execution of local queries.
+     */
+    @Test
+    public void testlocalLazyWithExternalWait() throws InterruptedException {
+        local = true;
+        lazy = true;
 
-        testLog().registerListener(lsnr);
-
-        try {
-            Iterator<List<?>> it = sql("test", "select * from test").iterator();
-
-            it.next();
-
-            Thread.sleep(EXT_WAIT_TIME);
-
-            it.next();
-
-            ConcurrentHashMap qrys = GridTestUtils.getFieldValue(heavyQueriesTracker(), "qrys");
-
-            H2QueryInfo qry = (H2QueryInfo)qrys.keySet().iterator().next();
-
-            long extWait = GridTestUtils.getFieldValue(qry, "extWait");
-
-            assertTrue(extWait >= EXT_WAIT_TIME - EXT_WAIT_REL_ERR);
-
-            assertFalse(lsnr.check());
-        }
-        finally {
-            pageSize = DEFAULT_PAGE_SIZE;
-        }
+        checkLazyWithExternalWait();
     }
 
     /**
@@ -408,6 +392,40 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
             .setPageSize(pageSize)
             .setDistributedJoins(distributedJoins)
             .setArgs(args));
+    }
+
+    /** */
+    public void checkLazyWithExternalWait() throws InterruptedException {
+        pageSize = 1;
+
+        LogListener lsnr = LogListener
+            .matches(LONG_QUERY_EXEC_MSG)
+            .build();
+
+        testLog().registerListener(lsnr);
+
+        try {
+            Iterator<List<?>> it = sql("test", "select * from test").iterator();
+
+            it.next();
+
+            Thread.sleep(EXT_WAIT_TIME);
+
+            it.next();
+
+            ConcurrentHashMap qrys = GridTestUtils.getFieldValue(heavyQueriesTracker(), "qrys");
+
+            H2QueryInfo qry = (H2QueryInfo)qrys.keySet().iterator().next();
+
+            long extWait = GridTestUtils.getFieldValue(qry, "extWait");
+
+            assertTrue(extWait >= EXT_WAIT_TIME - EXT_WAIT_REL_ERR);
+
+            assertFalse(lsnr.check());
+        }
+        finally {
+            pageSize = DEFAULT_PAGE_SIZE;
+        }
     }
 
     /**
