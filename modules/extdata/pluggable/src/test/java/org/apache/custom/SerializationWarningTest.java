@@ -55,7 +55,7 @@ public class SerializationWarningTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testAdditionalCommand() throws Exception {
+    public void testDevSerializationWarning() throws Exception {
         LogListener lsnr = LogListener.matches("cannot be serialized").build();
 
         listeningLog.registerListener(lsnr);
