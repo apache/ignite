@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
-import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
@@ -43,10 +42,8 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUn
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.CI2;
@@ -57,9 +54,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 
 /**
  * Near cache for transactional cache.
@@ -282,145 +276,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      */
     @Nullable public GridNearTxRemote startRemoteTx(UUID nodeId, GridDhtLockRequest req)
         throws IgniteCheckedException, GridDistributedLockCancelledException {
-        List<KeyCacheObject> nearKeys = req.nearKeys();
-
-        GridNearTxRemote tx = null;
-
-        ClassLoader ldr = ctx.deploy().globalLoader();
-
-        if (ldr != null) {
-            Collection<IgniteTxKey> evicted = null;
-
-            // Avoid iterator creation.
-            for (int i = 0; i < nearKeys.size(); i++) {
-                KeyCacheObject key = nearKeys.get(i);
-
-                if (key == null)
-                    continue;
-
-                IgniteTxKey txKey = ctx.txKey(key);
-
-                if (log.isDebugEnabled())
-                    log.debug("Unmarshalled key: " + key);
-
-                GridNearCacheEntry entry = null;
-
-                while (true) {
-                    try {
-                        entry = peekExx(key);
-
-                        if (entry != null) {
-                            // Handle implicit locks for pessimistic transactions.
-                            if (req.inTx()) {
-                                tx = ctx.tm().nearTx(req.version());
-
-                                if (tx == null) {
-                                    tx = new GridNearTxRemote(
-                                        ctx.shared(),
-                                        req.topologyVersion(),
-                                        nodeId,
-                                        req.nearNodeId(),
-                                        req.nearXidVersion(),
-                                        req.version(),
-                                        null,
-                                        ctx.systemTx(),
-                                        ctx.ioPolicy(),
-                                        PESSIMISTIC,
-                                        req.isolation(),
-                                        req.isInvalidate(),
-                                        req.timeout(),
-                                        req.txSize(),
-                                        securitySubjectId(ctx),
-                                        req.taskNameHash(),
-                                        req.txLabel()
-                                    );
-
-                                    tx = ctx.tm().onCreated(null, tx);
-
-                                    if (tx == null || !ctx.tm().onStarted(tx))
-                                        throw new IgniteTxRollbackCheckedException("Failed to acquire lock " +
-                                            "(transaction has been completed): " + req.version());
-                                }
-
-                                tx.addEntry(ctx,
-                                    txKey,
-                                    GridCacheOperation.NOOP,
-                                    null /*Value.*/,
-                                    null /*dr version*/,
-                                    req.skipStore(),
-                                    req.keepBinary());
-                            }
-
-                            // Add remote candidate before reordering.
-                            // Owned candidates should be reordered inside entry lock.
-                            entry.addRemote(
-                                req.nodeId(),
-                                nodeId,
-                                req.threadId(),
-                                req.version(),
-                                tx != null,
-                                tx != null && tx.implicitSingle(),
-                                req.owned(entry.key())
-                            );
-
-                            if (!req.inTx())
-                                entry.touch();
-                        }
-                        else {
-                            if (evicted == null)
-                                evicted = new LinkedList<>();
-
-                            evicted.add(txKey);
-                        }
-
-                        // Double-check in case if sender node left the grid.
-                        if (ctx.discovery().node(req.nodeId()) == null) {
-                            if (log.isDebugEnabled())
-                                log.debug("Node requesting lock left grid (lock request will be ignored): " + req);
-
-                            if (tx != null)
-                                tx.rollbackRemoteTx();
-
-                            return null;
-                        }
-
-                        // Entry is legit.
-                        break;
-                    }
-                    catch (GridCacheEntryRemovedException ignored) {
-                        assert entry.obsoleteVersion() != null : "Obsolete flag not set on removed entry: " +
-                            entry;
-
-                        if (log.isDebugEnabled())
-                            log.debug("Received entry removed exception (will retry on renewed entry): " + entry);
-
-                        if (tx != null) {
-                            tx.clearEntry(txKey);
-
-                            if (log.isDebugEnabled())
-                                log.debug("Cleared removed entry from remote transaction (will retry) [entry=" +
-                                    entry + ", tx=" + tx + ']');
-                        }
-                    }
-                }
-            }
-
-            if (tx != null && evicted != null) {
-                assert !evicted.isEmpty();
-
-                for (IgniteTxKey evict : evicted)
-                    tx.addEvicted(evict);
-            }
-        }
-        else {
-            String err = "Failed to acquire deployment class loader for message: " + req;
-
-            U.warn(log, err);
-
-            throw new IgniteCheckedException(err);
-        }
-
-        return tx;
+        return null;
     }
 
     /**

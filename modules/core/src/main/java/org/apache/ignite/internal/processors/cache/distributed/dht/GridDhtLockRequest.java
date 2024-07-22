@@ -19,17 +19,12 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
@@ -52,11 +47,6 @@ import org.jetbrains.annotations.Nullable;
 public class GridDhtLockRequest extends GridDistributedLockRequest {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Near keys to lock. */
-    @GridToStringInclude
-    @GridDirectCollection(KeyCacheObject.class)
-    private List<KeyCacheObject> nearKeys;
 
     /** Invalidate reader flags. */
     private BitSet invalidateEntries;
@@ -170,7 +160,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
         storeUsed(storeUsed);
 
-        nearKeys = nearCnt == 0 ? Collections.<KeyCacheObject>emptyList() : new ArrayList<KeyCacheObject>(nearCnt);
         invalidateEntries = new BitSet(dhtCnt == 0 ? nearCnt : dhtCnt);
 
         assert miniId != null;
@@ -204,40 +193,15 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * Adds a Near key.
-     *
-     * @param key Key.
-     * @param ctx Context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void addNearKey(KeyCacheObject key, GridCacheSharedContext ctx)
-        throws IgniteCheckedException {
-        nearKeys.add(key);
-    }
-
-    /**
-     * @return Near keys.
-     */
-    public List<KeyCacheObject> nearKeys() {
-        return nearKeys == null ? Collections.<KeyCacheObject>emptyList() : nearKeys;
-    }
-
-    /**
      * Adds a DHT key.
      *
      * @param key Key.
      * @param invalidateEntry Flag indicating whether node should attempt to invalidate reader.
-     * @param ctx Context.
-     * @throws IgniteCheckedException If failed.
      */
-    public void addDhtKey(
-        KeyCacheObject key,
-        boolean invalidateEntry,
-        GridCacheContext ctx
-    ) throws IgniteCheckedException {
+    public void addDhtKey(KeyCacheObject key, boolean invalidateEntry) {
         invalidateEntries.set(idx, invalidateEntry);
 
-        addKeyBytes(key, false, ctx);
+        addKeyBytes(key, false);
     }
 
     /**
@@ -311,10 +275,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
-
-        prepareMarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId));
 
         if (owned != null && ownedKeys == null) {
             ownedKeys = new KeyCacheObject[owned.size()];
@@ -331,10 +293,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
-
-        finishUnmarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId), ldr);
 
         if (ownedKeys != null) {
             owned = new GridLeanMap<>(ownedKeys.length);
@@ -383,42 +343,36 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 25:
                 if (!writer.writeObjectArray("ownedKeys", ownedKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 26:
+            case 25:
                 if (!writer.writeObjectArray("ownedValues", ownedValues, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 27:
+            case 26:
                 if (!writer.writeBitSet("preloadKeys", preloadKeys))
                     return false;
 
                 writer.incrementState();
 
-            case 28:
+            case 27:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 29:
+            case 28:
                 if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 30:
+            case 29:
                 if (!writer.writeString("txLbl", txLbl))
                     return false;
 
@@ -465,14 +419,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 24:
-                nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 25:
                 ownedKeys = reader.readObjectArray("ownedKeys", MessageCollectionItemType.MSG, KeyCacheObject.class);
 
                 if (!reader.isLastRead())
@@ -480,7 +426,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 26:
+            case 25:
                 ownedValues = reader.readObjectArray("ownedValues", MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
@@ -488,7 +434,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 27:
+            case 26:
                 preloadKeys = reader.readBitSet("preloadKeys");
 
                 if (!reader.isLastRead())
@@ -496,7 +442,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 28:
+            case 27:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -504,7 +450,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 29:
+            case 28:
                 topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
@@ -512,7 +458,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 30:
+            case 29:
                 txLbl = reader.readString("txLbl");
 
                 if (!reader.isLastRead())
@@ -532,7 +478,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 31;
+        return 30;
     }
 
     /** {@inheritDoc} */

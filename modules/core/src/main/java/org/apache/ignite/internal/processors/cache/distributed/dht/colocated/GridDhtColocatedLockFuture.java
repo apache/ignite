@@ -1113,8 +1113,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                 req.addKeyBytes(
                                     key,
                                     retval,
-                                    dhtVer, // Include DHT version to match remote DHT entry.
-                                    cctx);
+                                    dhtVer); // Include DHT version to match remote DHT entry.
                             }
 
                             explicit = inTx() && cand == null;
@@ -1219,9 +1218,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         final GridNearLockRequest req = map.request();
         final Collection<KeyCacheObject> mappedKeys = map.distributedKeys();
         final ClusterNode node = map.node();
-
-        if (filter != null && filter.length != 0)
-            req.filter(filter, cctx);
 
         if (node.isLocal())
             lockLocally(mappedKeys, req.topologyVersion());
