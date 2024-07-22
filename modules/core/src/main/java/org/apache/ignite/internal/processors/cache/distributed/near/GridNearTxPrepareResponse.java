@@ -174,7 +174,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      * @param pending Pending versions.
      */
     public void pending(Collection<GridCacheVersion> pending) {
-        this.pending = Collections.unmodifiableCollection(pending);
+        this.pending = pending != null ? Collections.unmodifiableCollection(pending) : null;
     }
 
     /**
@@ -228,9 +228,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      * @return Owned values map.
      */
     public Map<IgniteTxKey, CacheVersionedValue> ownedValues() {
-        return ownedVals == null ?
-            Collections.emptyMap() :
-            Collections.unmodifiableMap(ownedVals);
+        return ownedVals == null ? Collections.emptyMap() : Collections.unmodifiableMap(ownedVals);
     }
 
     /**
@@ -244,7 +242,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      * @param filterFailedKeys Collection of keys that did not pass the filter.
      */
     public void filterFailedKeys(Collection<IgniteTxKey> filterFailedKeys) {
-        this.filterFailedKeys = Collections.unmodifiableCollection(filterFailedKeys);
+        this.filterFailedKeys = filterFailedKeys != null ? Collections.unmodifiableCollection(filterFailedKeys) : null;
     }
 
     /**

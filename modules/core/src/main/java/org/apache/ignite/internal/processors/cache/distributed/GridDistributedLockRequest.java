@@ -307,7 +307,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      * @return Unmarshalled keys.
      */
     public List<KeyCacheObject> keys() {
-        return Collections.unmodifiableList(keys);
+        return keys != null ? Collections.unmodifiableList(keys) : Collections.emptyList();
     }
 
     /** {@inheritDoc} */
