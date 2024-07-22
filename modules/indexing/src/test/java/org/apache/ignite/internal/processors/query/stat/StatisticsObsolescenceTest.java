@@ -33,34 +33,40 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.stat.IgniteStatisticsHelper.buildDefaultConfigurations;
 import static org.apache.ignite.internal.processors.query.stat.IgniteStatisticsManagerImpl.OBSOLESCENCE_INTERVAL;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Test for statistics obsolescence.
  */
 public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
     /** */
-    private long testTimeout = super.getTestTimeout();
+    private long testTimeout;
 
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return testTimeout;
+    /** */
+    @Test
+    public void testObsolescenceWithInsert() throws Exception {
+        doTestObsolescenceUnderLoad(false, 1,
+            key -> sql(String.format("insert into SMALL(A, B, C) values(%d, %d, %d)", key, key, key)));
     }
 
     /** */
     @Test
-    public void testObsolescenceWithInserting() throws Exception {
-        doTestObsolescenceUnderLoad(0, 0L, 0L, 1,
-            key -> sql(String.format("INSERT INTO small(a, b, c) VALUES(%d, %d, %d)", key, key, key)));
+    public void testObsolescenceWithUpdate() throws Exception {
+        doTestObsolescenceUnderLoad(true, 0, key -> sql("update SMALL set B=B+1 where A=" + key));
     }
 
     /** */
     @Test
-    public void testObsolescenceWithUpdating() throws Exception {
-        doTestObsolescenceUnderLoad(10000, 10000L, 1L, 0, key -> sql("UPDATE small set b=b+1 where a=" + key));
+    public void testObsolescenceWithDelete() throws Exception {
+        doTestObsolescenceUnderLoad(true, -1, key -> sql("delete from SMALL where A=" + key));
     }
 
     /** */
-    private void doTestObsolescenceUnderLoad(int preloadCnt, long maxKey, long firstKey, int rowCntCmp, Consumer<Long> crud) throws Exception {
+    private void doTestObsolescenceUnderLoad(boolean preload, int rowCntCmp, Consumer<Long> op) throws Exception {
+        int preloadCnt = preload ? 1000 : 0;
+        long opFirstKey = 1L;
+        long opDelayKeysCnt = 300L;
+
         // Ensured IgniteStatisticsManagerImpl#OBSOLESCENCE_INTERVAL.
         testTimeout = 3L * OBSOLESCENCE_INTERVAL * 1000L;
 
@@ -75,44 +81,55 @@ public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
             statisticsMgr(0).collectStatistics(buildDefaultConfigurations(SMALL_TARGET));
 
             // Initialized statistics.
-            assertTrue(GridTestUtils.waitForCondition(() -> statisticsMgr(0).getLocalStatistics(SMALL_KEY) != null, getTestTimeout()));
-            assertTrue(GridTestUtils.waitForCondition(() -> statisticsMgr(1).getLocalStatistics(SMALL_KEY) != null, getTestTimeout()));
+            assertTrue(waitForCondition(() -> statisticsMgr(0).getLocalStatistics(SMALL_KEY) != null, getTestTimeout()));
+            assertTrue(waitForCondition(() -> statisticsMgr(1).getLocalStatistics(SMALL_KEY) != null, getTestTimeout()));
 
             ObjectStatisticsImpl initStat1 = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
             ObjectStatisticsImpl initStat2 = (ObjectStatisticsImpl)statisticsMgr(1).getLocalStatistics(SMALL_KEY);
 
             assertEquals(preloadCnt, initStat1.rowCount() + initStat2.rowCount());
 
-            GridTestUtils.runAsync(() -> {
-                AtomicLong key = new AtomicLong(firstKey);
+            AtomicBoolean statReadyFlag = new AtomicBoolean(false);
 
-                long a;
+            GridTestUtils.runAsync(() -> {
+                AtomicLong key = new AtomicLong(opFirstKey);
+
+                long opCnt = 0;
 
                 while (!stop.get()) {
-                    a = key.incrementAndGet();
+                    op.accept(key.getAndIncrement());
 
-                    if (maxKey > 0 && a > maxKey)
-                        key.set(a = firstKey);
+                    if (++opCnt == opDelayKeysCnt) {
+                        opCnt = 0;
 
-                    crud.accept(a);
+                        statReadyFlag.set(true);
+
+                        assertTrue(waitForCondition(() -> stop.get() || !statReadyFlag.get(), getTestTimeout()));
+                    }
                 }
             });
+
+            assertTrue(waitForCondition(statReadyFlag::get, getTestTimeout()));
 
             waitForStatsUpdates(initStat1);
 
             ObjectStatisticsImpl updatedStat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
             assertTrue(rowCntCmp > 0 ? updatedStat.rowCount() > initStat1.rowCount() :
-                (rowCntCmp < 0 ? initStat1.rowCount() < updatedStat.rowCount() : initStat1.rowCount() == updatedStat.rowCount()));
+                (rowCntCmp < 0 ? updatedStat.rowCount() < initStat1.rowCount() : updatedStat.rowCount() == initStat1.rowCount()));
+
+            statReadyFlag.set(false);
+
+            assertTrue(waitForCondition(statReadyFlag::get, getTestTimeout()));
 
             // Continuing data loading, the table is being updated. Since the row count is inreasing, we must obtain a
             // new statistics, greather than {@code firstNotEmpty}.
             waitForStatsUpdates(updatedStat);
 
-            ObjectStatisticsImpl updatedStat2 = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
+            ObjectStatisticsImpl finalStat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
-            assertTrue(rowCntCmp > 0 ? updatedStat2.rowCount() > updatedStat.rowCount() :
-                (rowCntCmp < 0 ? updatedStat2.rowCount() < updatedStat.rowCount() : updatedStat2.rowCount() == updatedStat.rowCount()));
+            assertTrue(rowCntCmp > 0 ? finalStat.rowCount() > updatedStat.rowCount() :
+                (rowCntCmp < 0 ? finalStat.rowCount() < updatedStat.rowCount() : finalStat.rowCount() == updatedStat.rowCount()));
         }
         finally {
             stop.set(true);
@@ -121,7 +138,7 @@ public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
 
     /** */
     private void waitForStatsUpdates(ObjectStatisticsImpl compareTo) throws IgniteInterruptedCheckedException {
-        assertTrue(GridTestUtils.waitForCondition(() -> {
+        assertTrue(waitForCondition(() -> {
             ObjectStatisticsImpl updatedStat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
             if (updatedStat == null)
@@ -159,7 +176,7 @@ public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
 
         statisticsMgr(0).collectStatistics(buildDefaultConfigurations(SMALL_TARGET));
 
-        assertTrue(GridTestUtils.waitForCondition(() -> statisticsMgr(0).getLocalStatistics(SMALL_KEY) != null, TIMEOUT));
+        assertTrue(waitForCondition(() -> statisticsMgr(0).getLocalStatistics(SMALL_KEY) != null, TIMEOUT));
 
         ObjectStatisticsImpl stat1 = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
@@ -170,7 +187,7 @@ public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
 
         statisticsMgr(0).processObsolescence();
 
-        assertTrue(GridTestUtils.waitForCondition(() -> {
+        assertTrue(waitForCondition(() -> {
             ObjectStatisticsImpl stat2 = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
             return stat2 != null && stat2.rowCount() > stat1.rowCount();
@@ -211,7 +228,7 @@ public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        assertTrue(GridTestUtils.waitForCondition(() -> statObs.get(SMALL_KEY).size() > oldSize, TIMEOUT));
+        assertTrue(waitForCondition(() -> statObs.get(SMALL_KEY).size() > oldSize, TIMEOUT));
     }
 
     /** {@inheritDoc} */
@@ -226,6 +243,11 @@ public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
         cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return testTimeout > 0 ? testTimeout : super.getTestTimeout();
     }
 
     /** {@inheritDoc} */
