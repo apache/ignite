@@ -17,7 +17,7 @@
 
 package org.apache.ignite.sqltests;
 
-import javax.cache.CacheException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -101,7 +101,7 @@ public class ReplicatedSqlCustomPartitionsTest extends ReplicatedSqlTest {
      */
     @Test
     public void testLeftJoinReplicatedPartitionedDiffPartitionsErr() {
-        GridTestUtils.assertThrows(log, () -> checkLeftJoinEmployeeDepartment(DEP_PART_TAB_DIFF), CacheException.class,
+        GridTestUtils.assertThrows(log, () -> checkLeftJoinEmployeeDepartment(DEP_PART_TAB_DIFF), IgniteException.class,
                 "only with the same partitions number configuration");
     }
 
@@ -110,7 +110,7 @@ public class ReplicatedSqlCustomPartitionsTest extends ReplicatedSqlTest {
      */
     @Test
     public void testRightJoinPartitionedReplicatedDiffPartitionsErr() {
-        GridTestUtils.assertThrows(log, () -> checkRightJoinDepartmentEmployee(DEP_PART_TAB_DIFF), CacheException.class,
+        GridTestUtils.assertThrows(log, () -> checkRightJoinDepartmentEmployee(DEP_PART_TAB_DIFF), IgniteException.class,
                 "only with the same partitions number configuration");
     }
 
@@ -120,7 +120,7 @@ public class ReplicatedSqlCustomPartitionsTest extends ReplicatedSqlTest {
      */
     @Test
     public void testLeftJoinReplicatedPartitionedDiffNodeFilterErr() {
-        GridTestUtils.assertThrows(log, () -> checkLeftJoinEmployeeDepartment(DEP_PART_TAB_DIFF_NF), CacheException.class,
+        GridTestUtils.assertThrows(log, () -> checkLeftJoinEmployeeDepartment(DEP_PART_TAB_DIFF_NF), IgniteException.class,
                 "due to different node filters configuration");
     }
 
@@ -129,7 +129,7 @@ public class ReplicatedSqlCustomPartitionsTest extends ReplicatedSqlTest {
      */
     @Test
     public void testRightJoinPartitionedReplicatedDiffNodeFilterErr() {
-        GridTestUtils.assertThrows(log, () -> checkRightJoinDepartmentEmployee(DEP_PART_TAB_DIFF_NF), CacheException.class,
+        GridTestUtils.assertThrows(log, () -> checkRightJoinDepartmentEmployee(DEP_PART_TAB_DIFF_NF), IgniteException.class,
                 "due to different node filters configuration");
     }
 }
