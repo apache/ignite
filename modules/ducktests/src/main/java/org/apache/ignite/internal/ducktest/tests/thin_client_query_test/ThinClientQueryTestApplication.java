@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.ducktest.tests.thin_client_query_test;
 
+import javax.cache.Cache;
+import java.util.LinkedHashMap;
+import java.util.List;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryEntity;
@@ -27,10 +30,6 @@ import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.ignite.internal.util.typedef.F;
-
-import javax.cache.Cache;
-import java.util.LinkedHashMap;
-import java.util.List;
 
 /** Tests cache queries for thin client. */
 public class ThinClientQueryTestApplication extends IgniteAwareApplication {
