@@ -15,9 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-name: Sonar Quality Pull Request Analysis
+name: SonarBuild
 
-# TODO IGNITE-20466 Investigate and fix the issue with running this workflow on PRs from forks.
 on: pull_request
 
 permissions:
@@ -28,32 +27,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  sonarcloud:
+  build:
     if: github.repository == 'apache/ignite'
-    name: Sonar Analysis
+    name: Build artifacts for Sonar Analysis
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: "refs/pull/${{ github.event.number }}/merge"
           fetch-depth: 0
 
       - name: Set up JDK11
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '11'
           cache: 'maven'
 
-      - name: Cache SonarCloud packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
-
       - name: Cache local Maven repository
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
@@ -67,25 +59,32 @@ jobs:
         run: |
           ./mvnw clean install -P all-java,lgpl,examples,skip-docs -DskipTests -B -V          
 
-      - name: Sonar Analyze Upload
-        run: >
-          ./mvnw org.sonarsource.scanner.maven:sonar-maven-plugin:sonar 
-          -P all-java,lgpl,examples,skip-docs
-          -Dsonar.pullrequest.branch=${PULLREQUEST_BRANCH}
-          -Dsonar.pullrequest.base=${PULLREQUEST_BASE}
-          -Dsonar.pullrequest.key=${PULLREQUEST_KEY}
-          -Dsonar.pullrequest.github.repository=apache/ignite
-          -Dsonar.pullrequest.provider=GitHub 
-          -Dsonar.pullrequest.github.summary_comment=true
-          -Dsonar.projectKey=apache_ignite
-          -Dsonar.login=${SONARCLOUD_TOKEN}
-          -B -V
-        env:
-          MAVEN_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
-          SONAR_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
-          JAVA_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONARCLOUD_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
-          PULLREQUEST_BRANCH: ${{ github.head_ref }}
-          PULLREQUEST_BASE: ${{ github.base_ref }}
-          PULLREQUEST_KEY: ${{ github.event.pull_request.number }}
+      - name: Prepare pull request artifact
+        shell: bash
+        run: |
+          echo ${{ github.event.pull_request.number }} >> pr-event.txt
+          echo ${{ github.event.pull_request.head.ref }} >> pr-event.txt
+          echo ${{ github.event.pull_request.base.ref }} >> pr-event.txt
+          echo ${{ github.event.pull_request.head.sha }} >> pr-event.txt
+
+      - name: Upload pull request event artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-event-artifact
+          path: |
+            pr-event.txt
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Prepare compiled classes artifact
+        shell: bash
+        run: find -iname "*target" -type d -exec tar -rf target.tar {} \+
+
+      - name: Upload compiled classes artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: target-artifact
+          path: |
+            target.tar
+          if-no-files-found: error
+          retention-days: 1

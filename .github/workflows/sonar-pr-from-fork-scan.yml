@@ -1,0 +1,131 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+name: Sonar Quality Pull Request Analysis
+
+on:
+  workflow_run:
+    workflows: [SonarBuild]
+    types: [completed]
+
+jobs:
+  sonarcloud:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.repository == 'apache/ignite' }}
+    name: Sonar Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      checks: write
+    steps:
+      - name: Download pull request event artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-event-artifact
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          merge-multiple: true
+
+      - name: Read pull request event
+        shell: bash
+        run: |
+          echo "pr_number=$(sed '1q;d' pr-event.txt)" >> "$GITHUB_ENV"
+          echo "pr_head_ref=$(sed '2q;d' pr-event.txt)" >> "$GITHUB_ENV"
+          echo "pr_base_ref=$(sed '3q;d' pr-event.txt)" >> "$GITHUB_ENV"
+          echo "pr_head_sha=$(sed '4q;d' pr-event.txt)" >> "$GITHUB_ENV"
+
+      - uses: actions/github-script@v7
+        id: job-url
+        with:
+          script: |
+            const { data } = await github.rest.actions.listJobsForWorkflowRunAttempt({
+              ...context.repo,
+              run_id: context.runId,
+              attempt_number: process.env.GITHUB_RUN_ATTEMPT,
+            });
+            return data.jobs[0].html_url
+          result-encoding: string
+
+      - uses: LouisBrunner/checks-action@v2.0.0
+        id: init
+        with:
+          sha: ${{ env.pr_head_sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: Sonar Quality Pull Request Analysis
+          output: |
+            ${{ format('{{"summary": "[Details ...]({0})"}}', steps.job-url.outputs.result) }}
+          status: in_progress
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.workflow_run.head_repository.full_name }}
+          ref: ${{ github.event.workflow_run.head_branch }}
+          fetch-depth: 0
+
+      - name: Download compiled classes artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: target-artifact
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          merge-multiple: true
+
+      - name: Extract compiled classes artifact
+        shell: bash
+        run: tar -xf target.tar
+
+      - name: Set up JDK17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: ${{ env.build_type }}
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Sonar Analyze Upload
+        shell: bash
+        run: >
+          ./mvnw org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+          -P all-java,lgpl,examples,skip-docs
+          -Dsonar.scm.revision=${{ github.event.workflow_run.head_sha }}
+          -Dsonar.pullrequest.branch=${{ env.pr_head_ref }}
+          -Dsonar.pullrequest.base=${{ env.pr_base_ref }}
+          -Dsonar.pullrequest.key=${{ env.pr_number }}
+          -Dsonar.pullrequest.github.repository=apache/ignite
+          -Dsonar.pullrequest.provider=GitHub
+          -Dsonar.pullrequest.github.summary_comment=true
+          -Dsonar.projectKey=apache_ignite
+          -Dsonar.token=${{ secrets.SONARCLOUD_TOKEN }}
+          -B -V
+        env:
+          MAVEN_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
+          SONAR_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
+          JAVA_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
+
+      - uses: LouisBrunner/checks-action@v2.0.0
+        if: always()
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          check_id: ${{ steps.init.outputs.check_id }}
+          status: completed
+          conclusion: ${{ job.status }}
