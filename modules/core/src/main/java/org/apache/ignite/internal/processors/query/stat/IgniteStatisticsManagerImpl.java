@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -60,7 +61,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     private static final StatisticsUsageState DEFAULT_STATISTICS_USAGE_STATE = ON;
 
     /** Interval to check statistics obsolescence in seconds. */
-    static final int OBSOLESCENCE_INTERVAL = 60;
+    private static final int OBSOLESCENCE_INTERVAL = 60;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -111,7 +112,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     private volatile boolean started;
 
     /** Schedule to process obsolescence statistics. */
-    private GridTimeoutProcessor.CancelableTask obsolescenceSchedule;
+    private final AtomicReference<GridTimeoutProcessor.CancelableTask> obsolescenceSchedule = new AtomicReference<>();
 
     /** Exchange listener. */
     private final PartitionsExchangeAware exchAwareLsnr = new PartitionsExchangeAware() {
@@ -236,14 +237,23 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
         tryStart();
 
-        if (serverNode) {
-            // Use mgmt pool to work with statistics repository in busy lock to schedule some tasks.
-            obsolescenceSchedule = ctx.timeout().schedule(() -> {
-                obsolescenceBusyExecutor.execute(() -> processObsolescence());
-            }, OBSOLESCENCE_INTERVAL * 1000, OBSOLESCENCE_INTERVAL * 1000);
-        }
+        if (serverNode)
+            scheduleObsolescence(OBSOLESCENCE_INTERVAL);
 
         ctx.cache().context().exchange().registerExchangeAwareComponent(exchAwareLsnr);
+    }
+
+    /** */
+    public void scheduleObsolescence(int seconds) {
+        assert seconds > 1;
+
+        obsolescenceSchedule.getAndUpdate(curSchedule -> {
+            if (curSchedule != null)
+                curSchedule.close();
+
+            return ctx.timeout().schedule(() -> obsolescenceBusyExecutor.execute(this::processObsolescence),
+                seconds * 1000, seconds * 1000);
+        });
     }
 
     /**
@@ -384,8 +394,10 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     @Override public void stop() {
         stopX();
 
-        if (obsolescenceSchedule != null)
-            obsolescenceSchedule.close();
+        GridTimeoutProcessor.CancelableTask obsolescenceTask = obsolescenceSchedule.getAndSet(null);
+
+        if (obsolescenceTask != null)
+            obsolescenceTask.close();
 
         if (gatherPool != null) {
             List<Runnable> unfinishedTasks = gatherPool.shutdownNow();
