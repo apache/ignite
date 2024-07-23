@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -31,6 +32,7 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
@@ -47,6 +49,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.RunnableX;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -302,6 +305,25 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
      */
     public Collection<IgniteTxEntry> getTxWriteEntries() {
         return txWriteEntries;
+    }
+
+    /**
+     * @return
+     */
+    public @Nullable Map<KeyCacheObject, IgniteTxEntry> transactionWrites(int cacheId) {
+        if (F.isEmpty(txWriteEntries))
+            return null;
+
+        Map<KeyCacheObject, IgniteTxEntry> res = new HashMap<>();
+
+        for (IgniteTxEntry e : txWriteEntries) {
+            if (e.cacheId() != cacheId)
+                continue;
+
+            res.put(e.key(), e);
+        }
+
+        return res;
     }
 
     /**

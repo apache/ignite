@@ -56,6 +56,8 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.calcite.exec.IndexFirstLastScan.createNotNullRowFilter;
+
 /**
  * Ignite scannable cache index.
  */
@@ -169,8 +171,7 @@ public class CacheIndexImpl implements IgniteIndex {
                 boolean nullsFirst = collation.getFieldCollations().get(0).nullDirection ==
                     RelFieldCollation.NullDirection.FIRST;
 
-                BPlusTree.TreeRowClosure<IndexRow, IndexRow> notNullRowFilter =
-                    IndexScan.createNotNullRowFilter(iidx, checkExpired);
+                BPlusTree.TreeRowClosure<IndexRow, IndexRow> notNullRowFilter = createNotNullRowFilter(iidx, checkExpired);
 
                 AtomicBoolean skipCheck = new AtomicBoolean();
 

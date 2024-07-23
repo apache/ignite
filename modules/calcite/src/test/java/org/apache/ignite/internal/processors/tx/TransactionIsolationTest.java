@@ -171,11 +171,11 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
             insert(F.t(4, JOHN));
 
             assertEquals(CACHE, JOHN, select(4, CACHE));
-            //assertEquals(SQL, JOHN, select(4, SQL));
+            assertEquals(SQL, JOHN, select(4, SQL));
         });
 
         assertNull(CACHE, select(4, CACHE));
-        //assertNull(SQL, select(4, SQL));
+        assertNull(SQL, select(4, SQL));
     }
 
     /** */
@@ -188,12 +188,12 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
             update(F.t(1, SARAH));
 
             assertEquals(SARAH, select(1, CACHE));
-            //assertEquals(SARAH, select(1, SQL));
+            assertEquals(SARAH, select(1, SQL));
 
             update(F.t(1, KYLE));
 
             assertEquals(KYLE, select(1, CACHE));
-            //assertEquals(KYLE, select(1, SQL));
+            assertEquals(KYLE, select(1, SQL));
         });
 
         assertEquals(JOHN, select(1, CACHE));
@@ -210,7 +210,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
             delete(1);
 
             assertNull(select(1, CACHE));
-            //assertNull(select(1, SQL));
+            assertNull(select(1, SQL));
         });
 
         assertEquals(JOHN, select(1, CACHE));
@@ -311,6 +311,14 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
     /** */
     public static List<List<?>> executeSql(IgniteEx node, String sqlText, Object... args) {
+        String explain = "EXPLAIN PLAN FOR ";
+        if (!sqlText.startsWith(explain)) {
+            List<List<?>> res = executeSql(node, explain + sqlText);
+            for (List<?> r : res) {
+                r.forEach(System.out::println);
+            }
+        }
+
         return node.cache(USERS).query(new SqlFieldsQuery(sqlText)
             .setArgs(args)
             .setTimeout(5, TimeUnit.SECONDS)

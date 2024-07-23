@@ -192,20 +192,32 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
         fragmentDesc.prepareMarshal(ctx);
 
-        // TODO: FIXME
         if (txWriteEntries != null) {
             for (IgniteTxEntry e : txWriteEntries) {
-                e.marshal(ctx, true);
+                boolean transferExpiry = false; // TODO: FIXME
+                e.marshal(ctx, transferExpiry);
             }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        ClassLoader ldr = U.resolveClassLoader(ctx.gridConfig());
+
         if (params == null && paramsBytes != null)
-            params = U.unmarshal(ctx, paramsBytes, U.resolveClassLoader(ctx.gridConfig()));
+            params = U.unmarshal(ctx, paramsBytes, ldr);
 
         fragmentDesc.prepareUnmarshal(ctx);
+
+        if (txWriteEntries != null) {
+            boolean near = false; // TODO: FIXME.
+
+            for (IgniteTxEntry e : txWriteEntries) {
+                e.prepareUnmarshal(ctx, topologyVersion(), near);
+
+                e.unmarshal(ctx, near, ldr);
+            }
+        }
     }
 
     /** {@inheritDoc} */

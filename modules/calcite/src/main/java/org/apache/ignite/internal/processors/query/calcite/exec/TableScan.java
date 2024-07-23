@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import org.apache.calcite.rel.type.RelDataType;
@@ -30,16 +31,20 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -70,6 +75,9 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
     private final ImmutableBitSet requiredColunms;
 
     /** */
+    private final Map<KeyCacheObject, IgniteTxEntry> txWrites;
+
+    /** */
     public TableScan(
         ExecutionContext<Row> ectx,
         CacheTableDescriptor desc,
@@ -86,6 +94,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
 
         factory = this.ectx.rowHandler().factory(this.ectx.getTypeFactory(), rowType);
         topVer = ectx.topologyVersion();
+        txWrites = ectx.transactionWrites(cctx.cacheId());
     }
 
     /** {@inheritDoc} */
@@ -241,6 +250,23 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
 
                 if (cur.next()) {
                     CacheDataRow row = cur.get();
+
+                    if (!F.isEmpty(txWrites)) {
+                        IgniteTxEntry val = txWrites.get(row.key());
+
+                        // Entry updated in TX.
+                        if (val != null) {
+                            if (val.value() == null) // Entry removed.
+                                continue;
+
+                            row = new CacheDataRowAdapter(
+                                row.key(),
+                                val.value(),
+                                val.explicitVersion(),
+                                val.ttl() == CU.TTL_NOT_CHANGED ? row.expireTime() : CU.toExpireTime(val.ttl())
+                            );
+                        }
+                    }
 
                     if (row.expireTime() > 0 && row.expireTime() <= U.currentTimeMillis())
                         continue;
