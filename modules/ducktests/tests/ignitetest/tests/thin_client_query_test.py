@@ -35,8 +35,6 @@ class ThinClientQueryTest(IgniteTest):
     to use with ssl enabled:
     export GLOBALS='{"ssl":{"enabled":true}}' .
     """
-    JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.thin_client_query_test.ThinClientQueryTestApplication"
-
     @cluster(num_nodes=3)
     @ignite_versions(str(DEV_BRANCH), version_prefix="server_version")
     @matrix(filter=[False, True])
@@ -57,11 +55,13 @@ class ThinClientQueryTest(IgniteTest):
 
         addresses = [ignite.nodes[0].account.hostname + ":" + str(server_config.client_connector_configuration.port)]
 
+        cls = "org.apache.ignite.internal.ducktest.tests.thin_client_query_test.ThinClientQueryTestApplication"
+
         thin_clients = IgniteApplicationService(self.test_context,
                                                 IgniteThinClientConfiguration(
                                                     addresses=addresses,
                                                     version=IgniteVersion(str(DEV_BRANCH))),
-                                                java_class_name=self.JAVA_CLIENT_CLASS_NAME,
+                                                java_class_name=cls,
                                                 num_nodes=1,
                                                 params={"filter": filter})
 
@@ -93,4 +93,3 @@ class IgniteNodeSpecExcludeDucktests(IgniteNodeSpec):
         envs["EXCLUDE_MODULES"] = "ducktests"
 
         return envs
-

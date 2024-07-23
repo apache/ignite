@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.ducktest.tests.thin_client_query_test;
 
-import javax.cache.Cache;
 import java.util.LinkedHashMap;
 import java.util.List;
+import javax.cache.Cache;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryEntity;
