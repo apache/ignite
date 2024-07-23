@@ -1887,7 +1887,7 @@ public class SnapshotRestoreProcess {
         private volatile Map<Integer, StoredCacheData> cfgs = Collections.emptyMap();
 
         /** Graceful shutdown future. */
-        private volatile IgniteFuture<Void> stopFut;
+        private volatile IgniteFuture<?> stopFut;
 
         /** Operation start time. */
         private final long startTime;
