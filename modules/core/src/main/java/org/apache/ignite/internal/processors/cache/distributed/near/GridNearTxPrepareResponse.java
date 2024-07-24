@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
@@ -37,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -58,7 +61,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     /** Collection of versions that are pending and less than lock version. */
     @GridToStringInclude
     @GridDirectCollection(GridCacheVersion.class)
-    private Collection<GridCacheVersion> pending;
+    private List<GridCacheVersion> pending;
 
     /** Future ID.  */
     private IgniteUuid futId;
@@ -164,8 +167,8 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      *
      * @return Pending versions.
      */
-    public Collection<GridCacheVersion> pending() {
-        return pending == null ? Collections.emptyList() : pending;
+    public List<GridCacheVersion> pending() {
+        return Collections.unmodifiableList(pending);
     }
 
     /**
@@ -174,7 +177,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      * @param pending Pending versions.
      */
     public void pending(Collection<GridCacheVersion> pending) {
-        this.pending = pending != null ? Collections.unmodifiableCollection(pending) : null;
+        this.pending = F.isEmpty(pending) ? Collections.emptyList() : new ArrayList<>(pending);
     }
 
     /**
