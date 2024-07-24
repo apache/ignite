@@ -866,13 +866,15 @@ public class GridMapQueryExecutor {
 
             final MapQueryResults qryResults = nodeRess.get(reqId, req.segmentId());
 
+            MapQueryResult res = null;
+
             if (qryResults == null)
                 sendError(node, reqId, new CacheException("No query result found for request: " + req));
             else if (qryResults.cancelled())
                 sendQueryCancel(node, reqId);
             else {
                 try {
-                    MapQueryResult res = qryResults.result(req.query());
+                    res = qryResults.result(req.query());
 
                     assert res != null;
 
@@ -901,12 +903,6 @@ public class GridMapQueryExecutor {
                         if (msg != null)
                             sendNextPage(node, msg);
                     }
-                    catch (Throwable e) {
-                        if (res.qryInfo() != null)
-                            h2.heavyQueriesTracker().stopTracking(res.qryInfo(), e);
-
-                        throw e;
-                    }
                     finally {
                         try {
                             res.unlockTables();
@@ -917,6 +913,9 @@ public class GridMapQueryExecutor {
                     }
                 }
                 catch (Exception e) {
+                    if (res.qryInfo() != null)
+                        h2.heavyQueriesTracker().stopTracking(res.qryInfo(), e);
+
                     QueryRetryException retryEx = X.cause(e, QueryRetryException.class);
 
                     if (retryEx != null)
