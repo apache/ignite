@@ -106,7 +106,7 @@ public class UnwrapDataEntry extends DataEntry {
         }
     }
 
-    /** TODO {@inheritDoc} */
+    /** TODO @inheritDoc} */
     public Object unwrappedPreviousStateMetadata() {
         try {
             return unwrapValue(prevStateMeta, keepBinary, cacheObjValCtx);
