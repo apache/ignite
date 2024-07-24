@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
@@ -37,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.apache.ignite.internal.processors.query.h2.H2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -56,9 +56,6 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
     /** External wait time. */
     private static final int EXT_WAIT_TIME = 2000;
-
-    /** External wait time relative error. */
-    private static final int EXT_WAIT_REL_ERR = (int)(EXT_WAIT_TIME * 0.01);
 
     /** Page size. */
     private int pageSize = DEFAULT_PAGE_SIZE;
@@ -190,7 +187,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * the execution of distributed queries.
      */
     @Test
-    public void testDistributedLazyWithExternalWait() throws InterruptedException {
+    public void testDistributedLazyWithExternalWait() {
         local = false;
         lazy = true;
 
@@ -202,7 +199,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * the execution of local queries.
      */
     @Test
-    public void testlocalLazyWithExternalWait() throws InterruptedException {
+    public void testlocalLazyWithExternalWait() {
         local = true;
         lazy = true;
 
@@ -395,7 +392,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /** */
-    public void checkLazyWithExternalWait() throws InterruptedException {
+    public void checkLazyWithExternalWait() {
         pageSize = 1;
 
         LogListener lsnr = LogListener
@@ -409,17 +406,16 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
             it.next();
 
-            Thread.sleep(EXT_WAIT_TIME);
+            long sleepStartTs = U.currentTimeMillis();
+
+            while (U.currentTimeMillis() - sleepStartTs <= EXT_WAIT_TIME)
+                doSleep(100L);
 
             it.next();
 
-            ConcurrentHashMap qrys = GridTestUtils.getFieldValue(heavyQueriesTracker(), "qrys");
+            H2QueryInfo qry = (H2QueryInfo)heavyQueriesTracker().getQueries().iterator().next();
 
-            H2QueryInfo qry = (H2QueryInfo)qrys.keySet().iterator().next();
-
-            long extWait = GridTestUtils.getFieldValue(qry, "extWait");
-
-            assertTrue(extWait >= EXT_WAIT_TIME - EXT_WAIT_REL_ERR);
+            assertTrue(qry.extWait() >= EXT_WAIT_TIME);
 
             assertFalse(lsnr.check());
         }

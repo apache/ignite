@@ -901,6 +901,12 @@ public class GridMapQueryExecutor {
                         if (msg != null)
                             sendNextPage(node, msg);
                     }
+                    catch (Throwable e) {
+                        if (res.qryInfo() != null)
+                            h2.heavyQueriesTracker().stopTracking(res.qryInfo(), e);
+
+                        throw e;
+                    }
                     finally {
                         try {
                             res.unlockTables();

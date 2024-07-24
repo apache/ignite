@@ -74,9 +74,6 @@ public class H2QueryInfo implements TrackableQuery {
     /** Query id. */
     private final long queryId;
 
-    /** Lock object. */
-    private final Object lock = new Object();
-
     /**
      * @param type Query type.
      * @param stmt Query statement.
@@ -124,6 +121,11 @@ public class H2QueryInfo implements TrackableQuery {
         return stmt.getPlanSQL();
     }
 
+    /** */
+    public long extWait() {
+        return extWait;
+    }
+
     /**
      * Print info specified by children.
      *
@@ -139,24 +141,20 @@ public class H2QueryInfo implements TrackableQuery {
     }
 
     /** */
-    public void suspendTracking() {
-        synchronized (lock) {
-            if (!isSuspended) {
-                isSuspended = true;
+    public synchronized void suspendTracking() {
+        if (!isSuspended) {
+            isSuspended = true;
 
-                lastSuspendTs = U.currentTimeMillis();
-            }
+            lastSuspendTs = U.currentTimeMillis();
         }
     }
 
     /** */
-    public void resumeTracking() {
-        synchronized (lock) {
-            if (isSuspended) {
-                isSuspended = false;
+    public synchronized void resumeTracking() {
+        if (isSuspended) {
+            isSuspended = false;
 
-                extWait += U.currentTimeMillis() - lastSuspendTs;
-            }
+            extWait += U.currentTimeMillis() - lastSuspendTs;
         }
     }
 
