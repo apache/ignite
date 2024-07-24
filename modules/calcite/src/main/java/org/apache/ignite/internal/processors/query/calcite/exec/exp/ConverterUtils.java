@@ -34,8 +34,10 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /** */
 public class ConverterUtils {
@@ -164,6 +166,21 @@ public class ConverterUtils {
     /** */
     static List<Type> internalTypes(List<? extends RexNode> operandList) {
         return Util.transform(operandList, node -> toInternal(node.getType()));
+    }
+
+    /**
+     * Convert {@code operand} to {@code targetType}.
+     *
+     * @param operand The expression to convert
+     * @param targetType Target type
+     * @return A new expression with java type corresponding to {@code targetType}
+     * or original expression if there is no need to convert.
+     */
+    public static Expression convert(Expression operand, RelDataType targetType) {
+        if (SqlTypeUtil.isDecimal(targetType))
+            return convertToDecimal(operand, targetType);
+        else
+            return convert(operand, Commons.typeFactory().getJavaClass(targetType));
     }
 
     /**

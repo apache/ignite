@@ -117,7 +117,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
             "'test', " +
             "date '2021-01-01', " +
             "time '12:34:56', " +
-            "timestamp '2021-01-01 12:34:56', " +
+            "timestamp '2021-01-01 12:34:56.789', " +
             "1, " +
             "9876543210, " +
             "3, " +
@@ -138,7 +138,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         assertEquals("test", row.get(1));
         assertEquals(Date.valueOf("2021-01-01"), row.get(2));
         assertEquals(Time.valueOf("12:34:56"), row.get(3));
-        assertEquals(Timestamp.valueOf("2021-01-01 12:34:56"), row.get(4));
+        assertEquals(Timestamp.valueOf("2021-01-01 12:34:56.789"), row.get(4));
         assertEquals(1, row.get(5));
         assertEquals(9876543210L, row.get(6));
         assertEquals((short)3, row.get(7));
