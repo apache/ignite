@@ -66,4 +66,14 @@ public interface Index {
      * @param softDelete if {@code true} then perform logical deletion.
      */
     public void destroy(boolean softDelete);
+
+    /**
+     * @param val Mark or unmark index to (re)build.
+     */
+    public void markIndexRebuild(boolean val);
+
+    /**
+     * @return Whether index is (re)building now.
+     */
+    public boolean rebuildInProgress();
 }
