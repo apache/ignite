@@ -174,12 +174,12 @@ public class LazyDataEntry extends DataEntry {
         return valBytes;
     }
 
-    /** {@inheritDoc} */
+    /** TODO {@inheritDoc} */
     public byte getPreviousStateMetadataType() {
         return prevStateMetaType;
     }
 
-    /** {@inheritDoc} */
+    /** TODO {@inheritDoc} */
     public byte[] getPreviousStateMetadataBytes() {
         return prevStateMetaBytes;
     }

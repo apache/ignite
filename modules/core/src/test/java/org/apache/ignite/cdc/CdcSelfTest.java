@@ -428,8 +428,7 @@ public class CdcSelfTest extends AbstractCdcTest {
             AtomicBoolean firstEvt = new AtomicBoolean(true);
 
             CdcConsumer cnsmr = new CdcConsumer() {
-                @Override
-                public void start(MetricRegistry mreg) {
+                @Override public void start(MetricRegistry mreg) {
                     // No-op.
                 }
 

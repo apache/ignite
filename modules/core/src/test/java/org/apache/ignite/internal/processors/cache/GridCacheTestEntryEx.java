@@ -72,14 +72,14 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean initialValue(CacheObject val, GridCacheVersion ver, long ttl, long expireTime, boolean preload, AffinityTopologyVersion topVer, GridDrType drType, boolean fromStore, boolean primary, @Nullable CacheDataRow row) throws IgniteCheckedException, GridCacheEntryRemovedException {
+    @Override public boolean initialValue(CacheObject val, GridCacheVersion ver, long ttl, long expireTime, boolean preload,
+        AffinityTopologyVersion topVer, GridDrType drType, boolean fromStore, boolean primary, @Nullable CacheDataRow row)
+        throws IgniteCheckedException, GridCacheEntryRemovedException {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public int memorySize() throws IgniteCheckedException {
+    @Override public int memorySize() throws IgniteCheckedException {
         return 0;
     }
 
@@ -537,8 +537,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override
-    public @Nullable CacheObject unswap(boolean needVal) throws IgniteCheckedException, GridCacheEntryRemovedException {
+    @Override public @Nullable CacheObject unswap(boolean needVal) throws IgniteCheckedException, GridCacheEntryRemovedException {
         return null;
     }
 
