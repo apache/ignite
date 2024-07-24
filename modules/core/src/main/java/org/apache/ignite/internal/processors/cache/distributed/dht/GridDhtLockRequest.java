@@ -104,7 +104,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @param isInvalidate Invalidation flag.
      * @param timeout Lock timeout.
      * @param dhtCnt DHT count.
-     * @param nearCnt Near count.
      * @param txSize Expected transaction size.
      * @param taskNameHash Task name hash code.
      * @param accessTtl TTL for read operation.
@@ -129,7 +128,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         boolean isInvalidate,
         long timeout,
         int dhtCnt,
-        int nearCnt,
         int txSize,
         int taskNameHash,
         long accessTtl,
@@ -150,7 +148,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             isolation,
             isInvalidate,
             timeout,
-            dhtCnt == 0 ? nearCnt : dhtCnt,
+            dhtCnt,
             txSize,
             skipStore,
             keepBinary,
@@ -160,7 +158,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
         storeUsed(storeUsed);
 
-        invalidateEntries = new BitSet(dhtCnt == 0 ? nearCnt : dhtCnt);
+        invalidateEntries = new BitSet(dhtCnt);
 
         assert miniId != null;
 
