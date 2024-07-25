@@ -22,6 +22,10 @@ on:
     workflows: [SonarBuild]
     types: [completed]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}}
+  cancel-in-progress: true
+
 jobs:
   sonarcloud:
     if: ${{ github.event.workflow_run.conclusion == 'success' && github.repository == 'apache/ignite' }}
@@ -29,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      actions: read
+      actions: write
       checks: write
     steps:
       - name: Download pull request event artifact
@@ -47,34 +51,49 @@ jobs:
           echo "pr_head_ref=$(sed '2q;d' pr-event.txt)" >> "$GITHUB_ENV"
           echo "pr_base_ref=$(sed '3q;d' pr-event.txt)" >> "$GITHUB_ENV"
           echo "pr_head_sha=$(sed '4q;d' pr-event.txt)" >> "$GITHUB_ENV"
+          echo "target_artifact_id=$(sed '5q;d' pr-event.txt)" >> "$GITHUB_ENV"
 
-      - uses: actions/github-script@v7
-        id: job-url
+      - name: Create new PR check
+        uses: actions/github-script@v7
+        id: check
         with:
           script: |
-            const { data } = await github.rest.actions.listJobsForWorkflowRunAttempt({
+            const jobs_response = await github.rest.actions.listJobsForWorkflowRunAttempt({
               ...context.repo,
               run_id: context.runId,
               attempt_number: process.env.GITHUB_RUN_ATTEMPT,
             });
-            return data.jobs[0].html_url
+
+            const job_url = jobs_response.data.jobs[0].html_url;
+
+            const check_response = await github.rest.checks.create({
+              ...context.repo,
+              name: 'Sonar Quality Pull Request Analysis',
+              head_sha: process.env.pr_head_sha,
+              status: 'in_progress',
+              output: {
+                title: 'Sonar Quality Pull Request Analysis',
+                summary: '[Details ...](' + job_url + ')'
+              }
+            });
+
+            return check_response.data.id;
           result-encoding: string
 
-      - uses: LouisBrunner/checks-action@v2.0.0
-        id: init
-        with:
-          sha: ${{ env.pr_head_sha }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          name: Sonar Quality Pull Request Analysis
-          output: |
-            ${{ format('{{"summary": "[Details ...]({0})"}}', steps.job-url.outputs.result) }}
-          status: in_progress
-
-      - uses: actions/checkout@v4
+      - name: Checkout PR head branch
+        uses: actions/checkout@v4
         with:
           repository: ${{ github.event.workflow_run.head_repository.full_name }}
           ref: ${{ github.event.workflow_run.head_branch }}
           fetch-depth: 0
+
+      - name: Checkout PR base branch
+        run: |
+          git remote add upstream ${{ github.event.repository.clone_url }}
+          git fetch upstream
+          git checkout -B $pr_base_ref upstream/$pr_base_ref
+          git checkout ${{ github.event.workflow_run.head_branch }}
+          git clean -ffdx && git reset --hard HEAD
 
       - name: Download compiled classes artifact
         uses: actions/download-artifact@v4
@@ -83,6 +102,16 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           merge-multiple: true
+
+      - name: Delete compiled classes artifact
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.deleteArtifact({
+              ...context.repo,
+              artifact_id: process.env.target_artifact_id
+            });
 
       - name: Extract compiled classes artifact
         shell: bash
@@ -93,7 +122,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: ${{ env.build_type }}
 
       - name: Cache SonarCloud packages
         uses: actions/cache@v4
@@ -101,6 +129,14 @@ jobs:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
+
+      - name: Cache local Maven repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-m2
 
       - name: Sonar Analyze Upload
         shell: bash
@@ -122,10 +158,19 @@ jobs:
           SONAR_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
           JAVA_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
 
-      - uses: LouisBrunner/checks-action@v2.0.0
+      - name: Update status of PR check
+        uses: actions/github-script@v7
         if: always()
+        env:
+          CHECK_ID: ${{ steps.check.outputs.result }}
+          JOB_STATUS: ${{ job.status }}
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          check_id: ${{ steps.init.outputs.check_id }}
-          status: completed
-          conclusion: ${{ job.status }}
+          script: |
+            const { CHECK_ID, JOB_STATUS } = process.env;
+
+            await github.rest.checks.update({
+              ...context.repo,
+              check_run_id: CHECK_ID,
+              status: 'completed',
+              conclusion: JOB_STATUS
+            });

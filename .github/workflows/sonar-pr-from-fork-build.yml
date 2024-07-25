@@ -36,13 +36,13 @@ jobs:
         with:
           ref: "refs/pull/${{ github.event.number }}/merge"
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up JDK11
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '11'
-          cache: 'maven'
 
       - name: Cache local Maven repository
         uses: actions/cache@v4
@@ -57,7 +57,21 @@ jobs:
 
       - name: Build with Maven
         run: |
-          ./mvnw clean install -P all-java,lgpl,examples,skip-docs -DskipTests -B -V          
+          ./mvnw install -P all-java,lgpl,examples,skip-docs -DskipTests -B -V
+
+      - name: Prepare compiled classes artifact
+        shell: bash
+        run: find -iname "*target" -type d -exec tar -rf target.tar {} \+
+
+      - name: Upload compiled classes artifact
+        uses: actions/upload-artifact@v4
+        id: target-artifact-upload-step
+        with:
+          name: target-artifact
+          path: |
+            target.tar
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Prepare pull request artifact
         shell: bash
@@ -66,6 +80,7 @@ jobs:
           echo ${{ github.event.pull_request.head.ref }} >> pr-event.txt
           echo ${{ github.event.pull_request.base.ref }} >> pr-event.txt
           echo ${{ github.event.pull_request.head.sha }} >> pr-event.txt
+          echo ${{ steps.target-artifact-upload-step.outputs.artifact-id }} >> pr-event.txt
 
       - name: Upload pull request event artifact
         uses: actions/upload-artifact@v4
@@ -73,18 +88,5 @@ jobs:
           name: pr-event-artifact
           path: |
             pr-event.txt
-          if-no-files-found: error
-          retention-days: 1
-
-      - name: Prepare compiled classes artifact
-        shell: bash
-        run: find -iname "*target" -type d -exec tar -rf target.tar {} \+
-
-      - name: Upload compiled classes artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: target-artifact
-          path: |
-            target.tar
           if-no-files-found: error
           retention-days: 1
