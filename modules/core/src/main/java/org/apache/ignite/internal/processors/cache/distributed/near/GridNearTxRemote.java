@@ -197,7 +197,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @return Evicted keys.
      */
     public Collection<IgniteTxKey> evicted() {
-        return Collections.unmodifiableCollection(evicted);
+        return F.readOnly(evicted);
     }
 
     /**
