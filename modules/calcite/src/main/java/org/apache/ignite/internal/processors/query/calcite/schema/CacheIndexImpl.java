@@ -258,8 +258,7 @@ public class CacheIndexImpl implements IgniteIndex {
         if (idxKeys.size() < requiredColumns.cardinality() || !ImmutableBitSet.of(idxKeys).contains(requiredColumns))
             return false;
 
-        List<IndexKeyDefinition> keyDefs = new ArrayList<>(idx.unwrap(InlineIndex.class).indexDefinition()
-            .indexKeyDefinitions().values());
+        List<IndexKeyDefinition> keyDefs = new ArrayList<>(idx.indexDefinition().indexKeyDefinitions().values());
 
         for (InlineIndexKeyType keyType : InlineIndexKeyTypeRegistry.types(keyDefs, new IndexKeyTypeSettings())) {
             // Skip variable length keys and java objects (see comments about these limitations in IndexScan class).
