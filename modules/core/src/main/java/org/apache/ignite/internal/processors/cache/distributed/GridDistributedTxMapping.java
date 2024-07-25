@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.function.Predicate;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -227,6 +228,14 @@ public class GridDistributedTxMapping {
      */
     public boolean removeEntry(IgniteTxEntry entry) {
         return entries.remove(entry);
+    }
+
+    /**
+     * @param p Predicate.
+     * @return {@code True} if entries were removed.
+     */
+    public boolean removeEntriesIf(Predicate<IgniteTxEntry> p) {
+        return entries.removeIf(p);
     }
 
     /**

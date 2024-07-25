@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -1388,7 +1387,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     private void sendPrepareRequests() {
         int miniId = 0;
 
-        assert tx.transactionNodes() != null;
+        assert !F.isEmpty(tx.transactionNodes());
 
         final long timeout = timeoutObj != null ? timeoutObj.timeout : 0;
 
@@ -1924,19 +1923,18 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 if (!F.isEmpty(res.invalidPartitionsByCacheId())) {
                     Map<Integer, int[]> invalidPartsMap = res.invalidPartitionsByCacheId();
 
-                    for (Iterator<IgniteTxEntry> it = dhtMapping.entries().iterator(); it.hasNext();) {
-                        IgniteTxEntry entry = it.next();
-
+                    dhtMapping.removeEntriesIf(entry -> {
                         int[] invalidParts = invalidPartsMap.get(entry.cacheId());
 
-                        if (invalidParts != null && F.contains(invalidParts, entry.cached().partition())) {
-                            it.remove();
+                        boolean isInvalid = invalidParts != null && F.contains(invalidParts, entry.cached().partition());
 
-                            if (log.isDebugEnabled())
-                                log.debug("Removed mapping for entry from dht mapping [key=" + entry.key() +
-                                    ", tx=" + tx + ", dhtMapping=" + dhtMapping + ']');
+                        if (isInvalid && log.isDebugEnabled()) {
+                            log.debug("Removed mapping for entry from dht mapping [key=" + entry.key() +
+                                ", tx=" + tx + ", dhtMapping=" + dhtMapping + ']');
                         }
-                    }
+
+                        return isInvalid;
+                    });
 
                     if (dhtMapping.empty()) {
                         dhtMap.remove(nodeId);

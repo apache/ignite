@@ -976,7 +976,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                 if (tx.syncMode() == FULL_SYNC) {
                     Map<UUID, Collection<UUID>> txNodes = tx.transactionNodes();
 
-                    if (txNodes != null) {
+                    if (!F.isEmpty(txNodes)) {
                         Collection<UUID> backups = txNodes.get(nodeId);
 
                         if (!F.isEmpty(backups)) {
