@@ -3929,7 +3929,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Override public void onException(UUID nodeId, Throwable ex) {
             RemoteSnapshotFilesRecevier task = active;
 
-            if (task == null)
+            if (task == null || task.isDone())
                 return;
 
             assert task.rmtNodeId.equals(nodeId);
