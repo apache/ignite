@@ -182,18 +182,18 @@ public class CdcResendCommandTest extends GridCommandHandlerAbstractTest {
         assertTrue(GridTestUtils.waitForCondition(() -> cnsmr.events().size() == 3, 10_000, 100));
 
         CdcEvent ev0 = cnsmr.events().get(0);
-        assertEquals(0, ev0.key());
-        assertEquals(0, ev0.value());
+        assertEquals(0, ev0.unwrappedKey());
+        assertEquals(0, ev0.unwrappedValue());
         assertNull(ev0.version().otherClusterVersion());
 
         CdcEvent ev1 = cnsmr.events().get(1);
-        assertEquals(0, ev1.key());
-        assertEquals(1, ev1.value());
+        assertEquals(0, ev1.unwrappedKey());
+        assertEquals(1, ev1.unwrappedValue());
         assertEquals(conflict, ev1.version().otherClusterVersion());
 
         CdcEvent ev2 = cnsmr.events().get(2);
-        assertEquals(0, ev2.key());
-        assertEquals(1, ev2.value());
+        assertEquals(0, ev2.unwrappedKey());
+        assertEquals(1, ev2.unwrappedValue());
         assertNull(ev2.version().otherClusterVersion());
     }
 
