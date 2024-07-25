@@ -186,8 +186,10 @@ public class H2TreeIndex extends H2TreeIndexBase {
         ctx.io().addMessageListener(msgTopic, msgLsnr);
     }
 
-    /** {@inheritDoc} */
-    @Override public int inlineSize() {
+    /**
+     * @return Inline size.
+     */
+    public int inlineSize() {
         return queryIndex.inlineSize();
     }
 
