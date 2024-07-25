@@ -164,7 +164,6 @@ import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -722,6 +721,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         busyLock.block();
 
         try {
+            snpRmtMgr.stop();
+
             restoreCacheGrpProc.interrupt(new NodeStoppingException("Node is stopping."));
 
             // Try stop all snapshot processing if not yet.
@@ -729,8 +730,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 sctx.acceptException(new NodeStoppingException(SNP_NODE_STOPPING_ERR_MSG));
 
             locSnpTasks.clear();
-
-            snpRmtMgr.stop();
 
             synchronized (snpOpMux) {
                 if (clusterSnpFut != null) {
@@ -3739,33 +3738,33 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** {@code true} if the node is stopping. */
         private boolean stopping;
 
-        /**
-         * @param next New task for scheduling.
-         */
-        public synchronized void submit(IgniteSnapshotManager.RemoteSnapshotFilesRecevier next) {
+        /**  @param next New task for scheduling. */
+        public void submit(IgniteSnapshotManager.RemoteSnapshotFilesRecevier next) {
             assert next != null;
 
-            if (stopping) {
-                next.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
+            synchronized (this) {
+                if (stopping) {
+                    next.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
 
-                return;
-            }
+                    return;
+                }
 
-            RemoteSnapshotFilesRecevier curr = active;
+                if (active != null && !active.isDone()) {
+                    queue.offer(next);
 
-            if (curr == null || curr.isDone()) {
-                next.listen(this::scheduleNext);
+                    return;
+                }
 
                 active = next;
 
-                next.init();
+                active.listen(this::scheduleNext);
             }
-            else
-                queue.offer(next);
+
+            next.init();
         }
 
         /** Schedule next async receiver. */
-        private synchronized void scheduleNext() {
+        private void scheduleNext() {
             RemoteSnapshotFilesRecevier next = queue.poll();
 
             if (next == null)
@@ -3775,57 +3774,38 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** Stopping handler. */
-        public synchronized void stop() {
-            stopping = true;
-
-            if (active != null)
-                active.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
+        public void stop() {
+            synchronized (this) {
+                stopping = true;
+            }
 
             RemoteSnapshotFilesRecevier r;
 
             while ((r = queue.poll()) != null)
                 r.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
 
-            Set<RemoteSnapshotFilesRecevier> futs = activeTasks();
-            GridCompoundFuture<Void, Void> stopFut = new GridCompoundFuture<>();
-
-            try {
-                for (IgniteInternalFuture<Void> fut : futs)
-                    stopFut.add(fut);
-
-                stopFut.markInitialized().get();
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+            if (active != null)
+                active.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
         }
 
-        /**
-         * @param nodeId A node left the cluster.
-         */
+        /** @param nodeId A node left the cluster. */
         public void onNodeLeft(UUID nodeId) {
-            Set<RemoteSnapshotFilesRecevier> futs = activeTasks();
             ClusterTopologyCheckedException ex = new ClusterTopologyCheckedException("The node from which a snapshot has been " +
                 "requested left the grid");
 
-            futs.forEach(t -> {
-                if (t.rmtNodeId.equals(nodeId))
-                    t.acceptException(ex);
-            });
-        }
+            Collection<UUID> requiredNodes = restoreCacheGrpProc.nodes();
 
-        /**
-         * @return The set of currently scheduled tasks, some of them may be already completed.
-         */
-        private Set<RemoteSnapshotFilesRecevier> activeTasks() {
-            Set<RemoteSnapshotFilesRecevier> futs = new HashSet<>(queue);
+            boolean cleanAll = requiredNodes != null && requiredNodes.contains(nodeId);
+
+            queue.forEach(r -> {
+                if (cleanAll || r.rmtNodeId.equals(nodeId))
+                    r.acceptException(ex);
+            });
 
             RemoteSnapshotFilesRecevier active0 = active;
 
-            if (active0 != null)
-                futs.add(active0);
-
-            return futs;
+            if (active0 != null && !active0.isDone() && (cleanAll || active0.rmtNodeId.equals(nodeId)))
+                active0.acceptException(ex);
         }
 
         /** {@inheritDoc} */
@@ -3944,12 +3924,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Override public void onException(UUID nodeId, Throwable ex) {
             RemoteSnapshotFilesRecevier task = active;
 
-            if (task == null)
+            if (task == null || task.isDone())
                 return;
 
-            assert task.rmtNodeId.equals(nodeId);
-
             task.acceptException(ex);
+
+            assert task.rmtNodeId.equals(nodeId);
         }
 
         /** {@inheritDoc} */
