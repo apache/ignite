@@ -2795,6 +2795,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             else
                 U.error(log, "Receiver has been interrupted due to an exception occurred [rctx=" + rctx + ']', ex);
 
+            log.error("TEST | interrupt receiver, e:" + ex.getMessage());
+
             rctx.hnd.onException(rctx.rmtNodeId, ex);
         }
     }

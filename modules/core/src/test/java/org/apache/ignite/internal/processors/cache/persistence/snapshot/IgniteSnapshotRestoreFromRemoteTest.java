@@ -371,6 +371,8 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
 
         restoreStarted.await(TIMEOUT, TimeUnit.MILLISECONDS);
 
+        log.error("TEST | stopping node: " + coord.localNode().id());
+
         coord.close();
 
         nodeStopped.countDown();

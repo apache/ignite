@@ -159,7 +159,6 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -2538,6 +2537,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         RemoteSnapshotFilesRecevier fut =
             new RemoteSnapshotFilesRecevier(this, rmtNodeId, reqId, snpName, rmtSnpPath, parts, stopChecker, partHnd);
 
+        log.error("TEST | requestRemoteSnapshotFiles");
+
         snpRmtMgr.submit(fut);
 
         return fut;
@@ -3696,6 +3697,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override protected synchronized boolean onDone(@Nullable Void res, @Nullable Throwable err, boolean cancel) {
+            System.err.println("TEST | receiver onDone, err=" + err + ", res="+res);
+
             U.delete(dir);
 
             return super.onDone(res, err, cancel);
@@ -3751,10 +3754,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
 
                 if (active != null && !active.isDone()) {
+                    log.error("TEST | queue: " + next.rmtNodeId);
+
                     queue.offer(next);
 
                     return;
                 }
+
+                log.error("TEST | active: " + next.rmtNodeId);
 
                 active = next;
 
@@ -3770,6 +3777,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             if (next == null)
                 return;
+
+            log.error("TEST | scheduleNext");
 
             submit(next);
         }
@@ -3802,14 +3811,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             RemoteSnapshotFilesRecevier active0 = active;
 
             if (active0 != null && !active0.isDone() && active0.rmtNodeId.equals(nodeId)) {
+                active0.acceptException(ex);
                 // If the task was started, but the remote node did not start the transmission and did not send SnapshotFilesFailureMessage.
                 // Otherwise, the task will fail via TransmissionHandler#onException.
-                cctx.kernalContext().timeout().addTimeoutObject(
-                    new GridTimeoutObjectAdapter(2 * cctx.kernalContext().config().getNetworkTimeout()) {
-                        @Override public void onTimeout() {
-                            active0.acceptException(ex);
-                        }
-                    });
+//                cctx.kernalContext().timeout().addTimeoutObject(
+//                    new GridTimeoutObjectAdapter(2 * cctx.kernalContext().config().getNetworkTimeout()) {
+//                        @Override public void onTimeout() {
+//                            active0.acceptException(ex);
+//                        }
+//                    });
             }
         }
 
@@ -3927,6 +3937,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override public void onException(UUID nodeId, Throwable ex) {
+            log.error("TEST | onException: nodeId=" + nodeId + ", e: " + ex.getMessage() + ", active: " + active);
+
             RemoteSnapshotFilesRecevier task = active;
 
             if (task == null || task.isDone())
