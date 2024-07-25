@@ -338,9 +338,9 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                             // Warn only if mode is not CONTINUOUS.
                             if (meta.deploymentMode() != CONTINUOUS)
                                 LT.warn(log, "Local node is in participants (most probably, " +
-                                    "IgniteConfiguration.getPeerClassLoadingLocalClassPathExclude() " +
-                                    "is not used properly " +
-                                    "[locNodeId=" + ctx.localNodeId() + ", meta=" + meta + ']');
+                                        "IgniteConfiguration.getPeerClassLoadingLocalClassPathExclude() " +
+                                        "is not used properly " +
+                                        "[locNodeId=" + ctx.localNodeId() + ", meta=" + meta + ']');
 
                             continue;
                         }
@@ -376,11 +376,33 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                     return null;
                 }
 
-                dep = (SharedDeployment)searchDeploymentCache(meta);
+                List<SharedDeployment> deps = cache.get(meta.userVersion());
+
+                // Check already exist deployment.
+                if (deps != null && meta.deploymentMode() == SHARED) {
+                    assert !deps.isEmpty();
+
+                    dep = (SharedDeployment)searchDeploymentCache(meta);
+
+                    if (dep == null) {
+                        for (SharedDeployment dep0 : deps) {
+                            // hot redeploy from same node
+                            if (dep0.participants().containsKey(meta.senderNodeId()) || dep0.undeployed())
+                                continue;
+
+                            IgniteBiTuple<Class<?>, Throwable> cls = dep0.deployedClass(meta.className(), meta.alias());
+
+                            if (cls.getKey() != null && cls.getValue() == null) {
+                                addParticipant(dep0, meta);
+                                dep = dep0;
+
+                                break;
+                            }
+                        }
+                    }
+                }
 
                 if (dep == null) {
-                    List<SharedDeployment> deps = cache.get(meta.userVersion());
-
                     if (deps != null) {
                         assert !deps.isEmpty();
 
@@ -1243,8 +1265,6 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
         /** {@inheritDoc} */
         @Override public void onDeployed(Class<?> cls) {
-            assert !Thread.holdsLock(mux);
-
             boolean isTask = isTask(cls);
 
             String msg = (isTask ? "Task" : "Class") + " was deployed in SHARED or CONTINUOUS mode: " + cls;
