@@ -1030,6 +1030,26 @@ public class GridFunc {
     }
 
     /**
+     * Safely creates read only collection view.
+     *
+     * @param c Original collection.
+     * @return Light-weight view on given collection.
+     */
+    public static <T> Collection<T> readOnly(@Nullable Collection<T> c) {
+        return isEmpty(c) ? Collections.emptyList() : Collections.unmodifiableCollection(c);
+    }
+
+    /**
+     * Safely creates read only map view.
+     *
+     * @param m Original map.
+     * @return Light-weight view on given map.
+     */
+    public static <K, V> Map<K, V> readOnly(@Nullable Map<K, V> m) {
+        return isEmpty(m) ? Collections.emptyMap() : Collections.unmodifiableMap(m);
+    }
+
+    /**
      * Creates a view on given list with provided transformer and predicates.
      * Resulting list will only "have" elements for which all provided predicates, if any,
      * evaluate to {@code true}. Note that a new collection will be created and data will

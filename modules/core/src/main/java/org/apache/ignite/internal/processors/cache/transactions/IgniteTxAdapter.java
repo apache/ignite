@@ -1313,7 +1313,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Nullable @Override public Map<UUID, Collection<UUID>> transactionNodes() {
-        return txNodes;
+        return Collections.unmodifiableMap(txNodes);
     }
 
     /**

@@ -22,9 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -39,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -102,7 +101,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** */
     @GridDirectTransient
-    private List<IgniteTxKey> nearWritesCacheMissed;
+    private Collection<IgniteTxKey> nearWritesCacheMissed;
 
     /** {@code True} if remote tx should skip adding itself to completed versions map on finish. */
     private boolean skipCompletedVers;
@@ -188,14 +187,14 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @return Update counters list.
      */
     public Collection<PartitionUpdateCountersMessage> updateCounters() {
-        return updCntrs;
+        return F.readOnly(updCntrs);
     }
 
     /**
      * @return Near cache writes for which cache was not found (possible if client near cache was closed).
      */
-    @Nullable public List<IgniteTxKey> nearWritesCacheMissed() {
-        return nearWritesCacheMissed;
+    @Nullable public Collection<IgniteTxKey> nearWritesCacheMissed() {
+        return F.readOnly(nearWritesCacheMissed);
     }
 
     /**
@@ -223,7 +222,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @return Near writes.
      */
     public Collection<IgniteTxEntry> nearWrites() {
-        return nearWrites == null ? Collections.<IgniteTxEntry>emptyList() : nearWrites;
+        return F.readOnly(nearWrites);
     }
 
     /**
@@ -302,7 +301,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @return Owned versions map.
      */
     public Map<IgniteTxKey, GridCacheVersion> owned() {
-        return owned;
+        return F.readOnly(owned);
     }
 
     /**
@@ -324,7 +323,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      *
      * @param ctx
      */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (owned != null && ownedKeys == null) {
@@ -333,7 +332,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
             ownedVals = owned.values();
 
             for (IgniteTxKey key: ownedKeys) {
-                GridCacheContext cctx = ctx.cacheContext(key.cacheId());
+                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
 
                 key.prepareMarshal(cctx);
 
@@ -347,7 +346,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (ownedKeys != null) {

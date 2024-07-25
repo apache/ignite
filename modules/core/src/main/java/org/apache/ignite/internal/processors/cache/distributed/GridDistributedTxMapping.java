@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -120,7 +119,7 @@ public class GridDistributedTxMapping {
      * @return Entries.
      */
     public Collection<IgniteTxEntry> entries() {
-        return entries;
+        return F.readOnly(entries);
     }
 
     /**
@@ -129,7 +128,7 @@ public class GridDistributedTxMapping {
     @Nullable public Collection<IgniteTxEntry> nearCacheEntries() {
         assert nearEntries > 0;
 
-        return F.view(entries, CU.FILTER_NEAR_CACHE_ENTRY);
+        return F.viewReadOnly(entries, F.identity(), CU.FILTER_NEAR_CACHE_ENTRY);
     }
 
     /**
@@ -168,14 +167,14 @@ public class GridDistributedTxMapping {
      * @return Reads.
      */
     public Collection<IgniteTxEntry> reads() {
-        return F.view(entries, CU.READ_FILTER);
+        return F.viewReadOnly(entries, F.identity(), CU.READ_FILTER);
     }
 
     /**
      * @return Writes.
      */
     public Collection<IgniteTxEntry> writes() {
-        return F.view(entries, CU.WRITE_FILTER);
+        return F.viewReadOnly(entries, F.identity(), CU.WRITE_FILTER);
     }
 
     /**
@@ -184,7 +183,7 @@ public class GridDistributedTxMapping {
     public Collection<IgniteTxEntry> nearEntriesReads() {
         assert hasNearCacheEntries();
 
-        return F.view(entries, CU.READ_FILTER_NEAR);
+        return F.viewReadOnly(entries, F.identity(), CU.READ_FILTER_NEAR);
     }
 
     /**
@@ -193,7 +192,7 @@ public class GridDistributedTxMapping {
     public Collection<IgniteTxEntry> nearEntriesWrites() {
         assert hasNearCacheEntries();
 
-        return F.view(entries, CU.WRITE_FILTER_NEAR);
+        return F.viewReadOnly(entries, F.identity(), CU.WRITE_FILTER_NEAR);
     }
 
     /**
@@ -202,7 +201,7 @@ public class GridDistributedTxMapping {
     public Collection<IgniteTxEntry> colocatedEntriesReads() {
         assert hasColocatedCacheEntries();
 
-        return F.view(entries, CU.READ_FILTER_COLOCATED);
+        return F.viewReadOnly(entries, F.identity(), CU.READ_FILTER_COLOCATED);
     }
 
     /**
@@ -211,7 +210,7 @@ public class GridDistributedTxMapping {
     public Collection<IgniteTxEntry> colocatedEntriesWrites() {
         assert hasColocatedCacheEntries();
 
-        return F.view(entries, CU.WRITE_FILTER_COLOCATED);
+        return F.viewReadOnly(entries, F.identity(), CU.WRITE_FILTER_COLOCATED);
     }
 
     /**
@@ -234,7 +233,7 @@ public class GridDistributedTxMapping {
      * @param keys Keys to evict readers for.
      */
     public void evictReaders(@Nullable Collection<IgniteTxKey> keys) {
-        if (keys == null || keys.isEmpty())
+        if (F.isEmpty(keys))
             return;
 
         evictReaders(keys, entries);
@@ -245,15 +244,10 @@ public class GridDistributedTxMapping {
      * @param entries Entries to check.
      */
     private void evictReaders(Collection<IgniteTxKey> keys, @Nullable Collection<IgniteTxEntry> entries) {
-        if (entries == null || entries.isEmpty())
+        if (F.isEmpty(entries))
             return;
 
-        for (Iterator<IgniteTxEntry> it = entries.iterator(); it.hasNext();) {
-            IgniteTxEntry entry = it.next();
-
-            if (keys.contains(entry.txKey()))
-                it.remove();
-        }
+        entries.removeIf(entry -> keys.contains(entry.txKey()));
     }
 
     /**

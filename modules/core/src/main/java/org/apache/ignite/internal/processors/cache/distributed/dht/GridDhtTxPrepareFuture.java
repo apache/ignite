@@ -951,7 +951,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      */
     private void addDhtValues(GridNearTxPrepareResponse res) {
         // Interceptor on near node needs old values to execute callbacks.
-        if (req.writes() != null) {
+        if (!F.isEmpty(req.writes())) {
             for (IgniteTxEntry e : req.writes()) {
                 IgniteTxEntry txEntry = tx.entry(e.txKey());
 
@@ -1413,7 +1413,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             add(fut); // Append new future.
 
-            assert req.transactionNodes() != null;
+            assert !F.isEmpty(req.transactionNodes());
 
             GridDhtTxPrepareRequest req = new GridDhtTxPrepareRequest(
                 futId,
@@ -1492,7 +1492,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
             }
 
-            assert req.transactionNodes() != null;
+            assert !F.isEmpty(req.transactionNodes());
 
             try {
                 cctx.tm().sendTransactionMessage(n, req, tx, tx.ioPolicy());
@@ -1571,7 +1571,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     }
                 }
 
-                assert req.transactionNodes() != null;
+                assert !F.isEmpty(req.transactionNodes());
 
                 try {
                     cctx.io().send(nearMapping.primary(), req, tx.ioPolicy());

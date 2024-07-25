@@ -356,7 +356,7 @@ public class IgniteTxHandler {
      * @throws IgniteCheckedException If failed.
      */
     private IgniteTxEntry unmarshal(@Nullable Collection<IgniteTxEntry> entries) throws IgniteCheckedException {
-        if (entries == null)
+        if (F.isEmpty(entries))
             return null;
 
         IgniteTxEntry firstEntry = null;
@@ -1172,7 +1172,7 @@ public class IgniteTxHandler {
             assert nodeId != null;
             assert req != null;
 
-            assert req.transactionNodes() != null;
+            assert !F.isEmpty(req.transactionNodes());
 
             GridDhtTxRemote dhtTx = null;
             GridNearTxRemote nearTx = null;
@@ -1195,9 +1195,9 @@ public class IgniteTxHandler {
                 if (nearTx != null)
                     res.nearEvicted(nearTx.evicted());
 
-                List<IgniteTxKey> writesCacheMissed = req.nearWritesCacheMissed();
+                Collection<IgniteTxKey> writesCacheMissed = req.nearWritesCacheMissed();
 
-                if (writesCacheMissed != null) {
+                if (!F.isEmpty(writesCacheMissed)) {
                     Collection<IgniteTxKey> evicted0 = res.nearEvicted();
 
                     if (evicted0 != null)
@@ -1671,7 +1671,7 @@ public class IgniteTxHandler {
                     req.isolation(),
                     req.isInvalidate(),
                     req.timeout(),
-                    req.writes() != null ? Math.max(req.writes().size(), req.txSize()) : req.txSize(),
+                    !F.isEmpty(req.writes()) ? Math.max(req.writes().size(), req.txSize()) : req.txSize(),
                     req.nearXidVersion(),
                     req.transactionNodes(),
                     securitySubjectId(ctx),
@@ -1715,7 +1715,7 @@ public class IgniteTxHandler {
 
             TxCounters txCounters = null;
 
-            if (req.updateCounters() != null) {
+            if (!F.isEmpty(req.updateCounters())) {
                 txCounters = tx.txCounters(true);
 
                 txCounters.updateCounters(req.updateCounters());
@@ -2076,7 +2076,7 @@ public class IgniteTxHandler {
         boolean rollback,
         boolean rollbackOnPrimary
     ) throws IgniteCheckedException {
-        if (counters == null)
+        if (F.isEmpty(counters))
             return;
 
         WALPointer ptr = null;

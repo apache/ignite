@@ -369,12 +369,12 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         }
 
         try {
-            if (req.reads() != null) {
+            if (!F.isEmpty(req.reads())) {
                 for (IgniteTxEntry e : req.reads())
                     addEntry(req.messageId(), e);
             }
 
-            if (req.writes() != null) {
+            if (!F.isEmpty(req.writes())) {
                 for (IgniteTxEntry e : req.writes())
                     addEntry(req.messageId(), e);
             }
