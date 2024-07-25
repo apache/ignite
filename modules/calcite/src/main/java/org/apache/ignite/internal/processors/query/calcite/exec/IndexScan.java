@@ -18,9 +18,12 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.SortedSet;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -31,6 +34,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexPlainRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
@@ -39,20 +43,27 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.jetbrains.annotations.Nullable;
@@ -467,5 +478,56 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
                 throw new IgniteException("Failed to find index rows", e);
             }
         }
+    }
+
+    /**
+     * @return
+     */
+    private IgniteBiTuple<SortedSet<IndexRow>, SortedSet<IndexRow>> transaactionRows() {
+        if (F.isEmpty(ectx.getTxWriteEntries()))
+            return F.t(Collections.emptySortedSet(), Collections.emptySortedSet());
+
+        InlineIndexRowHandler rowHnd = idx.segment(0).rowHandler();
+
+        // TODO: replace with sorted set
+        List<IndexRow> skipRows = new ArrayList<>();
+        List<IndexRow> mixRows = new ArrayList<>();
+
+        Collection<IgniteTxEntry> entries = ectx.getTxWriteEntries();
+
+        for (IgniteTxEntry e : entries) {
+            if (cctx.cacheId() != e.cacheId())
+                continue;
+
+            assert e.key().partition() != -1;
+
+            if (!F.contains(parts, e.key().partition()))
+                continue;
+
+            CacheObject txVal = e.value();
+            GridCacheEntryEx curVal = cctx.cache().peekEx(e.key());
+
+            assert curVal != null;
+            assert curVal.rawGet() != null;
+
+            // Skip all entries modified in transaction during index scan.
+            skipRows.add(new IndexRowImpl(rowHnd, new CacheDataRowAdapter(
+                e.key(),
+                curVal.rawGet(),
+                e.explicitVersion(),
+                CU.EXPIRE_TIME_ETERNAL // TODO: FIX expire time calculation.
+            )));
+
+            if (e.value() != null) { // Mix only updated entries. In case val == null entry removed.
+                mixRows.add(new IndexRowImpl(rowHnd, new CacheDataRowAdapter(
+                    e.key(),
+                    e.value(),
+                    e.explicitVersion(),
+                    CU.EXPIRE_TIME_ETERNAL // TODO: FIX expire time calculation.
+                )));
+            }
+        }
+
+        return F.t(skipRows, mixRows);
     }
 }

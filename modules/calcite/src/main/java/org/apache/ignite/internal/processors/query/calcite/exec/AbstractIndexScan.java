@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.SortedSet;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
@@ -29,6 +31,7 @@ import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract index scan.
@@ -111,7 +114,7 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
         private Row next;
 
         /** */
-        private IteratorImpl(@NotNull GridCursor<IdxRow> cursor) {
+        private IteratorImpl(@NotNull GridCursor<IdxRow> cursor, @Nullable SortedSet<IdxRow> skipRows) {
             this.cursor = cursor;
         }
 
