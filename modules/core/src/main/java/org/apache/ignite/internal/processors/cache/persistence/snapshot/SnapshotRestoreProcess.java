@@ -1840,6 +1840,13 @@ public class SnapshotRestoreProcess {
             .toString();
     }
 
+    /** */
+    @Nullable Collection<UUID> nodes() {
+        SnapshotRestoreContext ctx = opCtx;
+
+        return ctx == null ? null : ctx.nodes();
+    }
+
     /**
      * Cache group restore from snapshot operation context.
      */
