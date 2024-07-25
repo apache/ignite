@@ -24,11 +24,24 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
+import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
@@ -37,11 +50,13 @@ import org.junit.Test;
 import org.junit.runners.Parameterized;
 
 import static java.util.Arrays.asList;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_PASSWORD;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_USER;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
@@ -60,6 +75,9 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
 
     /** */
     private static final String DEFAULT_PWD = "pwd";
+
+    /** */
+    private static final int PARTITIONS = 8;
 
     /** */
     @Parameterized.Parameters(name = "cmdHnd={0}")
@@ -122,6 +140,19 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
 
     /** */
     @Test
+    public void testConsistencyRepair() throws Exception {
+        List<String> cmdArgs = asList(
+            "--consistency", "repair",
+            "--cache", DEFAULT_CACHE_NAME,
+            "--strategy", "LWW",
+            "--partitions", IntStream.range(0, PARTITIONS).mapToObj(Integer::toString).collect(Collectors.joining(","))
+        );
+
+        checkConsistencyCommandPermissions(cmdArgs, adminPermission(ADMIN_OPS));
+    }
+
+    /** */
+    @Test
     public void testCacheCreate() throws Exception {
         String ccfgPath = resolveIgnitePath(
             "modules/control-utility/src/test/resources/config/cache/cache-create-correct.xml"
@@ -146,11 +177,7 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
 
     /** */
     private void checkCommandPermissions(Collection<String> cmdArgs, SecurityPermissionSet reqPerms) throws Exception {
-        Ignite ignite = startGrid(
-            0,
-            userData(TEST_NO_PERMISSIONS_LOGIN, NO_PERMISSIONS),
-            userData(TEST_LOGIN, reqPerms)
-        );
+        Ignite ignite = startNode(0, reqPerms);
 
         ignite.createCache(DEFAULT_CACHE_NAME);
 
@@ -161,6 +188,68 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
             assertTrue(testOut.toString().contains("Authorization failed"));
 
         assertEquals(EXIT_CODE_OK, execute(enrichWithConnectionArguments(cmdArgs, TEST_LOGIN)));
+    }
+
+    /** */
+    private void checkConsistencyCommandPermissions(Collection<String> cmdArgs, SecurityPermissionSet reqPerms) throws Exception {
+        int nodes = 3;
+
+        Ignite ignite = startGrid(nodes, reqPerms);
+
+        String cacheName = createCache(nodes, ignite);
+
+        fillCache(cacheName);
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(enrichWithConnectionArguments(cmdArgs, TEST_NO_PERMISSIONS_LOGIN)));
+
+        // We are losing command failure cause for --cache clear commnad. See IGNITE-21023 for more details.
+        if (!cmdArgs.containsAll(Arrays.asList("--cache", "clear")))
+            assertTrue(testOut.toString().contains("Authorization failed"));
+
+        assertEquals(EXIT_CODE_OK, execute(enrichWithConnectionArguments(cmdArgs, TEST_LOGIN)));
+    }
+
+    /**
+     * @param nodes Number of nodes in cluster.
+     * @param reqPerms security permition set.
+     * @return {@link Ignite} instance of the first node in the grid.
+     */
+    private Ignite startGrid(int nodes, SecurityPermissionSet reqPerms) throws Exception {
+        assert nodes > 0;
+
+        Ignite ignite = startNode(0, reqPerms);
+
+        for(int i = 1; i < nodes; ++i)
+            startNode(i, reqPerms);
+
+        return ignite;
+    }
+
+    /**
+     * Starts a single node with specified user security parameters.
+     * @param idx node index.
+     * @param reqPerms {@link SecurityPermissionSet} with permissions.
+     */
+    private Ignite startNode(int idx, SecurityPermissionSet reqPerms) throws Exception {
+        return startGrid(
+            idx,
+            userData(TEST_NO_PERMISSIONS_LOGIN, NO_PERMISSIONS),
+            userData(TEST_LOGIN, reqPerms)
+        );
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     * @param nodes Number for ignite instances.
+     */
+    private String createCache(int nodes, Ignite ignite) {
+        CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+
+        cfg.setAtomicityMode(TRANSACTIONAL);
+        cfg.setBackups(nodes - 1);
+        cfg.setAffinity(new RendezvousAffinityFunction().setPartitions(PARTITIONS));
+
+        return ignite.getOrCreateCache(cfg).getName();
     }
 
     /** */
@@ -186,6 +275,14 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
     }
 
     /** */
+    private SecurityPermissionSet adminPermission(SecurityPermission... perms) {
+        return SecurityPermissionSetBuilder.create()
+            .defaultAllowAll(false)
+            .appendSystemPermissions(perms)
+            .build();
+    }
+
+    /** */
     private TestSecurityData userData(String login, SecurityPermissionSet perms) {
         return new TestSecurityData(
             login,
@@ -193,5 +290,53 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
             perms,
             new Permissions()
         );
+    }
+
+    /**
+     *
+     */
+    private void fillCache(String name) throws Exception {
+        for (Ignite node : G.allGrids()) {
+            while (((IgniteEx)node).cachex(name) == null) // Waiting for cache internals to init.
+                U.sleep(1);
+        }
+
+        GridCacheVersionManager mgr =
+            ((GridCacheAdapter)(grid(1)).cachex(name).cache()).context().shared().versions();
+
+        for (int key = 0; key < PARTITIONS; key++) {
+            List<Ignite> nodes = new ArrayList<>();
+
+            nodes.add(primaryNode(key, name));
+            nodes.addAll(backupNodes(key, name));
+
+            Collections.shuffle(nodes);
+
+            int val = key;
+            Object obj;
+
+            for (Ignite node : nodes) {
+                IgniteInternalCache cache = ((IgniteEx)node).cachex(name);
+
+                GridCacheAdapter adapter = ((GridCacheAdapter)cache.cache());
+
+                GridCacheEntryEx entry = adapter.entryEx(key);
+
+                obj = ++val;
+
+                boolean init = entry.initialValue(
+                    new CacheObjectImpl(obj, null), // Incremental or same value.
+                    mgr.next(entry.context().kernalContext().discovery().topologyVersion()), // Incremental version.
+                    0,
+                    0,
+                    false,
+                    AffinityTopologyVersion.NONE,
+                    GridDrType.DR_NONE,
+                    false,
+                    false);
+
+                assertTrue("iterableKey " + key + " already inited", init);
+            }
+        }
     }
 }

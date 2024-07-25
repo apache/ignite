@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
@@ -40,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteIrreparableConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -48,6 +50,7 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
+
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 
 /**
@@ -271,7 +274,8 @@ public class ConsistencyRepairTask extends AbstractConsistencyTask<ConsistencyRe
          * @param keys Keys.
          */
         private void repair(IgniteCache<Object, Object> cache, Set<Object> keys) {
-            try {
+            UUID randomNodeId = ignite.cluster().node().id();
+            try (OperationSecurityContext ignored = ignite.context().security().withContext(randomNodeId)) {
                 cache.getAll(keys); // Repair.
             }
             catch (CacheException e) {
