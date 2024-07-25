@@ -544,7 +544,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             List<KeyCacheObject> keys = req.keys();
 
-            if (keys != null) {
+            if (!F.isEmpty(keys)) {
                 for (KeyCacheObject key : keys) {
                     while (true) {
                         GridDistributedCacheEntry entry = peekExx(key);

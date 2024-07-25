@@ -1040,6 +1040,16 @@ public class GridFunc {
     }
 
     /**
+     * Safely creates read only list view.
+     *
+     * @param l Original list.
+     * @return Light-weight view on given collection.
+     */
+    public static <T> List<T> readOnly(@Nullable List<T> l) {
+        return isEmpty(l) ? Collections.emptyList() : Collections.unmodifiableList(l);
+    }
+
+    /**
      * Safely creates read only map view.
      *
      * @param m Original map.

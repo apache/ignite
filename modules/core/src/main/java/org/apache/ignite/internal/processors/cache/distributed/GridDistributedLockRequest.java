@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -31,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -307,7 +307,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      * @return Unmarshalled keys.
      */
     public List<KeyCacheObject> keys() {
-        return keys != null ? Collections.unmodifiableList(keys) : Collections.emptyList();
+        return F.readOnly(keys);
     }
 
     /** {@inheritDoc} */

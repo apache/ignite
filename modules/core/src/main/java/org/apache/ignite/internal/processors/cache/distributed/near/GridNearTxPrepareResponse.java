@@ -19,12 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
@@ -61,7 +58,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     /** Collection of versions that are pending and less than lock version. */
     @GridToStringInclude
     @GridDirectCollection(GridCacheVersion.class)
-    private List<GridCacheVersion> pending;
+    private Collection<GridCacheVersion> pending;
 
     /** Future ID.  */
     private IgniteUuid futId;
@@ -167,8 +164,8 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      *
      * @return Pending versions.
      */
-    public List<GridCacheVersion> pending() {
-        return Collections.unmodifiableList(pending);
+    public Collection<GridCacheVersion> pending() {
+        return F.readOnly(pending);
     }
 
     /**
@@ -177,7 +174,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      * @param pending Pending versions.
      */
     public void pending(Collection<GridCacheVersion> pending) {
-        this.pending = F.isEmpty(pending) ? Collections.emptyList() : new ArrayList<>(pending);
+        this.pending = pending;
     }
 
     /**
@@ -231,7 +228,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      * @return Owned values map.
      */
     public Map<IgniteTxKey, CacheVersionedValue> ownedValues() {
-        return ownedVals == null ? Collections.emptyMap() : Collections.unmodifiableMap(ownedVals);
+        return F.readOnly(ownedVals);
     }
 
     /**
@@ -245,14 +242,14 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      * @param filterFailedKeys Collection of keys that did not pass the filter.
      */
     public void filterFailedKeys(Collection<IgniteTxKey> filterFailedKeys) {
-        this.filterFailedKeys = filterFailedKeys != null ? Collections.unmodifiableCollection(filterFailedKeys) : null;
+        this.filterFailedKeys = filterFailedKeys;
     }
 
     /**
      * @return Collection of keys that did not pass the filter.
      */
     public Collection<IgniteTxKey> filterFailedKeys() {
-        return filterFailedKeys == null ? Collections.emptyList() : filterFailedKeys;
+        return F.readOnly(filterFailedKeys);
     }
 
     /**
