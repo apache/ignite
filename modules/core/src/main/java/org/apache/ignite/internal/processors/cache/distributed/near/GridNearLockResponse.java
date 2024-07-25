@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -134,7 +135,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
      * @return Pending versions.
      */
     public Collection<GridCacheVersion> pending() {
-        return pending;
+        return F.readOnly(pending);
     }
 
     /**

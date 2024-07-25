@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -67,7 +68,7 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
      * @return Keys.
      */
     public List<KeyCacheObject> keys() {
-        return keys;
+        return F.readOnly(keys);
     }
 
     /**
@@ -75,7 +76,7 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void addKey(KeyCacheObject key, GridCacheContext ctx) throws IgniteCheckedException {
+    public void addKey(KeyCacheObject key, GridCacheContext<?, ?> ctx) throws IgniteCheckedException {
         if (keys == null)
             keys = new ArrayList<>(keysCount());
 
@@ -89,21 +90,21 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         prepareMarshalCacheObjects(keys, ctx.cacheContext(cacheId));
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         finishUnmarshalCacheObjects(keys, ctx.cacheContext(cacheId), ldr);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.txLockMessageLogger();
     }
 
@@ -121,13 +122,11 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
             writer.onHeaderWritten();
         }
 
-        switch (writer.state()) {
-            case 8:
-                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
-                    return false;
+        if (writer.state() == 8) {
+            if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
+                return false;
 
-                writer.incrementState();
-
+            writer.incrementState();
         }
 
         return true;
@@ -143,15 +142,13 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
         if (!super.readFrom(buf, reader))
             return false;
 
-        switch (reader.state()) {
-            case 8:
-                keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
+        if (reader.state() == 8) {
+            keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
 
-                if (!reader.isLastRead())
-                    return false;
+            if (!reader.isLastRead())
+                return false;
 
-                reader.incrementState();
-
+            reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDistributedUnlockRequest.class);

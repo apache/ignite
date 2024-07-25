@@ -287,7 +287,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
             retVal.prepareMarshal(cctx);
         }
 
-        if (filterFailedKeys != null) {
+        if (!F.isEmpty(filterFailedKeys)) {
             for (IgniteTxKey key : filterFailedKeys) {
                 GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
 
@@ -332,7 +332,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
             retVal.finishUnmarshal(cctx, ldr);
         }
 
-        if (filterFailedKeys != null) {
+        if (!F.isEmpty(filterFailedKeys)) {
             for (IgniteTxKey key :filterFailedKeys) {
                 GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
 

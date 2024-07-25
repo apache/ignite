@@ -1427,9 +1427,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
             collectPendingVersions(dhtTxLoc.readEntries(), dhtTxLoc.xidVersion(), vers);
             collectPendingVersions(dhtTxLoc.writeEntries(), dhtTxLoc.xidVersion(), vers);
-
-            if (!vers.isEmpty())
-                dhtTxLoc.pendingVersions(vers);
         }
     }
 

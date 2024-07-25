@@ -1200,7 +1200,7 @@ public class IgniteTxHandler {
                 if (!F.isEmpty(writesCacheMissed)) {
                     Collection<IgniteTxKey> evicted0 = res.nearEvicted();
 
-                    if (evicted0 != null)
+                    if (!F.isEmpty(evicted0))
                         writesCacheMissed.addAll(evicted0);
 
                     res.nearEvicted(writesCacheMissed);
@@ -1421,7 +1421,7 @@ public class IgniteTxHandler {
                 tx.commitRemoteTx();
             }
             else {
-                if (tx.dht() && req.updateCounters() != null)
+                if (tx.dht() && !F.isEmpty(req.updateCounters()))
                     tx.txCounters(true).updateCounters(req.updateCounters());
 
                 tx.doneRemote(req.baseVersion(), null, null, null);

@@ -940,7 +940,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             tx.implicitSingleResult(ret);
         }
 
-        res.filterFailedKeys(filterFailedKeys);
+        res.filterFailedKeys(F.readOnly(filterFailedKeys));
 
         return res;
     }
