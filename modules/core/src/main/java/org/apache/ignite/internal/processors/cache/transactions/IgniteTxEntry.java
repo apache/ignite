@@ -1205,7 +1205,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeMessage("conflictMeta", prevStateMeta))
+                if (!writer.writeMessage("prevStateMeta", prevStateMeta))
                     return false;
 
                 writer.incrementState();
@@ -1327,7 +1327,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 13:
-                prevStateMeta = reader.readMessage("conflictMeta");
+                prevStateMeta = reader.readMessage("prevStateMeta");
 
                 if (!reader.isLastRead())
                     return false;
@@ -1345,7 +1345,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 13;
+        return 14;
     }
 
     /** {@inheritDoc} */
