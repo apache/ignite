@@ -101,7 +101,6 @@ jobs:
           name: target-artifact
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          merge-multiple: true
 
       - name: Delete compiled classes artifact
         if: always()
@@ -128,7 +127,6 @@ jobs:
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
 
       - name: Cache local Maven repository
         uses: actions/cache@v4
