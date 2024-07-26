@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -112,7 +111,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     private volatile boolean started;
 
     /** Schedule to process obsolescence statistics. */
-    private final AtomicReference<GridTimeoutProcessor.CancelableTask> obsolescenceSchedule = new AtomicReference<>();
+    private volatile GridTimeoutProcessor.CancelableTask obsolescenceSchedule;
 
     /** Exchange listener. */
     private final PartitionsExchangeAware exchAwareLsnr = new PartitionsExchangeAware() {
@@ -247,17 +246,11 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     void scheduleObsolescence(int seconds) {
         assert seconds >= 1;
 
-        synchronized (obsolescenceSchedule) {
-            GridTimeoutProcessor.CancelableTask cur = obsolescenceSchedule.get();
+        if (obsolescenceSchedule != null)
+            obsolescenceSchedule.close();
 
-            if (cur != null)
-                cur.close();
-
-            cur = ctx.timeout().schedule(() -> obsolescenceBusyExecutor.execute(this::processObsolescence),
-                seconds * 1000, seconds * 1000);
-
-            obsolescenceSchedule.set(cur);
-        }
+        obsolescenceSchedule = ctx.timeout().schedule(() -> obsolescenceBusyExecutor.execute(this::processObsolescence),
+            seconds * 1000, seconds * 1000);
     }
 
     /**
@@ -398,10 +391,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     @Override public void stop() {
         stopX();
 
-        GridTimeoutProcessor.CancelableTask obsolescenceTask = obsolescenceSchedule.getAndSet(null);
-
-        if (obsolescenceTask != null)
-            obsolescenceTask.close();
+        if (obsolescenceSchedule != null)
+            obsolescenceSchedule.close();
 
         if (gatherPool != null) {
             List<Runnable> unfinishedTasks = gatherPool.shutdownNow();
