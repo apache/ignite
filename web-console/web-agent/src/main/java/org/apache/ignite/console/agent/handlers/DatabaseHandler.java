@@ -380,7 +380,12 @@ public class DatabaseHandler  implements ClusterHandler {
         	catch(Exception e) {
         		e.printStackTrace();
         	}
-        } 
+        }
+        
+        for(String nodeId: databaseListener.deactivedCluster.keySet()) {
+        	databaseListener.clusters.remove(nodeId);
+    	}
+        databaseListener.deactivedCluster.clear();
         
         return tops;
     }

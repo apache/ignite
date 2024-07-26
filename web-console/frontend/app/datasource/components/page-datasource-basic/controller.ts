@@ -191,7 +191,7 @@ export default class PageDatasourceBasicController {
       datasource.db = foundPreset.db
       this.AgentManager.callClusterService(datasource,'datasourceTest',datasource).then((msg) => {
           if(msg.status){
-            datasource.status = msg.status;
+             datasource.status = msg.status;
              this.$scope.status = msg.status;
              this.$scope.message = msg.message;
           }
@@ -202,7 +202,7 @@ export default class PageDatasourceBasicController {
       let datasource =  this.clonedCluster;
       this.AgentManager.callClusterService(datasource,'datasourceDisconnect').then((msg) => {
           if(msg.status){
-            datasource.status = msg.status;
+             datasource.status = msg.status;
              this.$scope.status = msg.status;
              this.$scope.message = msg.message;
           }

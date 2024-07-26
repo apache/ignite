@@ -7,6 +7,7 @@ import naturalCompare from 'natural-compare-lite';
 import {removeClusterItems, advancedSaveCache} from '../../../configuration/store/actionCreators';
 import ConfigureState from '../../../configuration/services/ConfigureState';
 import ConfigSelectors from '../../../configuration/store/selectors';
+import {default as MessagesFactory} from '../../../services/Messages.service';
 import Caches from '../../../configuration/services/Caches';
 import Services from '../../services/Services';
 import Version from 'app/services/Version.service';
@@ -18,6 +19,7 @@ export default class ServiceController {
     static $inject = [
         'ConfigSelectors',
         'configSelectionManager',
+        'IgniteMessages',
         '$uiRouter',
         '$transitions',
         'ConfigureState',
@@ -31,6 +33,7 @@ export default class ServiceController {
     constructor(
         private ConfigSelectors,
         private configSelectionManager,
+        private messages: ReturnType<typeof MessagesFactory>,
         private $uiRouter: UIRouter,
         private $transitions: TransitionService,
         private ConfigureState: ConfigureState,
@@ -132,7 +135,7 @@ export default class ServiceController {
         //this.serviceListSubject$.next(this.serviceList);     
         
         this.clusterID = await clusterID$.toPromise();
-        this.serviceList$ = from(this.callServiceList());
+        this.serviceList$ = from(this.callServiceList('ClusterAgentService'));
          
         
         this.originalService$ = serviceID$.pipe(
@@ -164,8 +167,7 @@ export default class ServiceController {
 
         this.isBlocked$ = serviceID$; 
         
-        this.tableActions$ = this.selectionManager.selectedItemIDs$.pipe(map((selectedItems) => [
-            
+        this.tableActions$ = this.selectionManager.selectedItemIDs$.pipe(map((selectedItems) => [            
             {
                 action: 'Redeploy',
                 click: () => {
@@ -181,15 +183,9 @@ export default class ServiceController {
                 available: true
             },
             {
-                action: 'Simple Call',
+                action: 'Cancel',
                 click: () => {
-                    for(let serviceName of selectedItems){
-                        this.callService(serviceName,{}).then((data) => {
-                             if(data.message){
-                                 this.message = data.message;
-                             }
-                        });  
-                    }                   
+                    this.call(selectedItems,'cancelService');           
                 },
                 available: true
             }
@@ -214,27 +210,27 @@ export default class ServiceController {
         let clusterID = this.clusterID;
         return new Promise((resolve,reject) => {
            this.AgentManager.callClusterService({id:clusterID},serviceName,args).then((data) => {  
-                
-                if(data.result){
-                    resolve(data);
-                }    
-                else if(data.message){   
+                if(data.message){   
                     this.message = data.message;
-                    resolve(data)
-                }        
+                    this.messages.showInfo(data.message);
+                }
+                reject(data);      
             })   
            .catch((e) => {
-                //this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);    
-                reject(e)       
+                this.messages.showError('Failed to callClusterService : '+serviceName+' Caused : '+e);               
+                reject(e);  
             });
         });   
         
     }
     
-    callServiceList() {
+    callServiceList(type) {
         let clusterID = this.clusterID;
         return new Promise((resolve,reject) => {
-           this.AgentManager.callClusterService({id:clusterID},'serviceList').then((data) => {  
+            this.AgentManager.callClusterService({id:clusterID},'serviceList',{type:type}).then((data) => {
+                if(data.message){
+                    this.message = data.message;                   
+                }
                 if(data.result){
                     let serviceList = [];
                     let serviceMap = Object.assign(data.result);
@@ -244,13 +240,12 @@ export default class ServiceController {
                     });    
                     this.serviceMap = serviceMap;
                     resolve(serviceList);
-                }  
-               else if(data.message){
-                   this.message = data.message;                   
-               }        
+                }
+                else{
+                    reject(data)
+                }                
             })   
-           .catch((e) => {
-                //this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);    
+           .catch((e) => {                
                 reject(e)       
             });
         });   

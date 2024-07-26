@@ -179,7 +179,7 @@ export default class AgentManager {
 
     pool = new SimpleWorkerPool('decompressor', Worker, 4);
 
-    promises = new Set<ng.IPromise<unknown>>();
+    promises = new Set<angular.IDeferred<unknown>>();
 
     /** Websocket */
     ws = null;
@@ -499,6 +499,10 @@ export default class AgentManager {
     callClusterService(cluster,serviceName,payload) {
         return this._sendToAgent('agent:callClusterService',{id:cluster.id,name:cluster.name,serviceName:serviceName,args:payload});
     }
+
+    callCacheService(cluster,serviceName,payload) {
+        return this._sendToAgent('agent:callClusterService',{id:cluster.id,name:cluster.name,serviceName:serviceName,serviceType:'CacheAgentService',args:payload});
+    }
     
     callClusterCommand(cluster,cmdName,payload) {
         return this._sendToAgent('agent:callClusterCommand',{id:cluster.id,name:cluster.name,cmdName:cmdName,args:payload});
@@ -559,6 +563,10 @@ export default class AgentManager {
         const now = Date.now()
         return this._restOnCluster(event, params)
             .then((res) => {
+                if (typeof res === 'boolean') {
+                    return res
+                }
+                // add@byron
                 if('result' in res){
                     return res.result
                 }

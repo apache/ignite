@@ -6,7 +6,7 @@ include /app/configuration/mixins
 -var form = 'discovery'
 -var model = '$ctrl.clonedCluster.discovery'
 
-panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')` ng-if=`${model}.kind !== 'ZooKeeper'`)
     panel-title Discovery
     panel-description
         | TCP/IP discovery configuration.

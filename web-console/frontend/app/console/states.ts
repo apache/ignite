@@ -23,6 +23,21 @@ const shortCachesResolve = ['ConfigSelectors', 'ConfigureState', 'ConfigEffects'
     .toPromise();
 }];
 
+const shortCachesAndModels = ['ConfigSelectors', 'ConfigureState', 'ConfigEffects', '$transition$', (ConfigSelectors, ConfigureState, {etp}, $transition$) => {
+    if ($transition$.params().clusterID === 'new')
+        return Promise.resolve();
+
+    return from($transition$.injector().getAsync('_cluster')).pipe(
+        switchMap(() => ConfigureState.state$.pipe(ConfigSelectors.selectCluster($transition$.params().clusterID), take(1))),
+        map((cluster) => {
+            return Promise.all([
+                etp('LOAD_SHORT_CACHES', {ids: cluster.caches, clusterID: cluster.id}),
+                etp('LOAD_SHORT_MODELS', {ids: cluster.models, clusterID: cluster.id})
+            ]);
+        })
+    ).toPromise();
+}]
+
 function registerStates($stateProvider) {
     // Setup the states.
   $stateProvider
@@ -102,7 +117,7 @@ function registerStates($stateProvider) {
         component: 'pageConsoleService',
         permission: 'configuration',
         resolve: {
-            _shortCaches: shortCachesResolve
+            _shortCachesAndModels: shortCachesAndModels,
         },
         resolvePolicy: {
             async: 'NOWAIT'
@@ -116,7 +131,7 @@ function registerStates($stateProvider) {
         component: 'pageConsoleCacheService',
         permission: 'configuration',
         resolve: {
-            _shortCaches: shortCachesResolve
+            _shortCachesAndModels: shortCachesAndModels,            
         },
         resolvePolicy: {
             async: 'NOWAIT'
@@ -128,7 +143,7 @@ function registerStates($stateProvider) {
     .state('base.console.edit.service.select', {
         url: `/{serviceID}`,
         permission: 'configuration',
-        resolve: {            
+        resolve: {         
         },
         data: {
             errorState: 'base.console.edit.service'
@@ -204,21 +219,7 @@ function registerStates($stateProvider) {
         permission: 'configuration',
         component: pageConsoleAdvancedCachesComponent.name,
         resolve: {            
-            _shortCachesAndModels: ['ConfigSelectors', 'ConfigureState', 'ConfigEffects', '$transition$', (ConfigSelectors, ConfigureState, {etp}, $transition$) => {
-                if ($transition$.params().clusterID === 'new')
-                    return Promise.resolve();
-
-                return from($transition$.injector().getAsync('_cluster')).pipe(
-                    switchMap(() => ConfigureState.state$.pipe(ConfigSelectors.selectCluster($transition$.params().clusterID), take(1))),
-                    map((cluster) => {
-                        return Promise.all([
-                            etp('LOAD_SHORT_CACHES', {ids: cluster.caches, clusterID: cluster.id}),
-                            etp('LOAD_SHORT_MODELS', {ids: cluster.models, clusterID: cluster.id})
-                        ]);
-                    })
-                )
-                .toPromise();
-            }]
+            _shortCachesAndModels: shortCachesAndModels
         },
         resolvePolicy: {
             async: 'NOWAIT'
@@ -255,20 +256,7 @@ function registerStates($stateProvider) {
         component: pageConsoleAdvancedModelsComponent.name,
         permission: 'configuration',
         resolve: {
-            _shortCachesAndModels: ['ConfigSelectors', 'ConfigureState', 'ConfigEffects', '$transition$', (ConfigSelectors, ConfigureState, {etp}, $transition$) => {
-                if ($transition$.params().clusterID === 'new')
-                    return Promise.resolve();
-
-                return from($transition$.injector().getAsync('_cluster')).pipe(
-                    switchMap(() => ConfigureState.state$.pipe(ConfigSelectors.selectCluster($transition$.params().clusterID), take(1))),
-                    map((cluster) => {
-                        return Promise.all([
-                            etp('LOAD_SHORT_CACHES', {ids: cluster.caches, clusterID: cluster.id}),
-                            etp('LOAD_SHORT_MODELS', {ids: cluster.models, clusterID: cluster.id})
-                        ]);
-                    })
-                ).toPromise();
-            }]
+            _shortCachesAndModels: shortCachesAndModels
         },
         resolvePolicy: {
             async: 'NOWAIT'

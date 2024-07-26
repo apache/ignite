@@ -27,6 +27,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import com.beust.jcommander.Parameter;
+
+import org.apache.ignite.console.utils.BeanMerger;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.PluginConfiguration;
 
@@ -45,9 +47,8 @@ public class AgentConfiguration implements PluginConfiguration {
     private static final String DFLT_SERVER_URI = "http://localhost:3000";
 
     /** Default Ignite node HTTP URI. */
-    private static final String DFLT_NODE_URI = "http://localhost:8080";
-    
-    private static final String DFLT_ZOOKEEPER_URI = "127.0.0.1:2181";
+    private static final String DFLT_NODE_URI = "http://localhost:8080";    
+
 
     /** */
     @Parameter(names = {"-t", "--tokens"},
@@ -78,10 +79,10 @@ public class AgentConfiguration implements PluginConfiguration {
         description = "Password that will be used to connect to secured cluster")
     private String nodePwd;
     
-    /** zookeeper connect string */
-    @Parameter(names = {"-zk", "--zookeeper-uri"},
-        description = "Password that will be used to connect to secured cluster")
-    private String zookeeper = DFLT_ZOOKEEPER_URI;
+    /** agent ident no */
+    @Parameter(names = {"-id", "--server-id"},
+        description = "Server Ident that will be used to ident node for cluster")
+    private int serverId = 0;
 
    
 	/** URI for connect to Ignite demo node REST server */
@@ -508,12 +509,12 @@ public class AgentConfiguration implements PluginConfiguration {
         return cipherSuites;
     }
 
-    public String zookeeper() {
-		return zookeeper;
+    public int serverId() {
+		return serverId;
 	}
 
-	public void zookeeper(String zookeeper) {
-		this.zookeeper = zookeeper;
+	public void serverId(int serverId) {
+		this.serverId = serverId;
 	}
 	
     /**
@@ -577,9 +578,9 @@ public class AgentConfiguration implements PluginConfiguration {
         if (val != null)
             nodePassword(val);
         
-        val = props.getProperty("zookeeper-uri");
+        val = props.getProperty("server-id");
         if (val != null)
-        	zookeeper(val);
+        	serverId(Integer.parseInt(val));
 
         val = props.getProperty("driver-folder");
 
@@ -655,71 +656,8 @@ public class AgentConfiguration implements PluginConfiguration {
     /**
      * @param cfg Config to merge with.
      */
-    public void merge(AgentConfiguration cfg) {
-        if (tokens == null)
-            tokens(cfg.tokens());
-
-        if (srvUri == null)
-            serverUri(cfg.serverUri());
-
-        if (srvUri == null)
-            serverUri(DFLT_SERVER_URI);
-
-        if (nodeURIs == null)
-            nodeURIs(cfg.nodeURIs());
-
-        if (nodeURIs == null)
-            nodeURIs(Collections.singletonList(DFLT_NODE_URI));
-
-        if (nodeLogin == null)
-            nodeLogin(cfg.nodeLogin());
-
-        if (nodePwd == null)
-            nodePassword(cfg.nodePassword());
-
-        if (driversFolder == null)
-            driversFolder(cfg.driversFolder());
-
-        disableDemo(disableDemo || cfg.disableDemo());
-        
-        disableVertx(disableVertx || cfg.disableVertx());
-
-        if (nodeKeyStore == null)
-            nodeKeyStore(cfg.nodeKeyStore());
-
-        if (nodeKeyStorePass == null)
-            nodeKeyStorePassword(cfg.nodeKeyStorePassword());
-
-        if (nodeTrustStore == null)
-            nodeTrustStore(cfg.nodeTrustStore());
-
-        if (nodeTrustStorePass == null)
-            nodeTrustStorePassword(cfg.nodeTrustStorePassword());
-
-        if (srvKeyStore == null)
-            serverKeyStore(cfg.serverKeyStore());
-
-        if (srvKeyStorePass == null)
-            serverKeyStorePassword(cfg.serverKeyStorePassword());
-
-        if (srvTrustStore == null)
-            serverTrustStore(cfg.serverTrustStore());
-
-        if (srvTrustStorePass == null)
-            serverTrustStorePassword(cfg.serverTrustStorePassword());
-
-        if (passwordsStore == null)
-            passwordsStore(cfg.passwordsStore());
-
-        if (passwordsStorePass == null)
-            passwordsStorePassword(cfg.passwordsStorePassword());
-
-        if (cipherSuites == null)
-            cipherSuites(cfg.cipherSuites());
-
-        tokens = trim(tokens);
-        nodeURIs = trim(nodeURIs);
-        cipherSuites = trim(cipherSuites);
+    public void merge(AgentConfiguration cfg) {    	
+    	BeanMerger.mergeBeans(cfg,this);
     }
 
 

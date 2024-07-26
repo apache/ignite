@@ -8,8 +8,7 @@ include /app/configuration/mixins
 
 panel-collapsible(
     ng-form=form
-    on-open=`ui.loadPanel('${form}')`
-    ng-hide=`${model}.cacheMode === "LOCAL"`
+    on-open=`ui.loadPanel('${form}')` 
 )
     panel-title Rebalance
     panel-description

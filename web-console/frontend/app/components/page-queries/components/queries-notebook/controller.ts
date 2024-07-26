@@ -338,7 +338,7 @@ export class NotebookCtrl {
 
         $scope.aggregateFxs = ['FIRST', 'LAST', 'MIN', 'MAX', 'SUM', 'AVG', 'COUNT'];
 
-        $scope.modes = LegacyUtils.mkOptions(['PARTITIONED', 'REPLICATED', 'LOCAL']);
+        $scope.modes = LegacyUtils.mkOptions(['PARTITIONED', 'REPLICATED']);
 
         $scope.loadingText = this.Demo.enabled
             ? $translate.instant('queries.notebook.loadingMessageWithDemoEnabled')
@@ -1473,7 +1473,7 @@ export class NotebookCtrl {
                     rows.push([row.key, row.value])
                 }
                 paragraph.rows = rows;
-            }
+            }            
             else
                 paragraph.rows = res.rows;
 

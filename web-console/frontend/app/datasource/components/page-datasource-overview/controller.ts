@@ -127,8 +127,7 @@ export default class PageDatasourceOverviewController {
       }
     }
 
-    $onInit() { 
-       
+    $onInit() {       
         this.dataSourceList$ = from(this.Datasource.getDatasourceList()).pipe(            
             switchMap(({data}) => of(
                 data            

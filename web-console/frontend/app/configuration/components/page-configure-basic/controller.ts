@@ -156,12 +156,12 @@ export default class PageConfigureBasicController {
             {
                 text: 'Deploy and ReStart',
                 click: () => this.deploy(true),
-                icon: 'download'
+                icon: 'refresh'
             },
             {
                 text: 'Deploy Only',
                 click: () => this.deploy(false),
-                icon: 'plus'
+                icon: 'expand'
             }
         ];
 

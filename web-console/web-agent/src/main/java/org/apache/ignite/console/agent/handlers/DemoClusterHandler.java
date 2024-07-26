@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.TOPOLOG
  */
 public class DemoClusterHandler extends AbstractClusterHandler{
     /** Demo cluster ID. */
-    public static String DEMO_CLUSTER_ID;
+    public static String DEMO_CLUSTER_ID = null;
 
     /** Demo cluster name. */
     public static final String DEMO_CLUSTER_NAME = "demo-cluster";
@@ -55,8 +55,7 @@ public class DemoClusterHandler extends AbstractClusterHandler{
      * @param cfg Config.
      */
     DemoClusterHandler(AgentConfiguration cfg) {
-        super(cfg, null);
-        DEMO_CLUSTER_ID = F.first(cfg.tokens());
+        super(cfg, null);        
     }
 
     /** {@inheritDoc} */
@@ -83,13 +82,15 @@ public class DemoClusterHandler extends AbstractClusterHandler{
         if (AgentClusterDemo.getDemoUrl() != null) {
         	try {
 	            IgniteEx ignite = (IgniteEx)Ignition.ignite(AgentClusterDemo.SRV_NODE_NAME);
-	
+	            if(DEMO_CLUSTER_ID == null) {
+	            	DEMO_CLUSTER_ID = ignite.cluster().id().toString();
+	            }
 	            Collection<GridClientNodeBean> nodes = collectNodes(ignite.context());
 	
 	            top = new TopologySnapshot(nodes);
 	            top.setClusterVersion(VER_STR);
 	            top.setActive(ignite.cluster().active());
-	            top.setId(DEMO_CLUSTER_ID.toString());
+	            top.setId(DEMO_CLUSTER_ID);
 	            top.setName(DEMO_CLUSTER_NAME);
 	            top.setDemo(true);        
 
@@ -99,14 +100,16 @@ public class DemoClusterHandler extends AbstractClusterHandler{
         		return null;
         	}
         }
-        else {
+        else if(DEMO_CLUSTER_ID!=null) {
         	top = new TopologySnapshot();        	
             top.setClusterVersion(VER_STR);
-            top.setId(DEMO_CLUSTER_ID.toString());
+            top.setId(DEMO_CLUSTER_ID);
             top.setName(DEMO_CLUSTER_NAME);
             top.setDemo(true);
+            DEMO_CLUSTER_ID = null;
             return List.of(top);
-        }        
+        }
+        return null;
     }
 
     /**

@@ -1,5 +1,3 @@
-
-
 import template from './template.pug';
 import './style.scss';
 import ModalImportModels from '../modal-import-models/service';

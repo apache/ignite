@@ -55,7 +55,7 @@ import org.apache.ignite.console.agent.handlers.StringStreamHandler;
 import org.apache.ignite.console.agent.service.CacheClearDataService;
 import org.apache.ignite.console.agent.service.CacheCopyDataService;
 import org.apache.ignite.console.agent.service.CacheLoadDataService;
-import org.apache.ignite.console.agent.service.ClusterAgentServiceList;
+import org.apache.ignite.console.agent.service.ClusterAgentServiceManager;
 import org.apache.ignite.console.agent.service.ComputeTaskLoadService;
 import org.apache.ignite.console.json.JsonBinarySerializer;
 import org.apache.ignite.console.utils.BeanMerger;
@@ -192,9 +192,8 @@ public class IgniteClusterLauncher implements StartNodeCallable{
      *
      * @param services Distributed services on the grid.
      */
-    public static void deployServices(IgniteServices services) {
-    	
-        services.deployNodeSingleton("serviceList", new ClusterAgentServiceList());
+    public static void deployServices(IgniteServices services) {    	
+        
         services.deployNodeSingleton("loadDataService", new CacheLoadDataService());
         services.deployNodeSingleton("clearDataService", new CacheClearDataService());
         services.deployClusterSingleton("copyDataService", new CacheCopyDataService());        
@@ -237,14 +236,14 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 
 
     /** */
-    public static void stopIgnite(String clusterName,String nodeId) {  
-    	if(nodeId!=null) {
-    		try {
-	    		Ignite ignite = Ignition.ignite(UUID.fromString(nodeId));
-	    		String gridName = ignite.configuration().getIgniteInstanceName();
-	    		Ignition.stop(gridName,true);
-	    		clusterName = null;
-	    		
+    public static void stopIgnite(String clusterName,String clusterId) {  
+    	if(clusterId!=null) {
+    		try {	    		
+	    		String gridName = RestClusterHandler.clusterNameMap.get(clusterId);
+	    		if(gridName!=null) {
+		    		Ignition.stop(gridName,true);
+		    		clusterName = null;
+	    		}	    		
     		}
 	    	catch(IgniteIllegalStateException | IllegalArgumentException  e) {
 	    		//-log.error("Failed to stop cluster node: "+nodeId,e);
@@ -272,19 +271,6 @@ public class IgniteClusterLauncher implements StartNodeCallable{
     public static Ignite trySingleStart(String clusterId,String clusterName,int nodeIndex,boolean isLastNode,String cfgFile,String preCfgFile) throws IgniteCheckedException {
     	Ignite ignite = null;    	
     	
-    	// 最后一个节点： clusterID和nodeID相同
-    	UUID nodeID = null;
-    	if(isLastNode) {	    	
-	    	try {
-	    		nodeID = UUID.fromString(clusterId);
-	    		ignite = Ignition.ignite(UUID.fromString(clusterId));
-	    		return ignite;
-	    	}
-	    	catch(IgniteIllegalStateException | IllegalArgumentException  e) {
-	    		
-	    	}
-    	}
-    	
     	// 基于Instance Name 查找ignite
     	try {
     		ignite = Ignition.ignite(clusterName);
@@ -303,7 +289,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 			
 			Collection<IgniteConfiguration> cfgList = cfgMap.get1();
 			for(IgniteConfiguration cfg: cfgList) {
-				if(clusterName.equals(cfg.getIgniteInstanceName())){
+				if(clusterName.equals(cfg.getIgniteInstanceName()) || cfgList.size()==1){
 					preCfg = cfg;
 				}				
 			}
@@ -320,10 +306,9 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 			IgniteConfiguration cfg = cfgWorkMap.get1().iterator().next();			
 			
 			// 最后一个节点： clusterID和nodeID相同
-			if(isLastNode) {
-				cfg.setNodeId(nodeID);
+			if(isLastNode) {				
 				if(cfg.getConsistentId()==null)
-					cfg.setConsistentId(clusterId);
+					cfg.setConsistentId(clusterId+"_"+nodeIndex);
 			}
 			else {
 				cfg.setClusterStateOnStart(ClusterState.INACTIVE);
@@ -340,7 +325,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 			
         }
         
-        if(cfgMap!=null) {	
+        if(cfgMap!=null && cfgMap.get1().size()>1) {
 			// other ignite instance
 			Collection<IgniteConfiguration> cfgList = cfgMap.get1();
 			for(IgniteConfiguration cfg: cfgList) {
@@ -363,10 +348,15 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         if(isLastNode && ignite!=null) {
         	try {
 				Thread.sleep(1000*nodeIndex);
+				while(ignite.cluster().nodes().size()<nodeIndex) {
+            		Thread.sleep(1000);                    		
+            	}
 			} catch (InterruptedException e) {				
 				e.printStackTrace();
 			}
-			ignite.cluster().state(ClusterState.ACTIVE);
+        	
+			ignite.cluster().state(ClusterState.ACTIVE);			
+			deployServices(ignite.services(ignite.cluster().forServers()));			
 		}
         return ignite;
     }
@@ -435,48 +425,11 @@ public class IgniteClusterLauncher implements StartNodeCallable{
     /**
      * @param tok Token to revoke.
      */
-    public static JsonObject callClusterCommand(String cmdName,JsonObject json) {
-        log.info("Cluster cmd is invoking: " + cmdName);
-                
-        String nodeId = json.getString("id");
+    public static JsonObject callClusterCommand(Ignite ignite,String cmdName,JsonObject json) {
+        log.info("Cluster cmd is invoking: " + cmdName);                
         
-        String clusterName = json.getString("name");                
-        if(clusterName!=null) {
-        	clusterName = Utils.escapeFileName(clusterName);
-    	}
-        
-        JsonArray args = json.getJsonArray("args");
-        
+        JsonArray args = json.getJsonArray("args");        
         JsonObject stat = new JsonObject();
-        stat.put("status", "stoped");
-        
-        Ignite ignite = null;
-        
-        if(nodeId!=null) {        	
-        	try {
-        		ignite = Ignition.ignite(UUID.fromString(nodeId));	    		
-	    		stat.put("status", "started");
-	    		clusterName = null;
-    		}
-	    	catch(IgniteIllegalStateException | IllegalArgumentException e) {	
-	    		stat.put("message", e.getMessage());
-	    		stat.put("status", "stoped");	    		
-	    	}
-        }
-        
-        if(clusterName!=null) {
-        	try {
-        		ignite = Ignition.ignite(clusterName);	    		
-	    		stat.put("status", "started");
-    		}
-	    	catch(IgniteIllegalStateException e) {	
-	    		stat.put("message", e.getMessage());
-	    		stat.put("status", "stoped");
-	    		return stat;
-	    	}
-    	}
-        
-       
         
         List<String> argsList = new ArrayList<>();
         if(ignite!=null) {
@@ -510,12 +463,12 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         	IgniteCommandRegistry cmdReg = null;
         	if(ignite==null) {        		
 				try {
-					Field registry = hnd.getClass().getField("registry");
+					Field registry = hnd.getClass().getDeclaredField("registry");
 					registry.setAccessible(true);
 	            	cmdReg = (IgniteCommandRegistry)registry.get(hnd);
 	            	
 				} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
-					
+					e.printStackTrace();
 				}
             	
         	}
@@ -535,8 +488,8 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 	        		String usage = outHandder.getOutput();
 	        		String desc = c.description();
 	        		int pos = 0;
-	        		if((pos=usage.indexOf("<br/>"))>0) {
-	        			usage = usage.substring(pos+5).strip();
+	        		if((pos=usage.indexOf(desc))>0) {
+	        			usage = usage.substring(pos+desc.length()+26).strip();
 	        		}
 	            	JsonObject cmd = new JsonObject();
 	            	cmd.put("name", pair.getKey());

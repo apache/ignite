@@ -81,7 +81,7 @@ export default class TaskFlowFormController {
 
         this.formActions = [
             {text: 'Save TaskFlow', icon: 'checkmark', click: () => this.confirmAndSave()},
-            {text: 'Start TaskFlow', icon: 'checkmark', click: () => this.confirmAndStart()}                
+            {text: 'Start TaskFlow', icon: 'copy', click: () => this.confirmAndStart()}                
         ];
     }   
 
@@ -102,7 +102,7 @@ export default class TaskFlowFormController {
            this.taskFlow = Object.assign({},tplFlow);
            this.taskFlow.target = cache.name;
            this.taskFlow.source = cache.name;
-           this.taskFlow.name = 'Data from '+this.targetCluster.name+'.'+this.taskFlow.source+' to '+cache.name;
+           this.taskFlow.name = tplFlow.name +' to '+cache.name;
            taskList.push(this.taskFlow);
        }
        return taskList;
@@ -170,15 +170,15 @@ export default class TaskFlowFormController {
             result.push(stat);
         }
         if(result){
-            this.AgentManager.callClusterService({id: tplFlow.sourceCluster},serviceName,{tasks,task,models:this.models}).then((data) => {
-                 this.$scope.status = data.status; 
-                 if(data.result){
-                     return data.result;
-                 }    
-                 else if(data.message){
-                     this.$scope.message = data.message;
-                 }  
-                 return {}
+            this.AgentManager.callClusterService({id: tplFlow.targetCluster},serviceName,{tasks,task,models:this.models}).then((data) => {
+                this.$scope.status = data.status; 
+                if(data.message){
+                    this.$scope.message = data.message;
+                }
+                if(data.result){
+                    return data.result;
+                }
+                return {}
              })   
             .catch((e) => {
                  this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);           

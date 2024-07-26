@@ -18,15 +18,18 @@ package org.apache.ignite.console.agent.handlers;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Optional;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -74,6 +77,8 @@ public class VertxClusterHandler implements ClusterHandler{
     public static final Map<String, Throwable> lastErrors = U.newLinkedHashMap(4);
     /** ignite cluster id -> ignite name */
     public static final Map<String, String> clusterNameMap = U.newHashMap(4);
+    
+    public static final Map<String, Integer> deactivedCluster = new ConcurrentHashMap<>();
 
     private GremlinExecutor gremlinExecutor;
     
@@ -82,14 +87,12 @@ public class VertxClusterHandler implements ClusterHandler{
     /** Agent configuration. */
     protected final AgentConfiguration cfg;
     
-    private String lastClusterId = "";
-    
     /**
      * @param cfg Config.
      */
     public VertxClusterHandler(AgentConfiguration cfg) {
     	this.cfg = cfg;
-        gremlinExecutor = new GremlinExecutor(cfg.gremlinPort());
+        gremlinExecutor = new GremlinExecutor(F.first(cfg.nodeURIs()),cfg.gremlinPort());
         gridTaskExecutor = new GridTaskExecutor();
     }
 
@@ -105,17 +108,20 @@ public class VertxClusterHandler implements ClusterHandler{
     			
     			if(code.indexOf("vertx.")<0) {
             		// Gremlin Query
-        			Ignite ignite = Ignition.ignite(clusterName);        		
-            		return gremlinExecutor.sendRequest(ignite, clusterId, params);
+    				Map<String,Object> context = new HashMap<>();
+    				context.put("graphName", clusterName);
+            		return gremlinExecutor.sendRequest(context, clusterId, params);
         		}
         		
                 if (cfg.disableVertx())
                     return RestResult.fail(404, "Vertx disabled by administrator.");
                 
                 
+                lastErrors.clear();
                 if (!clusterVertxMap.containsKey(clusterName)) {
                 	startVertxCluster(clusterName,cfg);
-                	if(!lastErrors.containsKey(clusterName) && !clusterVertxMap.containsKey(clusterName)) {
+                	
+                	while(!lastErrors.containsKey(clusterName) && !clusterVertxMap.containsKey(clusterName)) {
                 		Thread.sleep(200);
                 	}
                 }            
@@ -133,7 +139,7 @@ public class VertxClusterHandler implements ClusterHandler{
                 }
                 
                 if (lastErrors.containsKey(clusterName)) {
-                	return RestResult.fail(500, lastErrors.get(clusterName).getMessage());
+                	return RestResult.fail(GridRestResponse.STATUS_FAILED, lastErrors.get(clusterName).getMessage());
                 }
     		}
     		else {
@@ -198,32 +204,41 @@ public class VertxClusterHandler implements ClusterHandler{
         
         List<TopologySnapshot> tops = new LinkedList<>();    
         
-        for (Entry<String, Vertx> ent: clusterVertxMap.entrySet()) {
+        for (Entry<String, String> ent: clusterNameMap.entrySet()) {
         	TopologySnapshot top;
-        	String clusterName = ent.getKey();
+        	String clusterId = ent.getKey();
+        	String clusterName = ent.getValue();
         	try {
 	        	IgniteEx ignite = (IgniteEx)Ignition.ignite(clusterName);
 	
 	            Collection<GridClientNodeBean> nodes = collectNodes(ignite.context());
-	            top = new TopologySnapshot(nodes);            
-	            lastClusterId = ignite.cluster().id().toString();
-	            top.setId(lastClusterId);
+	            top = new TopologySnapshot(nodes);
+	            top.setId(clusterId);
 	            top.setName(VERTX_CLUSTER_NAME_PREFIX+clusterName);
 	            top.setDemo(false);
 	            top.setClusterVersion(VER_STR);
 	            top.setActive(ignite.active());
         	}
-        	catch(Exception e) {
+        	catch(IgniteIllegalStateException e) {
         		top = new TopologySnapshot();            
         		
-	            top.setId(lastClusterId);
+	            top.setId(clusterId);
 	            top.setName(VERTX_CLUSTER_NAME_PREFIX+clusterName);
 	            top.setDemo(false);
 	            top.setClusterVersion(VER_STR);
 	            top.setActive(false);
+	            deactivedCluster.put(clusterId, 1);
+	            clusterVertxMap.remove(clusterName);
+	            
         	}
             tops.add(top);
         }
+        
+        for(String nodeId: deactivedCluster.keySet()) {        	
+    		clusterNameMap.remove(nodeId);
+    	}
+    	deactivedCluster.clear();
+    	
         return tops;
     }
 

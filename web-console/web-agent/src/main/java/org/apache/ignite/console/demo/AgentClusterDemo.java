@@ -113,7 +113,7 @@ public class AgentClusterDemo {
         cfg.setIgniteInstanceName((client ? CLN_NODE_NAME : SRV_NODE_NAME));
         cfg.setLocalHost("127.0.0.1");
         cfg.setEventStorageSpi(new MemoryEventStorageSpi());
-        cfg.setConsistentId(cfg.getIgniteInstanceName()+"_"+ gridIdx);
+        
 
         File workDir = new File(U.workDirectory(null, null), "demo-work");
 
@@ -146,7 +146,6 @@ public class AgentClusterDemo {
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
-        commSpi.setSharedMemoryPort(-1);
         commSpi.setMessageQueueLimit(10);
 
         int commPort = basePort + 30;
@@ -235,12 +234,12 @@ public class AgentClusterDemo {
                         cfg.getWorkDirectory(),
                         cfg.getDataStorageConfiguration().getStoragePath(),
                         true
-                    );
-                    cfg.setNodeId(UUID.fromString(DemoClusterHandler.DEMO_CLUSTER_ID));                        
+                    );          
+                    cfg.setConsistentId(cfg.getIgniteInstanceName()+"_"+ idx);
                 }
-                else {
-                	cfg.setNodeId(null);
+                else {                	
                 	cfg.setClusterStateOnStart(ClusterState.INACTIVE);
+                	cfg.setConsistentId(cfg.getIgniteInstanceName()+"_"+ idx);
                 }
 
                 ignite = Ignition.start(cfg);
@@ -281,10 +280,12 @@ public class AgentClusterDemo {
             }
             finally {
                 if (lastNode && ignite != null) {
-                    try {
+                    try {    
                     	Thread.sleep(1000*idx);
-                        ignite.cluster().state(ClusterState.ACTIVE);
-
+                    	while(ignite.cluster().nodes().size()<idx) {
+                    		Thread.sleep(1000);                    		
+                    	}                       
+                    	ignite.cluster().state(ClusterState.ACTIVE);
                         deployServices(ignite.services(ignite.cluster().forServers()));
 
                         log.info("DEMO: All embedded nodes for demo successfully started");

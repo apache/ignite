@@ -7,6 +7,10 @@ import uuidv4 from 'uuid/v4';
 import {CacheModes, AtomicityModes, ShortCache} from '../types';
 import {Menu} from 'app/types';
 
+const JDBC_LINKS = {
+    Oracle: 'https://docs.oracle.com/javase/tutorial/jdbc/basics/connecting.html'
+}
+
 export default class Caches {
     static $inject = ['$http'];
 
@@ -208,9 +212,8 @@ export default class Caches {
         return cache && cache.cacheMode === 'PARTITIONED';
     }
 
-    jdbcDriverURL(storeFactory) {
-        this.JDBC_LINKS = {}
-        return this.JDBC_LINKS[get(storeFactory, 'dialect')];
+    jdbcDriverURL(storeFactory) {       
+        return JDBC_LINKS[get(storeFactory, 'dialect')];
     }
 
     requiresProprietaryDrivers(storeFactory) {

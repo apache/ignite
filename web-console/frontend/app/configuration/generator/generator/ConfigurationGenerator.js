@@ -2344,15 +2344,13 @@ export default class IgniteConfigurationGenerator {
 
     // Generate cache rebalance group.
     static cacheRebalance(cache, ccfg = this.cacheConfigurationBean(cache)) {
-        if (ccfg.valueOf('cacheMode') !== 'LOCAL') {
-            ccfg.enumProperty('rebalanceMode')
-                .intProperty('rebalanceBatchSize')
-                .longProperty('rebalanceBatchesPrefetchCount')
-                .intProperty('rebalanceOrder')
-                .longProperty('rebalanceDelay')
-                .longProperty('rebalanceTimeout')
-                .longProperty('rebalanceThrottle');
-        }
+        ccfg.enumProperty('rebalanceMode')
+            .intProperty('rebalanceBatchSize')
+            .longProperty('rebalanceBatchesPrefetchCount')
+            .intProperty('rebalanceOrder')
+            .longProperty('rebalanceDelay')
+            .longProperty('rebalanceTimeout')
+            .longProperty('rebalanceThrottle');
 
         return ccfg;
     }

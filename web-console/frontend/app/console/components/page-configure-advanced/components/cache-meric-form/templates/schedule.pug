@@ -1,5 +1,3 @@
-
-
 include /app/helpers/jade/mixins
 include /app/configuration/mixins
 
@@ -8,8 +6,7 @@ include /app/configuration/mixins
 
 panel-collapsible(
     ng-form=form
-    on-open=`ui.loadPanel('${form}')`
-    ng-hide=`${model}.cacheMode === "LOCAL"`
+    on-open=`ui.loadPanel('${form}')`    
 )
     panel-title 调度配置
     panel-description

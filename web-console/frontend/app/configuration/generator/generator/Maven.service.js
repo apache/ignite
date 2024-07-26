@@ -137,10 +137,10 @@ export default class IgniteMavenGenerator {
 
         sb.startBlock('<plugin>');
         this.addProperty(sb, 'artifactId', 'maven-compiler-plugin');
-        this.addProperty(sb, 'version', '3.1');
+        this.addProperty(sb, 'version', '3.6');
         sb.startBlock('<configuration>');
-        this.addProperty(sb, 'source', '1.7');
-        this.addProperty(sb, 'target', '1.7');
+        this.addProperty(sb, 'source', '11');
+        this.addProperty(sb, 'target', '11');
         sb.endBlock('</configuration>');
         sb.endBlock('</plugin>');
 
@@ -169,7 +169,7 @@ export default class IgniteMavenGenerator {
         const storeDeps = [];
 
         this.addDependency(deps, artifactGrp, 'ignite-core', igniteVer);
-
+        this.addDependency(deps, artifactGrp, 'ignite-igfs', igniteVer);
         this.addDependency(deps, artifactGrp, 'ignite-spring', igniteVer);
         this.addDependency(deps, artifactGrp, 'ignite-indexing', igniteVer);
         this.addDependency(deps, artifactGrp, 'ignite-rest-http', igniteVer);

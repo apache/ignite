@@ -153,35 +153,39 @@ export default class PageConfigureBasicController {
     }
     
     buildFormActionsMenu(){
-       let formActionsMenu = [];//this.$scope.formActionsMenu;
-       //this.$scope.formActionsMenu.length = 0;
+        let formActionsMenu = [];
        
-       if(this.$scope.status && this.$scope.status!="started"){
-           formActionsMenu.push({
-               text: 'Start Cluster',
-               click: () => this.confirmAndRestart(),
-               icon: 'checkmark'
-           })
-       }        
-       else {
-           formActionsMenu.push({
-               text: 'Stop Cluster',
-               click: () => this.confirmAndStop(),
-               icon: 'download'
-           });
-           formActionsMenu.push({
-               text: 'Restart Cluster',
-               click: () => this.confirmAndRestart(),
-               icon: 'checkmark'
-           })
-       }
-       this.$scope.formActionsMenu = formActionsMenu;
-       return formActionsMenu;
+        if(this.$scope.status && this.$scope.status!="started"){
+            formActionsMenu.push({
+                text: 'Start Cluster',
+                click: () => this.confirmAndStart(),
+                icon: 'checkmark'
+            })
+        }        
+        else {
+            formActionsMenu.push({
+                text: 'Start Cluster',
+                click: () => this.confirmAndStart(),
+                icon: 'checkmark'
+            });
+            formActionsMenu.push({
+                text: 'Stop Cluster',
+                click: () => this.confirmAndStop(),
+                icon: 'exit'
+            });
+            formActionsMenu.push({
+                text: 'Restart Cluster',
+                click: () => this.confirmAndRestart(),
+                icon: 'refresh'
+            })
+        }
+        this.$scope.formActionsMenu = formActionsMenu;
+        return formActionsMenu;
     }
     
     
-    restart() {
-        this.clonedCluster['restart'] = true;
+    start(restart:boolean) {
+        this.clonedCluster['restart'] = restart;
         this.AgentManager.startCluster(this.clonedCluster).then((msg) => {  
             if(!msg.message){
                this.$scope.status = msg.status;
@@ -212,12 +216,12 @@ export default class PageConfigureBasicController {
             this.$scope.status = data.status;
             this.buildFormActionsMenu();
             this.clonedCluster.status = data.status;            
+            if(data.message){
+                this.$scope.message = data.message;
+            }
             if(data.result){
                 return data.result;
-            }    
-            else if(data.message){
-                this.$scope.message = data.message;
-            }  
+            }
             return {}
         })   
        .catch((e) => {
@@ -236,9 +240,14 @@ export default class PageConfigureBasicController {
             .then(() => this.reset())
             .catch(() => {});
     }
+    confirmAndStart() {
+        return this.Confirm.confirm('Are you sure you want to start current cluster? Current status:' + this.clonedCluster.status)
+            .then(() => this.start(false))
+            .catch(() => {});
+    }
     confirmAndRestart() {
         return this.Confirm.confirm('Are you sure you want to restart current cluster? Current status:' + this.clonedCluster.status)
-            .then(() => this.restart())
+            .then(() => this.start(true))
             .catch(() => {});
     }
     confirmAndStop() {

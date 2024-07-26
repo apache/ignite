@@ -168,18 +168,13 @@ export default class ClusterControlController {
     callCommand(cmdName: string, args) {
         let clusterID = this.clusterID;
         return new Promise((resolve,reject) => {
-           this.AgentManager.callClusterCommand({id:clusterID},cmdName,args).then((data) => {  
-                
-                if(data.result){
-                    resolve(data);
-                }    
-                else if(data.message){   
-                    this.message = data.message;
-                    resolve(data)
-                }        
+           this.AgentManager.callClusterCommand({id:clusterID},cmdName,args).then((data) => {                
+                if(data.message){   
+                    this.message = data.message;                    
+                }
+                resolve(data)    
             })   
-           .catch((e) => {
-                //this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);    
+           .catch((e) => {                 
                 reject(e)       
             });
         });   
@@ -206,8 +201,7 @@ export default class ClusterControlController {
                     this.message = data.message;                   
                 }        
             })   
-           .catch((e) => {
-                //this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);    
+           .catch((e) => {                
                 reject(e)       
             });
         });   

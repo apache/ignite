@@ -16,7 +16,7 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-
+import org.apache.ignite.console.agent.handlers.RestClusterHandler;
 import org.apache.ignite.console.utils.Utils;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -39,39 +39,39 @@ public class CacheCopyDataService implements CacheAgentService {
     @IgniteInstanceResource
     private Ignite ignite;
     
-    public Ignite getIgniteByName(String clusterName,Map<String,Object> stat) {
-    	Ignite ignite = null;
-    	String nodeId;
-    	nodeId = Utils.escapeFileName(clusterName);        
-        if(nodeId!=null) {        	
-        	try {
-        		ignite = Ignition.ignite(UUID.fromString(nodeId));	    		
-	    		stat.put("status", "started");
+    public Ignite getIgniteByName(String clusterName,ServiceResult stat) {
+    	Ignite ignite = null;    	
+    	String clusterId = Utils.escapeFileName(clusterName);
+    	String gridName = RestClusterHandler.clusterNameMap.get(clusterId);
+		if(gridName!=null) {
+			try {
+        		ignite = Ignition.ignite(gridName);	    		
+	    		stat.setStatus("started");
 	    		clusterName = null;
     		}
 	    	catch(IgniteIllegalStateException e) {	
-	    		stat.put("message", e.getMessage());
-	    		stat.put("status", "stoped");
+	    		stat.addMessage(e.getMessage());
+	    		stat.setStatus("stoped");
 	    	}
-        }
-        if(clusterName!=null) {
+		}        
+        if(ignite!=null && clusterName!=null) {
         	try {
         		ignite = Ignition.ignite(clusterName);	    		
-	    		stat.put("status", "started");
+	    		stat.setStatus("started");
     		}
 	    	catch(IgniteIllegalStateException e) {	
-	    		stat.put("message", e.getMessage());
-	    		stat.put("status", "stoped");
+	    		stat.addMessage(e.getMessage());
+	    		stat.setStatus("stoped");
 	    	}
     	}
         return ignite;
     }
     
 	@Override
-	public Map<String, ? extends Object> call(Map<String,Object> payload) {
-		Map<String,Object> result = new HashMap<>();
+	public ServiceResult call(Map<String,Object> payload) {
+		ServiceResult result = new ServiceResult();
 		int count = 0;		
-		JsonObject args = new JsonObject((Map)payload.get("args"));	
+		JsonObject args = new JsonObject(payload);	
 		String targetCache = args.getString("target");
 		String sourceCache = args.getString("source");	
 		
@@ -84,7 +84,7 @@ public class CacheCopyDataService implements CacheAgentService {
 		}
 		
 		JsonObject cacheInfo = new JsonObject();
-		String message = null;
+		
 
 		try {
 			IgniteCache<?,?> destCache = ignite.cache(targetCache);
@@ -101,11 +101,10 @@ public class CacheCopyDataService implements CacheAgentService {
 			count++;
 		}
 		catch(Exception e) {
-			message = e.getMessage();
+			result.messages.add(e.getMessage());
 		}
 		
-		result.put("metric", cacheInfo);
-		result.put("message", message);		
+		result.put("metric", cacheInfo);		
 		result.put("count", count);
 		return result;
 	}

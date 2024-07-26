@@ -5,7 +5,8 @@ import {tap, scan} from 'rxjs/operators';
 
 export default class ConfigureState {
     actions$: Subject<{type: string}>;
-
+    state$: BehaviorSubject<any>;
+    _combinedReducer: (state, action) => any;
     constructor() {
         this.actions$ = new Subject();
         this.state$ = new BehaviorSubject({});

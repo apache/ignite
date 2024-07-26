@@ -28,6 +28,7 @@ import 'brace';
 import 'brace/mode/xml';
 import 'brace/mode/sql';
 import 'brace/mode/java';
+import 'brace/mode/groovy';
 import 'brace/mode/csharp';
 import 'brace/mode/dockerfile';
 import 'brace/mode/snippets';

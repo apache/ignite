@@ -17,7 +17,7 @@ import org.apache.ignite.services.ServiceContext;
 public interface ClusterAgentService extends Service {
    
 	
-	public abstract Map<String, ? extends Object> call(Map<String,Object> payload);
+	public abstract ServiceResult call(Map<String,Object> payload);
 	
 	
 }

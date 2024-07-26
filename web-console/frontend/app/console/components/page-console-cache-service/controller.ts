@@ -7,6 +7,7 @@ import naturalCompare from 'natural-compare-lite';
 import {removeClusterItems, advancedSaveCache} from '../../../configuration/store/actionCreators';
 import ConfigureState from '../../../configuration/services/ConfigureState';
 import ConfigSelectors from '../../../configuration/store/selectors';
+import {default as MessagesFactory} from '../../../services/Messages.service';
 import Caches from '../../../configuration/services/Caches';
 import Services from '../../services/Services';
 import Version from 'app/services/Version.service';
@@ -18,6 +19,7 @@ export default class CacheServiceController {
     static $inject = [
         'ConfigSelectors',
         'configSelectionManager',
+        'IgniteMessages',
         '$uiRouter',
         '$transitions',
         'ConfigureState',
@@ -31,6 +33,7 @@ export default class CacheServiceController {
     constructor(
         private ConfigSelectors,
         private configSelectionManager,
+        private messages: ReturnType<typeof MessagesFactory>,
         private $uiRouter: UIRouter,
         private $transitions: TransitionService,
         private ConfigureState: ConfigureState,
@@ -103,7 +106,7 @@ export default class CacheServiceController {
         
         clusterID$.subscribe((v)=>{
             this.clusterID = v; 
-            this.callService('serviceList',{}).then((data) => {
+            this.callService('serviceList',{type:'CacheAgentService'}).then((data) => {
                 if(data.message){
                     this.message = data.message;
                     return;
@@ -117,7 +120,7 @@ export default class CacheServiceController {
         });
         
         this.shortCaches$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortCaches);
-        
+        this.shortModels$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortModels);
         this.originalCache$ = cacheID$.pipe(
             distinctUntilChanged(),
             switchMap((id) => {
@@ -201,18 +204,14 @@ export default class CacheServiceController {
     callService(serviceName: string, args) {
         let clusterID = this.clusterID;
         return new Promise((resolve,reject) => {
-           this.AgentManager.callClusterService({id:clusterID,type:'CacheAgentService'},serviceName,args).then((data) => {  
-                
-                if(data.result){
-                    resolve(data);
-                }    
-                else if(data.message){
-                    this.message = data.message;
-                    resolve(data)
-                }                 
+           this.AgentManager.callCacheService({id:clusterID},serviceName,args).then((data) => {                    
+                if(data.message){                    
+                    this.messages.showInfo(data.message);                    
+                }
+                resolve(data);         
             })   
            .catch((e) => {
-                //this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);    
+                this.messages.showError('Failed to callClusterService : '+serviceName+' Caused : '+e);    
                 reject(e)       
             });
         });   

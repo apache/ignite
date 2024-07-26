@@ -32,7 +32,7 @@ export default class IgniteVersion {
         this.supportedVersions = [
             {
                 label: 'Ignite 2.15+',
-                ignite: '2.15.0'
+                ignite: '2.16.999'
             },
             {
                 label: 'Ignite 2.9+',

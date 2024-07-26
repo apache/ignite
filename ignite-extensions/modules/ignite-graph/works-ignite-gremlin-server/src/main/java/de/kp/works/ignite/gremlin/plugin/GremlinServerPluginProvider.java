@@ -17,10 +17,7 @@
 package de.kp.works.ignite.gremlin.plugin;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
-import java.net.BindException;
-import java.net.Socket;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -33,19 +30,15 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
-import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.PluginValidationException;
-import org.apache.tinkerpop.gremlin.server.GraphManager;
 import org.apache.tinkerpop.gremlin.server.GremlinServer;
 import org.apache.tinkerpop.gremlin.server.Settings;
 import org.apache.tinkerpop.gremlin.server.util.ServerGremlinExecutor;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
-
 import org.jetbrains.annotations.Nullable;
+
 import de.kp.works.ignite.IgniteConnect;
 
 
@@ -198,7 +191,8 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
 
 			} catch (Exception e) {
 				log.error("GremlinServer bind fail.", e);
-				throw new RuntimeException(e);
+				//-throw new RuntimeException(e);
+				gremlinServer = null;
 			}
 		}		
 		
@@ -228,7 +222,7 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
 			if (counter<=0 && gremlinServer!= null) {
 				try {
 					log.info("GremlinServer", "shutting down " + gremlinServer.toString());
-					gremlinServer.stop();
+					gremlinServer.stop();					
 					gremlinServer = null;
 				} catch (Exception e) {
 					log.error("GremlinServer close fail.", e);

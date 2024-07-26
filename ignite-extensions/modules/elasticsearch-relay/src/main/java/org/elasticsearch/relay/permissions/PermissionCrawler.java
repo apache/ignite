@@ -34,7 +34,6 @@ public class PermissionCrawler implements IPermCrawler, Runnable {
 	
 	private static PermissionCrawler fPermCrawler = null;
 	
-	
 
 	private final Object fTrigger = new Object();
 
@@ -122,17 +121,13 @@ public class PermissionCrawler implements IPermCrawler, Runnable {
 				fActive = false;
 			}			
 			
-			try {
-				fLogger.log(Level.INFO, "starting permission crawl");
-				long time = System.currentTimeMillis();
+			fLogger.log(Level.INFO, "starting permission crawl");
+			long time = System.currentTimeMillis();
 
-				crawl();
+			crawl();
 
-				time = System.currentTimeMillis() - time;
-				fLogger.log(Level.INFO, "finished crawl in " + time + "ms");
-			} catch (Exception e) {
-				fLogger.log(Level.WARNING,e.getMessage());				
-			}
+			time = System.currentTimeMillis() - time;
+			fLogger.log(Level.INFO, "finished crawl in " + time + "ms");
 		}
 	}
 
@@ -143,7 +138,7 @@ public class PermissionCrawler implements IPermCrawler, Runnable {
 	 * @throws Exception
 	 *             if crawling fails
 	 */
-	public void crawl() throws Exception {
+	public void crawl() {
 		// clear users
 		fUsers.clear();
 
@@ -177,7 +172,7 @@ public class PermissionCrawler implements IPermCrawler, Runnable {
 				}
 			}
 		} catch(Exception e) {
-			fLogger.log(Level.WARNING,e.getMessage());	
+			fLogger.log(Level.INFO,e.getMessage());	
 		}
 
 		// crawl all permissions for all users

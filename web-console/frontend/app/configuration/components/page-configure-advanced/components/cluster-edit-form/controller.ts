@@ -110,7 +110,7 @@ export default class ClusterEditFormController {
         this.$scope.ui.loadedPanels = ['checkpoint', 'serviceConfiguration', 'odbcConfiguration'];
 
         this.formActions = [
-            {text: 'Save', icon: 'checkmark', click: () => this.save()},
+            {text: 'Save', icon: 'checkmark', click: () => this.save(false)},
             {text: 'Save and Download', icon: 'download', click: () => this.save(true)}
         ];
     }

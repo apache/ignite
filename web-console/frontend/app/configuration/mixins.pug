@@ -269,7 +269,6 @@ mixin form-field__cache-modes({ label, model, name, placeholder })
     +form-field__dropdown({
         label, model, name, placeholder,
         options: '[\
-            {value: "LOCAL", label: "LOCAL"},\
             {value: "REPLICATED", label: "REPLICATED"},\
             {value: "PARTITIONED", label: "PARTITIONED"}\
         ]',
@@ -277,7 +276,6 @@ mixin form-field__cache-modes({ label, model, name, placeholder })
         <ul>\
             <li>PARTITIONED - in this mode the overall key set will be divided into partitions and all partitions will be split equally between participating nodes</li>\
             <li>REPLICATED - in this mode all the keys are distributed to all participating nodes</li>\
-            <li>LOCAL - in this mode caches residing on different grid nodes will not know about each other</li>\
         </ul>'
     })&attributes(attributes)
         if  block

@@ -19,6 +19,8 @@ package org.apache.ignite.console.agent.rest;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,13 +58,22 @@ public class GremlinExecutor implements AutoCloseable {
     /** */
     private final GremlinGroovyScriptEngine engine;
     
+    String gremlinAddr = "localhost";
     int gremlinPort = 8182;
 
     /**
      * @param sslCtxFactory Ssl context factory.
      */
-    public GremlinExecutor(int gremlinPort) {
+    public GremlinExecutor(String addr, int gremlinPort) {
     	engine = new GremlinGroovyScriptEngine();
+    	if(addr!=null) {
+	    	try {
+				URL url = new URL(addr);
+				this.gremlinAddr = url.getHost();
+			} catch (MalformedURLException e) {
+		    	this.gremlinAddr = addr;
+			}
+    	}
     	this.gremlinPort = gremlinPort;
     }
 
@@ -76,24 +87,23 @@ public class GremlinExecutor implements AutoCloseable {
         }
     }
 
-    private void addFieldMetadata(JsonArray metaDataArray, String name,String type) {
+    private static void addFieldMetadata(JsonArray metaDataArray, String name,String type) {
     	JsonObject object = new JsonObject();
+    	object.put("schemaName", "default");
 		object.put("fieldName", name);
-		object.put("typeName", type);
-		object.put("schemaName", "default");		
 		object.put("fieldTypeName", type);
 		metaDataArray.add(object);	
 	}
     
-    private void addFieldMetadata(JsonArray metaDataArray, Set<String> keys) {
+    private static void addFieldMetadata(JsonArray metaDataArray, Set<String> keys) {
     	for(String key: keys) {
     		addFieldMetadata(metaDataArray, key, "String");
     	}    	
 	}
     
-    private void addFieldMetadata(JsonArray metaDataArray, Map<String,Object> dict) {    	
+    private static void addFieldMetadata(JsonArray metaDataArray, Map<String,Object> dict) {    	
     	for(Map.Entry<String,Object> ent: dict.entrySet()) {
-    		Class vCls = ent.getValue().getClass();
+    		Class vCls = ent.getValue()==null? Object.class: ent.getValue().getClass();
     		if(vCls.isArray()) {
     			vCls = vCls.getComponentType();
     		}
@@ -101,7 +111,7 @@ public class GremlinExecutor implements AutoCloseable {
     	}
 	}
     
-    private JsonObject parseResponse(Object object, String nodeId, JsonObject params) throws IOException {
+    public static JsonObject parseResponse(Object object, String nodeId, JsonObject params) throws IOException {
     	JsonObject queryResult = new JsonObject();
         String err = null;
         try {           
@@ -150,11 +160,67 @@ public class GremlinExecutor implements AutoCloseable {
 		}    
         
         return queryResult;        
+    }    
+    
+    public static JsonObject parseKeyValueResponse(JsonObject dataObject, String nodeId) throws IOException {
+    	JsonObject queryResult = new JsonObject();
+        String err = null;
+        try {           
+           
+            int rowCount = 0; //To count the number of rows
+            
+            queryResult.put("hasMore", false);
+            queryResult.put("queryId", 0);
+            queryResult.put("responseNodeId", nodeId);            
+            queryResult.put("protocolVersion", 1);
+            
+            JsonArray metaDataArray = new JsonArray();            
+
+            JsonArray dataArray = new JsonArray();
+            
+            JsonArray items = dataObject.getJsonArray("items");
+    		
+    		for(int i=0;i<items.size();i++) {
+    			JsonObject node = items.getJsonObject(i);
+    			Object value = node.getValue("value");
+    			if(value instanceof JsonObject) {
+    				JsonObject jsonValue = (JsonObject) value;
+    				JsonArray row = new JsonArray();
+    				row.add(node.getValue("key"));
+    				if(rowCount==0) {
+    					addFieldMetadata(metaDataArray,"_key",node.getValue("key").getClass().getSimpleName());
+    				}
+    				for(Map.Entry<String, Object> ent: jsonValue.getMap().entrySet()) {
+    					Object v = ent.getValue();
+    					if(rowCount==0) {
+            				JsonObject object = new JsonObject();
+            				object.put("schemaName", "default");
+            				object.put("fieldName", ent.getKey());
+            				object.put("fieldTypeName",v==null? "Object": v.getClass().getSimpleName());
+            				metaDataArray.add(object);	
+        				}
+    					row.add(v);
+    				}
+    				rowCount++;
+    				dataArray.add(row);
+    			}
+    		}
+    		if(items.size()>0) {
+	            queryResult.put("rows", dataArray); 
+	            queryResult.put("columns", metaDataArray);
+	            
+	            return queryResult;
+    		}
+            
+        } catch (Exception ex) {
+        	err = ex.getMessage();
+        	queryResult.put("error",err);        
+		}    
+        
+        return queryResult;        
     }
     
-    
-    
-    private JsonObject parseResponse(ResultSet resultSet,String nodeId,JsonObject params) throws IOException {
+    public static JsonObject parseResponse(ResultSet resultSet,String nodeId,JsonObject params) throws IOException {
     	    
         JsonObject queryResult = new JsonObject();
         String err = null;
@@ -191,7 +257,7 @@ public class GremlinExecutor implements AutoCloseable {
         return queryResult;
     }
     
-    private JsonArray parseObject(Object object, JsonArray metaDataArray,int rowCount) {
+    private static JsonArray parseObject(Object object, JsonArray metaDataArray,int rowCount) {
     	JsonArray row = new JsonArray();
     	if(object instanceof Vertex) {
         	Vertex v = (Vertex) object;
@@ -265,6 +331,26 @@ public class GremlinExecutor implements AutoCloseable {
         		}
         	}
         }
+        else if(object instanceof JsonObject) {
+        	Map<String,Object> dict = ((JsonObject)object).getMap();
+        	if(rowCount==0) {                		
+        		addFieldMetadata(metaDataArray,dict);
+        	}
+        	for(Map.Entry<String,Object> ent: dict.entrySet()) {
+        		if(ent.getValue() instanceof Object[]) {
+        			Object[] list = (Object[])ent.getValue();
+        			if(list.length==1) {
+        				row.add(list[0]);
+        			}
+        			else {
+        				row.add(ent.getValue());
+        			}
+        		}
+        		else {
+        			row.add(ent.getValue());
+        		}
+        	}
+        }
         else {
         	if(rowCount==0) {
         		addFieldMetadata(metaDataArray,"value","Object");
@@ -281,23 +367,20 @@ public class GremlinExecutor implements AutoCloseable {
      * @throws IOException If failed to parse REST result.
      * @throws Throwable If failed to send request.
      */
-    public RestResult sendRequest(Ignite ignite, String clusterId,JsonObject params) throws Throwable {
+    public RestResult sendRequest(Map<String,Object> context, String clusterId,JsonObject params) throws Throwable {
     	String code = params.getString("qry");
         try {
-        	long start = System.currentTimeMillis();    
-        	String addr = "localhost";
+        	long start = System.currentTimeMillis();
         	
         	JsonObject res = new JsonObject();
         	res.put("error",(String)null);
         	
-        	Cluster cluster = Cluster.build(addr).port(gremlinPort).create();
-        	Client client = cluster.connect();        	
-        	Map<String,Object> context = new HashMap<>();
-        	context.put("ignite_name", ignite.name());
-        	ResultSet result = client.submit(code,context);
+        	Cluster cluster = Cluster.build(gremlinAddr).port(gremlinPort).create();
+        	Client client = cluster.connect();
         	
-        	String nodeId = ignite.cluster().localNode().id().toString();
-        	JsonObject data = parseResponse(result, nodeId, params);
+        	ResultSet result = client.submit(code,context);
+
+        	JsonObject data = parseResponse(result, clusterId, params);
         	long end = System.currentTimeMillis();
         	data.put("duration", end-start);
         	res.put("result", data);

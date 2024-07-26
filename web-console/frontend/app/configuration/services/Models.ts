@@ -1,5 +1,3 @@
-
-
 import omit from 'lodash/fp/omit';
 import uuidv4 from 'uuid/v4';
 
@@ -109,7 +107,9 @@ ${scale && entity.precision && entity.scale ? ',' + entity.scale : ''}${precisio
             id: uuidv4(),
             name: '',
             indexType: 'SORTED',
-            fields: []
+            fields: [],
+            inlineSize: null,
+            inlineSizeType: -1
         });
 
         return model.indexes[model.indexes.length - 1];

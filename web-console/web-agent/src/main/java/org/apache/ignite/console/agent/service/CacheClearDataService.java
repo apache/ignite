@@ -24,11 +24,11 @@ public class CacheClearDataService implements CacheAgentService {
     private Ignite ignite;
     
 	@Override
-	public Map<String, ? extends Object> call(Map<String,Object> payload) {
-		Map<String,Object> result = new HashMap<>();
+	public ServiceResult call(Map<String,Object> payload) {
+		ServiceResult result = new ServiceResult();
 		int count = 0;		
-		JsonObject args = new JsonObject((Map)payload.get("args"));	
-		List<String> message = new ArrayList<>();	
+		JsonObject args = new JsonObject(payload);	
+		List<String> message = result.messages;	
 		List<String> caches = ClusterAgentServiceUtil.cacheSelectList(ignite,args);
 		for(String cache: caches) {
 			try {
@@ -41,7 +41,10 @@ public class CacheClearDataService implements CacheAgentService {
 				message.add(e.getMessage());
 			}
 		}
-		result.put("message", message);
+		if(message.isEmpty()) {
+			message.add("Finish clear data successfull!");
+		}
+		
 		result.put("caches", ignite.cacheNames());
 		result.put("count", count);
 		return result;

@@ -9,7 +9,8 @@ export default {
     bindings: {
         cache: '<',
         caches: '<',
-        services: '=',
+        models: '<',
+        services: '<',
         onCall: '&'
     }
 };

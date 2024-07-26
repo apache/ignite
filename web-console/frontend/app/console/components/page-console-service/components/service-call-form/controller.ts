@@ -65,7 +65,7 @@ export default class ServiceCallFormController {
 
     redeployService(force:boolean) {        
         let serviceName = 'redeployService';
-        return this.callServiceForCache(serviceName,{force});
+        return this.callServiceForGrid(serviceName,{force});
     }
 
     
@@ -75,12 +75,12 @@ export default class ServiceCallFormController {
         params = Object.assign(args,params);
         this.AgentManager.callClusterService({id: clusterId},serviceName,params).then((data) => {  
             this.$scope.status = data.status; 
+            if(data.message){
+                this.$scope.message = data.message;
+            }
             if(data.result){
                 return data.result;
-            }    
-            else if(data.message){
-                this.$scope.message = data.message;
-            }  
+            }
             return {}
         })   
        .catch((e) => {

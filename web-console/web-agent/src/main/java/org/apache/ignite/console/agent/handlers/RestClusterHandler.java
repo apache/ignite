@@ -62,9 +62,9 @@ public class RestClusterHandler extends AbstractClusterHandler {
     /** Index of alive node URI. */
     private final Map<List<String>, Integer> startIdxs = U.newHashMap(2);
     
-    /** Map of clusterId->  node URI. */
+    /** Map of clusterId ->  node URI. */
     public static final Map<String, List<String>> clusterUrlMap = U.newHashMap(2);
-    
+    /** Map of cluster id -> cluster name */
     public static final Map<String, String> clusterNameMap = U.newHashMap(2);
     
     public static final Map<String, Integer> deactivedCluster = new ConcurrentHashMap<>();    
@@ -98,16 +98,6 @@ public class RestClusterHandler extends AbstractClusterHandler {
     		urls.add(url);
     	}
     }
-    
-    public static boolean deactivedCluster(String id) {
-		Integer count = deactivedCluster.compute(id,(k,v)->{ return v==null? 1: ++v;});
-		if(count>1) {
-			
-			return true;
-		}
-		return false;
-	}
-
 
     /** {@inheritDoc} */
     @Override public RestResult restCommand(String clusterId,JsonObject params) throws Throwable {
@@ -290,10 +280,11 @@ public class RestClusterHandler extends AbstractClusterHandler {
                     log.info("Cluster topology changed, new topology: " + nid8(newTop.nids()));
                 }
                 
-                if(cluster.isEmpty()) {
-                	cluster = F.first(nodes).getConsistentId().toString();
-                	if(clusterNameMap.containsValue(cluster)) {
-                		continue;
+                if(cluster.isEmpty()) { // external node
+                	cluster = F.first(nodes).getNodeId().toString();
+                	String clusterName = F.first(nodes).getConsistentId().toString();
+                	if(!clusterNameMap.containsKey(cluster)) {
+                		clusterNameMap.put(cluster, clusterName);
                 	}
                 }
 
@@ -302,7 +293,7 @@ public class RestClusterHandler extends AbstractClusterHandler {
                 newTop.setDemo(false);
                 newTop.setActive(active);
                 newTop.setSecured(!F.isEmpty(res.getSessionToken()));
-                newTop.setName(RestClusterHandler.clusterNameMap.getOrDefault(cluster, cluster));
+                newTop.setName(clusterNameMap.getOrDefault(cluster, cluster));
 
                 latestTop = newTop;
 
@@ -318,14 +309,14 @@ public class RestClusterHandler extends AbstractClusterHandler {
                 dieTop.setName(RestClusterHandler.clusterNameMap.getOrDefault(cluster, cluster));
                 tops.add(dieTop);
                 
-                RestClusterHandler.deactivedCluster(cluster);
+                deactivedCluster.put(cluster,1);
                 latestTop = null;
             }
         }
     	
-    	for(String nodeId: deactivedCluster.keySet()) {
-    		RestClusterHandler.clusterUrlMap.remove(nodeId);
-    		RestClusterHandler.clusterNameMap.remove(nodeId);
+    	for(String clusterId: deactivedCluster.keySet()) {
+    		clusterUrlMap.remove(clusterId);
+    		clusterNameMap.remove(clusterId);
     	}
     	deactivedCluster.clear();
     	return tops;

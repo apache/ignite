@@ -200,8 +200,9 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
 				log.info("JanaGremlinServer", "listern on " + settings.host + ":" + settings.port);
 
 			} catch (Exception e) {
-				log.error("GremlinServer bind fail.", e);
-				throw new RuntimeException(e);
+				log.error("JanaGremlinServer bind fail.", e);
+				// throw new RuntimeException(e);
+				janusGraphServer = null;
 			}
 		}
 	}

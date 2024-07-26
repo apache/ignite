@@ -36,7 +36,7 @@ public class ClusterAgentServiceUtil  {
 			}
 			if(selectCaches!=null) {
 				if(!selectCaches.contains(igcache.getName())) {
-					//-continue;
+					continue;
 				}
 			}				
 			list.add(cache);

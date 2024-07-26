@@ -42,7 +42,7 @@ export default class ModelEditFormController {
         this.$scope.supportedJavaTypes = this.LegacyUtils.mkOptions(this.LegacyUtils.javaBuiltInTypes);
 
         this.formActions = [
-            {text: 'Save', icon: 'checkmark', click: () => this.save()},
+            {text: 'Save', icon: 'checkmark', click: () => this.save(false)},
             {text: 'Save and Download', icon: 'download', click: () => this.save(true)}
         ];
     }

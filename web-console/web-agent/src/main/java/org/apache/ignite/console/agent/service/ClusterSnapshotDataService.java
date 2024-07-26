@@ -33,10 +33,10 @@ public class ClusterSnapshotDataService implements ClusterAgentService {
     private Ignite ignite;
     
 	@Override
-	public Map<String, ? extends Object> call(Map<String,Object> payload) {
-		Map<String,Object> result = new HashMap<>();
+	public ServiceResult call(Map<String,Object> payload) {
+		ServiceResult result = new ServiceResult();
 		int count = 0;		
-		JsonObject args = new JsonObject((Map)payload.get("args"));	
+		JsonObject args = new JsonObject(payload);	
 		
 		String destClusterName = args.getString("dest");
 		

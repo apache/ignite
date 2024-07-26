@@ -211,6 +211,8 @@ public class AgentLauncher implements IgniteSshHelper {
 	
 	            websocket.awaitClose();
 	            
+	            websocket.close();
+	            
 	            Thread.sleep(1000);
 	        }
 	        catch (Throwable ignored) {
@@ -219,8 +221,5 @@ public class AgentLauncher implements IgniteSshHelper {
 	        	break;
 	        }
         }
-
-        // Force exit because of known issue with Jetty: HTTP client does not shutdown its threads.
-        //-System.exit(0);
     }
 }

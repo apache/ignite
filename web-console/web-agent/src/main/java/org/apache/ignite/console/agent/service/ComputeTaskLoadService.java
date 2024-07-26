@@ -38,11 +38,10 @@ public class ComputeTaskLoadService implements ClusterAgentService {
     private Ignite ignite;
     
 	@Override
-	public Map<String, ? extends Object> call(Map<String, Object> payload) {
-		
-		Map<String,Object> result = new HashMap<>();
+	public ServiceResult call(Map<String, Object> payload) {		
+		ServiceResult result = new ServiceResult();
 		int count = 0;
-		JsonObject args = new JsonObject((Map)payload.get("args"));	
+		JsonObject args = new JsonObject(payload);	
 		String task = args.getString("task");
 		if(task.indexOf('.')<0) {
 			task = "org.apache.ignite.console.agent.task."+task;
@@ -67,6 +66,7 @@ public class ComputeTaskLoadService implements ClusterAgentService {
 		            }
 		            catch (Throwable e) {
 		                ignite.log().error("DemoCancellableTask execution error", e);
+		                result.addMessage(e.getMessage());
 		            }
 					
 				}
@@ -77,7 +77,7 @@ public class ComputeTaskLoadService implements ClusterAgentService {
 		} catch (ClassNotFoundException e1) {
 			
 			e1.printStackTrace();			
-			result.put("errors", e1.getMessage());
+			result.addMessage(e1.getMessage());
 		}		
 		
 		return result;

@@ -36,29 +36,9 @@ export default class CacheServiceCallFormController {
         this.$scope.ui = this.IgniteFormUtils.formUI();
 
         this.$scope.formActions = [   
-            {text: 'Choose Service:', icon: 'plus', click: () => this.updateServices({})},
-        ];
-        
-        this.formActions$ = this.services.pipe(
-            filter((v) => v.length>0),
-            map((services) => {
-                let formActions = [ {text: 'Choose Service:', icon: 'plus', click: () => this.updateServices({})}];
-                for(let service of services){
-                    let action = {
-                        text: service.description,
-                        icon: 'checkmark',
-                        click:  () => this.confirmAndCall(service)
-                    };            
-                    formActions.push(action);
-                }                
-                return formActions;
-            })
-        ); 
-         
-        this.formActions$.subscribe((formActions)=>{
-            this.$scope.formActions = formActions;
-        });
-        
+            {text: 'Choose Service:', icon: 'plus', click: () => this.updateServices()},
+        ];        
+        setTimeout(() => this.updateServices(), 2000);
     }
 
     $onDestroy() {
@@ -89,25 +69,39 @@ export default class CacheServiceCallFormController {
         let args = this.onCall({$event: {cache: this.clonedCache}});
         let clusterId = args['id'];
         params = Object.assign(args,params);
-        this.AgentManager.callClusterService({id: clusterId},serviceName,params).then((data) => {  
-            this.$scope.status = data.status; 
+        this.AgentManager.callCacheService({id: clusterId},serviceName,params).then((data) => {  
+            this.$scope.status = data.status;
+            if(data.message){
+                this.$scope.message = data.message;                
+            }
             if(data.result){
                 return data.result;
-            }    
-            else if(data.message){
-                this.$scope.message = data.message;
-            }  
+            }
             return {}
         })   
        .catch((e) => {
-            this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);           
+            this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);                    
         });
     }
 
     reset = (forReal) => forReal ? this.clonedCache = cloneDeep(this.cache) : void 0;
 
-    updateServices(){
-        
+    updateServices(){        
+        if(this.services){
+            let formActions = []
+            for(let service of this.services){
+                let action = {
+                    text: service.description,
+                    icon: 'checkmark',
+                    click:  () => this.confirmAndCall(service)
+                };            
+                formActions.push(action);
+            }                
+            this.$scope.formActions = formActions;
+        }
+        else{
+            setTimeout(() => this.updateServices(), 2000);
+        }       
     }
     
     confirmAndCall(service) {        
