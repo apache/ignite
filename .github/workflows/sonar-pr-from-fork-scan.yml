@@ -42,7 +42,6 @@ jobs:
           name: pr-event-artifact
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          merge-multiple: true
 
       - name: Read pull request event
         shell: bash
