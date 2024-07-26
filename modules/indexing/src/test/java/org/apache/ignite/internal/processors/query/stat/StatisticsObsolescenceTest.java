@@ -105,7 +105,6 @@ public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
                         opCnt = 0;
 
                         barrier.await();
-
                         barrier.await();
                     }
                 }
@@ -121,7 +120,6 @@ public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
                 (rowCntCmp < 0 ? updatedStat.rowCount() < initStat1.rowCount() : updatedStat.rowCount() == initStat1.rowCount()));
 
             barrier.await();
-
             barrier.await();
 
             // Continuing data loading, the table is being updated. Since the row count is inreasing, we must obtain a
