@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.running;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -252,6 +253,11 @@ public final class HeavyQueriesTracker {
      */
     public void setResultSetSizeThresholdMultiplier(int rsSizeThresholdMult) {
         this.rsSizeThresholdMult = rsSizeThresholdMult <= 1 ? 1 : rsSizeThresholdMult;
+    }
+
+    /** */
+    public Set<TrackableQuery> getQueries() {
+        return qrys.keySet();
     }
 
     /**
