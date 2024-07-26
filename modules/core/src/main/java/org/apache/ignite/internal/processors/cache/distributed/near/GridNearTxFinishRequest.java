@@ -166,13 +166,11 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
             writer.onHeaderWritten();
         }
 
-        switch (writer.state()) {
-            case 21:
-                if (!writer.writeInt("miniId", miniId))
-                    return false;
+        if (writer.state() == 21) {
+            if (!writer.writeInt("miniId", miniId))
+                return false;
 
-                writer.incrementState();
-
+            writer.incrementState();
         }
 
         return true;
@@ -188,15 +186,13 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         if (!super.readFrom(buf, reader))
             return false;
 
-        switch (reader.state()) {
-            case 21:
-                miniId = reader.readInt("miniId");
+        if (reader.state() == 21) {
+            miniId = reader.readInt("miniId");
 
-                if (!reader.isLastRead())
-                    return false;
+            if (!reader.isLastRead())
+                return false;
 
-                reader.incrementState();
-
+            reader.incrementState();
         }
 
         return reader.afterMessageRead(GridNearTxFinishRequest.class);

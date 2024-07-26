@@ -1356,15 +1356,13 @@ public class IgniteTxHandler {
             GridDhtTxRemote dhtTx = ctx.tm().tx(req.version());
             GridNearTxRemote nearTx = ctx.tm().nearTx(req.version());
 
-            IgniteInternalTx anyTx = U.<IgniteInternalTx>firstNotNull(dhtTx, nearTx);
-
-            final GridCacheVersion nearTxId = anyTx != null ? anyTx.nearXidVersion() : null;
+            final GridCacheVersion nearTxId = dhtTx != null ? dhtTx.nearXidVersion() : null;
 
             if (txFinishMsgLog.isDebugEnabled())
                 txFinishMsgLog.debug("Received dht finish request [txId=" + nearTxId + ", dhtTxId=" + req.version() +
                     ", node=" + nodeId + ']');
 
-            if (anyTx == null && req.commit())
+            if (dhtTx == null && req.commit())
                 ctx.tm().addCommittedTx(null, req.version(), null);
 
             if (dhtTx != null)

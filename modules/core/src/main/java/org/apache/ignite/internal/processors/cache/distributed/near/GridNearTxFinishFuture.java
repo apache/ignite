@@ -885,7 +885,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             null,
             null,
             null,
-            null,
             0,
             0,
             tx.activeCachesDeploymentEnabled(),

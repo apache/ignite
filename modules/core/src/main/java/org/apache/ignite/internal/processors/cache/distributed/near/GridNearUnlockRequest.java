@@ -83,11 +83,6 @@ public class GridNearUnlockRequest extends GridDistributedUnlockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 9;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearUnlockRequest.class, this, super.toString());
     }

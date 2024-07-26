@@ -80,14 +80,14 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         prepareMarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId));
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         finishUnmarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId), ldr);
@@ -112,13 +112,11 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
             writer.onHeaderWritten();
         }
 
-        switch (writer.state()) {
-            case 9:
-                if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
-                    return false;
+        if (writer.state() == 9) {
+            if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
+                return false;
 
-                writer.incrementState();
-
+            writer.incrementState();
         }
 
         return true;
@@ -134,15 +132,13 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
         if (!super.readFrom(buf, reader))
             return false;
 
-        switch (reader.state()) {
-            case 9:
-                nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
+        if (reader.state() == 9) {
+            nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
 
-                if (!reader.isLastRead())
-                    return false;
+            if (!reader.isLastRead())
+                return false;
 
-                reader.incrementState();
-
+            reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDhtUnlockRequest.class);

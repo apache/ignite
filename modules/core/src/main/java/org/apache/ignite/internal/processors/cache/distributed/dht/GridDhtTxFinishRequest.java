@@ -53,11 +53,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /** Mini future ID. */
     private int miniId;
 
-    /** Pending versions with order less than one for this message (needed for commit ordering). */
-    @GridToStringInclude
-    @GridDirectCollection(GridCacheVersion.class)
-    private Collection<GridCacheVersion> pendingVers;
-
     /** Partition update counter. */
     @GridToStringInclude
     @GridDirectCollection(Long.class)
@@ -95,7 +90,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param baseVer Base version.
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
-     * @param pendingVers Pending versions.
      * @param txSize Expected transaction size.
      * @param taskNameHash Task name hash.
      * @param addDepInfo Deployment info flag.
@@ -121,7 +115,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
-        Collection<GridCacheVersion> pendingVers,
         int txSize,
         int taskNameHash,
         boolean addDepInfo,
@@ -151,7 +144,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         assert nearNodeId != null;
         assert isolation != null;
 
-        this.pendingVers = pendingVers;
         this.nearNodeId = nearNodeId;
         this.isolation = isolation;
         this.miniId = miniId;
@@ -180,7 +172,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param baseVer Base version.
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
-     * @param pendingVers Pending versions.
      * @param txSize Expected transaction size.
      * @param taskNameHash Task name hash.
      * @param updateIdxs Partition update idxs.
@@ -207,7 +198,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
-        Collection<GridCacheVersion> pendingVers,
         int txSize,
         int taskNameHash,
         boolean addDepInfo,
@@ -233,20 +223,12 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             baseVer,
             committedVers,
             rolledbackVers,
-            pendingVers,
             txSize,
             taskNameHash,
             addDepInfo,
             retVal,
             waitRemoteTxs,
             updCntrs);
-    }
-
-    /**
-     * @return Partition update counters.
-     */
-    public GridLongList partUpdateCounters() {
-        return partUpdateCnt;
     }
 
     /**
@@ -387,18 +369,12 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeCollection("pendingVers", pendingVers, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 26:
                 if (!writer.writeCollection("updCntrs", updCntrs, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 27:
+            case 26:
                 if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
@@ -457,14 +433,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 25:
-                pendingVers = reader.readCollection("pendingVers", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 26:
                 updCntrs = reader.readCollection("updCntrs", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -472,7 +440,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 reader.incrementState();
 
-            case 27:
+            case 26:
                 writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())
@@ -492,7 +460,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 28;
+        return 27;
     }
 
     /** {@inheritDoc} */

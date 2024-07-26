@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockResponse;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -45,11 +44,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 public class GridDhtLockResponse extends GridDistributedLockResponse {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Evicted readers. */
-    @GridToStringInclude
-    @GridDirectCollection(IgniteTxKey.class)
-    private Collection<IgniteTxKey> nearEvicted;
 
     /** Mini ID. */
     private IgniteUuid miniId;
@@ -91,7 +85,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @param futId Future ID.
      * @param miniId Mini future ID.
      * @param err Error.
-     * @param addDepInfo
+     * @param addDepInfo Deployment info.
      */
     public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId,
         Throwable err, boolean addDepInfo) {
@@ -100,20 +94,6 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
         assert miniId != null;
 
         this.miniId = miniId;
-    }
-
-    /**
-     * @return Evicted readers.
-     */
-    public Collection<IgniteTxKey> nearEvicted() {
-        return nearEvicted;
-    }
-
-    /**
-     * @param nearEvicted Evicted readers.
-     */
-    public void nearEvicted(Collection<IgniteTxKey> nearEvicted) {
-        this.nearEvicted = nearEvicted;
     }
 
     /**
@@ -137,7 +117,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @return Invalid partitions.
      */
     public Collection<Integer> invalidPartitions() {
-        return invalidParts == null ? Collections.<Integer>emptySet() : invalidParts;
+        return invalidParts == null ? Collections.emptySet() : invalidParts;
     }
 
     /**
@@ -158,35 +138,22 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @return Collection of preload entries.
      */
     public Collection<GridCacheEntryInfo> preloadEntries() {
-        return preloadEntries == null ? Collections.<GridCacheEntryInfo>emptyList() : preloadEntries;
+        return preloadEntries == null ? Collections.emptyList() : preloadEntries;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        if (nearEvicted != null) {
-            for (IgniteTxKey key : nearEvicted)
-                key.prepareMarshal(cctx);
-        }
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         if (preloadEntries != null)
             marshalInfos(preloadEntries, cctx.shared(), cctx.cacheObjectContext());
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        if (nearEvicted != null) {
-            for (IgniteTxKey key : nearEvicted)
-                key.finishUnmarshal(cctx, ldr);
-        }
 
         if (preloadEntries != null)
             unmarshalInfos(preloadEntries, ctx.cacheContext(cacheId), ldr);
@@ -220,12 +187,6 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeCollection("nearEvicted", nearEvicted, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
                 if (!writer.writeCollection("preloadEntries", preloadEntries, MessageCollectionItemType.MSG))
                     return false;
 
@@ -264,14 +225,6 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
                 reader.incrementState();
 
             case 13:
-                nearEvicted = reader.readCollection("nearEvicted", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
                 preloadEntries = reader.readCollection("preloadEntries", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -291,7 +244,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 15;
+        return 14;
     }
 
     /** {@inheritDoc} */
