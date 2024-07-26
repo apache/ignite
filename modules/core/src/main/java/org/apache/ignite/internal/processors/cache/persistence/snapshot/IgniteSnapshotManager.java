@@ -159,7 +159,6 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -3795,22 +3794,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "requested left the grid");
 
             queue.forEach(r -> {
-                if (r.rmtNodeId.equals(nodeId))
+                if (r.stopChecker.getAsBoolean() || r.rmtNodeId.equals(nodeId))
                     r.acceptException(ex);
             });
 
-            RemoteSnapshotFilesRecevier active0 = active;
+            RemoteSnapshotFilesRecevier task = active;
 
-            if (active0 != null && !active0.isDone() && active0.rmtNodeId.equals(nodeId)) {
-                // If the task was started, but the remote node did not start the transmission and did not send SnapshotFilesFailureMessage.
-                // Otherwise, the task will fail via TransmissionHandler#onException.
-                cctx.kernalContext().timeout().addTimeoutObject(
-                    new GridTimeoutObjectAdapter(2 * cctx.kernalContext().config().getNetworkTimeout()) {
-                        @Override public void onTimeout() {
-                            active0.acceptException(ex);
-                        }
-                    });
-            }
+            if (task != null && !task.isDone() && (task.stopChecker.getAsBoolean() || task.rmtNodeId.equals(nodeId)))
+                task.acceptException(ex);
         }
 
         /** {@inheritDoc} */
