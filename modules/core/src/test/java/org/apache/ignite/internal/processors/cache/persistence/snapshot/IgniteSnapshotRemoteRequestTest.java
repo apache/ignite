@@ -267,7 +267,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
         latch.countDown();
 
         assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), ClusterTopologyCheckedException.class,
-            "Remote node left the grid.");
+            "he node from which a snapshot has been requested left the grid");
     }
 
     /** @throws Exception If fails. */
