@@ -244,16 +244,20 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     }
 
     /** */
-    public void scheduleObsolescence(int seconds) {
-        assert seconds > 1;
+    void scheduleObsolescence(int seconds) {
+        assert seconds >= 1;
 
-        obsolescenceSchedule.getAndUpdate(curSchedule -> {
-            if (curSchedule != null)
-                curSchedule.close();
+        synchronized (obsolescenceSchedule) {
+            GridTimeoutProcessor.CancelableTask cur = obsolescenceSchedule.get();
 
-            return ctx.timeout().schedule(() -> obsolescenceBusyExecutor.execute(this::processObsolescence),
+            if (cur != null)
+                cur.close();
+
+            cur = ctx.timeout().schedule(() -> obsolescenceBusyExecutor.execute(this::processObsolescence),
                 seconds * 1000, seconds * 1000);
-        });
+
+            obsolescenceSchedule.set(cur);
+        }
     }
 
     /**

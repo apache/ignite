@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.stat;
 
 import java.util.Map;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -41,9 +42,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Test for statistics obsolescence.
  */
 public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
-    /** */
-    private long testTimeout;
-
     /** */
     @Test
     public void testObsolescenceWithInsert() throws Exception {
@@ -72,9 +70,7 @@ public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
 
         int osbInterval = 7;
 
-        testTimeout = osbInterval * 5 * 1000;
-
-        AtomicBoolean stop = new AtomicBoolean();
+        CyclicBarrier barrier = new CyclicBarrier(2);
 
         try {
             startGridsMultiThreaded(2);
@@ -96,42 +92,41 @@ public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
 
             assertEquals(preloadCnt, initStat1.rowCount() + initStat2.rowCount());
 
-            AtomicBoolean enoughDataChanged = new AtomicBoolean(false);
-
             GridTestUtils.runAsync(() -> {
                 AtomicLong key = new AtomicLong(1L);
 
                 long opCnt = 0;
 
-                while (!stop.get()) {
+                while (!barrier.isBroken()) {
                     op.accept(key.getAndIncrement());
 
+                    // Enough updates to trigger the statistics.
                     if (++opCnt == workingRowsNum / 3) {
                         opCnt = 0;
 
-                        enoughDataChanged.set(true);
+                        barrier.await();
 
-                        assertTrue(waitForCondition(() -> stop.get() || !enoughDataChanged.get(), getTestTimeout()));
+                        barrier.await();
                     }
                 }
             });
 
-            assertTrue(waitForCondition(enoughDataChanged::get, getTestTimeout()));
+            barrier.await();
 
-            waitForStatsUpdates(initStat1, osbInterval);
+            waitForStatsUpdates(initStat1, osbInterval * 2);
 
             ObjectStatisticsImpl updatedStat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
             assertTrue(rowCntCmp > 0 ? updatedStat.rowCount() > initStat1.rowCount() :
                 (rowCntCmp < 0 ? updatedStat.rowCount() < initStat1.rowCount() : updatedStat.rowCount() == initStat1.rowCount()));
 
-            enoughDataChanged.set(false);
+            barrier.await();
 
-            assertTrue(waitForCondition(enoughDataChanged::get, getTestTimeout()));
+            barrier.await();
 
             // Continuing data loading, the table is being updated. Since the row count is inreasing, we must obtain a
             // new statistics, greather than {@code firstNotEmpty}.
-            waitForStatsUpdates(updatedStat, osbInterval);
+            waitForStatsUpdates(updatedStat, osbInterval * 2);
 
             ObjectStatisticsImpl finalStat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
@@ -139,7 +134,7 @@ public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
                 (rowCntCmp < 0 ? finalStat.rowCount() < updatedStat.rowCount() : finalStat.rowCount() == updatedStat.rowCount()));
         }
         finally {
-            stop.set(true);
+            barrier.reset();
         }
     }
 
@@ -250,11 +245,6 @@ public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
         cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return testTimeout > 0 ? testTimeout : super.getTestTimeout();
     }
 
     /** {@inheritDoc} */
