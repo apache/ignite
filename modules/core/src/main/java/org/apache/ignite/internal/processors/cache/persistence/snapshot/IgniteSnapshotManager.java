@@ -164,6 +164,7 @@ import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -721,8 +722,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         busyLock.block();
 
         try {
-            snpRmtMgr.stop();
-
             restoreCacheGrpProc.interrupt(new NodeStoppingException("Node is stopping."));
 
             // Try stop all snapshot processing if not yet.
@@ -730,6 +729,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 sctx.acceptException(new NodeStoppingException(SNP_NODE_STOPPING_ERR_MSG));
 
             locSnpTasks.clear();
+
+            snpRmtMgr.stop();
 
             synchronized (snpOpMux) {
                 if (clusterSnpFut != null) {
@@ -3738,33 +3739,33 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** {@code true} if the node is stopping. */
         private boolean stopping;
 
-        /**  @param next New task for scheduling. */
-        public void submit(IgniteSnapshotManager.RemoteSnapshotFilesRecevier next) {
+        /**
+         * @param next New task for scheduling.
+         */
+        public synchronized void submit(IgniteSnapshotManager.RemoteSnapshotFilesRecevier next) {
             assert next != null;
 
-            synchronized (this) {
-                if (stopping) {
-                    next.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
+            if (stopping) {
+                next.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
 
-                    return;
-                }
+                return;
+            }
 
-                if (active != null && !active.isDone()) {
-                    queue.offer(next);
+            RemoteSnapshotFilesRecevier curr = active;
 
-                    return;
-                }
+            if (curr == null || curr.isDone()) {
+                next.listen(this::scheduleNext);
 
                 active = next;
 
-                active.listen(this::scheduleNext);
+                next.init();
             }
-
-            next.init();
+            else
+                queue.offer(next);
         }
 
         /** Schedule next async receiver. */
-        private void scheduleNext() {
+        private synchronized void scheduleNext() {
             RemoteSnapshotFilesRecevier next = queue.poll();
 
             if (next == null)
@@ -3774,38 +3775,57 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** Stopping handler. */
-        public void stop() {
-            synchronized (this) {
-                stopping = true;
-            }
+        public synchronized void stop() {
+            stopping = true;
+
+            if (active != null)
+                active.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
 
             RemoteSnapshotFilesRecevier r;
 
             while ((r = queue.poll()) != null)
                 r.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
 
-            if (active != null)
-                active.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
+            Set<RemoteSnapshotFilesRecevier> futs = activeTasks();
+            GridCompoundFuture<Void, Void> stopFut = new GridCompoundFuture<>();
+
+            try {
+                for (IgniteInternalFuture<Void> fut : futs)
+                    stopFut.add(fut);
+
+                stopFut.markInitialized().get();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
 
-        /** @param nodeId A node left the cluster. */
+        /**
+         * @param nodeId A node left the cluster.
+         */
         public void onNodeLeft(UUID nodeId) {
+            Set<RemoteSnapshotFilesRecevier> futs = activeTasks();
             ClusterTopologyCheckedException ex = new ClusterTopologyCheckedException("The node from which a snapshot has been " +
                 "requested left the grid");
 
-            Collection<UUID> requiredNodes = restoreCacheGrpProc.nodes();
-
-            boolean cleanAll = requiredNodes != null && requiredNodes.contains(nodeId);
-
-            queue.forEach(r -> {
-                if (cleanAll || r.rmtNodeId.equals(nodeId))
-                    r.acceptException(ex);
+            futs.forEach(t -> {
+                if (t.rmtNodeId.equals(nodeId))
+                    t.acceptException(ex);
             });
+        }
+
+        /**
+         * @return The set of currently scheduled tasks, some of them may be already completed.
+         */
+        private Set<RemoteSnapshotFilesRecevier> activeTasks() {
+            Set<RemoteSnapshotFilesRecevier> futs = new HashSet<>(queue);
 
             RemoteSnapshotFilesRecevier active0 = active;
 
-            if (active0 != null && !active0.isDone() && (cleanAll || active0.rmtNodeId.equals(nodeId)))
-                active0.acceptException(ex);
+            if (active0 != null)
+                futs.add(active0);
+
+            return futs;
         }
 
         /** {@inheritDoc} */
@@ -3924,12 +3944,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Override public void onException(UUID nodeId, Throwable ex) {
             RemoteSnapshotFilesRecevier task = active;
 
-            if (task == null || task.isDone())
+            if (task == null)
                 return;
 
-            task.acceptException(ex);
-
             assert task.rmtNodeId.equals(nodeId);
+
+            task.acceptException(ex);
         }
 
         /** {@inheritDoc} */

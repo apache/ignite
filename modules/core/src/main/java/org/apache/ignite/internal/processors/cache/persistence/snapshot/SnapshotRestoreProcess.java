@@ -1201,7 +1201,7 @@ public class SnapshotRestoreProcess {
         catch (Exception ex) {
             opCtx0.errHnd.accept(ex);
 
-            retFut.onDone(ex);
+            return new GridFinishedFuture<>(ex);
         }
 
         return retFut;
@@ -1838,13 +1838,6 @@ public class SnapshotRestoreProcess {
                 e -> String.format("{grpId=%d, grpName=%s}", e.getKey(), cacheGrpNames.get(e.getKey())),
                 e -> S.toStringSortedDistinct(e.getValue())))
             .toString();
-    }
-
-    /** */
-    @Nullable Collection<UUID> nodes() {
-        SnapshotRestoreContext ctx = opCtx;
-
-        return ctx == null ? null : ctx.nodes();
     }
 
     /**
