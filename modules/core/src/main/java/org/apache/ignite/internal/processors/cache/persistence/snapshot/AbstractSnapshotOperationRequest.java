@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -62,13 +64,17 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
     @GridToStringInclude
     private final long startTime;
 
+    /** IDs of the nodes that must be alive to complete the operation. */
+    @GridToStringInclude
+    protected final Set<UUID> nodes;
+
     /** Exception occurred during snapshot operation processing. */
     @GridToStringInclude
     private volatile Throwable err;
 
-    /** Snapshot metadata. */
+    /** Snapshot local metadata. */
     @GridToStringExclude
-    private transient volatile SnapshotMetadata meta;
+    private transient volatile SnapshotMetadata locMeta;
 
     /**
      * @param reqId Request ID.
@@ -77,6 +83,7 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
      * @param snpPath Snapshot directory path.
      * @param grps List of cache group names.
      * @param incIdx Incremental snapshot index.
+     * @param nodes IDs of the nodes that must be alive to complete the operation.
      */
     protected AbstractSnapshotOperationRequest(
         UUID reqId,
@@ -84,7 +91,8 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
         String snpName,
         String snpPath,
         @Nullable Collection<String> grps,
-        int incIdx
+        int incIdx,
+        Collection<UUID> nodes
     ) {
         this.reqId = reqId;
         this.opNodeId = opNodeId;
@@ -92,68 +100,54 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
         this.grps = grps;
         this.snpPath = snpPath;
         this.incIdx = incIdx;
+        this.nodes = new HashSet<>(nodes);
         this.startTime = System.currentTimeMillis();
     }
 
-    /**
-     * @return Snapshot metadata.
-     */
+    /** @return Snapshot local metadata. */
     public SnapshotMetadata meta() {
-        return meta;
+        return locMeta;
     }
 
-    /**
-     * Stores snapshot metadata.
-     */
+    /** Stores snapshot local metadata. */
     void meta(SnapshotMetadata meta) {
-        this.meta = meta;
+        this.locMeta = meta;
     }
 
-    /** */
-    void error(Throwable err) {
+    /** Stores exception occurred during snapshot operation processing. */
+    synchronized void error(Throwable err) {
         assert err != null;
 
-        this.err = err;
+        if (this.err == null)
+            this.err = err;
     }
 
-    /**
-     * @return Exception occurred during snapshot operation processing.
-     */
+    /** @return Exception occurred during snapshot operation processing. */
     public Throwable error() {
         return err;
     }
 
-    /**
-     * @return Request ID.
-     */
+    /** @return Request ID. */
     public UUID requestId() {
         return reqId;
     }
 
-    /**
-     * @return Snapshot name.
-     */
+    /** @return Snapshot name. */
     public String snapshotName() {
         return snpName;
     }
 
-    /**
-     * @return Snapshot directory path.
-     */
+    /** @return Snapshot directory path. */
     public String snapshotPath() {
         return snpPath;
     }
 
-    /**
-     * @return List of cache group names.
-     */
+    /** @return List of cache group names. */
     public @Nullable Collection<String> groups() {
         return grps;
     }
 
-    /**
-     * @return Operational node ID.
-     */
+    /** @return Operational node ID. */
     public UUID operationalNodeId() {
         return opNodeId;
     }
@@ -166,6 +160,11 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
     /** @return Start time. */
     public long startTime() {
         return startTime;
+    }
+
+    /** @return IDs of the nodes that must be alive to complete the operation. */
+    public Set<UUID> nodes() {
+        return nodes;
     }
 
     /** {@inheritDoc} */

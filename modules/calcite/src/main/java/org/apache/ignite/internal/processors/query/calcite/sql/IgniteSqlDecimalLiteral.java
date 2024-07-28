@@ -14,25 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.query.calcite.sql;
 
-package org.apache.ignite.tools.ant.beautifier;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.sql.SqlNumericLiteral;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 /**
- * Lexical token type.
+ * Class for numeric literal with exact value out of valid long type range.
  */
-enum GridJavadocTokenType {
-    /** HTML instruction.  */
-    TOKEN_INSTR,
+public class IgniteSqlDecimalLiteral extends SqlNumericLiteral {
+    /** */
+    public IgniteSqlDecimalLiteral(SqlNumericLiteral lit) {
+        super(lit.bigDecimalValue(), lit.getPrec(), lit.getScale(), lit.isExact(), lit.getParserPosition());
+    }
 
-    /** HTML comment. */
-    TOKEN_COMM,
-
-    /** HTML open tag. */
-    TOKEN_OPEN_TAG,
-
-    /** HTML close tag. */
-    TOKEN_CLOSE_TAG,
-
-    /** HTML text. */
-    TOKEN_TEXT
+    /** {@inheritDoc} */
+    @Override public RelDataType createSqlType(RelDataTypeFactory typeFactory) {
+        return typeFactory.createSqlType(SqlTypeName.DECIMAL, bigDecimalValue().precision());
+    }
 }

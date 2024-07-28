@@ -43,6 +43,7 @@ import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlMerge;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUpdate;
@@ -67,6 +68,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDecimalLiteral;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.internal.util.typedef.F;
@@ -574,5 +576,23 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
         else
             super.inferUnknownTypes(inferredType, scope, node);
+    }
+
+    /** {@inheritDoc} */
+    @Override public SqlLiteral resolveLiteral(SqlLiteral literal) {
+        if (literal instanceof SqlNumericLiteral && literal.createSqlType(typeFactory).getSqlTypeName() == SqlTypeName.BIGINT) {
+            BigDecimal bd = literal.getValueAs(BigDecimal.class);
+
+            if (bd.scale() == 0) {
+                try {
+                    bd.longValueExact();
+                }
+                catch (ArithmeticException e) {
+                    return new IgniteSqlDecimalLiteral((SqlNumericLiteral)literal);
+                }
+            }
+        }
+
+        return super.resolveLiteral(literal);
     }
 }

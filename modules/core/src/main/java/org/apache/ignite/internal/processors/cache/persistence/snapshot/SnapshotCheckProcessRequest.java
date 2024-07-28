@@ -28,8 +28,12 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-/** */
-public class SnapshotCheckOperationRequest extends AbstractSnapshotOperationRequest {
+/**
+ * Snapshot full check (validation) distributed process request.
+ *
+ * @see SnapshotCheckProcess
+ */
+public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationRequest {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -37,29 +41,34 @@ public class SnapshotCheckOperationRequest extends AbstractSnapshotOperationRequ
     @GridToStringInclude
     final boolean includeCustomHandlers;
 
-    /** */
-    @GridToStringExclude
-    transient volatile GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterInitiatorFut;
+    /** If of the operation coordinator node. One of {@link AbstractSnapshotOperationRequest#nodes}. */
+    @GridToStringInclude
+    final UUID opCoordId;
 
     /** */
     @GridToStringExclude
-    transient volatile Map<ClusterNode, List<SnapshotMetadata>> metas;
+    volatile Map<ClusterNode, List<SnapshotMetadata>> metas;
 
     /** Curent working future */
-    transient volatile GridFutureAdapter<?> fut;
+    @GridToStringExclude
+    private transient volatile GridFutureAdapter<?> fut;
 
     /**
      * @param reqId    Request ID.
      * @param opNodeId Operational node ID.
      * @param snpName  Snapshot name.
+     * @param nodes Baseline node IDs that must be alive to complete the operation..
+     * @param opCoordId Operation coordinator node id. One of {@code nodes}.
      * @param snpPath  Snapshot directory path.
      * @param grps     List of cache group names.
      * @param incIdx   Incremental snapshot index.
      * @param includeCustomHandlers   Incremental snapshot index.
      */
-    protected SnapshotCheckOperationRequest(
+    protected SnapshotCheckProcessRequest(
         UUID reqId,
         UUID opNodeId,
+        Collection<UUID> nodes,
+        UUID opCoordId,
         String snpName,
         String snpPath,
         @Nullable Collection<String> grps,
@@ -67,22 +76,29 @@ public class SnapshotCheckOperationRequest extends AbstractSnapshotOperationRequ
         boolean includeCustomHandlers,
         boolean validatePartitions
     ) {
-        super(reqId, opNodeId, snpName, snpPath, grps, incIdx);
+        super(reqId, opNodeId, snpName, snpPath, grps, incIdx, nodes);
 
+        assert nodes.contains(opCoordId);
+
+        this.opCoordId = opCoordId;
         this.includeCustomHandlers = includeCustomHandlers;
     }
 
-    /** {@inheritDoc} */
-    @Override synchronized void error(Throwable err) {
-        assert err != null;
+    /** */
+    GridFutureAdapter<?> fut() {
+        return fut;
+    }
 
-        if (error() == null)
-            super.error(err);
+    /** */
+    synchronized void fut(GridFutureAdapter<?> fut) {
+        assert fut != null;
+
+        this.fut = fut;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SnapshotCheckOperationRequest.class, this, super.toString());
+        return S.toString(SnapshotCheckProcessRequest.class, this, super.toString());
     }
 
     /** {@inheritDoc} */
@@ -96,7 +112,7 @@ public class SnapshotCheckOperationRequest extends AbstractSnapshotOperationRequ
         if (!super.equals(other))
             return false;
 
-        SnapshotCheckOperationRequest o = (SnapshotCheckOperationRequest)other;
+        SnapshotCheckProcessRequest o = (SnapshotCheckProcessRequest)other;
 
         return includeCustomHandlers == o.includeCustomHandlers;
     }

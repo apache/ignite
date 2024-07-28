@@ -386,6 +386,11 @@ public class Dump implements AutoCloseable {
         return grpDirs[0];
     }
 
+    /** @return Kernal context. */
+    public GridKernalContext context() {
+        return cctx;
+    }
+
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
         closeAllComponents(cctx);
