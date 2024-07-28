@@ -26,6 +26,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTr
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteCommunicationMessageSerializationTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlCustomParserTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlReservedWordsTest;
+import org.apache.ignite.internal.processors.tx.TransactionIsolationTest;
+import org.apache.ignite.internal.processors.tx.TransactionVisibilityTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -49,6 +51,9 @@ import org.junit.runners.Suite;
 
     ScriptTestSuite.class,
     CalciteCommunicationMessageSerializationTest.class,
+
+    TransactionIsolationTest.class,
+    TransactionVisibilityTest.class
 })
 public class IgniteCalciteTestSuite {
 }

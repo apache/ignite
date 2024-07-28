@@ -134,7 +134,14 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
          * @param lowerInclude {@code True} for inclusive lower bound.
          * @param upperInclude {@code True} for inclusive upper bound.
          */
-        public Cursor(Comparator<Row> comp, List<Row> rows, @Nullable Row lower, @Nullable Row upper, boolean lowerInclude, boolean upperInclude) {
+        public Cursor(
+            Comparator<Row> comp,
+            List<Row> rows,
+            @Nullable Row lower,
+            @Nullable Row upper,
+            boolean lowerInclude,
+            boolean upperInclude
+        ) {
             this.comp = comp;
             this.rows = rows;
             this.upper = upper;

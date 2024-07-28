@@ -70,8 +70,8 @@ public class TransactionVisibilityTest extends GridCommonAbstractTest {
             List<Cache.Entry<Integer, Integer>> scanData = cache.query(new ScanQuery<Integer, Integer>()).getAll();
 
             // Fails here.
-            assertEquals("Must see transaction related data", 1L, sqlData.get(0).get(0));
             assertEquals("Must see transaction related data", 1, scanData.size());
+            assertEquals("Must see transaction related data", 1L, sqlData.get(0).get(0));
 
             tx.commit();
         }
