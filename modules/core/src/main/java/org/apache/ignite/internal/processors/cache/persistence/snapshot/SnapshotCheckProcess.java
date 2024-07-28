@@ -188,10 +188,12 @@ public class SnapshotCheckProcess {
 
             GridFutureAdapter<?> locWorkingFut = locReq.fut();
 
-            if (locWorkingFut != null && (err == null ? locWorkingFut.onDone() : locWorkingFut.onDone(err)) && log.isInfoEnabled())
-                log.info("Finished snapshot local validation, req: " + locReq + '.');
+            boolean justFinished = locWorkingFut != null && locWorkingFut.onDone(err);
 
             requests.remove(locReq.snapshotName());
+
+            if (justFinished && log.isInfoEnabled())
+                log.info("Finished snapshot local validation, req: " + locReq + '.');
         }
 
         if (clusterOpFut == null || clusterOpFut.isDone())
