@@ -90,7 +90,7 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
         Row lowerRow = (lowerBound == null) ? null : lower;
         Row upperRow = (upperBound == null) ? null : upper;
 
-        return new Cursor(rows, lowerRow, upperRow, lowerInclude, upperInclude);
+        return new Cursor(comp, rows, lowerRow, upperRow, lowerInclude, upperInclude);
     }
 
     /**
@@ -107,7 +107,10 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
     /**
      * Cursor to navigate through a sorted list with duplicates.
      */
-    private class Cursor implements GridCursor<Row> {
+    public static class Cursor<Row> implements GridCursor<Row> {
+        /** */
+        private final Comparator<Row> comp;
+
         /** List of rows. */
         private final List<Row> rows;
 
@@ -124,13 +127,15 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
         private int idx;
 
         /**
+         * @param comp Rows comparator.
          * @param rows List of rows.
          * @param lower Lower bound.
          * @param upper Upper bound.
          * @param lowerInclude {@code True} for inclusive lower bound.
          * @param upperInclude {@code True} for inclusive upper bound.
          */
-        Cursor(List<Row> rows, @Nullable Row lower, @Nullable Row upper, boolean lowerInclude, boolean upperInclude) {
+        public Cursor(Comparator<Row> comp, List<Row> rows, @Nullable Row lower, @Nullable Row upper, boolean lowerInclude, boolean upperInclude) {
+            this.comp = comp;
             this.rows = rows;
             this.upper = upper;
             this.includeUpper = upperInclude;

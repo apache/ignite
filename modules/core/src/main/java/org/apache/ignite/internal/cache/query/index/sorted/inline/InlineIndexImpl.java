@@ -594,7 +594,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** Single cursor over multiple segments. The next value is chosen with the index row comparator. */
-    private static class SegmentedIndexCursor implements GridCursor<IndexRow> {
+    public static class SegmentedIndexCursor implements GridCursor<IndexRow> {
         /** Cursors over segments. */
         private final Queue<GridCursor<IndexRow>> cursors;
 
@@ -605,7 +605,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         private IndexRow head;
 
         /** */
-        SegmentedIndexCursor(GridCursor<IndexRow>[] cursors, SortedIndexDefinition idxDef) throws IgniteCheckedException {
+        public SegmentedIndexCursor(GridCursor<IndexRow>[] cursors, SortedIndexDefinition idxDef) throws IgniteCheckedException {
             cursorComp = new Comparator<GridCursor<IndexRow>>() {
                 private final IndexRowComparator rowComparator = idxDef.rowComparator();
 

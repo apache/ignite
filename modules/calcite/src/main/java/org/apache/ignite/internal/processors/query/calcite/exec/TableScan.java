@@ -22,9 +22,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+import java.util.Set;
+import java.util.function.Function;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
@@ -37,15 +38,14 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -75,9 +75,6 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
     private final ImmutableBitSet requiredColunms;
 
     /** */
-    private final Map<KeyCacheObject, IgniteTxEntry> txWrites;
-
-    /** */
     public TableScan(
         ExecutionContext<Row> ectx,
         CacheTableDescriptor desc,
@@ -94,7 +91,6 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
 
         factory = this.ectx.rowHandler().factory(this.ectx.getTypeFactory(), rowType);
         topVer = ectx.topologyVersion();
-        txWrites = ectx.transactionWrites(cctx.cacheId());
     }
 
     /** {@inheritDoc} */
@@ -197,6 +193,9 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
         private GridCursor<? extends CacheDataRow> cur;
 
         /** */
+        private Iterator<CacheDataRow> txIter = Collections.emptyIterator();
+
+        /** */
         private Row next;
 
         /** */
@@ -246,28 +245,29 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
                         break;
 
                     cur = part.dataStore().cursor(cctx.cacheId());
+
+                    /**
+                     * First, set of keys changed (updated or removed) inside transaction: must be skiped during index scan.
+                     * Second, list of rows inserted or updated inside transaction: must be mixed with the scan results.
+                     */
+                    IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges = IndexScan.transactionRows(
+                        ectx.getTxWriteEntries(),
+                        e -> e.cacheId() == cctx.cacheId() && e.key().partition() == part.id(),
+                        Function.identity()
+                    );
+
+                    if (!F.isEmpty(txChanges.get1())) {
+                        cur = new IndexScan.FilteredCursor<CacheDataRow>(cur, txChanges.get1(), CacheSearchRow::key);
+
+                        txIter = txChanges.get2().iterator();
+                    }
                 }
 
-                if (cur.next()) {
-                    CacheDataRow row = cur.get();
+                CacheDataRow row = cur.next()
+                    ? cur.get()
+                    : txIter.hasNext() ? txIter.next() : null;
 
-                    if (!F.isEmpty(txWrites)) {
-                        IgniteTxEntry val = txWrites.get(row.key());
-
-                        // Entry updated in TX.
-                        if (val != null) {
-                            if (val.value() == null) // Entry removed.
-                                continue;
-
-                            row = new CacheDataRowAdapter(
-                                row.key(),
-                                val.value(),
-                                val.explicitVersion(),
-                                val.ttl() == CU.TTL_NOT_CHANGED ? row.expireTime() : CU.toExpireTime(val.ttl())
-                            );
-                        }
-                    }
-
+                if (row != null) {
                     if (row.expireTime() > 0 && row.expireTime() <= U.currentTimeMillis())
                         continue;
 
@@ -283,5 +283,4 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
             }
         }
     }
-
 }

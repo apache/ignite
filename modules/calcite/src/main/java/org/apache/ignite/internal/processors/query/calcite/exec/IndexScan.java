@@ -20,10 +20,12 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.SortedSet;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -38,23 +40,26 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
+import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeSortedIndex.Cursor;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -107,6 +112,12 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
 
     /** Types of key fields stored in index. */
     private final Type[] fieldsStoreTypes;
+
+    /**
+     * First, set of keys changed (updated or removed) inside transaction: must be skiped during index scan.
+     * Second, list of rows inserted or updated inside transaction: must be mixed with the scan results.
+     */
+    private IgniteBiTuple<Set<KeyCacheObject>, List<IndexRow>> txChanges;
 
     /**
      * @param ectx Execution context.
@@ -228,6 +239,40 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             release();
 
             throw e;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridCursor<IndexRow> indexCursor(IndexRow lower, IndexRow upper, boolean lowerInclude, boolean upperInclude) {
+        GridCursor<IndexRow> idxCursor = super.indexCursor(lower, upper, lowerInclude, upperInclude);
+
+        if (F.isEmpty(ectx.getTxWriteEntries()))
+            return idxCursor;
+
+        if (txChanges == null) {
+            InlineIndexRowHandler rowHnd = idx.segment(0).rowHandler();
+
+            txChanges = transactionRows(
+                ectx.getTxWriteEntries(),
+                // TODO: Use set for partitions here.
+                e -> (cctx.cacheId() == e.cacheId()) && F.contains(parts, e.key().partition()),
+                r -> new IndexRowImpl(rowHnd, r)
+            );
+
+            txChanges.get2().sort(this::compare);
+        }
+
+        try {
+            return new InlineIndexImpl.SegmentedIndexCursor(
+                new GridCursor[]{
+                    new FilteredCursor<>(idxCursor, txChanges.get1(), r -> r.cacheDataRow().key()),
+                    new Cursor<>(this::compare, txChanges.get2(), lower, upper, lowerInclude, upperInclude)
+                },
+                idx.indexDefinition()
+            );
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -480,46 +525,28 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         }
     }
 
-    /**
-     * @return
-     */
-    private IgniteBiTuple<SortedSet<IndexRow>, SortedSet<IndexRow>> transaactionRows() {
-        if (F.isEmpty(ectx.getTxWriteEntries()))
-            return F.t(Collections.emptySortedSet(), Collections.emptySortedSet());
+    /** */
+    public static <R> IgniteBiTuple<Set<KeyCacheObject>, List<R>> transactionRows(
+        Collection<IgniteTxEntry> writes,
+        Predicate<IgniteTxEntry> filter,
+        Function<CacheDataRow, R> mapper
+    ) {
+        if (F.isEmpty(writes))
+            return F.t(Collections.emptySet(), Collections.emptyList());
 
-        InlineIndexRowHandler rowHnd = idx.segment(0).rowHandler();
+        Set<KeyCacheObject> skipKeys = new HashSet<>(writes.size());
+        List<R> mixRows = new ArrayList<>(writes.size());
 
-        // TODO: replace with sorted set
-        List<IndexRow> skipRows = new ArrayList<>();
-        List<IndexRow> mixRows = new ArrayList<>();
-
-        Collection<IgniteTxEntry> entries = ectx.getTxWriteEntries();
-
-        for (IgniteTxEntry e : entries) {
-            if (cctx.cacheId() != e.cacheId())
-                continue;
-
+        for (IgniteTxEntry e : writes) {
             assert e.key().partition() != -1;
 
-            if (!F.contains(parts, e.key().partition()))
+            if (!filter.test(e))
                 continue;
 
-            CacheObject txVal = e.value();
-            GridCacheEntryEx curVal = cctx.cache().peekEx(e.key());
+            skipKeys.add(e.key());
 
-            assert curVal != null;
-            assert curVal.rawGet() != null;
-
-            // Skip all entries modified in transaction during index scan.
-            skipRows.add(new IndexRowImpl(rowHnd, new CacheDataRowAdapter(
-                e.key(),
-                curVal.rawGet(),
-                e.explicitVersion(),
-                CU.EXPIRE_TIME_ETERNAL // TODO: FIX expire time calculation.
-            )));
-
-            if (e.value() != null) { // Mix only updated entries. In case val == null entry removed.
-                mixRows.add(new IndexRowImpl(rowHnd, new CacheDataRowAdapter(
+            if (e.value() != null) { // Mix only updated or inserted entries. In case val == null entry removed.
+                mixRows.add(mapper.apply(new CacheDataRowAdapter(
                     e.key(),
                     e.value(),
                     e.explicitVersion(),
@@ -528,6 +555,61 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             }
         }
 
-        return F.t(skipRows, mixRows);
+        return F.t(skipKeys, mixRows);
+    }
+
+    /** */
+    static class FilteredCursor<R> implements GridCursor<R> {
+        /** Sorted cursor. */
+        private final GridCursor<? extends R> cursor;
+
+        /** Sorted rows that must be skiped on {@link #cursor} iteration. */
+        private final Set<KeyCacheObject> skipKeys;
+
+        /** */
+        private final Function<R, KeyCacheObject> key;
+
+        /**
+         * @param cursor
+         * @param skipKeys
+         * @param key
+         */
+        FilteredCursor(GridCursor<? extends R> cursor, Set<KeyCacheObject> skipKeys, Function<R, KeyCacheObject> key) {
+            this.cursor = cursor;
+            this.skipKeys = skipKeys;
+            this.key = key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean next() throws IgniteCheckedException {
+            if (!cursor.next())
+                return false;
+
+            R cur = cursor.get();
+
+            while (skipKeys.contains(key.apply(cur))) {
+                if (!cursor.next())
+                    return false;
+
+                cur = cursor.get();
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public R get() throws IgniteCheckedException {
+            return cursor.get();
+        }
+    }
+
+    /** */
+    private int compare(IndexRow o1, IndexRow o2) {
+        try {
+            return InlineIndexTree.compareFullRows(o1, o2, 0, idx.segment(0).rowHandler(), idx.indexDefinition().rowComparator());
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 }

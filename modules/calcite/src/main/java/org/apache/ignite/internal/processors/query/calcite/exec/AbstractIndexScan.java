@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.SortedSet;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
@@ -31,7 +29,6 @@ import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract index scan.
@@ -69,14 +66,14 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
     /** {@inheritDoc} */
     @Override public synchronized Iterator<Row> iterator() {
         if (ranges == null)
-            return new IteratorImpl(idx.find(null, null, true, true, indexQueryContext()));
+            return new IteratorImpl(indexCursor(null, null, true, true));
 
         IgniteClosure<RangeCondition<Row>, IteratorImpl> clo = range -> {
             IdxRow lower = range.lower() == null ? null : row2indexRow(range.lower());
             IdxRow upper = range.upper() == null ? null : row2indexRow(range.upper());
 
             return new IteratorImpl(
-                idx.find(lower, upper, range.lowerInclude(), range.upperInclude(), indexQueryContext()));
+                indexCursor(lower, upper, range.lowerInclude(), range.upperInclude()));
         };
 
         if (!ranges.multiBounds()) {
@@ -89,6 +86,11 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
         }
 
         return F.flat(F.iterator(ranges, clo, true));
+    }
+
+    /** */
+    protected GridCursor<IdxRow> indexCursor(IdxRow lower, IdxRow upper, boolean lowerInclude, boolean upperInclude) {
+        return idx.find(lower, upper, lowerInclude, upperInclude, indexQueryContext());
     }
 
     /** */
@@ -114,7 +116,7 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
         private Row next;
 
         /** */
-        private IteratorImpl(@NotNull GridCursor<IdxRow> cursor, @Nullable SortedSet<IdxRow> skipRows) {
+        private IteratorImpl(@NotNull GridCursor<IdxRow> cursor) {
             this.cursor = cursor;
         }
 
