@@ -319,7 +319,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
             }
         }
 
-        return node.cache(USERS).query(new SqlFieldsQuery(sqlText)
+        return node.cache(F.first(node.cacheNames())).query(new SqlFieldsQuery(sqlText)
             .setArgs(args)
             .setTimeout(5, TimeUnit.SECONDS)
         ).getAll();

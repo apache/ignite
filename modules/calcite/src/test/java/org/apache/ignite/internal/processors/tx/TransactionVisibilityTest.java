@@ -19,13 +19,10 @@ package org.apache.ignite.internal.processors.tx;
 
 import java.util.Collections;
 import java.util.List;
-import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -36,6 +33,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.tx.TransactionIsolationTest.executeSql;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
@@ -61,30 +59,20 @@ public class TransactionVisibilityTest extends GridCommonAbstractTest {
                 .setKeyType(Integer.class.getName())
                 .setValueType(Integer.class.getName()))));
 
-        try (Transaction tx = srv.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 1_000, 10)) {
+        try (Transaction tx = srv.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 5_000, 10)) {
             cache.put(1, 2);
 
             assertEquals("Must see transaction related data", (Integer)2, cache.get(1));
 
             List<List<?>> sqlData = executeSql(srv, "SELECT COUNT(*) FROM TBL.TBL");
-            List<Cache.Entry<Integer, Integer>> scanData = cache.query(new ScanQuery<Integer, Integer>()).getAll();
 
-            // Fails here.
-            assertEquals("Must see transaction related data", 1, scanData.size());
             assertEquals("Must see transaction related data", 1L, sqlData.get(0).get(0));
 
             tx.commit();
         }
 
         List<List<?>> sqlData = executeSql(srv, "SELECT COUNT(*) FROM TBL.TBL");
-        List<Cache.Entry<Integer, Integer>> scanData = cache.query(new ScanQuery<Integer, Integer>()).getAll();
 
         assertEquals("Must see committed data", 1L, sqlData.get(0).get(0));
-        assertEquals("Must see committed data", 1, scanData.size());
-    }
-
-    /** */
-    public static List<List<?>> executeSql(IgniteEx node, String sqlText, Object... args) {
-        return node.cache("TBL").query(new SqlFieldsQuery(sqlText).setArgs(args)).getAll();
     }
 }

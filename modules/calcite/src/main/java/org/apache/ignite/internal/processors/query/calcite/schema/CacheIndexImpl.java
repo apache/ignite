@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
@@ -41,6 +43,8 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -52,11 +56,14 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.Search
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.exec.IndexFirstLastScan.createNotNullRowFilter;
+import static org.apache.ignite.internal.processors.query.calcite.exec.IndexScan.transactionRows;
 
 /**
  * Ignite scannable cache index.
@@ -200,6 +207,37 @@ public class CacheIndexImpl implements IgniteIndex {
             }
             else if (checkExpired)
                 rowFilter = IndexScan.createNotExpiredRowFilter();
+
+            if (!F.isEmpty(ectx.getTxWriteEntries())) {
+                BPlusTree.TreeRowClosure<IndexRow, IndexRow> _rowFilter = rowFilter;
+
+                IgniteBiTuple<Set<KeyCacheObject>, List<CacheDataRow>> txChanges = transactionRows(
+                    ectx.getTxWriteEntries(),
+                    e -> true,
+                    Function.identity()
+                );
+
+                if (!txChanges.get1().isEmpty()) {
+                    rowFilter = new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
+                        @Override public boolean apply(
+                            BPlusTree<IndexRow, IndexRow> tree,
+                            BPlusIO<IndexRow> io,
+                            long pageAddr,
+                            int idx
+                        ) throws IgniteCheckedException {
+                            if (!_rowFilter.apply(tree, io, pageAddr, idx))
+                                return false;
+
+                            IndexRow row = tree.getRow(io, pageAddr, idx);
+
+                            return txChanges.get1().remove(row.cacheDataRow().key());
+                        }
+                    };
+
+                    // TODO: no need to create list here.
+                    cnt += txChanges.get2().size();
+                }
+            }
 
             try {
                 for (int i = 0; i < iidx.segmentsCount(); ++i)
