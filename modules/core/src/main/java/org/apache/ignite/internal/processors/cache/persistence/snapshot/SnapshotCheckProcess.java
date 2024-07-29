@@ -107,25 +107,26 @@ public class SnapshotCheckProcess {
      * Stops the process with the passed exception.
      *
      * @param th The interrupt reason.
-     * @param rqFilter If not {@code null}, used to filter which requests/process to stop. If {@code null}, stops all the validations.
+     * @param reqFilter If not {@code null}, used to filter which requests/process to stop. If {@code null}, stops all the validations.
      */
-    void interrupt(Throwable th, @Nullable Function<SnapshotCheckProcessRequest, Boolean> rqFilter) {
+    void interrupt(Throwable th, @Nullable Function<SnapshotCheckProcessRequest, Boolean> reqFilter) {
         requests.values().forEach(req -> {
-            if (rqFilter == null || rqFilter.apply(req)) {
+            if (reqFilter == null || reqFilter.apply(req)) {
                 req.error(th);
 
-                clean(req.requestId(), th, null, null);
+                // Current long-running futures like partition validation should be requested to stop.
+                stopFuturesAndClean(req.requestId(), th, null, null);
             }
         });
     }
 
     /** Phase 2 and process finish. */
     private IgniteInternalFuture<?> reduceValidatePartsAndFinish(
-        UUID procId,
+        UUID reqId,
         Map<UUID, CheckResultDTO> results,
         Map<UUID, Throwable> errors
     ) {
-        clean(procId, null, results, errors);
+        stopFuturesAndClean(reqId, null, results, errors);
 
         return new GridFinishedFuture<>();
     }
@@ -142,7 +143,7 @@ public class SnapshotCheckProcess {
 
         assert locReq.equals(req);
 
-        // Store metas on the originator to redulte relusts later.
+        // Store metas on the originator node to form the process result (SnapshotPartitionsVerifyTaskResult) at the end.
         if (req.operationalNodeId().equals(kctx.localNodeId()))
             locReq.metas = req.metas;
 
@@ -169,8 +170,8 @@ public class SnapshotCheckProcess {
         return locPartsChkFut;
     }
 
-    /** Cleans certain snapshot validation. */
-    private void clean(
+    /** Stops current working futures. Cleans related snapshot check process. */
+    private void stopFuturesAndClean(
         UUID reqId,
         @Nullable Throwable opErr,
         @Nullable Map<UUID, CheckResultDTO> results,
@@ -193,7 +194,7 @@ public class SnapshotCheckProcess {
             requests.remove(locReq.snapshotName());
 
             if (justFinished && log.isInfoEnabled())
-                log.info("Finished snapshot local validation, req: " + locReq + '.');
+                log.info("Finished snapshot local validation [req=" + locReq + ']');
         }
 
         if (clusterOpFut == null || clusterOpFut.isDone())
@@ -241,12 +242,12 @@ public class SnapshotCheckProcess {
 
     /**
      * @param snpName Snapshot name of the validation process. If {@code null}, ignored.
-     * @param procId  If {@code snpName} is {@code null}, is used to find the operation request.
-     * @return Current snapshot checking request by {@code snpName} or {@code procId}.
+     * @param reqId  If {@code snpName} is {@code null}, is used to find the operation request.
+     * @return Current snapshot checking request by {@code snpName} or {@code reqId}.
      */
-    private @Nullable SnapshotCheckProcessRequest currentRequest(@Nullable String snpName, UUID procId) {
+    private @Nullable SnapshotCheckProcessRequest currentRequest(@Nullable String snpName, UUID reqId) {
         return snpName == null
-            ? requests.values().stream().filter(req -> req.requestId().equals(procId)).findFirst().orElse(null)
+            ? requests.values().stream().filter(req -> req.requestId().equals(reqId)).findFirst().orElse(null)
             : requests.get(snpName);
     }
 
@@ -301,17 +302,17 @@ public class SnapshotCheckProcess {
 
     /** Phase 1 end. */
     private void reducePreparationAndMetasCheck(
-        UUID procId,
+        UUID reqId,
         Map<UUID, CheckResultDTO> results,
         Map<UUID, Throwable> errors
     ) {
         if (!F.isEmpty(errors)) {
-            clean(procId, null, results, errors);
+            stopFuturesAndClean(reqId, null, results, errors);
 
             return;
         }
 
-        SnapshotCheckProcessRequest locReq = currentRequest(snpName(results), procId);
+        SnapshotCheckProcessRequest locReq = currentRequest(snpName(results), reqId);
 
         if (locReq == null || !locReq.opCoordId.equals(kctx.localNodeId()))
             return;
@@ -333,9 +334,6 @@ public class SnapshotCheckProcess {
 
             locReq.metas = metas;
 
-            if (!locReq.opCoordId.equals(kctx.localNodeId()))
-                return;
-
             SnapshotMetadataVerificationTaskResult metasRes = new SnapshotMetadataVerificationTaskResult(
                 locReq.metas,
                 SnapshotChecker.reduceMetasResults(locReq.snapshotName(), locReq.snapshotPath(), locReq.metas, null,
@@ -352,7 +350,7 @@ public class SnapshotCheckProcess {
         if (stopClusterProcErr != null)
             locReq.error(stopClusterProcErr);
 
-        phase2PartsHashes.start(procId, locReq);
+        phase2PartsHashes.start(reqId, locReq);
 
         if (log.isDebugEnabled())
             log.debug("Started partitions validation as part of the snapshot checking. Request=" + locReq + '.');
@@ -408,7 +406,7 @@ public class SnapshotCheckProcess {
             clusterOpFuts.remove(reqId);
 
             if (log.isInfoEnabled())
-                log.info("Finished snapshot checking process. Request=" + req + '.');
+                log.info("Finished snapshot checking process [req=" + req + ']');
         });
 
         clusterOpFuts.put(reqId, clusterOpFut);
