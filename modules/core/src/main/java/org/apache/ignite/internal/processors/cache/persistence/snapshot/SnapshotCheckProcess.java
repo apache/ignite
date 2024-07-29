@@ -114,8 +114,13 @@ public class SnapshotCheckProcess {
             if (reqFilter == null || reqFilter.apply(req)) {
                 req.error(th);
 
-                // Current long-running futures like partition validation should be requested to stop.
-                stopFuturesAndClean(req.requestId(), th, null, null);
+                if (req.fut() != null)
+                    req.fut().onDone(th);
+
+                GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.get(req.requestId());
+
+                if (clusterOpFut != null)
+                    clusterOpFut.onDone(th);
             }
         });
     }
@@ -306,18 +311,18 @@ public class SnapshotCheckProcess {
         Map<UUID, CheckResultDTO> results,
         Map<UUID, Throwable> errors
     ) {
-        if (!F.isEmpty(errors)) {
-            stopFuturesAndClean(reqId, null, results, errors);
+        SnapshotCheckProcessRequest locReq = currentRequest(snpName(results), reqId);
+
+        Throwable err = locReq == null ? null : locReq.error();
+
+        if (err != null || !F.isEmpty(errors)) {
+            stopFuturesAndClean(reqId, err, results, errors);
 
             return;
         }
 
-        SnapshotCheckProcessRequest locReq = currentRequest(snpName(results), reqId);
-
         if (locReq == null || !locReq.opCoordId.equals(kctx.localNodeId()))
             return;
-
-        Throwable stopClusterProcErr = null;
 
         try {
             Map<ClusterNode, List<SnapshotMetadata>> metas = new HashMap<>();
@@ -344,11 +349,11 @@ public class SnapshotCheckProcess {
                 throw new IgniteSnapshotVerifyException(metasRes.exceptions());
         }
         catch (Throwable th) {
-            stopClusterProcErr = th;
+            err = th;
         }
 
-        if (stopClusterProcErr != null)
-            locReq.error(stopClusterProcErr);
+        if (err != null)
+            locReq.error(err);
 
         phase2PartsHashes.start(reqId, locReq);
 
