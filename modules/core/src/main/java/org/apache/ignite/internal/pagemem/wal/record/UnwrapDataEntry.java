@@ -106,7 +106,12 @@ public class UnwrapDataEntry extends DataEntry {
         }
     }
 
-    /** TODO @inheritDoc} */
+    /**
+     * Unwraps previous state metadata from cache value object into primitive boxed type or source class. If client classes were
+     * used in key, call of this method requires classes to be available in classpath.
+     *
+     * @return Previous state metadata which was placed into cache. Or null for delete operation or for failure.
+     */
     public Object unwrappedPreviousStateMetadata() {
         try {
             return unwrapValue(prevStateMeta, keepBinary, cacheObjValCtx);
