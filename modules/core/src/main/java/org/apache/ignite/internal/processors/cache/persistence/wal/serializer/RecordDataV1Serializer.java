@@ -2022,11 +2022,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         buf.put(entry.flags());
 
-        CacheObject prevStare = entry.previousStateMetadata();
+        CacheObject prevState = entry.previousStateMetadata();
 
-        if (prevStare != null)
-            if (!prevStare.putValue(buf))
-                throw new AssertionError();
+        if (prevState != null && !prevState.putValue(buf))
+            throw new AssertionError();
     }
 
     /**
