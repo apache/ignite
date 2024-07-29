@@ -300,16 +300,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     }
 
     /**
-     * @param cached Entry.
-     * @return {@code True} if locked.
-     * @throws GridCacheEntryRemovedException If removed.
-     */
-    private boolean locked(GridCacheEntryEx cached) throws GridCacheEntryRemovedException {
-        // Reentry-aware check (If filter failed, lock is failed).
-        return cached.lockedLocallyByIdOrThread(lockVer, threadId);
-    }
-
-    /**
      * Adds entry to future.
      *
      * @param topVer Topology version.
@@ -632,7 +622,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                         GridCacheEntryEx cached = entries.get(i);
 
                         try {
-                            if (!locked(cached)) {
+                            if (!cached.lockedLocallyByIdOrThread(lockVer, threadId)) {
                                 if (log.isDebugEnabled())
                                     log.debug("Lock is still not acquired for entry (will keep waiting) [entry=" +
                                         cached + ", fut=" + this + ']');
