@@ -156,13 +156,6 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         return owned == null ? null : owned.get(key);
     }
 
-    /**
-     * @return Near transaction ID.
-     */
-    @Override public GridCacheVersion nearXidVersion() {
-        return null;
-    }
-
     /** {@inheritDoc} */
     @Override public void addActiveCache(GridCacheContext<?, ?> cacheCtx, boolean recovery) {
         throw new UnsupportedOperationException("Near tx doesn't track active caches.");
