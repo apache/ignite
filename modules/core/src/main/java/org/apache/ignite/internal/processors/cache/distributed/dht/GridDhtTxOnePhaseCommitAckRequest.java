@@ -96,13 +96,11 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
             writer.onHeaderWritten();
         }
 
-        switch (writer.state()) {
-            case 3:
-                if (!writer.writeCollection("vers", vers, MessageCollectionItemType.MSG))
-                    return false;
+        if (writer.state() == 3) {
+            if (!writer.writeCollection("vers", vers, MessageCollectionItemType.MSG))
+                return false;
 
-                writer.incrementState();
-
+            writer.incrementState();
         }
 
         return true;
@@ -118,15 +116,13 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
         if (!super.readFrom(buf, reader))
             return false;
 
-        switch (reader.state()) {
-            case 3:
-                vers = reader.readCollection("vers", MessageCollectionItemType.MSG);
+        if (reader.state() == 3) {
+            vers = reader.readCollection("vers", MessageCollectionItemType.MSG);
 
-                if (!reader.isLastRead())
-                    return false;
+            if (!reader.isLastRead())
+                return false;
 
-                reader.incrementState();
-
+            reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDhtTxOnePhaseCommitAckRequest.class);

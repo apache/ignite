@@ -288,14 +288,14 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         assert ctx != null;
         assert !F.isEmpty(keys);
         assert readersFlags == null || keys.size() == readersFlags.size();
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         prepareMarshalCacheObjects(keys, cctx);
     }
@@ -305,10 +305,10 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      * @param ldr Loader.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         finishUnmarshalCacheObjects(keys, cctx, ldr);
 

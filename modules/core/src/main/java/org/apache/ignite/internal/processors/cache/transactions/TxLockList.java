@@ -84,13 +84,11 @@ public class TxLockList implements Message {
             writer.onHeaderWritten();
         }
 
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeCollection("txLocks", txLocks, MessageCollectionItemType.MSG))
-                    return false;
+        if (writer.state() == 0) {
+            if (!writer.writeCollection("txLocks", txLocks, MessageCollectionItemType.MSG))
+                return false;
 
-                writer.incrementState();
-
+            writer.incrementState();
         }
 
         return true;
@@ -103,15 +101,13 @@ public class TxLockList implements Message {
         if (!reader.beforeMessageRead())
             return false;
 
-        switch (reader.state()) {
-            case 0:
-                txLocks = reader.readCollection("txLocks", MessageCollectionItemType.MSG);
+        if (reader.state() == 0) {
+            txLocks = reader.readCollection("txLocks", MessageCollectionItemType.MSG);
 
-                if (!reader.isLastRead())
-                    return false;
+            if (!reader.isLastRead())
+                return false;
 
-                reader.incrementState();
-
+            reader.incrementState();
         }
 
         return reader.afterMessageRead(TxLockList.class);
