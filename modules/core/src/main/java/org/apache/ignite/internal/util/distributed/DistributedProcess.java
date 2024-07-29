@@ -488,6 +488,16 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         /**
          * Incremental snapshot restore start phase.
          */
-        RESTORE_INCREMENTAL_SNAPSHOT_START
+        RESTORE_INCREMENTAL_SNAPSHOT_START,
+
+        /**
+         * Snapshot check metas.
+         */
+        SNAPSHOT_CHECK_METAS,
+
+        /**
+         * Snapshot validate partitions.
+         */
+        SNAPSHOT_VALIDATE_PARTS
     }
 }
