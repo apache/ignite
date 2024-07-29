@@ -123,4 +123,7 @@ public interface SortedSegmentedIndex extends Index {
      * @return amount of index tree segments.
      */
     public int segmentsCount();
+
+    /** {@inheritDoc} */
+    @Override public SortedIndexDefinition indexDefinition();
 }

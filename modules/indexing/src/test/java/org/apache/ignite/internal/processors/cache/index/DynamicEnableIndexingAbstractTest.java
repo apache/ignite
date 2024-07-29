@@ -39,8 +39,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.SortedSegmentedIndex;
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -277,12 +276,8 @@ public class DynamicEnableIndexingAbstractTest extends GridCommonAbstractTest {
 
         assertNotNull(idxDesc);
 
-        InlineIndex idx = idxDesc.index().unwrap(InlineIndex.class);
-
-        assertNotNull(idx);
-
-        if (idx instanceof InlineIndexImpl) // Check segments count only on affinity nodes (skip client indexes).
-            assertEquals(expectedParallelism, idx.segmentsCount());
+        if (idxDesc.index() instanceof SortedSegmentedIndex) // Check segments count only on affinity nodes (skip client indexes).
+            assertEquals(expectedParallelism, ((SortedSegmentedIndex)idxDesc.index()).segmentsCount());
 
         CacheConfiguration<?, ?> cfg = ig.context().cache().cacheConfiguration(POI_CACHE_NAME);
 

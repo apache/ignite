@@ -41,11 +41,6 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
         super(tbl, name, cols, type);
     }
 
-    /**
-     * @return Inline size.
-     */
-    public abstract int inlineSize();
-
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
         HashSet<Column> allColumnsSet) {

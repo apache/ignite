@@ -412,8 +412,10 @@ public class GridSubqueryJoinOptimizer {
         remapColumns(
             parent,
             subSel,
-            // reference equality used intentionally here
-            col -> wrappedSubQry == col.expressionInFrom(),
+            // In case of several nested subqueries, inner subqueries are wrapped into alias of outer subqueries,
+            // to check column belonging correctly we should unwrap aliases.
+            // Reference equality used intentionally here.
+            col -> GridSqlAlias.unwrap(wrappedSubQry) == GridSqlAlias.unwrap(col.expressionInFrom()),
             subTbl
         );
 

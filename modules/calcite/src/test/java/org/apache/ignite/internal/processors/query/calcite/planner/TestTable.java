@@ -49,8 +49,8 @@ import org.apache.ignite.internal.cache.query.index.Order;
 import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.client.ClientIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.client.ClientIndexDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.client.ClientInlineIndex;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
@@ -246,12 +246,10 @@ public class TestTable implements IgniteCacheTable {
 
         IndexDefinition idxDef = new ClientIndexDefinition(
             new IndexName(QueryUtils.createTableCacheName(DEFAULT_SCHEMA, this.name), DEFAULT_SCHEMA, this.name, name),
-            keyDefs,
-            -1,
-            -1
+            keyDefs
         );
 
-        indexes.put(name, new CacheIndexImpl(collation, name, new ClientInlineIndex(idxDef, -1), this));
+        indexes.put(name, new CacheIndexImpl(collation, name, new ClientIndex(idxDef), this));
 
         return this;
     }
