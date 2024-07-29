@@ -428,14 +428,6 @@ public class CdcSelfTest extends AbstractCdcTest {
             AtomicBoolean firstEvt = new AtomicBoolean(true);
 
             CdcConsumer cnsmr = new CdcConsumer() {
-                @Override public void start(MetricRegistry mreg) {
-                    // No-op.
-                }
-
-                @Override public void stop() {
-                    // No-op.
-                }
-
                 @Override public boolean onEvents(Iterator<CdcEvent> evts) {
                     if (!evts.hasNext())
                         return true;
@@ -468,6 +460,14 @@ public class CdcSelfTest extends AbstractCdcTest {
                 /** {@inheritDoc} */
                 @Override public void onCacheDestroy(Iterator<Integer> caches) {
                     caches.forEachRemaining(ce -> assertNotNull(ce));
+                }
+
+                @Override public void stop() {
+                    // No-op.
+                }
+
+                @Override public void start(MetricRegistry mreg) {
+                    // No-op.
                 }
             };
 
