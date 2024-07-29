@@ -25,6 +25,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,36 +40,36 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
 
     /** */
     @GridToStringInclude
-    final boolean includeCustomHandlers;
+    private final boolean includeCustomHandlers;
 
-    /** If of the operation coordinator node. One of {@link AbstractSnapshotOperationRequest#nodes}. */
+    /** ID of the initiator node. */
     @GridToStringInclude
-    final UUID opCoordId;
+    private final UUID initiatorId;
 
     /** */
     @GridToStringExclude
-    volatile Map<ClusterNode, List<SnapshotMetadata>> metas;
+    private volatile Map<ClusterNode, List<SnapshotMetadata>> metas;
 
     /** Curent working future */
     @GridToStringExclude
     private transient volatile GridFutureAdapter<?> fut;
 
     /**
-     * @param reqId    Request ID.
-     * @param opNodeId Operational node ID.
-     * @param snpName  Snapshot name.
+     * @param reqId Request ID.
+     * @param initiatorId Initiator node ID.
+     * @param opNodeId Operation coordinator node ID.
+     * @param snpName Snapshot name.
      * @param nodes Baseline node IDs that must be alive to complete the operation..
-     * @param opCoordId Operation coordinator node id. One of {@code nodes}.
-     * @param snpPath  Snapshot directory path.
-     * @param grps     List of cache group names.
-     * @param incIdx   Incremental snapshot index.
-     * @param includeCustomHandlers   Incremental snapshot index.
+     * @param snpPath Snapshot directory path.
+     * @param grps List of cache group names.
+     * @param incIdx Incremental snapshot index.
+     * @param includeCustomHandlers Incremental snapshot index.
      */
     protected SnapshotCheckProcessRequest(
         UUID reqId,
+        UUID initiatorId,
         UUID opNodeId,
         Collection<UUID> nodes,
-        UUID opCoordId,
         String snpName,
         String snpPath,
         @Nullable Collection<String> grps,
@@ -78,10 +79,25 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
     ) {
         super(reqId, opNodeId, snpName, snpPath, grps, incIdx, nodes);
 
-        assert nodes.contains(opCoordId);
+        assert !F.isEmpty(nodes);
 
-        this.opCoordId = opCoordId;
+        this.initiatorId = initiatorId;
         this.includeCustomHandlers = includeCustomHandlers;
+    }
+
+    /** */
+    UUID initiatorId() {
+        return initiatorId;
+    }
+
+    /** */
+    void metas(Map<ClusterNode, List<SnapshotMetadata>> metas) {
+        this.metas = metas;
+    }
+
+    /** */
+    Map<ClusterNode, List<SnapshotMetadata>> metas() {
+        return metas;
     }
 
     /** */
