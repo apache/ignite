@@ -4233,7 +4233,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** */
-    private CacheObject previousStateMetadata() throws IgniteCheckedException {
+    private CacheObject previousStateMetadata() {
         CacheVersionConflictResolver resolver = cctx.conflictResolver();
 
         if (resolver == null)
