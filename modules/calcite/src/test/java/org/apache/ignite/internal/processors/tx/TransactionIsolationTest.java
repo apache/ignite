@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -45,6 +46,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /** */
@@ -215,6 +217,40 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
         assertEquals(JOHN, select(1, CACHE));
         assertEquals(JOHN, select(1, SQL));
+    }
+
+    /** */
+    @Test
+    public void testVisibility() {
+        IgniteCache<Integer, Integer> cache = srv.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
+            .setName("TBL")
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setQueryEntities(Collections.singleton(new QueryEntity()
+                .setTableName("TBL")
+                .setKeyType(Integer.class.getName())
+                .setValueType(Integer.class.getName()))));
+
+        executeSql(srv, "DELETE FROM TBL.TBL");
+
+        try (Transaction tx = srv.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 5_000, 10)) {
+            List<List<?>> sqlData = executeSql(srv, "SELECT COUNT(*) FROM TBL.TBL");
+
+            assertEquals("Table must be empty", 0L, sqlData.get(0).get(0));
+
+            cache.put(1, 2);
+
+            assertEquals("Must see transaction related data", (Integer)2, cache.get(1));
+
+            sqlData = executeSql(srv, "SELECT COUNT(*) FROM TBL.TBL");
+
+            assertEquals("Must see transaction related data", 1L, sqlData.get(0).get(0));
+
+            tx.commit();
+        }
+
+        List<List<?>> sqlData = executeSql(srv, "SELECT COUNT(*) FROM TBL.TBL");
+
+        assertEquals("Must see committed data", 1L, sqlData.get(0).get(0));
     }
 
     /** */
