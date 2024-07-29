@@ -35,7 +35,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: "refs/pull/${{ github.event.number }}/merge"
-          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up JDK11
