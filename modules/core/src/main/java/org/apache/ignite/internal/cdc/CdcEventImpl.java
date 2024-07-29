@@ -49,32 +49,32 @@ public class CdcEventImpl implements CdcEvent {
     }
 
     /** {@inheritDoc} */
-    @Override public Object unwrappedKey() {
+    @Override public Object key() {
         return ((UnwrapDataEntry)(entry)).unwrappedKey();
     }
 
     /** {@inheritDoc} */
-    @Override public Object unwrappedValue() {
+    @Override public Object value() {
         return ((UnwrapDataEntry)(entry)).unwrappedValue();
     }
 
     /** {@inheritDoc} */
-    @Override public Object unwrappedPreviousStateMetadata() {
+    @Override public Object previousStateMetadata() {
         return ((UnwrapDataEntry)(entry)).unwrappedPreviousStateMetadata();
     }
 
     /** {@inheritDoc} */
-    @Override public KeyCacheObject key() {
+    @Override public KeyCacheObject keyCacheObject() {
         return entry.key();
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject value() {
+    @Override public CacheObject valueCacheObject() {
         return entry.value();
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable CacheObject previousStateMetadata() {
+    @Override public @Nullable CacheObject previousStateMetadataCacheObject() {
         return entry.previousStateMetadata();
     }
 

@@ -249,7 +249,7 @@ public class CdcSelfTest extends AbstractCdcTest {
         try {
             readAll(new UserCdcConsumer() {
                 @Override public void checkEvent(CdcEvent evt) {
-                    assertEquals(evt.unwrappedKey(), evt.unwrappedPreviousStateMetadata());
+                    assertEquals(evt.key(), evt.previousStateMetadata());
                 }
             }, true);
         }
@@ -292,9 +292,9 @@ public class CdcSelfTest extends AbstractCdcTest {
             @Override public void checkEvent(CdcEvent evt) {
                 super.checkEvent(evt);
 
-                Integer key = (Integer)evt.unwrappedKey();
+                Integer key = (Integer)evt.key();
 
-                if (evt.value() == null || key % 2 != 0) {
+                if (evt.valueCacheObject() == null || key % 2 != 0) {
                     assertEquals("Expire time must not be set [key=" + key + ']', CU.EXPIRE_TIME_ETERNAL, evt.expireTime());
 
                     return;
@@ -443,7 +443,7 @@ public class CdcSelfTest extends AbstractCdcTest {
                     if (!firstEvt.get())
                         throw new RuntimeException("Expected fail.");
 
-                    data.add((Integer)evts.next().unwrappedKey());
+                    data.add((Integer)evts.next().key());
 
                     firstEvt.set(false);
 
@@ -527,7 +527,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
                     CdcEvent evt = evts.next();
 
-                    assertEquals(expKey.get(), evt.unwrappedKey());
+                    assertEquals(expKey.get(), evt.key());
 
                     expKey.incrementAndGet();
 
@@ -819,8 +819,8 @@ public class CdcSelfTest extends AbstractCdcTest {
                         continue;
 
                     data.computeIfAbsent(
-                        F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
-                        k -> new ArrayList<>()).add((Integer)evt.unwrappedKey()
+                        F.t(evt.valueCacheObject() == null ? DELETE : UPDATE, evt.cacheId()),
+                        k -> new ArrayList<>()).add((Integer)evt.key()
                     );
 
                     if (consumeHalf.get())

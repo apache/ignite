@@ -308,7 +308,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
                     return;
 
                 data.computeIfAbsent(
-                    F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
+                    F.t(evt.valueCacheObject() == null ? DELETE : UPDATE, evt.cacheId()),
                     k -> new ArrayList<>()).add(extract(evt));
 
                 assertTrue(caches.containsKey(evt.cacheId()));
@@ -375,10 +375,10 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
             assertTrue(userTypeFound);
             assertNull(evt.version().otherClusterVersion());
 
-            if (evt.value() == null)
+            if (evt.valueCacheObject() == null)
                 return;
 
-            User user = (User)evt.unwrappedValue();
+            User user = (User)evt.value();
 
             assertTrue(user.getName().startsWith(JOHN));
             assertTrue(user.getAge() >= 42);
@@ -386,7 +386,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Integer extract(CdcEvent evt) {
-            return (Integer)evt.unwrappedKey();
+            return (Integer)evt.key();
         }
 
         /** {@inheritDoc} */

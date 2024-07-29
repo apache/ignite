@@ -41,32 +41,32 @@ public interface CdcEvent extends Serializable {
     /**
      * @return Key for the changed entry.
      */
-    public KeyCacheObject key();
+    public KeyCacheObject keyCacheObject();
 
     /**
      * @return Value for the changed entry or {@code null} in case of entry removal.
      */
-    @Nullable public CacheObject value();
+    @Nullable public CacheObject valueCacheObject();
 
     /**
      * @return Previous entry state metadata if expected.
      */
-    @Nullable public CacheObject previousStateMetadata();
+    @Nullable public CacheObject previousStateMetadataCacheObject();
 
     /**
      * @return Key which was placed into cache. Or null if failed to convert.
      */
-    public Object unwrappedKey();
+    public Object key();
 
     /**
      * @return Value which was placed into cache. Or null for delete operation or for failure.
      */
-    public Object unwrappedValue();
+    public Object value();
 
     /**
      * @return Previous entry state metadata.
      */
-    public Object unwrappedPreviousStateMetadata();
+    public Object previousStateMetadata();
 
     /**
      * @return {@code True} if event fired on primary node for partition containing this entry.
