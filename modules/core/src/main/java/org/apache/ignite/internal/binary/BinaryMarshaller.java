@@ -97,7 +97,7 @@ public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override protected <T> T unmarshal0(byte[] bytes, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override protected <T> T unmarshal0(byte[] bytes, @Nullable ClassLoader clsLdr) {
         return impl.deserialize(bytes, clsLdr);
     }
 

@@ -44,6 +44,16 @@ public class IgniteTypeSystem extends RelDataTypeSystemImpl implements Serializa
     }
 
     /** {@inheritDoc} */
+    @Override public int getDefaultPrecision(SqlTypeName typeName) {
+        // Timestamps internally stored as millis, precision more than 3 is redundant. At the same time,
+        // default Calcite precision 0 causes truncation when converting to TIMESTAMP without specifying precision.
+        if (typeName == SqlTypeName.TIMESTAMP || typeName == SqlTypeName.TIME_WITH_LOCAL_TIME_ZONE)
+            return 3;
+
+        return super.getDefaultPrecision(typeName);
+    }
+
+    /** {@inheritDoc} */
     @Override public RelDataType deriveSumType(RelDataTypeFactory typeFactory, RelDataType argumentType) {
         RelDataType sumType;
         if (argumentType instanceof BasicSqlType) {

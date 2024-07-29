@@ -84,7 +84,7 @@
         <javax.cache.version>1.0.0</javax.cache.version>
         <jboss.rmi.version>1.0.6.Final</jboss.rmi.version>
         <jetbrains.annotations.version>16.0.3</jetbrains.annotations.version>
-        <jetty.version>9.4.53.v20231009</jetty.version>
+        <jetty.version>9.4.55.v20240627</jetty.version>
         <jmh.version>1.13</jmh.version>
         <jna.version>4.5.2</jna.version>
         <jnr.posix.version>3.1.15</jnr.posix.version>
@@ -109,7 +109,7 @@
         <surefire.version>3.1.2</surefire.version>
         <tomcat.version>9.0.63</tomcat.version>
         <yardstick.version>0.8.3</yardstick.version>
-        <zookeeper.version>3.8.3</zookeeper.version>
+        <zookeeper.version>3.8.4</zookeeper.version>
         <zstd.version>1.5.5-5</zstd.version>
         <opencensus.version>0.31.1</opencensus.version>
         <commons.lang3.version>3.9</commons.lang3.version>
