@@ -41,6 +41,15 @@ public class H2QueryInfo implements TrackableQuery {
     /** Begin timestamp. */
     private final long beginTs;
 
+    /** The most recent point in time when the tracking of a long query was suspended. */
+    private volatile long lastSuspendTs;
+
+    /** External wait time. */
+    private volatile long extWait;
+
+    /** Long query time tracking suspension flag. */
+    private volatile boolean isSuspended;
+
     /** Query schema. */
     private final String schema;
 
@@ -112,6 +121,11 @@ public class H2QueryInfo implements TrackableQuery {
         return stmt.getPlanSQL();
     }
 
+    /** */
+    public long extWait() {
+        return extWait;
+    }
+
     /**
      * Print info specified by children.
      *
@@ -123,7 +137,25 @@ public class H2QueryInfo implements TrackableQuery {
 
     /** {@inheritDoc} */
     @Override public long time() {
-        return U.currentTimeMillis() - beginTs;
+        return (isSuspended ? lastSuspendTs : U.currentTimeMillis()) - beginTs - extWait;
+    }
+
+    /** */
+    public synchronized void suspendTracking() {
+        if (!isSuspended) {
+            isSuspended = true;
+
+            lastSuspendTs = U.currentTimeMillis();
+        }
+    }
+
+    /** */
+    public synchronized void resumeTracking() {
+        if (isSuspended) {
+            isSuspended = false;
+
+            extWait += U.currentTimeMillis() - lastSuspendTs;
+        }
     }
 
     /**
@@ -154,6 +186,11 @@ public class H2QueryInfo implements TrackableQuery {
         msgSb.append(']');
 
         return msgSb.toString();
+    }
+
+    /** */
+    public boolean isSuspended() {
+        return isSuspended;
     }
 
     /**
