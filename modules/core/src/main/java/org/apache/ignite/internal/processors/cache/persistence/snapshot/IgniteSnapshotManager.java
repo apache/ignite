@@ -3779,13 +3779,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 stopping = true;
             }
 
+            IgniteException ex = new IgniteException(SNP_NODE_STOPPING_ERR_MSG);
+
             RemoteSnapshotFilesRecevier r;
 
             while ((r = queue.poll()) != null)
-                r.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
+                r.acceptException(ex);
 
             if (active != null)
-                active.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
+                active.acceptException(ex);
         }
 
         /** @param nodeId A node left the cluster. */
