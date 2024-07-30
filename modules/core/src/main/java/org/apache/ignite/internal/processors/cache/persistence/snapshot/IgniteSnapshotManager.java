@@ -3770,8 +3770,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             while (next != null && next.isDone())
                 next = queue.poll();
 
-            if (next == null)
+            if (next == null) {
+                active = null;
+
                 return;
+            }
 
             submit(next);
         }
