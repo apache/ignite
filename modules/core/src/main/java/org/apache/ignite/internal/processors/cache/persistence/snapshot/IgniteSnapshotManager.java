@@ -3767,6 +3767,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private void scheduleNext() {
             RemoteSnapshotFilesRecevier next = queue.poll();
 
+            while (next != null && next.isDone())
+                next = queue.poll();
+
             if (next == null)
                 return;
 
@@ -3922,7 +3925,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Override public void onException(UUID nodeId, Throwable ex) {
             RemoteSnapshotFilesRecevier task = active;
 
-            if (task == null || task.isDone())
+            if (task == null)
                 return;
 
             assert task.rmtNodeId.equals(nodeId);
