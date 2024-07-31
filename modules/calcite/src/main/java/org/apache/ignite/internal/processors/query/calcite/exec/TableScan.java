@@ -263,9 +263,12 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
                     }
                 }
 
-                CacheDataRow row = cur.next()
-                    ? cur.get()
-                    : txIter.hasNext() ? txIter.next() : null;
+                CacheDataRow row;
+
+                if (cur.next())
+                    row = cur.get();
+                else
+                    row = txIter.hasNext() ? txIter.next() : null;
 
                 if (row != null) {
                     if (row.expireTime() > 0 && row.expireTime() <= U.currentTimeMillis())

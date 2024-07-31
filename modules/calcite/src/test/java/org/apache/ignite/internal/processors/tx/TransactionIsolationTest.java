@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.tx;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -148,9 +149,14 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
                 .setValueType(User.class.getName())
                 .setKeyFieldName("id")
                 .setFields(flds)
-                .setIndexes(Collections.singleton(new QueryIndex()
-                    .setName("IDX_FIO_USERS")
-                    .setFieldNames(Collections.singleton("fio"), true).setInlineSize(Character.BYTES * 20))))));
+                .setIndexes(Arrays.asList(
+                    new QueryIndex()
+                        .setName("IDX_FIO_USERS")
+                        .setFieldNames(Collections.singleton("fio"), true).setInlineSize(Character.BYTES * 20),
+                    new QueryIndex()
+                        .setName("IDX_USER_ID")
+                        .setFieldNames(Collections.singleton("userId"), true)
+                )))));
 
         cli.createCache(new CacheConfiguration<Integer, Integer>()
             .setName("TBL")
@@ -195,8 +201,6 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
             for (int j = 0; j < 5; j++) {
                 int id = start + j + 1;
 
-                log.info("id = " + id);
-
                 insert(F.t(id, new User(id, "User" + j))); // Intentionally repeat FIO to make same indexed keys.
             }
         }
@@ -207,10 +211,10 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
             for (int i = 0; i < 5; i++) {
                 int start = i * 10 + 5;
 
+                assertEquals(i * 10 + 1, executeSql(cli, "SELECT MIN(userid) FROM USERS.USERS WHERE userid > ?", i * 10).get(0).get(0));
+
                 for (int j = 0; j < 5; j++) {
                     int id = start + j + 1;
-
-                    log.info("id = " + id);
 
                     insert(F.t(id, new User(id, "User" + j))); // Intentionally repeat FIO to make same indexed keys.
 
@@ -223,6 +227,12 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
                     assertEquals(expTblSz, rows.size());
 
                     ensureSorted(rows, true);
+
+                    assertEquals(
+                        id,
+                        executeSql(cli, "SELECT MIN(userid) FROM USERS.USERS WHERE userid BETWEEN ? AND ?", id, 500).get(0).get(0)
+                    );
+
                 }
             }
 
@@ -231,8 +241,6 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
                 for (int j = 0; j < 5; j++) {
                     int id = start + j + 1;
-
-                    log.info("id = " + id);
 
                     delete(id);
 

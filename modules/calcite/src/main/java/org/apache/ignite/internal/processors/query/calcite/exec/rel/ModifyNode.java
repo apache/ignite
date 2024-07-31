@@ -251,6 +251,9 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
                         if (cache.get(entry.getKey()) != null)
                             throw conflictKeysException(Collections.singletonList(entry.getKey()));
 
+                        cache.put(entry.getKey(), entry.getValue());
+
+                        break;
                     case UPDATE:
                         cache.put(entry.getKey(), entry.getValue());
 

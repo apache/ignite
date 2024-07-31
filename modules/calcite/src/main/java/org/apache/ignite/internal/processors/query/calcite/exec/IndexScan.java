@@ -417,8 +417,12 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
 
         InlineIndexRowHandler rowHnd = idx.segment(0).rowHandler();
 
-        InlineIndexRowFactory rowFactory = isInlineScan() ?
-            new InlineIndexRowFactory(rowHnd.inlineIndexKeyTypes().toArray(new InlineIndexKeyType[0]), rowHnd) : null;
+        InlineIndexRowFactory rowFactory = isInlineScan()
+            ? new InlineIndexRowFactory(
+                rowHnd.inlineIndexKeyTypes().toArray(new InlineIndexKeyType[0]),
+                rowHnd,
+                !F.isEmpty(ectx.getTxWriteEntries())) // Need access to CacheDataRow to corecctly handle transcaction context.
+            : null;
 
         BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = isInlineScan() ? null : createNotExpiredRowFilter();
 
@@ -444,10 +448,12 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         /** */
         private InlineIndexRowFactory(
             InlineIndexKeyType[] keyTypes,
-            InlineIndexRowHandler idxRowHnd
+            InlineIndexRowHandler idxRowHnd,
+            boolean useCacheRow
         ) {
             this.keyTypes = keyTypes;
             this.idxRowHnd = idxRowHnd;
+            this.useCacheRow = useCacheRow;
         }
 
         /** {@inheritDoc} */
