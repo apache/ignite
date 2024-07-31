@@ -21,10 +21,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static java.lang.String.format;
 
 /** */
 public class CacheCreateCommandArg extends IgniteDataTransferObject {
@@ -35,6 +39,10 @@ public class CacheCreateCommandArg extends IgniteDataTransferObject {
     @Argument(description = "Path to the Spring XML configuration that contains " +
         "'org.apache.ignite.configuration.CacheConfiguration' beans to create caches from", example = "springXmlConfigPath")
     private String springxmlconfig;
+
+    /** */
+    @Argument(optional = true, example = "cacheName1,...,cacheNameN")
+    private String[] excludeCaches;
 
     /** */
     private String fileContent;
@@ -55,15 +63,31 @@ public class CacheCreateCommandArg extends IgniteDataTransferObject {
         }
     }
 
+    /**
+     * @param str To validate that given name is valed regex.
+     */
+    private void validateRegexes(String[] str) {
+        for (String s : str) {
+            try {
+                Pattern.compile(s);
+            }
+            catch (PatternSyntaxException e) {
+                throw new IgniteException(format("Invalid cache name regexp '%s': %s", s, e.getMessage()));
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, springxmlconfig);
+        U.writeArray(out, excludeCaches);
         U.writeString(out, fileContent);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         springxmlconfig = U.readString(in);
+        excludeCaches = U.readArray(in, String.class);
         fileContent = U.readString(in);
     }
 
@@ -76,6 +100,18 @@ public class CacheCreateCommandArg extends IgniteDataTransferObject {
     public void springxmlconfig(String springxmlconfig) {
         this.springxmlconfig = springxmlconfig;
         readFile();
+    }
+
+    /** */
+    public String[] excludeCaches() {
+        return excludeCaches;
+    }
+
+    /** */
+    public void excludeCaches(String[] excludeCaches) {
+        this.excludeCaches = excludeCaches;
+
+        validateRegexes(excludeCaches);
     }
 
     /** */

@@ -21,6 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.util.Collection;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
@@ -90,6 +91,10 @@ public class CacheCreateTask extends VisorOneNodeTask<CacheCreateCommandArg, Set
                 throw new IgniteException("Failed to create caches. Make sure that Spring XML contains '" +
                     CacheConfiguration.class.getName() + "' beans.", e);
             }
+
+            if (!F.isEmpty(arg.excludeCaches()))
+                for (String excluded : arg.excludeCaches())
+                    ccfgs.removeIf(ccfg -> ccfg.getName() != null && Pattern.compile(excluded).matcher(ccfg.getName()).matches());
 
             Collection<IgniteCache> caches = ignite.createCaches(ccfgs);
 

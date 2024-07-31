@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.Set;
+import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 
@@ -26,8 +28,9 @@ import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 public class CacheCreateCommand implements ComputeCommand<CacheCreateCommandArg, Set<String>> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Create caches from Spring XML configuration. Note that the '" +
-            SPRING.module() + "' module should be enabled";
+        return "Create caches from Spring XML configuration. Note that the '" + SPRING.module() + "' module should be enabled. " +
+            "Cache filtering options configure the set of caches that will be processed by cache command. " +
+            "Default value for --exclude-caches is empty set. ";
     }
 
     /** {@inheritDoc} */
@@ -38,5 +41,31 @@ public class CacheCreateCommand implements ComputeCommand<CacheCreateCommandArg,
     /** {@inheritDoc} */
     @Override public Class<CacheCreateTask> taskClass() {
         return CacheCreateTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(CacheCreateCommandArg arg, Set<String> res, Consumer<String> printer) {
+        logParsedArgs(arg, printer);
+
+        printer.accept(res.isEmpty() ? "No cache was created" : "Created caches: " + res);
+    }
+
+    /**
+     * Passes parsed arguments to given log consumer.
+     *
+     * @param arg arguments.
+     * @param logConsumer Logger.
+     */
+    public static void logParsedArgs(CacheCreateCommandArg arg, Consumer<String> logConsumer) {
+        SB options = new SB("The procedure task was executed with the following args: ");
+
+        options
+            .a("excluded=[")
+            .a(arg.excludeCaches() == null ? "" : String.join(", ", arg.excludeCaches()))
+            .a("], springxmlConfig=[")
+            .a(arg.springxmlconfig() == null ? "" : String.join(", ", arg.springxmlconfig()))
+            .a("]\n");
+
+        logConsumer.accept(options.toString());
     }
 }
