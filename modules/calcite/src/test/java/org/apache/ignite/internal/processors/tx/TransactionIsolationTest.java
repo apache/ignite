@@ -33,10 +33,15 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.client.ClientTransaction;
+import org.apache.ignite.client.Config;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -92,10 +97,17 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     public String delete;
 
     /** */
+    @Parameterized.Parameter(3)
+    public boolean thin;
+
+    /** */
     private static IgniteEx srv;
 
     /** */
     private static IgniteEx cli;
+
+    /** */
+    private static IgniteClient thinCli;
 
     /** */
     private TransactionConcurrency txConcurrency = TransactionConcurrency.OPTIMISTIC;
@@ -104,7 +116,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     private TransactionIsolation txIsolation = READ_COMMITTED;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "insert={0},update={1},delete={2}")
+    @Parameterized.Parameters(name = "insert={0},update={1},delete={2},thin={3}")
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
@@ -113,7 +125,8 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
         for (String insert : apis) {
             for (String update : apis) {
                 for (String delete : apis) {
-                    params.add(new Object[]{insert, update, delete});
+                    for (boolean thin : new boolean[]{false, true})
+                        params.add(new Object[]{insert, update, delete, thin});
                 }
             }
         }
@@ -133,6 +146,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
         srv = startGrids(3);
         cli = startClientGrid("client");
+        thinCli = TcpIgniteClient.start(new ClientConfiguration().setAddresses(Config.SERVER));
 
         LinkedHashMap<String, String> flds = new LinkedHashMap<>();
 
@@ -193,7 +207,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     public void testIndexScan() {
         delete(1);
 
-        assertEquals("Table must be empty", 0L, executeSql(cli, "SELECT COUNT(*) FROM USERS.USERS").get(0).get(0));
+        assertEquals("Table must be empty", 0L, executeSql("SELECT COUNT(*) FROM USERS.USERS").get(0).get(0));
 
         for (int i = 0; i < 5; i++) {
             int start = i * 10;
@@ -205,13 +219,13 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
             }
         }
 
-        assertEquals(25L, executeSql(cli, "SELECT COUNT(*) FROM USERS.USERS").get(0).get(0));
+        assertEquals(25L, executeSql("SELECT COUNT(*) FROM USERS.USERS").get(0).get(0));
 
-        try (Transaction tx = cli.transactions().txStart(txConcurrency, txIsolation, TX_TIMEOUT, TX_SIZE)) {
+        insideTx(() -> {
             for (int i = 0; i < 5; i++) {
                 int start = i * 10 + 5;
 
-                assertEquals(i * 10 + 1, executeSql(cli, "SELECT MIN(userid) FROM USERS.USERS WHERE userid > ?", i * 10).get(0).get(0));
+                assertEquals(i * 10 + 1, executeSql("SELECT MIN(userid) FROM USERS.USERS WHERE userid > ?", i * 10).get(0).get(0));
 
                 for (int j = 0; j < 5; j++) {
                     int id = start + j + 1;
@@ -220,9 +234,9 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
                     long expTblSz = 25L + i * 5 + j + 1;
 
-                    assertEquals(expTblSz, executeSql(cli, "SELECT COUNT(*) FROM USERS.USERS").get(0).get(0));
+                    assertEquals(expTblSz, executeSql("SELECT COUNT(*) FROM USERS.USERS").get(0).get(0));
 
-                    List<List<?>> rows = executeSql(cli, "SELECT fio FROM USERS.USERS ORDER BY fio");
+                    List<List<?>> rows = executeSql("SELECT fio FROM USERS.USERS ORDER BY fio");
 
                     assertEquals(expTblSz, rows.size());
 
@@ -230,9 +244,8 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
                     assertEquals(
                         id,
-                        executeSql(cli, "SELECT MIN(userid) FROM USERS.USERS WHERE userid BETWEEN ? AND ?", id, 500).get(0).get(0)
+                        executeSql("SELECT MIN(userid) FROM USERS.USERS WHERE userid BETWEEN ? AND ?", id, 500).get(0).get(0)
                     );
-
                 }
             }
 
@@ -246,20 +259,18 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
                     long expTblSz = 50L - (i * 5 + j + 1);
 
-                    assertEquals(expTblSz, executeSql(cli, "SELECT COUNT(*) FROM USERS.USERS").get(0).get(0));
+                    assertEquals(expTblSz, executeSql("SELECT COUNT(*) FROM USERS.USERS").get(0).get(0));
 
-                    List<List<?>> rows = executeSql(cli, "SELECT fio FROM USERS.USERS ORDER BY fio DESC");
+                    List<List<?>> rows = executeSql("SELECT fio FROM USERS.USERS ORDER BY fio DESC");
 
                     assertEquals(expTblSz, rows.size());
 
                     ensureSorted(rows, false);
                 }
             }
+        }, true);
 
-            tx.commit();
-        }
-
-        assertEquals(25L, executeSql(srv, "SELECT COUNT(*) FROM USERS.USERS").get(0).get(0));
+        assertEquals(25L, executeSql("SELECT COUNT(*) FROM USERS.USERS").get(0).get(0));
     }
 
     /** */
@@ -275,7 +286,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testInsert() {
-        insideRollbackedTx(() -> {
+        insideTx(() -> {
             assertNull(CACHE, select(4, CACHE));
             assertNull(SQL, select(4, SQL));
 
@@ -283,7 +294,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
             assertEquals(CACHE, JOHN, select(4, CACHE));
             assertEquals(SQL, JOHN, select(4, SQL));
-        });
+        }, false);
 
         assertNull(CACHE, select(4, CACHE));
         assertNull(SQL, select(4, SQL));
@@ -292,7 +303,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testUpdate() {
-        insideRollbackedTx(() -> {
+        insideTx(() -> {
             assertEquals(JOHN, select(1, CACHE));
             assertEquals(JOHN, select(1, SQL));
 
@@ -305,7 +316,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
             assertEquals(KYLE, select(1, CACHE));
             assertEquals(KYLE, select(1, SQL));
-        });
+        }, false);
 
         assertEquals(JOHN, select(1, CACHE));
         assertEquals(JOHN, select(1, SQL));
@@ -314,7 +325,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testDelete() {
-        insideRollbackedTx(() -> {
+        insideTx(() -> {
             assertEquals(JOHN, select(1, CACHE));
             assertEquals(JOHN, select(1, SQL));
 
@@ -322,7 +333,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
             assertNull(select(1, CACHE));
             assertNull(select(1, SQL));
-        });
+        }, false);
 
         assertEquals(JOHN, select(1, CACHE));
         assertEquals(JOHN, select(1, SQL));
@@ -331,48 +342,64 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testVisibility() {
-        executeSql(srv, "DELETE FROM TBL.TBL");
+        executeSql("DELETE FROM TBL.TBL");
 
         IgniteCache<Long, Long> cache = cli.cache("TBL");
 
-        assertEquals("Table must be empty", 0L, executeSql(srv, "SELECT COUNT(*) FROM TBL.TBL").get(0).get(0));
+        assertEquals("Table must be empty", 0L, executeSql("SELECT COUNT(*) FROM TBL.TBL").get(0).get(0));
 
         long cnt = 100;
 
         LongStream.range(1, 1 + cnt).forEach(i -> {
-            try (Transaction tx = srv.transactions().txStart(txConcurrency, txIsolation, TX_TIMEOUT, TX_SIZE)) {
+            insideTx(() -> {
                 cache.put(i, i + 1);
 
                 assertEquals("Must see transaction related data", (Long)(i + 1), cache.get(i));
 
-                List<List<?>> sqlData = executeSql(srv, "SELECT COUNT(*) FROM TBL.TBL");
+                List<List<?>> sqlData = executeSql("SELECT COUNT(*) FROM TBL.TBL");
 
                 assertEquals("Must count properly", i, sqlData.get(0).get(0));
-
-                tx.commit();
-            }
+            }, true);
         });
 
-        List<List<?>> sqlData = executeSql(srv, "SELECT COUNT(*) FROM TBL.TBL");
+        List<List<?>> sqlData = executeSql("SELECT COUNT(*) FROM TBL.TBL");
 
         assertEquals("Must see committed data", cnt, sqlData.get(0).get(0));
     }
 
     /** */
-    private void insideRollbackedTx(RunnableX test) {
-        try (Transaction tx = cli.transactions().txStart(txConcurrency, txIsolation, TX_TIMEOUT, TX_SIZE)) {
-            test.run();
+    private void insideTx(RunnableX test, boolean commit) {
+        if (thin) {
+            try (ClientTransaction tx = thinCli.transactions().txStart(txConcurrency, txIsolation, TX_TIMEOUT)) {
+                test.run();
 
-            tx.rollback();
+                if (commit)
+                    tx.commit();
+                else
+                    tx.rollback();
+            }
+
+        }
+        else {
+            try (Transaction tx = cli.transactions().txStart(txConcurrency, txIsolation, TX_TIMEOUT, TX_SIZE)) {
+                test.run();
+
+                if (commit)
+                    tx.commit();
+                else
+                    tx.rollback();
+            }
         }
     }
 
     /** */
     private User select(Integer id, String api) {
         if (api.equals(CACHE))
-            return (User)cli.cache(USERS).get(id);
+            return thin
+                ? (User)thinCli.cache(USERS).get(id)
+                : (User)cli.cache(USERS).get(id);
         else if (api.equals(SQL)) {
-            List<List<?>> res = executeSql(cli, "SELECT _VAL FROM USERS.USERS WHERE _KEY = ?", id);
+            List<List<?>> res = executeSql("SELECT _VAL FROM USERS.USERS WHERE _KEY = ?", id);
 
             assertNotNull(res);
 
@@ -386,10 +413,14 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
     /** */
     private void insert(IgniteBiTuple<Integer, User> data) {
-        if (insert.equals(CACHE))
-            cli.cache(USERS).put(data.get1(), data.get2());
+        if (insert.equals(CACHE)) {
+            if (thin)
+                thinCli.cache(USERS).put(data.get1(), data.get2());
+            else
+                cli.cache(USERS).put(data.get1(), data.get2());
+        }
         else if (insert.equals(SQL)) {
-            executeSql(cli, "INSERT INTO USERS.USERS(id, userid, fio) VALUES(?, ?, ?)",
+            executeSql("INSERT INTO USERS.USERS(id, userid, fio) VALUES(?, ?, ?)",
                 data.get1(),
                 data.get2().userId,
                 data.get2().fio);
@@ -400,10 +431,14 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
     /** */
     private void update(IgniteBiTuple<Integer, User> data) {
-        if (update.equals(CACHE))
-            cli.cache(USERS).put(data.get1(), data.get2());
+        if (update.equals(CACHE)) {
+            if (thin)
+                thinCli.cache(USERS).put(data.get1(), data.get2());
+            else
+                cli.cache(USERS).put(data.get1(), data.get2());
+        }
         else if (update.equals(SQL)) {
-            executeSql(cli, "UPDATE USERS.USERS SET userid = ?, fio = ? WHERE id = ?",
+            executeSql("UPDATE USERS.USERS SET userid = ?, fio = ? WHERE id = ?",
                 data.get2().userId,
                 data.get2().fio,
                 data.get1());
@@ -417,7 +452,7 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
         if (delete.equals(CACHE))
             cli.cache(USERS).remove(id);
         else if (delete.equals(SQL))
-            executeSql(cli, "DELETE FROM USERS.USERS WHERE id = ?", id);
+            executeSql("DELETE FROM USERS.USERS WHERE id = ?", id);
         else
             fail("Unknown delete: " + delete);
     }
@@ -451,18 +486,21 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static List<List<?>> executeSql(IgniteEx node, String sqlText, Object... args) {
+    public List<List<?>> executeSql(String sqlText, Object... args) {
         String explain = "EXPLAIN PLAN FOR ";
+
         if (!sqlText.startsWith(explain)) {
-            List<List<?>> res = executeSql(node, explain + sqlText);
-            for (List<?> r : res) {
+            List<List<?>> res = executeSql(explain + sqlText);
+            for (List<?> r : res)
                 r.forEach(System.out::println);
-            }
         }
 
-        return node.cache(F.first(node.cacheNames())).query(new SqlFieldsQuery(sqlText)
+        SqlFieldsQuery qry = new SqlFieldsQuery(sqlText)
             .setArgs(args)
-            .setTimeout(5, TimeUnit.SECONDS)
-        ).getAll();
+            .setTimeout(5, TimeUnit.SECONDS);
+
+        return thin
+            ? thinCli.query(qry).getAll()
+            : cli.cache(F.first(cli.cacheNames())).query(qry).getAll();
     }
 }
