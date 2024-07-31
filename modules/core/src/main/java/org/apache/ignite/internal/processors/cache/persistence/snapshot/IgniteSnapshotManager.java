@@ -730,7 +730,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         try {
             restoreCacheGrpProc.interrupt(stopErr);
-            checkSnpProc.interrupt(stopErr, null);
+            checkSnpProc.interrupt(stopErr);
 
             // Try stop all snapshot processing if not yet.
             for (AbstractSnapshotFutureTask<?> sctx : locSnpTasks.values())

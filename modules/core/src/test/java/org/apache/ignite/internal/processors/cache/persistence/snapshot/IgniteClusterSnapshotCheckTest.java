@@ -733,7 +733,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** Tests that concurrent snapshot full restoration (with checking) is declined when the same snapshot is being fully checked. */
     @Test
-    public void testConcurrentTheSameSnpFullRestorationWhenFullyCheckingDeclined() throws Exception {
+    public void testConcurrentFullCheckAndFullRestoreDeclined() throws Exception {
         prepareGridsAndSnapshot(3, 2, 2, false);
 
         for (int i = 0; i < G.allGrids().size(); ++i) {
@@ -808,7 +808,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** Tests that snapshot full check doesn't affect a snapshot creation. */
     @Test
-    public void testConcurrentSnpCheckAndCreate() throws Exception {
+    public void testConcurrentSnpCheckAndCreateAllowed() throws Exception {
         prepareGridsAndSnapshot(3, 2, 2, false);
 
         for (int i = 0; i < G.allGrids().size(); ++i) {
@@ -1101,7 +1101,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         ClusterNode leaving = grid(nodeToStopIdx).cluster().localNode();
 
-        boolean requredLeft = !leaving.isClient() && grid(nodeToStopIdx).cluster().currentBaselineTopology().stream()
+        boolean requredLeft = originatorIdx == nodeToStopIdx || grid(nodeToStopIdx).cluster().currentBaselineTopology().stream()
             .anyMatch(bl -> bl.consistentId().equals(leaving.consistentId()));
 
         int coordIdx = -1;

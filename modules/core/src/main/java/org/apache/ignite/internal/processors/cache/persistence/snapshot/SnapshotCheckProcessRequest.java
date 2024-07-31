@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -46,13 +45,9 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
     @GridToStringInclude
     private final UUID initiatorId;
 
-    /** */
+    /** Cluster metas to pass to the initiator with the phase 2. */
     @GridToStringExclude
-    private volatile Map<ClusterNode, List<SnapshotMetadata>> metas;
-
-    /** Curent working future */
-    @GridToStringExclude
-    private transient volatile GridFutureAdapter<?> fut;
+    @Nullable private final Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
 
     /**
      * @param reqId Request ID.
@@ -64,8 +59,9 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
      * @param grps List of cache group names.
      * @param incIdx Incremental snapshot index.
      * @param includeCustomHandlers Incremental snapshot index.
+     * @param clusterMetas Cluster snapshot metadatas.
      */
-    protected SnapshotCheckProcessRequest(
+    SnapshotCheckProcessRequest(
         UUID reqId,
         UUID initiatorId,
         UUID opNodeId,
@@ -75,7 +71,7 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
         @Nullable Collection<String> grps,
         int incIdx,
         boolean includeCustomHandlers,
-        boolean validatePartitions
+        @Nullable Map<ClusterNode, List<SnapshotMetadata>> clusterMetas
     ) {
         super(reqId, opNodeId, snpName, snpPath, grps, incIdx, nodes);
 
@@ -83,6 +79,19 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
 
         this.initiatorId = initiatorId;
         this.includeCustomHandlers = includeCustomHandlers;
+        this.clusterMetas = clusterMetas;
+    }
+
+    /**
+     * @param req Original request to extend.
+     * @param clusterMetas Cluster snapshot meadatas.
+     */
+    SnapshotCheckProcessRequest(SnapshotCheckProcessRequest req, Throwable err,
+        Map<ClusterNode, List<SnapshotMetadata>> clusterMetas) {
+        this(req.reqId, req.initiatorId, req.opNodeId, req.nodes, req.snpName, req.snpPath, req.grps, req.incIdx,
+            req.includeCustomHandlers, clusterMetas);
+
+        error(err == null ? req.error() : err);
     }
 
     /** */
@@ -91,25 +100,8 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
     }
 
     /** */
-    void metas(Map<ClusterNode, List<SnapshotMetadata>> metas) {
-        this.metas = metas;
-    }
-
-    /** */
-    Map<ClusterNode, List<SnapshotMetadata>> metas() {
-        return metas;
-    }
-
-    /** */
-    GridFutureAdapter<?> fut() {
-        return fut;
-    }
-
-    /** */
-    synchronized void fut(GridFutureAdapter<?> fut) {
-        assert fut != null;
-
-        this.fut = fut;
+    Map<ClusterNode, List<SnapshotMetadata>> clusterMetas() {
+        return clusterMetas;
     }
 
     /** {@inheritDoc} */

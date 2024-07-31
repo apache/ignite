@@ -115,11 +115,8 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
     }
 
     /** Stores exception occurred during snapshot operation processing. */
-    synchronized void error(Throwable err) {
-        assert err != null;
-
-        if (this.err == null)
-            this.err = err;
+    void error(Throwable err) {
+        this.err = err;
     }
 
     /** @return Exception occurred during snapshot operation processing. */
