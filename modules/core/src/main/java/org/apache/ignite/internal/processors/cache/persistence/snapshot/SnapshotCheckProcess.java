@@ -83,33 +83,33 @@ public class SnapshotCheckProcess {
         phase2PartsHashes = new DistributedProcess<>(kctx, SNAPSHOT_VALIDATE_PARTS, this::validateParts,
             this::reduceValidatePartsAndFinish);
 
-        // Discovery-managed thread.
-        kctx.event().addLocalEventListener((evt) -> {
-            DiscoveryEvent devt = (DiscoveryEvent)evt;
+        kctx.event().addLocalEventListener(evt -> onNodeLeft(((DiscoveryEvent)evt).eventNode().id()), EVT_NODE_FAILED, EVT_NODE_LEFT);
+    }
 
-            Throwable err = new ClusterTopologyCheckedException("Snapshot checking stopped. " +
-                "A required node or the initiator node left the cluster: " + devt.eventNode() + '.');
+    /** Expected to run in a discovery-managed thread. */
+    private void onNodeLeft(UUID nodeId) {
+        Throwable err = new ClusterTopologyCheckedException("Snapshot checking stopped. " +
+            "A required node or the initiator node left the cluster [nodeId=" + nodeId + ']');
 
-            Iterator<Map.Entry<String, SnapshotCheckContext>> it = contexts.entrySet().iterator();
+        Iterator<Map.Entry<String, SnapshotCheckContext>> it = contexts.entrySet().iterator();
 
-            while (it.hasNext()) {
-                SnapshotCheckContext ctx = it.next().getValue();
+        while (it.hasNext()) {
+            SnapshotCheckContext ctx = it.next().getValue();
 
-                if (!workingNode(ctx.req, devt.eventNode().id()))
-                    continue;
+            if (!workingNode(ctx.req, nodeId))
+                continue;
 
-                if (ctx.fut != null)
-                    ctx.fut.onDone(err);
+            if (ctx.fut != null)
+                ctx.fut.onDone(err);
 
-                it.remove();
+            it.remove();
 
-                if (ctx.req.initiatorId().equals(kctx.localNodeId())) {
-                    assert clusterOpFuts.get(ctx.req.reqId) != null;
+            if (ctx.req.initiatorId().equals(kctx.localNodeId())) {
+                assert clusterOpFuts.get(ctx.req.reqId) != null;
 
-                    clusterOpFuts.get(ctx.req.reqId).onDone(err);
-                }
+                clusterOpFuts.get(ctx.req.reqId).onDone(err);
             }
-        }, EVT_NODE_FAILED, EVT_NODE_LEFT);
+        }
     }
 
     /** */

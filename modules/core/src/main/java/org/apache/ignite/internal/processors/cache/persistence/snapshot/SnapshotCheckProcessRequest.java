@@ -86,8 +86,7 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
      * @param req Original request to extend.
      * @param clusterMetas Cluster snapshot meadatas.
      */
-    SnapshotCheckProcessRequest(SnapshotCheckProcessRequest req, Throwable err,
-        Map<ClusterNode, List<SnapshotMetadata>> clusterMetas) {
+    SnapshotCheckProcessRequest(SnapshotCheckProcessRequest req, Throwable err, Map<ClusterNode, List<SnapshotMetadata>> clusterMetas) {
         this(req.reqId, req.initiatorId, req.opNodeId, req.nodes, req.snpName, req.snpPath, req.grps, req.incIdx,
             req.includeCustomHandlers, clusterMetas);
 
