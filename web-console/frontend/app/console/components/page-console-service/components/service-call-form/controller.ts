@@ -71,9 +71,9 @@ export default class ServiceCallFormController {
     
     callServiceForGrid(serviceName:string,params) {
         let args = this.onCall({$event: {serviceName: this.clonedService}});
-        let clusterId = args['id'];
+        let clusterId = args['clusterId'];
         params = Object.assign(args,params);
-        this.AgentManager.callClusterService({id: clusterId},serviceName,params).then((data) => {  
+        this.AgentManager.callClusterService({id: clusterId},serviceName,args).then((data) => {  
             this.$scope.status = data.status; 
             if(data.message){
                 this.$scope.message = data.message;

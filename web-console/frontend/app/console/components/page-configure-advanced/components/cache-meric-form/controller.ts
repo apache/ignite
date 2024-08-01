@@ -70,7 +70,7 @@ export default class CacheEditFormController {
         this.$scope.ui = this.IgniteFormUtils.formUI();
 
         this.formActions = [
-            {text: 'Save', icon: 'checkmark', click: () => this.save()},
+            {text: 'Save', icon: 'checkmark', click: () => this.save(false)},
             {text: 'Save and Start', icon: 'download', click: () => this.save(true)}
         ];
 
@@ -110,8 +110,19 @@ export default class CacheEditFormController {
         
         for(let task of this.cacheDataProvider){
             task.group = task.targetCluster
-            if(!task.name){
-                task.name = 'Data from '+task.source+' to '+ task.target
+            if(this.clusters){
+                var targetCluster = '';
+                var sourceCluster = ''
+                for(let c of this.clusters){
+                    if(c.id == task.targetCluster){
+                        targetCluster = c.name + '.'
+                        task.group = c.name
+                    }
+                    if(c.id == task.sourceCluster){
+                        sourceCluster = c.name + '.'
+                    }
+                }
+                task.name = 'Data from ' + sourceCluster + task.source + ' to ' + targetCluster + task.target                
             }
                 
             let stat = this.TaskFlows.saveBasic(task).

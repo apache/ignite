@@ -193,7 +193,7 @@ export default class ServiceController {
     }
 
     call(itemIDs: Array<string>, serviceName: string) {
-       this.callService(serviceName,{services:itemIDs}).then((data) => {
+       this.callService(serviceName,{services: itemIDs,clusterId: this.clusterID}).then((data) => {
             if(data.message){
                 this.message = data.message;
             }
@@ -257,6 +257,6 @@ export default class ServiceController {
     }
 
     onCall({name, updated}) {
-        return {id: this.clusterID, serviceName:name, updated:updated};
+        return {clusterId: this.clusterID, serviceName:name, updated:updated};
     }
 }

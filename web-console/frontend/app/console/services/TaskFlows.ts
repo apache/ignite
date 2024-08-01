@@ -63,14 +63,6 @@ export default class TaskFlows {
         {value: 'Custom', label: 'Custom'},
         {value: null, label: 'Not set'}
     ];
-    
-    diskPageCompression = [
-        {value: 'SKIP_GARBAGE', label: 'SKIP_GARBAGE'},
-        {value: 'ZSTD', label: 'ZSTD'},
-        {value: 'LZ4', label: 'LZ4'},
-        {value: 'SNAPPY', label: 'SNAPPY'},
-        {value: null, label: 'Disabled'}
-    ];
 
     taskFlowStoreFactory = {
         kind: {
@@ -126,11 +118,11 @@ export default class TaskFlows {
     }
 
     getTaskFlowsOfSource(clusterID: string,cacheID: string) {
-        return this.$http.get(`/api/v1/taskflow/group/${clusterID}?source=`+cacheID);
+        return this.$http.get(`/api/v1/taskflow/group/*?source=`+cacheID+'&sourceCluster='+clusterID);
     }
     
     getTaskFlowsOfTarget(clusterID: string,cacheID: string) {
-        return this.$http.get(`/api/v1/taskflow/group/${clusterID}?target=`+cacheID);
+        return this.$http.get(`/api/v1/taskflow/cluster/${clusterID}?target=`+cacheID);
     }
     
     removeTaskFlowOfGroup(clusterID: string) {

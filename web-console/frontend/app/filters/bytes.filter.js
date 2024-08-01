@@ -9,7 +9,7 @@ export default () => {
         if (bytes === 0)
             return '0 bytes';
 
-        if (isNaN(parseFloat(bytes)) || !isFinite(bytes))
+        if (isNaN(bytes) || !isFinite(bytes))
             return '-';
 
         if (typeof precision === 'undefined')

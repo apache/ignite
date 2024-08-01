@@ -19,7 +19,7 @@ import ConfigSelectors from '../../store/selectors';
 import Caches from '../../services/Caches';
 import Clusters from '../../services/Clusters';
 import IgniteVersion from 'app/services/Version.service';
-import {default as ConfigChangesGuard} from '../../services/ConfigChangesGuard';
+import ConfigChangesGuard from '../../services/ConfigChangesGuard';
 import {UIRouter} from '@uirouter/angularjs';
 import FormUtils from 'app/services/FormUtils.service';
 import AgentManager from 'app/modules/agent/AgentManager.service';
@@ -41,7 +41,7 @@ export default class PageConfigureBasicController {
         private Caches: Caches,
         private IgniteVersion: IgniteVersion,
         private $element: JQLite,
-        private ConfigChangesGuard: ReturnType<typeof ConfigChangesGuard>,
+        private ConfigChangesGuard: ConfigChangesGuard<any>,
         private IgniteFormUtils: ReturnType<typeof FormUtils>,
         private AgentManager: AgentManager,
         private ConfigurationDownload: ConfigurationDownload,

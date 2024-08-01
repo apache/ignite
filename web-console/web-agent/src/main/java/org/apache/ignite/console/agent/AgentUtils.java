@@ -320,15 +320,12 @@ public class AgentUtils {
      * @param unit the time unit of the timeout argument
      * @throws Exception If failed to send event.
      */
-    public static void send(Session ses, WebSocketResponse evt, long timeout, TimeUnit unit) throws Exception {
-        Future<Void> fut = ses.getRemote().sendStringByFuture(toJson(evt));
+    public static void send(Session ses, WebSocketResponse evt, long timeout, TimeUnit unit) throws Exception {        
 
         try {
-            fut.get(timeout, unit);
+        	ses.getRemote().sendString(toJson(evt));
         }
-        catch (TimeoutException e) {
-            fut.cancel(true);
-
+        catch (IOException e) {
             throw e;
         }
     }

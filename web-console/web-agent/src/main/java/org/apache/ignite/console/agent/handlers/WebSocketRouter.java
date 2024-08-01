@@ -46,6 +46,7 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -78,6 +79,7 @@ import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.console.agent.service.CacheAgentService;
 import org.apache.ignite.console.agent.service.ClusterAgentService;
 import org.apache.ignite.console.agent.service.ClusterAgentServiceManager;
+import org.apache.ignite.console.agent.service.ClusterAgentServiceUtil;
 import org.apache.ignite.console.agent.service.ServiceResult;
 import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.ignite.console.utils.Utils;
@@ -96,6 +98,7 @@ import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.ignite.services.Service;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -103,7 +106,6 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.slf4j.LoggerFactory;
 
@@ -179,12 +181,12 @@ public class WebSocketRouter implements AutoCloseable {
 
         watcher = new ClustersWatcher(cfg, clusterHnd,demoClusterHnd,dbHnd,vertxClusterHnd);
         
-        httpClient = new HttpClient(createServerSslFactory(cfg));
+        // createServerSslFactory(cfg)
+        httpClient = new HttpClient();
         httpClient.setMaxConnectionsPerDestination(2);
         httpClient.setConnectBlocking(false);
         httpClient.setConnectTimeout(1000);
         httpClient.setFollowRedirects(false);
-        httpClient.setExecutor(RestExecutor.executor);
         
         
         // TODO GG-18379 Investigate how to establish native websocket connection with proxy.
@@ -235,9 +237,7 @@ public class WebSocketRouter implements AutoCloseable {
      * Stop websocket client.
      */
     private void stopClient() {
-        LT.clear();
-
-        watcher.stop();
+        LT.clear();        
 
         if (client != null) {
             try {
@@ -254,7 +254,7 @@ public class WebSocketRouter implements AutoCloseable {
     /** {@inheritDoc} */
     @Override public void close() {
         log.info("Stopping Web Console Agent...");
-        
+        watcher.stop();
         vertxClusterHnd.close();
         dbHnd.close();
         demoClusterHnd.close();
@@ -263,7 +263,7 @@ public class WebSocketRouter implements AutoCloseable {
         stopClient();
         
         httpClient.destroy();
-
+        
         watcher.close();
     }
 
@@ -289,14 +289,13 @@ public class WebSocketRouter implements AutoCloseable {
 
             
             client = new WebSocketClient(httpClient); 
-            client.getPolicy().setMaxTextMessageSize(1024*1024);
-            client.getPolicy().setMaxBinaryMessageSize(1024*1024);
-            client.getPolicy().setMaxTextMessageBufferSize(1024*1024);
-            client.getPolicy().setMaxBinaryMessageBufferSize(1024*1024);            
+                     
             
             client.start();
-            Session session = client.connect(this, URI.create(cfg.serverUri()).resolve(AGENTS_PATH)).get(5L, TimeUnit.SECONDS);
-            session.setIdleTimeout(60*60000);            
+            Session session = client.connect(this, URI.create(cfg.serverUri()).resolve(AGENTS_PATH)).get(5L, TimeUnit.SECONDS);            
+            session.getPolicy().setMaxTextMessageSize(1024*1024);
+            session.getPolicy().setMaxBinaryMessageSize(1024*1024);            
+            session.setIdleTimeout(Duration.ofMinutes(600)); 
             
             reconnectCnt.set(0);
             
@@ -690,9 +689,9 @@ public class WebSocketRouter implements AutoCloseable {
         			}
             		
             		CacheAgentService agentSeervice = (CacheAgentService)(serviceObject);
-            		runningServices.put(serviceName,agentSeervice);
+            		runningServices.put(serviceName,agentSeervice);            		
             		ServiceResult result = agentSeervice.call(args.getMap());
-            		runningServices.remove(serviceName);
+            		runningServices.remove(serviceName);            		
             		return result.toJson();
             		
             	}

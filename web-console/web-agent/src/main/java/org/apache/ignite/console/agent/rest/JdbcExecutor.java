@@ -204,7 +204,7 @@ public class JdbcExecutor implements AutoCloseable {
             		ArrayNode arr = new ArrayNode(jsonNodeFactory);   
             		ObjectNode cachesMap = new ObjectNode(jsonNodeFactory);
                     for (DbTable table: meta) {
-                    	ObjectNode caches = cachesMap.withObject(table.getSchema());
+                    	ObjectNode caches = cachesMap.withObject("/"+table.getSchema());
                     	if(caches.isEmpty()) {
                     		caches.put("cacheName",table.getSchema());
                     		arr.add(caches);
@@ -212,10 +212,10 @@ public class JdbcExecutor implements AutoCloseable {
                     	
                     	String typeName = table.getTable();
                     	                    	
-                    	ArrayNode types = caches.withArray("types");  
+                    	ArrayNode types = caches.withArray("/types");  
                     	types.add(typeName);
                     	
-                    	ObjectNode fields = caches.withObject("fields");
+                    	ObjectNode fields = caches.withObject("/fields");
                     	ObjectNode column = new ObjectNode(jsonNodeFactory);
                     	
                     	for(DbColumn col: table.getColumns()) {
@@ -230,7 +230,7 @@ public class JdbcExecutor implements AutoCloseable {
                     	fields.set(typeName, column);
                     	
                     	
-                    	ObjectNode indexes = caches.withObject("indexes");
+                    	ObjectNode indexes = caches.withObject("/indexes");
                     	ArrayNode index = new ArrayNode(jsonNodeFactory);  
                     	
                     	for(VisorQueryIndex idx: table.getIndexes()) {
@@ -240,7 +240,7 @@ public class JdbcExecutor implements AutoCloseable {
                     		indexItem.put("unique",false);
                     		indexItem.put("descendings","");
                     		for(VisorQueryIndexField idxField: idx.getFields()) {                    			
-                    			indexItem.withArray("fields").add(idxField.getName());                    			
+                    			indexItem.withArray("/fields").add(idxField.getName());                    			
                     		}
                     		
                     	}

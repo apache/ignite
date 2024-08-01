@@ -17,9 +17,22 @@ import io.vertx.core.json.JsonObject;
 
 public class ClusterAgentServiceUtil  {
 	
+	public static List<JsonObject> cacheSelectList(JsonObject args) {
+		JsonObject cacheOne = null;
+		if(args.containsKey("cache")) {
+			cacheOne = args.getJsonObject("cache");
+			return List.of(cacheOne);
+		}
+			
+		JsonArray selectCaches = args.getJsonArray("caches");				
+		List<JsonObject> list = new ArrayList<>();
+		for(int i=0;i<selectCaches.size();i++) {
+			list.add(selectCaches.getJsonObject(i));					
+		}		
+		return list;
+	}
 	
-	public static List<String> cacheSelectList(Ignite ignite,JsonObject args) {		
-		int count = 0;		
+	public static List<String> cacheNameSelectList(Ignite ignite,JsonObject args) {
 		String cacheName = null;
 			
 		JsonArray selectCaches = args.getJsonArray("caches");
@@ -39,10 +52,8 @@ public class ClusterAgentServiceUtil  {
 					continue;
 				}
 			}				
-			list.add(cache);
-			count++;			
-		}
-		
+			list.add(cache);					
+		}		
 		return list;
 	}
 	

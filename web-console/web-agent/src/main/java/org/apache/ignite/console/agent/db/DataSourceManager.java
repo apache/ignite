@@ -37,6 +37,8 @@ import javax.naming.spi.NamingManager;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.dbcp2.BasicDataSource;
+
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 public class DataSourceManager {
@@ -48,6 +50,7 @@ public class DataSourceManager {
 	private static HttpClient serverClient;
 	private static String datasourceGetUrl = "";
 	private static String datasourceCreateUrl = "";
+	private static String taskflowGetUrl = "";
 	private static Collection<String> serverTokens;
 	
 	static class DBinitialContext extends InitialContext {
@@ -105,6 +108,7 @@ public class DataSourceManager {
 		}
 		datasourceGetUrl = serverUri+"/api/v1/datasource";
 		datasourceCreateUrl = serverUri+"/api/v1/datasource";
+		taskflowGetUrl = serverUri+"/api/v1/taskflow/cluster/%s?target=%s";
 		
 		try {
 			
@@ -252,5 +256,31 @@ public class DataSourceManager {
 		return null;
 	}
 	
-
+	public static JsonArray getTaskFlows(String clusterId,String cache) {
+		JsonArray dataSource = null;
+		String url = String.format(taskflowGetUrl,clusterId,cache);
+		try {
+			for(String token: serverTokens) {
+				Request req = serverClient.newRequest(url);
+				req.header("Authorization", "token "+token);
+				req.method(HttpMethod.GET);
+				ContentResponse response = req.send();
+				String body = response.getContentAsString();
+				if(body.startsWith("[")) {					
+					dataSource  = new JsonArray(body);
+					break;
+				}					
+			}
+		} catch (InterruptedException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (ExecutionException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (TimeoutException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		return dataSource;
+	}
 }

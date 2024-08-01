@@ -1,5 +1,3 @@
-
-
 import {Observable, merge} from 'rxjs';
 import {share, distinctUntilChanged, startWith, filter, map, pluck, withLatestFrom, mapTo} from 'rxjs/operators';
 import {RejectType, TransitionService} from '@uirouter/angularjs';

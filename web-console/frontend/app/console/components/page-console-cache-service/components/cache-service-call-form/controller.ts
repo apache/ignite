@@ -67,9 +67,9 @@ export default class CacheServiceCallFormController {
     callServiceForCache(serviceName:string) {
         let params = this.clonedCache;
         let args = this.onCall({$event: {cache: this.clonedCache}});
-        let clusterId = args['id'];
+        let clusterId = args['clusterId'];
         params = Object.assign(args,params);
-        this.AgentManager.callCacheService({id: clusterId},serviceName,params).then((data) => {  
+        this.AgentManager.callCacheService({id: clusterId},serviceName,args).then((data) => {  
             this.$scope.status = data.status;
             if(data.message){
                 this.$scope.message = data.message;                

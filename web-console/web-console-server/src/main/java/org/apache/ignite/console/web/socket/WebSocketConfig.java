@@ -1,5 +1,6 @@
 package org.apache.ignite.console.web.socket;
 
+import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -16,6 +17,8 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
 import static org.apache.ignite.console.websocket.WebSocketEvents.AGENTS_PATH;
 import static org.apache.ignite.console.websocket.WebSocketEvents.BROWSERS_PATH;
 
+import javax.websocket.WebSocketContainer;
+
 /**
  * Websocket configuration.
  */
@@ -26,8 +29,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     private final AgentsService agentsSrvc;
 
     /** */
-    private final BrowsersService browsersSrvc;
-    
+    private final BrowsersService browsersSrvc;    
    
     /**
      * @param agentsSrvc Agents service.
@@ -43,20 +45,8 @@ public class WebSocketConfig implements WebSocketConfigurer {
      */
     @Override public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(agentsSrvc, AGENTS_PATH).setAllowedOrigins("*");
-        registry.addHandler(browsersSrvc, BROWSERS_PATH).setAllowedOrigins("*");        
+        registry.addHandler(browsersSrvc, BROWSERS_PATH).setAllowedOrigins("*");      
         
-    }
-    
-    @Bean
-    public ServletServerContainerFactoryBean createWebSocketContainer() {
-        ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
-        // 在此处设置bufferSize        
-        container.setMaxTextMessageBufferSize(WebSocketMessageBrokerConfig.MSG_SIZE);
-        container.setMaxBinaryMessageBufferSize(WebSocketMessageBrokerConfig.MSG_SIZE);
-        container.setMaxSessionIdleTimeout(60 * 60000L);
-        return container;
-    }
-
-    
+    }  
  
 }

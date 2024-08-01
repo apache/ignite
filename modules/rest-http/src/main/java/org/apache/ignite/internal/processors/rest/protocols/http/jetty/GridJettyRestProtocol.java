@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_HOST;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_LOG_NO_OVERRIDE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
+import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -39,7 +44,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.server.AbstractNetworkConnector;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
@@ -53,20 +57,11 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.FragmentConfiguration;
-import org.eclipse.jetty.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebInfConfiguration;
-import org.eclipse.jetty.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.jetbrains.annotations.Nullable;
 import org.xml.sax.SAXException;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_HOST;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_LOG_NO_OVERRIDE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
-import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 
 /**
  * Jetty REST protocol implementation.
@@ -204,31 +199,30 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         try {
             System.setProperty(IGNITE_JETTY_HOST, U.resolveLocalHost(jettyHost).getHostAddress());
+            String jettyPath = config().getJettyPath();
+	        final URL cfgUrl;
+	
+	        if (jettyPath == null) {
+	            cfgUrl = null;
+	
+	            if (log.isDebugEnabled())
+	                log.debug("Jetty configuration file is not provided, using defaults.");
+	        }
+	        else {
+	            cfgUrl = U.resolveIgniteUrl(jettyPath);
+	
+	            if (cfgUrl == null)
+	                throw new IgniteSpiException("Invalid Jetty configuration file: " + jettyPath);
+	            else if (log.isDebugEnabled())
+	                log.debug("Jetty configuration file: " + cfgUrl);
+	        }
+	
+	        loadJettyConfiguration(cfgUrl);
+        
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to resolve host to bind address: " + jettyHost, e);
         }
-        
-    	String jettyPath = config().getJettyPath();
-
-        final URL cfgUrl;
-
-        if (jettyPath == null) {
-            cfgUrl = null;
-
-            if (log.isDebugEnabled())
-                log.debug("Jetty configuration file is not provided, using defaults.");
-        }
-        else {
-            cfgUrl = U.resolveIgniteUrl(jettyPath);
-
-            if (cfgUrl == null)
-                throw new IgniteSpiException("Invalid Jetty configuration file: " + jettyPath);
-            else if (log.isDebugEnabled())
-                log.debug("Jetty configuration file: " + cfgUrl);
-        }
-
-        loadJettyConfiguration(cfgUrl);
 
         return true;
     }
@@ -290,8 +284,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      *
      * @param cfgUrl URL to load configuration from.
      * @throws IgniteCheckedException if load failed.
+     * @throws IOException 
      */
-    private void loadJettyConfiguration(@Nullable URL cfgUrl) throws IgniteCheckedException {
+    private void loadJettyConfiguration(@Nullable URL cfgUrl) throws IgniteCheckedException, IOException {
         if (cfgUrl == null) {        	
             HttpConfiguration httpCfg = new HttpConfiguration();
 
@@ -358,8 +353,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         String webAppDirs = "webapps"; 
 		if(ctx.config().getIgniteHome()!=null){
 			webAppDirs = ctx.config().getIgniteHome()+File.separatorChar+webAppDirs; 
-		}
+		}		
 		
+
 		List<Handler> plugins = new ArrayList<>();
 		File webPlugins = new File(webAppDirs);
 		if(webPlugins.isDirectory()) {
@@ -370,30 +366,28 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 			    String contextPath =  pos>0? warFile.getName().substring(0,pos): warFile.getName();
 			    WebAppContext webApp = new WebAppContext();
 			    webApp.setContextPath("/"+contextPath);
-			    webApp.setConfigurationDiscovered(true);
-			    AnnotationConfiguration annotationConfiguration = new AnnotationConfiguration();
-			    
-			    webApp.setConfigurations(new Configuration[]{
-			    		annotationConfiguration, new WebXmlConfiguration(), new WebInfConfiguration(), new MetaInfConfiguration(), new FragmentConfiguration()		            
-			        });			    
+			    webApp.setConfigurationDiscovered(false);
 			    
 			    if (warFile.isDirectory()) {
 			        // Development mode, read from FS
 			    	webApp.setResourceBase(warFile.getPath());
 			        webApp.setDescriptor(warPath+"/WEB-INF/web.xml");
-			        //-webApp.setExtraClasspath(warPath+"/WEB-INF/classes/");		        
+			        webApp.setExtraClasspath(warPath+"/WEB-INF/classes/");	        
 			       
 		        } else if(warFile.getName().endsWith(".war")) {
 			        // use packaged WAR
 			        webApp.setWar(warFile.getAbsolutePath());
-			        webApp.setExtractWAR(false);
+			        webApp.setExtractWAR(true);
 			       
 			    }
 		        else {
 		        	continue;
 		        }
 			    
-			    //-webApp.setClassLoader(Thread.currentThread().getContextClassLoader());  
+			    ClassLoader cl = Thread.currentThread().getContextClassLoader();
+			    WebAppClassLoader loader = new WebAppClassLoader(cl,webApp);			   
+			    webApp.setClassLoader(loader);
+			    
 				webApp.setParentLoaderPriority(true);
 				webApp.setServer(httpSrv);
 				webApp.setErrorHandler(new ErrorHandler());

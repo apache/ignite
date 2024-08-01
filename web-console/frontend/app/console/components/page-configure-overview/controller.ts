@@ -18,9 +18,9 @@ import {default as ConfigureState} from 'app/configuration/services/ConfigureSta
 import {default as ConfigSelectors} from 'app/configuration/store/selectors';
 import {default as Clusters} from 'app/configuration/services/Clusters';
 import {Confirm} from 'app/services/Confirm.service';
-
+import AgentManager from 'app/modules/agent/AgentManager.service';
 import {UIRouter} from '@uirouter/angularjs';
-import {ShortCluster} from '../../types';
+import {ShortCluster} from 'app/configuration/types';
 import {IColumnDefOf} from 'ui-grid';
 
 export default class PageConfigureOverviewController {
@@ -73,7 +73,7 @@ export default class PageConfigureOverviewController {
     
     pingClusters(clusters: Array<ShortCluster>) {
       for(let cluster of clusters){
-         this.AgentManager.callClusterService(cluster,'serviceList').then((msg) => {
+         this.AgentManager.callClusterService(cluster,'serviceList',{}).then((msg) => {
              if(msg.status){
                 cluster.status = msg.status;
              }        

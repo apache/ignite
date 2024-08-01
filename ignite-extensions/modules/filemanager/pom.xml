@@ -9,13 +9,12 @@
 		<version>1</version>
 		<relativePath>../../parent-internal/pom.xml</relativePath>
 	</parent>
-
-	<groupId>org.apache.ignite</groupId>
-	<artifactId>s3-filemanager</artifactId>
+	
+	<artifactId>igfs-filemanager</artifactId>
 	<version>2.16.999-SNAPSHOT</version>
 	<packaging>war</packaging>
 
-	<name>s3-filemanager</name>
+	<name>igfs-filemanager</name>
 	<description>Ignite S3 project for igfs</description>
 
 	<properties>
@@ -26,8 +25,6 @@
 
 		<jmail.version>1.6.7</jmail.version>
 		<ignite.version>2.16.999-SNAPSHOT</ignite.version>
-		<commons-lang3.version>3.7</commons-lang3.version>
-		<commons-beanutils.version>1.9.1</commons-beanutils.version>
 		<commons-io.version>2.6</commons-io.version>
 		<guava.version>22.0</guava.version>
 		<lombok.version>1.18.4</lombok.version>
@@ -36,15 +33,13 @@
 	</properties>
 
 	<dependencies>
+		<!-- https://mvnrepository.com/artifact/jakarta.servlet/jakarta.servlet-api -->
 		<dependency>
-			<groupId>javax.servlet</groupId>
-			<artifactId>javax.servlet-api</artifactId>
-			<version>3.1.0</version>
-			<scope>provided</scope>
-		</dependency>
-
-
-		<!-- 在zeppelin里面运行，要注释掉 -->
+		    <groupId>jakarta.servlet</groupId>
+		    <artifactId>jakarta.servlet-api</artifactId>
+		    <version>4.0.4</version>
+		    <scope>provided</scope>
+		</dependency>		
 
 		<dependency>
 			<groupId>org.apache.ignite</groupId>
@@ -55,8 +50,9 @@
 		<dependency>
 			<groupId>org.apache.ignite</groupId>
 			<artifactId>ignite-spring</artifactId>
-			<scope>provided</scope>			
+			<scope>provided</scope>
 		</dependency>
+		
 		<dependency>
 			<groupId>org.apache.ignite</groupId>
 			<artifactId>ignite-igfs</artifactId>
@@ -65,17 +61,17 @@
 		</dependency>
 		
 		<dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-webmvc</artifactId>
-            <version>${spring.version}</version>                              
-        </dependency>
-        
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
-            <version>${spring.version}</version>                          
-        </dependency>
-        
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-webmvc</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-web</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+
 
 		<dependency>
 			<groupId>software.amazon.awssdk</groupId>
@@ -95,12 +91,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>commons-beanutils</groupId>
-			<artifactId>commons-beanutils</artifactId>
-			<version>${commons-beanutils.version}</version>
-		</dependency>
-
-		<dependency>
 			<groupId>com.alibaba</groupId>
 			<artifactId>fastjson</artifactId>
 			<version>${fastjson.version}</version>
@@ -113,16 +103,11 @@
 		</dependency>
 
 		<dependency>
-			<groupId>commons-fileupload</groupId>
-			<artifactId>commons-fileupload</artifactId>
-			<version>1.3.1</version>
-		</dependency>
-
-		<dependency>
 			<groupId>com.github.junrar</groupId>
 			<artifactId>junrar</artifactId>
 			<version>7.5.5</version>
-		</dependency>        
+		</dependency>
+		    
 		<dependency>
 			<groupId>org.webjars</groupId>
 			<artifactId>angularjs</artifactId>

@@ -1,7 +1,5 @@
-
-
+import _ from 'lodash';
 import {nonEmpty} from 'app/utils/lodashMixins';
-
 import { Bean } from './Beans';
 
 import AbstractTransformer from './AbstractTransformer';
@@ -1024,7 +1022,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
      * @param fullClsName Full class name.
      * @param fields Fields.
      * @param addConstructor If 'true' then empty and full constructors should be generated.
-     * @returns {StringBuilder}
+     * @returns {String}
      */
     static pojo(fullClsName, fields, addConstructor) {
         const dotIdx = fullClsName.lastIndexOf('.');

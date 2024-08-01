@@ -29,7 +29,7 @@ public class CacheClearDataService implements CacheAgentService {
 		int count = 0;		
 		JsonObject args = new JsonObject(payload);	
 		List<String> message = result.messages;	
-		List<String> caches = ClusterAgentServiceUtil.cacheSelectList(ignite,args);
+		List<String> caches = ClusterAgentServiceUtil.cacheNameSelectList(ignite,args);
 		for(String cache: caches) {
 			try {
 				IgniteCache<?,?> igcache = ignite.cache(cache);

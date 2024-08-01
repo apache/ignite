@@ -16,6 +16,12 @@
 
 package org.apache.ignite.console.agent.handlers;
 
+import static org.apache.ignite.console.agent.AgentUtils.nid8;
+import static org.apache.ignite.console.utils.Utils.fromJson;
+import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientResponse.STATUS_FAILED;
+import static org.apache.ignite.lang.IgniteProductVersion.fromString;
+
 import java.net.ConnectException;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.ArrayList;
@@ -26,8 +32,9 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
+
 import javax.net.ssl.SSLException;
-import org.apache.ignite.IgniteLogger;
+
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.console.websocket.TopologySnapshot;
@@ -37,21 +44,11 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.eclipse.jetty.client.HttpResponseException;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import io.vertx.core.json.JsonObject;
-
-import static org.apache.ignite.console.agent.AgentUtils.nid8;
-import static org.apache.ignite.console.agent.AgentUtils.sslContextFactory;
-import static org.apache.ignite.console.utils.Utils.fromJson;
-import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
-import static org.apache.ignite.internal.processors.rest.client.message.GridClientResponse.STATUS_FAILED;
-import static org.apache.ignite.lang.IgniteProductVersion.fromString;
 
 /**
  * API to transfer topology from Ignite cluster to Web Console.
@@ -126,8 +123,12 @@ public class RestClusterHandler extends AbstractClusterHandler {
 
                 return res;
             }
-            catch (ConnectException | InterruptedException | TimeoutException | HttpResponseException | AsynchronousCloseException ignored) {
+            catch (InterruptedException | TimeoutException | HttpResponseException | AsynchronousCloseException ignored) {
                 // No-op.
+            	throw new TimeoutException("Failed connect to cluster [urls=" + nodeURIs + ", parameters=" + params + "]"+ " Cause by "+ignored.getMessage());
+            }
+            catch (ConnectException ignored) {
+                // No-op.            	
             }
             catch (Throwable e) {
                 LT.error(log, e, "Failed execute request on node [url=" + nodeUrl + ", parameters=" + params + "]");
@@ -299,6 +300,10 @@ public class RestClusterHandler extends AbstractClusterHandler {
 
                 tops.add(newTop);	
                 
+            }
+            catch (TimeoutException | IllegalStateException e) {
+                onFailedClusterRequest(e);
+                latestTop = null;
             }
             catch (Throwable e) {
                 onFailedClusterRequest(e);

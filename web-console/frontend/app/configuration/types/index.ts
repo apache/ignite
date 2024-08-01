@@ -29,7 +29,8 @@ export interface ValueField {
 }
 export interface Field {
     name: string,
-    className: string
+    className: string,
+    comment: string
 }
 export interface Alias {
     field: string,
@@ -65,6 +66,7 @@ export interface DomainModel {
     queryMetadata?: QueryMetadataTypes,
     kind?: DomainModelKinds,
     tableName?: string,
+    tableComment?: string,
     keyFieldName?: string,
     valueFieldName?: string,
     databaseSchema?: string,

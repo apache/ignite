@@ -246,4 +246,20 @@ public class TaskFlow extends AbstractDto {
 	public void setExistingMode(String existingMode) {
 		this.existingMode = existingMode;
 	}
+
+	public String getAtomicityMode() {
+		return atomicityMode;
+	}
+
+	public void setAtomicityMode(String atomicityMode) {
+		this.atomicityMode = atomicityMode;
+	}
+
+	public boolean isReadFromBackup() {
+		return readFromBackup;
+	}
+
+	public void setReadFromBackup(boolean readFromBackup) {
+		this.readFromBackup = readFromBackup;
+	}	
 }

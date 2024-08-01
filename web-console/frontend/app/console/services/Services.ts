@@ -4,13 +4,15 @@ import get from 'lodash/get';
 import omit from 'lodash/fp/omit';
 import uuidv4 from 'uuid/v4';
 
-import {CacheModes, AtomicityModes, ShortCache} from 'app/configuration/types';
+import {AtomicityModes} from 'app/configuration/types';
 import {Menu} from 'app/types';
+
+export type ServiceModes = 'NodeSingleton' | 'ClusterSingleton' | 'KeyAffinitySingleton' | 'Multiple';
 
 export default class Services {
     static $inject = ['$http'];
 
-    serviceModes: Menu<CacheModes> = [
+    serviceModes: Menu<ServiceModes> = [
         {value: 'NodeSingleton', label: 'NodeSingleton'},
         {value: 'ClusterSingleton', label: 'ClusterSingleton'},
         {value: 'KeyAffinitySingleton', label: 'KeyAffinitySingleton'},

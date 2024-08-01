@@ -5,9 +5,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import {merge, timer} from 'rxjs';
 import {take, tap, ignoreElements, filter, map, pluck} from 'rxjs/operators';
 
-import {
-    ofType
-} from '../store/effects';
+import {ofType} from '../store/effects';
 
 import {default as ConfigureState} from './ConfigureState';
 import {default as ConfigSelectors} from '../store/selectors';
@@ -36,7 +34,8 @@ export default class PageConfigure {
                 take(1),
                 map((data) => ({...data, clusters: [cloneDeep(data.cluster)]}))
             )
-        ).pipe(take(1))
+        )
+        .pipe(take(1))
         .toPromise();
     }
 }

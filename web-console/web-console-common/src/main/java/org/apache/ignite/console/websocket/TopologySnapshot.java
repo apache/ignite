@@ -17,7 +17,6 @@
 package org.apache.ignite.console.websocket;
 
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
@@ -279,25 +278,7 @@ public class TopologySnapshot {
         return supportedFeatures;
     }
 
-    /**
-     * @param nodes Cluster nodes.
-     * @return Features supported by the current grid.
-     */
-    private byte[] supportedFeatures(Collection<GridClientNodeBean> nodes) {
-        if (F.isEmpty(nodes))
-            return new byte[0];
-
-        return nodes.stream()
-            .map(n -> attribute(n.getAttributes(), ATTR_IGNITE_FEATURES))
-            .filter(Objects::nonNull)
-            .map(f -> BitSet.valueOf(Base64.getDecoder().decode(f.toString())))
-            .collect(BitSet::new, (acc, f) -> {
-                if (acc.isEmpty())
-                    acc.or(f);
-                else
-                    acc.and(f);
-            }, BitSet::and).toByteArray();
-    }
+   
 
     /**
      * @param nodes Cluster nodes.

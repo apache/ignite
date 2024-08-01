@@ -108,13 +108,15 @@ export default class CacheServiceController {
             this.clusterID = v; 
             this.callService('serviceList',{type:'CacheAgentService'}).then((data) => {
                 if(data.message){
-                    this.message = data.message;
-                    return;
-                }  
-                this.serviceMap = Object.assign(data.result);
-                Object.keys(this.serviceMap).forEach((key) => {
-                   this.serviceList.push(this.serviceMap[key]);
-                });                
+                    this.message = data.message;                    
+                }
+                if(data.result){
+                	this.serviceMap = Object.assign(data.result);
+	                Object.keys(this.serviceMap).forEach((key) => {
+	                   this.serviceList.push(this.serviceMap[key]);
+	                });
+                }
+                              
             });  
             
         });
@@ -185,9 +187,10 @@ export default class CacheServiceController {
     }
 
     call(itemIDs: Array<string>, serviceName: string) {
-       let cacheNames$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCacheNames(itemIDs));
+       console.log('call '+itemIDs);       
+       let cacheNames$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCacheNames(itemIDs),take(1));
        cacheNames$.subscribe((cacheNames)=>{
-           this.callService(serviceName,{caches:cacheNames}).then((data) => {
+           this.callService(serviceName,{caches:cacheNames,clusterId: this.clusterID}).then((data) => {
                 if(data.message){
                     this.message = data.message;
                 }
@@ -223,6 +226,6 @@ export default class CacheServiceController {
     }
 
     onCall({cache, updated}) {
-        return {id: this.clusterID, cache:cache, updated:updated};
+        return {clusterId: this.clusterID, cache:cache, updated:updated};
     }
 }

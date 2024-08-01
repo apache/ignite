@@ -6,7 +6,7 @@ import get from 'lodash/get';
 import {Subject, Observable, combineLatest, from, of} from 'rxjs';
 import {catchError,tap, map, refCount, pluck, take, filter, publishReplay, switchMap, distinctUntilChanged} from 'rxjs/operators';
 import {Menu} from 'app/types';
-
+import uuidv4 from 'uuid/v4';
 import {default as ConfigureState} from 'app/configuration/services/ConfigureState';
 import {default as ConfigSelectors} from 'app/configuration/store/selectors';
 import LegacyConfirmFactory from 'app/services/Confirm.service';
@@ -100,6 +100,7 @@ export default class TaskFlowFormController {
        }
        for(let cache of this.selectCaches){
            this.taskFlow = Object.assign({},tplFlow);
+           this.taskFlow.id = uuidv4();
            this.taskFlow.target = cache.name;
            this.taskFlow.source = cache.name;
            this.taskFlow.name = tplFlow.name +' to '+cache.name;
@@ -132,7 +133,7 @@ export default class TaskFlowFormController {
         let result = [];
         
         for(let task of tasks){           
-            let stat = from(this.TaskFlows.saveAdvanced(task)).pipe(
+            let stat = from(this.TaskFlows.saveBasic(task)).pipe(
                 switchMap(({data}) => of(
                     {type: 'SAVE_TASK_FLOW'}
                 )),

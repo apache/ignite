@@ -67,10 +67,6 @@ export default class ModelEditFormController {
         return fields;
     }
 
-    importModels() {
-       
-    }
-
     checkQueryConfiguration(item: DomainModel) {
         if (item.queryMetadata === 'Configuration' && this.LegacyUtils.domainForQueryConfigured(item)) {
             if (_.isEmpty(item.fields))

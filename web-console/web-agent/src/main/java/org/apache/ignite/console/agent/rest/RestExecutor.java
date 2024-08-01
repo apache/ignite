@@ -50,12 +50,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
  */
 public class RestExecutor implements AutoCloseable {
     /** */
-    private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(RestExecutor.class));
-    /** */
-    public static QueuedThreadPool executor = new QueuedThreadPool(64);
-    static {
-    	executor.setName("Agent http client");    	
-    }
+    private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(RestExecutor.class));    
     
     /** */
     private final HttpClient httpClient;
@@ -64,9 +59,9 @@ public class RestExecutor implements AutoCloseable {
      * @param sslCtxFactory Ssl context factory.
      */
     public RestExecutor(SslContextFactory sslCtxFactory) {
-        httpClient = new HttpClient(sslCtxFactory);
+        httpClient = new HttpClient();        
         httpClient.setMaxConnectionsPerDestination(1);
-        httpClient.setExecutor(executor);
+        httpClient.setFollowRedirects(false);
     }
 
     /** {@inheritDoc} */
@@ -132,12 +127,12 @@ public class RestExecutor implements AutoCloseable {
             .send(lsnr);
 
         try {
-            Response res = lsnr.get(6L, TimeUnit.SECONDS);
-
+            Response res = lsnr.get(6L, TimeUnit.SECONDS);            
             return parseResponse(res, lsnr.getInputStream());
         }
         catch (ExecutionException e) {
             throw e.getCause();
         }
+        
     }
 }

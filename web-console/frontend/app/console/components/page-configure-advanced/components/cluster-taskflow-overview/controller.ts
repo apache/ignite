@@ -102,7 +102,7 @@ export default class ClusterTaskFlowController {
     
     pingClusters(clusters: Array<ShortCluster>) {
       for(let cluster of clusters){
-         this.AgentManager.callClusterService(cluster,'serviceList').then((msg) => {
+         this.AgentManager.callClusterService(cluster,'serviceList',{}).then((msg:any) => {
              if(msg.status){
                 cluster.status = msg.status;
              }        
@@ -139,7 +139,7 @@ export default class ClusterTaskFlowController {
         this.itemEditTitle$ = combineLatest(this.selectedRows$, (clusters) => {
             let names = 'Select cluster ';
             for(let cluster  of clusters){
-                names+=' '+cluster.name
+                names += ' ' + cluster.name;
             }
             return names;
         });

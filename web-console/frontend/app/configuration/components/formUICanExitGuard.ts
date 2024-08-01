@@ -5,7 +5,7 @@ import {default as ConfigChangesGuard} from '../services/ConfigChangesGuard';
 class FormUICanExitGuardController {
     static $inject = ['$element', 'ConfigChangesGuard'];
 
-    constructor(private $element: JQLite, private ConfigChangesGuard: ConfigChangesGuard) {}
+    constructor(private $element: JQLite, private ConfigChangesGuard: ConfigChangesGuard<any>) {}
 
     $onDestroy() {
         this.$element = null;

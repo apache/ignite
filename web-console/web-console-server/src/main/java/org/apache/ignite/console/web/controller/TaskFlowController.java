@@ -60,9 +60,21 @@ public class TaskFlowController {
     @Operation(summary = "Get user's grouped taskFlows.")
     @GetMapping(path = "/group/{groupId}")
     public ResponseEntity<Collection<TaskFlow>> list(@AuthenticationPrincipal Account acc,
-    		@PathVariable("groupId") String groupId,String action, String target, String source) {
-        return ResponseEntity.ok(taskFlowsSrv.taskFlowForGroup(acc.getId(),groupId,action, target, source));
+    		@PathVariable("groupId") String groupId,String sourceCluster, String target, String source) {
+        return ResponseEntity.ok(taskFlowsSrv.taskFlowForGroup(acc.getId(),groupId, sourceCluster, target, source));
     }
+    
+    /**
+     * @param acc Account.
+     * @return Collection of taskFlows.
+     */
+    @Operation(summary = "Get user's grouped taskFlows.")
+    @GetMapping(path = "/cluster/{clusterId}")
+    public ResponseEntity<Collection<TaskFlow>> listOfCache(@AuthenticationPrincipal Account acc,
+    		@PathVariable("clusterId") String clusterId,String action, String target) {
+        return ResponseEntity.ok(taskFlowsSrv.taskFlowForCache(acc.getId(),clusterId, action, target));
+    }
+    
 
     /**
      * @param acc Account.

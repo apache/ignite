@@ -23,7 +23,7 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
             )
                 label Not available for annotated types
 
-            .pc-form-grid-col-60(ng-if-start=`${model}.queryMetadata === 'Configuration'`)
+            .pc-form-grid-col-30(ng-if-start=`${model}.queryMetadata === 'Configuration'`)
                 +form-field__text({
                     label: 'Table name:',
                     model: `${model}.tableName`,
@@ -31,7 +31,15 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                     placeholder: 'Enter table name'
                 })
 
-            .pc-form-grid-col-30(ng-if-start='$ctrl.available("2.0.0")')
+            .pc-form-grid-col-30
+                +form-field__text({
+                    label: 'Table comment:',
+                    model: `${model}.tableComment`,
+                    name: '"tableComment"',
+                    placeholder: 'Enter table comment'
+                })
+
+            .pc-form-grid-col-30
                 +form-field__text({
                     label: 'Key field name:',
                     model: `${model}.keyFieldName`,
@@ -63,7 +71,7 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                             ng-change=`$ctrl.onQueryFieldsChange(${model})`
                         )
                             list-editable-item-view
-                                | {{$ctrl.Models.fieldProperties.fieldPresentation($item, $ctrl.available)}}
+                                | {{$ctrl.Models.fieldProperties.fieldPresentation($item, $ctrl.available)}} / {{$item.comment}}
 
                             list-editable-item-edit
                                 - form = '$parent.form'
@@ -93,7 +101,14 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                                             ng-model-options='{allowInvalid: true}'
                                             extra-valid-java-identifiers='$ctrl.queryFieldTypes'
                                         )
-                                    .pc-form-grid-col-60(ng-if='$ctrl.available("2.4.0")')
+                                    .pc-form-grid-col-30(ng-if='$ctrl.available("2.4.0")')
+                                        +form-field__text({
+                                            label: 'Field comment:',
+                                            model: '$item.comment',
+                                            name: '"comment"',
+                                            placeholder: 'Enter field comment'
+                                        })
+                                    .pc-form-grid-col-30(ng-if='$ctrl.available("2.4.0")')
                                         +form-field__text({
                                             label: 'Default value:',
                                             model: '$item.defaultValue',

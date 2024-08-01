@@ -166,6 +166,31 @@ public class TaskFlowRepository {
             return totals;
         });
     }
+    
+    /**
+     * @param accId Account ID.    
+     */
+    public List<TaskFlow> taskFlowForCache(UUID accId, String targetCluster, String action, String target) {
+        return txMgr.doInTransaction(() -> {
+            List<TaskFlow> totals = new ArrayList<>();
+            if (target!=null) {
+            	Set<UUID> ids = accountsIdx.get(accId);
+
+                if (!F.isEmpty(ids)) {
+                    Collection<TaskFlow> activities = taskflowTbl.loadAll(ids);
+
+                    activities.forEach(activity -> {
+                        if(activity.getTargetCluster().equals(targetCluster) && activity.getTarget().equals(target)) {
+                        	if(action==null || activity.getAction().equals(action)) {
+                        		totals.add(activity);
+                        	}
+                        }
+                    });
+                }
+            }
+            return totals;
+        });
+    }
 
     /**
      * @param activityKey TaskFlow key.

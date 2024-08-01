@@ -48,6 +48,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.adapter.jetty.JettyWebSocketSession;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -119,9 +120,11 @@ public class BrowsersService extends AbstractSocketHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void afterConnectionEstablished(WebSocketSession ses) {
-        log.info("Browser session opened [socket=" + ses + "]");
-
+    @Override public void afterConnectionEstablished(WebSocketSession ws) {
+        log.info("Browser session opened [socket=" + ws + "]");
+        JettyWebSocketSession ses = (JettyWebSocketSession) ws;
+        ses.getNativeSession().getPolicy().setMaxTextMessageSize(MAX_TEXT_MESSAGE_SIZE);
+        ses.getNativeSession().getPolicy().setMaxTextMessageBufferSize(MAX_TEXT_MESSAGE_SIZE);
         ses.setTextMessageSizeLimit(MAX_TEXT_MESSAGE_SIZE);
 
         UserKey id = getId(ses);

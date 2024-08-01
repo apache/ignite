@@ -203,15 +203,15 @@ public class AgentLauncher implements IgniteSshHelper {
         // Failed to parse configuration or help printed.
         if (cfg == null)
             return;
+        
+        WebSocketRouter websocket = new WebSocketRouter(cfg);
 
         while(true) {
-	        try (WebSocketRouter websocket = new WebSocketRouter(cfg)) {
+	        try {
 	        	
 	            websocket.start();
 	
 	            websocket.awaitClose();
-	            
-	            websocket.close();
 	            
 	            Thread.sleep(1000);
 	        }
@@ -221,5 +221,6 @@ public class AgentLauncher implements IgniteSshHelper {
 	        	break;
 	        }
         }
+        websocket.close();
     }
 }

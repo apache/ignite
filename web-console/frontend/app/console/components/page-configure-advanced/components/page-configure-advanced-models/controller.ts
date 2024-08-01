@@ -150,12 +150,12 @@ export default class PageConfigureAdvancedModels {
     }
 
     save({model, download}) {
-        this.ConfigureState.dispatchAction(advancedSaveModel(model, download));
+        //this.ConfigureState.dispatchAction(advancedSaveModel(model, download));
     }
 
     remove(itemIDs: Array<string>) {
-        this.ConfigureState.dispatchAction(
-            removeClusterItems(this.$uiRouter.globals.params.clusterID, 'models', itemIDs, true, true)
-        );
+        //this.ConfigureState.dispatchAction(
+        //    removeClusterItems(this.$uiRouter.globals.params.clusterID, 'models', itemIDs, true, true)
+        //);
     }
 }

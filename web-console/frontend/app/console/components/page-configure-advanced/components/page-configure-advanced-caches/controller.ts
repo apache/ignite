@@ -157,8 +157,7 @@ export default class Controller {
                 },
                 available: true
             }
-        ]));
-        
+        ]));        
         
     }
 
@@ -167,12 +166,7 @@ export default class Controller {
             //removeClusterItems(this.$uiRouter.globals.params.clusterID, 'caches', itemIDs, true, true)
        // );
     }
-    
-    clone(itemIDs: Array<string>) {
-       // this.ConfigureState.dispatchAction(
-            //removeClusterItems(this.$uiRouter.globals.params.clusterID, 'caches', itemIDs, true, true)
-       // );
-    }
+
 
     $onDestroy() {
         this.subscription.unsubscribe();

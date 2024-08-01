@@ -25,6 +25,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.websocket.WebSocketContainer;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.console.dto.Account;
@@ -38,6 +41,7 @@ import org.apache.ignite.console.websocket.WebSocketRequest;
 import org.apache.ignite.console.websocket.WebSocketResponse;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.jsr166.ConcurrentLinkedHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +50,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.adapter.jetty.JettyWebSocketSession;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
@@ -63,6 +68,9 @@ import static org.apache.ignite.console.websocket.WebSocketEvents.*;
 public class AgentsService extends AbstractSocketHandler {
     /** */
     private static final Logger log = LoggerFactory.getLogger(AgentsService.class);
+    
+    /** Max text message size. */
+    private static final int MAX_TEXT_MESSAGE_SIZE = 10 * 1024 * 1024;
 
     /** */
     protected final AccountsRepository accRepo;
@@ -249,8 +257,10 @@ public class AgentsService extends AbstractSocketHandler {
     /** {@inheritDoc} */
     @Override public void afterConnectionEstablished(WebSocketSession ws) {
         log.info("Agent session opened [socket=" + ws + "]");
-
-        ws.setTextMessageSizeLimit(10 * 1024 * 1024);
+        JettyWebSocketSession ses = (JettyWebSocketSession) ws;
+        ses.getNativeSession().getPolicy().setMaxTextMessageSize(MAX_TEXT_MESSAGE_SIZE);
+        ses.getNativeSession().getPolicy().setMaxTextMessageBufferSize(MAX_TEXT_MESSAGE_SIZE);
+        ws.setTextMessageSizeLimit(MAX_TEXT_MESSAGE_SIZE);
     }
 
     /** {@inheritDoc} */
