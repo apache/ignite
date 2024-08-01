@@ -366,7 +366,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 			    String contextPath =  pos>0? warFile.getName().substring(0,pos): warFile.getName();
 			    WebAppContext webApp = new WebAppContext();
 			    webApp.setContextPath("/"+contextPath);
-			    webApp.setConfigurationDiscovered(false);
+			    webApp.setConfigurationDiscovered(true);
 			    
 			    if (warFile.isDirectory()) {
 			        // Development mode, read from FS
