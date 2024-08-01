@@ -16,7 +16,6 @@
 """
 Module contains DNS service failure test.
 """
-import os
 import socket
 
 from ducktape.mark import defaults
@@ -27,7 +26,6 @@ from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.services.utils.jvm_utils import java_major_version
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
@@ -110,19 +108,8 @@ class DnsFailureTest(IgniteTest):
             self.test_context,
             ignite_config,
             startup_timeout_sec=120,
-            num_nodes=num_nodes)
-
-        bootclasspath = list(map(lambda lib: os.path.join(lib, "classes"), ignite.spec._module_libs("ducktests")))
-
-        # Note: Support of impl.prefix property was removed since java 18.
-        ignite.spec.jvm_opts.append("-Dimpl.prefix=BlockingDns")
-
-        java_version = ignite.java_version()
-
-        if java_major_version(java_version) > 8:
-            ignite.spec.jvm_opts.append("\"--patch-module java.base=" + ":".join(bootclasspath) + "\"")
-        else:
-            ignite.spec.jvm_opts.append("-Xbootclasspath/a:" + ":".join(bootclasspath))
+            num_nodes=num_nodes,
+            main_java_class="org.apache.ignite.internal.ducktest.tests.dns_failure_test.BlockingNameService")
 
         return ignite
 

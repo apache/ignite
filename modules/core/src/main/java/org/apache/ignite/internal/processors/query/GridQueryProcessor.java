@@ -2747,6 +2747,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (idx != null)
             idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
+
+        statsMgr.onRowUpdated(desc.schemaName(), desc.tableName(), newRow.partition(), key.valueBytes(coctx));
     }
 
     /**
@@ -3042,7 +3044,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         QueryEngine qryEngine = engineForQuery(cliCtx, qry);
 
                         if (qryEngine != null) {
-                            QueryProperties qryProps = new QueryProperties(cctx == null ? null : cctx.name(), keepBinary);
+                            QueryProperties qryProps = new QueryProperties(
+                                cctx == null ? null : cctx.name(),
+                                keepBinary,
+                                failOnMultipleStmts
+                            );
 
                             if (qry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)qry).isBatched()) {
                                 res = qryEngine.queryBatched(
@@ -3610,6 +3616,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (indexingEnabled())
             idx.remove(cctx, desc, row);
+
+        statsMgr.onRowUpdated(desc.schemaName(), desc.tableName(), row.partition(), row.key().valueBytes(cctx.cacheObjectContext()));
     }
 
     /**
@@ -3657,6 +3665,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param entryFilter Optional user defined cache entries filter.
      * @param cacheFilter Ignite specific cache entries filters.
      * @param keepBinary Keep binary flag.
+     * @param taskHash Hashcode of the task.
      * @return Key/value rows.
      * @throws IgniteCheckedException If failed.
      */
@@ -3666,7 +3675,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         final IndexQueryDesc idxQryDesc,
         @Nullable IgniteBiPredicate<K, V> entryFilter,
         final IndexingQueryFilter cacheFilter,
-        boolean keepBinary
+        boolean keepBinary,
+        int taskHash
     ) throws IgniteCheckedException {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
@@ -3678,7 +3688,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 new IgniteOutClosureX<IndexQueryResult<K, V>>() {
                     @Override public IndexQueryResult<K, V> applyx() throws IgniteCheckedException {
                         try {
-                            return idxQryPrc.queryLocal(cctx, idxQryDesc, entryFilter, cacheFilter, keepBinary);
+                            return idxQryPrc.queryLocal(cctx, idxQryDesc, entryFilter, cacheFilter, keepBinary, taskHash);
                         }
                         catch (IgniteCheckedException e) {
                             String msg = "Failed to execute IndexQuery: " + e.getMessage() + ". Query desc: " + idxQryDesc;

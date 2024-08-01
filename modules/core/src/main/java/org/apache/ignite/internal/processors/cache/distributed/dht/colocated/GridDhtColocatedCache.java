@@ -189,14 +189,13 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final boolean needVer) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
-        GridNearTxLocal tx = checkCurrentTx();
+        GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         final boolean recovery = opCtx != null && opCtx.recovery();
         final ReadRepairStrategy readRepairStrategy = opCtx != null ? opCtx.readRepairStrategy() : null;
 
-        // Get operation bypass Tx in Mvcc mode.
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<V>() {
                 @Override public IgniteInternalFuture<V> op(GridNearTxLocal tx, AffinityTopologyVersion readyTopVer) {
@@ -293,7 +292,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         warnIfUnordered(keys, BulkOperation.GET);
 
-        GridNearTxLocal tx = checkCurrentTx();
+        GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -340,7 +339,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 tx).multi();
         }
 
-        IgniteInternalFuture<Map<K, V>> fut = loadAsync(
+        return loadAsync(
             ctx.cacheKeysView(keys),
             opCtx == null || !opCtx.skipStore(),
             forcePrimary,
@@ -354,8 +353,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             false,
             null
         );
-
-        return fut;
     }
 
     /**

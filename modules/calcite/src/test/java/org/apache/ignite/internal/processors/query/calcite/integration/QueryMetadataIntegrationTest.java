@@ -52,16 +52,16 @@ public class QueryMetadataIntegrationTest extends AbstractBasicIntegrationTest {
                     .add("PUBLIC", "TBL1", BigDecimal.class, "ID", 10, 2, true)
                     .add("PUBLIC", "TBL1", String.class, "VAL", true)
                     .add("PUBLIC", "TBL1", Long.class, "VAL2", 19, 0, true)
-                    .add("PUBLIC", "TBL1", java.sql.Timestamp.class, "TS", 0, SCALE_NOT_SPECIFIED, true)
+                    .add("PUBLIC", "TBL1", java.sql.Timestamp.class, "TS", 3, SCALE_NOT_SPECIFIED, true)
                     .add("PUBLIC", "TBL2", BigDecimal.class, "ID", 10, 2, false)
                     .add("PUBLIC", "TBL2", String.class, "VAL", true)
                     .add("PUBLIC", "TBL2", Long.class, "VAL2", 19, 0, true)
-                    .add("PUBLIC", "TBL2", java.sql.Timestamp.class, "TS", 0, SCALE_NOT_SPECIFIED, true),
+                    .add("PUBLIC", "TBL2", java.sql.Timestamp.class, "TS", 3, SCALE_NOT_SPECIFIED, true),
                 builder -> builder
                     .add(BigDecimal.class, 10, 2)
                     .add(BigDecimal.class, 10, 2)
                     .add(String.class)
-                    .add(java.sql.Timestamp.class, 0, SCALE_NOT_SPECIFIED)
+                    .add(java.sql.Timestamp.class, 3, SCALE_NOT_SPECIFIED)
             ).check();
     }
 

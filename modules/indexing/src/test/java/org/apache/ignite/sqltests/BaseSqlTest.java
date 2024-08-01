@@ -1224,7 +1224,6 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
     /**
      * Check that FULL OUTER JOIN (which is currently unsupported) causes valid error message.
      */
-    @SuppressWarnings("ThrowableNotThrown")
     @Test
     public void testFullOuterJoinIsNotSupported() {
         testAllNodes(node -> {
@@ -1245,7 +1244,6 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
     /**
      * Check that distributed FULL OUTER JOIN (which is currently unsupported) causes valid error message.
      */
-    @SuppressWarnings("ThrowableNotThrown")
     @Test
     public void testFullOuterDistributedJoinIsNotSupported() {
         testAllNodes(node -> {

@@ -217,9 +217,14 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
 
         G.allGrids().forEach(this::failCompressionProcessor);
 
-        for (String snpName: Arrays.asList(SNAPSHOT_WITH_HOLES, SNAPSHOT_WITHOUT_HOLES)) {
-            GridTestUtils.assertThrows(log, () -> ignite.snapshot().restoreSnapshot(snpName, null).get(TIMEOUT),
-                IgniteException.class, "Snapshot contains compressed cache groups");
+        for (String snpName : Arrays.asList(SNAPSHOT_WITH_HOLES, SNAPSHOT_WITHOUT_HOLES)) {
+            GridTestUtils.assertThrowsAnyCause(
+                log,
+                () -> ignite.snapshot().restoreSnapshot(snpName, null).get(TIMEOUT),
+                IllegalStateException.class,
+                "from snapshot '" + snpName + "' are compressed while disk page compression is disabled. To check " +
+                    "these groups please start Ignite with ignite-compress"
+            );
         }
     }
 

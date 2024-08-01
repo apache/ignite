@@ -45,10 +45,10 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/com/fasterxml/jackson/core/jackson-core/2.14.0/jackson-core-2.14.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/fasterxml/jackson/core/jackson-databind/2.14.0/jackson-databind-2.14.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/fasterxml/jackson/core/jackson-annotations/2.14.0/jackson-annotations-2.14.0.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/com/jayway/jsonpath/json-path/2.7.0/json-path-2.7.0.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/net/minidev/json-smart/2.4.7/json-smart-2.4.7.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/net/minidev/accessors-smart/2.4.7/accessors-smart-2.4.7.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/ow2/asm/asm/9.1/asm-9.1.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/com/jayway/jsonpath/json-path/2.9.0/json-path-2.9.0.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/net/minidev/json-smart/2.5.0/json-smart-2.5.0.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/net/minidev/accessors-smart/2.5.0/accessors-smart-2.5.0.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/ow2/asm/asm/9.3/asm-9.3.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/reflections/reflections/0.10.2/reflections-0.10.2.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/slf4j/slf4j-api/1.7.33/slf4j-api-1.7.33.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/locationtech/jts/jts-core/1.19.0/jts-core-1.19.0.jar" enabled="true" runInBatchMode="false"/>

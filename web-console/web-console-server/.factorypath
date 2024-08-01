@@ -86,7 +86,7 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/org/mongodb/bson-record-codec/4.6.1/bson-record-codec-4.6.1.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/javax/cache/cache-api/1.1.1/cache-api-1.1.1.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/jetbrains/annotations/16.0.3/annotations-16.0.3.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/zookeeper/zookeeper/3.8.3/zookeeper-3.8.3.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/zookeeper/zookeeper/3.8.4/zookeeper-3.8.4.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/yetus/audience-annotations/0.12.0/audience-annotations-0.12.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/io/netty/netty-handler/4.1.94.Final/netty-handler-4.1.94.Final.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/io/netty/netty-transport-native-unix-common/4.1.94.Final/netty-transport-native-unix-common-4.1.94.Final.jar" enabled="true" runInBatchMode="false"/>
@@ -94,11 +94,11 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/io/netty/netty-transport-native-epoll/4.1.94.Final/netty-transport-native-epoll-4.1.94.Final.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/io/netty/netty-transport-classes-epoll/4.1.94.Final/netty-transport-classes-epoll-4.1.94.Final.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/commons-io/commons-io/2.11.0/commons-io-2.11.0.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/zookeeper/zookeeper-jute/3.8.3/zookeeper-jute-3.8.3.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/apache/zookeeper/zookeeper-jute/3.8.4/zookeeper-jute-3.8.4.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/com/fasterxml/jackson/core/jackson-databind/2.13.5/jackson-databind-2.13.5.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/com/fasterxml/jackson/core/jackson-annotations/2.13.5/jackson-annotations-2.13.5.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/fasterxml/jackson/core/jackson-core/2.13.5/jackson-core-2.13.5.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/com/fasterxml/jackson/core/jackson-annotations/2.13.5/jackson-annotations-2.13.5.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/com/fasterxml/jackson/core/jackson-databind/2.13.5/jackson-databind-2.13.5.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/projectlombok/lombok/1.18.28/lombok-1.18.28.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/io/vertx/vertx-core/4.4.5/vertx-core-4.4.5.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/io/netty/netty-common/4.1.94.Final/netty-common-4.1.94.Final.jar" enabled="true" runInBatchMode="false"/>

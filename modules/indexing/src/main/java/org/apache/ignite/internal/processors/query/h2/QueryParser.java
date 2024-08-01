@@ -591,7 +591,6 @@ public class QueryParser {
             plan = UpdatePlanBuilder.planForStatement(
                 planKey,
                 stmt,
-                false,
                 idx,
                 log,
                 forceFillAbsentPKsWithDefaults

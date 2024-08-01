@@ -54,13 +54,14 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.jackson.IgniteBinaryObjectJsonDeserializer;
+import org.apache.ignite.internal.jackson.IgniteObjectMapper;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationOverride;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
-import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
-import org.apache.ignite.internal.processors.rest.protocols.http.jetty.IgniteBinaryObjectJsonDeserializer;
+
 import org.apache.ignite.internal.processors.rest.request.DataStructuresRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestBaselineRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
@@ -132,9 +133,8 @@ public class GridTaskExecutor {
 
     private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(GridTaskExecutor.class));
 
-    /** Mapper from Java object to JSON. */
-    private static ObjectMapper jsonMapper;    
-
+    /** Mapper from Java object to JSON. */      
+    public IgniteObjectMapper jsonMapper = null;
     
     public int index = 0;
 
@@ -265,7 +265,7 @@ public class GridTaskExecutor {
         IgniteEx igniteEx = (IgniteEx)ignite;
         GridRestProcessor restProcessor = (GridRestProcessor)igniteEx.context().rest();
         if(jsonMapper==null) {
-        	jsonMapper = new GridJettyObjectMapper(igniteEx.context());    
+        	jsonMapper = new IgniteObjectMapper(igniteEx.context());    
         }
         
         /** Request handlers. */

@@ -1029,24 +1029,6 @@ public class CacheGroupContext {
     }
 
     /**
-     * @return {@code True} if there is at least one cache with registered CQ exists in this group.
-     */
-    public boolean hasContinuousQueryCaches() {
-        List<GridCacheContext<?, ?>> contQryCaches;
-
-        listenerLock.readLock().lock();
-
-        try {
-            contQryCaches = this.contQryCaches;
-
-            return !F.isEmpty(contQryCaches);
-        }
-        finally {
-            listenerLock.readLock().unlock();
-        }
-    }
-
-    /**
      * @throws IgniteCheckedException If failed.
      */
     public void start() throws IgniteCheckedException {

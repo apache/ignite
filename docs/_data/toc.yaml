@@ -472,7 +472,9 @@
       url: tools/index-reader
 - title: Security
   url: security
-  items: 
+  items:
+    - title: Security Model
+      url: security/security-model
     - title: Authentication
       url: security/authentication
     - title: SSL/TLS 

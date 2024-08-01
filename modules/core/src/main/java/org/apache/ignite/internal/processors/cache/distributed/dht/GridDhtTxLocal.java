@@ -417,8 +417,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             final IgniteInternalFuture<?> lockFut = tryRollbackAsync();
 
             if (lockFut != null) {
-                if (lockFut instanceof DhtLockFuture)
-                    ((DhtLockFuture<?>)lockFut).onError(rollbackException());
+                if (lockFut instanceof GridDhtLockFuture)
+                    ((GridDhtLockFuture)lockFut).onError(rollbackException());
                 else if (!lockFut.isDone()) {
                     /*
                      * Prevents race with {@link GridDhtTransactionalCacheAdapter#lockAllAsync

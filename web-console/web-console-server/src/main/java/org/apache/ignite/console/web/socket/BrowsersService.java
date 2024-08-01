@@ -77,7 +77,7 @@ public class BrowsersService extends AbstractSocketHandler {
     private static final String VISOR_IGNITE = "org.apache.ignite.internal.visor.";
 
     /** Max text message size. */
-    private static final int MAX_TEXT_MESSAGE_SIZE = 10 * 1024 * 1024;
+    private static final int MAX_TEXT_MESSAGE_SIZE = 8 * 1024 * 1024;
 
     /** */
     private final Map<String, VisorTaskDescriptor> visorTasks = new HashMap<>();
@@ -123,8 +123,7 @@ public class BrowsersService extends AbstractSocketHandler {
     @Override public void afterConnectionEstablished(WebSocketSession ws) {
         log.info("Browser session opened [socket=" + ws + "]");
         JettyWebSocketSession ses = (JettyWebSocketSession) ws;
-        ses.getNativeSession().getPolicy().setMaxTextMessageSize(MAX_TEXT_MESSAGE_SIZE);
-        ses.getNativeSession().getPolicy().setMaxTextMessageBufferSize(MAX_TEXT_MESSAGE_SIZE);
+        ses.getNativeSession().getPolicy().setMaxTextMessageSize(MAX_TEXT_MESSAGE_SIZE);        
         ses.setTextMessageSizeLimit(MAX_TEXT_MESSAGE_SIZE);
 
         UserKey id = getId(ses);

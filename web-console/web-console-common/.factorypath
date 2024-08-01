@@ -1,9 +1,10 @@
 <factorypath>
     <factorypathentry kind="VARJAR" id="M2_REPO/javax/cache/cache-api/1.1.1/cache-api-1.1.1.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/jetbrains/annotations/16.0.3/annotations-16.0.3.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/com/fasterxml/jackson/core/jackson-databind/2.14.0/jackson-databind-2.14.0.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="VARJAR" id="M2_REPO/com/fasterxml/jackson/core/jackson-annotations/2.14.0/jackson-annotations-2.14.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/fasterxml/jackson/core/jackson-core/2.14.0/jackson-core-2.14.0.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/com/fasterxml/jackson/core/jackson-annotations/2.14.0/jackson-annotations-2.14.0.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/slf4j/slf4j-api/1.7.33/slf4j-api-1.7.33.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/com/fasterxml/jackson/core/jackson-databind/2.14.0/jackson-databind-2.14.0.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/springframework/spring-context/5.2.25.RELEASE/spring-context-5.2.25.RELEASE.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/springframework/spring-aop/5.2.25.RELEASE/spring-aop-5.2.25.RELEASE.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/org/springframework/spring-beans/5.2.25.RELEASE/spring-beans-5.2.25.RELEASE.jar" enabled="true" runInBatchMode="false"/>

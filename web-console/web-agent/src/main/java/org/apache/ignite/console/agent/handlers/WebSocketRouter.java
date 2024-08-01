@@ -88,8 +88,9 @@ import org.apache.ignite.console.websocket.AgentHandshakeResponse;
 import org.apache.ignite.console.websocket.WebSocketRequest;
 import org.apache.ignite.console.websocket.WebSocketResponse;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.jackson.IgniteObjectMapper;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
-import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
+
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -98,7 +99,7 @@ import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.ignite.services.Service;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.websocket.api.Frame;
+
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -106,6 +107,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.slf4j.LoggerFactory;
 
@@ -115,7 +117,7 @@ import io.vertx.core.json.JsonObject;
 /**
  * Router that listen for web socket and redirect messages to event bus.
  */
-@WebSocket(maxTextMessageSize = 10 * 1024 * 1024, maxBinaryMessageSize = 10 * 1024 * 1024)
+@WebSocket(maxTextMessageSize = 8 * 1024 * 1024, maxBinaryMessageSize = 8 * 1024 * 1024)
 public class WebSocketRouter implements AutoCloseable {
     /** */
     private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(WebSocketRouter.class));
@@ -160,9 +162,7 @@ public class WebSocketRouter implements AutoCloseable {
     private AtomicInteger reconnectCnt = new AtomicInteger();
 
     /** Active tokens after handshake. */
-    private Collection<String> validTokens;    
-
-    public GridJettyObjectMapper objectMapper = new GridJettyObjectMapper();
+    private Collection<String> validTokens;     
     
     private HttpClient httpClient;
     
@@ -292,10 +292,9 @@ public class WebSocketRouter implements AutoCloseable {
                      
             
             client.start();
-            Session session = client.connect(this, URI.create(cfg.serverUri()).resolve(AGENTS_PATH)).get(5L, TimeUnit.SECONDS);            
-            session.getPolicy().setMaxTextMessageSize(1024*1024);
-            session.getPolicy().setMaxBinaryMessageSize(1024*1024);            
-            session.setIdleTimeout(Duration.ofMinutes(600)); 
+            Session session = client.connect(this, URI.create(cfg.serverUri()).resolve(AGENTS_PATH)).get(5L, TimeUnit.SECONDS);         
+                        
+            session.setIdleTimeout(3600*1000);
             
             reconnectCnt.set(0);
             

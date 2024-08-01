@@ -136,15 +136,21 @@ class ClientJCacheAdapter<K, V> implements Cache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProc,
-        Object... arguments) throws EntryProcessorException {
-        throw new UnsupportedOperationException();
+    @Override public <T> T invoke(
+        K key,
+        EntryProcessor<K, V, T> entryProc,
+        Object... arguments
+    ) throws EntryProcessorException {
+        return delegate.invoke(key, entryProc, arguments);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
-        EntryProcessor<K, V, T> entryProc, Object... arguments) {
-        throw new UnsupportedOperationException();
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(
+        Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProc,
+        Object... arguments
+    ) {
+        return delegate.invokeAll(keys, entryProc, arguments);
     }
 
     /** {@inheritDoc} */

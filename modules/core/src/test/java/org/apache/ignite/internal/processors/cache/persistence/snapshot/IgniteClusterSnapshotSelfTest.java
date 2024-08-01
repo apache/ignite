@@ -120,6 +120,14 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** {@code true} if node should be started in separate jvm. */
     protected volatile boolean jvm;
 
+    /** Any node failed. */
+    private boolean failed;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setFailureHandler((ignite, ctx) -> failed = true);
+    }
+
     /** @throws Exception If fails. */
     @Before
     @Override public void beforeTestSnapshot() throws Exception {
@@ -321,9 +329,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
             TestRecordingCommunicationSpi.stopBlockAll();
         }
-        else {
+        else
             snpIg0.cluster().state(ACTIVE);
-        }
 
         assertPartitionsSame(idleVerify(snpIg0, dfltCacheCfg.getName(), atomicCcfg.getName()));
     }
@@ -563,6 +570,28 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             stopAllGrids();
             cleanPersistenceDir();
         }
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testExceptionOnStartStage() throws Exception {
+        IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        IgniteFuture<Void> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
+
+        File snpDir = snp(ignite).snapshotLocalDir(SNAPSHOT_NAME);
+
+        assertTrue(snpDir.mkdirs());
+
+        File snpMeta = new File(snpDir, IgniteSnapshotManager.snapshotMetaFileName(ignite.localNode().consistentId().toString()));
+
+        assertTrue(snpMeta.createNewFile());
+
+        assertThrowsAnyCause(log, fut::get, IgniteException.class, "Snapshot metafile must not exist");
+
+        assertFalse(failed);
+
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
     }
 
     /** @throws Exception If fails. */

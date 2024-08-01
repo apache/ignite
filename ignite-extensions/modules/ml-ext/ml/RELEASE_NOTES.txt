@@ -1,9 +1,0 @@
-Apache Ignite Extensions Release Notes
-======================================
-
-Apache Ignite ML Module 1.0.0
---------------------------------
-
-* Initial release of the Apache Ignite ML module.
-* Dependencies updated.
-* Fixed native BLAS integration, migrated to dev.ludovic.netlib.

@@ -6770,7 +6770,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             if (previous != null && !previous.id().equals(nodeId) &&
                                 (req.checkPreviousNodeId() == null || previous.id().equals(req.checkPreviousNodeId()))) {
-                                Collection<InetSocketAddress> nodeAddrs = spi.getEffectiveNodeAddresses(previous);
 
                                 // The connection recovery connection to one node is connCheckTick.
                                 // We need to suppose network delays. So we use half of this time.
@@ -6781,13 +6780,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         "previous [" + previous + "] with timeout " + backwardCheckTimeout);
                                 }
 
-                                liveAddr = checkConnection(new ArrayList<>(nodeAddrs), backwardCheckTimeout);
-
-                                if (log.isInfoEnabled()) {
-                                    log.info("Connection check to previous node done: [liveAddr=" + liveAddr
-                                        + ", previousNode=" + U.toShortString(previous) + ", addressesToCheck=" +
-                                        nodeAddrs + ", connectingNodeId=" + nodeId + ']');
-                                }
+                                liveAddr = checkConnection(previous, backwardCheckTimeout);
                             }
 
                             ok = liveAddr != null;
@@ -7254,8 +7247,10 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** @return Alive address if was able to connected to. {@code Null} otherwise. */
-        private InetSocketAddress checkConnection(List<InetSocketAddress> addrs, int timeout) {
+        private InetSocketAddress checkConnection(TcpDiscoveryNode node, int timeout) {
             AtomicReference<InetSocketAddress> liveAddrHolder = new AtomicReference<>();
+
+            List<InetSocketAddress> addrs = new ArrayList<>(spi.getEffectiveNodeAddresses(node));
 
             CountDownLatch latch = new CountDownLatch(addrs.size());
 
@@ -7289,8 +7284,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     liveAddrHolder.compareAndSet(null, addr);
                                 }
                             }
-                            catch (Exception ignored) {
-                                // No-op.
+                            catch (Exception e) {
+                                U.warn(log, "Failed to check connection to previous node [nodeId=" + node.id() + ", order="
+                                    + node.order() + ", address=" + addr + ']', e);
                             }
                             finally {
                                 latch.countDown();
@@ -7305,6 +7301,16 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
             catch (InterruptedException ignored) {
                 // No-op.
+            }
+
+            if (liveAddrHolder.get() == null) {
+                U.warn(log, "Failed to check connection to previous node [connectingNodeId=" + nodeId
+                    + ", previousNode=" + U.toShortString(node) + ", previousNodeKnownAddresses=" + addrs + ']');
+            }
+            else if (log.isInfoEnabled()) {
+                log.info("Connection check to previous node done [connectingNodeId=" + nodeId + ", previousNode="
+                    + U.toShortString(node) + ", firstRespondedAddress=" + liveAddrHolder.get() +
+                    ", previousNodeKnownAddresses=" + addrs + ']');
             }
 
             return liveAddrHolder.get();

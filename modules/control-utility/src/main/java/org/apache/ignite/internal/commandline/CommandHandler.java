@@ -255,81 +255,69 @@ public class CommandHandler {
 
             cmdName = toFormattedCommandName(args.cmdPath().peekLast().getClass()).toUpperCase();
 
-            try (CliCommandInvoker<A> invoker = new CliCommandInvoker<>(args.command(), args.commandArg(), getClientConfiguration(args))) {
-                int tryConnectMaxCnt = 3;
+            int tryConnectMaxCnt = 3;
 
-                boolean suppliedAuth = !F.isEmpty(args.userName()) && !F.isEmpty(args.password());
+            boolean suppliedAuth = !F.isEmpty(args.userName()) && !F.isEmpty(args.password());
 
-                boolean credentialsRequested = false;
+            boolean credentialsRequested = false;
 
-                while (true) {
-                    try {
-                        if (!invoker.prepare(logger::info))
+            while (true) {
+                try (
+                    CliCommandInvoker<A> invoker =
+                        new CliCommandInvoker<>(args.command(), args.commandArg(), getClientConfiguration(args))
+                ) {
+                    if (!invoker.prepare(logger::info))
+                        return EXIT_CODE_OK;
+
+                    if (!args.autoConfirmation()) {
+                        if (!confirm(invoker.confirmationPrompt())) {
+                            logger.info("Operation cancelled.");
+
                             return EXIT_CODE_OK;
-
-                        if (!args.autoConfirmation()) {
-                            if (!confirm(invoker.confirmationPrompt())) {
-                                logger.info("Operation cancelled.");
-
-                                return EXIT_CODE_OK;
-                            }
                         }
-
-                        logger.info("Command [" + cmdName + "] started");
-                        logger.info("Arguments: " + argumentsToString(rawArgs));
-                        logger.info(U.DELIM);
-
-                        String deprecationMsg = args.command().deprecationMessage(args.commandArg());
-
-                        if (deprecationMsg != null)
-                            logger.warning(deprecationMsg);
-
-                        if (args.command() instanceof HelpCommand)
-                            printUsage(logger, args.cmdPath().peekLast());
-                        else {
-                            try {
-                                if (args.command() instanceof BeforeNodeStartCommand)
-                                    lastOperationRes = invoker.invokeBeforeNodeStart(logger::info);
-                                else
-                                    lastOperationRes = invoker.invoke(logger::info, args.verbose());
-                            }
-                            catch (Throwable e) {
-                                logger.error("Failed to perform operation.");
-                                logger.error(CommandLogger.errorMessage(e));
-
-                                throw e;
-                            }
-                        }
-
-                        break;
                     }
-                    catch (Throwable e) {
-                        if (!isAuthError(e))
-                            throw e;
 
-                        if (suppliedAuth)
-                            throw new GridClientAuthenticationException("Wrong credentials.");
+                    logger.info("Command [" + cmdName + "] started");
+                    logger.info("Arguments: " + argumentsToString(rawArgs));
+                    logger.info(U.DELIM);
 
-                        if (tryConnectMaxCnt == 0) {
-                            throw new GridClientAuthenticationException("Maximum number of " +
-                                "retries exceeded");
-                        }
+                    String deprecationMsg = args.command().deprecationMessage(args.commandArg());
 
-                        logger.info(credentialsRequested ?
-                            "Authentication error, please try again." :
-                            "This cluster requires authentication.");
+                    if (deprecationMsg != null)
+                        logger.warning(deprecationMsg);
 
-                        if (credentialsRequested)
-                            tryConnectMaxCnt--;
+                    if (args.command() instanceof HelpCommand)
+                        printUsage(logger, args.cmdPath().peekLast());
+                    else if (args.command() instanceof BeforeNodeStartCommand)
+                        lastOperationRes = invoker.invokeBeforeNodeStart(logger::info);
+                    else
+                        lastOperationRes = invoker.invoke(logger::info, args.verbose());
 
-                        invoker.clientConfiguration(getClientConfiguration(
-                            retrieveUserName(args, invoker.clientConfiguration()),
-                            new String(requestPasswordFromConsole("password: ")),
-                            args
-                        ));
+                    break;
+                }
+                catch (Throwable e) {
+                    if (!isAuthError(e))
+                        throw e;
 
-                        credentialsRequested = true;
-                    }
+                    if (suppliedAuth)
+                        throw new GridClientAuthenticationException("Wrong credentials.");
+
+                    if (tryConnectMaxCnt == 0)
+                        throw new GridClientAuthenticationException("Maximum number of retries exceeded");
+
+                    logger.info(credentialsRequested ?
+                        "Authentication error, please try again." :
+                        "This cluster requires authentication.");
+
+                    if (credentialsRequested)
+                        tryConnectMaxCnt--;
+
+                    if (F.isEmpty(args.userName()))
+                        args.userName(requestDataFromConsole("user: "));
+
+                    args.password(new String(requestPasswordFromConsole("password: ")));
+
+                    credentialsRequested = true;
                 }
             }
 
@@ -337,16 +325,9 @@ public class CommandHandler {
 
             return EXIT_CODE_OK;
         }
-        catch (IllegalArgumentException e) {
-            logger.error("Check arguments. " + errorMessage(e));
-            logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
-
-            if (verbose)
-                err = e;
-
-            return EXIT_CODE_INVALID_ARGUMENTS;
-        }
         catch (Throwable e) {
+            logger.error("Failed to perform operation.");
+
             if (isAuthError(e)) {
                 logger.error("Authentication error. " + errorMessage(e));
                 logger.info("Command [" + cmdName + "] finished with code: " + ERR_AUTHENTICATION_FAILED);
@@ -512,30 +493,6 @@ public class CommandHandler {
         }
 
         return sb.toString();
-    }
-
-    /**
-     * Does one of three things:
-     * <ul>
-     *     <li>returns user name from connection parameters if it is there;</li>
-     *     <li>returns user name from client configuration if it is there;</li>
-     *     <li>requests user input and returns entered name.</li>
-     * </ul>
-     *
-     * @param args Connection parameters.
-     * @param clientCfg Client configuration.
-     * @throws IgniteCheckedException If security credetials cannot be provided from client configuration.
-     */
-    private String retrieveUserName(
-        ConnectionAndSslParameters args,
-        GridClientConfiguration clientCfg
-    ) throws IgniteCheckedException {
-        if (!F.isEmpty(args.userName()))
-            return args.userName();
-        else if (clientCfg.getSecurityCredentialsProvider() == null)
-            return requestDataFromConsole("user: ");
-        else
-            return (String)clientCfg.getSecurityCredentialsProvider().credentials().getLogin();
     }
 
     /**

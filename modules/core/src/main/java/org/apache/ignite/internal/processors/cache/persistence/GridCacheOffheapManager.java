@@ -1155,6 +1155,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
+    @Override public boolean hasEntriesPendingExpire(int cacheId) throws IgniteCheckedException {
+        for (CacheDataStore store : cacheDataStores()) {
+            if (((GridCacheDataStore)store).hasEntriesPendingExpire(cacheId))
+                return true;
+        }
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public void preloadPartition(int partId) throws IgniteCheckedException {
         GridDhtLocalPartition locPart = grp.topology().localPartition(partId, AffinityTopologyVersion.NONE, false, false);
 
@@ -1226,8 +1236,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         grp.groupId(),
                         grp.dataRegion().pageMemory(),
                         globalRemoveId(),
-                        reuseListForIndex(name),
-                        false
+                        reuseListForIndex(name)
                     );
 
                     indexStorage.dropIndex(name);
@@ -1643,11 +1652,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public int size() throws IgniteCheckedException {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int headerSize() {
             throw new UnsupportedOperationException();
         }
 
@@ -2664,6 +2668,29 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             CacheDataStore delegate0 = init0(true);
 
             return delegate0 == null ? 0 : pendingTree.size();
+        }
+
+        /**
+         * Checks if the cache has entries pending expire.
+         *
+         * @return {@code True} if there are entries pending expire.
+         * @throws IgniteCheckedException If failed to get number of pending entries.
+         */
+        public boolean hasEntriesPendingExpire(int cacheId) throws IgniteCheckedException {
+            CacheDataStore delegate0 = init0(true);
+
+            if (delegate0 == null)
+                return false;
+
+            if (grp.sharedGroup()) {
+                PendingRow row = new PendingRow(cacheId);
+
+                GridCursor<PendingRow> cur = pendingTree.find(row, row, PendingEntriesTree.WITHOUT_KEY);
+
+                return cur.next();
+            }
+            else
+                return !pendingTree.isEmpty();
         }
 
         /**

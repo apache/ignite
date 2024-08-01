@@ -70,7 +70,7 @@ public class AgentsService extends AbstractSocketHandler {
     private static final Logger log = LoggerFactory.getLogger(AgentsService.class);
     
     /** Max text message size. */
-    private static final int MAX_TEXT_MESSAGE_SIZE = 10 * 1024 * 1024;
+    private static final int MAX_TEXT_MESSAGE_SIZE = 8 * 1024 * 1024;
 
     /** */
     protected final AccountsRepository accRepo;
@@ -258,8 +258,7 @@ public class AgentsService extends AbstractSocketHandler {
     @Override public void afterConnectionEstablished(WebSocketSession ws) {
         log.info("Agent session opened [socket=" + ws + "]");
         JettyWebSocketSession ses = (JettyWebSocketSession) ws;
-        ses.getNativeSession().getPolicy().setMaxTextMessageSize(MAX_TEXT_MESSAGE_SIZE);
-        ses.getNativeSession().getPolicy().setMaxTextMessageBufferSize(MAX_TEXT_MESSAGE_SIZE);
+        ses.getNativeSession().getPolicy().setMaxTextMessageSize(MAX_TEXT_MESSAGE_SIZE);        
         ws.setTextMessageSizeLimit(MAX_TEXT_MESSAGE_SIZE);
     }
 

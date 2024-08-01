@@ -730,8 +730,6 @@ public class IgniteTxHandler {
      * @return {@code True} if cache affinity changed and request should be remapped.
      */
     private boolean needRemap(AffinityTopologyVersion rmtVer, GridNearTxPrepareRequest req) {
-        // TODO IGNITE-6754 check mvcc crd for mvcc enabled txs.
-
         for (IgniteTxEntry e : F.concat(false, req.reads(), req.writes())) {
             if (!e.context().affinity().isCompatibleWithCurrentTopologyVersion(rmtVer))
                 return true;
@@ -1654,7 +1652,7 @@ public class IgniteTxHandler {
         GridDhtTxPrepareRequest req,
         GridDhtTxPrepareResponse res
     ) throws IgniteCheckedException {
-        if (req.queryUpdate() || !F.isEmpty(req.writes())) {
+        if (!F.isEmpty(req.writes())) {
             GridDhtTxRemote tx = ctx.tm().tx(req.version());
 
             if (tx == null) {
@@ -1843,7 +1841,7 @@ public class IgniteTxHandler {
 
             res.invalidPartitionsByCacheId(tx.invalidPartitions());
 
-            if (!req.queryUpdate() && tx.empty() && req.last()) {
+            if (tx.empty() && req.last()) {
                 tx.skipCompletedVersions(req.skipCompletedVersion());
 
                 tx.rollbackRemoteTx();

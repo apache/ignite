@@ -42,7 +42,9 @@ fi
 # Set SCRIPTS_HOME - base path to scripts.
 #
 SCRIPTS_HOME="${IGNITE_HOME_TMP}/bin"
-
+ulimit -n 65000
+export PYTORCH_PRECXX11=true
+export PYTORCH_VERSION=1.13.1
 source "${SCRIPTS_HOME}"/include/functions.sh
 source "${SCRIPTS_HOME}"/include/jvmdefaults.sh
 
@@ -162,12 +164,12 @@ do
             Darwin*)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" \
                   -DIGNITE_HOME="${IGNITE_HOME}" \
-                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} "${CONFIG}" && ERRORCODE="$?" || ERRORCODE="$?"
+                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} ${CONFIG} && ERRORCODE="$?" || ERRORCODE="$?"
             ;;
             *)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${RESTART_SUCCESS_OPT}" \
                   -DIGNITE_HOME="${IGNITE_HOME}" \
-                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} "${CONFIG}" && ERRORCODE="$?" || ERRORCODE="$?"
+                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} ${CONFIG} && ERRORCODE="$?" || ERRORCODE="$?"
             ;;
         esac
     fi

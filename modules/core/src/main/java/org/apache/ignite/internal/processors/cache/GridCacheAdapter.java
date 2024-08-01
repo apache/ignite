@@ -1810,11 +1810,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final boolean needVer
     );
 
-    /** */
-    protected GridNearTxLocal checkCurrentTx() {
-        return ctx.tm().threadLocalTx(ctx);
-    }
-
     /** {@inheritDoc} */
     @Override public final V getAndPut(K key, V val) throws IgniteCheckedException {
         return getAndPut(key, val, null);
@@ -3630,7 +3625,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Nullable private <T> T syncOp(SyncOp<T> op) throws IgniteCheckedException {
         checkJta();
 
-        GridNearTxLocal tx = checkCurrentTx();
+        GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);
 
         if (tx == null || tx.implicit()) {
             lastAsyncFuture().await();
@@ -3750,7 +3745,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (log.isDebugEnabled())
             log.debug("Performing async op: " + op);
 
-        GridNearTxLocal tx = checkCurrentTx();
+        GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -4292,7 +4287,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         IgniteInternalFuture<R> orig,
         Function<IgniteConsistencyViolationException, IgniteInternalFuture<Void>> repair,
         Supplier<IgniteInternalFuture<R>> retry) {
-        final GridNearTxLocal tx = checkCurrentTx();
+        final GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         GridFutureAdapter<R> fut = new GridFutureAdapter<>();
@@ -4371,7 +4366,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         boolean skipVals) {
         assert ctx.transactional();
 
-        final GridNearTxLocal orig = checkCurrentTx();
+        final GridNearTxLocal orig = ctx.tm().threadLocalTx(ctx);
 
         assert orig == null || orig.optimistic() || orig.readCommitted() || /*contains*/ skipVals :
             "Pessimistic non-read-committed 'get' should be fixed inside its own tx, the only exception is 'contains' " +
@@ -4387,7 +4382,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 try (Transaction tx = ctx.grid().transactions().txStart(PESSIMISTIC, SERIALIZABLE)) {
                     get((K)key, null, !ctx.keepBinary(), false); // Repair.
 
-                    final GridNearTxLocal tx0 = checkCurrentTx();
+                    final GridNearTxLocal tx0 = ctx.tm().threadLocalTx(ctx);
 
                     final IgniteTxKey txKey = ctx.txKey(ctx.toCacheKeyObject(key));
 

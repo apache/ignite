@@ -71,7 +71,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -1595,11 +1594,6 @@ public class QueryUtils {
             sqlState = ((IgniteSQLException)e).sqlState();
 
             code = ((IgniteSQLException)e).statusCode();
-        }
-        else if (e instanceof TransactionDuplicateKeyException) {
-            code = IgniteQueryErrorCode.DUPLICATE_KEY;
-
-            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
         }
         else {
             sqlState = SqlStateCode.INTERNAL_ERROR;

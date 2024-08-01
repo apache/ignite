@@ -47,12 +47,6 @@ public interface Storable {
     public int size() throws IgniteCheckedException;
 
     /**
-     * @return Row header size in page. Header is indivisible part of row
-     * which is entirely available on the very first page followed by the row link.
-     */
-    public int headerSize();
-
-    /**
      * @return I/O for handling this storable.
      */
     public IOVersions<? extends AbstractDataPageIO> ioVersions();

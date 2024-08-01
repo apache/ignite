@@ -23,7 +23,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.apache.ignite.console.messages.WebConsoleMessageSourceAccessor;
-import org.apache.ignite.console.web.socket.WebSocketMessageBrokerConfig;
+
 import org.apache.ignite.console.websocket.WebSocketEvent;
 import org.apache.ignite.console.websocket.WebSocketRequest;
 import org.apache.ignite.console.websocket.WebSocketResponse;

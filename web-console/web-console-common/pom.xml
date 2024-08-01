@@ -19,7 +19,7 @@
         <!-- Ignite dependencies -->
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-core</artifactId>
+            <artifactId>ignite-json</artifactId>
             <version>${web-console.ignite.version}</version>
         </dependency>
 

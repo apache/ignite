@@ -22,6 +22,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -56,6 +57,8 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -384,6 +387,42 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     }
 
     /**
+     * This test uses node failure by stopping service threads, which makes the node unresponsive and results in
+     * failing connection to the server. Failures are simulated on the 1st node in the ring. In this case,
+     * the 2nd node in the ring will trigger 'Backward Connection Check', which should result in failing attempt of connection.
+     * This result is followed by the corresponding logs, indicating described failures. The test verifies the logs.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBackwardConnectionCheckFailedLogMessage() throws Exception {
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
+
+        LogListener lsnr0 = LogListener.matches("Failed to check connection to previous node").times(2).build();
+
+        testLog.registerListener(lsnr0);
+
+        startGrid(0);
+
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(1));
+        cfg.setGridLogger(testLog);
+
+        startGrid(cfg);
+
+        startGrid(2);
+
+        spi(grid(0)).simulateNodeFailure();
+
+        assertTrue(lsnr0.check(getTestTimeout()));
+
+        for (Ignite ig : Arrays.asList(grid(1), grid(2))) {
+            waitForCondition(() -> ig.cluster().nodes().size() == 2, getTestTimeout());
+
+            assertTrue(ig.cluster().nodes().stream().noneMatch(node -> node.order() == 1));
+        }
+    }
+
+    /**
      * @param ig Ignite instance to get failedNodes collection from.
      */
     private Map getFailedNodesCollection(IgniteEx ig) {
@@ -545,7 +584,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         private final Collection<InetSocketAddress> testAddrs;
 
         /**
-         * Creates test tco discovery spi.
+         * Creates test TCP discovery spi.
          *
          * @param node Original node.
          * @param simulatedAddrs Simulated addresses of {@code node}

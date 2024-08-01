@@ -28,7 +28,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
-import org.apache.ignite.internal.pagemem.wal.record.MarshalledDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
@@ -431,8 +431,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         final CacheObject val;
         boolean keepBinary = this.keepBinary || !fakeCacheObjCtx.kernalContext().marshallerContext().initialized();
 
-        if (dataEntry instanceof MarshalledDataEntry) {
-            final MarshalledDataEntry lazyDataEntry = (MarshalledDataEntry)dataEntry;
+        if (dataEntry instanceof LazyDataEntry) {
+            final LazyDataEntry lazyDataEntry = (LazyDataEntry)dataEntry;
 
             key = processor.toKeyCacheObject(fakeCacheObjCtx,
                 lazyDataEntry.getKeyType(),

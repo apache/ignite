@@ -30,6 +30,7 @@ import org.apache.ignite.internal.client.thin.DataReplicationOperationsTest;
 import org.apache.ignite.internal.client.thin.FunctionalTest;
 import org.apache.ignite.internal.client.thin.IgniteSetTest;
 import org.apache.ignite.internal.client.thin.InactiveClusterCacheRequestTest;
+import org.apache.ignite.internal.client.thin.InvokeTest;
 import org.apache.ignite.internal.client.thin.MetadataRegistrationTest;
 import org.apache.ignite.internal.client.thin.OptimizedMarshallerClassesCachedTest;
 import org.apache.ignite.internal.client.thin.ReliableChannelTest;
@@ -44,6 +45,7 @@ import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessStable
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessUnstableTopologyTest;
 import org.apache.ignite.internal.client.thin.TimeoutTest;
 import org.apache.ignite.internal.client.thin.events.IgniteClientConnectionEventListenerTest;
+import org.apache.ignite.internal.client.thin.events.IgniteClientLifecycleEventListenerTest;
 import org.apache.ignite.internal.client.thin.events.IgniteClientRequestEventListenerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -89,11 +91,13 @@ import org.junit.runners.Suite;
     MetadataRegistrationTest.class,
     IgniteClientConnectionEventListenerTest.class,
     IgniteClientRequestEventListenerTest.class,
+    IgniteClientLifecycleEventListenerTest.class,
     ThinClientEnpointsDiscoveryTest.class,
     InactiveClusterCacheRequestTest.class,
     AffinityMetricsTest.class,
     ClusterGroupClusterRestartTest.class,
     BlockingTxOpsTest.class,
+    InvokeTest.class,
 })
 public class ClientTestSuite {
     // No-op.
