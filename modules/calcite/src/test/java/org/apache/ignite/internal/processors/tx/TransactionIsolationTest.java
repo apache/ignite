@@ -33,6 +33,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
@@ -55,6 +56,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.junit.Assume.assumeFalse;
 
 /** */
 @RunWith(Parameterized.class)
@@ -101,6 +103,10 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     public boolean thin;
 
     /** */
+    @Parameterized.Parameter(4)
+    public boolean partitionAwareness;
+
+    /** */
     private static IgniteEx srv;
 
     /** */
@@ -125,8 +131,11 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
         for (String insert : apis) {
             for (String update : apis) {
                 for (String delete : apis) {
-                    for (boolean thin : new boolean[]{false, true})
-                        params.add(new Object[]{insert, update, delete, thin});
+                    params.add(new Object[]{insert, update, delete, false, false});
+
+                    for (boolean partitionAwareness : new boolean[]{false, true}) {
+                        params.add(new Object[]{insert, update, delete, true, partitionAwareness});
+                    }
                 }
             }
         }
@@ -146,7 +155,9 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
 
         srv = startGrids(3);
         cli = startClientGrid("client");
-        thinCli = TcpIgniteClient.start(new ClientConfiguration().setAddresses(Config.SERVER));
+        thinCli = TcpIgniteClient.start(new ClientConfiguration()
+            .setAddresses(Config.SERVER)
+            .setPartitionAwarenessEnabled(partitionAwareness));
 
         LinkedHashMap<String, String> flds = new LinkedHashMap<>();
 
@@ -205,6 +216,8 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testIndexScan() {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", thin);
+
         delete(1);
 
         assertEquals("Table must be empty", 0L, executeSql("SELECT COUNT(*) FROM USERS.USERS").get(0).get(0));
@@ -286,6 +299,8 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testInsert() {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", thin);
+
         insideTx(() -> {
             assertNull(CACHE, select(4, CACHE));
             assertNull(SQL, select(4, SQL));
@@ -303,6 +318,8 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testUpdate() {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", thin);
+
         insideTx(() -> {
             assertEquals(JOHN, select(1, CACHE));
             assertEquals(JOHN, select(1, SQL));
@@ -325,6 +342,8 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testDelete() {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", thin);
+
         insideTx(() -> {
             assertEquals(JOHN, select(1, CACHE));
             assertEquals(JOHN, select(1, SQL));
@@ -342,25 +361,33 @@ public class TransactionIsolationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testVisibility() {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-22874", thin);
+
         executeSql("DELETE FROM TBL.TBL");
 
         IgniteCache<Long, Long> cache = cli.cache("TBL");
+        ClientCache<Long, Long> thinCache = thinCli.cache("TBL");
 
         assertEquals("Table must be empty", 0L, executeSql("SELECT COUNT(*) FROM TBL.TBL").get(0).get(0));
 
         long cnt = 100;
 
-        LongStream.range(1, 1 + cnt).forEach(i -> {
-            insideTx(() -> {
+        LongStream.range(1, 1 + cnt).forEach(i -> insideTx(() -> {
+            if (thin) {
+                thinCache.put(i, i + 1);
+
+                assertEquals("Must see transaction related data", (Long)(i + 1), thinCache.get(i));
+            }
+            else {
                 cache.put(i, i + 1);
 
                 assertEquals("Must see transaction related data", (Long)(i + 1), cache.get(i));
+            }
 
-                List<List<?>> sqlData = executeSql("SELECT COUNT(*) FROM TBL.TBL");
+            List<List<?>> sqlData = executeSql("SELECT COUNT(*) FROM TBL.TBL");
 
-                assertEquals("Must count properly", i, sqlData.get(0).get(0));
-            }, true);
-        });
+            assertEquals("Must count properly", i, sqlData.get(0).get(0));
+        }, true));
 
         List<List<?>> sqlData = executeSql("SELECT COUNT(*) FROM TBL.TBL");
 
