@@ -219,7 +219,7 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
 
         Ignite ignite = startNode(0, reqPerms);
 
-        for(int i = 1; i < nodes; ++i)
+        for (int i = 1; i < nodes; ++i)
             startNode(i, reqPerms);
 
         return ignite;
