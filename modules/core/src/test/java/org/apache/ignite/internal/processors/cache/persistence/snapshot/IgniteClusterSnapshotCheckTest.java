@@ -98,7 +98,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -931,7 +930,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** Tests snapshot checking process stops when the coorditator leaves. */
     @Test
-    @Ignore
     public void testCoordinatorLeavesDuringSnapshotChecking() throws Exception {
         prepareGridsAndSnapshot(5, 4, 1, false);
 

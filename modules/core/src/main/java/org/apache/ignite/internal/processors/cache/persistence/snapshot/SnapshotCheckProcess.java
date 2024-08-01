@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -82,20 +83,32 @@ public class SnapshotCheckProcess {
         phase2PartsHashes = new DistributedProcess<>(kctx, SNAPSHOT_VALIDATE_PARTS, this::validateParts,
             this::reduceValidatePartsAndFinish);
 
+        // Discovery-managed thread.
         kctx.event().addLocalEventListener((evt) -> {
             DiscoveryEvent devt = (DiscoveryEvent)evt;
 
             Throwable err = new ClusterTopologyCheckedException("Snapshot checking stopped. " +
                 "A required node or the initiator node left the cluster: " + devt.eventNode() + '.');
 
-            contexts.values().forEach(ctx -> {
-                if (workingNode(ctx.req, devt.eventNode().id())) {
-                    ctx.err = err;
+            Iterator<Map.Entry<String, SnapshotCheckContext>> it = contexts.entrySet().iterator();
 
-                    if (ctx.fut != null)
-                        ctx.fut.onDone(err);
+            while (it.hasNext()) {
+                SnapshotCheckContext ctx = it.next().getValue();
+
+                if (!workingNode(ctx.req, devt.eventNode().id()))
+                    continue;
+
+                if (ctx.fut != null)
+                    ctx.fut.onDone(err);
+
+                it.remove();
+
+                if (ctx.req.initiatorId().equals(kctx.localNodeId())) {
+                    assert clusterOpFuts.get(ctx.req.reqId) != null;
+
+                    clusterOpFuts.get(ctx.req.reqId).onDone(err);
                 }
-            });
+            }
         }, EVT_NODE_FAILED, EVT_NODE_LEFT);
     }
 
@@ -139,7 +152,7 @@ public class SnapshotCheckProcess {
 
                 Map<ClusterNode, Exception> errors0 = mapErrors(errors);
 
-                if (ctx.err == null && !F.isEmpty(results)) {
+                if (!F.isEmpty(results)) {
                     assert results.values().stream().noneMatch(res -> res != null && res.metas != null);
 
                     Map<ClusterNode, Map<PartitionKeyV2, PartitionHashRecordV2>> results0 = mapPartsHashes(results, ctx.req.nodes());
@@ -149,7 +162,7 @@ public class SnapshotCheckProcess {
                     clusterOpFut.onDone(new SnapshotPartitionsVerifyTaskResult(ctx.clusterMetas, chkRes));
                 }
                 else
-                    finishClusterFutureWithErr(clusterOpFut, ctx.err, errors0);
+                    finishClusterFutureWithErr(clusterOpFut, null, errors0);
             }
         }
 
@@ -283,11 +296,7 @@ public class SnapshotCheckProcess {
         // The context is not stored in the case of concurrent check of the same snapshot but the operation future is registered.
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.get(reqId);
 
-        // There could be 2 types of error: detected by the process (occurs on a node during the process pahse) or
-        // a node-left error which can appre asynchronously between the phases or results collecting.
-        Throwable err = ctx == null ? null : ctx.err;
-
-        if (err != null || !F.isEmpty(errors)) {
+        if (!F.isEmpty(errors)) {
             if (ctx != null) {
                 assert ctx.req.reqId.equals(reqId);
 
@@ -302,7 +311,7 @@ public class SnapshotCheckProcess {
 
                 Map<ClusterNode, Exception> errors0 = mapErrors(errors);
 
-                finishClusterFutureWithErr(clusterOpFut, err, errors0);
+                finishClusterFutureWithErr(clusterOpFut, null, errors0);
             }
 
             return;
@@ -313,6 +322,8 @@ public class SnapshotCheckProcess {
             return;
 
         Map<ClusterNode, List<SnapshotMetadata>> metas = new HashMap<>();
+
+        Throwable metasValidationErr;
 
         try {
             results.forEach((nodeId, nodeRes) -> {
@@ -334,12 +345,14 @@ public class SnapshotCheckProcess {
 
             if (!F.isEmpty(metasRes.exceptions()))
                 throw new IgniteSnapshotVerifyException(metasRes.exceptions());
+
+            metasValidationErr = null;
         }
-        catch (Throwable th) {
-            err = th;
+        catch (Throwable err) {
+            metasValidationErr = err;
         }
 
-        phase2PartsHashes.start(reqId, new SnapshotCheckProcessRequest(ctx.req, err, metas));
+        phase2PartsHashes.start(reqId, new SnapshotCheckProcessRequest(ctx.req, metasValidationErr, metas));
 
         if (log.isDebugEnabled())
             log.debug("Started partitions validation as part of the snapshot checking [req=" + ctx.req + ']');
@@ -451,16 +464,13 @@ public class SnapshotCheckProcess {
         /** Collected cluster metas. */
         @Nullable private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
 
-        /** An error occured. Expected to be set/read in the same discovery-managed thread. */
-        @Nullable private Throwable err;
-
         /** Creates operation context. */
         private SnapshotCheckContext(SnapshotCheckProcessRequest req) {
             this.req = req;
         }
     }
 
-    /** A DTO used to transfer nodes' results for the both phases. Guarantees the serialization. */
+    /** A DTO used to transfer nodes' results for the both phases. */
     private static final class CheckResultDTO implements Serializable {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
@@ -473,14 +483,14 @@ public class SnapshotCheckProcess {
 
         /** Ctor for the phase 1. */
         private CheckResultDTO(@Nullable List<SnapshotMetadata> metas) {
-            this.metas = metas == null || metas instanceof Serializable ? metas : new ArrayList<>(metas);
+            this.metas = metas;
             this.partsHashes = null;
         }
 
         /** Ctor for the phase 2. */
         private CheckResultDTO(@Nullable Map<PartitionKeyV2, PartitionHashRecordV2> partsHashes) {
             this.metas = null;
-            this.partsHashes = partsHashes == null || partsHashes instanceof Serializable ? partsHashes : new HashMap<>(partsHashes);
+            this.partsHashes = partsHashes;
         }
     }
 }
