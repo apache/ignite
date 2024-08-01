@@ -41,7 +41,8 @@ public class CacheCreateCommandArg extends IgniteDataTransferObject {
     private String springxmlconfig;
 
     /** */
-    @Argument(optional = true, example = "cacheName1,...,cacheNameN")
+    @Argument(description = "Optional flag to list caches to ignore at creation step. " +
+        "You can use regular expressions to list caches", optional = true, example = "cacheName1,...,cacheNameN")
     private String[] excludeCaches;
 
     /** */
