@@ -536,7 +536,7 @@ public final class UpdatePlan {
     }
 
     /**
-     * @return String representation of update plan.
+     * @return String representation of the update plan.
      */
     public String plan() {
         StringBuilder sb = new StringBuilder("mode=" + mode +
